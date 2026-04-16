@@ -46,6 +46,7 @@ export interface ConfigTable {
   electrs_host: string | null;
   electrs_port: number | null;
   boot_mode: 'ALWAYS_DRY_RUN' | 'LAST_MODE' | 'ALWAYS_LIVE';
+  spent_scope: 'autopilot' | 'account';
   updated_at: number;
 }
 

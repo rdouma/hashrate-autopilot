@@ -14,6 +14,7 @@ import { createBraiinsClient } from '@braiins-hashrate/braiins-client';
 
 import { loadSecrets } from './config/secrets.js';
 import { createHttpServer } from './http/server.js';
+import { AccountSpendService } from './services/account-spend.js';
 import { BraiinsService } from './services/braiins-service.js';
 import { createOceanClient } from './services/ocean.js';
 import { PayoutObserver } from './services/payout-observer.js';
@@ -144,6 +145,11 @@ async function main(): Promise<void> {
   // finance panel just won't have an "expected income" figure then).
   const oceanClient = createOceanClient();
 
+  // Account-lifetime spend tracker — sums Braiins's transaction
+  // ledger when the operator picks `spent_scope = 'account'`. Uses
+  // the owner-token client so it can read /v1/account/transaction.
+  const accountSpend = new AccountSpendService(braiinsClient);
+
   // HTTP server (dashboard API + static).
   const httpServer = await createHttpServer({
     controller,
@@ -155,6 +161,7 @@ async function main(): Promise<void> {
     bidEventsRepo,
     payoutObserver,
     oceanClient,
+    accountSpend,
     password: secrets.dashboard_password,
     tickIntervalMs: DEFAULT_TICK_INTERVAL_MS,
     secretsPath,

@@ -56,6 +56,8 @@ export type OrderbookSnapshot = components['schemas']['SpotGetOrderBookResponse'
 export type AccountBalance = components['schemas']['AccountBalance'];
 export type AccountBalances = components['schemas']['GetAccountBalancesResponse'];
 export type BidsResponse = components['schemas']['SpotGetBidsResponse'];
+export type TransactionsResponse = components['schemas']['GetTransactionsResponse'];
+export type Transaction = components['schemas']['Transaction'];
 export type BidItem = components['schemas']['SpotGetBidsResponseItem'];
 export type BidDetail = components['schemas']['SpotGetBidDetailResponse'];
 export type PlaceBidRequest = components['schemas']['SpotPlaceBidRequest'];
@@ -75,6 +77,7 @@ export interface BraiinsClient {
   getFee(): Promise<FeeSchedule>;
   getBalance(): Promise<AccountBalances>;
   getCurrentBids(): Promise<BidsResponse>;
+  getTransactions(opts?: { limit?: number; offset?: number }): Promise<TransactionsResponse>;
   getBidDetail(orderId: string): Promise<BidDetail>;
   placeBid(request: PlaceBidRequest): Promise<PlaceBidResponse>;
   editBid(request: EditBidRequest): Promise<void>;
@@ -218,6 +221,15 @@ export function createBraiinsClient(config: BraiinsClientConfig = {}): BraiinsCl
       read('/spot/bid/current', async () => {
         const res = await api.GET('/spot/bid/current', { headers: authHeaders('READ_ONLY') });
         return unwrap<BidsResponse>('/spot/bid/current', res);
+      }),
+
+    getTransactions: ({ limit = 200, offset = 0 } = {}) =>
+      read('/account/transaction', async () => {
+        const res = await api.GET('/account/transaction', {
+          params: { query: { limit, offset } },
+          headers: authHeaders('READ_ONLY'),
+        });
+        return unwrap<TransactionsResponse>('/account/transaction', res);
       }),
 
     getBidDetail: (orderId: string) =>

@@ -767,9 +767,13 @@ function FinancePanel({ data }: { data: FinanceResponse | undefined }) {
       </div>
 
       <FinanceRow
-        label="spent"
+        label={data.spent_scope === 'account' ? 'spent (whole account)' : 'spent (autopilot)'}
         value={data.spent_sat}
-        tooltip="Lifetime sum of (amount_sat − amount_remaining_sat) across every bid the autopilot has ever owned. Real BTC that left the Braiins wallet to buy hashrate."
+        tooltip={
+          data.spent_scope === 'account'
+            ? 'Sum of every "(Partial) order settlement (brutto price)" on /v1/account/transaction — covers all bids the Braiins account has ever settled, including any that existed before the autopilot was switched on. Switch via Config → Money panel.'
+            : 'Lifetime sum of (amount_sat − amount_remaining_sat) across every bid the autopilot has tagged. Excludes any bids placed before the autopilot was switched on. Switch to "whole account" via Config → Money panel.'
+        }
       />
       <FinanceRow
         label="expected (Ocean)"

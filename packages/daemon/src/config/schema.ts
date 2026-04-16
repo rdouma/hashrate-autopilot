@@ -115,6 +115,16 @@ export const AppConfigSchema = z.object({
   boot_mode: z
     .enum(['ALWAYS_DRY_RUN', 'LAST_MODE', 'ALWAYS_LIVE'])
     .default('ALWAYS_DRY_RUN'),
+
+  // Money panel: which "spent" figure to display.
+  // - 'autopilot': only bids the autopilot has tagged in owned_bids
+  //   (correct number for "what has the autopilot itself spent",
+  //   but ignores any bids that existed before it was switched on).
+  // - 'account':  sum of every "(Partial) order settlement (brutto
+  //   price)" entry from Braiins's /v1/account/transaction ledger,
+  //   covering the full account history. Pairs honestly with Ocean's
+  //   lifetime earnings on the income side.
+  spent_scope: z.enum(['autopilot', 'account']).default('autopilot'),
 });
 
 export type AppConfig = z.infer<typeof AppConfigSchema>;
@@ -194,4 +204,5 @@ export const APP_CONFIG_DEFAULTS: Omit<
   electrs_port: null,
 
   boot_mode: 'ALWAYS_DRY_RUN',
+  spent_scope: 'autopilot',
 };

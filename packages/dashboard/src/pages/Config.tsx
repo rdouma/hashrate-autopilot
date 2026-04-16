@@ -244,6 +244,23 @@ const SECTIONS: Section[] = [
       },
     ],
   },
+  {
+    title: 'Money panel',
+    description:
+      'Controls how the Money panel computes the "spent" figure that feeds the net result.',
+    fields: [
+      {
+        key: 'spent_scope',
+        label: 'Spend scope',
+        kind: 'select',
+        options: [
+          { value: 'autopilot', label: 'Autopilot only (autopilot-tagged bids)' },
+          { value: 'account', label: 'Whole account (all settled bids ever)' },
+        ],
+        help: '"Autopilot only" sums consumed across bids the daemon has tagged in its ledger — accurate for what *this* autopilot has cost. "Whole account" sums every settlement on /v1/account/transaction — covers bids that existed before the autopilot was switched on, so it pairs honestly with Ocean\'s lifetime earnings.',
+      },
+    ],
+  },
 ];
 
 export function Config() {

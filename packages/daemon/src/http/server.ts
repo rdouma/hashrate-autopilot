@@ -24,6 +24,7 @@ import type { DecisionsRepo } from '../state/repos/decisions.js';
 import type { OwnedBidsRepo } from '../state/repos/owned_bids.js';
 import type { RuntimeStateRepo } from '../state/repos/runtime_state.js';
 import type { TickMetricsRepo } from '../state/repos/tick_metrics.js';
+import type { AccountSpendService } from '../services/account-spend.js';
 import type { OceanClient } from '../services/ocean.js';
 import type { PayoutObserver } from '../services/payout-observer.js';
 import { registerActionRoutes } from './routes/actions.js';
@@ -47,6 +48,7 @@ export interface HttpServerDeps {
   readonly bidEventsRepo: BidEventsRepo;
   readonly payoutObserver: PayoutObserver | null;
   readonly oceanClient: OceanClient | null;
+  readonly accountSpend: AccountSpendService | null;
   readonly password: string;
   readonly tickIntervalMs: number;
   readonly secretsPath: string;
@@ -101,6 +103,7 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<HttpServer
     configRepo: deps.configRepo,
     payoutObserver: deps.payoutObserver,
     oceanClient: deps.oceanClient,
+    accountSpend: deps.accountSpend,
   });
 
   // Serve built dashboard if present.

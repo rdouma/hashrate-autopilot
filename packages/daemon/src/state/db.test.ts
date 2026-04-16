@@ -46,6 +46,7 @@ describe('openDatabase — migrations', () => {
       '0015_rename_max_overpay.sql',
       '0016_bid_events_allow_edit_speed.sql',
       '0017_owned_bids_consumed.sql',
+      '0018_spent_scope.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });

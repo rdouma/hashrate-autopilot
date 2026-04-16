@@ -17,6 +17,8 @@ export {
   type OrderbookSnapshot,
   type PlaceBidRequest,
   type PlaceBidResponse,
+  type Transaction,
+  type TransactionsResponse,
 } from './client.js';
 export {
   BraiinsApiError,

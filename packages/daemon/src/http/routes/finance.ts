@@ -24,6 +24,7 @@
 
 import type { FastifyInstance } from 'fastify';
 
+import type { AccountSpendService } from '../../services/account-spend.js';
 import type { OceanClient } from '../../services/ocean.js';
 import type { PayoutObserver } from '../../services/payout-observer.js';
 import type { OwnedBidsRepo } from '../../state/repos/owned_bids.js';
@@ -31,6 +32,8 @@ import type { ConfigRepo } from '../../state/repos/config.js';
 
 export interface FinanceResponse {
   readonly spent_sat: number;
+  /** Which scope produced `spent_sat`. Mirrors the config field. */
+  readonly spent_scope: 'autopilot' | 'account';
   readonly collected_sat: number | null;
   readonly expected_sat: number | null;
   readonly net_sat: number | null;
@@ -50,6 +53,7 @@ export interface FinanceDeps {
   readonly configRepo: ConfigRepo;
   readonly payoutObserver: PayoutObserver | null;
   readonly oceanClient: OceanClient | null;
+  readonly accountSpend: AccountSpendService | null;
 }
 
 export async function registerFinanceRoute(
@@ -58,7 +62,20 @@ export async function registerFinanceRoute(
 ): Promise<void> {
   app.get('/api/finance', async (): Promise<FinanceResponse> => {
     const config = await deps.configRepo.get();
-    const spent_sat = await deps.ownedBidsRepo.sumLifetimeConsumedSat();
+    const scope = config?.spent_scope ?? 'autopilot';
+
+    let spent_sat: number;
+    if (scope === 'account' && deps.accountSpend) {
+      const snap = await deps.accountSpend.getLifetimeSpend();
+      // Fall back to autopilot-scope if Braiins's transaction ledger
+      // is unavailable rather than falsely reporting 0 spent.
+      spent_sat =
+        snap?.total_settlement_sat ??
+        (await deps.ownedBidsRepo.sumLifetimeConsumedSat());
+    } else {
+      spent_sat = await deps.ownedBidsRepo.sumLifetimeConsumedSat();
+    }
+
     const collected_sat = deps.payoutObserver?.getLastSnapshot()?.total_unspent_sat ?? null;
 
     let oceanStats: Awaited<ReturnType<OceanClient['fetchStats']>> | null = null;
@@ -79,6 +96,7 @@ export async function registerFinanceRoute(
 
     return {
       spent_sat,
+      spent_scope: scope,
       collected_sat,
       expected_sat,
       net_sat,

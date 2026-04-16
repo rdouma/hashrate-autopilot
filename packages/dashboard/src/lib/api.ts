@@ -209,6 +209,7 @@ export interface AppConfig {
   electrs_host: string | null;
   electrs_port: number | null;
   boot_mode: 'ALWAYS_DRY_RUN' | 'LAST_MODE' | 'ALWAYS_LIVE';
+  spent_scope: 'autopilot' | 'account';
 }
 
 export interface ConfigResponse {
@@ -259,6 +260,7 @@ export const api = {
 
 export interface FinanceResponse {
   spent_sat: number;
+  spent_scope: 'autopilot' | 'account';
   collected_sat: number | null;
   expected_sat: number | null;
   net_sat: number | null;
