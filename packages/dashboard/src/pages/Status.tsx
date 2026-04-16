@@ -821,9 +821,9 @@ function FinancePanel({ data }: { data: FinanceResponse | undefined }) {
           )}
           {data.ocean.time_to_payout_text && (
             <FinanceFootnote
-              label="next payout in"
-              value={data.ocean.time_to_payout_text}
-              tooltip="Estimated wait at the address's 3-hour hashrate until earnings cross Ocean's payout threshold."
+              label="next payout"
+              value={formatNextPayout(data.ocean.time_to_payout_text)}
+              tooltip="Ocean's estimate at the address's 3-hour hashrate until earnings cross the payout threshold (0.01048576 BTC). The timestamp is computed from this duration plus the current time — slides earlier as hashrate climbs, later as it drops."
             />
           )}
         </div>
@@ -878,11 +878,50 @@ function FinanceFootnote({
   tooltip: string;
 }) {
   return (
-    <div className="cursor-help flex items-baseline justify-between" title={tooltip}>
+    <div className="cursor-help flex items-baseline justify-between gap-2" title={tooltip}>
       <span>{label}</span>
-      <span className="text-slate-300">{value}</span>
+      <span className="text-slate-300 text-right">{value}</span>
     </div>
   );
+}
+
+/**
+ * Turn Ocean's "Estimated Time Until Minimum Payout" string ("11 days",
+ * "5 hours", "Below threshold", etc.) into a footnote value that
+ * includes both the raw text and a concrete date — easier to plan
+ * around than counting days mentally.
+ *
+ * Falls back to the raw text if it can't be parsed (e.g. "Below
+ * threshold" when the rate is so low Ocean refuses to estimate, or
+ * any future format we haven't seen yet).
+ */
+function formatNextPayout(raw: string): string {
+  const ms = parseDurationMs(raw);
+  if (ms === null || ms <= 0) return raw;
+  const eta = new Date(Date.now() + ms);
+  const date = new Intl.DateTimeFormat(undefined, {
+    day: '2-digit',
+    month: 'short',
+  }).format(eta);
+  return `${raw} · ~${date}`;
+}
+
+function parseDurationMs(raw: string): number | null {
+  // Ocean uses friendly units: "11 days", "5 hours", "30 minutes",
+  // "2 weeks". Single + plural; case-insensitive on the unit.
+  const m = raw.match(/^\s*(\d+)\s+(minute|hour|day|week|month)s?\s*$/i);
+  if (!m || !m[1] || !m[2]) return null;
+  const n = Number.parseInt(m[1], 10);
+  if (!Number.isFinite(n)) return null;
+  const unitMs: Record<string, number> = {
+    minute: 60_000,
+    hour: 3_600_000,
+    day: 86_400_000,
+    week: 7 * 86_400_000,
+    month: 30 * 86_400_000,
+  };
+  const u = unitMs[m[2].toLowerCase()];
+  return u ? n * u : null;
 }
 
 function PoolCard({

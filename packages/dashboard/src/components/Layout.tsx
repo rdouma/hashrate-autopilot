@@ -43,7 +43,7 @@ export function Layout() {
           makes a real difference, especially for the new vertical
           Money panel. */}
       <header className="bg-slate-900 border-b border-slate-800 sticky top-0 z-20 backdrop-blur">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 flex flex-wrap items-center gap-x-6 gap-y-2 py-2">
+        <div className="px-4 sm:px-6 flex flex-wrap items-center gap-x-6 gap-y-2 py-2">
           <div className="flex items-center gap-3 mr-4">
             <div className="text-amber-400 font-semibold leading-tight">Braiins</div>
             <div className="text-[11px] text-slate-500 leading-tight">Hashrate&nbsp;Autopilot</div>
@@ -121,9 +121,11 @@ export function Layout() {
       </header>
 
       <main className="flex-1 overflow-auto">
-        {/* Centered max-width container so the page doesn't sprawl on
-            ultra-wide monitors but uses everything up to ~1600 px. */}
-        <div className="max-w-[1600px] mx-auto p-4 sm:p-6">
+        {/* Use the full viewport width — the operator runs this
+            full-screen on a desktop and earlier max-w-[1600px] left a
+            visible empty bar on the right on wider monitors. Side
+            padding only. */}
+        <div className="p-4 sm:p-6">
           <Outlet />
         </div>
       </main>
