@@ -230,17 +230,23 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
 
   const shortfall = ph - primary.avg_speed_ph;
   if (shortfall > 0.1) {
-    // Minute-precision elapsed/remaining. Ceil on remaining so we never
-    // claim "in 30 min" when it's actually 29m59s away.
+    // Minute-precision elapsed/remaining. Ceil on both branches; clamp to
+    // a minimum of 1 so we never display "0 min" (would be ambiguous
+    // between "just now" and "just past"). Honest overdue when elapsed
+    // has passed the escalation window — the previous modulo version
+    // wrapped around and made long droughts look like fresh timers.
     const windowMs = state.config.fill_escalation_after_minutes * 60_000;
     const elapsedMs = state.below_floor_since
       ? state.tick_at - state.below_floor_since
       : 0;
-    const remainingMs = windowMs - (elapsedMs % windowMs);
-    const remainingMin = Math.ceil(remainingMs / 60_000);
+    const remainingMs = windowMs - elapsedMs;
+    const countdownText =
+      remainingMs > 0
+        ? `Escalation in ${Math.max(1, Math.ceil(remainingMs / 60_000))} min`
+        : `Escalation overdue by ${Math.max(1, Math.ceil(-remainingMs / 60_000))} min`;
     return {
       summary: `Bid filling below target (${primary.avg_speed_ph.toFixed(2)}/${ph} PH/s).`,
-      detail: `Escalation in ${remainingMin} min if still under floor. Current price ${currentPricePH.toLocaleString('en-US')} sat/PH/day; target ${targetPricePH.toLocaleString('en-US')}.`,
+      detail: `${countdownText} if still under floor. Current price ${currentPricePH.toLocaleString('en-US')} sat/PH/day; target ${targetPricePH.toLocaleString('en-US')}.`,
     };
   }
 

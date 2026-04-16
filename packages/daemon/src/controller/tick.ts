@@ -28,6 +28,7 @@ export interface TickResult {
 
 export class Controller {
   private belowFloorSince: number | null = null;
+  private aboveFloorTicks: number = 0;
   private manualOverrideUntilMs: number | null = null;
   private lastResult: TickResult | null = null;
 
@@ -51,9 +52,11 @@ export class Controller {
     }
     const state = await observe(this.deps, {
       previousBelowFloorSince: this.belowFloorSince,
+      previousAboveFloorTicks: this.aboveFloorTicks,
       manualOverrideUntilMs: this.manualOverrideUntilMs,
     });
     this.belowFloorSince = state.below_floor_since;
+    this.aboveFloorTicks = state.above_floor_ticks;
 
     const proposals = decide(state);
     const gated = gate(proposals, state);

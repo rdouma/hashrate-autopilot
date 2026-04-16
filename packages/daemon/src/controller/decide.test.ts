@@ -47,6 +47,7 @@ function state(overrides: Partial<State> = {}): State {
     unknown_bids: [],
     actual_hashrate: { owned_ph: 0, unknown_ph: 0, total_ph: 0 },
     below_floor_since: null,
+    above_floor_ticks: 0,
     manual_override_until_ms: null,
     pool: { reachable: true, last_ok_at: 1_700_000_000_000, consecutive_failures: 0 },
     last_api_ok_at: 1_700_000_000_000,

@@ -95,6 +95,14 @@ export interface State {
   readonly actual_hashrate: ActualHashrate;
   /** When we first observed hashrate below floor, or null if currently OK. */
   readonly below_floor_since: number | null;
+  /**
+   * Consecutive ticks observed at-or-above floor. Required for debouncing
+   * the below_floor_since timer against transient `avg_speed_ph` spikes
+   * from Braiins' lagged rolling average on bid-state flickers. Capped at
+   * `FLOOR_DEBOUNCE_TICKS` — once we've cleared the hysteresis threshold
+   * it doesn't matter how much higher the counter goes.
+   */
+  readonly above_floor_ticks: number;
 
   readonly pool: PoolHealth;
 

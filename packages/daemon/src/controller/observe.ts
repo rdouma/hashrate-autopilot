@@ -44,9 +44,20 @@ export interface ObserveDeps {
 export interface ObserveInputs {
   /** below_floor_since carried forward from the previous tick (or null). */
   readonly previousBelowFloorSince: number | null;
+  /** Consecutive above-floor ticks carried forward from the previous tick. */
+  readonly previousAboveFloorTicks: number;
   /** Manual-override-until timestamp from the controller, carried through. */
   readonly manualOverrideUntilMs: number | null;
 }
+
+/**
+ * Number of consecutive above-floor ticks required to clear the
+ * `below_floor_since` timer. Debounces against transient `avg_speed_ph`
+ * spikes caused by Braiins' lagged rolling average during bid-state
+ * flickers (ACTIVE → non-ACTIVE → ACTIVE). At the default 60 s tick
+ * cadence this is a 3-minute above-floor confirmation.
+ */
+export const FLOOR_DEBOUNCE_TICKS = 3;
 
 interface ApiBid {
   braiins_order_id: string;
@@ -143,10 +154,11 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
     total_ph: actual_owned_ph + actual_unknown_ph,
   };
 
-  const below_floor_since = computeBelowFloorSince(
+  const floorCheck = computeBelowFloorSince(
     actual_hashrate.total_ph,
     config.minimum_floor_hashrate_ph,
     inputs.previousBelowFloorSince,
+    inputs.previousAboveFloorTicks,
     tickAt,
     poolProbe,
     marketSnapshot !== null,
@@ -164,7 +176,8 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
     owned_bids,
     unknown_bids,
     actual_hashrate,
-    below_floor_since,
+    below_floor_since: floorCheck.below_floor_since,
+    above_floor_ticks: floorCheck.above_floor_ticks,
     pool,
     last_api_ok_at: deps.braiins.getLastApiOkAt(),
   };
@@ -231,26 +244,55 @@ function sumDeliveredPh(bids: ReadonlyArray<{ avg_speed_ph: number }>): number {
   return bids.reduce((total, b) => total + (b.avg_speed_ph ?? 0), 0);
 }
 
+export interface FloorCheckResult {
+  readonly below_floor_since: number | null;
+  readonly above_floor_ticks: number;
+}
+
 /**
- * Maintain the below-floor timer.
+ * Maintain the below-floor timer with hysteresis.
  *
- * - If we can't tell (API unreachable, pool down), keep the previous value
- *   so a blip doesn't reset the clock.
- * - Else: below floor → start/continue; at-or-above floor → clear.
+ * - If we can't tell (API unreachable, pool down), keep the previous
+ *   values so a blip doesn't reset the clock or the counter.
+ * - Below floor → start/continue the timer; reset the above-floor
+ *   counter to 0.
+ * - At-or-above floor → increment the above-floor counter (capped at
+ *   `FLOOR_DEBOUNCE_TICKS`). Only clear `below_floor_since` once we've
+ *   seen `FLOOR_DEBOUNCE_TICKS` consecutive above-floor ticks.
+ *
+ * Rationale: Braiins' `state_estimate.avg_speed_ph` is a rolling
+ * average that lags real delivery. When a bid flickers through
+ * non-ACTIVE → ACTIVE, the re-ACTIVE tick can inherit a stale lagged
+ * value above floor even though instantaneous delivery is 0. Without
+ * hysteresis, one such tick clears the timer and the escalation clock
+ * effectively never fires. See issue #10.
  */
-function computeBelowFloorSince(
+export function computeBelowFloorSince(
   actualHashratePh: number,
   floorPh: number,
   previous: number | null,
+  previousAboveFloorTicks: number,
   now: number,
   poolProbe: PoolProbeResult,
   apiOk: boolean,
-): number | null {
-  if (!apiOk || !poolProbe.reachable) return previous;
-  if (actualHashratePh < floorPh) {
-    return previous ?? now;
+): FloorCheckResult {
+  if (!apiOk || !poolProbe.reachable) {
+    return {
+      below_floor_since: previous,
+      above_floor_ticks: previousAboveFloorTicks,
+    };
   }
-  return null;
+  if (actualHashratePh < floorPh) {
+    return {
+      below_floor_since: previous ?? now,
+      above_floor_ticks: 0,
+    };
+  }
+  const newCount = Math.min(previousAboveFloorTicks + 1, FLOOR_DEBOUNCE_TICKS);
+  if (newCount >= FLOOR_DEBOUNCE_TICKS) {
+    return { below_floor_since: null, above_floor_ticks: newCount };
+  }
+  return { below_floor_since: previous, above_floor_ticks: newCount };
 }
 
 function logAndReturnNull(label: string, err: unknown): null {
