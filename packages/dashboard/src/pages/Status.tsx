@@ -938,10 +938,20 @@ function FinanceFootnote({
   tooltip: string;
   valueClass?: string;
 }) {
+  const split = splitUnit(value);
   return (
     <div className="cursor-help flex items-baseline justify-between gap-2" title={tooltip}>
       <span>{label}</span>
-      <span className={`text-right ${valueClass}`}>{value}</span>
+      <span className={`text-right ${valueClass}`}>
+        {split ? (
+          <>
+            {split.num}
+            <span className="text-slate-500 text-[11px] ml-1">{split.unit}</span>
+          </>
+        ) : (
+          value
+        )}
+      </span>
     </div>
   );
 }
@@ -1066,13 +1076,43 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
   );
 }
 
+/**
+ * Key-value row used across all info cards. Detects trailing unit
+ * suffixes (sat, PH/s, sat/PH/day) and renders them in a muted
+ * smaller style so the number pops and the unit recedes — matching
+ * the aesthetic the Money panel's FinanceRow already uses.
+ */
 function Row({ k, v }: { k: string; v: string }) {
+  const split = splitUnit(v);
   return (
     <div className="flex justify-between text-sm py-0.5">
       <span className="text-slate-400">{k}</span>
-      <span className="text-slate-100 font-mono">{v}</span>
+      <span className="text-slate-100 font-mono">
+        {split ? (
+          <>
+            {split.num}
+            <span className="text-slate-500 text-[11px] ml-1">{split.unit}</span>
+          </>
+        ) : (
+          v
+        )}
+      </span>
     </div>
   );
+}
+
+/**
+ * Split a pre-formatted display value like "45,662 sat/PH/day" into
+ * `{ num: "45,662", unit: "sat/PH/day" }` so the caller can render
+ * the unit in a muted style. Returns null for values without a
+ * recognised unit suffix.
+ */
+function splitUnit(v: string): { num: string; unit: string } | null {
+  // Order matters: longest match first so "sat/PH/day" isn't
+  // partially matched as "sat".
+  const m = v.match(/^(.+?)\s+(sat\/PH\/day|PH\/s|sat)(\s*(?:\(.*\))?)$/);
+  if (!m || !m[1]) return null;
+  return { num: m[1], unit: m[2] + (m[3] ?? '') };
 }
 
 function ProposalLine({ p }: { p: ProposalView }) {
