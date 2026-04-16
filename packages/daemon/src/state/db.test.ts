@@ -44,6 +44,7 @@ describe('openDatabase — migrations', () => {
       '0013_min_lower_delta.sql',
       '0014_persist_floor_state.sql',
       '0015_rename_max_overpay.sql',
+      '0016_bid_events_allow_edit_speed.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });
