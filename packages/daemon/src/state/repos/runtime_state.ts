@@ -1,7 +1,7 @@
 /**
  * Repository for the single-row `runtime_state` table.
  *
- * Per SPEC §7.1, `run_mode` is reset to DRY_RUN on every daemon boot. Other
+ * `run_mode` is set on each boot from `config.boot_mode` (daemon main). Other
  * fields (`operator_available`, `last_*_ok_at`) persist across restarts.
  */
 
@@ -19,6 +19,8 @@ export interface RuntimeStateRow {
   last_api_ok_at: number | null;
   last_rpc_ok_at: number | null;
   last_pool_ok_at: number | null;
+  below_floor_since_ms: number | null;
+  above_floor_ticks: number;
 }
 
 export class RuntimeStateRepo {
@@ -49,20 +51,10 @@ export class RuntimeStateRepo {
         last_api_ok_at: null,
         last_rpc_ok_at: null,
         last_pool_ok_at: null,
+        below_floor_since_ms: null,
+        above_floor_ticks: 0,
       })
       .onConflict((oc) => oc.doNothing())
-      .execute();
-  }
-
-  /**
-   * Reset `run_mode` to DRY_RUN. Called once at daemon boot before the
-   * control loop starts.
-   */
-  async resetRunModeToDryRun(): Promise<void> {
-    await this.db
-      .updateTable('runtime_state')
-      .set({ run_mode: 'DRY_RUN' })
-      .where('id', '=', 1)
       .execute();
   }
 
@@ -85,5 +77,7 @@ function toDomain(row: RuntimeStateTable): RuntimeStateRow {
     last_api_ok_at: row.last_api_ok_at,
     last_rpc_ok_at: row.last_rpc_ok_at,
     last_pool_ok_at: row.last_pool_ok_at,
+    below_floor_since_ms: row.below_floor_since_ms,
+    above_floor_ticks: row.above_floor_ticks,
   };
 }

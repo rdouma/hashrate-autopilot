@@ -183,8 +183,8 @@ CREATE TABLE config (
   minimum_floor_hashrate_ph REAL NOT NULL,
   destination_pool_url TEXT NOT NULL,
   destination_pool_worker_name TEXT NOT NULL,  -- must be <btc-addr>.<label>
-  max_price_sat_per_eh_day INTEGER NOT NULL,
-  emergency_max_price_sat_per_eh_day INTEGER NOT NULL,
+  max_bid_sat_per_eh_day INTEGER NOT NULL,
+  emergency_max_bid_sat_per_eh_day INTEGER NOT NULL,
   monthly_budget_ceiling_sat INTEGER NOT NULL,
   bid_budget_sat INTEGER NOT NULL,
   wallet_runway_alert_days INTEGER NOT NULL,
@@ -194,11 +194,11 @@ CREATE TABLE config (
   pool_outage_blip_tolerance_seconds INTEGER NOT NULL,
   api_outage_alert_after_minutes INTEGER NOT NULL,
   handover_window_minutes INTEGER NOT NULL,
-  -- strategy knobs (v1.1 empirical)
+  -- strategy knobs (v1.2 simplified)
   fill_escalation_step_sat_per_eh_day INTEGER NOT NULL,
   fill_escalation_after_minutes INTEGER NOT NULL,
-  max_overpay_vs_ask_sat_per_eh_day INTEGER NOT NULL,
-  overpay_before_lowering_sat_per_eh_day INTEGER NOT NULL,
+  max_overpay_sat_per_eh_day INTEGER NOT NULL,
+  escalation_mode TEXT NOT NULL DEFAULT 'dampened',  -- 'market' | 'dampened'
   hibernate_on_expensive_market INTEGER NOT NULL,  -- bool
   btc_payout_address TEXT NOT NULL,
   electrs_host TEXT,       -- optional, for fast balance lookups
@@ -216,7 +216,10 @@ CREATE TABLE runtime_state (
   last_rpc_ok_at INTEGER,
   last_pool_ok_at INTEGER
 );
--- Note: run_mode is reset to DRY_RUN on startup (not persisted across restarts).
+-- Note: run_mode is set on startup from config.boot_mode:
+--   ALWAYS_DRY_RUN (default) → always boots in DRY_RUN (safest)
+--   LAST_MODE                → keeps whatever mode was active pre-restart; PAUSED → DRY_RUN
+--   ALWAYS_LIVE              → boots directly into LIVE (for trusted redeployments)
 
 -- Ownership ledger — which Braiins order IDs we created
 CREATE TABLE owned_bids (

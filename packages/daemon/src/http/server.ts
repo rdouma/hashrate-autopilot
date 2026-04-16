@@ -18,6 +18,7 @@ import { readdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 import type { Controller } from '../controller/tick.js';
+import type { BidEventsRepo } from '../state/repos/bid_events.js';
 import type { ConfigRepo } from '../state/repos/config.js';
 import type { DecisionsRepo } from '../state/repos/decisions.js';
 import type { OwnedBidsRepo } from '../state/repos/owned_bids.js';
@@ -25,6 +26,7 @@ import type { RuntimeStateRepo } from '../state/repos/runtime_state.js';
 import type { TickMetricsRepo } from '../state/repos/tick_metrics.js';
 import type { PayoutObserver } from '../services/payout-observer.js';
 import { registerActionRoutes } from './routes/actions.js';
+import { registerBidEventsRoute } from './routes/bid-events.js';
 import { registerConfigRoutes } from './routes/config.js';
 import { registerDecisionsRoutes } from './routes/decisions.js';
 import { registerMetricsRoute } from './routes/metrics.js';
@@ -40,6 +42,7 @@ export interface HttpServerDeps {
   readonly ownedBidsRepo: OwnedBidsRepo;
   readonly decisionsRepo: DecisionsRepo;
   readonly tickMetricsRepo: TickMetricsRepo;
+  readonly bidEventsRepo: BidEventsRepo;
   readonly payoutObserver: PayoutObserver | null;
   readonly password: string;
   readonly tickIntervalMs: number;
@@ -88,6 +91,7 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<HttpServer
   await registerOperatorRoutes(app, deps);
   await registerActionRoutes(app, deps);
   await registerMetricsRoute(app, deps);
+  await registerBidEventsRoute(app, deps);
   await registerPayoutsRoute(app, { payoutObserver: deps.payoutObserver });
 
   // Serve built dashboard if present.

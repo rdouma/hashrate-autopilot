@@ -20,6 +20,7 @@
 
 import type { BraiinsClient } from '@braiins-hashrate/braiins-client';
 
+import type { BidEventsRepo } from '../state/repos/bid_events.js';
 import type { OwnedBidsRepo } from '../state/repos/owned_bids.js';
 import type { DecisionsRepo } from '../state/repos/decisions.js';
 import type { RuntimeStateRepo } from '../state/repos/runtime_state.js';
@@ -30,6 +31,7 @@ export interface ExecuteDeps {
   readonly ownedBidsRepo: OwnedBidsRepo;
   readonly runtimeRepo: RuntimeStateRepo;
   readonly decisionsRepo: DecisionsRepo;
+  readonly bidEventsRepo: BidEventsRepo;
   readonly now: () => number;
 }
 
@@ -63,7 +65,66 @@ export async function execute(
     executed,
   });
 
+  for (const e of executed) {
+    if (e.outcome !== 'EXECUTED') continue;
+    const event = toBidEventInsert(e.proposal, 'AUTOPILOT', state.tick_at);
+    if (event) {
+      try {
+        await deps.bidEventsRepo.insert(event);
+      } catch (err) {
+        console.warn(`[execute] bid_events insert failed: ${(err as Error).message}`);
+      }
+    }
+  }
+
   return executed;
+}
+
+function toBidEventInsert(
+  proposal: Proposal,
+  source: 'AUTOPILOT' | 'OPERATOR',
+  occurredAt: number,
+): Parameters<BidEventsRepo['insert']>[0] | null {
+  switch (proposal.kind) {
+    case 'CREATE_BID':
+      return {
+        occurred_at: occurredAt,
+        source,
+        kind: 'CREATE_BID',
+        braiins_order_id: null,
+        old_price_sat: null,
+        new_price_sat: proposal.price_sat,
+        speed_limit_ph: proposal.speed_limit_ph,
+        amount_sat: proposal.amount_sat,
+        reason: proposal.reason,
+      };
+    case 'EDIT_PRICE':
+      return {
+        occurred_at: occurredAt,
+        source,
+        kind: 'EDIT_PRICE',
+        braiins_order_id: proposal.braiins_order_id,
+        old_price_sat: proposal.old_price_sat,
+        new_price_sat: proposal.new_price_sat,
+        speed_limit_ph: null,
+        amount_sat: null,
+        reason: proposal.reason,
+      };
+    case 'CANCEL_BID':
+      return {
+        occurred_at: occurredAt,
+        source,
+        kind: 'CANCEL_BID',
+        braiins_order_id: proposal.braiins_order_id,
+        old_price_sat: null,
+        new_price_sat: null,
+        speed_limit_ph: null,
+        amount_sat: null,
+        reason: proposal.reason,
+      };
+    case 'PAUSE':
+      return null; // PAUSE is a run-mode transition, not a bid event
+  }
 }
 
 async function executeLive(deps: ExecuteDeps, proposal: Proposal): Promise<ExecutionResult> {

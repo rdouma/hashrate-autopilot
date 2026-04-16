@@ -36,6 +36,13 @@ describe('openDatabase — migrations', () => {
       '0005_electrs_config.sql',
       '0006_decisions_run_mode_index.sql',
       '0007_overpay_before_lowering.sql',
+      '0008_boot_mode.sql',
+      '0009_bid_events.sql',
+      '0010_max_lowering_step.sql',
+      '0011_pricing_simplification.sql',
+      '0012_tick_metrics_fillable.sql',
+      '0013_min_lower_delta.sql',
+      '0014_persist_floor_state.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });
@@ -165,11 +172,15 @@ describe('RuntimeStateRepo', () => {
     expect(row?.operator_available).toBe(true);
   });
 
-  it('resetRunModeToDryRun sets run_mode regardless of prior value', async () => {
+  it('patch overrides run_mode on boot (replacing the old resetRunModeToDryRun helper)', async () => {
+    // The daemon used to call a dedicated `resetRunModeToDryRun()` method on
+    // every boot. With the `boot_mode` config knob that logic moved to
+    // main.ts, which now uses `patch({ run_mode })` with whichever mode the
+    // boot_mode config resolves to. Exercise the patch path directly.
     const repo = new RuntimeStateRepo(handle.db);
     await repo.initializeIfMissing();
     await repo.patch({ run_mode: 'LIVE' });
-    await repo.resetRunModeToDryRun();
+    await repo.patch({ run_mode: 'DRY_RUN' });
     const row = await repo.get();
     expect(row?.run_mode).toBe('DRY_RUN');
   });

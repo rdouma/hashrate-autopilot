@@ -3,21 +3,28 @@
  *
  * Pricing strategy (SPEC §9; M4.7):
  *
- *   1. Find the **cheapest ask with non-zero available hashrate**. That's
- *      the cheapest real supply in the book.
- *   2. `target_price = cheapest_available_ask + max_overpay_vs_ask_sat`.
- *   3. If `target_price > max_price_sat_per_eh_day`:
+ *   1. Find the **cheapest ask at which our full `target_hashrate_ph`
+ *      is fillable** by walking asks cumulatively (see
+ *      `cheapestAskForDepth`). The naive "topmost ask with any non-zero
+ *      supply" approach strands us when the cheapest ask offers only
+ *      a sliver of hashrate.
+ *   2. `target_price = min(fillable + max_overpay, max_bid)`.
+ *   3. If fillable + max_overpay > max_bid:
  *      - if `hibernate_on_expensive_market`: propose PAUSE.
  *      - else: don't propose CREATE this tick.
- *   4. Escalation: if we've been below floor for longer than
- *      `fill_escalation_after_minutes` and our current bid is below
- *      `target_price`, bump our bid up by `fill_escalation_step_sat_per_eh_day`
- *      (capped by `max_price_sat_per_eh_day`).
+ *   4. Escalation (upward adjustments): when below floor too long:
+ *      - 'market' mode: jump directly to target_price (track market)
+ *      - 'dampened' mode: step from current_bid + escalation_step
+ *        (capped at target_price, avoids chasing spikes)
+ *   5. Lowering (downward adjustments): when primary > target, jump
+ *      directly to target. No dampening downward — trust the operator's
+ *      max_overpay setting.
  *
  * Unknown bids → PAUSE (SPEC §9 unknown-order detection).
  * Duplicate owned bids → cancel the extras.
  */
 
+import { cheapestAskForDepth } from './orderbook.js';
 import type { Proposal, State } from './types.js';
 
 /**
@@ -26,11 +33,6 @@ import type { Proposal, State } from './types.js';
  * the target price.
  */
 const EDIT_PRICE_TOLERANCE_PCT = 0.005;
-
-interface OrderbookAsk {
-  price_sat: number;
-  hr_available_ph?: number;
-}
 
 export function decide(state: State): readonly Proposal[] {
   // 1. Unknown-order ambiguity trumps all other rules (SPEC §9).
@@ -47,34 +49,30 @@ export function decide(state: State): readonly Proposal[] {
   if (!state.market) return [];
 
   const { market, config, owned_bids } = state;
-  const asks = (market.orderbook.asks ?? []) as OrderbookAsk[];
+  const asks = market.orderbook.asks ?? [];
   if (asks.length === 0) return [];
 
-  // 2. Cheapest ask with actual available hashrate.
-  const cheapestAvailable = cheapestAskWithAvailable(asks);
+  // 2. Depth-aware target: cheapest price at which our full target
+  //    hashrate is fillable. Replaces the old "first ask with any
+  //    non-zero supply" lookup, which was fooled by slivers of supply
+  //    at the top of the book.
+  const fillable = cheapestAskForDepth(asks, config.target_hashrate_ph);
+  const cheapestAvailable = fillable.price_sat;
   if (cheapestAvailable === null) return []; // nothing for sale
 
-  // 3. Start target at cheapest_available + overpay margin, then apply caps.
+  // 3. Target = min(fillable + max_overpay, max_bid). Simple and direct.
   const effectiveCap = computeEffectiveCap(state);
-  const overpayAllowance = config.max_overpay_vs_ask_sat_per_eh_day;
+  const overpayAllowance = config.max_overpay_sat_per_eh_day;
   const desiredPrice = cheapestAvailable + overpayAllowance;
-
-  // 4. Escalation — if we've been stuck below floor too long, let ourselves
-  //    bid one step above whatever we're already paying.
-  const escalation = computeEscalation(state, owned_bids[0]?.price_sat ?? 0);
-  const targetFromStrategy = Math.max(desiredPrice, escalation);
-
-  // 5. Apply the hard cap. If even the desired price is above the cap,
-  //    market is too expensive for us right now.
-  const isMarketTooExpensive = targetFromStrategy > effectiveCap;
-  const targetPrice = Math.min(targetFromStrategy, effectiveCap);
+  const targetPrice = Math.min(desiredPrice, effectiveCap);
+  const isMarketTooExpensive = desiredPrice > effectiveCap;
 
   if (isMarketTooExpensive) {
     if (state.config.hibernate_on_expensive_market) {
       return [
         {
           kind: 'PAUSE',
-          reason: `market_too_expensive: needed ${targetFromStrategy} > cap ${effectiveCap} (cheapest ask ${cheapestAvailable})`,
+          reason: `market_too_expensive: needed ${desiredPrice} > cap ${effectiveCap} (cheapest ask ${cheapestAvailable})`,
         },
       ];
     }
@@ -122,36 +120,51 @@ export function decide(state: State): readonly Proposal[] {
   const overrideActive = overrideUntil !== null && overrideUntil > state.tick_at;
 
   // (a) Escalate UP when we've been stuck below floor.
-  const escalatedTarget = Math.min(escalation, effectiveCap);
-  if (!overrideActive && escalatedTarget > primary.price_sat + tickSize) {
+  // Mode determines escalation behavior:
+  // - 'market': jump directly to targetPrice (track market)
+  // - 'dampened': step from current_bid + escalation_step (avoid chasing)
+  const shouldEscalate = shouldTriggerEscalation(state);
+  if (!overrideActive && shouldEscalate && primary.price_sat < targetPrice) {
+    const escalatedPrice =
+      config.escalation_mode === 'market'
+        ? targetPrice
+        : Math.min(
+            primary.price_sat + config.fill_escalation_step_sat_per_eh_day,
+            targetPrice,
+          );
+    if (escalatedPrice > primary.price_sat + tickSize) {
+      proposals.push({
+        kind: 'EDIT_PRICE',
+        braiins_order_id: primary.braiins_order_id,
+        new_price_sat: escalatedPrice,
+        old_price_sat: primary.price_sat,
+        reason:
+          config.escalation_mode === 'market'
+            ? `escalation[market]: stuck below floor — jumping to target ${escalatedPrice}`
+            : `escalation[dampened]: stuck below floor — stepping up to ${escalatedPrice}`,
+      });
+    }
+  }
+
+  // (b) Lower when we're paying more than target (fillable + max_overpay).
+  // Threshold gate: only bother if the saving exceeds
+  // `min_lower_delta_sat_per_eh_day` — avoids burning the 10-min Braiins
+  // price-decrease cooldown for a few sat. tickSize is the absolute floor
+  // (Braiins rejects sub-tick prices anyway).
+  const alreadyProposingEdit = proposals.some((p) => p.kind === 'EDIT_PRICE');
+  const lowerThreshold = Math.max(tickSize, config.min_lower_delta_sat_per_eh_day);
+  if (
+    !overrideActive &&
+    primary.price_sat > targetPrice + lowerThreshold &&
+    !alreadyProposingEdit
+  ) {
     proposals.push({
       kind: 'EDIT_PRICE',
       braiins_order_id: primary.braiins_order_id,
-      new_price_sat: escalatedTarget,
+      new_price_sat: targetPrice,
       old_price_sat: primary.price_sat,
-      reason: `escalation: stuck below floor — raising by one step to ${escalatedTarget}`,
+      reason: `market_drop: paying ${primary.price_sat} > target ${targetPrice} (delta > ${lowerThreshold}) — lowering to target`,
     });
-  }
-
-  // (b) Lower ONLY when we're materially overpaying vs current market.
-  // Triggered by the operator-configured `overpay_before_lowering`
-  // safety margin: we only consider lowering if current_price exceeds
-  // the naive target (cheapest_available_ask + max_overpay) by that
-  // many sat/EH/day. Caveat: still respects the override grace lock
-  // (don't undo a recent escalation) and Braiins's 10-min
-  // price-decrease cooldown (gate enforces).
-  const lowerMargin = state.config.overpay_before_lowering_sat_per_eh_day;
-  const overpayDelta = primary.price_sat - desiredPrice;
-  const alreadyProposingEdit = proposals.some((p) => p.kind === 'EDIT_PRICE');
-  if (!overrideActive && overpayDelta > lowerMargin && !alreadyProposingEdit) {
-    const lowerEdit: Proposal = {
-      kind: 'EDIT_PRICE',
-      braiins_order_id: primary.braiins_order_id,
-      new_price_sat: desiredPrice,
-      old_price_sat: primary.price_sat,
-      reason: `market_drop: overpaying by ${overpayDelta} > safety margin ${lowerMargin} — lowering to target ${desiredPrice}`,
-    };
-    proposals.push(lowerEdit);
   }
   void EDIT_PRICE_TOLERANCE_PCT;
 
@@ -159,23 +172,12 @@ export function decide(state: State): readonly Proposal[] {
 }
 
 /**
- * Walk asks ascending by price, return the first whose hr_available_ph > 0.
- */
-function cheapestAskWithAvailable(asks: readonly OrderbookAsk[]): number | null {
-  const sorted = [...asks].sort((a, b) => a.price_sat - b.price_sat);
-  for (const ask of sorted) {
-    if ((ask.hr_available_ph ?? 0) > 0) return ask.price_sat;
-  }
-  return null;
-}
-
-/**
  * Effective price cap. Rises to emergency_max once we've been below floor
  * longer than `below_floor_emergency_cap_after_minutes` (SPEC §9).
  */
 function computeEffectiveCap(state: State): number {
-  const normal = state.config.max_price_sat_per_eh_day;
-  const emergency = state.config.emergency_max_price_sat_per_eh_day;
+  const normal = state.config.max_bid_sat_per_eh_day;
+  const emergency = state.config.emergency_max_bid_sat_per_eh_day;
   if (state.below_floor_since === null) return normal;
   const elapsedMinutes = (state.tick_at - state.below_floor_since) / 60_000;
   if (elapsedMinutes >= state.config.below_floor_emergency_cap_after_minutes) {
@@ -185,18 +187,14 @@ function computeEffectiveCap(state: State): number {
 }
 
 /**
- * Escalation target: +1 step above the current bid once we've been
- * stuck below floor for a full window. Repeated escalations are
- * controlled by the tick driver via `manual_override_until_ms`, which
- * locks in each escalated price for a full window before another
- * escalation may fire. Returns 0 when no escalation applies.
+ * Returns true when escalation should trigger: we've been stuck below
+ * floor for longer than `fill_escalation_after_minutes`. The actual
+ * escalation price is computed in the caller based on `escalation_mode`.
  */
-function computeEscalation(state: State, currentBidPriceSat: number): number {
-  if (state.below_floor_since === null) return 0;
+function shouldTriggerEscalation(state: State): boolean {
+  if (state.below_floor_since === null) return false;
   const elapsedMinutes = (state.tick_at - state.below_floor_since) / 60_000;
-  if (elapsedMinutes < state.config.fill_escalation_after_minutes) return 0;
-  if (currentBidPriceSat <= 0) return 0;
-  return currentBidPriceSat + state.config.fill_escalation_step_sat_per_eh_day;
+  return elapsedMinutes >= state.config.fill_escalation_after_minutes;
 }
 
 // Re-export a type the tick driver consumes alongside decide():

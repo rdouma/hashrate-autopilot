@@ -1,10 +1,14 @@
 /**
  * One control-loop tick: observe → decide → gate → execute + persist.
  *
- * Pure-ish orchestration layer; hosts no business logic itself. Keeps a
- * small piece of in-memory controller state (below_floor_since) that
- * survives across ticks but not across process restarts. M4 may promote
- * this to SQLite if we want it to survive crashes.
+ * Pure-ish orchestration layer; hosts no business logic itself.
+ *
+ * Controller state (`belowFloorSince`, `aboveFloorTicks`) is mirrored to
+ * `runtime_state` on every tick and seeded from there via `hydrate()` on
+ * boot, so the escalation timer survives restarts (issue #11). The
+ * `manualOverrideUntilMs` lock is intentionally *not* persisted — it
+ * exists to bound a single operator/escalation interaction and a
+ * restart is a clean reset point for that.
  */
 
 import type { TickMetricsRepo } from '../state/repos/tick_metrics.js';
@@ -13,6 +17,7 @@ import { decide } from './decide.js';
 import { execute, type ExecuteDeps } from './execute.js';
 import { gate } from './gate.js';
 import { observe, type ObserveDeps } from './observe.js';
+import { cheapestAskForDepth } from './orderbook.js';
 import type { ExecutionResult, GateOutcome, Proposal, State } from './types.js';
 
 export interface TickDeps extends ObserveDeps, ExecuteDeps {
@@ -33,6 +38,18 @@ export class Controller {
   private lastResult: TickResult | null = null;
 
   constructor(private readonly deps: TickDeps) {}
+
+  /**
+   * Seed in-memory floor-state from the persisted `runtime_state` row.
+   * Call once at boot, after the migration runner. Idempotent — safe to
+   * call multiple times if needed.
+   */
+  async hydrate(): Promise<void> {
+    const row = await this.deps.runtimeRepo.get();
+    if (!row) return;
+    this.belowFloorSince = row.below_floor_since_ms;
+    this.aboveFloorTicks = row.above_floor_ticks;
+  }
 
   /**
    * Record a manual operator override — autopilot EDIT_PRICE proposals
@@ -74,11 +91,14 @@ export class Controller {
       }
     }
 
-    // Also bump runtime_state diagnostics.
+    // Also bump runtime_state diagnostics + persist floor-tracking
+    // state so the escalation timer survives daemon restarts (#11).
     await this.deps.runtimeRepo.patch({
       last_tick_at: state.tick_at,
       last_api_ok_at: state.last_api_ok_at,
       last_pool_ok_at: state.pool.last_ok_at,
+      below_floor_since_ms: this.belowFloorSince,
+      above_floor_ticks: this.aboveFloorTicks,
     });
 
     // Metrics snapshot — one row per tick, used by the Hashrate chart.
@@ -87,6 +107,12 @@ export class Controller {
         a.braiins_order_id.localeCompare(b.braiins_order_id),
       )[0];
       const primaryBalance = state.balance?.accounts?.[0];
+      const fillable = state.market
+        ? cheapestAskForDepth(
+            state.market.orderbook.asks ?? [],
+            state.config.target_hashrate_ph,
+          )
+        : null;
       await this.deps.tickMetricsRepo.insert({
         tick_at: state.tick_at,
         delivered_ph: state.actual_hashrate.total_ph,
@@ -97,6 +123,7 @@ export class Controller {
         our_primary_price_sat_per_eh_day: primary?.price_sat ?? null,
         best_bid_sat_per_eh_day: state.market?.best_bid_sat ?? null,
         best_ask_sat_per_eh_day: state.market?.best_ask_sat ?? null,
+        fillable_ask_sat_per_eh_day: fillable?.price_sat ?? null,
         available_balance_sat: primaryBalance?.available_balance_sat ?? null,
         run_mode: state.run_mode,
         action_mode: state.action_mode,

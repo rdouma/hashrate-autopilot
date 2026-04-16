@@ -9,7 +9,7 @@
  *   tick immediately, without waiting for the interval timer.
  * - POST /api/actions/bump-price — runs one EDIT_PRICE on the current
  *   owned bid, adding `fill_escalation_step_sat_per_eh_day` on top of its
- *   current price. Still capped by `max_price_sat_per_eh_day`.
+ *   current price. Still capped by `max_bid_sat_per_eh_day`.
  */
 
 import type { FastifyInstance } from 'fastify';
@@ -48,7 +48,7 @@ export async function registerActionRoutes(
     }
   });
 
-  app.post('/api/actions/bump-price', async (_req, reply) => {
+  app.post('/api/actions/bump-price', async (req, reply) => {
     const last = deps.controller.getLastResult();
     if (!last || last.state.owned_bids.length === 0) {
       reply.code(409);
@@ -63,12 +63,12 @@ export async function registerActionRoutes(
       a.braiins_order_id.localeCompare(b.braiins_order_id),
     )[0]!;
     const step = config.fill_escalation_step_sat_per_eh_day;
-    const newPrice = Math.min(primary.price_sat + step, config.max_price_sat_per_eh_day);
+    const newPrice = Math.min(primary.price_sat + step, config.max_bid_sat_per_eh_day);
     if (newPrice <= primary.price_sat) {
       reply.code(409);
       return {
         ok: false,
-        error: `already at or above cap ${config.max_price_sat_per_eh_day} sat/EH/day`,
+        error: `already at or above cap ${config.max_bid_sat_per_eh_day} sat/EH/day`,
       };
     }
 
@@ -108,6 +108,26 @@ export async function registerActionRoutes(
           newPrice,
         );
       }
+      try {
+        await deps.bidEventsRepo.insert({
+          occurred_at: Date.now(),
+          source: 'OPERATOR',
+          kind: 'EDIT_PRICE',
+          braiins_order_id: primary.braiins_order_id,
+          old_price_sat: primary.price_sat,
+          new_price_sat: newPrice,
+          speed_limit_ph: null,
+          amount_sat: null,
+          reason: 'operator_manual_bump_from_dashboard',
+        });
+      } catch (err) {
+        // Event log failure must not break the user-visible action.
+        req.log.warn({ err }, '[actions] bid_events insert failed');
+      }
+      // Lock the autopilot out of reverting the operator's bump for one
+      // escalation window. Matches the behaviour of automatic EDIT_PRICE.
+      const windowMs = config.fill_escalation_after_minutes * 60_000;
+      deps.controller.setManualOverrideUntil(Date.now() + windowMs);
       return {
         ok: true,
         braiins_order_id: primary.braiins_order_id,

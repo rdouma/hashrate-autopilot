@@ -18,6 +18,7 @@ import { BraiinsService } from './services/braiins-service.js';
 import { PayoutObserver } from './services/payout-observer.js';
 import { PoolHealthTracker } from './services/pool-health.js';
 import { closeDatabase, openDatabase } from './state/db.js';
+import { BidEventsRepo } from './state/repos/bid_events.js';
 import { ConfigRepo } from './state/repos/config.js';
 import { DecisionsRepo } from './state/repos/decisions.js';
 import { OwnedBidsRepo } from './state/repos/owned_bids.js';
@@ -60,15 +61,33 @@ async function main(): Promise<void> {
   const ownedBidsRepo = new OwnedBidsRepo(handle.db);
   const decisionsRepo = new DecisionsRepo(handle.db);
   const tickMetricsRepo = new TickMetricsRepo(handle.db);
+  const bidEventsRepo = new BidEventsRepo(handle.db);
 
   const cfg = await configRepo.get();
   if (!cfg) throw new Error('config row missing — run `pnpm -w run setup` first');
   log(`config:   target=${cfg.target_hashrate_ph} PH/s  floor=${cfg.minimum_floor_hashrate_ph} PH/s`);
 
-  // SPEC §7.1: run_mode always boots in DRY_RUN.
   await runtimeRepo.initializeIfMissing();
-  await runtimeRepo.resetRunModeToDryRun();
-  log('run mode reset to DRY_RUN (boot)');
+  // boot_mode decides how run_mode is set at startup. LAST_MODE keeps whatever
+  // the operator last set, demoting PAUSED to DRY_RUN (we never auto-boot into
+  // PAUSED — that's only a reactive state).
+  const priorRuntime = await runtimeRepo.get();
+  const priorMode = priorRuntime?.run_mode ?? 'DRY_RUN';
+  let bootMode: 'DRY_RUN' | 'LIVE' | 'PAUSED';
+  switch (cfg.boot_mode) {
+    case 'ALWAYS_LIVE':
+      bootMode = 'LIVE';
+      break;
+    case 'LAST_MODE':
+      bootMode = priorMode === 'PAUSED' ? 'DRY_RUN' : priorMode;
+      break;
+    case 'ALWAYS_DRY_RUN':
+    default:
+      bootMode = 'DRY_RUN';
+      break;
+  }
+  await runtimeRepo.patch({ run_mode: bootMode });
+  log(`run mode set to ${bootMode} on boot (boot_mode=${cfg.boot_mode}, was=${priorMode})`);
 
   const braiinsClient = createBraiinsClient({
     ownerToken: secrets.braiins_owner_token,
@@ -106,8 +125,12 @@ async function main(): Promise<void> {
     ownedBidsRepo,
     decisionsRepo,
     tickMetricsRepo,
+    bidEventsRepo,
     now: () => Date.now(),
   });
+  // Restore floor-tracking state so the escalation timer keeps counting
+  // across daemon restarts (#11).
+  await controller.hydrate();
 
   const loop = new TickLoop({
     controller,
@@ -124,6 +147,7 @@ async function main(): Promise<void> {
     ownedBidsRepo,
     decisionsRepo,
     tickMetricsRepo,
+    bidEventsRepo,
     payoutObserver,
     password: secrets.dashboard_password,
     tickIntervalMs: DEFAULT_TICK_INTERVAL_MS,
@@ -161,7 +185,7 @@ async function main(): Promise<void> {
 
   loop.start();
   payoutObserver.start();
-  log('daemon ready (DRY-RUN). Ctrl+C to stop.');
+  log(`daemon ready (${bootMode}). Ctrl+C to stop.`);
 }
 
 function logTick(r: TickResult): void {

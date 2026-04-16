@@ -20,8 +20,8 @@ export interface ConfigTable {
   minimum_floor_hashrate_ph: number;
   destination_pool_url: string;
   destination_pool_worker_name: string;
-  max_price_sat_per_eh_day: number;
-  emergency_max_price_sat_per_eh_day: number;
+  max_bid_sat_per_eh_day: number;
+  emergency_max_bid_sat_per_eh_day: number;
   monthly_budget_ceiling_sat: number;
   bid_budget_sat: number;
   wallet_runway_alert_days: number;
@@ -39,11 +39,13 @@ export interface ConfigTable {
   telegram_chat_id: string;
   fill_escalation_step_sat_per_eh_day: number;
   fill_escalation_after_minutes: number;
-  max_overpay_vs_ask_sat_per_eh_day: number;
-  overpay_before_lowering_sat_per_eh_day: number;
+  max_overpay_sat_per_eh_day: number;
+  escalation_mode: 'market' | 'dampened';
+  min_lower_delta_sat_per_eh_day: number;
   hibernate_on_expensive_market: 0 | 1;
   electrs_host: string | null;
   electrs_port: number | null;
+  boot_mode: 'ALWAYS_DRY_RUN' | 'LAST_MODE' | 'ALWAYS_LIVE';
   updated_at: number;
 }
 
@@ -60,6 +62,8 @@ export interface RuntimeStateTable {
   last_api_ok_at: number | null;
   last_rpc_ok_at: number | null;
   last_pool_ok_at: number | null;
+  below_floor_since_ms: number | null;
+  above_floor_ticks: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -175,6 +179,26 @@ export interface FeeScheduleCacheTable {
 }
 
 // ---------------------------------------------------------------------------
+// bid_events (append-only log of executed CREATE/EDIT/CANCEL events)
+// ---------------------------------------------------------------------------
+
+export type BidEventSource = 'AUTOPILOT' | 'OPERATOR';
+export type BidEventKind = 'CREATE_BID' | 'EDIT_PRICE' | 'CANCEL_BID';
+
+export interface BidEventsTable {
+  id: Generated<number>;
+  occurred_at: number;
+  source: BidEventSource;
+  kind: BidEventKind;
+  braiins_order_id: string | null;
+  old_price_sat: number | null;
+  new_price_sat: number | null;
+  speed_limit_ph: number | null;
+  amount_sat: number | null;
+  reason: string | null;
+}
+
+// ---------------------------------------------------------------------------
 // tick_metrics (time series for the hashrate chart)
 // ---------------------------------------------------------------------------
 
@@ -189,6 +213,7 @@ export interface TickMetricsTable {
   our_primary_price_sat_per_eh_day: number | null;
   best_bid_sat_per_eh_day: number | null;
   best_ask_sat_per_eh_day: number | null;
+  fillable_ask_sat_per_eh_day: number | null;
   available_balance_sat: number | null;
   run_mode: RunMode;
   action_mode: ActionMode;
@@ -220,5 +245,6 @@ export interface Database {
   market_settings_cache: MarketSettingsCacheTable;
   fee_schedule_cache: FeeScheduleCacheTable;
   tick_metrics: TickMetricsTable;
+  bid_events: BidEventsTable;
   _migrations: MigrationsTable;
 }

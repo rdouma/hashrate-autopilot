@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 
+import { cheapestAskForDepth } from '../../controller/orderbook.js';
 import type { ExecutionResult, GateOutcome, State } from '../../controller/types.js';
 import type { HttpServerDeps } from '../server.js';
 import type {
@@ -37,7 +38,13 @@ export async function registerStatusRoute(
         last_api_ok_at: runtime.last_api_ok_at,
         next_tick_at: nextTickAt,
         tick_interval_ms: tickIntervalMs,
-        next_action: { summary: 'Waiting for first tick…', detail: null },
+        next_action: {
+          summary: 'Waiting for first tick…',
+          detail: null,
+          eta_ms: null,
+          event_started_ms: null,
+          event_kind: null,
+        },
         balances: [],
         market: null,
         pool: {
@@ -120,12 +127,25 @@ export async function registerStatusRoute(
       next_action: describeNextAction(state, liveRunMode),
       balances,
       market: state.market
-        ? {
-            best_bid_sat_per_ph_day:
-              state.market.best_bid_sat !== null ? state.market.best_bid_sat / EH_PER_PH : null,
-            best_ask_sat_per_ph_day:
-              state.market.best_ask_sat !== null ? state.market.best_ask_sat / EH_PER_PH : null,
-          }
+        ? (() => {
+            const fillable = cheapestAskForDepth(
+              state.market.orderbook.asks,
+              config.target_hashrate_ph,
+            );
+            return {
+              best_bid_sat_per_ph_day:
+                state.market.best_bid_sat !== null
+                  ? state.market.best_bid_sat / EH_PER_PH
+                  : null,
+              best_ask_sat_per_ph_day:
+                state.market.best_ask_sat !== null
+                  ? state.market.best_ask_sat / EH_PER_PH
+                  : null,
+              fillable_ask_sat_per_ph_day:
+                fillable.price_sat !== null ? fillable.price_sat / EH_PER_PH : null,
+              fillable_thin: fillable.thin,
+            };
+          })()
         : null,
       pool: {
         reachable: state.pool.reachable,
@@ -174,10 +194,14 @@ function describeProposal(p: GateOutcome['proposal']): string {
  * posture summary so the operator doesn't have to reverse-engineer state.
  */
 function describeNextAction(state: State, runMode: State['run_mode']): NextActionView {
+  // Steady-state / non-timed cases share this shape (no progress bar).
+  const noEvent = { eta_ms: null, event_started_ms: null, event_kind: null } as const;
+
   if (runMode === 'PAUSED') {
     return {
       summary: 'Paused — no bids will be placed or edited until run mode changes.',
       detail: null,
+      ...noEvent,
     };
   }
 
@@ -185,6 +209,7 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
     return {
       summary: 'Unknown bid(s) detected — next tick will PAUSE the autopilot.',
       detail: `IDs: ${state.unknown_bids.map((b) => b.braiins_order_id.slice(0, 8) + '…').join(', ')}`,
+      ...noEvent,
     };
   }
 
@@ -192,19 +217,22 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
     return {
       summary: 'Braiins API unreachable — waiting for connectivity.',
       detail: null,
+      ...noEvent,
     };
   }
 
   const ph = state.config.target_hashrate_ph;
   const tickSize = state.market.settings.tick_size_sat ?? 1000;
-  const cheapestAsk = findCheapestAvailable(state.market.orderbook.asks);
+  const fillable = cheapestAskForDepth(state.market.orderbook.asks, ph);
+  const cheapestAsk = fillable.price_sat;
   if (cheapestAsk === null) {
     return {
       summary: 'No hashrate available on the market right now.',
       detail: 'Next tick will re-check supply.',
+      ...noEvent,
     };
   }
-  const targetPriceEH = cheapestAsk + state.config.max_overpay_vs_ask_sat_per_eh_day;
+  const targetPriceEH = cheapestAsk + state.config.max_overpay_sat_per_eh_day;
   const targetPricePH = Math.round(targetPriceEH / EH_PER_PH);
 
   if (state.owned_bids.length === 0) {
@@ -212,6 +240,7 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
     return {
       summary: `Will ${verb} a CREATE_BID on the next tick.`,
       detail: `~${targetPricePH.toLocaleString('en-US')} sat/PH/day, ${ph} PH/s target, ${state.config.bid_budget_sat.toLocaleString('en-US')} sat budget.`,
+      ...noEvent,
     };
   }
 
@@ -225,20 +254,15 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
         primary.status === 'BID_STATUS_CREATED'
           ? 'Confirm in Telegram (@BraiinsBotOfficial) to activate.'
           : null,
+      ...noEvent,
     };
   }
 
   const shortfall = ph - primary.avg_speed_ph;
   if (shortfall > 0.1) {
-    // Minute-precision elapsed/remaining. Ceil on both branches; clamp to
-    // a minimum of 1 so we never display "0 min" (would be ambiguous
-    // between "just now" and "just past"). Honest overdue when elapsed
-    // has passed the escalation window — the previous modulo version
-    // wrapped around and made long droughts look like fresh timers.
     const windowMs = state.config.fill_escalation_after_minutes * 60_000;
-    const elapsedMs = state.below_floor_since
-      ? state.tick_at - state.below_floor_since
-      : 0;
+    const startMs = state.below_floor_since;
+    const elapsedMs = startMs ? state.tick_at - startMs : 0;
     const remainingMs = windowMs - elapsedMs;
     const countdownText =
       remainingMs > 0
@@ -247,33 +271,72 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
     return {
       summary: `Bid filling below target (${primary.avg_speed_ph.toFixed(2)}/${ph} PH/s).`,
       detail: `${countdownText} if still under floor. Current price ${currentPricePH.toLocaleString('en-US')} sat/PH/day; target ${targetPricePH.toLocaleString('en-US')}.`,
+      // Only emit a progress bar when we know when the timer started —
+      // otherwise the bar has no meaningful start anchor.
+      eta_ms: startMs !== null ? startMs + windowMs : null,
+      event_started_ms: startMs,
+      event_kind: startMs !== null ? 'escalation' : null,
+    };
+  }
+
+  // Over-paying check: if our bid is materially above target (fillable +
+  // max_overpay) — by more than min_lower_delta — the next tick will
+  // lower us. Surface that, plus any gate currently holding the move.
+  const lowerThreshold = Math.max(tickSize, state.config.min_lower_delta_sat_per_eh_day);
+  if (primary.price_sat > targetPriceEH + lowerThreshold) {
+    const overpayPH = Math.round((primary.price_sat - targetPriceEH) / EH_PER_PH);
+    const overrideUntil = state.manual_override_until_ms;
+    const overrideActive = overrideUntil !== null && overrideUntil > state.tick_at;
+    const cooldownMs =
+      (state.market.settings.min_bid_price_decrease_period_s ?? 600) * 1000;
+    const lastDecrease = primary.last_price_decrease_at;
+    const cooldownEndsMs = lastDecrease !== null ? lastDecrease + cooldownMs : null;
+    const cooldownRemainsMs =
+      cooldownEndsMs !== null ? Math.max(0, cooldownEndsMs - state.tick_at) : 0;
+
+    if (overrideActive) {
+      const minsLeft = Math.max(1, Math.ceil((overrideUntil! - state.tick_at) / 60_000));
+      // Approx: bar fills from one escalation window before the unlock
+      // (when the override was set) to the unlock time.
+      const windowMs = state.config.fill_escalation_after_minutes * 60_000;
+      return {
+        summary: `Overpaying by ${overpayPH.toLocaleString('en-US')} sat/PH/day vs target — held by override lock.`,
+        detail: `Will lower to ${targetPricePH.toLocaleString('en-US')} sat/PH/day after lock expires (~${minsLeft} min).`,
+        eta_ms: overrideUntil,
+        event_started_ms: overrideUntil! - windowMs,
+        event_kind: 'lower_after_override',
+      };
+    }
+    if (cooldownRemainsMs > 0 && cooldownEndsMs !== null && lastDecrease !== null) {
+      const minsLeft = Math.max(1, Math.ceil(cooldownRemainsMs / 60_000));
+      return {
+        summary: `Overpaying by ${overpayPH.toLocaleString('en-US')} sat/PH/day vs target — Braiins price-decrease cooldown.`,
+        detail: `Will lower to ${targetPricePH.toLocaleString('en-US')} sat/PH/day in ~${minsLeft} min.`,
+        eta_ms: cooldownEndsMs,
+        event_started_ms: lastDecrease,
+        event_kind: 'lower_after_cooldown',
+      };
+    }
+    const verb = runMode === 'LIVE' ? 'lower' : 'log lower (dry-run)';
+    return {
+      summary: `Will ${verb} bid to ${targetPricePH.toLocaleString('en-US')} sat/PH/day on the next tick.`,
+      detail: `Currently overpaying by ${overpayPH.toLocaleString('en-US')} sat/PH/day vs fillable + max overpay.`,
+      ...noEvent,
     };
   }
 
   return {
     summary: 'On target — no action expected.',
     detail: `Bid filling at ${primary.avg_speed_ph.toFixed(2)} PH/s; re-evaluating every tick.`,
+    ...noEvent,
   };
-}
-
-function findCheapestAvailable(
-  asks: ReadonlyArray<{ price_sat?: number; hr_available_ph?: number }> | undefined,
-): number | null {
-  if (!asks) return null;
-  const sorted = [...asks]
-    .filter((a) => typeof a.price_sat === 'number')
-    .sort((a, b) => (a.price_sat ?? 0) - (b.price_sat ?? 0));
-  for (const a of sorted) {
-    if ((a.hr_available_ph ?? 0) > 0 && a.price_sat) return a.price_sat;
-  }
-  return null;
 }
 
 function summariseConfig(config: {
   target_hashrate_ph: number;
   minimum_floor_hashrate_ph: number;
-  max_price_sat_per_eh_day: number;
-  emergency_max_price_sat_per_eh_day: number;
+  max_bid_sat_per_eh_day: number;
+  emergency_max_bid_sat_per_eh_day: number;
   fill_escalation_step_sat_per_eh_day: number;
   bid_budget_sat: number;
   destination_pool_url: string;
@@ -284,8 +347,8 @@ function summariseConfig(config: {
   return {
     target_hashrate_ph: config.target_hashrate_ph,
     minimum_floor_hashrate_ph: config.minimum_floor_hashrate_ph,
-    max_price_sat_per_ph_day: config.max_price_sat_per_eh_day / EH_PER_PH,
-    emergency_max_price_sat_per_ph_day: config.emergency_max_price_sat_per_eh_day / EH_PER_PH,
+    max_bid_sat_per_ph_day: config.max_bid_sat_per_eh_day / EH_PER_PH,
+    emergency_max_bid_sat_per_ph_day: config.emergency_max_bid_sat_per_eh_day / EH_PER_PH,
     fill_escalation_step_sat_per_ph_day: config.fill_escalation_step_sat_per_eh_day / EH_PER_PH,
     bid_budget_sat: config.bid_budget_sat,
     pool_url: config.destination_pool_url,

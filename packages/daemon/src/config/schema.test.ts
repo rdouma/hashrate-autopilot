@@ -89,12 +89,12 @@ describe('AppConfigInvariantsSchema', () => {
     ).toThrow(/floor must be <= target/);
   });
 
-  it('rejects emergency price cap below normal max', () => {
+  it('rejects emergency bid cap below normal max', () => {
     expect(() =>
       AppConfigInvariantsSchema.parse({
         ...VALID_CONFIG,
-        max_price_sat_per_eh_day: 100_000_000,
-        emergency_max_price_sat_per_eh_day: 50_000_000,
+        max_bid_sat_per_eh_day: 100_000_000,
+        emergency_max_bid_sat_per_eh_day: 50_000_000,
       }),
     ).toThrow(/emergency cap/);
   });

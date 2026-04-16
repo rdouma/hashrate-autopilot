@@ -92,8 +92,14 @@ Exactly one: the operator, running this on a home always-on box alongside an Umb
 - **PAUSED** — operator or controller-entered hard stop. No creates, edits, or cancels. Observation continues.
   Entered on: operator pause button, sustained pool outage, unknown-order ambiguity.
 
-Run mode is **not** persisted across restarts: every boot lands in DRY-RUN. Rationale: first-run-after-crash is
-exactly when inputs are most likely to be stale or inconsistent; human-in-the-loop at boot bounds blast radius.
+Run mode on startup is chosen by the `boot_mode` config knob:
+
+- `ALWAYS_DRY_RUN` (default) — every boot lands in DRY-RUN. Safest posture. Rationale: first-run-after-crash is
+  exactly when inputs are most likely to be stale or inconsistent; human-in-the-loop at boot bounds blast radius.
+- `LAST_MODE` — resume whatever mode the operator last set. PAUSED is demoted to DRY-RUN (PAUSED is a reactive
+  state, never an initial one).
+- `ALWAYS_LIVE` — boot directly into LIVE. Use only once the autopilot is proven and an unplanned restart should
+  not interrupt bidding.
 
 ### 7.2 The mutation-gate rule (single source of truth)
 
@@ -154,16 +160,26 @@ Plus (not profile-driven; set once, rarely tuned):
 - `pool_outage_blip_tolerance_seconds` (default 120)
 - `api_outage_alert_after_minutes` (default 15)
 
-**Pricing strategy knobs (empirically tuned, v1.1):**
+**Pricing strategy (v1.2 — simplified model):**
 
-- `fill_escalation_step_sat_per_eh_day` — price bump when a bid sits unmatched past the escalation window.
-- `fill_escalation_after_minutes` — window before an auto-bump.
-- `max_overpay_vs_ask_sat_per_eh_day` — ceiling on how far above the cheapest available ask the autopilot will go.
-- `overpay_before_lowering_sat_per_eh_day` — deadband; only auto-lower when current price exceeds target by this
-  amount. Prevents real market drops from killing active fills (empirically observed as a live-thrash failure mode).
+Target price formula: `min(fillable + max_overpay, max_bid)`, where "fillable" is the depth-aware price at which the
+full `target_hashrate_ph` is available (walks asks cumulatively by unmatched supply).
+
+- `max_overpay_sat_per_eh_day` — how much above the fillable ask we're willing to bid.
+- `max_bid_sat_per_eh_day` — absolute cap (renamed from max_price for clarity).
+- `emergency_max_bid_sat_per_eh_day` — higher cap once below-floor timer exceeds threshold.
+- `escalation_mode` — `market` (jump to target) or `dampened` (step from current bid). Controls upward adjustments.
+- `fill_escalation_step_sat_per_eh_day` — step size for dampened mode.
+- `fill_escalation_after_minutes` — window before escalation kicks in.
+- `min_lower_delta_sat_per_eh_day` — deadband: only auto-lower when overpay vs target exceeds this. Default 200 sat/PH/day. Avoids burning the Braiins 10-min decrease cooldown for a few-sat saving.
 - `hibernate_on_expensive_market` — pause bidding rather than overpay when the market blows past the configured cap.
-- `handover_window_minutes` — manual-override suppression window, and (optional) lead time to pre-place an
-  overlapping successor bid before an active bid's estimated end.
+- `handover_window_minutes` — manual-override suppression window.
+
+Lowering: when overpay vs target exceeds `min_lower_delta`, jump directly to target (no dampening downward — trust max_overpay setting).
+
+**Daemon startup:**
+
+- `boot_mode` — `ALWAYS_DRY_RUN` (default, safest) | `LAST_MODE` (resume, with PAUSED → DRY_RUN) | `ALWAYS_LIVE`.
 
 **Integrations:**
 
@@ -176,10 +192,10 @@ Plus (not profile-driven; set once, rarely tuned):
 
 **Hashrate below floor (escalation ladder):**
 
-- Controller continuously attempts to maintain `target_hashrate_ph` at `max_price_sat_per_eh_day`.
+- Controller continuously attempts to maintain `target_hashrate_ph` at `max_bid_sat_per_eh_day`.
 - If actual hashrate drops below `minimum_floor_hashrate_ph`: start a timer.
 - At `below_floor_alert_after_minutes`: surface a dashboard alert.
-- At `below_floor_emergency_cap_after_minutes`: raise effective cap to `emergency_max_price_sat_per_eh_day` for
+- At `below_floor_emergency_cap_after_minutes`: raise effective cap to `emergency_max_bid_sat_per_eh_day` for
   floor-sized orders only. Target-hashrate orders remain at normal cap.
 - At `zero_hashrate_loud_alert_after_minutes`: second louder dashboard alert.
 
@@ -330,3 +346,8 @@ Still open:
 |---------|------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | 1.0     | 2026-04-14 | Initial version.                                                                                                                                                                                    |
 | 1.1     | 2026-04-16 | Post-empirical rewrite: owner-token API bypasses 2FA. Removed action-mode state machine (PENDING_CONFIRMATION, CONFIRMATION_TIMEOUT, QUIET_HOURS), confirmation bot, and operator-availability flag. Added empirical findings on worker identity shape and DELETE body. |
+| 1.2     | 2026-04-16 | Replaced hard-coded "always reset to DRY-RUN on boot" rule (§7.1) with a `boot_mode` config knob: `ALWAYS_DRY_RUN` (default) \| `LAST_MODE` \| `ALWAYS_LIVE`. |
+| 1.3     | 2026-04-16 | Added `max_lowering_step_sat_per_eh_day` dampener: auto-lower edits now move down at most one step per edit so a sliver-of-supply "topmost ask" drop doesn't strand the fill in one move. Empirical trigger: live event 2026-04-16 dropped 2,000 sat/PH/day in one EDIT and killed delivered hashrate. |
+| 1.4     | 2026-04-16 | Hashrate chart gains a time-range picker (6 h / 12 h / 24 h / 1 w / 1 m / 1 y / all, default 24 h, persisted in `localStorage`). Server aggregates to 5-min (1 w), 1-h (1 m), or 1-day (1 y / all) buckets via `GROUP BY tick_at / bucket_ms`; raw rows for ≤ 24 h. Event overlay suppressed for ranges ≥ 1 m (individual markers lose signal at that zoom). AVG used for all aggregated fields in the MVP — median/end-of-bucket refinements are follow-ups. |
+| 1.5     | 2026-04-16 | Depth-aware pricing: the autopilot no longer targets "cheapest ask with any non-zero supply". Instead it walks asks cumulatively and targets the cheapest price at which the full `target_hashrate_ph` is fillable. Empirical trigger: live orderbook 2026-04-16 had a sliver ask at 45,070 with the real supply at 47,803 — the old logic targeted 45,070 and stranded the fill. Dashboard gains a "fillable @ target" row in the Hashrate & Market card. |
+| 1.6     | 2026-04-16 | Simplified pricing model: target = min(fillable + max_overpay, max_bid). Renamed `max_price_sat_per_eh_day` → `max_bid_sat_per_eh_day`, `max_overpay_vs_ask` → `max_overpay`. Removed `overpay_before_lowering` and `max_lowering_step` dampeners — downward adjustments now jump directly to target. Added `escalation_mode` config: `market` (jump to target) or `dampened` (step up). User interview drove the simplification: all thresholds relative to fillable, no stacked margins. |

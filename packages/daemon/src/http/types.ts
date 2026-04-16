@@ -37,6 +37,20 @@ export interface BalanceView {
 export interface NextActionView {
   readonly summary: string;
   readonly detail: string | null;
+  /**
+   * When a *concrete event with a known time* is queued (escalation
+   * countdown, price-decrease cooldown, override lock), the dashboard
+   * renders a progress bar between `event_started_ms` and `eta_ms`.
+   * Steady state ("on target, nothing to do") leaves both null and no
+   * bar is shown. Issue #4.
+   */
+  readonly eta_ms: number | null;
+  readonly event_started_ms: number | null;
+  readonly event_kind:
+    | 'escalation'
+    | 'lower_after_override'
+    | 'lower_after_cooldown'
+    | null;
 }
 
 export interface StatusResponse {
@@ -54,6 +68,15 @@ export interface StatusResponse {
   readonly market: {
     readonly best_bid_sat_per_ph_day: number | null;
     readonly best_ask_sat_per_ph_day: number | null;
+    /**
+     * Depth-aware "fillable ask" — the cheapest price at which the full
+     * `target_hashrate_ph` is fillable by walking asks cumulatively. This
+     * is what the autopilot actually targets (plus `max_overpay_vs_ask`).
+     * `null` when the market has no supply at all.
+     */
+    readonly fillable_ask_sat_per_ph_day: number | null;
+    /** True when cumulative supply across the whole book is under target. */
+    readonly fillable_thin: boolean;
   } | null;
 
   readonly pool: {
@@ -70,8 +93,8 @@ export interface StatusResponse {
   readonly config_summary: {
     readonly target_hashrate_ph: number;
     readonly minimum_floor_hashrate_ph: number;
-    readonly max_price_sat_per_ph_day: number;
-    readonly emergency_max_price_sat_per_ph_day: number;
+    readonly max_bid_sat_per_ph_day: number;
+    readonly emergency_max_bid_sat_per_ph_day: number;
     readonly fill_escalation_step_sat_per_ph_day: number;
     readonly bid_budget_sat: number;
     readonly pool_url: string;

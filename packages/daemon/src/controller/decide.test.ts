@@ -15,7 +15,7 @@ const BASE_CONFIG = {
 // With the defaults, overpay allowance = 500,000 sat/EH/day.
 // Given a cheapest-available ask at 45M sat/EH/day, target = 45.5M.
 const CHEAPEST_ASK = 45_000_000;
-const EXPECTED_TARGET = CHEAPEST_ASK + APP_CONFIG_DEFAULTS.max_overpay_vs_ask_sat_per_eh_day;
+const EXPECTED_TARGET = CHEAPEST_ASK + APP_CONFIG_DEFAULTS.max_overpay_sat_per_eh_day;
 
 function market(cheapestAskSat: number = CHEAPEST_ASK, tickSize = 1000): MarketSnapshot {
   return {
@@ -140,14 +140,14 @@ describe('decide — CREATE path', () => {
     const proposals = decide(state({ market: tieredMarket }));
     expect(proposals[0]).toMatchObject({
       kind: 'CREATE_BID',
-      price_sat: 46_000_000 + APP_CONFIG_DEFAULTS.max_overpay_vs_ask_sat_per_eh_day,
+      price_sat: 46_000_000 + APP_CONFIG_DEFAULTS.max_overpay_sat_per_eh_day,
     });
   });
 });
 
 describe('decide — hibernate when too expensive', () => {
-  it('proposes PAUSE when target > max_price AND hibernate is enabled', () => {
-    const cappedCfg = { ...BASE_CONFIG, max_price_sat_per_eh_day: 44_000_000 };
+  it('proposes PAUSE when target > max_bid AND hibernate is enabled', () => {
+    const cappedCfg = { ...BASE_CONFIG, max_bid_sat_per_eh_day: 44_000_000 };
     const proposals = decide(state({ config: cappedCfg }));
     expect(proposals).toHaveLength(1);
     expect(proposals[0]).toMatchObject({ kind: 'PAUSE' });
@@ -155,10 +155,10 @@ describe('decide — hibernate when too expensive', () => {
     expect(pause.reason).toMatch(/market_too_expensive/);
   });
 
-  it('emits no proposal (silently waits) when target > max AND hibernate disabled', () => {
+  it('emits no proposal (silently waits) when target > max_bid AND hibernate disabled', () => {
     const cappedCfg = {
       ...BASE_CONFIG,
-      max_price_sat_per_eh_day: 44_000_000,
+      max_bid_sat_per_eh_day: 44_000_000,
       hibernate_on_expensive_market: false,
     };
     expect(decide(state({ config: cappedCfg }))).toEqual([]);
@@ -171,8 +171,8 @@ describe('decide — hibernate when too expensive', () => {
     // Normal cap is below target; emergency cap is above it.
     const cappedCfg = {
       ...BASE_CONFIG,
-      max_price_sat_per_eh_day: 44_000_000,
-      emergency_max_price_sat_per_eh_day: 80_000_000,
+      max_bid_sat_per_eh_day: 44_000_000,
+      emergency_max_bid_sat_per_eh_day: 80_000_000,
     };
     const proposals = decide(
       state({ config: cappedCfg, tick_at: tick, below_floor_since: longAgo }),
@@ -187,17 +187,19 @@ describe('decide — EDIT / CANCEL paths', () => {
     expect(decide(s)).toEqual([]);
   });
 
-  it('NEVER auto-lowers price, even when overpaying', () => {
-    // By design: once a bid is placed, the autopilot never revises its
-    // price downward. If fills are flowing, lowering kills them; if the
-    // market drops, the next bid (placed after budget drain) picks up
-    // the cheaper market automatically.
+  it('auto-lowers price when overpaying vs target (fillable + max_overpay)', () => {
+    // With simplified pricing: if we're paying more than target, lower
+    // immediately to target. No dampening downward.
+    const overpayAmount = 2_000_000;
     const s = state({
-      owned_bids: [owned({ price_sat: EXPECTED_TARGET + 2_000_000 })],
+      owned_bids: [owned({ price_sat: EXPECTED_TARGET + overpayAmount })],
     });
     const proposals = decide(s);
-    const edits = proposals.filter((p) => p.kind === 'EDIT_PRICE');
-    expect(edits).toHaveLength(0);
+    const edit = proposals.find((p) => p.kind === 'EDIT_PRICE') as
+      | { new_price_sat: number }
+      | undefined;
+    expect(edit).toBeDefined();
+    expect(edit?.new_price_sat).toBe(EXPECTED_TARGET);
   });
 
   it('does NOT auto-edit when underpaying without being below floor', () => {
@@ -231,7 +233,56 @@ describe('decide — EDIT / CANCEL paths', () => {
 });
 
 describe('decide — escalation when stuck below floor', () => {
-  it('bumps price upward once the escalation window has passed', () => {
+  it('escalates in dampened mode (steps toward target) when below floor', () => {
+    const tick = 1_700_000_000_000;
+    const stuckMinutes = BASE_CONFIG.fill_escalation_after_minutes + 5;
+    const longAgo = tick - stuckMinutes * 60_000;
+    const belowTarget = EXPECTED_TARGET - 1_000_000;
+    const primary = owned({
+      price_sat: belowTarget,
+      avg_speed_ph: 0,
+      speed_limit_ph: 2,
+    });
+    const s = state({
+      tick_at: tick,
+      below_floor_since: longAgo,
+      owned_bids: [primary],
+      config: { ...BASE_CONFIG, escalation_mode: 'dampened' as const },
+    });
+    const proposals = decide(s);
+    const edit = proposals.find((p) => p.kind === 'EDIT_PRICE') as
+      | { new_price_sat: number }
+      | undefined;
+    expect(edit).toBeDefined();
+    expect(edit?.new_price_sat).toBeGreaterThan(belowTarget);
+    expect(edit?.new_price_sat).toBeLessThanOrEqual(EXPECTED_TARGET);
+  });
+
+  it('escalates in market mode (jumps to target) when below floor', () => {
+    const tick = 1_700_000_000_000;
+    const stuckMinutes = BASE_CONFIG.fill_escalation_after_minutes + 5;
+    const longAgo = tick - stuckMinutes * 60_000;
+    const belowTarget = EXPECTED_TARGET - 1_000_000;
+    const primary = owned({
+      price_sat: belowTarget,
+      avg_speed_ph: 0,
+      speed_limit_ph: 2,
+    });
+    const s = state({
+      tick_at: tick,
+      below_floor_since: longAgo,
+      owned_bids: [primary],
+      config: { ...BASE_CONFIG, escalation_mode: 'market' as const },
+    });
+    const proposals = decide(s);
+    const edit = proposals.find((p) => p.kind === 'EDIT_PRICE') as
+      | { new_price_sat: number }
+      | undefined;
+    expect(edit).toBeDefined();
+    expect(edit?.new_price_sat).toBe(EXPECTED_TARGET);
+  });
+
+  it('does not escalate when already at target', () => {
     const tick = 1_700_000_000_000;
     const stuckMinutes = BASE_CONFIG.fill_escalation_after_minutes + 5;
     const longAgo = tick - stuckMinutes * 60_000;
@@ -246,9 +297,7 @@ describe('decide — escalation when stuck below floor', () => {
       owned_bids: [primary],
     });
     const proposals = decide(s);
-    const edit = proposals.find((p) => p.kind === 'EDIT_PRICE') as
-      | { new_price_sat: number }
-      | undefined;
-    expect(edit?.new_price_sat).toBeGreaterThan(EXPECTED_TARGET);
+    const edits = proposals.filter((p) => p.kind === 'EDIT_PRICE');
+    expect(edits).toHaveLength(0);
   });
 });

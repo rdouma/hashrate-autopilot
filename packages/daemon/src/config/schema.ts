@@ -65,8 +65,8 @@ export const AppConfigSchema = z.object({
   destination_pool_worker_name: nonEmptyString,
 
   // Pricing ceilings (sat per EH per day)
-  max_price_sat_per_eh_day: positiveInt,
-  emergency_max_price_sat_per_eh_day: positiveInt,
+  max_bid_sat_per_eh_day: positiveInt,
+  emergency_max_bid_sat_per_eh_day: positiveInt,
 
   // Budgeting
   monthly_budget_ceiling_sat: positiveInt,
@@ -96,13 +96,25 @@ export const AppConfigSchema = z.object({
   // Strategy knobs (M4.6)
   fill_escalation_step_sat_per_eh_day: positiveInt,
   fill_escalation_after_minutes: positiveInt,
-  max_overpay_vs_ask_sat_per_eh_day: nonNegativeInt,
-  overpay_before_lowering_sat_per_eh_day: nonNegativeInt,
+  max_overpay_sat_per_eh_day: nonNegativeInt,
+  // Escalation mode for upward price adjustments:
+  // - 'market': jump directly to fillable + max_overpay (tracks market)
+  // - 'dampened': step from current_bid + escalation_step (avoids chasing spikes)
+  escalation_mode: z.enum(['market', 'dampened']).default('dampened'),
+  // Minimum overpay (vs fillable + max_overpay target) before lowering.
+  // Avoids micro-edits that burn the Braiins 10-min decrease cooldown for
+  // a few sat of savings.
+  min_lower_delta_sat_per_eh_day: nonNegativeInt,
   hibernate_on_expensive_market: z.boolean(),
 
   // Electrs (optional, for fast balance lookups)
   electrs_host: z.string().nullable().default(null),
   electrs_port: z.number().int().positive().nullable().default(null),
+
+  // Boot mode — how the daemon chooses run_mode on startup.
+  boot_mode: z
+    .enum(['ALWAYS_DRY_RUN', 'LAST_MODE', 'ALWAYS_LIVE'])
+    .default('ALWAYS_DRY_RUN'),
 });
 
 export type AppConfig = z.infer<typeof AppConfigSchema>;
@@ -119,11 +131,11 @@ export const AppConfigInvariantsSchema = AppConfigSchema.superRefine((cfg, ctx) 
       message: 'floor must be <= target hashrate',
     });
   }
-  if (cfg.max_price_sat_per_eh_day > cfg.emergency_max_price_sat_per_eh_day) {
+  if (cfg.max_bid_sat_per_eh_day > cfg.emergency_max_bid_sat_per_eh_day) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      path: ['emergency_max_price_sat_per_eh_day'],
-      message: 'emergency cap must be >= normal max price',
+      path: ['emergency_max_bid_sat_per_eh_day'],
+      message: 'emergency cap must be >= normal max bid',
     });
   }
   if (cfg.below_floor_alert_after_minutes >= cfg.below_floor_emergency_cap_after_minutes) {
@@ -150,8 +162,8 @@ export const APP_CONFIG_DEFAULTS: Omit<
   minimum_floor_hashrate_ph: 0.5,
 
   // Sensible upper bound; operator will tune once live market data is in view.
-  max_price_sat_per_eh_day: 60_000_000,
-  emergency_max_price_sat_per_eh_day: 90_000_000,
+  max_bid_sat_per_eh_day: 60_000_000,
+  emergency_max_bid_sat_per_eh_day: 90_000_000,
 
   monthly_budget_ceiling_sat: 500_000,
   bid_budget_sat: 50_000,
@@ -173,10 +185,13 @@ export const APP_CONFIG_DEFAULTS: Omit<
   // 300 sat/PH/day = 300_000 sat/EH/day.
   fill_escalation_step_sat_per_eh_day: 300_000,
   fill_escalation_after_minutes: 30,
-  max_overpay_vs_ask_sat_per_eh_day: 500_000,
-  overpay_before_lowering_sat_per_eh_day: 2_000_000,
+  max_overpay_sat_per_eh_day: 500_000,
+  escalation_mode: 'dampened',
+  min_lower_delta_sat_per_eh_day: 200_000,
   hibernate_on_expensive_market: true,
 
   electrs_host: null,
   electrs_port: null,
+
+  boot_mode: 'ALWAYS_DRY_RUN',
 };
