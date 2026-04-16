@@ -9,10 +9,10 @@ hashrate keeps landing at your own Datum-connected pool without manual babysitti
 
 ## Why this exists
 
-The Braiins Hashpower marketplace works well, but orders cancel overnight, prices move, and filling a gap means
-catching a 2FA prompt in Telegram before it expires. The common failure mode for a home miner is: "orders cancelled at
-03:00, zero hashing until I woke up." This project replaces the 3 AM alarm with a controller that decides, prepares,
-and — when a human tap is genuinely required — asks once, at a reasonable hour, through Telegram.
+The Braiins Hashpower marketplace works well, but orders cancel overnight, prices move, and fills thrash when bids are
+undersized. The common failure mode for a home miner is: "orders cancelled at 03:00, zero hashing until I woke up."
+This project replaces the 3 AM alarm with a controller that quietly holds a bid alive at a price the operator is
+comfortable with, and escalates only when genuinely needed.
 
 The goal is **bounded, observable downtime** with an explicit recovery policy, not gapless uptime.
 
@@ -24,19 +24,19 @@ Umbrel Bitcoin node running [Ocean](https://ocean.xyz/) with a Datum Gateway.
 **v2 (aspirational):** Multi-market abstraction so additional hashrate marketplaces can be plugged in behind the same
 controller and dashboard.
 
-Non-goals (v1): SaaS / multi-user, cloud deployment, hands-free wallet funding, 2FA bypass, gapless uptime.
+Non-goals (v1): SaaS / multi-user, cloud deployment, hands-free wallet funding, gapless uptime.
 
 ## How it works (short version)
 
-- A Node daemon runs a periodic control loop: reads Braiins state, reads `bitcoind` RPC for payout observation,
-  decides whether to create / edit / cancel bids.
-- **Cancels are fully autonomous** (no 2FA on Braiins' side).
-- **Creates and edits are 2FA-gated**: the daemon prepares them, asks the operator via Telegram, and only fires on
-  confirmation. Actions deferred inside operator-configured quiet hours get re-evaluated when the window ends (freshly
-  computed — never blind-replayed).
-- A React dashboard binds to LAN only, shows current state, pending confirmations, and an operator-availability
-  toggle.
-- State, ledger, and deferred decisions persist to SQLite and survive restarts. **Run mode always boots into DRY-RUN**;
+- A Node daemon runs a periodic control loop: reads Braiins state, reads `bitcoind` (or Electrs) for on-chain payout
+  observation, decides whether to create / edit / cancel bids.
+- **All three actions (create / edit / cancel) are fully autonomous.** Empirical finding: an owner-scope API token
+  authorises `POST /spot/bid` and `PUT /spot/bid` directly — the 2FA prompt that appears in Braiins' web UI does
+  *not* gate the API path. The autopilot therefore has a single mutation gate (DRY-RUN vs LIVE vs PAUSED) rather
+  than a separate human-in-the-loop confirmation layer.
+- A React dashboard binds to LAN only, shows current state, live decisions, the hashrate chart, config, and operator
+  overrides.
+- State, ledger, and tick metrics persist to SQLite and survive restarts. **Run mode always boots into DRY-RUN**;
   promotion to LIVE is a deliberate operator action.
 
 Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/architecture.md) ·
@@ -49,7 +49,8 @@ TypeScript monorepo (pnpm workspaces), Node 22+, React dashboard, SQLite (better
 ```
 packages/
 ├── braiins-client   # typed client for the Braiins Hashpower REST API
-├── daemon           # control loop, ledger, Telegram gate, persistence
+├── bitcoind-client  # minimal bitcoind RPC client for on-chain payout observation
+├── daemon           # control loop, gate, ledger, HTTP API, persistence
 ├── dashboard        # React UI (LAN-only)
 └── shared           # shared types and utilities
 ```
@@ -57,10 +58,10 @@ packages/
 ## Prerequisites
 
 - Node.js 22+ and `pnpm` 10+
-- A Braiins account with API tokens (one **owner** token, one **read-only** token)
-- A Telegram bot configured with `@BraiinsBotOfficial` for 2FA taps
-- A running `bitcoind` (Umbrel or otherwise) reachable on the LAN
-- An Ocean pool account with a Datum Gateway running locally
+- A Braiins account with API tokens (one **owner** token, and optionally a read-only token)
+- A running `bitcoind` (Umbrel or otherwise) reachable on the LAN, or an Electrs endpoint for faster balance lookups
+- An Ocean pool account with a Datum Gateway running locally, and a BTC payout address configured as the worker
+  identity (`<btc-address>.<worker-label>` — Ocean credits shares by address, not by label)
 - `sops` + `age` for encrypted secrets
 
 ## Getting started
@@ -71,12 +72,13 @@ see [`docs/spec.md`](docs/spec.md) for the full picture.
 ## Roadmap
 
 - [x] Spec, research, architecture drafted
-- [ ] Braiins REST client with full-coverage smoke test
-- [ ] Control-loop daemon with DRY-RUN decisioning
-- [ ] Dashboard (LAN)
-- [ ] Telegram 2FA gate + deferred-decisions queue
-- [ ] Ledger + `bitcoind`-based payout observation
-- [ ] LIVE mode with the full mutation-gate state machine
+- [x] Braiins REST client with full-coverage smoke test
+- [x] Control-loop daemon with DRY-RUN decisioning
+- [x] Dashboard (LAN)
+- [x] Ledger + `bitcoind` / Electrs-based payout observation
+- [x] LIVE mode with the mutation gate (RUN_MODE + PAUSE)
+- [ ] Operator-initiated cancel / recreate from the dashboard (#2)
+- [ ] i18n for the dashboard (#1)
 - [ ] (v2) Second marketplace adapter
 
 ## Disclaimer
