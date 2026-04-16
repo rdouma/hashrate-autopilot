@@ -737,7 +737,7 @@ function formatRemaining(ms: number): string {
 function TickingAge({ epochMs }: { epochMs: number }) {
   const [, setTick] = useState(0);
   useEffect(() => {
-    const id = setInterval(() => setTick((n) => n + 1), 10_000);
+    const id = setInterval(() => setTick((n) => n + 1), 1_000);
     return () => clearInterval(id);
   }, []);
   return <span>updated {formatAge(epochMs)}</span>;
