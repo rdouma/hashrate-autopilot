@@ -44,6 +44,7 @@ export async function registerStatusRoute(
           eta_ms: null,
           event_started_ms: null,
           event_kind: null,
+          last_executed: null,
         },
         balances: [],
         market: null,
@@ -124,7 +125,10 @@ export async function registerStatusRoute(
       last_api_ok_at: state.last_api_ok_at,
       next_tick_at: nextTickAt,
       tick_interval_ms: tickIntervalMs,
-      next_action: describeNextAction(state, liveRunMode),
+      next_action: {
+        ...describeNextAction(state, liveRunMode),
+        last_executed: summariseLastExecuted(state.tick_at, executed),
+      },
       balances,
       market: state.market
         ? (() => {
@@ -161,6 +165,43 @@ export async function registerStatusRoute(
   });
 }
 
+/**
+ * Summarise the last tick's executed mutation as a one-liner the
+ * dashboard can display as a fading "just did this" breadcrumb. We
+ * pick the first EXECUTED proposal from the last tick — there's
+ * usually at most one anyway. DRY_RUN / BLOCKED / FAILED outcomes
+ * intentionally don't surface here; those are visible in the
+ * decisions log and the proposals list lower on the page.
+ */
+function summariseLastExecuted(
+  tickAt: number,
+  executed: readonly ExecutionResult[],
+): NextActionView['last_executed'] {
+  const fired = executed.find((e) => e.outcome === 'EXECUTED');
+  if (!fired) return null;
+  const p = fired.proposal;
+  let summary: string;
+  switch (p.kind) {
+    case 'CREATE_BID':
+      summary = `Just placed a new bid at ${Math.round(p.price_sat / EH_PER_PH).toLocaleString('en-US')} sat/PH/day.`;
+      break;
+    case 'EDIT_PRICE': {
+      const oldPH = Math.round(p.old_price_sat / EH_PER_PH);
+      const newPH = Math.round(p.new_price_sat / EH_PER_PH);
+      const verb = p.new_price_sat < p.old_price_sat ? 'lowered' : 'raised';
+      summary = `Just ${verb} bid: ${oldPH.toLocaleString('en-US')} → ${newPH.toLocaleString('en-US')} sat/PH/day.`;
+      break;
+    }
+    case 'CANCEL_BID':
+      summary = `Just cancelled bid ${p.braiins_order_id.slice(0, 8)}…`;
+      break;
+    case 'PAUSE':
+      // PAUSE isn't a mutation in the Braiins sense — skip the breadcrumb.
+      return null;
+  }
+  return { summary, executed_at_ms: tickAt };
+}
+
 function toProposalView(g: GateOutcome, executionResult: ExecutionResult | undefined): ProposalView {
   const proposal = g.proposal;
   const summary = describeProposal(proposal);
@@ -193,7 +234,12 @@ function describeProposal(p: GateOutcome['proposal']): string {
  * next tick is likely to do. Not a re-run of decide() — just a readable
  * posture summary so the operator doesn't have to reverse-engineer state.
  */
-function describeNextAction(state: State, runMode: State['run_mode']): NextActionView {
+// describeNextAction is concerned only with the prediction; the route
+// merges in `last_executed` after the fact, so the function returns
+// the prediction shape without that field.
+type NextActionPrediction = Omit<NextActionView, 'last_executed'>;
+
+function describeNextAction(state: State, runMode: State['run_mode']): NextActionPrediction {
   // Steady-state / non-timed cases share this shape (no progress bar).
   const noEvent = { eta_ms: null, event_started_ms: null, event_kind: null } as const;
 

@@ -36,6 +36,10 @@ export interface NextActionView {
   eta_ms: number | null;
   event_started_ms: number | null;
   event_kind: 'escalation' | 'lower_after_override' | 'lower_after_cooldown' | null;
+  last_executed: {
+    summary: string;
+    executed_at_ms: number;
+  } | null;
 }
 
 export interface BidView {

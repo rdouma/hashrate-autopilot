@@ -81,7 +81,7 @@ export class Controller {
     if (this.manualOverrideUntilMs !== null && this.manualOverrideUntilMs <= this.deps.now()) {
       this.manualOverrideUntilMs = null;
     }
-    const state = await observe(this.deps, {
+    let state = await observe(this.deps, {
       previousBelowFloorSince: this.belowFloorSince,
       previousAboveFloorTicks: this.aboveFloorTicks,
       manualOverrideUntilMs: this.manualOverrideUntilMs,
@@ -92,6 +92,39 @@ export class Controller {
     const proposals = decide(state);
     const gated = gate(proposals, state);
     const executed = await execute(this.deps, state, gated);
+
+    // observe() ran *before* execute(), so `state.owned_bids` still
+    // reflects the pre-execute world. Patch it in-memory so anything
+    // downstream this tick (metrics row, lastResult consumed by
+    // /api/status) sees the post-execute reality. Without this the
+    // dashboard shows a stale hero price + a "will lower" prediction
+    // for ~30s after a tick that just lowered, even though the chart's
+    // bid-event marker is already visible. Next observe() picks up the
+    // same data on its own a tick later, so this is a freshness-only
+    // patch — no source-of-truth shift.
+    const patchedOwnedBids = state.owned_bids
+      .map((b) => {
+        const edit = executed.find(
+          (e) =>
+            e.outcome === 'EXECUTED' &&
+            e.proposal.kind === 'EDIT_PRICE' &&
+            e.proposal.braiins_order_id === b.braiins_order_id,
+        );
+        if (edit && edit.proposal.kind === 'EDIT_PRICE') {
+          return { ...b, price_sat: edit.proposal.new_price_sat };
+        }
+        return b;
+      })
+      .filter(
+        (b) =>
+          !executed.some(
+            (e) =>
+              e.outcome === 'EXECUTED' &&
+              e.proposal.kind === 'CANCEL_BID' &&
+              e.proposal.braiins_order_id === b.braiins_order_id,
+          ),
+      );
+    state = { ...state, owned_bids: patchedOwnedBids };
 
     // After any EDIT_PRICE that actually fired, lock the new price in
     // for one full escalation window. Prevents same-window re-escalation

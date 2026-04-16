@@ -51,6 +51,18 @@ export interface NextActionView {
     | 'lower_after_override'
     | 'lower_after_cooldown'
     | null;
+  /**
+   * Breadcrumb of what the *most recent* tick actually executed —
+   * "just lowered to X", "just raised to X", "just placed bid", etc.
+   * Surfaced for a brief window so the operator sees explicit
+   * confirmation that the action they were waiting for fired, instead
+   * of the panel jumping silently from "Will lower …" to "On target".
+   * `null` if the last tick made no autopilot mutation.
+   */
+  readonly last_executed: {
+    readonly summary: string;
+    readonly executed_at_ms: number;
+  } | null;
 }
 
 export interface StatusResponse {

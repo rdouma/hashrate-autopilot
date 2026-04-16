@@ -459,6 +459,7 @@ function NextActionCard({
     <section className="bg-slate-900 border border-slate-800 rounded-lg p-4 h-full flex flex-col">
       <div>
         <h3 className="text-xs uppercase tracking-wider text-slate-100 mb-1">Next action</h3>
+        <JustExecutedBanner last={s.next_action.last_executed} />
         <div className="text-slate-100">{s.next_action.summary}</div>
         {s.next_action.detail && (
           <div className="text-xs text-slate-400 mt-1">{s.next_action.detail}</div>
@@ -623,6 +624,39 @@ function PriceDeltaVsFillable({
       {sign}
       {formatNumber(Math.abs(delta), {}, intlLocale)}
     </span>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// "Just executed" breadcrumb on the Next-Action card
+// ---------------------------------------------------------------------------
+
+const JUST_EXECUTED_VISIBLE_MS = 90_000;
+
+/**
+ * Briefly surfaces the most recent autopilot mutation so the operator
+ * sees explicit confirmation when a tick fires — instead of the panel
+ * silently jumping from "Will lower …" to "On target". Auto-fades
+ * after ~90s. Re-renders every 5s so the relative-age text refreshes.
+ */
+function JustExecutedBanner({ last }: { last: NextActionView['last_executed'] }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!last) return;
+    const id = setInterval(() => setNow(Date.now()), 5000);
+    return () => clearInterval(id);
+  }, [last]);
+
+  if (!last) return null;
+  const age = now - last.executed_at_ms;
+  if (age > JUST_EXECUTED_VISIBLE_MS) return null;
+
+  return (
+    <div className="mb-2 flex items-baseline gap-2 text-xs">
+      <span className="text-emerald-400">✓</span>
+      <span className="text-emerald-200">{last.summary}</span>
+      <span className="text-slate-500 text-[11px]">({formatAge(last.executed_at_ms)})</span>
+    </div>
   );
 }
 
