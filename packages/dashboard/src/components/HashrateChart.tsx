@@ -1,18 +1,31 @@
 /**
- * Minimal dependency-free SVG line chart for delivered hashrate.
- *
- * Draws the `delivered_ph` series over time with reference lines for the
- * target and floor. Hand-rolled SVG keeps the bundle lean — no chart
- * library, no extra 100 KB. Dark-theme coloured to match the rest of
- * the dashboard.
+ * Hashrate-only chart: delivered (filled green area) with target + floor as
+ * dashed reference lines. Pairs with `PriceChart` rendered immediately
+ * below it so price moves can be matched up against fill events visually
+ * — both charts share the same time-range filter and X-axis layout.
  */
 
+import {
+  CHART_RANGES,
+  CHART_RANGE_SPECS,
+  type ChartRange,
+} from '@braiins-hashrate/shared';
+
 import type { MetricPoint } from '../lib/api';
-import { formatTimestamp } from '../lib/format';
+import { formatNumber, formatTimestamp } from '../lib/format';
+import { useLocale } from '../lib/locale';
 
 const WIDTH = 880;
-const HEIGHT = 220;
-const PADDING = { top: 12, right: 16, bottom: 24, left: 44 };
+const HEIGHT = 200;
+// Padding kept identical to PriceChart so the two charts can be stacked
+// and the X-axis lines up tick-for-tick. Right padding is small now that
+// the price-side Y-axis moved to the left — just enough to keep the
+// rightmost timestamp from clipping the edge.
+const PADDING = { top: 16, right: 16, bottom: 24, left: 64 };
+
+const COLOR_DELIVERED = '#34d399';
+const COLOR_TARGET = '#94a3b8';
+const COLOR_FLOOR = '#64748b';
 
 function formatDuration(ms: number): string {
   const totalMinutes = Math.max(0, Math.round(ms / 60_000));
@@ -23,11 +36,29 @@ function formatDuration(ms: number): string {
   return `${hours}h ${minutes}m`;
 }
 
-export function HashrateChart({ points }: { points: readonly MetricPoint[] }) {
+export function HashrateChart({
+  points,
+  range,
+  onRangeChange,
+}: {
+  points: readonly MetricPoint[];
+  range: ChartRange;
+  onRangeChange: (r: ChartRange) => void;
+}) {
+  const { intlLocale } = useLocale();
+
   if (points.length < 2) {
     return (
-      <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 text-sm text-slate-500">
-        Not enough data yet — chart appears after a couple of ticks.
+      <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <h3 className="text-xs uppercase tracking-wider text-slate-100">
+            Delivered hashrate
+          </h3>
+          <RangePicker current={range} onChange={onRangeChange} />
+        </div>
+        <div className="mt-4 text-sm text-slate-500">
+          Not enough data in this range yet.
+        </div>
       </div>
     );
   }
@@ -39,6 +70,7 @@ export function HashrateChart({ points }: { points: readonly MetricPoint[] }) {
 
   const minX = xs[0]!;
   const maxX = xs[xs.length - 1]!;
+
   const yMaxData = Math.max(...ys, ...targets, ...floors);
   const yMax = yMaxData > 0 ? yMaxData * 1.15 : 1;
   const yMin = 0;
@@ -53,7 +85,7 @@ export function HashrateChart({ points }: { points: readonly MetricPoint[] }) {
     return HEIGHT - PADDING.bottom - ((y - yMin) / (yMax - yMin)) * usable;
   };
 
-  const path = (values: readonly number[]): string =>
+  const hashratePath = (values: readonly number[]): string =>
     values
       .map((v, i) => {
         const cmd = i === 0 ? 'M' : 'L';
@@ -61,31 +93,30 @@ export function HashrateChart({ points }: { points: readonly MetricPoint[] }) {
       })
       .join(' ');
 
-  const deliveredPath = path(ys);
-  const targetPath = path(targets);
-  const floorPath = path(floors);
+  const deliveredPath = hashratePath(ys);
+  const targetPath = hashratePath(targets);
+  const floorPath = hashratePath(floors);
 
-  // Y-axis grid + labels.
   const ticks = 4;
   const yTicks: number[] = [];
   for (let i = 0; i <= ticks; i++) {
     yTicks.push(yMin + ((yMax - yMin) / ticks) * i);
   }
 
-  // X-axis: start + end labels only.
   const firstTs = formatTimestamp(minX);
   const lastTs = formatTimestamp(maxX);
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-xs uppercase tracking-wider text-slate-400">
+      <div className="flex items-center justify-between mb-2 gap-3 flex-wrap">
+        <h3 className="text-xs uppercase tracking-wider text-slate-100">
           Delivered hashrate (last {formatDuration(maxX - minX)})
         </h3>
-        <div className="flex gap-3 text-xs">
-          <Legend color="#34d399" label="delivered" />
-          <Legend color="#fbbf24" label="target" dashed />
-          <Legend color="#94a3b8" label="floor" dashed />
+        <div className="flex items-center gap-3 text-xs flex-wrap">
+          <Legend color={COLOR_DELIVERED} label="delivered" />
+          <Legend color={COLOR_TARGET} label="target" dashed />
+          <Legend color={COLOR_FLOOR} label="floor" dashed />
+          <RangePicker current={range} onChange={onRangeChange} />
         </div>
       </div>
       <svg
@@ -93,9 +124,8 @@ export function HashrateChart({ points }: { points: readonly MetricPoint[] }) {
         preserveAspectRatio="xMidYMid meet"
         className="w-full h-auto"
       >
-        {/* Grid lines + y labels */}
         {yTicks.map((v, i) => (
-          <g key={i}>
+          <g key={`y-${i}`}>
             <line
               x1={PADDING.left}
               x2={WIDTH - PADDING.right}
@@ -112,31 +142,28 @@ export function HashrateChart({ points }: { points: readonly MetricPoint[] }) {
               fill="#64748b"
               fontFamily="monospace"
             >
-              {v.toFixed(1)}
+              {formatNumber(v, { minimumFractionDigits: 1, maximumFractionDigits: 1 }, intlLocale)}
             </text>
           </g>
         ))}
 
-        {/* Target & floor reference lines (dashed) */}
-        <path d={targetPath} stroke="#fbbf24" strokeWidth="1.2" strokeDasharray="4 3" fill="none" opacity="0.7" />
-        <path d={floorPath} stroke="#94a3b8" strokeWidth="1.2" strokeDasharray="2 3" fill="none" opacity="0.5" />
+        <path d={targetPath} stroke={COLOR_TARGET} strokeWidth="1.2" strokeDasharray="4 3" fill="none" opacity="0.6" />
+        <path d={floorPath} stroke={COLOR_FLOOR} strokeWidth="1" strokeDasharray="2 3" fill="none" opacity="0.5" />
 
-        {/* Delivered series (solid, with soft fill below) */}
         <path
           d={`${deliveredPath} L${xScale(maxX).toFixed(1)},${yScale(0)} L${xScale(minX).toFixed(1)},${yScale(0)} Z`}
           fill="url(#deliveredFill)"
           opacity="0.5"
         />
-        <path d={deliveredPath} stroke="#34d399" strokeWidth="1.8" fill="none" />
+        <path d={deliveredPath} stroke={COLOR_DELIVERED} strokeWidth="1.8" fill="none" />
 
         <defs>
           <linearGradient id="deliveredFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#34d399" stopOpacity="0.45" />
-            <stop offset="100%" stopColor="#34d399" stopOpacity="0" />
+            <stop offset="0%" stopColor={COLOR_DELIVERED} stopOpacity="0.45" />
+            <stop offset="100%" stopColor={COLOR_DELIVERED} stopOpacity="0" />
           </linearGradient>
         </defs>
 
-        {/* X axis baseline */}
         <line
           x1={PADDING.left}
           x2={WIDTH - PADDING.right}
@@ -146,28 +173,13 @@ export function HashrateChart({ points }: { points: readonly MetricPoint[] }) {
           strokeWidth="1"
         />
 
-        {/* X labels */}
-        <text
-          x={PADDING.left}
-          y={HEIGHT - 6}
-          fontSize="10"
-          fill="#64748b"
-          fontFamily="monospace"
-        >
+        <text x={PADDING.left} y={HEIGHT - 6} fontSize="10" fill="#64748b" fontFamily="monospace">
           {firstTs}
         </text>
-        <text
-          x={WIDTH - PADDING.right}
-          y={HEIGHT - 6}
-          textAnchor="end"
-          fontSize="10"
-          fill="#64748b"
-          fontFamily="monospace"
-        >
+        <text x={WIDTH - PADDING.right} y={HEIGHT - 6} textAnchor="end" fontSize="10" fill="#64748b" fontFamily="monospace">
           {lastTs}
         </text>
 
-        {/* Y-axis unit label — rotated along the axis to avoid overlapping tick numbers */}
         <text
           x={14}
           y={PADDING.top + (HEIGHT - PADDING.top - PADDING.bottom) / 2}
@@ -200,5 +212,36 @@ function Legend({ color, label, dashed }: { color: string; label: string; dashed
       </svg>
       {label}
     </span>
+  );
+}
+
+function RangePicker({
+  current,
+  onChange,
+}: {
+  current: ChartRange;
+  onChange: (r: ChartRange) => void;
+}) {
+  return (
+    <div className="flex gap-0.5 bg-slate-950/70 border border-slate-800 rounded-md p-0.5 pl-2 items-center">
+      <span className="text-[10px] uppercase tracking-wider text-slate-500 pr-1">range</span>
+      {CHART_RANGES.map((r) => {
+        const active = r === current;
+        return (
+          <button
+            key={r}
+            onClick={() => onChange(r)}
+            className={
+              'px-2 py-1 text-[11px] rounded transition font-mono ' +
+              (active
+                ? 'bg-amber-400 text-slate-900 font-medium'
+                : 'text-slate-300 hover:bg-slate-800')
+            }
+          >
+            {CHART_RANGE_SPECS[r].label}
+          </button>
+        );
+      })}
+    </div>
   );
 }

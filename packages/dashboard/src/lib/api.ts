@@ -1,3 +1,5 @@
+import type { ChartRange } from '@braiins-hashrate/shared';
+
 import { basicAuthHeader, clearPassword, getPassword } from './auth';
 
 export class UnauthorizedError extends Error {
@@ -26,6 +28,14 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     throw new Error(`${res.status} ${res.statusText}${text ? ` — ${text}` : ''}`);
   }
   return res.json() as Promise<T>;
+}
+
+export interface NextActionView {
+  summary: string;
+  detail: string | null;
+  eta_ms: number | null;
+  event_started_ms: number | null;
+  event_kind: 'escalation' | 'lower_after_override' | 'lower_after_cooldown' | null;
 }
 
 export interface BidView {
@@ -66,8 +76,21 @@ export interface MetricPoint {
   our_primary_price_sat_per_ph_day: number | null;
   best_bid_sat_per_ph_day: number | null;
   best_ask_sat_per_ph_day: number | null;
+  fillable_ask_sat_per_ph_day: number | null;
   available_balance_sat: number | null;
-  run_mode: string;
+}
+
+export interface BidEventView {
+  id: number;
+  occurred_at: number;
+  source: 'AUTOPILOT' | 'OPERATOR';
+  kind: 'CREATE_BID' | 'EDIT_PRICE' | 'CANCEL_BID';
+  braiins_order_id: string | null;
+  old_price_sat_per_ph_day: number | null;
+  new_price_sat_per_ph_day: number | null;
+  speed_limit_ph: number | null;
+  amount_sat: number | null;
+  reason: string | null;
 }
 
 export interface PayoutsResponse {
@@ -97,11 +120,6 @@ export interface BalanceView {
   blocked_balance_sat: number;
 }
 
-export interface NextActionView {
-  summary: string;
-  detail: string | null;
-}
-
 export interface StatusResponse {
   run_mode: 'DRY_RUN' | 'LIVE' | 'PAUSED';
   action_mode: 'NORMAL' | 'QUIET_HOURS' | 'PENDING_CONFIRMATION' | 'CONFIRMATION_TIMEOUT';
@@ -115,6 +133,8 @@ export interface StatusResponse {
   market: {
     best_bid_sat_per_ph_day: number | null;
     best_ask_sat_per_ph_day: number | null;
+    fillable_ask_sat_per_ph_day: number | null;
+    fillable_thin: boolean;
   } | null;
   pool: {
     reachable: boolean;
@@ -128,8 +148,8 @@ export interface StatusResponse {
   config_summary: {
     target_hashrate_ph: number;
     minimum_floor_hashrate_ph: number;
-    max_price_sat_per_ph_day: number;
-    emergency_max_price_sat_per_ph_day: number;
+    max_bid_sat_per_ph_day: number;
+    emergency_max_bid_sat_per_ph_day: number;
     fill_escalation_step_sat_per_ph_day: number;
     bid_budget_sat: number;
     pool_url: string;
@@ -159,8 +179,8 @@ export interface AppConfig {
   minimum_floor_hashrate_ph: number;
   destination_pool_url: string;
   destination_pool_worker_name: string;
-  max_price_sat_per_eh_day: number;
-  emergency_max_price_sat_per_eh_day: number;
+  max_bid_sat_per_eh_day: number;
+  emergency_max_bid_sat_per_eh_day: number;
   monthly_budget_ceiling_sat: number;
   bid_budget_sat: number;
   wallet_runway_alert_days: number;
@@ -178,11 +198,13 @@ export interface AppConfig {
   telegram_chat_id: string;
   fill_escalation_step_sat_per_eh_day: number;
   fill_escalation_after_minutes: number;
-  max_overpay_vs_ask_sat_per_eh_day: number;
-  overpay_before_lowering_sat_per_eh_day: number;
+  max_overpay_sat_per_eh_day: number;
+  escalation_mode: 'market' | 'dampened';
+  min_lower_delta_sat_per_eh_day: number;
   hibernate_on_expensive_market: boolean;
   electrs_host: string | null;
   electrs_port: number | null;
+  boot_mode: 'ALWAYS_DRY_RUN' | 'LAST_MODE' | 'ALWAYS_LIVE';
 }
 
 export interface ConfigResponse {
@@ -216,9 +238,13 @@ export const api = {
     }),
   tickNow: () => request<TickNowResponse>('/api/actions/tick-now', { method: 'POST' }),
   bumpPrice: () => request<BumpPriceResponse>('/api/actions/bump-price', { method: 'POST' }),
-  metrics: (sinceMs?: number) =>
-    request<{ points: MetricPoint[] }>(
-      `/api/metrics${sinceMs ? `?since=${sinceMs}` : ''}`,
+  metrics: (range: ChartRange) =>
+    request<{ points: MetricPoint[]; range: ChartRange | null }>(
+      `/api/metrics?range=${encodeURIComponent(range)}`,
+    ),
+  bidEvents: (range: ChartRange) =>
+    request<{ events: BidEventView[] }>(
+      `/api/bid-events?range=${encodeURIComponent(range)}`,
     ),
   payouts: () => request<PayoutsResponse>('/api/payouts'),
   scanPayouts: () => request<{ ok: boolean; error?: string }>('/api/payouts/scan', { method: 'POST' }),

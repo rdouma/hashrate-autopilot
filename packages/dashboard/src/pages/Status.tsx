@@ -1,12 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import {
+  CHART_RANGE_SPECS,
+  DEFAULT_CHART_RANGE,
+  parseChartRange,
+  type ChartRange,
+} from '@braiins-hashrate/shared';
+
 import { HashrateChart } from '../components/HashrateChart';
+import { PriceChart } from '../components/PriceChart';
 import { ModeBadge } from '../components/ModeBadge';
 import {
   api,
   UnauthorizedError,
+  type NextActionView,
   type PayoutsResponse,
   type ProposalView,
   type StatusResponse,
@@ -24,11 +33,23 @@ import { actionModeLabel, bidStatusClass, bidStatusLabel } from '../lib/labels';
 import { useLocale } from '../lib/locale';
 
 const RUN_MODES = ['DRY_RUN', 'LIVE', 'PAUSED'] as const;
+const CHART_RANGE_STORAGE_KEY = 'hashrate-chart-range';
+
+function readStoredChartRange(): ChartRange {
+  if (typeof window === 'undefined') return DEFAULT_CHART_RANGE;
+  return parseChartRange(window.localStorage.getItem(CHART_RANGE_STORAGE_KEY)) ?? DEFAULT_CHART_RANGE;
+}
 
 export function Status() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { intlLocale } = useLocale();
+
+  const [chartRange, setChartRangeState] = useState<ChartRange>(() => readStoredChartRange());
+  useEffect(() => {
+    window.localStorage.setItem(CHART_RANGE_STORAGE_KEY, chartRange);
+  }, [chartRange]);
+  const setChartRange = (r: ChartRange) => setChartRangeState(r);
 
   const query = useQuery({
     queryKey: ['status'],
@@ -66,8 +87,14 @@ export function Status() {
   });
 
   const metricsQuery = useQuery({
-    queryKey: ['metrics', '6h'],
-    queryFn: () => api.metrics(Date.now() - 6 * 60 * 60 * 1000),
+    queryKey: ['metrics', chartRange],
+    queryFn: () => api.metrics(chartRange),
+    refetchInterval: 15_000,
+  });
+
+  const bidEventsQuery = useQuery({
+    queryKey: ['bid-events', chartRange],
+    queryFn: () => api.bidEvents(chartRange),
     refetchInterval: 15_000,
   });
 
@@ -109,13 +136,15 @@ export function Status() {
         </div>
       </header>
 
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <OperationsCard
-          s={s}
-          onRunMode={(m) => runModeMutation.mutate(m)}
-          runModePending={runModeMutation.isPending}
-        />
-        <div className="lg:col-span-2">
+      <section className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        <div className="lg:col-span-2 h-full">
+          <OperationsCard
+            s={s}
+            onRunMode={(m) => runModeMutation.mutate(m)}
+            runModePending={runModeMutation.isPending}
+          />
+        </div>
+        <div className="lg:col-span-3 h-full">
           <NextActionCard
             s={s}
             onTickNow={() => tickNowMutation.mutate()}
@@ -129,9 +158,16 @@ export function Status() {
         </div>
       </section>
 
-      {metricsQuery.data && metricsQuery.data.points.length > 0 && (
-        <HashrateChart points={metricsQuery.data.points} />
-      )}
+      <HashrateChart
+        points={metricsQuery.data?.points ?? []}
+        range={chartRange}
+        onRangeChange={setChartRange}
+      />
+      <PriceChart
+        points={metricsQuery.data?.points ?? []}
+        events={bidEventsQuery.data?.events ?? []}
+        showEvents={CHART_RANGE_SPECS[chartRange].showEvents}
+      />
 
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         <Card title="Hashrate & market">
@@ -146,6 +182,15 @@ export function Status() {
           <div className="border-t border-slate-800 mt-2 pt-2">
             <Row k="best bid" v={formatSatPerPH(s.market?.best_bid_sat_per_ph_day ?? null)} />
             <Row k="best ask" v={formatSatPerPH(s.market?.best_ask_sat_per_ph_day ?? null)} />
+            <Row
+              k={`fillable @ ${formatHashratePH(s.config_summary.target_hashrate_ph)}`}
+              v={
+                s.market?.fillable_ask_sat_per_ph_day != null
+                  ? formatSatPerPH(s.market.fillable_ask_sat_per_ph_day) +
+                    (s.market.fillable_thin ? ' (thin)' : '')
+                  : '—'
+              }
+            />
           </div>
         </Card>
         <Card title="Braiins balance">
@@ -168,22 +213,8 @@ export function Status() {
         />
       </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <PoolCard
-          url={s.config_summary.pool_url}
-          reachable={s.pool.reachable}
-          consecutiveFailures={s.pool.consecutive_failures}
-          lastOkAt={s.pool.last_ok_at}
-        />
-        <Card title="Caps">
-          <Row k="normal" v={formatSatPerPH(s.config_summary.max_price_sat_per_ph_day)} />
-          <Row k="emergency" v={formatSatPerPH(s.config_summary.emergency_max_price_sat_per_ph_day)} />
-          <Row k="budget" v={formatSats(s.config_summary.bid_budget_sat)} />
-        </Card>
-      </section>
-
       <section>
-        <h3 className="text-sm text-slate-400 mb-2">Bids</h3>
+        <h3 className="text-xs uppercase tracking-wider text-slate-100 mb-2">Bids</h3>
         {s.bids.length === 0 ? (
           <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 text-slate-500 text-sm">
             no bids on this account
@@ -255,9 +286,23 @@ export function Status() {
         )}
       </section>
 
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <PoolCard
+          url={s.config_summary.pool_url}
+          reachable={s.pool.reachable}
+          consecutiveFailures={s.pool.consecutive_failures}
+          lastOkAt={s.pool.last_ok_at}
+        />
+        <Card title="Caps">
+          <Row k="normal" v={formatSatPerPH(s.config_summary.max_bid_sat_per_ph_day)} />
+          <Row k="emergency" v={formatSatPerPH(s.config_summary.emergency_max_bid_sat_per_ph_day)} />
+          <Row k="budget" v={formatSats(s.config_summary.bid_budget_sat)} />
+        </Card>
+      </section>
+
       {s.last_proposals.length > 0 && (
         <section>
-          <h3 className="text-sm text-slate-400 mb-2">Last tick proposals</h3>
+          <h3 className="text-xs uppercase tracking-wider text-slate-100 mb-2">Last tick proposals</h3>
           <ul className="space-y-1">
             {s.last_proposals.map((p, i) => (
               <li key={i}>
@@ -284,31 +329,88 @@ function OperationsCard({
   onRunMode: (m: (typeof RUN_MODES)[number]) => void;
   runModePending: boolean;
 }) {
+  const { intlLocale } = useLocale();
+
   const heroColors: Record<StatusResponse['run_mode'], string> = {
     DRY_RUN: 'from-sky-900/60 to-sky-950/40 border-sky-700/40',
     LIVE: 'from-emerald-900/60 to-emerald-950/40 border-emerald-700/40',
     PAUSED: 'from-amber-900/60 to-amber-950/40 border-amber-700/40',
   };
-  const heroLabels: Record<StatusResponse['run_mode'], string> = {
-    DRY_RUN: 'DRY RUN',
-    LIVE: 'LIVE',
-    PAUSED: 'PAUSED',
-  };
-  const heroTextColors: Record<StatusResponse['run_mode'], string> = {
-    DRY_RUN: 'text-sky-200',
-    LIVE: 'text-emerald-200',
-    PAUSED: 'text-amber-200',
-  };
 
   const actionVisible = s.action_mode !== 'NORMAL';
 
+  // Effective rate across all owned active bids, weighted by delivered
+  // hashrate (avg_speed_ph). That's the true "what am I paying right now"
+  // number when more than one bid is open. Falls back to a simple price
+  // average if nothing is being delivered yet (all bids freshly created).
+  const activeOwned = s.bids.filter(
+    (b) => b.is_owned && b.status === 'BID_STATUS_ACTIVE',
+  );
+  const totalDelivered = activeOwned.reduce((sum, b) => sum + b.avg_speed_ph, 0);
+  let currentPricePH: number | null = null;
+  if (activeOwned.length > 0) {
+    if (totalDelivered > 0) {
+      currentPricePH =
+        activeOwned.reduce((sum, b) => sum + b.price_sat_per_ph_day * b.avg_speed_ph, 0) /
+        totalDelivered;
+    } else {
+      currentPricePH =
+        activeOwned.reduce((sum, b) => sum + b.price_sat_per_ph_day, 0) / activeOwned.length;
+    }
+  }
+
+  const deliveredColor =
+    s.actual_hashrate_ph < s.config_summary.minimum_floor_hashrate_ph
+      ? 'text-red-400'
+      : s.actual_hashrate_ph < s.config_summary.target_hashrate_ph
+        ? 'text-amber-300'
+        : 'text-emerald-300';
+
   return (
     <section
-      className={`bg-gradient-to-br ${heroColors[s.run_mode]} border rounded-xl p-5 h-full flex flex-col justify-center`}
+      className={`bg-gradient-to-br ${heroColors[s.run_mode]} border rounded-xl p-5 h-full flex flex-col justify-center items-center text-center`}
     >
-      <div className={`text-4xl font-semibold tracking-wide ${heroTextColors[s.run_mode]}`}>
-        {heroLabels[s.run_mode]}
-      </div>
+      {currentPricePH !== null ? (
+        <div className="grid grid-cols-2 gap-6 w-full">
+          <div className="flex flex-col items-center">
+            <div className="text-[11px] uppercase tracking-wider text-slate-100 mb-1">price</div>
+            {/* relative wrapper so the ±delta can be position:absolute
+                outside the flow — that way the big number stays centered
+                regardless of how wide the badge gets (e.g. "+9" vs "+126"). */}
+            <div className="relative leading-none">
+              <span className="text-4xl font-mono font-semibold text-slate-100 tabular-nums">
+                {formatNumber(Math.round(currentPricePH), {}, intlLocale)}
+              </span>
+              <span className="absolute left-full top-1/2 -translate-y-1/2 ml-1.5 whitespace-nowrap">
+                <PriceDeltaVsFillable
+                  currentPH={currentPricePH}
+                  fillablePH={s.market?.fillable_ask_sat_per_ph_day ?? null}
+                  intlLocale={intlLocale}
+                />
+              </span>
+            </div>
+            <div className="text-xs text-slate-400 mt-1">
+              sat/PH/day
+              {activeOwned.length > 1 ? ` · avg/${activeOwned.length}` : ''}
+            </div>
+          </div>
+          <div className="flex flex-col items-center">
+            <div className="text-[11px] uppercase tracking-wider text-slate-100 mb-1">delivered</div>
+            <div className={`text-4xl font-mono font-semibold tabular-nums leading-none ${deliveredColor}`}>
+              {formatNumber(s.actual_hashrate_ph, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              }, intlLocale)}
+            </div>
+            <div className="text-xs text-slate-400 mt-1">PH/s</div>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center">
+          <div className="text-3xl font-mono text-slate-500">—</div>
+          <div className="text-xs text-slate-400 mt-0.5">no active bid</div>
+        </div>
+      )}
       <RunModeToggle current={s.run_mode} onChange={onRunMode} disabled={runModePending} />
       {actionVisible && (
         <div className="mt-2 text-sm text-amber-200">
@@ -344,6 +446,7 @@ function NextActionCard({
     | undefined;
   escalationStepSatPerPh: number;
 }) {
+  const { intlLocale } = useLocale();
   const secondsUntilTick = s.next_tick_at
     ? Math.max(0, Math.round((s.next_tick_at - Date.now()) / 1000))
     : null;
@@ -351,14 +454,15 @@ function NextActionCard({
   const canBump = s.run_mode === 'LIVE' && s.bids.some((b) => b.is_owned);
 
   return (
-    <section className="bg-slate-900 border border-slate-800 rounded-lg p-4">
+    <section className="bg-slate-900 border border-slate-800 rounded-lg p-4 h-full flex flex-col">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex-1 min-w-[240px]">
-          <h3 className="text-xs uppercase tracking-wider text-slate-400 mb-1">Next action</h3>
+          <h3 className="text-xs uppercase tracking-wider text-slate-100 mb-1">Next action</h3>
           <div className="text-slate-100">{s.next_action.summary}</div>
           {s.next_action.detail && (
             <div className="text-xs text-slate-400 mt-1">{s.next_action.detail}</div>
           )}
+          <NextActionProgress next={s.next_action} />
         </div>
         <div className="text-right text-xs">
           <div className="text-slate-500">last tick</div>
@@ -415,14 +519,133 @@ function NextActionCard({
           }
         >
           {bumpResult.ok
-            ? `price bumped to ${Math.round(
-                (bumpResult.new_price_sat_per_eh_day ?? 0) / 1000,
-              ).toLocaleString()} sat/PH/day`
+            ? `price bumped to ${formatNumber(
+                Math.round((bumpResult.new_price_sat_per_eh_day ?? 0) / 1000),
+                {},
+                intlLocale,
+              )} sat/PH/day`
             : `bump failed: ${bumpResult.error}`}
         </div>
       )}
     </section>
   );
+}
+
+// ---------------------------------------------------------------------------
+// Price-vs-fillable delta indicator (hero card)
+// ---------------------------------------------------------------------------
+
+/**
+ * Stock-ticker style ±delta vs the depth-aware fillable ask, rendered
+ * inline next to the big price number. Hover for the full explanation.
+ */
+function PriceDeltaVsFillable({
+  currentPH,
+  fillablePH,
+  intlLocale,
+}: {
+  currentPH: number;
+  fillablePH: number | null;
+  intlLocale: string | undefined;
+}) {
+  if (fillablePH === null) return null;
+  const delta = Math.round(currentPH - fillablePH);
+  const fillablePretty = formatNumber(Math.round(fillablePH), {}, intlLocale);
+
+  if (delta === 0) {
+    return (
+      <span
+        className="text-xs font-mono text-slate-400 cursor-help"
+        title={`Paying exactly the fillable ask (${fillablePretty} sat/PH/day) — the cheapest price at which the full target hashrate is available.`}
+      >
+        ±0
+      </span>
+    );
+  }
+
+  const sign = delta > 0 ? '+' : '−';
+  // Overpaying = red; underpaying (rare, mid-market move) = emerald.
+  const color = delta > 0 ? 'text-red-300' : 'text-emerald-300';
+  const verb = delta > 0 ? 'over' : 'under';
+  const tooltip =
+    `Currently paying ${sign}${formatNumber(Math.abs(delta), {}, intlLocale)} sat/PH/day ` +
+    `${verb} the fillable ask (${fillablePretty}) — the cheapest price at which ` +
+    `your full target hashrate is available in the orderbook.`;
+
+  return (
+    <span className={`text-xs font-mono ${color} cursor-help`} title={tooltip}>
+      {sign}
+      {formatNumber(Math.abs(delta), {}, intlLocale)}
+    </span>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Next-action progress bar (issue #4)
+// ---------------------------------------------------------------------------
+
+const EVENT_LABELS: Record<NonNullable<NextActionView['event_kind']>, string> = {
+  escalation: 'Escalation in',
+  lower_after_override: 'Override lock clears in',
+  lower_after_cooldown: 'Cooldown clears in',
+};
+
+const EVENT_COLORS: Record<NonNullable<NextActionView['event_kind']>, string> = {
+  escalation: 'bg-amber-400',
+  lower_after_override: 'bg-sky-400',
+  lower_after_cooldown: 'bg-sky-400',
+};
+
+function NextActionProgress({ next }: { next: NextActionView }) {
+  // Re-render every second so the bar visibly creeps even between the
+  // 5s status polls. Hook is only useful when an event is queued; gate
+  // the interval below to avoid burning a timer in steady state.
+  const hasEvent =
+    next.eta_ms !== null && next.event_started_ms !== null && next.event_kind !== null;
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!hasEvent) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [hasEvent]);
+
+  if (!hasEvent) return null;
+  const start = next.event_started_ms!;
+  const end = next.eta_ms!;
+  const span = Math.max(1, end - start);
+  const elapsed = Math.max(0, Math.min(span, now - start));
+  const fraction = elapsed / span;
+  const remainingMs = Math.max(0, end - now);
+  const overdue = end < now;
+  const label = EVENT_LABELS[next.event_kind!];
+  const fillColor = overdue ? 'bg-red-400' : EVENT_COLORS[next.event_kind!];
+
+  return (
+    <div className="mt-3 max-w-md">
+      <div className="flex items-baseline justify-between text-[11px] text-slate-400 mb-1 font-mono">
+        <span>{label}</span>
+        <span className={overdue ? 'text-red-300' : ''}>
+          {overdue ? `overdue ${formatRemaining(now - end)}` : formatRemaining(remainingMs)}
+        </span>
+      </div>
+      <div className="h-1.5 bg-slate-800 rounded overflow-hidden">
+        <div
+          className={`h-full ${fillColor} transition-[width] duration-1000 ease-linear`}
+          style={{ width: `${(fraction * 100).toFixed(2)}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function formatRemaining(ms: number): string {
+  const totalSeconds = Math.max(0, Math.round(ms / 1000));
+  if (totalSeconds < 60) return `${totalSeconds}s`;
+  const totalMinutes = Math.round(totalSeconds / 60);
+  if (totalMinutes < 60) return `${totalMinutes}m`;
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return minutes === 0 ? `${hours}h` : `${hours}h ${minutes}m`;
 }
 
 // ---------------------------------------------------------------------------
@@ -506,7 +729,7 @@ function PoolCard({
 
   return (
     <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-lg p-4">
-      <div className="text-xs uppercase tracking-wider text-slate-400 mb-2">Pool</div>
+      <div className="text-xs uppercase tracking-wider text-slate-100 mb-2">Pool</div>
       <div className="flex items-center gap-2 mb-2">
         <span
           className={
@@ -557,7 +780,7 @@ function BidProgress({ pct }: { pct: number | null }) {
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
-      <div className="text-xs uppercase tracking-wider text-slate-400 mb-2">{title}</div>
+      <div className="text-xs uppercase tracking-wider text-slate-100 mb-2">{title}</div>
       {children}
     </div>
   );
@@ -602,7 +825,7 @@ function RunModeToggle({
   disabled: boolean;
 }) {
   return (
-    <div className="flex gap-1 bg-slate-950/70 border border-slate-800 rounded-lg p-1 mt-3">
+    <div className="inline-flex gap-1.5 bg-slate-950/70 border border-slate-800 rounded-xl p-1.5 mt-5">
       {RUN_MODES.map((m) => {
         const active = m === current;
         return (
@@ -611,9 +834,9 @@ function RunModeToggle({
             disabled={disabled || active}
             onClick={() => onChange(m)}
             className={
-              'px-3 py-1.5 text-xs rounded transition ' +
+              'px-5 py-2.5 text-sm rounded-lg transition font-medium tracking-wide ' +
               (active
-                ? 'bg-amber-400 text-slate-900 font-medium'
+                ? 'bg-amber-400 text-slate-900'
                 : 'text-slate-300 hover:bg-slate-800 disabled:opacity-50')
             }
           >

@@ -32,6 +32,20 @@ type FieldSpec = (
     }
   | { key: keyof AppConfig; label: string; kind: 'text'; help?: string }
   | { key: keyof AppConfig; label: string; kind: 'boolean'; help?: string }
+  | {
+      key: keyof AppConfig;
+      label: string;
+      kind: 'radio';
+      help?: string;
+      options: ReadonlyArray<{ value: string; label: string; help?: string }>;
+    }
+  | {
+      key: keyof AppConfig;
+      label: string;
+      kind: 'select';
+      help?: string;
+      options: ReadonlyArray<{ value: string; label: string }>;
+    }
 ) & { fullWidth?: boolean };
 
 const SECTIONS: Section[] = [
@@ -69,13 +83,13 @@ const SECTIONS: Section[] = [
     description: 'Hard ceilings on how much you are willing to pay. Entered in sat/PH/day (displayed natively).',
     fields: [
       {
-        key: 'max_price_sat_per_eh_day',
+        key: 'max_bid_sat_per_eh_day',
         label: 'Normal maximum',
         kind: 'price_sat_per_eh_day',
         help: 'Everyday ceiling. Above this we hibernate instead of bidding.',
       },
       {
-        key: 'emergency_max_price_sat_per_eh_day',
+        key: 'emergency_max_bid_sat_per_eh_day',
         label: 'Emergency maximum',
         kind: 'price_sat_per_eh_day',
         help: 'Higher cap allowed once we have been below floor for the emergency timer.',
@@ -85,25 +99,35 @@ const SECTIONS: Section[] = [
   {
     title: 'Fill strategy',
     description:
-      'How the autopilot competes in the orderbook: target = cheapest-available-ask + overpay allowance.',
+      'Target price = min(fillable + max overpay, max bid). Fillable = depth-aware price at which your full target hashrate is available.',
     fields: [
       {
-        key: 'max_overpay_vs_ask_sat_per_eh_day',
-        label: 'Overpay vs cheapest ask',
+        key: 'max_overpay_sat_per_eh_day',
+        label: 'Max overpay',
         kind: 'price_sat_per_eh_day',
-        help: 'If target exceeds cheapest-available-ask + this, we hibernate instead.',
+        help: 'How much above the fillable ask we are willing to bid. Target = fillable + this, capped by max bid.',
       },
       {
-        key: 'overpay_before_lowering_sat_per_eh_day',
-        label: 'Overpay before lowering',
+        key: 'min_lower_delta_sat_per_eh_day',
+        label: 'Min lower delta',
         kind: 'price_sat_per_eh_day',
-        help: 'Only auto-lower the bid when current price exceeds cheapest-available-ask + this. Higher = stickier price (holds through market noise); lower = more responsive to real market drops.',
+        help: 'Deadband: only auto-lower when overpay vs target exceeds this. Avoids burning the Braiins 10-min cooldown for a few-sat saving.',
+      },
+      {
+        key: 'escalation_mode',
+        label: 'Escalation mode',
+        kind: 'select',
+        options: [
+          { value: 'dampened', label: 'Dampened (step up slowly)' },
+          { value: 'market', label: 'Market (jump to target)' },
+        ],
+        help: 'How to adjust upward when below floor. "Dampened" steps up by escalation step; "Market" jumps directly to target.',
       },
       {
         key: 'fill_escalation_step_sat_per_eh_day',
         label: 'Escalation step',
         kind: 'price_sat_per_eh_day',
-        help: 'Raise the bid by this much per escalation window when stuck below floor.',
+        help: 'Raise the bid by this much per escalation window when stuck below floor (dampened mode only).',
       },
       {
         key: 'fill_escalation_after_minutes',
@@ -161,6 +185,35 @@ const SECTIONS: Section[] = [
         unit: 'min',
       },
       { key: 'wallet_runway_alert_days', label: 'Wallet runway alert', kind: 'integer', unit: 'days' },
+    ],
+  },
+  {
+    title: 'Daemon startup',
+    description: 'How the daemon chooses its run mode when it boots.',
+    fields: [
+      {
+        key: 'boot_mode',
+        label: 'Boot mode',
+        kind: 'radio',
+        fullWidth: true,
+        options: [
+          {
+            value: 'ALWAYS_DRY_RUN',
+            label: 'Always dry-run (safest)',
+            help: 'Every restart resets to DRY_RUN. You explicitly flip to LIVE from the dashboard.',
+          },
+          {
+            value: 'LAST_MODE',
+            label: 'Resume last mode',
+            help: 'Keep whatever run mode was active before the restart. PAUSED is demoted to DRY_RUN.',
+          },
+          {
+            value: 'ALWAYS_LIVE',
+            label: 'Always live (for trusted deployments)',
+            help: 'Boot directly into LIVE. Use only when the autopilot is proven and the box reboots should not interrupt bidding.',
+          },
+        ],
+      },
     ],
   },
   {
@@ -301,6 +354,44 @@ function Field({
 }) {
   const value = draft[spec.key];
 
+  if (spec.kind === 'radio') {
+    const current = value as string;
+    return (
+      <fieldset>
+        <legend className="block text-sm text-slate-300 mb-2">{spec.label}</legend>
+        <div className="space-y-2">
+          {spec.options.map((opt) => (
+            <label
+              key={opt.value}
+              className={
+                'flex items-start gap-2 p-2 rounded border cursor-pointer transition ' +
+                (current === opt.value
+                  ? 'border-amber-500 bg-amber-950/20'
+                  : 'border-slate-800 hover:bg-slate-800/40')
+              }
+            >
+              <input
+                type="radio"
+                name={spec.key as string}
+                value={opt.value}
+                checked={current === opt.value}
+                onChange={() => onChange(spec.key, opt.value as never)}
+                className="mt-1 accent-amber-400"
+              />
+              <span>
+                <span className="text-sm text-slate-200">{opt.label}</span>
+                {opt.help && (
+                  <span className="block text-xs text-slate-500 mt-0.5">{opt.help}</span>
+                )}
+              </span>
+            </label>
+          ))}
+        </div>
+        {spec.help && <span className="block text-xs text-slate-500 mt-2">{spec.help}</span>}
+      </fieldset>
+    );
+  }
+
   if (spec.kind === 'boolean') {
     return (
       <label className="flex items-start gap-2 cursor-pointer">
@@ -314,6 +405,27 @@ function Field({
           <span className="text-sm text-slate-200">{spec.label}</span>
           {spec.help && <span className="block text-xs text-slate-500 mt-0.5">{spec.help}</span>}
         </span>
+      </label>
+    );
+  }
+
+  if (spec.kind === 'select') {
+    const current = value as string;
+    return (
+      <label className="block">
+        <span className="block text-sm text-slate-300 mb-1">{spec.label}</span>
+        <select
+          value={current}
+          onChange={(e) => onChange(spec.key, e.target.value as never)}
+          className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm"
+        >
+          {spec.options.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+        {spec.help && <span className="block text-xs text-slate-500 mt-1">{spec.help}</span>}
       </label>
     );
   }

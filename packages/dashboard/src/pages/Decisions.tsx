@@ -3,7 +3,13 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { api, UnauthorizedError, type DecisionDetail, type DecisionSummary } from '../lib/api';
-import { formatAge, formatSatPerPH, formatTimestamp } from '../lib/format';
+import {
+  formatAge,
+  formatHashratePH,
+  formatSatPerPH,
+  formatSats,
+  formatTimestamp,
+} from '../lib/format';
 
 type ModeFilter = 'ALL' | 'LIVE' | 'DRY_RUN' | 'PAUSED';
 
@@ -170,7 +176,7 @@ function DecisionDetailView({ d, listRow }: { d: DecisionDetail; listRow?: Decis
   const observed = (d.observed as {
     market?: { best_bid_sat: number | null; best_ask_sat: number | null };
     actual_hashrate?: { total_ph: number };
-    config?: { max_price_sat_per_eh_day: number };
+    config?: { max_bid_sat_per_eh_day: number };
   }) ?? {};
 
   return (
@@ -198,7 +204,11 @@ function DecisionDetailView({ d, listRow }: { d: DecisionDetail; listRow?: Decis
           />
           <Stat
             k="actual hashrate"
-            v={observed.actual_hashrate ? `${observed.actual_hashrate.total_ph.toFixed(2)} PH/s` : '—'}
+            v={
+              observed.actual_hashrate
+                ? formatHashratePH(observed.actual_hashrate.total_ph)
+                : '—'
+            }
           />
         </div>
       </section>
@@ -273,7 +283,7 @@ function ProposalRow({
 function describeProposal(p: ProposedEntry): string {
   switch (p.kind) {
     case 'CREATE_BID':
-      return `CREATE bid at ${formatSatPerPH(p.price_sat / EH_PER_PH)}, speed ${p.speed_limit_ph} PH/s, ${p.amount_sat.toLocaleString()} sat budget`;
+      return `CREATE bid at ${formatSatPerPH(p.price_sat / EH_PER_PH)}, speed ${p.speed_limit_ph} PH/s, ${formatSats(p.amount_sat)} budget`;
     case 'EDIT_PRICE':
       return `EDIT ${p.braiins_order_id.slice(0, 8)}… price ${formatSatPerPH(p.old_price_sat / EH_PER_PH)} → ${formatSatPerPH(p.new_price_sat / EH_PER_PH)}`;
     case 'CANCEL_BID':
