@@ -1,0 +1,27 @@
+{
+  "name": "@braiins-hashrate/braiins-client",
+  "version": "0.1.0",
+  "description": "Typed client for the Braiins Hashpower marketplace REST API",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "codegen": "openapi-typescript ./openapi.yml -o ./src/generated/types.ts"
+  },
+  "dependencies": {
+    "@braiins-hashrate/shared": "workspace:*",
+    "openapi-fetch": "^0.13.8"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.5.2"
+  }
+}

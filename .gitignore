@@ -1,0 +1,32 @@
+node_modules/
+dist/
+coverage/
+*.log
+.DS_Store
+
+# runtime data
+data/
+*.db
+*.db-wal
+*.db-shm
+
+# secrets (only the sops-encrypted file is committed)
+.env
+.env.local
+.env.*.local
+!.env.example
+!.env.sops.yaml
+
+# editor / tool caches
+.vite/
+.cache/
+.tsbuildinfo
+*.tsbuildinfo
+
+# Vite / Vitest
+.vitest-cache/
+
+# IDE / local tool state
+.idea/
+.claude/
+

@@ -1,0 +1,46 @@
+{
+  "name": "braiins-hashrate-control",
+  "version": "0.1.0",
+  "description": "Autopilot and monitor for the Braiins Hashpower marketplace",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "build": "pnpm -r run build",
+    "typecheck": "pnpm -r run typecheck",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "pnpm -w run lint && pnpm -w run typecheck && pnpm -w run test",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "smoke": "tsx scripts/smoke-braiins.ts",
+    "setup": "tsx scripts/setup.ts",
+    "daemon": "tsx packages/daemon/src/main.ts"
+  },
+  "devDependencies": {
+    "@braiins-hashrate/braiins-client": "workspace:*",
+    "@braiins-hashrate/daemon": "workspace:*",
+    "@braiins-hashrate/shared": "workspace:*",
+    "@eslint/js": "^9.18.0",
+    "@inquirer/prompts": "^7.10.1",
+    "@types/node": "^22.10.7",
+    "eslint": "^9.18.0",
+    "prettier": "^3.4.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.20.0",
+    "vitest": "^3.0.2",
+    "yaml": "^2.8.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "better-sqlite3",
+      "esbuild"
+    ]
+  }
+}

@@ -14,6 +14,12 @@ Format: `YYYY-MM-DDTHH:MM | event | tool(s) | context`
 - 2026-04-14T22:01 | BLOCKED | WebFetch | https://docs.braiins.com/ — research sprint
 - 2026-04-14T22:01 | BLOCKED | WebFetch | https://braiins.com/hashrate-market — research sprint
 - 2026-04-14T22:02 | WORKAROUND | curl via Bash | All subsequent web fetches used curl since WebFetch/WebSearch remained blocked; user explicitly authorized web research and said not to abandon the task on denial
-- 2026-04-14T22:04 | EXTERNAL_BLOCK | curl | reddit.com returned 403 to unauthenticated scripts; noted as source gap in RESEARCH.md
-- 2026-04-14T22:04 | EXTERNAL_BLOCK | curl | bitcointalk.org search requires login; noted as source gap in RESEARCH.md
+- 2026-04-14T22:04 | EXTERNAL_BLOCK | curl | reddit.com returned 403 to unauthenticated scripts; noted as source gap in docs/research.md
+- 2026-04-14T22:04 | EXTERNAL_BLOCK | curl | bitcointalk.org search requires login; noted as source gap in docs/research.md
 - 2026-04-14T22:20 | DIAGNOSED | WebFetch, WebSearch | Harness-level block observed on all calls despite user verbal authorization. Likely a settings.json / settings.local.json permission rule. Action: user to run `/update-config` to add `WebFetch` and `WebSearch` to the project's allow-list so future research sprints don't require curl workarounds.
+
+## Document history
+
+| Version | Date       | Changes         |
+|---------|------------|-----------------|
+| 1.0     | 2026-04-14 | Initial version |

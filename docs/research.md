@@ -11,7 +11,7 @@ Meta note on tooling: WebFetch and WebSearch were denied at the harness level
 throughout the sprint, despite the user authorising them. Per the instruction
 "if a specific URL fetch is denied, try alternates and note the gap — do not
 abandon the task", all web retrieval was performed with `curl` from Bash and
-all denials are logged in `permissions-log.md`. Where a source was unreachable
+all denials are logged in `docs/permissions-log.md`. Where a source was unreachable
 without an authenticated session (Reddit, BitcoinTalk), it is marked as a gap
 rather than fabricated.
 
@@ -36,7 +36,7 @@ Gaps (need live confirmation with a real owner token, or missing entirely):
 - Documented rate limits per endpoint. The API doc says HTTP 429 is returned when exceeded but does not enumerate thresholds. ([API doc](https://academy.braiins.com/en/braiins-hashpower/api/))
 - No WebSocket / streaming endpoint appears in the OpenAPI spec — polling is the only documented model.
 - Ramp-up and ramp-down latency values ("delivery momentum" language) are qualitative, not quantified. The API doc says cancel takes "a minute or two" to end delivery and settle. ([about page](https://academy.braiins.com/en/braiins-hashpower/about/))
-- No public documentation of the Telegram 2FA flow as seen from the API side. Behavioural question: does `POST /spot/bid` block until the operator confirms in Telegram, or return a pending state? Needs empirical test.
+- ⚠ **2026-04-15 empirical finding (contradicts §1 item 8 above):** `POST /spot/bid` with an owner API token returns the new bid ID immediately in `BID_STATUS_CREATED` and **does not require any Telegram confirmation**. The bid transitions to `BID_STATUS_ACTIVE` on its own (observed after ~60s). Multiple autopilot-placed bids confirmed this: the operator received zero messages from `@BraiinsBotOfficial` and never tapped Confirm, yet the bids activated. The documented "Telegram 2FA required for create/edit" appears to apply to the **web UI only**, not to API calls made with an owner token. This substantially simplifies the autopilot's action-mode state machine (SPEC §7.2): PENDING_CONFIRMATION and CONFIRMATION_TIMEOUT may be unneeded for API-placed bids. Worth re-verifying on a fresh account, but holds as of this date.
 - Bitcointalk and Reddit discussions were blocked at fetch level; no forum-sourced reliability anecdotes collected.
 
 ---
@@ -423,7 +423,7 @@ Recommended design: rely on `bitcoind` RPC on the LAN. ZMQ `hashblock` → trigg
 ## 7. Implementation-relevant details the SPEC will care about
 
 This section consolidates the operational points that the controller in
-`SPEC.md` will need to encode, each cited back to an authoritative source so
+`docs/spec.md` will need to encode, each cited back to an authoritative source so
 they survive review.
 
 ### 7.1 Deposit and funding flow
@@ -674,3 +674,10 @@ Sources that were blocked / gaps:
 - Braiins T&S full text — served by Gatsby SPA; not text-mined in this pass.
 - Live `/spot/settings` exact numeric values (decrease cooldowns, grace period, tick size, price bounds) — owner token required.
 - Live `/spot/fee` per-action values beyond the documented "0% BUY during beta" — owner token required.
+
+## Document history
+
+| Version | Date       | Changes                                                                             |
+|---------|------------|-------------------------------------------------------------------------------------|
+| 1.0     | 2026-04-14 | Initial version                                                                     |
+| 1.1     | 2026-04-16 | Empirical correction: owner-token API bids bypass Telegram 2FA; documented in §0.9. |

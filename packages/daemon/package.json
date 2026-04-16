@@ -1,0 +1,43 @@
+{
+  "name": "@braiins-hashrate/daemon",
+  "version": "0.1.0",
+  "description": "Control loop, HTTP API, and state store for the Braiins hashrate autopilot",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./config": {
+      "types": "./dist/config/index.d.ts",
+      "import": "./dist/config/index.js"
+    },
+    "./state": {
+      "types": "./dist/state/index.d.ts",
+      "import": "./dist/state/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && cp -R src/state/migrations dist/state/",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@braiins-hashrate/braiins-client": "workspace:*",
+    "@braiins-hashrate/shared": "workspace:*",
+    "@fastify/basic-auth": "^6.2.0",
+    "@fastify/cors": "^11.2.0",
+    "@fastify/static": "^9.1.0",
+    "@inquirer/prompts": "^7.2.1",
+    "better-sqlite3": "^11.7.0",
+    "fastify": "^5.8.5",
+    "kysely": "^0.27.5",
+    "yaml": "^2.7.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12"
+  }
+}

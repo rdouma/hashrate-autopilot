@@ -1,0 +1,31 @@
+{
+  "name": "@braiins-hashrate/shared",
+  "version": "0.1.0",
+  "description": "Shared types and pure utilities for the Braiins hashrate autopilot",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./units": {
+      "types": "./dist/units.d.ts",
+      "import": "./dist/units.js"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "import": "./dist/types.js"
+    },
+    "./decision": {
+      "types": "./dist/decision.d.ts",
+      "import": "./dist/decision.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}

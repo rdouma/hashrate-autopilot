@@ -1,0 +1,1285 @@
+openapi: 3.1.0
+info:
+  title: Braiins Hashpower API
+  description: |-
+    All **prices** are in the units specified in `/spot/settings`.
+
+    For example, to see the unit for `price_sat` in `POST /spot/bid`, check the `hr_unit` field in `GET /spot/settings`.
+    * e.g. "EH/day"
+  version: 1.0.0
+servers:
+  - url: https://hashpower.braiins.com/api/v1
+    description: Client access
+paths:
+  /spot/settings:
+    get:
+      summary: Retrieve market settings & rules
+      operationId: spotGetMarketSettings
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketSettings"
+  /spot/bid/current:
+    get:
+      summary: List user's bids (active)
+      operationId: spotGetCurrentBids
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpotGetBidsResponse"
+  /spot/bid:
+    get:
+      summary: List user’s bids (historical & active).
+      operationId: spotGetBids
+      parameters:
+        - name: limit
+          in: query
+          description: Limit amount of rows retrieved. Must be between 1 and 1000.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+        - name: offset
+          in: query
+          description: Offset to start from. Must be >= 0.
+          schema:
+            $ref: "#/components/schemas/Uint32"
+        - name: reverse
+          in: query
+          description: Reverse (ascending) order of results. Default is descending. Orders are sorted by creation time.
+          schema:
+            type: boolean
+        - name: created_after
+          in: query
+          description: Filter for orders created on or after YYYY-MM-DD.
+          schema:
+            type: string
+            format: date
+            examples:
+              - 2025-10-25
+        - name: created_before
+          in: query
+          description: Filter for orders created before YYYY-MM-DD.
+          schema:
+            type: string
+            format: date
+            examples:
+              - 2025-10-26
+        - name: order_id
+          in: query
+          description: Filter by order ID.
+          schema:
+            type: string
+            examples:
+              - B123456789
+        - name: bid_status
+          in: query
+          description: Filter by order status.
+          schema:
+            $ref: "#/components/schemas/SpotMarketBidStatus"
+        - name: exclude_active
+          in: query
+          description: Exclude current orders.
+          schema:
+            type: boolean
+        - name: upstream_url
+          in: query
+          description: Filter by upstream URL.
+          schema:
+            type: string
+        - name: upstream_identity
+          in: query
+          description: Filter by upstream identity.
+          schema:
+            type: string
+
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpotGetBidsResponse"
+    post:
+      summary: Place new bid (buy order) to the market
+      operationId: spotPlaceBid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SpotPlaceBidRequest"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlaceOrderResponse"
+    put:
+      summary: Edit existing bid
+      operationId: spotEditBid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SpotEditBidRequest"
+      responses:
+        "200":
+          description: Success
+    delete:
+      summary: Cancel existing bid
+      operationId: spotCancelBid
+      description: Provide either order_id or cl_order_id
+      parameters:
+        - name: order_id
+          in: query
+          description: Order ID (exclusive with cl_order_id).
+          schema:
+            type: string
+        - name: cl_order_id
+          in: query
+          description: Client assigned ID of this bid for identification (exclusive with order_id).
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CancelResponse"
+  /spot/bid/detail/{order_id}:
+    get:
+      summary: Get detailed information for a specific bid
+      operationId: spotGetBidDetail
+      description: Retrieves comprehensive information about a specific bid order including current state, counters, and network status.
+      parameters:
+        - name: order_id
+          in: path
+          required: true
+          description: The bid order ID (e.g., B123456789)
+          schema:
+            type: string
+            pattern: '^B[0-9]+$'
+            examples:
+              - B123456789
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpotGetBidDetailResponse"
+        "404":
+          description: Bid not found
+        "403":
+          description: Access forbidden - bid belongs to another user
+  /spot/bid/speed/{order_id}:
+    get:
+      summary: Get bid speed history time series
+      operationId: spotGetBidSpeedHistory
+      description: Retrieves speed history time series for a specific bid with selected granularity and sliding window.
+      parameters:
+        - name: order_id
+          in: path
+          required: true
+          description: The bid order ID (e.g., B123456789)
+          schema:
+            type: string
+            pattern: '^B[0-9]+$'
+            examples:
+              - B123456789
+        - name: aggregation_period
+          in: query
+          description: Aggregation period for resampling the data.
+          schema:
+            $ref: "#/components/schemas/AggregationPeriod"
+        - name: sliding_window_size
+          in: query
+          description: Sliding window size for estimating the speed.
+          schema:
+            $ref: "#/components/schemas/SlidingWindowSize"
+        - name: datetime_from
+          in: query
+          description: Datetime from which to start the history (optional). RFC 3339 format expected.
+          schema:
+            type: string
+            format: date-time
+            examples:
+              - "2025-10-04T12:00:00Z"
+        - name: limit
+          in: query
+          description: Maximum number of items to return (optional).
+          schema:
+            $ref: "#/components/schemas/Uint32"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpotGetOrderSpeedHistoryResponse"
+        "404":
+          description: Bid not found
+        "403":
+          description: Access forbidden - bid belongs to another user
+  /spot/bid/delivery/{order_id}:
+    get:
+      summary: Get bid delivery history time series
+      operationId: spotGetBidDeliveryHistory
+      description: Retrieves delivery history time series (shares delivered, accepted, and rejected) for a specific bid.
+      parameters:
+        - name: order_id
+          in: path
+          required: true
+          description: The bid order ID (e.g., B123456789)
+          schema:
+            type: string
+            pattern: '^B[0-9]+$'
+            examples:
+              - B123456789
+        - name: aggregation_period
+          in: query
+          description: Aggregation period for resampling the data.
+          schema:
+            $ref: "#/components/schemas/AggregationPeriod"
+        - name: datetime_from
+          in: query
+          description: Datetime from which to start the history (optional). RFC 3339 format expected.
+          schema:
+            type: string
+            format: date-time
+            examples:
+              - "2025-10-04T12:00:00Z"
+        - name: limit
+          in: query
+          description: Maximum number of items to return (optional).
+          schema:
+            $ref: "#/components/schemas/Uint32"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpotGetBidDeliveryHistoryResponse"
+        "404":
+          description: Bid not found
+        "403":
+          description: Access forbidden - bid belongs to another user
+  /spot/fee:
+    get:
+      summary: Get spot market fee structure
+      operationId: getFeeStructure
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetFeeStructureResponse"
+  /account/balance:
+    get:
+      summary: Get account balance
+      operationId: getAccountBalances
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetAccountBalancesResponse"
+  /account/transaction:
+    get:
+      summary: List account transactions
+      operationId: getTransactions
+      parameters:
+        - name: limit
+          in: query
+          description: Optional limit for the number of transactions to return.
+          schema:
+            $ref: "#/components/schemas/Uint32"
+            examples:
+              - 10
+        - name: offset
+          in: query
+          description: Optional offset for listing the transactions.
+          schema:
+            $ref: "#/components/schemas/Uint32"
+            examples:
+              - 0
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetTransactionsResponse"
+  /account/transaction/on-chain:
+    get:
+      summary: List on-chain account transactions
+      operationId: getOnChainTransactions
+      parameters:
+        - name: limit
+          in: query
+          description: Optional limit for the number of transactions to return.
+          schema:
+            $ref: "#/components/schemas/Uint32"
+            examples:
+              - 10
+        - name: offset
+          in: query
+          description: Optional offset for listing the transactions.
+          schema:
+            $ref: "#/components/schemas/Uint32"
+            examples:
+              - 0
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetOnChainTransactionsResponse"
+  /spot/stats:
+    get:
+      summary: Get market statistics
+      operationId: spotGetMarketStats
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpotGetMarketStatsResponse"
+  /spot/orderbook:
+    get:
+      summary: Get spot market order book snapshot
+      operationId: spotGetOrderbookSnapshot
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpotGetOrderBookResponse"
+  /spot/trades:
+    get:
+      summary: Get last market trades
+      operationId: spotGetMarketTrades
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpotGetMarketTradesResponse"
+  /spot/bars:
+    get:
+      summary: Get aggregated bars for a given market (OHLCV)
+      operationId: spotGetMarketBars
+      parameters:
+        - name: aggregation_period
+          in: query
+          description: Aggregation period for the bars.
+          required: true
+          schema:
+            $ref: "#/components/schemas/AggregationPeriod"
+        - name: limit
+          in: query
+          description: Limit amount of bars to retrieve.
+          schema:
+            $ref: "#/components/schemas/Uint32"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpotGetBarsResponse"
+components:
+  schemas:
+    SpotInstrumentStatus:
+      type: string
+      enum:
+        - SPOT_INSTRUMENT_STATUS_UNSPECIFIED
+        - SPOT_INSTRUMENT_STATUS_ACTIVE
+        - SPOT_INSTRUMENT_STATUS_HALTED
+    MarketSettings:
+      type: object
+      required:
+        - status
+        - tick_size_sat
+        - hr_multiplier_log10
+        - hr_unit
+        - min_bid_price_sat
+        - max_bid_price_sat
+        - min_ask_price_sat
+        - max_ask_price_sat
+        - min_bid_amount_sat
+        - max_bid_amount_sat
+        - min_bid_speed_limit_ph
+        - max_bid_speed_limit_ph
+        - max_bid_idle_time_s
+        - created
+        - max_bids_per_subaccount
+        - max_asks_per_subaccount
+        - bid_grace_period_s
+        - ask_grace_period_s
+        - min_bid_price_decrease_period_s
+        - min_bid_speed_limit_decrease_period_s
+        - min_limited_bid_amount_sat
+        - max_limited_bid_amount_sat
+        - min_limited_bid_duration_s
+      properties:
+        status:
+          $ref: "#/components/schemas/SpotInstrumentStatus"
+        tick_size_sat:
+          $ref: "#/components/schemas/Double"
+          description: Order book decimalization step in satoshi.
+        hr_multiplier_log10:
+          $ref: "#/components/schemas/Int32"
+          description: Market log10 multiplier for the hash rate. For example set it 18 to have EH/day as the base unit.
+          examples:
+            - 18
+        hr_unit:
+          type: string
+          description: Human readable market log10 multiplier, e.g. 18 -> "EH/day", 17 -> "100PH/day"
+          examples:
+            - EH/day
+            - 100PH/day
+            - 10PH/day
+        min_bid_price_sat:
+          $ref: "#/components/schemas/Double"
+        max_bid_price_sat:
+          $ref: "#/components/schemas/Double"
+        min_ask_price_sat:
+          $ref: "#/components/schemas/Double"
+        max_ask_price_sat:
+          $ref: "#/components/schemas/Double"
+        min_bid_amount_sat:
+          $ref: "#/components/schemas/Double"
+          description: Minimum bid amount for bids with no speed limit in satoshi.
+        max_bid_amount_sat:
+          $ref: "#/components/schemas/Double"
+          description: Minimum bid amount for bids with no speed limit in satoshi.
+        min_bid_speed_limit_ph:
+          $ref: "#/components/schemas/Double"
+        max_bid_speed_limit_ph:
+          $ref: "#/components/schemas/Double"
+        max_bid_idle_time_s:
+          $ref: "#/components/schemas/Uint32"
+          description: Max allowed idle time for any bid in seconds. For example 7 days = 604800.
+        created:
+          type: string
+          format: date-time
+        max_bids_per_subaccount:
+          $ref: "#/components/schemas/Uint32"
+        max_asks_per_subaccount:
+          $ref: "#/components/schemas/Uint32"
+        bid_grace_period_s:
+          $ref: "#/components/schemas/Uint32"
+          description: Minimum period required to be able to cancel a bid in seconds.
+        ask_grace_period_s:
+          $ref: "#/components/schemas/Uint32"
+          description: Minimum period required to be able to cancel an ask in seconds.
+        min_bid_price_decrease_period_s:
+          $ref: "#/components/schemas/Uint32"
+          description: Price is allowed to be decreased only when this period passes since last decrease (in seconds).
+        min_bid_speed_limit_decrease_period_s:
+          $ref: "#/components/schemas/Uint32"
+          description: Speed limit is allowed to be decreased only when this period passes since last decrease (in seconds).
+        min_limited_bid_amount_sat:
+          $ref: "#/components/schemas/Double"
+          description: Minimum bid amount for bids with speed limit in satoshi.
+        max_limited_bid_amount_sat:
+          $ref: "#/components/schemas/Double"
+          description: Maximum bid amount for bids with speed limit in satoshi.
+        min_limited_bid_duration_s:
+          $ref: "#/components/schemas/Uint32"
+          description: Minimum duration for bids with speed limit in seconds.
+    ProfileIdentifier:
+      type: object
+      required:
+        - profile_name
+        - client_name
+      properties:
+        profile_name:
+          type: string
+        client_name:
+          type: string
+    SpotGetBidsResponse:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SpotGetBidsResponseItem"
+    SpotGetBidsResponseItem:
+      type: object
+      required:
+        - bid
+        - counters_estimate
+        - counters_committed
+        - state_estimate
+      properties:
+        bid:
+          $ref: "#/components/schemas/SpotMarketBid"
+        counters_estimate:
+          $ref: "#/components/schemas/SpotMarketBidCounters"
+        counters_committed:
+          $ref: "#/components/schemas/SpotMarketBidCounters"
+        state_estimate:
+          $ref: "#/components/schemas/SpotMarketBidState"
+        last_network_failure:
+          description: Last network failure (if any).
+          $ref: "#/components/schemas/UpstreamFailure"
+    SpotGetBidDetailResponse:
+      type: object
+      required:
+        - bid
+        - counters_estimate
+        - counters_committed
+        - state_estimate
+      properties:
+        bid:
+          $ref: "#/components/schemas/SpotMarketBid"
+          description: Complete bid information including all metadata
+        counters_estimate:
+          $ref: "#/components/schemas/SpotMarketBidCounters"
+          description: Estimated counters for the bid (may be ahead of committed values)
+        counters_committed:
+          $ref: "#/components/schemas/SpotMarketBidCounters"
+          description: Committed counters for the bid (confirmed values)
+        state_estimate:
+          $ref: "#/components/schemas/SpotMarketBidState"
+          description: Current estimated state of the bid including speed and progress
+        last_network_failure:
+          description: Last network failure related to the bid, if any. For bids with external destinations only.
+          $ref: "#/components/schemas/UpstreamFailure"
+        history:
+          type: array
+          description: History of bid status changes and updates
+          items:
+            $ref: "#/components/schemas/SpotBidHistoryItem"
+    SpotMarketBid:
+      type: object
+      required:
+        - id
+        - cl_order_id
+        - client_name
+        - subaccount
+        - dest_upstream
+        - speed_limit_ph
+        - amount_sat
+        - price_sat
+        - status
+        - is_current
+        - memo
+        - created
+        - created_by
+        - last_updated
+        - last_updated_by
+        - last_paused
+        - last_pause_reason
+        - fee_rate_pct
+      properties:
+        id:
+          type: string
+          description: ID of this bid (autogenerated). 64bit integer prefixes with "B".
+        cl_order_id:
+          type: string
+          description: Client assigned ID of this bid, optional.
+        client_name:
+          type: string
+          description: Client owning this bid.
+        subaccount:
+          type: string
+          description: Subaccount owning this order.
+        symbol:
+          type: string
+        dest_upstream:
+          $ref: "#/components/schemas/UpstreamSpecification"
+          description: Upstream specification for orders of dest type UPSTREAM
+        price_sat:
+          $ref: "#/components/schemas/Double"
+          description: Bid price specified in satoshi.
+        status:
+          $ref: "#/components/schemas/SpotMarketBidStatus"
+          description: This bid's status.
+        is_current:
+          type: boolean
+          description: True if status is not terminal.
+        memo:
+          type: string
+          description: Remark.
+        created:
+          type: string
+          format: date-time
+        created_by:
+          $ref: "#/components/schemas/ProfileIdentifier"
+          description: Profile which created this bid.
+        last_updated:
+          type: string
+          format: date-time
+          description: Timestamp of the last user update.
+        last_updated_by:
+          $ref: "#/components/schemas/ProfileIdentifier"
+          description: Profile which updated this bid last time.
+        last_paused:
+          type: string
+          format: date-time
+        last_pause_reason:
+          type: string
+        fee_rate_pct:
+          $ref: "#/components/schemas/Double"
+          description: Continuous spot buy fee rate in percents.
+    SpotMarketBidStatus:
+      type: string
+      description: Common status values used for multiple client management entities
+      enum:
+        - BID_STATUS_UNSPECIFIED
+        - BID_STATUS_ACTIVE
+        - BID_STATUS_PENDING_CANCEL
+        - BID_STATUS_CANCELED
+        - BID_STATUS_FULFILLED
+        - BID_STATUS_PAUSED
+        - BID_STATUS_FROZEN
+        - BID_STATUS_CREATED
+    SpotMarketBidCounters:
+      type: object
+      required:
+        - shares_purchased_m
+        - shares_accepted_m
+        - shares_rejected_m
+        - fee_paid_sat
+        - amount_consumed_sat
+      properties:
+        shares_purchased_m:
+          $ref: "#/components/schemas/Double"
+          description: Shares already purchased by this bid. In millions.
+        shares_accepted_m:
+          $ref: "#/components/schemas/Double"
+          description: Shares accepted by bid's target. In millions.
+        shares_rejected_m:
+          $ref: "#/components/schemas/Double"
+          description: Shares rejected by bid's target. In millions.
+        fee_paid_sat:
+          $ref: "#/components/schemas/Double"
+          description: Fees paid in total on this bid. In satoshi.
+        amount_consumed_sat:
+          $ref: "#/components/schemas/Double"
+          description: Consumed order amount in satoshi.
+    SpotMarketBidState:
+      type: object
+      required:
+        - avg_speed_ph
+        - progress_pct
+        - amount_remaining_sat
+      properties:
+        avg_speed_ph:
+          $ref: "#/components/schemas/Double"
+          description: Order speed estimate.
+        progress_pct:
+          type: number
+          format: float
+          description: Progress in percents (0..100)
+        amount_remaining_sat:
+          $ref: "#/components/schemas/Double"
+          description: Remaining order amount in satoshi.
+    UpstreamFailure:
+      type: object
+      required:
+        - timestamp
+        - description
+        - code
+      properties:
+        timestamp:
+          type: string
+          description: Timestamp of the failure.
+        description:
+          type: string
+          description: Failure description in English.
+        code:
+          type: string
+          description: Failure code (E_ERR_SOME_FAILURE).
+    SpotBidHistoryItem:
+      type: object
+      required:
+        - timestamp
+        - speed_limit_ph
+        - price_sat
+        - amount
+        - status
+        - remark
+        - updated_by
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp of the status change or update
+        speed_limit_ph:
+          $ref: "#/components/schemas/Double"
+          description: Speed limit in PH/s at the time of this update
+        price_sat:
+          $ref: "#/components/schemas/Double"
+          description: Bid price in satoshi at the time of this update
+        amount:
+          $ref: "#/components/schemas/Double"
+          description: Allocated amount in satoshi at the time of this update
+        status:
+          $ref: "#/components/schemas/SpotMarketBidStatus"
+          description: Bid status at this point in history
+        remark:
+          type: string
+          description: Remark or reason for the status change
+        updated_by:
+          $ref: "#/components/schemas/ProfileIdentifier"
+          description: Profile that made this update
+    UpstreamSpecification:
+      type: object
+      required:
+        - url
+        - identity
+      properties:
+        url:
+          type: string
+          description: Upstream URL
+          examples:
+            - stratum+tcp://pool.net:7770
+        identity:
+          type: string
+          description: User / worker identification
+    SpotPlaceBidRequest:
+      type: object
+      required:
+        - dest_upstream
+        - amount_sat
+        - price_sat
+      properties:
+        cl_order_id:
+          type: string
+          description: Client assigned ID of this bid, optional.
+        dest_upstream:
+          $ref: "#/components/schemas/UpstreamSpecification"
+          description: Upstream specification for orders of dest type UPSTREAM
+        speed_limit_ph:
+          $ref: "#/components/schemas/Double"
+          description: Optional speed limit in PH/s.
+        amount_sat:
+          $ref: "#/components/schemas/Double"
+          description: Order amount in satoshi.
+        price_sat:
+          $ref: "#/components/schemas/Double"
+          description: Bid price specified in satoshi.
+        memo:
+          type: string
+          description: Remark (optional).
+    PlaceOrderResponse:
+      type: object
+      required:
+        - id
+        - cl_order_id
+      properties:
+        id:
+          type: string
+          description: Autogenerated order ID.
+        cl_order_id:
+          type: string
+          description: Client order ID passed through.
+    SpotEditBidRequest:
+      type: object
+      properties:
+        bid_id:
+          type: string
+          description: Bid ID (exclusive with cl_order_id).
+        cl_order_id:
+          type: string
+          description: Client assigned ID of this bid for identification (exclusive with bid_id).
+        new_amount_sat:
+          $ref: "#/components/schemas/Double"
+          description: New order amount (total). If provided, it must be greater than previous amount value.
+        new_price_sat:
+          $ref: "#/components/schemas/Double"
+          description: New bid price in satoshi.
+        new_speed_limit_ph:
+          $ref: "#/components/schemas/OptionalDouble"
+          description: New speed limit in PH/s. Set to 0 to disable. If not provided, speed limit is not changed.
+        memo:
+          type: string
+          description: Remark (optional).
+    CancelResponse:
+      description: IDs affected by the operation (canceled successfully).
+      type: object
+      required:
+        - affected_ids
+      properties:
+        affected_ids:
+          $ref: "#/components/schemas/MultipleStringIds"
+    MultipleStringIds:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: array
+          description: Client order IDs for identification.
+          items:
+            type: string
+    GetFeeStructureResponse:
+      type: object
+      required:
+        - spot_fees
+      properties:
+        spot_fees:
+          type: array
+          items:
+            $ref: "#/components/schemas/SpotFeePublic"
+    SpotFeePublic:
+      type: object
+      required:
+        - symbol
+        - fee_type
+        - fee
+      properties:
+        symbol:
+          type: string
+        fee_type:
+          $ref: '#/components/schemas/SpotMarketFeeType'
+        fee:
+          $ref: '#/components/schemas/FeeSpec'
+    SpotMarketFeeType:
+      type: string
+      description: |-
+        * SPOT_FEE_TYPE_UNSPECIFIED
+        * SPOT_FEE_TYPE_BUY - Continuous spot buy fee. Only percentage_fee_rate is used.
+        * SPOT_FEE_TYPE_SELL - Continuous spot sell fee. Only percentage_fee_rate is used.
+        * SPOT_FEE_TYPE_PLACEMENT - Fee for placing a new order. Both percentage_fee_rate and abs_fee are used.
+        * SPOT_FEE_TYPE_CANCEL - Fee for canceling an order. Both percentage_fee_rate and abs_fee are used.
+        * SPOT_FEE_TYPE_EDIT - Fee for editing an order. Both percentage_fee_rate and abs_fee are used.
+      enum:
+        - SPOT_FEE_TYPE_UNSPECIFIED
+        - SPOT_FEE_TYPE_BUY
+        - SPOT_FEE_TYPE_SELL
+        - SPOT_FEE_TYPE_PLACEMENT
+        - SPOT_FEE_TYPE_CANCEL
+        - SPOT_FEE_TYPE_EDIT
+    FeeSpec:
+      description: Generic fee specification. Allows to specify a fee w/ percents for now.
+      type: object
+      required:
+        - fee_rate_pct
+      properties:
+        fee_rate_pct:
+          $ref: "#/components/schemas/Double"
+          description: Fee rate in percents
+    GetAccountBalancesResponse:
+      type: object
+      required:
+        - accounts
+      properties:
+        accounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/AccountBalance"
+    AccountBalance:
+      type: object
+      required:
+        - subaccount
+        - currency
+        - total_balance_sat
+        - available_balance_sat
+        - blocked_balance_sat
+        - total_deposited_sat
+        - total_withdrawn_sat
+        - total_spot_spent_sat
+        - total_spot_revenue_gross_sat
+        - total_spot_revenue_net_sat
+        - total_spent_spot_buy_fees_sat
+        - total_spent_spot_sell_fees_sat
+        - total_spent_fees_sat
+        - has_pending_withdrawal
+      properties:
+        subaccount:
+          type: string
+          description: Related subaccount
+        currency:
+          type: string
+          description: Account currency.
+          examples:
+            - USDC
+        total_balance_sat:
+          $ref: "#/components/schemas/Int64"
+          description: Actual total account balance (including blocked funds).
+        available_balance_sat:
+          $ref: "#/components/schemas/Int64"
+          description: Account balance minus blocked funds. Funds available for withdrawals / purchases.
+        blocked_balance_sat:
+          $ref: "#/components/schemas/Int64"
+          description: Blocked amount (in orders, etc...).
+        total_deposited_sat:
+          $ref: "#/components/schemas/Int64"
+          description: Total deposited.
+        total_withdrawn_sat:
+          $ref: "#/components/schemas/Int64"
+          description: Total withdrawn from this account.
+        total_spot_spent_sat:
+          $ref: "#/components/schemas/Int64"
+          description: Total spent on spot market bids (net).
+        total_spot_revenue_gross_sat:
+          $ref: "#/components/schemas/Int64"
+          description: Total revenue from spot market asks (gross).
+        total_spot_revenue_net_sat:
+          $ref: "#/components/schemas/Int64"
+          description: Total revenue from spot market asks (net).
+        total_spent_spot_buy_fees_sat:
+          $ref: "#/components/schemas/Int64"
+          description: Total spent on spot fees (buy)
+        total_spent_spot_sell_fees_sat:
+          $ref: "#/components/schemas/Int64"
+          description: Total spent in fees.
+        total_spent_fees_sat:
+          $ref: "#/components/schemas/Int64"
+        has_pending_withdrawal:
+          type: boolean
+          description: True if there is a pending withdrawal (clients may only withdraw the full amount).
+    GetTransactionsResponse:
+      type: object
+      required:
+        - transactions
+      properties:
+        transactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Transaction"
+    GetOnChainTransactionsResponse:
+      type: object
+      required:
+        - transactions
+      properties:
+        transactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/OnChainTransaction"
+    Transaction:
+      type: object
+      required:
+        - tx_type
+        - amount_sat
+        - details
+        - timestamp
+      properties:
+        tx_type:
+          type: string
+          description: Transaction type (deposit, withdrawal, fee, etc...).
+        amount_sat:
+          $ref: "#/components/schemas/Double"
+          description: Order amount in satoshi.
+        details:
+          type: string
+          description: Additional details.
+        timestamp:
+          type: string
+          format: date-time
+          description: Transaction timestamp.
+    OnChainTransaction:
+      type: object
+      required:
+        - tx_type
+        - timestamp
+        - amount_sat
+        - address
+      properties:
+        tx_type:
+          $ref: "#/components/schemas/OnChainTransactionType"
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp of the transaction recording.
+        amount_sat:
+          $ref: "#/components/schemas/Double"
+          description: Transaction amount in satoshi.
+        tx_id:
+          type: string
+          description: Blockchain transaction ID (deposit, withdrawal confirmation only).
+        address:
+          type: string
+          description: BTC address of the realizing output.
+        order_no:
+          type: integer
+          format: uint32
+          description: Sequential order of the realizing output.
+        deposit_status:
+          $ref: "#/components/schemas/DepositStatus"
+        return_tx_id:
+          type: string
+          description: Return transaction ID (returned deposits only).
+    OnChainTransactionType:
+      type: integer
+      format: int32
+      description: On-chain transaction type.
+      enum:
+        - 0
+        - 1
+        - 2
+        - 3
+    DepositStatus:
+      type: integer
+      format: int32
+      description: Deposit status (deposit transactions only).
+      enum:
+        - 0
+        - 1
+        - 2
+        - 3
+        - 4
+        - 5
+    SpotGetMarketStatsResponse:
+      type: object
+      required:
+        - status
+        - volume_24h_m
+        - best_bid_sat
+        - best_ask_sat
+        - last_avg_price_sat
+        - hash_rate_matched_10m_ph
+        - hash_rate_available_10m_ph
+      properties:
+        status:
+          $ref: "#/components/schemas/SpotInstrumentStatus"
+        volume_24h_m:
+          $ref: "#/components/schemas/Double"
+          description: Shares sold here in last 24 hours. In millions of shares.
+        best_bid_sat:
+          $ref: "#/components/schemas/Double"
+        best_ask_sat:
+          $ref: "#/components/schemas/Double"
+        last_avg_price_sat:
+          $ref: "#/components/schemas/Double"
+          description: Last second's average price matched. In satoshi.
+        hash_rate_matched_10m_ph:
+          $ref: "#/components/schemas/Double"
+          description: Hash rate being matched, estimate on 10m rolling window. In PH/s.
+        hash_rate_available_10m_ph:
+          $ref: "#/components/schemas/Double"
+          description: Hash rate available in asks, estimate on 10m rolling window. In PH/s.
+    SpotGetOrderBookResponse:
+      type: object
+      required:
+        - bids
+        - asks
+      properties:
+        bids:
+          type: array
+          items:
+            $ref: "#/components/schemas/BidItem"
+          description: List of bid items.
+        asks:
+          type: array
+          items:
+            $ref: "#/components/schemas/AskItem"
+          description: List of ask items.
+    BidItem:
+      type: object
+      required:
+        - price_sat
+        - amount_sat
+        - hr_matched_ph
+        - speed_limit_ph
+      properties:
+        price_sat:
+          $ref: "#/components/schemas/Double"
+          description: Price of the bid item.
+        amount_sat:
+          $ref: "#/components/schemas/Double"
+          description: Amount in market currency ready to purchase hashing power.
+        hr_matched_ph:
+          $ref: "#/components/schemas/Double"
+          description: Hash rate being matched on this level (estimate on 10m window). In PH/s.
+        speed_limit_ph:
+          $ref: "#/components/schemas/Double"
+          description: Aggregated speed limit on this level. 0 = no limit. In PH/s.
+    AskItem:
+      type: object
+      required:
+        - price_sat
+        - hr_matched_ph
+        - hr_available_ph
+      properties:
+        price_sat:
+          $ref: "#/components/schemas/Double"
+          description: Price of the ask item.
+        hr_matched_ph:
+          $ref: "#/components/schemas/Double"
+          description: Hash rate being matched on this level (estimate on 10m window), in PH/s.
+        hr_available_ph:
+          $ref: "#/components/schemas/Double"
+          description: Hash rate available to be sold on this level (estimate on 10m window). in PH/s.
+    Int32:
+      type: integer
+      format: int32
+    Int64:
+      type: integer
+      format: int64
+    Uint32:
+      type: integer
+      format: uint32
+      minimum: 0
+      maximum: 4294967295
+    Double:
+      type: number
+      format: double
+    OptionalDouble:
+      description: Optional double value.
+      type: object
+      properties:
+        value:
+          $ref: "#/components/schemas/Double"
+    SpotGetMarketTradesResponse:
+      type: object
+      required:
+        - trades
+      properties:
+        trades:
+          type: array
+          items:
+            $ref: "#/components/schemas/TradeSha256Btc"
+    TradeSha256Btc:
+      type: object
+      required:
+        - timestamp
+        - volume_m
+        - price_sat
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp of the trade.
+        volume_m:
+          $ref: "#/components/schemas/Double"
+          description: Volume in millions of shares.
+        price_sat:
+          $ref: "#/components/schemas/Double"
+          description: Average price in satoshi.
+    AggregationPeriod:
+      type: string
+      description: Aggregation period for bars (OHLCV candles).
+      enum:
+        - PERIOD_UNSPECIFIED
+        - PERIOD_5_MINUTES
+        - PERIOD_15_MINUTES
+        - PERIOD_1_HOUR
+        - PERIOD_4_HOURS
+        - PERIOD_1_DAY
+    SlidingWindowSize:
+      type: string
+      description: Sliding window size for estimating the speed.
+      enum:
+        - WINDOW_SIZE_UNSPECIFIED
+        - WINDOW_SIZE_10_MINUTES
+        - WINDOW_SIZE_20_MINUTES
+        - WINDOW_SIZE_30_MINUTES
+    SpotGetBarsResponse:
+      type: object
+      required:
+        - bars
+      properties:
+        bars:
+          type: array
+          items:
+            $ref: "#/components/schemas/TradeBar"
+    TradeBar:
+      type: object
+      required:
+        - timestamp
+        - open
+        - high
+        - low
+        - close
+        - volume
+        - vwap
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp of the bar.
+        open:
+          $ref: "#/components/schemas/Double"
+          description: Opening price.
+        high:
+          $ref: "#/components/schemas/Double"
+          description: Highest price during the period.
+        low:
+          $ref: "#/components/schemas/Double"
+          description: Lowest price during the period.
+        close:
+          $ref: "#/components/schemas/Double"
+          description: Closing price.
+        volume:
+          $ref: "#/components/schemas/Double"
+          description: Volume traded during the period.
+        vwap:
+          $ref: "#/components/schemas/Double"
+          description: Volume-weighted average price.
+    SpotGetOrderSpeedHistoryResponse:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SpotGetOrderSpeedHistoryItem"
+    SpotGetOrderSpeedHistoryItem:
+      type: object
+      required:
+        - timestamp
+        - speed_ph
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp of the speed measurement.
+        speed_ph:
+          $ref: "#/components/schemas/Double"
+          description: Estimated speed in PH/s.
+    SpotGetBidDeliveryHistoryResponse:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SpotBidDeliveryHistoryItem"
+    SpotBidDeliveryHistoryItem:
+      type: object
+      required:
+        - timestamp
+        - shares_purchased_m
+        - shares_accepted_m
+        - shares_rejected_m
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp of the delivery record.
+        shares_purchased_m:
+          $ref: "#/components/schemas/Double"
+          description: Shares purchased (validated by platform). In millions.
+        shares_accepted_m:
+          $ref: "#/components/schemas/Double"
+          description: Shares accepted by the target. In millions.
+        shares_rejected_m:
+          $ref: "#/components/schemas/Double"
+          description: Shares rejected by the target. In millions.
