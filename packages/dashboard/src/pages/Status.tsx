@@ -107,10 +107,10 @@ export function Status() {
   const financeQuery = useQuery({
     queryKey: ['finance'],
     queryFn: api.finance,
-    // Ocean updates on share-submission cadence (multi-second) and the
-    // payout observer is itself polled at ~1 min — refreshing the
-    // composite panel at 60 s mirrors the slowest underlying source.
-    refetchInterval: 60_000,
+    // Money is a slow-moving summary — earnings per day, lifetime
+    // figures, ocean stats. Hourly refresh is plenty; the operator can
+    // hit the refresh button on the panel for an immediate pull.
+    refetchInterval: 3_600_000,
   });
 
   // Operator availability removed from the UI (API bids bypass 2FA;
@@ -208,7 +208,12 @@ export function Status() {
             ))
           )}
         </Card>
-        <FinancePanel data={financeQuery.data} status={s} />
+        <FinancePanel
+          data={financeQuery.data}
+          status={s}
+          onRefresh={() => qc.invalidateQueries({ queryKey: ['finance'] })}
+          refreshing={financeQuery.isFetching}
+        />
       </section>
 
       <section>
@@ -741,9 +746,13 @@ function formatRemaining(ms: number): string {
 function FinancePanel({
   data,
   status,
+  onRefresh,
+  refreshing,
 }: {
   data: FinanceResponse | undefined;
   status: StatusResponse;
+  onRefresh: () => void;
+  refreshing: boolean;
 }) {
   const { intlLocale } = useLocale();
 
@@ -792,8 +801,16 @@ function FinancePanel({
     <section className="bg-slate-900 border border-slate-800 rounded-lg p-4 flex flex-col">
       <div className="flex items-baseline justify-between mb-3">
         <div className="text-xs uppercase tracking-wider text-slate-100">Money</div>
-        <div className="text-[11px] text-slate-500">
-          updated {formatAge(data.checked_at_ms)}
+        <div className="flex items-center gap-2 text-[11px] text-slate-500">
+          <span>updated {formatAge(data.checked_at_ms)}</span>
+          <button
+            onClick={onRefresh}
+            disabled={refreshing}
+            className="px-1.5 py-0.5 rounded border border-slate-700 text-slate-400 hover:bg-slate-800 disabled:opacity-50"
+            title="Refresh the money panel now (normally updates hourly)."
+          >
+            {refreshing ? '…' : '↻'}
+          </button>
         </div>
       </div>
 

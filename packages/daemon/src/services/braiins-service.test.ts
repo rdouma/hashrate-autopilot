@@ -31,7 +31,7 @@ describe('BraiinsService — metadata cache', () => {
     const client = makeClient();
     const now = vi.fn<() => number>();
     now.mockReturnValue(1_000_000);
-    const svc = new BraiinsService({ client, metadataTtlMs: 60_000, now });
+    const svc = new BraiinsService({ client, settingsTtlMs: 60_000, feeTtlMs: 60_000, now });
     await svc.getSettings();
     now.mockReturnValue(1_030_000); // +30s, inside TTL
     await svc.getSettings();
@@ -42,7 +42,7 @@ describe('BraiinsService — metadata cache', () => {
     const client = makeClient();
     const now = vi.fn<() => number>();
     now.mockReturnValue(1_000_000);
-    const svc = new BraiinsService({ client, metadataTtlMs: 60_000, now });
+    const svc = new BraiinsService({ client, settingsTtlMs: 60_000, feeTtlMs: 60_000, now });
     await svc.getSettings();
     now.mockReturnValue(1_000_000 + 61_000); // just past TTL
     await svc.getSettings();

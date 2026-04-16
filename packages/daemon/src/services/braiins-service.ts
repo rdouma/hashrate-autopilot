@@ -2,7 +2,7 @@
  * Wraps the raw Braiins client with two concerns:
  *
  * 1. **TTL cache** for slow-moving market metadata (`/spot/settings`,
- *    `/spot/fee`) — refresh every `metadataTtlMs` (default 5 min) rather
+ *    `/spot/fee`) — refresh every `settingsTtlMs` / `feeTtlMs` rather
  *    than on every tick.
  * 2. **Last-OK tracking** — records the timestamp of the last successful
  *    read so the control loop can detect API outages (SPEC §9
@@ -29,15 +29,23 @@ interface CachedValue<T> {
 
 export interface BraiinsServiceOptions {
   readonly client: BraiinsClient;
-  /** How long to cache settings + fee, in ms. Default 5 minutes. */
-  readonly metadataTtlMs?: number;
+  /**
+   * Per-endpoint TTLs for slow-moving metadata. Settings change
+   * maybe once per Braiins release (weeks/months); fee changes only
+   * on beta-exit. Separate knobs so we can poll fee faster than
+   * settings to catch the beta-exit transition within the alert
+   * window (addresses #7).
+   */
+  readonly settingsTtlMs?: number;
+  readonly feeTtlMs?: number;
   /** Injectable clock for tests. */
   readonly now?: () => number;
 }
 
 export class BraiinsService {
   private readonly client: BraiinsClient;
-  private readonly metadataTtlMs: number;
+  private readonly settingsTtlMs: number;
+  private readonly feeTtlMs: number;
   private readonly now: () => number;
 
   private settingsCache: CachedValue<MarketSettings> | null = null;
@@ -46,7 +54,8 @@ export class BraiinsService {
 
   constructor(options: BraiinsServiceOptions) {
     this.client = options.client;
-    this.metadataTtlMs = options.metadataTtlMs ?? 5 * 60_000;
+    this.settingsTtlMs = options.settingsTtlMs ?? 60 * 60_000; // 1 hour
+    this.feeTtlMs = options.feeTtlMs ?? 15 * 60_000; // 15 min
     this.now = options.now ?? Date.now;
   }
 
@@ -79,7 +88,7 @@ export class BraiinsService {
   // ---- cached reads ----------------------------------------------------
 
   async getSettings(): Promise<MarketSettings> {
-    if (this.settingsCache && this.now() - this.settingsCache.cached_at < this.metadataTtlMs) {
+    if (this.settingsCache && this.now() - this.settingsCache.cached_at < this.settingsTtlMs) {
       return this.settingsCache.value;
     }
     const value = await this.client.getSettings();
@@ -89,7 +98,7 @@ export class BraiinsService {
   }
 
   async getFee(): Promise<FeeSchedule> {
-    if (this.feeCache && this.now() - this.feeCache.cached_at < this.metadataTtlMs) {
+    if (this.feeCache && this.now() - this.feeCache.cached_at < this.feeTtlMs) {
       return this.feeCache.value;
     }
     const value = await this.client.getFee();
