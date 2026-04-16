@@ -268,9 +268,30 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
       remainingMs > 0
         ? `Escalation in ${Math.max(1, Math.ceil(remainingMs / 60_000))} min`
         : `Escalation overdue by ${Math.max(1, Math.ceil(-remainingMs / 60_000))} min`;
+
+    // Predict the *actual* next-edit price, mirroring decide.ts. In
+    // `dampened` mode this is current+step (capped at fillable cap);
+    // in `market` mode it jumps straight to the cap. Reporting just
+    // the cap would mislead — the operator chose dampened precisely so
+    // the autopilot doesn't jump there in one go.
+    const escalationStep = state.config.fill_escalation_step_sat_per_eh_day;
+    const nextEditEH =
+      state.config.escalation_mode === 'market'
+        ? targetPriceEH
+        : Math.min(primary.price_sat + escalationStep, targetPriceEH);
+    const nextEditPH = Math.round(nextEditEH / EH_PER_PH);
+    const ceilingPH = targetPricePH;
+    const modeWord = state.config.escalation_mode === 'market' ? 'market' : 'dampened';
+    const stepDescription =
+      state.config.escalation_mode === 'market'
+        ? `will jump to ${nextEditPH.toLocaleString('en-US')} (fillable + max overpay).`
+        : nextEditPH < ceilingPH
+          ? `will step up by ${Math.round(escalationStep / EH_PER_PH).toLocaleString('en-US')} to ${nextEditPH.toLocaleString('en-US')} (cap ${ceilingPH.toLocaleString('en-US')}).`
+          : `will reach the cap ${ceilingPH.toLocaleString('en-US')} (one step gets us there).`;
+
     return {
       summary: `Bid filling below target (${primary.avg_speed_ph.toFixed(2)}/${ph} PH/s).`,
-      detail: `${countdownText} if still under floor. Current price ${currentPricePH.toLocaleString('en-US')} sat/PH/day; target ${targetPricePH.toLocaleString('en-US')}.`,
+      detail: `${countdownText} if still under floor. Current ${currentPricePH.toLocaleString('en-US')} sat/PH/day; ${modeWord} mode ${stepDescription}`,
       // Only emit a progress bar when we know when the timer started —
       // otherwise the bar has no meaningful start anchor.
       eta_ms: startMs !== null ? startMs + windowMs : null,
