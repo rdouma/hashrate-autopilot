@@ -28,5 +28,8 @@ data/
 
 # IDE / local tool state
 .idea/
-.claude/
+
+# Keep .claude/commands/ (project slash-commands) but ignore everything else
+.claude/*
+!.claude/commands/
 
