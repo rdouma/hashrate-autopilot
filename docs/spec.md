@@ -162,10 +162,10 @@ Plus (not profile-driven; set once, rarely tuned):
 
 **Pricing strategy (v1.2 — simplified model):**
 
-Target price formula: `min(fillable + max_overpay, max_bid)`, where "fillable" is the depth-aware price at which the
+Target price formula: `min(fillable + overpay, max_bid)`, where "fillable" is the depth-aware price at which the
 full `target_hashrate_ph` is available (walks asks cumulatively by unmatched supply).
 
-- `max_overpay_sat_per_eh_day` — how much above the fillable ask we're willing to bid.
+- `overpay_sat_per_eh_day` — how much above the fillable ask we bid (always — every tick aims for exactly this overpay; not a "max", the cap is `max_bid`).
 - `max_bid_sat_per_eh_day` — absolute cap (renamed from max_price for clarity).
 - `emergency_max_bid_sat_per_eh_day` — higher cap once below-floor timer exceeds threshold.
 - `escalation_mode` — `market` (jump to target) or `dampened` (step from current bid). Controls upward adjustments.
@@ -175,7 +175,7 @@ full `target_hashrate_ph` is available (walks asks cumulatively by unmatched sup
 - `hibernate_on_expensive_market` — pause bidding rather than overpay when the market blows past the configured cap.
 - `handover_window_minutes` — manual-override suppression window.
 
-Lowering: when overpay vs target exceeds `min_lower_delta`, jump directly to target (no dampening downward — trust max_overpay setting).
+Lowering: when overpay vs target exceeds `min_lower_delta`, jump directly to target (no dampening downward — trust the `overpay` setting).
 
 **Daemon startup:**
 
@@ -351,3 +351,4 @@ Still open:
 | 1.4     | 2026-04-16 | Hashrate chart gains a time-range picker (6 h / 12 h / 24 h / 1 w / 1 m / 1 y / all, default 24 h, persisted in `localStorage`). Server aggregates to 5-min (1 w), 1-h (1 m), or 1-day (1 y / all) buckets via `GROUP BY tick_at / bucket_ms`; raw rows for ≤ 24 h. Event overlay suppressed for ranges ≥ 1 m (individual markers lose signal at that zoom). AVG used for all aggregated fields in the MVP — median/end-of-bucket refinements are follow-ups. |
 | 1.5     | 2026-04-16 | Depth-aware pricing: the autopilot no longer targets "cheapest ask with any non-zero supply". Instead it walks asks cumulatively and targets the cheapest price at which the full `target_hashrate_ph` is fillable. Empirical trigger: live orderbook 2026-04-16 had a sliver ask at 45,070 with the real supply at 47,803 — the old logic targeted 45,070 and stranded the fill. Dashboard gains a "fillable @ target" row in the Hashrate & Market card. |
 | 1.6     | 2026-04-16 | Simplified pricing model: target = min(fillable + max_overpay, max_bid). Renamed `max_price_sat_per_eh_day` → `max_bid_sat_per_eh_day`, `max_overpay_vs_ask` → `max_overpay`. Removed `overpay_before_lowering` and `max_lowering_step` dampeners — downward adjustments now jump directly to target. Added `escalation_mode` config: `market` (jump to target) or `dampened` (step up). User interview drove the simplification: all thresholds relative to fillable, no stacked margins. |
+| 1.7     | 2026-04-16 | Renamed `max_overpay_sat_per_eh_day` → `overpay_sat_per_eh_day`. The "max_" prefix was misleading — the field is the (fixed) overpay we always aim for, not the upper bound of a varying amount. The only "max" semantic is the absolute `max_bid` cap that clips overheated markets. |

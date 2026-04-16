@@ -39,7 +39,7 @@ export interface ConfigTable {
   telegram_chat_id: string;
   fill_escalation_step_sat_per_eh_day: number;
   fill_escalation_after_minutes: number;
-  max_overpay_sat_per_eh_day: number;
+  overpay_sat_per_eh_day: number;
   escalation_mode: 'market' | 'dampened';
   min_lower_delta_sat_per_eh_day: number;
   hibernate_on_expensive_market: 0 | 1;

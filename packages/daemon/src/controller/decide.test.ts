@@ -15,7 +15,7 @@ const BASE_CONFIG = {
 // With the defaults, overpay allowance = 500,000 sat/EH/day.
 // Given a cheapest-available ask at 45M sat/EH/day, target = 45.5M.
 const CHEAPEST_ASK = 45_000_000;
-const EXPECTED_TARGET = CHEAPEST_ASK + APP_CONFIG_DEFAULTS.max_overpay_sat_per_eh_day;
+const EXPECTED_TARGET = CHEAPEST_ASK + APP_CONFIG_DEFAULTS.overpay_sat_per_eh_day;
 
 function market(cheapestAskSat: number = CHEAPEST_ASK, tickSize = 1000): MarketSnapshot {
   return {
@@ -140,7 +140,7 @@ describe('decide — CREATE path', () => {
     const proposals = decide(state({ market: tieredMarket }));
     expect(proposals[0]).toMatchObject({
       kind: 'CREATE_BID',
-      price_sat: 46_000_000 + APP_CONFIG_DEFAULTS.max_overpay_sat_per_eh_day,
+      price_sat: 46_000_000 + APP_CONFIG_DEFAULTS.overpay_sat_per_eh_day,
     });
   });
 });
@@ -187,7 +187,7 @@ describe('decide — EDIT / CANCEL paths', () => {
     expect(decide(s)).toEqual([]);
   });
 
-  it('auto-lowers price when overpaying vs target (fillable + max_overpay)', () => {
+  it('auto-lowers price when overpaying vs target (fillable + overpay)', () => {
     // With simplified pricing: if we're paying more than target, lower
     // immediately to target. No dampening downward.
     const overpayAmount = 2_000_000;

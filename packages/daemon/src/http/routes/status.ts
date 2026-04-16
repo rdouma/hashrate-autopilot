@@ -232,7 +232,7 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
       ...noEvent,
     };
   }
-  const targetPriceEH = cheapestAsk + state.config.max_overpay_sat_per_eh_day;
+  const targetPriceEH = cheapestAsk + state.config.overpay_sat_per_eh_day;
   const targetPricePH = Math.round(targetPriceEH / EH_PER_PH);
 
   if (state.owned_bids.length === 0) {
@@ -301,7 +301,7 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
   }
 
   // Over-paying check: if our bid is materially above target (fillable +
-  // max_overpay) — by more than min_lower_delta — the next tick will
+  // overpay) — by more than min_lower_delta — the next tick will
   // lower us. Surface that, plus any gate currently holding the move.
   const lowerThreshold = Math.max(tickSize, state.config.min_lower_delta_sat_per_eh_day);
   if (primary.price_sat > targetPriceEH + lowerThreshold) {

@@ -8,8 +8,8 @@
  *      `cheapestAskForDepth`). The naive "topmost ask with any non-zero
  *      supply" approach strands us when the cheapest ask offers only
  *      a sliver of hashrate.
- *   2. `target_price = min(fillable + max_overpay, max_bid)`.
- *   3. If fillable + max_overpay > max_bid:
+ *   2. `target_price = min(fillable + overpay, max_bid)`.
+ *   3. If fillable + overpay > max_bid:
  *      - if `hibernate_on_expensive_market`: propose PAUSE.
  *      - else: don't propose CREATE this tick.
  *   4. Escalation (upward adjustments): when below floor too long:
@@ -18,7 +18,7 @@
  *        (capped at target_price, avoids chasing spikes)
  *   5. Lowering (downward adjustments): when primary > target, jump
  *      directly to target. No dampening downward — trust the operator's
- *      max_overpay setting.
+ *      overpay setting.
  *
  * Unknown bids → PAUSE (SPEC §9 unknown-order detection).
  * Duplicate owned bids → cancel the extras.
@@ -71,9 +71,9 @@ export function decide(state: State): readonly Proposal[] {
   const cheapestAvailable = fillable.price_sat;
   if (cheapestAvailable === null) return []; // nothing for sale
 
-  // 3. Target = min(fillable + max_overpay, max_bid). Simple and direct.
+  // 3. Target = min(fillable + overpay, max_bid). Simple and direct.
   const effectiveCap = computeEffectiveCap(state);
-  const overpayAllowance = config.max_overpay_sat_per_eh_day;
+  const overpayAllowance = config.overpay_sat_per_eh_day;
   const desiredPrice = cheapestAvailable + overpayAllowance;
   const targetPrice = Math.min(desiredPrice, effectiveCap);
   const isMarketTooExpensive = desiredPrice > effectiveCap;
@@ -157,7 +157,7 @@ export function decide(state: State): readonly Proposal[] {
     }
   }
 
-  // (b) Lower when we're paying more than target (fillable + max_overpay).
+  // (b) Lower when we're paying more than target (fillable + overpay).
   // Threshold gate: only bother if the saving exceeds
   // `min_lower_delta_sat_per_eh_day` — avoids burning the 10-min Braiins
   // price-decrease cooldown for a few sat. tickSize is the absolute floor

@@ -102,10 +102,10 @@ const SECTIONS: Section[] = [
       'Target price = min(fillable + max overpay, max bid). Fillable = depth-aware price at which your full target hashrate is available.',
     fields: [
       {
-        key: 'max_overpay_sat_per_eh_day',
-        label: 'Max overpay',
+        key: 'overpay_sat_per_eh_day',
+        label: 'Overpay',
         kind: 'price_sat_per_eh_day',
-        help: 'How much above the fillable ask we are willing to bid. Target = fillable + this, capped by max bid.',
+        help: 'How much above the fillable ask we bid. Target = fillable + this, capped by max bid. Not a maximum — every tick aims for exactly this overpay (the cap only kicks in if it would push us above max bid).',
       },
       {
         key: 'min_lower_delta_sat_per_eh_day',

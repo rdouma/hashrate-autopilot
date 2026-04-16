@@ -71,7 +71,7 @@ export interface StatusResponse {
     /**
      * Depth-aware "fillable ask" — the cheapest price at which the full
      * `target_hashrate_ph` is fillable by walking asks cumulatively. This
-     * is what the autopilot actually targets (plus `max_overpay_vs_ask`).
+     * is what the autopilot actually targets (plus `overpay`).
      * `null` when the market has no supply at all.
      */
     readonly fillable_ask_sat_per_ph_day: number | null;

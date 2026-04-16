@@ -96,12 +96,12 @@ export const AppConfigSchema = z.object({
   // Strategy knobs (M4.6)
   fill_escalation_step_sat_per_eh_day: positiveInt,
   fill_escalation_after_minutes: positiveInt,
-  max_overpay_sat_per_eh_day: nonNegativeInt,
+  overpay_sat_per_eh_day: nonNegativeInt,
   // Escalation mode for upward price adjustments:
-  // - 'market': jump directly to fillable + max_overpay (tracks market)
+  // - 'market': jump directly to fillable + overpay (tracks market)
   // - 'dampened': step from current_bid + escalation_step (avoids chasing spikes)
   escalation_mode: z.enum(['market', 'dampened']).default('dampened'),
-  // Minimum overpay (vs fillable + max_overpay target) before lowering.
+  // Minimum overpay (vs fillable + overpay target) before lowering.
   // Avoids micro-edits that burn the Braiins 10-min decrease cooldown for
   // a few sat of savings.
   min_lower_delta_sat_per_eh_day: nonNegativeInt,
@@ -185,7 +185,7 @@ export const APP_CONFIG_DEFAULTS: Omit<
   // 300 sat/PH/day = 300_000 sat/EH/day.
   fill_escalation_step_sat_per_eh_day: 300_000,
   fill_escalation_after_minutes: 30,
-  max_overpay_sat_per_eh_day: 500_000,
+  overpay_sat_per_eh_day: 500_000,
   escalation_mode: 'dampened',
   min_lower_delta_sat_per_eh_day: 200_000,
   hibernate_on_expensive_market: true,

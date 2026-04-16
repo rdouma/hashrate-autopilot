@@ -197,7 +197,7 @@ CREATE TABLE config (
   -- strategy knobs (v1.2 simplified)
   fill_escalation_step_sat_per_eh_day INTEGER NOT NULL,
   fill_escalation_after_minutes INTEGER NOT NULL,
-  max_overpay_sat_per_eh_day INTEGER NOT NULL,
+  overpay_sat_per_eh_day INTEGER NOT NULL,
   escalation_mode TEXT NOT NULL DEFAULT 'dampened',  -- 'market' | 'dampened'
   hibernate_on_expensive_market INTEGER NOT NULL,  -- bool
   btc_payout_address TEXT NOT NULL,
