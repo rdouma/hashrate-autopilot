@@ -106,7 +106,6 @@ export interface StatusResponse {
     readonly target_hashrate_ph: number;
     readonly minimum_floor_hashrate_ph: number;
     readonly max_bid_sat_per_ph_day: number;
-    readonly emergency_max_bid_sat_per_ph_day: number;
     readonly fill_escalation_step_sat_per_ph_day: number;
     readonly bid_budget_sat: number;
     readonly pool_url: string;

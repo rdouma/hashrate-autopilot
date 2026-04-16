@@ -66,7 +66,6 @@ export const AppConfigSchema = z.object({
 
   // Pricing ceilings (sat per EH per day)
   max_bid_sat_per_eh_day: positiveInt,
-  emergency_max_bid_sat_per_eh_day: positiveInt,
 
   // Budgeting
   monthly_budget_ceiling_sat: positiveInt,
@@ -75,7 +74,6 @@ export const AppConfigSchema = z.object({
   // Alerting thresholds (SPEC §9)
   wallet_runway_alert_days: positiveInt,
   below_floor_alert_after_minutes: positiveInt,
-  below_floor_emergency_cap_after_minutes: positiveInt,
   zero_hashrate_loud_alert_after_minutes: positiveInt,
   pool_outage_blip_tolerance_seconds: nonNegativeInt,
   api_outage_alert_after_minutes: positiveInt,
@@ -141,20 +139,6 @@ export const AppConfigInvariantsSchema = AppConfigSchema.superRefine((cfg, ctx) 
       message: 'floor must be <= target hashrate',
     });
   }
-  if (cfg.max_bid_sat_per_eh_day > cfg.emergency_max_bid_sat_per_eh_day) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ['emergency_max_bid_sat_per_eh_day'],
-      message: 'emergency cap must be >= normal max bid',
-    });
-  }
-  if (cfg.below_floor_alert_after_minutes >= cfg.below_floor_emergency_cap_after_minutes) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ['below_floor_emergency_cap_after_minutes'],
-      message: 'emergency cap must fire strictly after the alert',
-    });
-  }
 });
 
 // ---------------------------------------------------------------------------
@@ -173,14 +157,12 @@ export const APP_CONFIG_DEFAULTS: Omit<
 
   // Sensible upper bound; operator will tune once live market data is in view.
   max_bid_sat_per_eh_day: 60_000_000,
-  emergency_max_bid_sat_per_eh_day: 90_000_000,
 
   monthly_budget_ceiling_sat: 500_000,
   bid_budget_sat: 50_000,
 
   wallet_runway_alert_days: 3,
   below_floor_alert_after_minutes: 10,
-  below_floor_emergency_cap_after_minutes: 30,
   zero_hashrate_loud_alert_after_minutes: 15,
   pool_outage_blip_tolerance_seconds: 120,
   api_outage_alert_after_minutes: 10,

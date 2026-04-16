@@ -166,21 +166,6 @@ describe('decide — hibernate when too expensive', () => {
     expect(decide(state({ config: cappedCfg }))).toEqual([]);
   });
 
-  it('uses emergency cap once below-floor timer exceeds threshold', () => {
-    const tick = 1_700_000_000_000;
-    const emergencyMinutes = BASE_CONFIG.below_floor_emergency_cap_after_minutes;
-    const longAgo = tick - (emergencyMinutes + 1) * 60_000;
-    // Normal cap is below target; emergency cap is above it.
-    const cappedCfg = {
-      ...BASE_CONFIG,
-      max_bid_sat_per_eh_day: 44_000_000,
-      emergency_max_bid_sat_per_eh_day: 80_000_000,
-    };
-    const proposals = decide(
-      state({ config: cappedCfg, tick_at: tick, below_floor_since: longAgo }),
-    );
-    expect(proposals[0]).toMatchObject({ kind: 'CREATE_BID', price_sat: EXPECTED_TARGET });
-  });
 });
 
 describe('decide — EDIT / CANCEL paths', () => {

@@ -304,8 +304,7 @@ export function Status() {
           lastOkAt={s.pool.last_ok_at}
         />
         <Card title="Caps">
-          <Row k="normal" v={formatSatPerPH(s.config_summary.max_bid_sat_per_ph_day)} />
-          <Row k="emergency" v={formatSatPerPH(s.config_summary.emergency_max_bid_sat_per_ph_day)} />
+          <Row k="max bid" v={formatSatPerPH(s.config_summary.max_bid_sat_per_ph_day)} />
           <Row k="budget" v={formatSats(s.config_summary.bid_budget_sat)} />
         </Card>
       </section>

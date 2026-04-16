@@ -20,7 +20,15 @@ export class ConfigRepo {
   async get(): Promise<AppConfig | null> {
     const row = await this.db.selectFrom('config').selectAll().where('id', '=', 1).executeTakeFirst();
     if (!row) return null;
-    const { id: _id, updated_at: _ua, hibernate_on_expensive_market, ...rest } = row;
+    const {
+      id: _id,
+      updated_at: _ua,
+      hibernate_on_expensive_market,
+      // Legacy columns still in DB but no longer part of AppConfig.
+      emergency_max_bid_sat_per_eh_day: _legacy1,
+      below_floor_emergency_cap_after_minutes: _legacy2,
+      ...rest
+    } = row;
     return {
       ...rest,
       hibernate_on_expensive_market: hibernate_on_expensive_market === 1,
@@ -37,6 +45,10 @@ export class ConfigRepo {
     const row = {
       ...validated,
       hibernate_on_expensive_market: (validated.hibernate_on_expensive_market ? 1 : 0) as 0 | 1,
+      // Legacy NOT NULL columns still in the DB — provide harmless defaults
+      // so INSERT succeeds. No migration needed; SQLite ignores unused columns.
+      emergency_max_bid_sat_per_eh_day: validated.max_bid_sat_per_eh_day,
+      below_floor_emergency_cap_after_minutes: 9999,
     };
     await this.db
       .insertInto('config')

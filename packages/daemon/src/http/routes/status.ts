@@ -410,7 +410,6 @@ function summariseConfig(config: {
   target_hashrate_ph: number;
   minimum_floor_hashrate_ph: number;
   max_bid_sat_per_eh_day: number;
-  emergency_max_bid_sat_per_eh_day: number;
   fill_escalation_step_sat_per_eh_day: number;
   bid_budget_sat: number;
   destination_pool_url: string;
@@ -422,7 +421,6 @@ function summariseConfig(config: {
     target_hashrate_ph: config.target_hashrate_ph,
     minimum_floor_hashrate_ph: config.minimum_floor_hashrate_ph,
     max_bid_sat_per_ph_day: config.max_bid_sat_per_eh_day / EH_PER_PH,
-    emergency_max_bid_sat_per_ph_day: config.emergency_max_bid_sat_per_eh_day / EH_PER_PH,
     fill_escalation_step_sat_per_ph_day: config.fill_escalation_step_sat_per_eh_day / EH_PER_PH,
     bid_budget_sat: config.bid_budget_sat,
     pool_url: config.destination_pool_url,

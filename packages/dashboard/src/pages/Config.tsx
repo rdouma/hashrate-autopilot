@@ -84,15 +84,9 @@ const SECTIONS: Section[] = [
     fields: [
       {
         key: 'max_bid_sat_per_eh_day',
-        label: 'Normal maximum',
+        label: 'Maximum',
         kind: 'price_sat_per_eh_day',
-        help: 'Everyday ceiling. Above this we hibernate instead of bidding.',
-      },
-      {
-        key: 'emergency_max_bid_sat_per_eh_day',
-        label: 'Emergency maximum',
-        kind: 'price_sat_per_eh_day',
-        help: 'Higher cap allowed once we have been below floor for the emergency timer.',
+        help: 'Hard ceiling. Above this we hibernate instead of bidding.',
       },
     ],
   },
@@ -160,12 +154,6 @@ const SECTIONS: Section[] = [
     title: 'Alerts & timers',
     fields: [
       { key: 'below_floor_alert_after_minutes', label: 'Below-floor alert', kind: 'integer', unit: 'min' },
-      {
-        key: 'below_floor_emergency_cap_after_minutes',
-        label: 'Emergency cap timer',
-        kind: 'integer',
-        unit: 'min',
-      },
       {
         key: 'zero_hashrate_loud_alert_after_minutes',
         label: 'Zero-hashrate loud alert',

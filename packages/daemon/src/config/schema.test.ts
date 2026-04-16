@@ -89,23 +89,4 @@ describe('AppConfigInvariantsSchema', () => {
     ).toThrow(/floor must be <= target/);
   });
 
-  it('rejects emergency bid cap below normal max', () => {
-    expect(() =>
-      AppConfigInvariantsSchema.parse({
-        ...VALID_CONFIG,
-        max_bid_sat_per_eh_day: 100_000_000,
-        emergency_max_bid_sat_per_eh_day: 50_000_000,
-      }),
-    ).toThrow(/emergency cap/);
-  });
-
-  it('rejects emergency-cap timer not strictly after the alert', () => {
-    expect(() =>
-      AppConfigInvariantsSchema.parse({
-        ...VALID_CONFIG,
-        below_floor_alert_after_minutes: 30,
-        below_floor_emergency_cap_after_minutes: 30,
-      }),
-    ).toThrow(/emergency cap must fire strictly after/);
-  });
 });

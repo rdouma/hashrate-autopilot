@@ -153,7 +153,6 @@ export interface StatusResponse {
     target_hashrate_ph: number;
     minimum_floor_hashrate_ph: number;
     max_bid_sat_per_ph_day: number;
-    emergency_max_bid_sat_per_ph_day: number;
     fill_escalation_step_sat_per_ph_day: number;
     bid_budget_sat: number;
     pool_url: string;
@@ -184,12 +183,10 @@ export interface AppConfig {
   destination_pool_url: string;
   destination_pool_worker_name: string;
   max_bid_sat_per_eh_day: number;
-  emergency_max_bid_sat_per_eh_day: number;
   monthly_budget_ceiling_sat: number;
   bid_budget_sat: number;
   wallet_runway_alert_days: number;
   below_floor_alert_after_minutes: number;
-  below_floor_emergency_cap_after_minutes: number;
   zero_hashrate_loud_alert_after_minutes: number;
   pool_outage_blip_tolerance_seconds: number;
   api_outage_alert_after_minutes: number;

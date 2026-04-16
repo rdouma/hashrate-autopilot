@@ -21,11 +21,13 @@ export interface ConfigTable {
   destination_pool_url: string;
   destination_pool_worker_name: string;
   max_bid_sat_per_eh_day: number;
+  /** @deprecated Legacy column — kept for NOT NULL; ignored by the app. */
   emergency_max_bid_sat_per_eh_day: number;
   monthly_budget_ceiling_sat: number;
   bid_budget_sat: number;
   wallet_runway_alert_days: number;
   below_floor_alert_after_minutes: number;
+  /** @deprecated Legacy column — kept for NOT NULL; ignored by the app. */
   below_floor_emergency_cap_after_minutes: number;
   zero_hashrate_loud_alert_after_minutes: number;
   pool_outage_blip_tolerance_seconds: number;

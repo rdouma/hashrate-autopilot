@@ -135,8 +135,7 @@ All values change on the next control-loop tick without restart.
 
 **Pricing (unit: sat per EH/day, matching Braiins `price_sat` / `hr_unit = "EH/day"`):**
 
-- `max_price_sat_per_eh_day` — normal cap for all target-hashrate orders
-- `emergency_max_price_sat_per_eh_day` — higher cap applied **only** to floor-sized orders when §9 escalation fires
+- `max_price_sat_per_eh_day` — hard cap for all target-hashrate orders
 
 **Budget:**
 
@@ -152,7 +151,6 @@ the thresholds to a preset bundle. Editing any individual threshold switches the
 | Threshold                                 | Aggressive    | Regular | Relaxed (default) |
 |-------------------------------------------|---------------|---------|-------------------|
 | `below_floor_alert_after_minutes`         | 10            | 30      | 60                |
-| `below_floor_emergency_cap_after_minutes` | 0 (immediate) | 60      | 240               |
 | `zero_hashrate_loud_alert_after_minutes`  | 30            | 120     | 360               |
 
 Plus (not profile-driven; set once, rarely tuned):
@@ -167,7 +165,6 @@ full `target_hashrate_ph` is available (walks asks cumulatively by unmatched sup
 
 - `overpay_sat_per_eh_day` — how much above the fillable ask we bid (always — every tick aims for exactly this overpay; not a "max", the cap is `max_bid`).
 - `max_bid_sat_per_eh_day` — absolute cap (renamed from max_price for clarity).
-- `emergency_max_bid_sat_per_eh_day` — higher cap once below-floor timer exceeds threshold.
 - `escalation_mode` — `market` (jump to target) or `dampened` (step from current bid). Controls upward adjustments.
 - `fill_escalation_step_sat_per_eh_day` — step size for dampened mode.
 - `fill_escalation_after_minutes` — window before escalation kicks in.
@@ -195,8 +192,6 @@ Lowering: when overpay vs target exceeds `min_lower_delta`, jump directly to tar
 - Controller continuously attempts to maintain `target_hashrate_ph` at `max_bid_sat_per_eh_day`.
 - If actual hashrate drops below `minimum_floor_hashrate_ph`: start a timer.
 - At `below_floor_alert_after_minutes`: surface a dashboard alert.
-- At `below_floor_emergency_cap_after_minutes`: raise effective cap to `emergency_max_bid_sat_per_eh_day` for
-  floor-sized orders only. Target-hashrate orders remain at normal cap.
 - At `zero_hashrate_loud_alert_after_minutes`: second louder dashboard alert.
 
 **Order strategy (single-bid + optional handover):**

@@ -72,7 +72,7 @@ export function decide(state: State): readonly Proposal[] {
   if (cheapestAvailable === null) return []; // nothing for sale
 
   // 3. Target = min(fillable + overpay, max_bid). Simple and direct.
-  const effectiveCap = computeEffectiveCap(state);
+  const effectiveCap = config.max_bid_sat_per_eh_day;
   const overpayAllowance = config.overpay_sat_per_eh_day;
   const desiredPrice = cheapestAvailable + overpayAllowance;
   const targetPrice = Math.min(desiredPrice, effectiveCap);
@@ -201,21 +201,6 @@ export function decide(state: State): readonly Proposal[] {
   }
 
   return proposals;
-}
-
-/**
- * Effective price cap. Rises to emergency_max once we've been below floor
- * longer than `below_floor_emergency_cap_after_minutes` (SPEC §9).
- */
-function computeEffectiveCap(state: State): number {
-  const normal = state.config.max_bid_sat_per_eh_day;
-  const emergency = state.config.emergency_max_bid_sat_per_eh_day;
-  if (state.below_floor_since === null) return normal;
-  const elapsedMinutes = (state.tick_at - state.below_floor_since) / 60_000;
-  if (elapsedMinutes >= state.config.below_floor_emergency_cap_after_minutes) {
-    return emergency;
-  }
-  return normal;
 }
 
 /**
