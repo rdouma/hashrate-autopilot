@@ -730,6 +730,20 @@ function formatRemaining(ms: number): string {
 // ---------------------------------------------------------------------------
 
 /**
+ * Self-ticking "updated X ago" label. Re-renders every 10 s so the
+ * operator actually sees the age climb (previously it was pinned to
+ * "0s ago" because `checked_at_ms` was Date.now() on every response).
+ */
+function TickingAge({ epochMs }: { epochMs: number }) {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((n) => n + 1), 10_000);
+    return () => clearInterval(id);
+  }, []);
+  return <span>updated {formatAge(epochMs)}</span>;
+}
+
+/**
  * Vertical money panel: cost on top, then the two income sources,
  * then net at the bottom. Reads naturally as a profit-and-loss page —
  * the two incomes obviously add up to "what we'll have", which is
@@ -802,7 +816,7 @@ function FinancePanel({
       <div className="flex items-baseline justify-between mb-3">
         <div className="text-xs uppercase tracking-wider text-slate-100">Money</div>
         <div className="flex items-center gap-2 text-[11px] text-slate-500">
-          <span>updated {formatAge(data.checked_at_ms)}</span>
+          <TickingAge epochMs={data.checked_at_ms} />
           <button
             onClick={onRefresh}
             disabled={refreshing}

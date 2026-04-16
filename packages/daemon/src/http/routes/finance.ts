@@ -110,7 +110,19 @@ export async function registerFinanceRoute(
             fetched_at_ms: oceanStats.fetched_at_ms,
           }
         : null,
-      checked_at_ms: Date.now(),
+      // Use the oldest data-source timestamp, not Date.now(). The
+      // operator wants to see how stale the *data* is, not when the
+      // endpoint responded. Date.now() was always "0s ago" — useless.
+      checked_at_ms: oldestSourceTimestamp(
+        oceanStats?.fetched_at_ms ?? null,
+        deps.payoutObserver?.getLastSnapshot()?.checked_at ?? null,
+        scope === 'account' ? (await deps.accountSpend?.getLifetimeSpend())?.fetched_at_ms ?? null : null,
+      ),
     };
   });
+}
+
+function oldestSourceTimestamp(...sources: (number | null)[]): number {
+  const valid = sources.filter((s): s is number => s !== null && s > 0);
+  return valid.length > 0 ? Math.min(...valid) : Date.now();
 }
