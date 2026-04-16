@@ -849,7 +849,7 @@ function StatChip({
   const split = splitUnit(value);
   return (
     <div className="cursor-help" title={tooltip}>
-      <div className="text-[11px] uppercase tracking-wider text-slate-500">{label}</div>
+      <div className="text-xs uppercase tracking-wider text-slate-100">{label}</div>
       <div className={`font-mono ${color}`}>
         {split ? (
           <>
