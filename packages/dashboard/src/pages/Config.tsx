@@ -99,7 +99,7 @@ const SECTIONS: Section[] = [
   {
     title: 'Fill strategy',
     description:
-      'Target price = min(fillable + max overpay, max bid). Fillable = depth-aware price at which your full target hashrate is available.',
+      'Target price = min(fillable + overpay, max bid). Fillable = depth-aware price at which your full target hashrate is available.',
     fields: [
       {
         key: 'overpay_sat_per_eh_day',

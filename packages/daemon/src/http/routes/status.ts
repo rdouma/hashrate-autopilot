@@ -337,7 +337,7 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
     const modeWord = state.config.escalation_mode === 'market' ? 'market' : 'dampened';
     const stepDescription =
       state.config.escalation_mode === 'market'
-        ? `will jump to ${nextEditPH.toLocaleString('en-US')} (fillable + max overpay).`
+        ? `will jump to ${nextEditPH.toLocaleString('en-US')} (fillable + overpay).`
         : nextEditPH < ceilingPH
           ? `will step up by ${Math.round(escalationStep / EH_PER_PH).toLocaleString('en-US')} to ${nextEditPH.toLocaleString('en-US')} (cap ${ceilingPH.toLocaleString('en-US')}).`
           : `will reach the cap ${ceilingPH.toLocaleString('en-US')} (one step gets us there).`;
@@ -394,7 +394,7 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
     const verb = runMode === 'LIVE' ? 'lower' : 'log lower (dry-run)';
     return {
       summary: `Will ${verb} bid to ${targetPricePH.toLocaleString('en-US')} sat/PH/day on the next tick.`,
-      detail: `Currently overpaying by ${overpayPH.toLocaleString('en-US')} sat/PH/day vs fillable + max overpay.`,
+      detail: `Currently overpaying by ${overpayPH.toLocaleString('en-US')} sat/PH/day vs fillable + overpay.`,
       ...noEvent,
     };
   }
