@@ -15,7 +15,9 @@ import { ModeBadge } from '../components/ModeBadge';
 import {
   api,
   UnauthorizedError,
+  type BidEventView,
   type FinanceResponse,
+  type MetricPoint,
   type NextActionView,
   type ProposalView,
   type StatusResponse,
@@ -166,6 +168,11 @@ export function Status() {
         points={metricsQuery.data?.points ?? []}
         events={bidEventsQuery.data?.events ?? []}
         showEvents={CHART_RANGE_SPECS[chartRange].showEvents}
+      />
+
+      <StatsBar
+        points={metricsQuery.data?.points ?? []}
+        events={bidEventsQuery.data?.events ?? []}
       />
 
       {/* Three-column row: market context | Braiins wallet | financial
@@ -727,6 +734,146 @@ function formatRemaining(ms: number): string {
 
 // ---------------------------------------------------------------------------
 // Small helpers
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Tuning stats bar (between charts and cards)
+// ---------------------------------------------------------------------------
+
+/**
+ * Four KPIs computed client-side from the same tick_metrics +
+ * bid_events the charts already consume. Responds to the chart range
+ * filter so the operator can compare stats across 6h/24h/1w etc.
+ * when tuning escalation window, overpay, and lowering parameters.
+ */
+function StatsBar({
+  points,
+  events,
+}: {
+  points: readonly MetricPoint[];
+  events: readonly BidEventView[];
+}) {
+  const { intlLocale } = useLocale();
+  if (points.length < 2) return null;
+
+  // 1. Uptime % — fraction of ticks with delivered hashrate > 0
+  const hashingTicks = points.filter((p) => p.delivered_ph > 0).length;
+  const uptimePct = (hashingTicks / points.length) * 100;
+
+  // 2. Avg overpay vs fillable — how much more we paid than the depth-aware market price
+  const overpayPairs = points.filter(
+    (p) =>
+      Number.isFinite(p.our_primary_price_sat_per_ph_day) &&
+      Number.isFinite(p.fillable_ask_sat_per_ph_day),
+  );
+  const avgOverpay =
+    overpayPairs.length > 0
+      ? overpayPairs.reduce(
+          (s, p) => s + (p.our_primary_price_sat_per_ph_day! - p.fillable_ask_sat_per_ph_day!),
+          0,
+        ) / overpayPairs.length
+      : null;
+
+  // 3. Avg cost per PH delivered — weighted average price across all delivering ticks
+  const delivering = points.filter(
+    (p) => p.delivered_ph > 0 && Number.isFinite(p.our_primary_price_sat_per_ph_day),
+  );
+  const totalWeighted = delivering.reduce(
+    (s, p) => s + p.our_primary_price_sat_per_ph_day! * p.delivered_ph,
+    0,
+  );
+  const totalPh = delivering.reduce((s, p) => s + p.delivered_ph, 0);
+  const avgCostPerPh = totalPh > 0 ? totalWeighted / totalPh : null;
+
+  // 4. Avg time-to-fill after CREATE/EDIT events — how long from an
+  //    event until the next tick with delivered_ph > 0. Measures how
+  //    quickly the market fills our bids at current settings.
+  const fillable = events.filter(
+    (e) => e.kind === 'CREATE_BID' || e.kind === 'EDIT_PRICE',
+  );
+  const fillTimes: number[] = [];
+  for (const ev of fillable) {
+    const firstFill = points.find(
+      (p) => p.tick_at > ev.occurred_at && p.delivered_ph > 0,
+    );
+    if (firstFill) {
+      fillTimes.push(firstFill.tick_at - ev.occurred_at);
+    }
+  }
+  const avgFillMs =
+    fillTimes.length > 0
+      ? fillTimes.reduce((a, b) => a + b, 0) / fillTimes.length
+      : null;
+
+  const fmt = (n: number) => formatNumber(Math.round(n), {}, intlLocale);
+
+  return (
+    <section className="bg-slate-900 border border-slate-800 rounded-lg px-4 py-3">
+      <div className="flex flex-wrap gap-x-8 gap-y-2 text-sm">
+        <StatChip
+          label="uptime"
+          value={`${uptimePct.toFixed(1)}%`}
+          tooltip="% of ticks in this range with delivered hashrate > 0. Low = bids not filling or escalation too slow."
+          color={uptimePct >= 90 ? 'text-emerald-300' : uptimePct >= 50 ? 'text-amber-300' : 'text-red-300'}
+        />
+        <StatChip
+          label="avg overpay vs fillable"
+          value={avgOverpay !== null ? `${fmt(avgOverpay)} sat/PH/day` : '—'}
+          tooltip="Average of (our price − fillable ask) across ticks where both are known. High = overpay too generous or lowering too slow."
+        />
+        <StatChip
+          label="avg cost / PH delivered"
+          value={avgCostPerPh !== null ? `${fmt(avgCostPerPh)} sat/PH/day` : '—'}
+          tooltip="Weighted average price across all delivering ticks: sum(price × delivered) / sum(delivered). The efficiency metric."
+        />
+        <StatChip
+          label="avg time to fill"
+          value={avgFillMs !== null ? formatFillTime(avgFillMs) : '—'}
+          tooltip="Average time from a CREATE/EDIT event to the first tick with delivered hashrate > 0. Measures how quickly the market fills at your current settings."
+        />
+      </div>
+    </section>
+  );
+}
+
+function StatChip({
+  label,
+  value,
+  tooltip,
+  color = 'text-slate-100',
+}: {
+  label: string;
+  value: string;
+  tooltip: string;
+  color?: string;
+}) {
+  const split = splitUnit(value);
+  return (
+    <div className="cursor-help" title={tooltip}>
+      <div className="text-[11px] uppercase tracking-wider text-slate-500">{label}</div>
+      <div className={`font-mono ${color}`}>
+        {split ? (
+          <>
+            {split.num}
+            <span className="text-slate-500 text-[11px] ml-1">{split.unit}</span>
+          </>
+        ) : (
+          value
+        )}
+      </div>
+    </div>
+  );
+}
+
+function formatFillTime(ms: number): string {
+  const sec = Math.round(ms / 1000);
+  if (sec < 60) return `${sec}s`;
+  const min = Math.round(sec / 60);
+  if (min < 60) return `${min}m`;
+  const hrs = Math.floor(min / 60);
+  return `${hrs}h ${min % 60}m`;
+}
+
 // ---------------------------------------------------------------------------
 
 /**
