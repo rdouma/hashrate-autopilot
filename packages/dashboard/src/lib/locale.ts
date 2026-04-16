@@ -19,17 +19,22 @@ import {
 
 const STORAGE_KEY = 'braiins.displayLocale';
 
-/** Locales we ship as quick presets. Anything is accepted via "Other". */
+/**
+ * Number/date format presets. Listed format-first (the example
+ * separators + date layout) rather than language-first — the picker
+ * is for *how numbers and dates look*, not for translation. Until
+ * the dashboard has real i18n (#1) the UI strings stay English no
+ * matter what's selected here.
+ */
 export const LOCALE_PRESETS: Array<{ code: string; label: string }> = [
   { code: 'auto', label: 'system default' },
-  { code: 'en-GB', label: 'English (UK, DD/MM/YYYY)' },
-  { code: 'en-US', label: 'English (US, MM/DD/YYYY)' },
-  { code: 'es-UY', label: 'Español (Uruguay)' },
-  { code: 'es-ES', label: 'Español (España)' },
-  { code: 'nl-NL', label: 'Nederlands' },
-  { code: 'de-DE', label: 'Deutsch' },
-  { code: 'fr-FR', label: 'Français' },
-  { code: 'pt-BR', label: 'Português (Brasil)' },
+  { code: 'en-US', label: '1,234.56 · Apr 16, 2026 · 5:00 PM' },
+  { code: 'en-GB', label: '1,234.56 · 16 Apr 2026 · 17:00' },
+  { code: 'nl-NL', label: '1.234,56 · 16 apr 2026 · 17:00' },
+  { code: 'de-DE', label: '1.234,56 · 16. Apr. 2026 · 17:00' },
+  { code: 'fr-FR', label: '1\u202f234,56 · 16 avr. 2026 · 17:00' },
+  { code: 'es-ES', label: '1.234,56 · 16 abr 2026 · 17:00' },
+  { code: 'pt-BR', label: '1.234,56 · 16 de abr. de 2026 · 17:00' },
 ];
 
 export function getStoredLocale(): string {

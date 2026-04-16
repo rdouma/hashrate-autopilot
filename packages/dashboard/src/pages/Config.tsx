@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { NumberField } from '../components/NumberField';
 import { api, UnauthorizedError, type AppConfig } from '../lib/api';
-import { useLocale } from '../lib/locale';
+import { LOCALE_PRESETS, useLocale } from '../lib/locale';
 
 const EH_PER_PH = 1000;
 
@@ -317,6 +317,8 @@ export function Config() {
         </div>
       )}
 
+      <DisplaySettingsSection />
+
       {SECTIONS.map((section) => (
         <section key={section.title} className="bg-slate-900 border border-slate-800 rounded-lg p-4">
           <header className="mb-3">
@@ -338,6 +340,47 @@ export function Config() {
         </section>
       ))}
     </div>
+  );
+}
+
+/**
+ * Per-browser display preferences. Lives outside the daemon-config
+ * SECTIONS because it's local-only (saved to localStorage), not pushed
+ * to the autopilot. Format-first labels — "1.234,56 · 16 apr 2026" —
+ * because the picker controls *how numbers and dates look*, not the
+ * UI language. UI strings stay English regardless until proper i18n
+ * (#1) lands.
+ */
+function DisplaySettingsSection() {
+  const { selected, setSelected } = useLocale();
+  return (
+    <section className="bg-slate-900 border border-slate-800 rounded-lg p-4">
+      <header className="mb-3">
+        <h3 className="text-sm uppercase tracking-wider text-amber-400">Display</h3>
+        <p className="text-xs text-slate-500 mt-1">
+          How numbers and dates render in this browser. Doesn't change the
+          UI language. Saved locally — every operator can pick their own.
+        </p>
+      </header>
+      <label className="block max-w-md">
+        <span className="block text-sm text-slate-300 mb-1">Number &amp; date format</span>
+        <select
+          value={selected}
+          onChange={(e) => setSelected(e.target.value)}
+          className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm font-mono"
+        >
+          {LOCALE_PRESETS.map((p) => (
+            <option key={p.code} value={p.code}>
+              {p.label}
+            </option>
+          ))}
+        </select>
+        <span className="block text-xs text-slate-500 mt-1">
+          "system default" follows your browser. The other entries lock
+          to a specific format regardless of browser language.
+        </span>
+      </label>
+    </section>
   );
 }
 

@@ -4,7 +4,7 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { clearPassword } from '../lib/auth';
 import { formatNumber } from '../lib/format';
-import { LOCALE_PRESETS, useLocale } from '../lib/locale';
+import { useLocale } from '../lib/locale';
 import { ModeBadge } from './ModeBadge';
 
 const NAV_ITEMS: Array<{ label: string; to: string }> = [
@@ -16,7 +16,7 @@ const NAV_ITEMS: Array<{ label: string; to: string }> = [
 export function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { selected, setSelected, intlLocale } = useLocale();
+  const { intlLocale } = useLocale();
 
   // Status powers the global header (mode badge + balance) on every
   // page. 30 s mirrors the Status-page polling cadence — header
@@ -97,19 +97,11 @@ export function Layout() {
               </span>
             ) : null}
 
-            <select
-              value={selected}
-              onChange={(e) => setSelected(e.target.value)}
-              className="bg-slate-800 border border-slate-700 rounded text-[11px] text-slate-200 px-1.5 py-1"
-              title="display locale"
-            >
-              {LOCALE_PRESETS.map((p) => (
-                <option key={p.code} value={p.code}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
-
+            {/* Number/date format picker moved to Config → Display
+                so it's a one-time preference, not a piece of permanent
+                header chrome. The "Nederlands" label dropping out of
+                an English UI was misleading anyway — i18n proper is
+                #1, not done yet. */}
             <button
               onClick={logout}
               className="px-2 py-1 text-[11px] text-slate-300 border border-slate-700 rounded hover:bg-slate-800"

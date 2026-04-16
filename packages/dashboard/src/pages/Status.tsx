@@ -130,16 +130,11 @@ export function Status() {
   const s: StatusResponse = query.data;
 
   return (
-    <div className="space-y-5 max-w-6xl">
-      <header className="flex items-baseline justify-between">
-        <div>
-          <h2 className="text-2xl text-slate-100">Status</h2>
-          <div className="text-xs text-slate-500">
-            last tick: {formatTimestamp(s.tick_at)} ({formatAge(s.tick_at)})
-          </div>
-        </div>
-      </header>
-
+    <div className="space-y-5">
+      {/* No "Status" h2 header — the top nav already announces the
+          page, and last-tick info is duplicated in the
+          NextActionCard's footer. Saved a chunk of vertical real
+          estate above the fold. */}
       <section className="grid grid-cols-1 lg:grid-cols-5 gap-4">
         <div className="lg:col-span-2 h-full">
           <OperationsCard
