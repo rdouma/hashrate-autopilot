@@ -256,20 +256,23 @@ export function PriceChart({
             );
           }
           if (e.kind === 'EDIT_SPEED') {
-            // Speed-edit marker: a hollow blue diamond (rotated square) at
-            // chart-top — speed changes have no inherent price coordinate
-            // so anchoring to the price line would be misleading.
-            const yTop = PADDING.top + 4;
+            // Speed-edit marker: hollow blue diamond on the price line at
+            // the event time. Earlier I parked it at chart-top reasoning
+            // that a speed change has no inherent price coordinate — but
+            // operator pointed out (correctly) that anchoring it to the
+            // price line is what makes it readable: you see *at what
+            // price* the capacity got resized, lined up with the rest of
+            // the events.
             const r = 4.5;
             return (
               <g key={e.id} {...common}>
                 <polygon
-                  points={`${cx},${yTop - r} ${cx + r},${yTop} ${cx},${yTop + r} ${cx - r},${yTop}`}
+                  points={`${cx},${cy - r} ${cx + r},${cy} ${cx},${cy + r} ${cx - r},${cy}`}
                   fill="none"
                   stroke={COLOR_EDIT_SPEED}
                   strokeWidth="1.6"
                 />
-                <rect x={cx - 8} y={yTop - 8} width="16" height="16" fill="transparent" />
+                <rect x={cx - 8} y={cy - 8} width="16" height="16" fill="transparent" />
               </g>
             );
           }
@@ -503,7 +506,18 @@ function EventLegend() {
         <svg width="10" height="10">
           <circle cx="5" cy="5" r="3.5" fill={COLOR_EDIT} />
         </svg>
-        edit
+        edit price
+      </span>
+      <span className="flex items-center gap-1">
+        <svg width="10" height="10">
+          <polygon
+            points="5,1 9,5 5,9 1,5"
+            fill="none"
+            stroke={COLOR_EDIT_SPEED}
+            strokeWidth="1.4"
+          />
+        </svg>
+        edit speed
       </span>
       <span className="flex items-center gap-1">
         <svg width="10" height="10">
