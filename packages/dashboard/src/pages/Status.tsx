@@ -447,37 +447,24 @@ function NextActionCard({
   escalationStepSatPerPh: number;
 }) {
   const { intlLocale } = useLocale();
-  const secondsUntilTick = s.next_tick_at
-    ? Math.max(0, Math.round((s.next_tick_at - Date.now()) / 1000))
-    : null;
-
   const canBump = s.run_mode === 'LIVE' && s.bids.some((b) => b.is_owned);
 
   return (
     <section className="bg-slate-900 border border-slate-800 rounded-lg p-4 h-full flex flex-col">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div className="flex-1 min-w-[240px]">
-          <h3 className="text-xs uppercase tracking-wider text-slate-100 mb-1">Next action</h3>
-          <div className="text-slate-100">{s.next_action.summary}</div>
-          {s.next_action.detail && (
-            <div className="text-xs text-slate-400 mt-1">{s.next_action.detail}</div>
-          )}
-          <NextActionProgress next={s.next_action} />
-        </div>
-        <div className="text-right text-xs">
-          <div className="text-slate-500">last tick</div>
-          <div className="text-slate-300">{formatTimestamp(s.tick_at)}</div>
-          <div className="text-[11px] text-slate-500">{formatTimestampUtc(s.tick_at)}</div>
-          <div className="text-slate-500 mt-1">
-            next in ≤ {secondsUntilTick !== null ? secondsUntilTick : '?'}s
-          </div>
-        </div>
+      <div>
+        <h3 className="text-xs uppercase tracking-wider text-slate-100 mb-1">Next action</h3>
+        <div className="text-slate-100">{s.next_action.summary}</div>
+        {s.next_action.detail && (
+          <div className="text-xs text-slate-400 mt-1">{s.next_action.detail}</div>
+        )}
+        <NextActionProgress next={s.next_action} />
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
         <button
           onClick={onTickNow}
           disabled={tickPending}
+          title="Run a full observe-decide-execute tick now, instead of waiting for the next interval blip."
           className="px-3 py-1.5 text-xs rounded border border-slate-700 text-slate-200 hover:bg-slate-800 disabled:opacity-50"
         >
           {tickPending ? 'ticking…' : 'Run decision now'}
@@ -487,8 +474,8 @@ function NextActionCard({
           disabled={bumpPending || !canBump}
           title={
             canBump
-              ? 'Raise our bid price by one escalation step'
-              : 'Requires LIVE mode with an owned bid'
+              ? 'Manually raise the current bid by one escalation step (overrides the auto-edit lock for one tick).'
+              : 'Requires LIVE mode with an owned bid.'
           }
           className="px-3 py-1.5 text-xs rounded border border-amber-800 text-amber-200 hover:bg-amber-900/40 disabled:opacity-50"
         >
@@ -496,9 +483,6 @@ function NextActionCard({
             ? 'bumping…'
             : `Bump price +${formatNumber(escalationStepSatPerPh)} sat/PH/day`}
         </button>
-        <span className="text-xs text-slate-500 self-center">
-          Manual overrides — use when you want action sooner than the tick cadence.
-        </span>
       </div>
 
       {tickResult && (
@@ -527,7 +511,63 @@ function NextActionCard({
             : `bump failed: ${bumpResult.error}`}
         </div>
       )}
+
+      <NextActionFooter
+        tickAt={s.tick_at}
+        nextTickAt={s.next_tick_at}
+        tickIntervalMs={s.tick_interval_ms}
+      />
     </section>
+  );
+}
+
+/**
+ * Single-line footer on the Next-Action card: left = "last tick" with
+ * absolute timestamp + relative age, right = live-ticking countdown to
+ * the next blip. The countdown ticks once per second client-side
+ * (server poll only refreshes `next_tick_at` every 5s, which would
+ * otherwise produce a step-jumping number).
+ */
+function NextActionFooter({
+  tickAt,
+  nextTickAt,
+  tickIntervalMs,
+}: {
+  tickAt: number | null;
+  nextTickAt: number | null;
+  tickIntervalMs: number;
+}) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  // If the server hasn't told us when the next tick is, fall back to
+  // tick_at + interval so the countdown still has something to show.
+  const eta =
+    nextTickAt ?? (tickAt !== null ? tickAt + tickIntervalMs : null);
+  const remainingSec =
+    eta !== null ? Math.max(0, Math.ceil((eta - now) / 1000)) : null;
+
+  return (
+    <div className="mt-3 pt-2 border-t border-slate-800 flex items-baseline justify-between gap-3 text-[11px] text-slate-500 font-mono">
+      <span title={tickAt !== null ? formatTimestampUtc(tickAt) : ''}>
+        last tick:{' '}
+        <span className="text-slate-400">
+          {tickAt !== null ? formatTimestamp(tickAt) : '—'}
+        </span>
+        {tickAt !== null && (
+          <span className="ml-1 text-slate-600">({formatAge(tickAt)})</span>
+        )}
+      </span>
+      <span>
+        next in{' '}
+        <span className="text-slate-300 tabular-nums">
+          {remainingSec !== null ? `${remainingSec}s` : '—'}
+        </span>
+      </span>
+    </div>
   );
 }
 
@@ -569,8 +609,8 @@ function PriceDeltaVsFillable({
   const verb = delta > 0 ? 'over' : 'under';
   const tooltip =
     `Currently paying ${sign}${formatNumber(Math.abs(delta), {}, intlLocale)} sat/PH/day ` +
-    `${verb} the fillable ask (${fillablePretty}) — the cheapest price at which ` +
-    `your full target hashrate is available in the orderbook.`;
+    `${verb} the fillable ask (${fillablePretty}) (the cheapest price at which ` +
+    `your full target hashrate is available in the orderbook).`;
 
   return (
     <span className={`text-xs font-mono ${color} cursor-help`} title={tooltip}>
@@ -621,7 +661,7 @@ function NextActionProgress({ next }: { next: NextActionView }) {
   const fillColor = overdue ? 'bg-red-400' : EVENT_COLORS[next.event_kind!];
 
   return (
-    <div className="mt-3 max-w-md">
+    <div className="mt-3">
       <div className="flex items-baseline justify-between text-[11px] text-slate-400 mb-1 font-mono">
         <span>{label}</span>
         <span className={overdue ? 'text-red-300' : ''}>
