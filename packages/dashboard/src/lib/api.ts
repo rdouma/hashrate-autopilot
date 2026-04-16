@@ -88,7 +88,7 @@ export interface BidEventView {
   id: number;
   occurred_at: number;
   source: 'AUTOPILOT' | 'OPERATOR';
-  kind: 'CREATE_BID' | 'EDIT_PRICE' | 'CANCEL_BID';
+  kind: 'CREATE_BID' | 'EDIT_PRICE' | 'EDIT_SPEED' | 'CANCEL_BID';
   braiins_order_id: string | null;
   old_price_sat_per_ph_day: number | null;
   new_price_sat_per_ph_day: number | null;
@@ -108,7 +108,7 @@ export interface PayoutsResponse {
 }
 
 export interface ProposalView {
-  kind: 'CREATE_BID' | 'EDIT_PRICE' | 'CANCEL_BID' | 'PAUSE';
+  kind: 'CREATE_BID' | 'EDIT_PRICE' | 'EDIT_SPEED' | 'CANCEL_BID' | 'PAUSE';
   summary: string;
   reason: string;
   allowed: boolean;

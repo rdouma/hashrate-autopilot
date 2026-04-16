@@ -218,6 +218,8 @@ function describeProposal(p: TickResult['gated'][number]['proposal']): string {
       return `CREATE_BID  price=${fmtSat(p.price_sat)} sat/EH/day  speed=${p.speed_limit_ph} PH/s  budget=${fmtSat(p.amount_sat)} sat  (${p.reason})`;
     case 'EDIT_PRICE':
       return `EDIT_PRICE  id=${short(p.braiins_order_id)}  ${fmtSat(p.old_price_sat)} → ${fmtSat(p.new_price_sat)} sat/EH/day  (${p.reason})`;
+    case 'EDIT_SPEED':
+      return `EDIT_SPEED  id=${short(p.braiins_order_id)}  ${p.old_speed_limit_ph} → ${p.new_speed_limit_ph} PH/s  (${p.reason})`;
     case 'CANCEL_BID':
       return `CANCEL_BID  id=${short(p.braiins_order_id)}  (${p.reason})`;
     case 'PAUSE':

@@ -114,7 +114,12 @@ export interface State {
 // Proposals
 // ---------------------------------------------------------------------------
 
-export type ProposalKind = 'CREATE_BID' | 'EDIT_PRICE' | 'CANCEL_BID' | 'PAUSE';
+export type ProposalKind =
+  | 'CREATE_BID'
+  | 'EDIT_PRICE'
+  | 'EDIT_SPEED'
+  | 'CANCEL_BID'
+  | 'PAUSE';
 
 export interface CreateBidProposal {
   readonly kind: 'CREATE_BID';
@@ -134,6 +139,24 @@ export interface EditPriceProposal {
   readonly reason: string;
 }
 
+/**
+ * In-place speed-limit edit. Used when the operator changes
+ * `target_hashrate_ph` and we want to grow / shrink the existing bid
+ * without losing its matched fills (Design A — empirically confirmed
+ * 2026-04-16, see `scripts/test-speed-limit-edit.ts`).
+ *
+ * Speed-only edits bypass the Braiins price-decrease cooldown and the
+ * autopilot's post-EDIT_PRICE override lock — neither of those exists
+ * to constrain capacity changes.
+ */
+export interface EditSpeedProposal {
+  readonly kind: 'EDIT_SPEED';
+  readonly braiins_order_id: string;
+  readonly new_speed_limit_ph: number;
+  readonly old_speed_limit_ph: number;
+  readonly reason: string;
+}
+
 export interface CancelBidProposal {
   readonly kind: 'CANCEL_BID';
   readonly braiins_order_id: string;
@@ -145,7 +168,12 @@ export interface PauseProposal {
   readonly reason: string;
 }
 
-export type Proposal = CreateBidProposal | EditPriceProposal | CancelBidProposal | PauseProposal;
+export type Proposal =
+  | CreateBidProposal
+  | EditPriceProposal
+  | EditSpeedProposal
+  | CancelBidProposal
+  | PauseProposal;
 
 // ---------------------------------------------------------------------------
 // Gate outcomes

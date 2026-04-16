@@ -33,7 +33,7 @@ export interface BidEventView {
   readonly id: number;
   readonly occurred_at: number;
   readonly source: 'AUTOPILOT' | 'OPERATOR';
-  readonly kind: 'CREATE_BID' | 'EDIT_PRICE' | 'CANCEL_BID';
+  readonly kind: 'CREATE_BID' | 'EDIT_PRICE' | 'EDIT_SPEED' | 'CANCEL_BID';
   readonly braiins_order_id: string | null;
   readonly old_price_sat_per_ph_day: number | null;
   readonly new_price_sat_per_ph_day: number | null;
@@ -89,7 +89,7 @@ function toView(r: {
   id: number;
   occurred_at: number;
   source: 'AUTOPILOT' | 'OPERATOR';
-  kind: 'CREATE_BID' | 'EDIT_PRICE' | 'CANCEL_BID';
+  kind: 'CREATE_BID' | 'EDIT_PRICE' | 'EDIT_SPEED' | 'CANCEL_BID';
   braiins_order_id: string | null;
   old_price_sat: number | null;
   new_price_sat: number | null;

@@ -110,6 +110,22 @@ function toBidEventInsert(
         amount_sat: null,
         reason: proposal.reason,
       };
+    case 'EDIT_SPEED':
+      return {
+        occurred_at: occurredAt,
+        source,
+        kind: 'EDIT_SPEED',
+        braiins_order_id: proposal.braiins_order_id,
+        old_price_sat: null,
+        new_price_sat: null,
+        // Reuse the existing column to record the *new* speed; the
+        // bid_events row's `kind` disambiguates whether this is a
+        // create/edit-speed snapshot. Old speed lives only in the
+        // reason string for now (separate column would be a migration).
+        speed_limit_ph: proposal.new_speed_limit_ph,
+        amount_sat: null,
+        reason: proposal.reason,
+      };
     case 'CANCEL_BID':
       return {
         occurred_at: occurredAt,
@@ -180,6 +196,20 @@ async function executeLive(deps: ExecuteDeps, proposal: Proposal): Promise<Execu
         };
       }
 
+      case 'EDIT_SPEED': {
+        // OptionalDouble (per OpenAPI) is wrapped: { value: n }. Empirical
+        // 2026-04-16: bare scalar 400s with "failed to encode payload".
+        await deps.braiinsClient.editBid({
+          bid_id: proposal.braiins_order_id,
+          new_speed_limit_ph: { value: proposal.new_speed_limit_ph },
+        } as Parameters<typeof deps.braiinsClient.editBid>[0]);
+        return {
+          proposal,
+          outcome: 'EXECUTED',
+          note: `PUT /spot/bid OK  speed ${proposal.old_speed_limit_ph} → ${proposal.new_speed_limit_ph} PH/s`,
+        };
+      }
+
       case 'CANCEL_BID': {
         await deps.braiinsClient.cancelBid({ order_id: proposal.braiins_order_id });
         await deps.ownedBidsRepo.markCancelled(proposal.braiins_order_id);
@@ -214,6 +244,8 @@ function dryRunNote(proposal: Proposal): string {
       return `would POST /spot/bid  price=${proposal.price_sat} amount=${proposal.amount_sat} speed=${proposal.speed_limit_ph} PH/s`;
     case 'EDIT_PRICE':
       return `would PUT /spot/bid  id=${proposal.braiins_order_id}  price=${proposal.old_price_sat} → ${proposal.new_price_sat}`;
+    case 'EDIT_SPEED':
+      return `would PUT /spot/bid  id=${proposal.braiins_order_id}  speed=${proposal.old_speed_limit_ph} → ${proposal.new_speed_limit_ph} PH/s`;
     case 'CANCEL_BID':
       return `would DELETE /spot/bid  id=${proposal.braiins_order_id}`;
     case 'PAUSE':

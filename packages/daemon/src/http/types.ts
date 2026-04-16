@@ -117,7 +117,7 @@ export interface StatusResponse {
 }
 
 export interface ProposalView {
-  readonly kind: 'CREATE_BID' | 'EDIT_PRICE' | 'CANCEL_BID' | 'PAUSE';
+  readonly kind: 'CREATE_BID' | 'EDIT_PRICE' | 'EDIT_SPEED' | 'CANCEL_BID' | 'PAUSE';
   readonly summary: string;
   readonly reason: string;
   readonly allowed: boolean;

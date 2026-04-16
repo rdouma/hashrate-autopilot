@@ -61,8 +61,10 @@ function owned(overrides: Partial<OwnedBidSnapshot> = {}): OwnedBidSnapshot {
     cl_order_id: null,
     price_sat: EXPECTED_TARGET,
     amount_sat: 50_000,
-    speed_limit_ph: 2.0,
-    avg_speed_ph: 2.0,
+    // Match BASE_CONFIG.target_hashrate_ph so the new EDIT_SPEED logic
+    // doesn't fire spuriously in tests that focus on price behavior.
+    speed_limit_ph: BASE_CONFIG.target_hashrate_ph,
+    avg_speed_ph: BASE_CONFIG.target_hashrate_ph,
     progress_pct: 10,
     amount_remaining_sat: 45_000,
     status: 'BID_STATUS_ACTIVE',
@@ -212,6 +214,65 @@ describe('decide — EDIT / CANCEL paths', () => {
     const proposals = decide(s);
     const edits = proposals.filter((p) => p.kind === 'EDIT_PRICE');
     expect(edits).toHaveLength(0);
+  });
+
+  it('proposes EDIT_SPEED when target_hashrate_ph differs from bid speed_limit', () => {
+    // Operator just bumped target 1.0 -> 1.6. Existing bid still has the
+    // old speed_limit of 1.0. Expect an in-place EDIT_SPEED to grow it.
+    const cfg = { ...BASE_CONFIG, target_hashrate_ph: 1.6 };
+    const s = state({
+      config: cfg,
+      owned_bids: [
+        owned({ price_sat: EXPECTED_TARGET, speed_limit_ph: 1.0, avg_speed_ph: 1.0 }),
+      ],
+    });
+    const proposals = decide(s);
+    const speedEdit = proposals.find((p) => p.kind === 'EDIT_SPEED') as
+      | { new_speed_limit_ph: number; old_speed_limit_ph: number }
+      | undefined;
+    expect(speedEdit).toBeDefined();
+    expect(speedEdit?.old_speed_limit_ph).toBe(1.0);
+    expect(speedEdit?.new_speed_limit_ph).toBe(1.6);
+  });
+
+  it('proposes EDIT_SPEED when shrinking the target as well', () => {
+    const cfg = { ...BASE_CONFIG, target_hashrate_ph: 1.0 };
+    const s = state({
+      config: cfg,
+      owned_bids: [
+        owned({ price_sat: EXPECTED_TARGET, speed_limit_ph: 2.0, avg_speed_ph: 1.0 }),
+      ],
+    });
+    const proposals = decide(s);
+    const speedEdit = proposals.find((p) => p.kind === 'EDIT_SPEED') as
+      | { new_speed_limit_ph: number; old_speed_limit_ph: number }
+      | undefined;
+    expect(speedEdit).toBeDefined();
+    expect(speedEdit?.old_speed_limit_ph).toBe(2.0);
+    expect(speedEdit?.new_speed_limit_ph).toBe(1.0);
+  });
+
+  it('caps EDIT_SPEED at min_bid_speed_limit_ph (Braiins floor)', () => {
+    // Even if target is below 1.0, we never propose a sub-1.0 speed
+    // because the market floor is 1.0 PH/s.
+    const cfg = { ...BASE_CONFIG, target_hashrate_ph: 0.5 };
+    const s = state({
+      config: cfg,
+      owned_bids: [owned({ speed_limit_ph: 2.0 })],
+    });
+    const proposals = decide(s);
+    const speedEdit = proposals.find((p) => p.kind === 'EDIT_SPEED') as
+      | { new_speed_limit_ph: number }
+      | undefined;
+    expect(speedEdit?.new_speed_limit_ph).toBe(1.0);
+  });
+
+  it('does not propose EDIT_SPEED when bid speed already matches target', () => {
+    const s = state({
+      owned_bids: [owned({ speed_limit_ph: BASE_CONFIG.target_hashrate_ph })],
+    });
+    const speedEdits = decide(s).filter((p) => p.kind === 'EDIT_SPEED');
+    expect(speedEdits).toHaveLength(0);
   });
 
   it('proposes CANCEL for duplicate owned bids beyond the primary', () => {

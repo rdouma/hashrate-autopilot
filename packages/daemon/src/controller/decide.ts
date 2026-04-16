@@ -179,6 +179,27 @@ export function decide(state: State): readonly Proposal[] {
   }
   void EDIT_PRICE_TOLERANCE_PCT;
 
+  // (c) Resize the bid in-place when the configured target_hashrate_ph
+  // no longer matches the bid's speed_limit_ph. Confirmed empirically
+  // 2026-04-16 that PUT /spot/bid accepts new_speed_limit_ph on an
+  // ACTIVE bid — id and matched fills are preserved, no cancel/recreate
+  // gap. Speed-only edits intentionally don't trigger the post-EDIT_PRICE
+  // override lock (that exists to bound price escalation rhythm, which
+  // capacity changes don't participate in).
+  const desiredSpeed = speedLimitPh; // already capped at min_bid_speed_limit_ph
+  if (
+    primary.speed_limit_ph !== null &&
+    Math.abs(primary.speed_limit_ph - desiredSpeed) > 0.001
+  ) {
+    proposals.push({
+      kind: 'EDIT_SPEED',
+      braiins_order_id: primary.braiins_order_id,
+      new_speed_limit_ph: desiredSpeed,
+      old_speed_limit_ph: primary.speed_limit_ph,
+      reason: `target_hashrate change: speed ${primary.speed_limit_ph} → ${desiredSpeed} PH/s`,
+    });
+  }
+
   return proposals;
 }
 

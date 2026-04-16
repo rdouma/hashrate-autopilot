@@ -192,6 +192,11 @@ function summariseLastExecuted(
       summary = `Just ${verb} bid: ${oldPH.toLocaleString('en-US')} → ${newPH.toLocaleString('en-US')} sat/PH/day.`;
       break;
     }
+    case 'EDIT_SPEED': {
+      const verb = p.new_speed_limit_ph < p.old_speed_limit_ph ? 'shrunk' : 'grew';
+      summary = `Just ${verb} bid capacity: ${p.old_speed_limit_ph} → ${p.new_speed_limit_ph} PH/s.`;
+      break;
+    }
     case 'CANCEL_BID':
       summary = `Just cancelled bid ${p.braiins_order_id.slice(0, 8)}…`;
       break;
@@ -222,6 +227,8 @@ function describeProposal(p: GateOutcome['proposal']): string {
       return `CREATE bid at ${(p.price_sat / EH_PER_PH).toLocaleString('en-US')} sat/PH/day, ${p.speed_limit_ph} PH/s, ${p.amount_sat.toLocaleString('en-US')} sat budget`;
     case 'EDIT_PRICE':
       return `EDIT ${p.braiins_order_id.slice(0, 8)}… ${(p.old_price_sat / EH_PER_PH).toLocaleString('en-US')} → ${(p.new_price_sat / EH_PER_PH).toLocaleString('en-US')} sat/PH/day`;
+    case 'EDIT_SPEED':
+      return `EDIT ${p.braiins_order_id.slice(0, 8)}… speed ${p.old_speed_limit_ph} → ${p.new_speed_limit_ph} PH/s`;
     case 'CANCEL_BID':
       return `CANCEL ${p.braiins_order_id.slice(0, 8)}…`;
     case 'PAUSE':

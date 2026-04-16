@@ -104,16 +104,26 @@ export class Controller {
     // patch — no source-of-truth shift.
     const patchedOwnedBids = state.owned_bids
       .map((b) => {
-        const edit = executed.find(
+        let next = b;
+        const priceEdit = executed.find(
           (e) =>
             e.outcome === 'EXECUTED' &&
             e.proposal.kind === 'EDIT_PRICE' &&
             e.proposal.braiins_order_id === b.braiins_order_id,
         );
-        if (edit && edit.proposal.kind === 'EDIT_PRICE') {
-          return { ...b, price_sat: edit.proposal.new_price_sat };
+        if (priceEdit && priceEdit.proposal.kind === 'EDIT_PRICE') {
+          next = { ...next, price_sat: priceEdit.proposal.new_price_sat };
         }
-        return b;
+        const speedEdit = executed.find(
+          (e) =>
+            e.outcome === 'EXECUTED' &&
+            e.proposal.kind === 'EDIT_SPEED' &&
+            e.proposal.braiins_order_id === b.braiins_order_id,
+        );
+        if (speedEdit && speedEdit.proposal.kind === 'EDIT_SPEED') {
+          next = { ...next, speed_limit_ph: speedEdit.proposal.new_speed_limit_ph };
+        }
+        return next;
       })
       .filter(
         (b) =>

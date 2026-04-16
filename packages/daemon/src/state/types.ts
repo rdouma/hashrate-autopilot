@@ -183,7 +183,7 @@ export interface FeeScheduleCacheTable {
 // ---------------------------------------------------------------------------
 
 export type BidEventSource = 'AUTOPILOT' | 'OPERATOR';
-export type BidEventKind = 'CREATE_BID' | 'EDIT_PRICE' | 'CANCEL_BID';
+export type BidEventKind = 'CREATE_BID' | 'EDIT_PRICE' | 'EDIT_SPEED' | 'CANCEL_BID';
 
 export interface BidEventsTable {
   id: Generated<number>;

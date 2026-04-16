@@ -28,6 +28,7 @@ const COLOR_PRICE = '#fbbf24';
 const COLOR_FILLABLE = '#f97316';
 const COLOR_CREATE = '#34d399';
 const COLOR_EDIT = '#fbbf24';
+const COLOR_EDIT_SPEED = '#60a5fa';
 const COLOR_CANCEL = '#f87171';
 
 interface HoveredTooltip {
@@ -254,6 +255,24 @@ export function PriceChart({
               </g>
             );
           }
+          if (e.kind === 'EDIT_SPEED') {
+            // Speed-edit marker: a hollow blue diamond (rotated square) at
+            // chart-top — speed changes have no inherent price coordinate
+            // so anchoring to the price line would be misleading.
+            const yTop = PADDING.top + 4;
+            const r = 4.5;
+            return (
+              <g key={e.id} {...common}>
+                <polygon
+                  points={`${cx},${yTop - r} ${cx + r},${yTop} ${cx},${yTop + r} ${cx - r},${yTop}`}
+                  fill="none"
+                  stroke={COLOR_EDIT_SPEED}
+                  strokeWidth="1.6"
+                />
+                <rect x={cx - 8} y={yTop - 8} width="16" height="16" fill="transparent" />
+              </g>
+            );
+          }
           if (e.kind === 'CANCEL_BID') {
             return (
               <g key={e.id} {...common}>
@@ -362,13 +381,21 @@ function EventTooltip({ tip }: { tip: HoveredTooltip }) {
   const e = tip.event;
   const sourceLabel = e.source === 'OPERATOR' ? 'manual' : 'automatic';
   const kindLabel =
-    e.kind === 'CREATE_BID' ? 'CREATE' : e.kind === 'EDIT_PRICE' ? 'EDIT' : 'CANCEL';
+    e.kind === 'CREATE_BID'
+      ? 'CREATE'
+      : e.kind === 'EDIT_PRICE'
+        ? 'EDIT PRICE'
+        : e.kind === 'EDIT_SPEED'
+          ? 'EDIT SPEED'
+          : 'CANCEL';
   const headerColor =
     e.kind === 'CREATE_BID'
       ? 'text-emerald-300'
       : e.kind === 'EDIT_PRICE'
         ? 'text-amber-300'
-        : 'text-red-300';
+        : e.kind === 'EDIT_SPEED'
+          ? 'text-sky-300'
+          : 'text-red-300';
 
   return (
     <div
@@ -408,6 +435,12 @@ function EventTooltip({ tip }: { tip: HoveredTooltip }) {
               )} sat/PH/day`}
             />
           )}
+        </div>
+      )}
+
+      {e.kind === 'EDIT_SPEED' && (
+        <div className="mt-2 space-y-0.5 text-slate-300">
+          <Row label="new speed" value={`${e.speed_limit_ph ?? '—'} PH/s`} />
         </div>
       )}
 

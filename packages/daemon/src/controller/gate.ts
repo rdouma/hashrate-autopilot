@@ -48,6 +48,7 @@ function mapToGateAction(proposal: Exclude<Proposal, { kind: 'PAUSE' }>): Mutati
     case 'CREATE_BID':
       return 'create';
     case 'EDIT_PRICE':
+    case 'EDIT_SPEED':
       return 'edit';
     case 'CANCEL_BID':
       return 'cancel';
