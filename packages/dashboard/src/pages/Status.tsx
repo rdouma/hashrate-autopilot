@@ -173,9 +173,10 @@ export function Status() {
         showEvents={CHART_RANGE_SPECS[chartRange].showEvents}
       />
 
-      <FinancePanel data={financeQuery.data} />
-
-      <section className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {/* Three-column row: market context | Braiins wallet | financial
+          P&L. Money panel reads top-to-bottom (cost → incomes → net).
+          On narrow screens the columns stack. */}
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         <Card title="Hashrate & market">
           <Row k="delivered" v={formatHashratePH(s.actual_hashrate_ph)} />
           <Row k="target" v={formatHashratePH(s.config_summary.target_hashrate_ph)} />
@@ -212,6 +213,7 @@ export function Status() {
             ))
           )}
         </Card>
+        <FinancePanel data={financeQuery.data} />
       </section>
 
       <section>
@@ -728,19 +730,22 @@ function formatRemaining(ms: number): string {
 // ---------------------------------------------------------------------------
 
 /**
- * Top-level financial picture: net = (collected + expected) - spent.
+ * Vertical money panel: cost on top, then the two income sources,
+ * then net at the bottom. Reads naturally as a profit-and-loss page —
+ * the two incomes obviously add up to "what we'll have", which is
+ * then offset against "what we paid".
  *
  *   spent     — lifetime sat consumed across all autopilot-owned bids
+ *   expected  — Ocean's "Unpaid Earnings" (pending next payout)
  *   collected — on-chain UTXOs at the configured payout address
- *   expected  — Ocean's "Unpaid Earnings" (next-payout balance)
- *   net       — collected + expected - spent
+ *   net       — collected + expected − spent (final result)
  *
- * Each input renders "—" when its source isn't reporting; net stays
- * "—" until both halves of the income side have at least one
- * observation. Hover the labels for the operator-friendly explanation
- * (Ocean payout threshold, etc.).
+ * Each input renders "—" when its source isn't reporting yet; net
+ * stays "—" until both income halves have at least one observation.
  */
 function FinancePanel({ data }: { data: FinanceResponse | undefined }) {
+  const { intlLocale } = useLocale();
+
   if (!data) {
     return (
       <section className="bg-slate-900 border border-slate-800 rounded-lg p-4">
@@ -757,10 +762,8 @@ function FinancePanel({ data }: { data: FinanceResponse | undefined }) {
         ? 'text-emerald-300'
         : 'text-red-300';
 
-  const formatOpt = (v: number | null): string => (v === null ? '—' : formatSats(v));
-
   return (
-    <section className="bg-slate-900 border border-slate-800 rounded-lg p-4">
+    <section className="bg-slate-900 border border-slate-800 rounded-lg p-4 flex flex-col">
       <div className="flex items-baseline justify-between mb-3">
         <div className="text-xs uppercase tracking-wider text-slate-100">Money</div>
         <div className="text-[11px] text-slate-500">
@@ -768,51 +771,60 @@ function FinancePanel({ data }: { data: FinanceResponse | undefined }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <FinanceCell
+      <FinanceRow
+        label="spent"
+        value={data.spent_sat}
+        valueClass="text-amber-200"
+        tooltip="Lifetime sum of (amount_sat − amount_remaining_sat) across every bid the autopilot has ever owned. Real BTC that left the Braiins wallet to buy hashrate."
+      />
+      <FinanceRow
+        label="expected (Ocean)"
+        value={data.expected_sat}
+        valueClass="text-sky-200"
+        tooltip={
+          data.ocean
+            ? `Ocean's Unpaid Earnings — what will land on-chain at the next payout. Threshold: ${formatSats(data.ocean.payout_threshold_sat)} sat (~0.01 BTC).`
+            : 'Ocean stats unavailable.'
+        }
+      />
+      <FinanceRow
+        label="collected (on-chain)"
+        value={data.collected_sat}
+        valueClass="text-sky-200"
+        tooltip="UTXOs at the configured payout address. Read via Electrs (preferred, instant) or bitcoind RPC (slower)."
+      />
+
+      <div className="mt-3 pt-3 border-t border-slate-800">
+        <FinanceRow
           label="net"
-          value={formatOpt(data.net_sat)}
-          valueClass={`${netColor} text-2xl font-mono tabular-nums`}
+          value={data.net_sat}
+          valueClass={`${netColor} text-xl`}
           tooltip="Collected on-chain + Ocean's unpaid earnings − spent on bids. Negative = still recouping the initial deposit."
-          large
-        />
-        <FinanceCell
-          label="spent"
-          value={formatSats(data.spent_sat)}
-          tooltip="Lifetime sum of (amount_sat − amount_remaining_sat) across every bid the autopilot has ever owned. Real BTC that left the Braiins wallet to buy hashrate."
-        />
-        <FinanceCell
-          label="collected (on-chain)"
-          value={formatOpt(data.collected_sat)}
-          tooltip="UTXOs at the configured payout address. Read via Electrs (preferred, instant) or bitcoind RPC (slower)."
-        />
-        <FinanceCell
-          label="expected (Ocean)"
-          value={formatOpt(data.expected_sat)}
-          tooltip={
-            data.ocean
-              ? `Ocean's Unpaid Earnings — what will land on-chain at the next payout. The on-chain payout threshold is ${formatSats(data.ocean.payout_threshold_sat)} sat (~0.01 BTC).`
-              : 'Ocean stats unavailable.'
-          }
         />
       </div>
 
       {data.ocean && (
-        <div className="mt-3 pt-3 border-t border-slate-800 flex flex-wrap gap-x-6 gap-y-1 text-[11px] text-slate-500 font-mono">
+        <div className="mt-3 pt-3 border-t border-slate-800 space-y-1 text-[11px] text-slate-500 font-mono">
           {data.ocean.lifetime_sat !== null && (
-            <span title="Total earned at this address since first share, per Ocean.">
-              ocean lifetime: <span className="text-slate-300">{formatSats(data.ocean.lifetime_sat)} sat</span>
-            </span>
+            <FinanceFootnote
+              label="ocean lifetime"
+              value={`${formatNumber(data.ocean.lifetime_sat, {}, intlLocale)} sat`}
+              tooltip="Total earned at this address since first share, per Ocean."
+            />
           )}
           {data.ocean.daily_estimate_sat !== null && (
-            <span title="Estimated earnings per day at the address's 3-hour hashrate.">
-              est/day: <span className="text-slate-300">{formatSats(data.ocean.daily_estimate_sat)} sat</span>
-            </span>
+            <FinanceFootnote
+              label="est/day"
+              value={`${formatNumber(data.ocean.daily_estimate_sat, {}, intlLocale)} sat`}
+              tooltip="Ocean's estimated earnings per day at the address's 3-hour hashrate."
+            />
           )}
           {data.ocean.time_to_payout_text && (
-            <span title="Time at current hashrate until earnings cross the payout threshold.">
-              next payout in: <span className="text-slate-300">{data.ocean.time_to_payout_text}</span>
-            </span>
+            <FinanceFootnote
+              label="next payout in"
+              value={data.ocean.time_to_payout_text}
+              tooltip="Estimated wait at the address's 3-hour hashrate until earnings cross Ocean's payout threshold."
+            />
           )}
         </div>
       )}
@@ -820,26 +832,55 @@ function FinancePanel({ data }: { data: FinanceResponse | undefined }) {
   );
 }
 
-function FinanceCell({
+/**
+ * One row in the vertical money stack: label on the left, value on
+ * the right (right-aligned, monospace, tabular-nums so the digits
+ * line up across rows). `value=null` renders as "—".
+ */
+function FinanceRow({
   label,
   value,
   tooltip,
-  valueClass,
-  large = false,
+  valueClass = 'text-slate-200',
+}: {
+  label: string;
+  value: number | null;
+  tooltip: string;
+  valueClass?: string;
+}) {
+  const { intlLocale } = useLocale();
+  return (
+    <div className="cursor-help flex items-baseline justify-between py-1" title={tooltip}>
+      <div className="text-[11px] uppercase tracking-wider text-slate-500">{label}</div>
+      <div className={`font-mono tabular-nums ${valueClass}`}>
+        {value === null ? (
+          '—'
+        ) : (
+          <>
+            {formatNumber(value, {}, intlLocale)}
+            {/* Single "sat" suffix in muted style — formatSats helper
+                already appends one, so we use raw formatNumber here. */}
+            <span className="text-slate-500 text-[11px] ml-1">sat</span>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function FinanceFootnote({
+  label,
+  value,
+  tooltip,
 }: {
   label: string;
   value: string;
   tooltip: string;
-  valueClass?: string;
-  large?: boolean;
 }) {
-  const defaultValueClass = large
-    ? 'text-emerald-300 text-2xl font-mono tabular-nums'
-    : 'text-slate-200 text-lg font-mono tabular-nums';
   return (
-    <div className="cursor-help" title={tooltip}>
-      <div className="text-[11px] uppercase tracking-wider text-slate-500 mb-1">{label}</div>
-      <div className={valueClass ?? defaultValueClass}>{value}</div>
+    <div className="cursor-help flex items-baseline justify-between" title={tooltip}>
+      <span>{label}</span>
+      <span className="text-slate-300">{value}</span>
     </div>
   );
 }

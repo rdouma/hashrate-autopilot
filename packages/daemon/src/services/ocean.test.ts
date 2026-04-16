@@ -125,6 +125,32 @@ describe('OceanClient', () => {
     expect(calls).toBe(callsAfterFirst); // no extra fetches
   });
 
+  it('does not pick up tooltip help-text as the value (regression)', async () => {
+    // Earlier bug: the parser matched `<span[^>]*>...` and so found the
+    // `<span class="tooltiptext">...` *before* the bare `<span>11 days
+    // </span>` value. Real-world result was the dashboard rendering
+    // "Time at 3-hour hashrate until earnings exceed payout threshold
+    // (0.01048576 BTC)" as if it were the value.
+    const fragmentWithTooltip = `
+      <div class="blocks-label">Estimated Time Until Minimum Payout
+        <div class="tooltip tooltip-info">
+          <span class="tooltiptext">Time at 3-hour hashrate until earnings exceed payout threshold (0.01048576 BTC)</span>
+        </div>
+      </div>
+        <span>11 days</span>
+    `;
+    const client = createOceanClient({
+      fetch: fakeFetch({
+        '/template/workers/payoutcards': fragmentWithTooltip,
+        '/template/workers/lifetimecards': LIFETIME_FRAGMENT,
+        '/template/workers/earningscards': EARNINGS_FRAGMENT,
+      }),
+    });
+    const stats = await client.fetchStats('bc1qaddress');
+    expect(stats!.time_to_payout_text).toBe('11 days');
+    expect(stats!.time_to_payout_text).not.toContain('hashrate');
+  });
+
   it('returns "Below threshold" branch when the time-text is missing', async () => {
     const payoutWithoutTime = `
       <div class="blocks dashboard-container">

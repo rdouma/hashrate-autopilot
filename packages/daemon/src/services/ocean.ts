@@ -166,19 +166,28 @@ function parsePctLabel(html: string, label: string): number | null {
 }
 
 /**
- * Generic "label -> text inside the next <span>". Used for the time-
- * until-payout and threshold-status text which aren't BTC values
- * (e.g. "11 days", "Below threshold"). Strips inner HTML tags.
+ * Generic "label -> text inside the value <span>". Used for the
+ * time-until-payout and threshold-status text which aren't BTC values
+ * (e.g. "11 days", "Below threshold").
+ *
+ * Subtle bug worth keeping commented: the .blocks-label DIV nests a
+ * `tooltip tooltip-info` block whose `<span class="tooltiptext">...`
+ * comes BEFORE the actual value `<span>`. Any pattern that accepts
+ * `<span[^>]*>` matches the tooltip first and we end up rendering
+ * Ocean's hover help-text on the dashboard instead of "11 days".
+ * Constrain to bare `<span>` with no attributes — that's the value
+ * convention Ocean's templates use throughout.
  */
 function parseRawSpanLabel(html: string, label: string): string | null {
   const re = new RegExp(
     String.raw`blocks-label">\s*` +
       escapeRegex(label) +
-      String.raw`[\s\S]*?<span[^>]*>([\s\S]*?)</span>`,
+      String.raw`[\s\S]*?<span>([\s\S]*?)</span>`,
   );
   const m = html.match(re);
   if (!m || !m[1]) return null;
-  // Strip nested anchors / tags.
+  // Strip nested anchors / tags (the "Below threshold" branch wraps
+  // the text in an <a>).
   const text = m[1].replace(/<[^>]+>/g, '').trim();
   return text.length > 0 ? text : null;
 }
