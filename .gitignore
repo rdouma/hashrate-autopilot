@@ -30,6 +30,7 @@ data/
 .idea/
 
 # Keep .claude/commands/ (project slash-commands) but ignore everything else
-.claude/*
-!.claude/commands/
+# at any nesting depth (scripts/.claude/, packages/*/.claude/, ...).
+**/.claude/*
+!**/.claude/commands/
 
