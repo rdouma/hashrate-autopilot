@@ -22,8 +22,8 @@ export function Decisions() {
   const list = useQuery({
     queryKey: ['decisions', modeFilter],
     queryFn: () =>
-      api.decisions(200, modeFilter === 'ALL' ? undefined : modeFilter),
-    refetchInterval: 5000,
+      api.decisions(2000, modeFilter === 'ALL' ? undefined : modeFilter),
+    refetchInterval: 60_000,
   });
 
   const detail = useQuery({
@@ -49,7 +49,7 @@ export function Decisions() {
   }
 
   return (
-    <div className="space-y-4 max-w-6xl">
+    <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h2 className="text-2xl text-slate-100">Decisions</h2>
         <div className="flex items-center gap-4">
@@ -86,7 +86,7 @@ export function Decisions() {
           </label>
         </div>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-4 min-h-0">
         <div className="bg-slate-900 border border-slate-800 rounded-lg overflow-hidden max-h-[70vh] overflow-y-auto">
           <table className="w-full text-sm">
             <thead className="text-xs text-slate-400 bg-slate-900 sticky top-0 z-10">
