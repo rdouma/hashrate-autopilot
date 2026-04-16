@@ -252,6 +252,23 @@ export const api = {
     ),
   payouts: () => request<PayoutsResponse>('/api/payouts'),
   scanPayouts: () => request<{ ok: boolean; error?: string }>('/api/payouts/scan', { method: 'POST' }),
+  finance: () => request<FinanceResponse>('/api/finance'),
   // Test-auth call: hits /api/status to validate credentials.
   checkAuth: () => request<StatusResponse>('/api/status'),
 };
+
+export interface FinanceResponse {
+  spent_sat: number;
+  collected_sat: number | null;
+  expected_sat: number | null;
+  net_sat: number | null;
+  ocean: {
+    lifetime_sat: number | null;
+    daily_estimate_sat: number | null;
+    rewards_in_window_sat: number | null;
+    time_to_payout_text: string | null;
+    payout_threshold_sat: number;
+    fetched_at_ms: number | null;
+  } | null;
+  checked_at_ms: number;
+}

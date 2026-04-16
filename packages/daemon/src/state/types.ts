@@ -81,6 +81,13 @@ export interface OwnedBidsTable {
   speed_limit_ph: number | null;
   last_price_decrease_at: number | null;
   abandoned: Generated<0 | 1>;
+  /**
+   * Latest snapshot of `amount_sat - amount_remaining_sat` from
+   * Braiins. Updated every observe() while the bid is reachable;
+   * frozen once the bid leaves /spot/bid/current. Sum across all rows
+   * = lifetime spend (used by the finance panel).
+   */
+  amount_consumed_sat: Generated<number>;
 }
 
 // ---------------------------------------------------------------------------

@@ -112,7 +112,14 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
         status: b.status,
         last_price_decrease_at: lastPriceDecreaseByOrder.get(b.braiins_order_id) ?? null,
       });
-      reconcilable.push(b);
+      reconcilable.push({
+        braiins_order_id: b.braiins_order_id,
+        status: b.status,
+        price_sat: b.price_sat,
+        amount_sat: b.amount_sat,
+        speed_limit_ph: b.speed_limit_ph,
+        amount_consumed_sat: Math.max(0, b.amount_sat - b.amount_remaining_sat),
+      });
     } else {
       unknown_bids.push({
         braiins_order_id: b.braiins_order_id,

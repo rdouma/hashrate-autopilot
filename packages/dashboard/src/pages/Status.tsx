@@ -15,8 +15,8 @@ import { ModeBadge } from '../components/ModeBadge';
 import {
   api,
   UnauthorizedError,
+  type FinanceResponse,
   type NextActionView,
-  type PayoutsResponse,
   type ProposalView,
   type StatusResponse,
 } from '../lib/api';
@@ -104,15 +104,13 @@ export function Status() {
     refetchInterval: 60_000,
   });
 
-  const payoutsQuery = useQuery({
-    queryKey: ['payouts'],
-    queryFn: api.payouts,
+  const financeQuery = useQuery({
+    queryKey: ['finance'],
+    queryFn: api.finance,
+    // Ocean updates on share-submission cadence (multi-second) and the
+    // payout observer is itself polled at ~1 min — refreshing the
+    // composite panel at 60 s mirrors the slowest underlying source.
     refetchInterval: 60_000,
-  });
-
-  const scanPayoutsMutation = useMutation({
-    mutationFn: () => api.scanPayouts(),
-    onSettled: () => qc.invalidateQueries({ queryKey: ['payouts'] }),
   });
 
   // Operator availability removed from the UI (API bids bypass 2FA;
@@ -175,7 +173,9 @@ export function Status() {
         showEvents={CHART_RANGE_SPECS[chartRange].showEvents}
       />
 
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <FinancePanel data={financeQuery.data} />
+
+      <section className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Card title="Hashrate & market">
           <Row k="delivered" v={formatHashratePH(s.actual_hashrate_ph)} />
           <Row k="target" v={formatHashratePH(s.config_summary.target_hashrate_ph)} />
@@ -212,11 +212,6 @@ export function Status() {
             ))
           )}
         </Card>
-        <CollectedBtcCard
-          data={payoutsQuery.data}
-          onRescan={() => scanPayoutsMutation.mutate()}
-          rescanPending={scanPayoutsMutation.isPending}
-        />
       </section>
 
       <section>
@@ -732,56 +727,120 @@ function formatRemaining(ms: number): string {
 // Small helpers
 // ---------------------------------------------------------------------------
 
-function CollectedBtcCard({
-  data,
-  onRescan,
-  rescanPending,
-}: {
-  data: PayoutsResponse | undefined;
-  onRescan: () => void;
-  rescanPending: boolean;
-}) {
-  const hasScan = data?.checked_at !== null && data?.checked_at !== undefined;
-  const hasError = !!data?.last_error;
-  const amountSat = data?.total_unspent_sat;
-  const source = data?.source;
+/**
+ * Top-level financial picture: net = (collected + expected) - spent.
+ *
+ *   spent     — lifetime sat consumed across all autopilot-owned bids
+ *   collected — on-chain UTXOs at the configured payout address
+ *   expected  — Ocean's "Unpaid Earnings" (next-payout balance)
+ *   net       — collected + expected - spent
+ *
+ * Each input renders "—" when its source isn't reporting; net stays
+ * "—" until both halves of the income side have at least one
+ * observation. Hover the labels for the operator-friendly explanation
+ * (Ocean payout threshold, etc.).
+ */
+function FinancePanel({ data }: { data: FinanceResponse | undefined }) {
+  if (!data) {
+    return (
+      <section className="bg-slate-900 border border-slate-800 rounded-lg p-4">
+        <div className="text-xs uppercase tracking-wider text-slate-100 mb-2">Money</div>
+        <div className="text-slate-500 text-sm">loading…</div>
+      </section>
+    );
+  }
+
+  const netColor =
+    data.net_sat === null
+      ? 'text-slate-400'
+      : data.net_sat >= 0
+        ? 'text-emerald-300'
+        : 'text-red-300';
+
+  const formatOpt = (v: number | null): string => (v === null ? '—' : formatSats(v));
 
   return (
-    <Card title="Collected BTC (on-chain)">
-      <div className="text-2xl font-mono text-emerald-300">
-        {amountSat !== null && amountSat !== undefined ? formatSats(amountSat) : '—'}
+    <section className="bg-slate-900 border border-slate-800 rounded-lg p-4">
+      <div className="flex items-baseline justify-between mb-3">
+        <div className="text-xs uppercase tracking-wider text-slate-100">Money</div>
+        <div className="text-[11px] text-slate-500">
+          updated {formatAge(data.checked_at_ms)}
+        </div>
       </div>
-      <div className="text-xs text-slate-500 mt-1">
-        {hasScan ? (
-          <>
-            {source === 'electrs' ? (
-              <span className="text-sky-400">via Electrs</span>
-            ) : source === 'bitcoind' ? (
-              <span className="text-amber-400">via bitcoind</span>
-            ) : null}
-            {source && ' · '}
-            checked {formatAge(data.checked_at)}
-            {source === 'bitcoind' && data.scanned_block_height !== null && (
-              <> · block {data.scanned_block_height}</>
-            )}
-          </>
-        ) : (
-          'waiting for first scan…'
-        )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <FinanceCell
+          label="net"
+          value={formatOpt(data.net_sat)}
+          valueClass={`${netColor} text-2xl font-mono tabular-nums`}
+          tooltip="Collected on-chain + Ocean's unpaid earnings − spent on bids. Negative = still recouping the initial deposit."
+          large
+        />
+        <FinanceCell
+          label="spent"
+          value={formatSats(data.spent_sat)}
+          tooltip="Lifetime sum of (amount_sat − amount_remaining_sat) across every bid the autopilot has ever owned. Real BTC that left the Braiins wallet to buy hashrate."
+        />
+        <FinanceCell
+          label="collected (on-chain)"
+          value={formatOpt(data.collected_sat)}
+          tooltip="UTXOs at the configured payout address. Read via Electrs (preferred, instant) or bitcoind RPC (slower)."
+        />
+        <FinanceCell
+          label="expected (Ocean)"
+          value={formatOpt(data.expected_sat)}
+          tooltip={
+            data.ocean
+              ? `Ocean's Unpaid Earnings — what will land on-chain at the next payout. The on-chain payout threshold is ${formatSats(data.ocean.payout_threshold_sat)} sat (~0.01 BTC).`
+              : 'Ocean stats unavailable.'
+          }
+        />
       </div>
-      {hasError && (
-        <div className="text-xs text-amber-400 mt-1">
-          last scan issue: {data.last_error}
+
+      {data.ocean && (
+        <div className="mt-3 pt-3 border-t border-slate-800 flex flex-wrap gap-x-6 gap-y-1 text-[11px] text-slate-500 font-mono">
+          {data.ocean.lifetime_sat !== null && (
+            <span title="Total earned at this address since first share, per Ocean.">
+              ocean lifetime: <span className="text-slate-300">{formatSats(data.ocean.lifetime_sat)} sat</span>
+            </span>
+          )}
+          {data.ocean.daily_estimate_sat !== null && (
+            <span title="Estimated earnings per day at the address's 3-hour hashrate.">
+              est/day: <span className="text-slate-300">{formatSats(data.ocean.daily_estimate_sat)} sat</span>
+            </span>
+          )}
+          {data.ocean.time_to_payout_text && (
+            <span title="Time at current hashrate until earnings cross the payout threshold.">
+              next payout in: <span className="text-slate-300">{data.ocean.time_to_payout_text}</span>
+            </span>
+          )}
         </div>
       )}
-      <button
-        onClick={onRescan}
-        disabled={rescanPending}
-        className="mt-2 px-2 py-1 text-xs rounded border border-slate-700 text-slate-300 hover:bg-slate-800 disabled:opacity-50"
-      >
-        {rescanPending ? 'scanning…' : 'rescan now'}
-      </button>
-    </Card>
+    </section>
+  );
+}
+
+function FinanceCell({
+  label,
+  value,
+  tooltip,
+  valueClass,
+  large = false,
+}: {
+  label: string;
+  value: string;
+  tooltip: string;
+  valueClass?: string;
+  large?: boolean;
+}) {
+  const defaultValueClass = large
+    ? 'text-emerald-300 text-2xl font-mono tabular-nums'
+    : 'text-slate-200 text-lg font-mono tabular-nums';
+  return (
+    <div className="cursor-help" title={tooltip}>
+      <div className="text-[11px] uppercase tracking-wider text-slate-500 mb-1">{label}</div>
+      <div className={valueClass ?? defaultValueClass}>{value}</div>
+    </div>
   );
 }
 

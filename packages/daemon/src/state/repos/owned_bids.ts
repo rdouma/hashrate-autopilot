@@ -8,7 +8,7 @@
  * what Braiins reports.
  */
 
-import type { Kysely, Selectable } from 'kysely';
+import { sql, type Kysely, type Selectable } from 'kysely';
 
 import type { Database, OwnedBidsTable } from '../types.js';
 
@@ -43,6 +43,8 @@ export interface ReconcilableBid {
   readonly price_sat: number;
   readonly amount_sat: number;
   readonly speed_limit_ph: number | null;
+  /** Currently consumed sat (= amount_sat − amount_remaining_sat). */
+  readonly amount_consumed_sat: number;
 }
 
 export class OwnedBidsRepo {
@@ -129,6 +131,12 @@ export class OwnedBidsRepo {
           price_sat: b.price_sat,
           amount_sat: b.amount_sat,
           speed_limit_ph: b.speed_limit_ph,
+          // Monotonic: never roll the persisted consumed value
+          // backwards. Braiins's `amount_remaining_sat` can wobble by
+          // a few sat between polls (counters_estimate vs
+          // counters_committed), so always keep the highest seen
+          // value to avoid spurious dips on the finance panel.
+          amount_consumed_sat: sql<number>`MAX(amount_consumed_sat, ${b.amount_consumed_sat})`,
           first_seen_active_at:
             b.status === 'BID_STATUS_ACTIVE'
               ? eb.fn.coalesce('first_seen_active_at', eb.val(now))
@@ -137,6 +145,19 @@ export class OwnedBidsRepo {
         .where('braiins_order_id', '=', b.braiins_order_id)
         .execute();
     }
+  }
+
+  /**
+   * Sum of `amount_consumed_sat` across every bid the autopilot has
+   * ever owned. The lifetime "money spent on hashrate" figure for the
+   * finance panel.
+   */
+  async sumLifetimeConsumedSat(): Promise<number> {
+    const row = await this.db
+      .selectFrom('owned_bids')
+      .select(sql<number>`COALESCE(SUM(amount_consumed_sat), 0)`.as('total'))
+      .executeTakeFirst();
+    return Number(row?.total ?? 0);
   }
 }
 

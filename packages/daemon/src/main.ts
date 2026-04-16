@@ -15,6 +15,7 @@ import { createBraiinsClient } from '@braiins-hashrate/braiins-client';
 import { loadSecrets } from './config/secrets.js';
 import { createHttpServer } from './http/server.js';
 import { BraiinsService } from './services/braiins-service.js';
+import { createOceanClient } from './services/ocean.js';
 import { PayoutObserver } from './services/payout-observer.js';
 import { PoolHealthTracker } from './services/pool-health.js';
 import { closeDatabase, openDatabase } from './state/db.js';
@@ -139,6 +140,10 @@ async function main(): Promise<void> {
     onError: (err) => log(`[tick] error: ${(err as Error)?.message ?? err}`),
   });
 
+  // Ocean stats client — null if no payout address configured (the
+  // finance panel just won't have an "expected income" figure then).
+  const oceanClient = createOceanClient();
+
   // HTTP server (dashboard API + static).
   const httpServer = await createHttpServer({
     controller,
@@ -149,6 +154,7 @@ async function main(): Promise<void> {
     tickMetricsRepo,
     bidEventsRepo,
     payoutObserver,
+    oceanClient,
     password: secrets.dashboard_password,
     tickIntervalMs: DEFAULT_TICK_INTERVAL_MS,
     secretsPath,
