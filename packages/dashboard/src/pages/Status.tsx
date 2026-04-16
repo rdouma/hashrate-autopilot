@@ -54,7 +54,12 @@ export function Status() {
   const query = useQuery({
     queryKey: ['status'],
     queryFn: api.status,
-    refetchInterval: 5000,
+    // Status is the headline data (price, delivered, next-action). 30s
+    // is fast enough for an autopilot that ticks once per minute and
+    // slow enough that the operator's tab isn't constantly thrashing.
+    // Per-second timers (NextActionFooter, NextActionProgress) tick
+    // client-side so they keep moving between polls.
+    refetchInterval: 30_000,
   });
 
   const runModeMutation = useMutation({
@@ -89,13 +94,14 @@ export function Status() {
   const metricsQuery = useQuery({
     queryKey: ['metrics', chartRange],
     queryFn: () => api.metrics(chartRange),
-    refetchInterval: 15_000,
+    // Charts span hours-to-months — a 60s refresh is plenty.
+    refetchInterval: 60_000,
   });
 
   const bidEventsQuery = useQuery({
     queryKey: ['bid-events', chartRange],
     queryFn: () => api.bidEvents(chartRange),
-    refetchInterval: 15_000,
+    refetchInterval: 60_000,
   });
 
   const payoutsQuery = useQuery({

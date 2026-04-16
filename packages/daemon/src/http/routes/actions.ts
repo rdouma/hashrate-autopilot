@@ -32,11 +32,16 @@ export async function registerActionRoutes(
 ): Promise<void> {
   app.post('/api/actions/tick-now', async (_req, reply) => {
     try {
+      // Manual operator action — bypass any stale post-edit lock so the
+      // controller is free to make its current best decision instead of
+      // sitting on its hands until the auto-set window expires.
+      const clearedOverrideUntil = deps.controller.clearManualOverride();
       const result = await deps.controller.tick();
       return {
         ok: true,
         tick_at: result.state.tick_at,
         proposals: result.proposals.length,
+        cleared_override_until_ms: clearedOverrideUntil,
         executed: result.executed.map((e) => ({
           kind: e.proposal.kind,
           outcome: e.outcome,

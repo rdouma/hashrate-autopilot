@@ -63,6 +63,20 @@ export class Controller {
     return this.manualOverrideUntilMs;
   }
 
+  /**
+   * Drop the post-edit lock without waiting for it to expire. Used by
+   * the "Run decision now" route — when the operator manually invokes
+   * the controller, they're overriding their own autopilot's
+   * self-imposed pacing, so suppressing the next decision because of a
+   * stale lock is unhelpful. Returns the previous value so the caller
+   * can report what (if anything) was cleared.
+   */
+  clearManualOverride(): number | null {
+    const prev = this.manualOverrideUntilMs;
+    this.manualOverrideUntilMs = null;
+    return prev;
+  }
+
   async tick(): Promise<TickResult> {
     if (this.manualOverrideUntilMs !== null && this.manualOverrideUntilMs <= this.deps.now()) {
       this.manualOverrideUntilMs = null;
