@@ -208,7 +208,7 @@ export function Status() {
             ))
           )}
         </Card>
-        <FinancePanel data={financeQuery.data} />
+        <FinancePanel data={financeQuery.data} status={s} />
       </section>
 
       <section>
@@ -738,7 +738,13 @@ function formatRemaining(ms: number): string {
  * Each input renders "—" when its source isn't reporting yet; net
  * stays "—" until both income halves have at least one observation.
  */
-function FinancePanel({ data }: { data: FinanceResponse | undefined }) {
+function FinancePanel({
+  data,
+  status,
+}: {
+  data: FinanceResponse | undefined;
+  status: StatusResponse;
+}) {
   const { intlLocale } = useLocale();
 
   if (!data) {
@@ -754,6 +760,31 @@ function FinancePanel({ data }: { data: FinanceResponse | undefined }) {
     data.net_sat === null
       ? 'text-slate-400'
       : data.net_sat >= 0
+        ? 'text-emerald-300'
+        : 'text-red-300';
+
+  // Run-rate view: what's this autopilot costing/earning *right now*,
+  // per day? Distinct from the lifetime P&L above. Sum across active
+  // owned bids of (price × delivered_hashrate) — Braiins only debits
+  // for hashrate actually delivered, so avg_speed_ph (not speed_limit)
+  // is the truthful "what am I being charged for" multiplier.
+  const ownedActive = status.bids.filter(
+    (b) => b.is_owned && b.status === 'BID_STATUS_ACTIVE',
+  );
+  const dailySpendSat = ownedActive.reduce(
+    (sum, b) => sum + b.price_sat_per_ph_day * b.avg_speed_ph,
+    0,
+  );
+  const hasDailySpend = ownedActive.length > 0 && dailySpendSat > 0;
+  const dailyIncomeSat = data.ocean?.daily_estimate_sat ?? null;
+  const dailyNetSat =
+    hasDailySpend && dailyIncomeSat !== null
+      ? Math.round(dailyIncomeSat - dailySpendSat)
+      : null;
+  const dailyNetColor =
+    dailyNetSat === null
+      ? ''
+      : dailyNetSat >= 0
         ? 'text-emerald-300'
         : 'text-red-300';
 
@@ -803,23 +834,44 @@ function FinancePanel({ data }: { data: FinanceResponse | undefined }) {
         />
       </div>
 
-      {data.ocean && (
+      {(data.ocean || hasDailySpend) && (
         <div className="mt-3 pt-3 border-t border-slate-800 space-y-1 text-[11px] text-slate-500 font-mono">
-          {data.ocean.lifetime_sat !== null && (
+          {/* Run-rate: what the autopilot costs / earns *right now*
+              at current bid price + delivered hashrate, vs Ocean's
+              estimated daily earnings at the same hashrate. The net
+              tells the operator if the autopilot is profitable per day
+              under present conditions — distinct from the lifetime
+              P&L above. */}
+          {dailyIncomeSat !== null && (
+            <FinanceFootnote
+              label="income/day"
+              value={`${formatNumber(dailyIncomeSat, {}, intlLocale)} sat`}
+              tooltip="Ocean's estimated earnings per day at the address's 3-hour hashrate."
+            />
+          )}
+          {hasDailySpend && (
+            <FinanceFootnote
+              label="spend/day"
+              value={`${formatNumber(Math.round(dailySpendSat), {}, intlLocale)} sat`}
+              tooltip="Cost per day at current bid price × delivered hashrate, summed across active owned bids. Braiins only debits for hashrate actually delivered, so this tracks reality (not the speed-limit cap)."
+            />
+          )}
+          {dailyNetSat !== null && (
+            <FinanceFootnote
+              label="net/day"
+              value={`${dailyNetSat >= 0 ? '+' : ''}${formatNumber(dailyNetSat, {}, intlLocale)} sat`}
+              tooltip="Income/day − spend/day. Positive = the autopilot is profitable at current rates; negative = burning money per day. Don't confuse with the lifetime net above."
+              valueClass={dailyNetColor}
+            />
+          )}
+          {data.ocean?.lifetime_sat != null && (
             <FinanceFootnote
               label="ocean lifetime"
               value={`${formatNumber(data.ocean.lifetime_sat, {}, intlLocale)} sat`}
               tooltip="Total earned at this address since first share, per Ocean."
             />
           )}
-          {data.ocean.daily_estimate_sat !== null && (
-            <FinanceFootnote
-              label="est/day"
-              value={`${formatNumber(data.ocean.daily_estimate_sat, {}, intlLocale)} sat`}
-              tooltip="Ocean's estimated earnings per day at the address's 3-hour hashrate."
-            />
-          )}
-          {data.ocean.time_to_payout_text && (
+          {data.ocean?.time_to_payout_text && (
             <FinanceFootnote
               label="next payout"
               value={formatNextPayout(data.ocean.time_to_payout_text)}
@@ -879,15 +931,17 @@ function FinanceFootnote({
   label,
   value,
   tooltip,
+  valueClass = 'text-slate-300',
 }: {
   label: string;
   value: string;
   tooltip: string;
+  valueClass?: string;
 }) {
   return (
     <div className="cursor-help flex items-baseline justify-between gap-2" title={tooltip}>
       <span>{label}</span>
-      <span className="text-slate-300 text-right">{value}</span>
+      <span className={`text-right ${valueClass}`}>{value}</span>
     </div>
   );
 }
