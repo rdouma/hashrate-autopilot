@@ -774,13 +774,11 @@ function FinancePanel({ data }: { data: FinanceResponse | undefined }) {
       <FinanceRow
         label="spent"
         value={data.spent_sat}
-        valueClass="text-amber-200"
         tooltip="Lifetime sum of (amount_sat − amount_remaining_sat) across every bid the autopilot has ever owned. Real BTC that left the Braiins wallet to buy hashrate."
       />
       <FinanceRow
         label="expected (Ocean)"
         value={data.expected_sat}
-        valueClass="text-sky-200"
         tooltip={
           data.ocean
             ? `Ocean's Unpaid Earnings — what will land on-chain at the next payout. Threshold: ${formatSats(data.ocean.payout_threshold_sat)} sat (~0.01 BTC).`
@@ -790,7 +788,6 @@ function FinancePanel({ data }: { data: FinanceResponse | undefined }) {
       <FinanceRow
         label="collected (on-chain)"
         value={data.collected_sat}
-        valueClass="text-sky-200"
         tooltip="UTXOs at the configured payout address. Read via Electrs (preferred, instant) or bitcoind RPC (slower)."
       />
 
@@ -798,7 +795,11 @@ function FinancePanel({ data }: { data: FinanceResponse | undefined }) {
         <FinanceRow
           label="net"
           value={data.net_sat}
-          valueClass={`${netColor} text-xl`}
+          // Only the bottom-line gets a sentiment color — green when
+          // the autopilot has paid for itself, red when it's still
+          // digging out of the initial deposit. Keeps the rest of the
+          // panel calm so the eye lands on the conclusion.
+          valueClass={netColor}
           tooltip="Collected on-chain + Ocean's unpaid earnings − spent on bids. Negative = still recouping the initial deposit."
         />
       </div>
@@ -841,7 +842,7 @@ function FinanceRow({
   label,
   value,
   tooltip,
-  valueClass = 'text-slate-200',
+  valueClass = 'text-slate-100',
 }: {
   label: string;
   value: number | null;
@@ -849,21 +850,28 @@ function FinanceRow({
   valueClass?: string;
 }) {
   const { intlLocale } = useLocale();
+  // Match the size + label-color of the standard <Row> used by the
+  // sibling Hashrate-and-market and Braiins-balance cards so the three
+  // panels read as a set. Only the value's *color* varies (caller can
+  // override via valueClass — used for the green/red net bottom line).
   return (
-    <div className="cursor-help flex items-baseline justify-between py-1" title={tooltip}>
-      <div className="text-[11px] uppercase tracking-wider text-slate-500">{label}</div>
-      <div className={`font-mono tabular-nums ${valueClass}`}>
+    <div
+      className="cursor-help flex justify-between text-sm py-0.5"
+      title={tooltip}
+    >
+      <span className="text-slate-400">{label}</span>
+      <span className={`font-mono ${valueClass}`}>
         {value === null ? (
           '—'
         ) : (
           <>
             {formatNumber(value, {}, intlLocale)}
-            {/* Single "sat" suffix in muted style — formatSats helper
-                already appends one, so we use raw formatNumber here. */}
+            {/* Single muted "sat" suffix — formatSats() already appends
+                one, so we use raw formatNumber here. */}
             <span className="text-slate-500 text-[11px] ml-1">sat</span>
           </>
         )}
-      </div>
+      </span>
     </div>
   );
 }
