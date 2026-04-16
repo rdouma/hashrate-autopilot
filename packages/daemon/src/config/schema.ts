@@ -97,7 +97,12 @@ export const AppConfigSchema = z.object({
   fill_escalation_step_sat_per_eh_day: positiveInt,
   fill_escalation_after_minutes: positiveInt,
   max_overpay_vs_ask_sat_per_eh_day: nonNegativeInt,
+  overpay_before_lowering_sat_per_eh_day: nonNegativeInt,
   hibernate_on_expensive_market: z.boolean(),
+
+  // Electrs (optional, for fast balance lookups)
+  electrs_host: z.string().nullable().default(null),
+  electrs_port: z.number().int().positive().nullable().default(null),
 });
 
 export type AppConfig = z.infer<typeof AppConfigSchema>;
@@ -169,5 +174,9 @@ export const APP_CONFIG_DEFAULTS: Omit<
   fill_escalation_step_sat_per_eh_day: 300_000,
   fill_escalation_after_minutes: 30,
   max_overpay_vs_ask_sat_per_eh_day: 500_000,
+  overpay_before_lowering_sat_per_eh_day: 2_000_000,
   hibernate_on_expensive_market: true,
+
+  electrs_host: null,
+  electrs_port: null,
 };

@@ -33,6 +33,9 @@ describe('openDatabase — migrations', () => {
       '0002_strategy_knobs.sql',
       '0003_null_empty_cl_order_id.sql',
       '0004_tick_metrics.sql',
+      '0005_electrs_config.sql',
+      '0006_decisions_run_mode_index.sql',
+      '0007_overpay_before_lowering.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });

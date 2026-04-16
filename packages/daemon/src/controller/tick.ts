@@ -59,6 +59,18 @@ export class Controller {
     const gated = gate(proposals, state);
     const executed = await execute(this.deps, state, gated);
 
+    // After any EDIT_PRICE that actually fired, lock the new price in
+    // for one full escalation window. Prevents same-window re-escalation
+    // and blocks any automatic revert. Manual bumps already set this
+    // via the actions route.
+    const windowMs = state.config.fill_escalation_after_minutes * 60_000;
+    for (const e of executed) {
+      if (e.proposal.kind === 'EDIT_PRICE' && e.outcome === 'EXECUTED') {
+        this.manualOverrideUntilMs = state.tick_at + windowMs;
+        break;
+      }
+    }
+
     // Also bump runtime_state diagnostics.
     await this.deps.runtimeRepo.patch({
       last_tick_at: state.tick_at,

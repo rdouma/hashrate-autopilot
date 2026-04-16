@@ -9,11 +9,13 @@
 import { homedir } from 'node:os';
 import { resolve } from 'node:path';
 
+import { createBitcoindClient } from '@braiins-hashrate/bitcoind-client';
 import { createBraiinsClient } from '@braiins-hashrate/braiins-client';
 
 import { loadSecrets } from './config/secrets.js';
 import { createHttpServer } from './http/server.js';
 import { BraiinsService } from './services/braiins-service.js';
+import { PayoutObserver } from './services/payout-observer.js';
 import { PoolHealthTracker } from './services/pool-health.js';
 import { closeDatabase, openDatabase } from './state/db.js';
 import { ConfigRepo } from './state/repos/config.js';
@@ -77,6 +79,24 @@ async function main(): Promise<void> {
   const braiins = new BraiinsService({ client: braiinsClient });
   const poolTracker = new PoolHealthTracker();
 
+  const bitcoindClient = createBitcoindClient({
+    url: secrets.bitcoind_rpc_url,
+    username: secrets.bitcoind_rpc_user,
+    password: secrets.bitcoind_rpc_password,
+  });
+  const payoutObserver = new PayoutObserver({
+    client: bitcoindClient,
+    getAddress: () => cfg.btc_payout_address,
+    electrsHost: cfg.electrs_host,
+    electrsPort: cfg.electrs_port,
+    log: (m) => log(m),
+  });
+  if (cfg.electrs_host && cfg.electrs_port) {
+    log(`payout: using Electrs at ${cfg.electrs_host}:${cfg.electrs_port}`);
+  } else {
+    log('payout: using bitcoind scantxoutset (set electrs_host/port in Config for faster lookups)');
+  }
+
   const controller = new Controller({
     braiins,
     braiinsClient,
@@ -104,6 +124,7 @@ async function main(): Promise<void> {
     ownedBidsRepo,
     decisionsRepo,
     tickMetricsRepo,
+    payoutObserver,
     password: secrets.dashboard_password,
     tickIntervalMs: DEFAULT_TICK_INTERVAL_MS,
     secretsPath,
@@ -120,6 +141,7 @@ async function main(): Promise<void> {
     if (shuttingDown) return;
     shuttingDown = true;
     log(`received ${signal}; draining loop`);
+    payoutObserver.stop();
     await loop.stop();
     try {
       await httpServer.stop();
@@ -138,6 +160,7 @@ async function main(): Promise<void> {
   process.on('SIGTERM', () => void shutdown('SIGTERM'));
 
   loop.start();
+  payoutObserver.start();
   log('daemon ready (DRY-RUN). Ctrl+C to stop.');
 }
 

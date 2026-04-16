@@ -21,16 +21,23 @@ export interface NumberFieldProps {
   className?: string;
   placeholder?: string;
   disabled?: boolean;
+  /** Suppress thousand separators on display (e.g. for port numbers). */
+  noGrouping?: boolean;
   /**
    * Optional suffix rendered to the right of the field, e.g. "sat/PH/day".
    */
   suffix?: string;
 }
 
-function formatForDisplay(n: number, locale: string | undefined, isInteger: boolean): string {
+function formatForDisplay(
+  n: number,
+  locale: string | undefined,
+  isInteger: boolean,
+  useGrouping: boolean,
+): string {
   if (!Number.isFinite(n)) return '';
   return new Intl.NumberFormat(locale, {
-    useGrouping: true,
+    useGrouping,
     minimumFractionDigits: 0,
     maximumFractionDigits: isInteger ? 0 : 6,
   }).format(n);
@@ -69,15 +76,19 @@ export function NumberField({
   className = '',
   placeholder,
   disabled,
+  noGrouping,
   suffix,
 }: NumberFieldProps) {
   const isInteger = step === 'integer';
+  const useGrouping = !noGrouping;
   const [focused, setFocused] = useState(false);
-  const [draft, setDraft] = useState<string>(() => formatForDisplay(value, locale, isInteger));
+  const [draft, setDraft] = useState<string>(() =>
+    formatForDisplay(value, locale, isInteger, useGrouping),
+  );
 
   useEffect(() => {
-    if (!focused) setDraft(formatForDisplay(value, locale, isInteger));
-  }, [value, locale, focused, isInteger]);
+    if (!focused) setDraft(formatForDisplay(value, locale, isInteger, useGrouping));
+  }, [value, locale, focused, isInteger, useGrouping]);
 
   return (
     <div className="flex items-center gap-2 flex-1">
@@ -102,7 +113,7 @@ export function NumberField({
           setFocused(false);
           const parsed = parseUserInput(draft);
           if (parsed === null) {
-            setDraft(formatForDisplay(value, locale, isInteger));
+            setDraft(formatForDisplay(value, locale, isInteger, useGrouping));
             return;
           }
           let n = parsed;
@@ -110,7 +121,7 @@ export function NumberField({
           if (typeof min === 'number' && n < min) n = min;
           if (typeof max === 'number' && n > max) n = max;
           onChange(n);
-          setDraft(formatForDisplay(n, locale, isInteger));
+          setDraft(formatForDisplay(n, locale, isInteger, useGrouping));
         }}
         onChange={(e) => setDraft(e.target.value)}
         className={

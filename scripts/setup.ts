@@ -214,17 +214,29 @@ async function promptConfig(): Promise<AppConfig> {
     required: true,
   });
   const pool = await input({
-    message: 'Destination pool URL (Datum Gateway):',
+    message: 'Destination pool URL (Datum Gateway; must be public-routable):',
     default: 'stratum+tcp://datum.local:23334',
     validate: validUrl,
-  });
-  const worker = await input({
-    message: 'Worker name to present to the pool:',
-    validate: nonEmpty,
   });
   const payout = await input({
     message: 'BTC payout address to observe via bitcoind:',
     validate: nonEmpty,
+  });
+  console.log(
+    '\n  Ocean TIDES credits hashrate to the address in the worker identity.',
+  );
+  console.log(
+    `  Format: <btc address>.<label> — e.g. ${payout.slice(0, 10)}….rig1\n`,
+  );
+  const worker = await input({
+    message: 'Worker identity (btc_address.label):',
+    default: `${payout}.autopilot`,
+    validate: (v) => {
+      if (!v.includes('.')) {
+        return 'must contain a period — "<btc address>.<label>"; without it, shares are uncredited on Ocean';
+      }
+      return true;
+    },
   });
   const chatId = await input({
     message: 'Telegram chat ID for alerts:',

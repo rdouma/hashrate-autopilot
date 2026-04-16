@@ -70,6 +70,16 @@ export interface MetricPoint {
   run_mode: string;
 }
 
+export interface PayoutsResponse {
+  address: string | null;
+  total_unspent_sat: number | null;
+  utxo_count: number | null;
+  scanned_block_height: number | null;
+  checked_at: number | null;
+  last_error: string | null;
+  source: 'electrs' | 'bitcoind' | null;
+}
+
 export interface ProposalView {
   kind: 'CREATE_BID' | 'EDIT_PRICE' | 'CANCEL_BID' | 'PAUSE';
   summary: string;
@@ -168,7 +178,10 @@ export interface AppConfig {
   fill_escalation_step_sat_per_eh_day: number;
   fill_escalation_after_minutes: number;
   max_overpay_vs_ask_sat_per_eh_day: number;
+  overpay_before_lowering_sat_per_eh_day: number;
   hibernate_on_expensive_market: boolean;
+  electrs_host: string | null;
+  electrs_port: number | null;
 }
 
 export interface ConfigResponse {
@@ -206,6 +219,8 @@ export const api = {
     request<{ points: MetricPoint[] }>(
       `/api/metrics${sinceMs ? `?since=${sinceMs}` : ''}`,
     ),
+  payouts: () => request<PayoutsResponse>('/api/payouts'),
+  scanPayouts: () => request<{ ok: boolean; error?: string }>('/api/payouts/scan', { method: 'POST' }),
   // Test-auth call: hits /api/status to validate credentials.
   checkAuth: () => request<StatusResponse>('/api/status'),
 };

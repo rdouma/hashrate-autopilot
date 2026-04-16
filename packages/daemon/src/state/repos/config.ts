@@ -21,7 +21,12 @@ export class ConfigRepo {
     const row = await this.db.selectFrom('config').selectAll().where('id', '=', 1).executeTakeFirst();
     if (!row) return null;
     const { id: _id, updated_at: _ua, hibernate_on_expensive_market, ...rest } = row;
-    return { ...rest, hibernate_on_expensive_market: hibernate_on_expensive_market === 1 };
+    return {
+      ...rest,
+      hibernate_on_expensive_market: hibernate_on_expensive_market === 1,
+      electrs_host: rest.electrs_host ?? null,
+      electrs_port: rest.electrs_port ?? null,
+    };
   }
 
   /**

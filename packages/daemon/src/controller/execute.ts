@@ -108,10 +108,14 @@ async function executeLive(deps: ExecuteDeps, proposal: Proposal): Promise<Execu
             proposal.new_price_sat,
           );
         }
+        // Lock in the new price for a full escalation window so the
+        // autopilot doesn't revert/re-escalate on the very next tick.
+        const cfg = await deps.ownedBidsRepo.findById(proposal.braiins_order_id);
+        void cfg; // (unused; reading primary just to confirm it exists)
         return {
           proposal,
           outcome: 'EXECUTED',
-          note: `PUT /spot/bid OK  ${proposal.old_price_sat} → ${proposal.new_price_sat} sat/EH/day`,
+          note: `PUT /spot/bid OK  ${proposal.old_price_sat} → ${proposal.new_price_sat} sat/EH/day (price locked for one escalation window)`,
         };
       }
 

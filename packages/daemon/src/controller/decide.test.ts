@@ -186,30 +186,29 @@ describe('decide — EDIT / CANCEL paths', () => {
     expect(decide(s)).toEqual([]);
   });
 
-  it('proposes EDIT_PRICE when overpaying beyond tolerance', () => {
+  it('NEVER auto-lowers price, even when overpaying', () => {
+    // By design: once a bid is placed, the autopilot never revises its
+    // price downward. If fills are flowing, lowering kills them; if the
+    // market drops, the next bid (placed after budget drain) picks up
+    // the cheaper market automatically.
     const s = state({
       owned_bids: [owned({ price_sat: EXPECTED_TARGET + 2_000_000 })],
     });
     const proposals = decide(s);
-    expect(proposals).toContainEqual(
-      expect.objectContaining({
-        kind: 'EDIT_PRICE',
-        new_price_sat: EXPECTED_TARGET,
-      }),
-    );
+    const edits = proposals.filter((p) => p.kind === 'EDIT_PRICE');
+    expect(edits).toHaveLength(0);
   });
 
-  it('proposes EDIT_PRICE upward when underpaying', () => {
+  it('does NOT auto-edit when underpaying without being below floor', () => {
+    // Underpaying is only corrected via escalation (and only after the
+    // below-floor window elapses). Plain "bid below target" isn't
+    // enough to trigger an edit.
     const s = state({
       owned_bids: [owned({ price_sat: EXPECTED_TARGET - 2_000_000 })],
     });
     const proposals = decide(s);
-    expect(proposals).toContainEqual(
-      expect.objectContaining({
-        kind: 'EDIT_PRICE',
-        new_price_sat: EXPECTED_TARGET,
-      }),
-    );
+    const edits = proposals.filter((p) => p.kind === 'EDIT_PRICE');
+    expect(edits).toHaveLength(0);
   });
 
   it('proposes CANCEL for duplicate owned bids beyond the primary', () => {

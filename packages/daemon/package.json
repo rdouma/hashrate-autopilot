@@ -25,12 +25,14 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@braiins-hashrate/bitcoind-client": "workspace:*",
     "@braiins-hashrate/braiins-client": "workspace:*",
     "@braiins-hashrate/shared": "workspace:*",
     "@fastify/basic-auth": "^6.2.0",
     "@fastify/cors": "^11.2.0",
     "@fastify/static": "^9.1.0",
     "@inquirer/prompts": "^7.2.1",
+    "bech32": "^2.0.0",
     "better-sqlite3": "^11.7.0",
     "fastify": "^5.8.5",
     "kysely": "^0.27.5",

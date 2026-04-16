@@ -1,10 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { NumberField } from '../components/NumberField';
 import { api, UnauthorizedError, type AppConfig } from '../lib/api';
-import { formatNumber } from '../lib/format';
 import { useLocale } from '../lib/locale';
 
 const EH_PER_PH = 1000;
@@ -15,9 +14,16 @@ type Section = {
   fields: FieldSpec[];
 };
 
-type FieldSpec =
+type FieldSpec = (
   | { key: keyof AppConfig; label: string; kind: 'decimal'; unit: string; help?: string }
-  | { key: keyof AppConfig; label: string; kind: 'integer'; unit: string; help?: string }
+  | {
+      key: keyof AppConfig;
+      label: string;
+      kind: 'integer';
+      unit: string;
+      help?: string;
+      noGrouping?: boolean;
+    }
   | {
       key: keyof AppConfig;
       label: string;
@@ -25,7 +31,8 @@ type FieldSpec =
       help?: string;
     }
   | { key: keyof AppConfig; label: string; kind: 'text'; help?: string }
-  | { key: keyof AppConfig; label: string; kind: 'boolean'; help?: string };
+  | { key: keyof AppConfig; label: string; kind: 'boolean'; help?: string }
+) & { fullWidth?: boolean };
 
 const SECTIONS: Section[] = [
   {
@@ -38,10 +45,23 @@ const SECTIONS: Section[] = [
   },
   {
     title: 'Pool destination',
-    description: 'Where rented hashrate lands. Change only if your pool endpoint moves.',
+    description:
+      'Where rented hashrate lands. Change only if your pool endpoint moves.',
     fields: [
-      { key: 'destination_pool_url', label: 'Pool URL', kind: 'text' },
-      { key: 'destination_pool_worker_name', label: 'Worker name', kind: 'text' },
+      {
+        key: 'destination_pool_url',
+        label: 'Pool URL',
+        kind: 'text',
+        help: 'Must be reachable from the public internet — Braiins probes it.',
+        fullWidth: true,
+      },
+      {
+        key: 'destination_pool_worker_name',
+        label: 'Worker identity',
+        kind: 'text',
+        help: 'For Ocean TIDES this must be "<your BTC payout address>.<label>" — e.g. bc1qxyz….rig1. Without the address prefix your hashrate is credited to no one.',
+        fullWidth: true,
+      },
     ],
   },
   {
@@ -72,6 +92,12 @@ const SECTIONS: Section[] = [
         label: 'Overpay vs cheapest ask',
         kind: 'price_sat_per_eh_day',
         help: 'If target exceeds cheapest-available-ask + this, we hibernate instead.',
+      },
+      {
+        key: 'overpay_before_lowering_sat_per_eh_day',
+        label: 'Overpay before lowering',
+        kind: 'price_sat_per_eh_day',
+        help: 'Only auto-lower the bid when current price exceeds cheapest-available-ask + this. Higher = stickier price (holds through market noise); lower = more responsive to real market drops.',
       },
       {
         key: 'fill_escalation_step_sat_per_eh_day',
@@ -138,25 +164,31 @@ const SECTIONS: Section[] = [
     ],
   },
   {
-    title: 'Quiet hours & 2FA',
+    title: 'Bitcoin node (optional)',
+    description:
+      'Enter your BTC payout address to see what you have collected on-chain. Electrs is much faster and polled every minute; plain bitcoind uses scantxoutset (heavy) and is polled hourly.',
     fields: [
-      { key: 'quiet_hours_start', label: 'Quiet hours start (HH:MM)', kind: 'text' },
-      { key: 'quiet_hours_end', label: 'Quiet hours end (HH:MM)', kind: 'text' },
-      { key: 'quiet_hours_timezone', label: 'Timezone (IANA)', kind: 'text' },
       {
-        key: 'confirmation_timeout_minutes',
-        label: '2FA confirmation timeout',
-        kind: 'integer',
-        unit: 'min',
+        key: 'btc_payout_address',
+        label: 'BTC payout address',
+        kind: 'text',
+        help: 'The same address used in your worker identity (bech32 only — bc1q… / bc1p…).',
+        fullWidth: true,
       },
-      { key: 'handover_window_minutes', label: 'Handover window', kind: 'integer', unit: 'min' },
-    ],
-  },
-  {
-    title: 'Wiring',
-    fields: [
-      { key: 'btc_payout_address', label: 'BTC payout address', kind: 'text' },
-      { key: 'telegram_chat_id', label: 'Telegram chat ID', kind: 'text' },
+      {
+        key: 'electrs_host',
+        label: 'Electrs host (recommended)',
+        kind: 'text',
+        help: 'e.g. 192.168.1.121 or umbrel.local — leave empty to use bitcoind only.',
+      },
+      {
+        key: 'electrs_port',
+        label: 'Electrs port',
+        kind: 'integer',
+        unit: '',
+        help: 'Default 50001.',
+        noGrouping: true,
+      },
     ],
   },
 ];
@@ -175,8 +207,6 @@ export function Config() {
     if (query.data?.config) setDraft(query.data.config);
   }, [query.data]);
 
-  const status = useQuery({ queryKey: ['status'], queryFn: api.status });
-
   const mutation = useMutation({
     mutationFn: (cfg: AppConfig) => api.updateConfig(cfg),
     onSuccess: () => {
@@ -186,16 +216,6 @@ export function Config() {
     },
     onError: (err: Error) => setError(err.message),
   });
-
-  const [budgetDays, setBudgetDays] = useState<number>(0);
-
-  const currentAskPricePerPh = status.data?.market?.best_ask_sat_per_ph_day ?? null;
-  const computedBudgetSat = useMemo(() => {
-    if (!draft) return null;
-    if (!Number.isFinite(budgetDays) || budgetDays <= 0) return null;
-    const price = currentAskPricePerPh ?? draft.max_price_sat_per_eh_day / EH_PER_PH;
-    return Math.round(budgetDays * draft.target_hashrate_ph * price);
-  }, [budgetDays, draft, currentAskPricePerPh]);
 
   if (query.isError && query.error instanceof UnauthorizedError) {
     navigate('/login');
@@ -244,48 +264,6 @@ export function Config() {
         </div>
       )}
 
-      <section className="bg-slate-900 border border-slate-800 rounded-lg p-4">
-        <h3 className="text-sm uppercase tracking-wider text-amber-400 mb-2">Budget helper</h3>
-        <p className="text-xs text-slate-500 mb-3">
-          How many days of runway do you want per bid? We'll size <code>bid_budget_sat</code> using
-          current market price × {draft.target_hashrate_ph} PH/s target.
-        </p>
-        <div className="flex flex-wrap items-end gap-3">
-          <div>
-            <label className="block text-xs text-slate-400 mb-1">days of runway</label>
-            <NumberField
-              value={budgetDays}
-              onChange={setBudgetDays}
-              locale={intlLocale}
-              min={0}
-              className="w-32"
-            />
-          </div>
-          <div className="text-sm text-slate-300">
-            →{' '}
-            {computedBudgetSat === null
-              ? '—'
-              : `${formatNumber(computedBudgetSat, {}, intlLocale)} sat`}
-            {currentAskPricePerPh && (
-              <span className="block text-xs text-slate-500">
-                at current cheapest ask{' '}
-                {formatNumber(currentAskPricePerPh, {}, intlLocale)} sat/PH/day
-              </span>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={() =>
-              computedBudgetSat !== null && update('bid_budget_sat', computedBudgetSat)
-            }
-            disabled={computedBudgetSat === null}
-            className="px-3 py-1.5 text-xs border border-slate-700 text-slate-200 rounded hover:bg-slate-800 disabled:opacity-50"
-          >
-            apply to bid_budget_sat
-          </button>
-        </div>
-      </section>
-
       {SECTIONS.map((section) => (
         <section key={section.title} className="bg-slate-900 border border-slate-800 rounded-lg p-4">
           <header className="mb-3">
@@ -296,13 +274,12 @@ export function Config() {
           </header>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
             {section.fields.map((f) => (
-              <Field
+              <div
                 key={f.key as string}
-                spec={f}
-                draft={draft}
-                locale={intlLocale}
-                onChange={update}
-              />
+                className={f.fullWidth ? 'sm:col-span-2' : ''}
+              >
+                <Field spec={f} draft={draft} locale={intlLocale} onChange={update} />
+              </div>
             ))}
           </div>
         </section>
@@ -342,15 +319,30 @@ function Field({
   }
 
   if (spec.kind === 'text') {
+    const v = (value as string | null) ?? '';
+    // Ocean/TIDES worker-name sanity check: should be <btc-addr>.<label>.
+    // Warn when the value has no period (no payout address prefix) —
+    // that's the "worker mines but nobody gets credited" trap.
+    const showWorkerWarning =
+      spec.key === 'destination_pool_worker_name' && v.length > 0 && !v.includes('.');
     return (
       <label className="block">
         <span className="block text-sm text-slate-300 mb-1">{spec.label}</span>
         <input
           type="text"
-          value={value as string}
+          value={v}
           onChange={(e) => onChange(spec.key, e.target.value as never)}
-          className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm font-mono"
+          className={
+            'w-full bg-slate-800 border rounded px-3 py-1.5 text-sm font-mono ' +
+            (showWorkerWarning ? 'border-amber-600' : 'border-slate-700')
+          }
         />
+        {showWorkerWarning && (
+          <span className="block text-xs text-amber-400 mt-1">
+            ⚠ No period found. Ocean TIDES requires "&lt;BTC address&gt;.&lt;label&gt;".
+            Without the address prefix, shares go uncredited.
+          </span>
+        )}
         {spec.help && <span className="block text-xs text-slate-500 mt-1">{spec.help}</span>}
       </label>
     );
@@ -379,11 +371,12 @@ function Field({
     <label className="block">
       <span className="block text-sm text-slate-300 mb-1">{spec.label}</span>
       <NumberField
-        value={value as number}
+        value={(value as number | null) ?? 0}
         onChange={(n) => onChange(spec.key, n as never)}
         step={spec.kind === 'integer' ? 'integer' : 'any'}
         locale={locale}
         suffix={spec.unit}
+        noGrouping={spec.kind === 'integer' && (spec as { noGrouping?: boolean }).noGrouping}
       />
       {spec.help && <span className="block text-xs text-slate-500 mt-1">{spec.help}</span>}
     </label>

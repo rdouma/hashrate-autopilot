@@ -118,19 +118,42 @@ export function decide(state: State): readonly Proposal[] {
     });
   }
 
-  // Case: edit primary if its price is out of the tolerance band.
-  const tolerance = Math.max(tickSize, targetPrice * EDIT_PRICE_TOLERANCE_PCT);
-  const diff = primary.price_sat - targetPrice;
-  if (Math.abs(diff) > tolerance) {
-    const direction = diff > 0 ? 'overpaying' : 'underpaying';
+  const overrideUntil = state.manual_override_until_ms;
+  const overrideActive = overrideUntil !== null && overrideUntil > state.tick_at;
+
+  // (a) Escalate UP when we've been stuck below floor.
+  const escalatedTarget = Math.min(escalation, effectiveCap);
+  if (!overrideActive && escalatedTarget > primary.price_sat + tickSize) {
     proposals.push({
       kind: 'EDIT_PRICE',
       braiins_order_id: primary.braiins_order_id,
-      new_price_sat: targetPrice,
+      new_price_sat: escalatedTarget,
       old_price_sat: primary.price_sat,
-      reason: `${direction}: ${primary.price_sat} vs target ${targetPrice}`,
+      reason: `escalation: stuck below floor — raising by one step to ${escalatedTarget}`,
     });
   }
+
+  // (b) Lower ONLY when we're materially overpaying vs current market.
+  // Triggered by the operator-configured `overpay_before_lowering`
+  // safety margin: we only consider lowering if current_price exceeds
+  // the naive target (cheapest_available_ask + max_overpay) by that
+  // many sat/EH/day. Caveat: still respects the override grace lock
+  // (don't undo a recent escalation) and Braiins's 10-min
+  // price-decrease cooldown (gate enforces).
+  const lowerMargin = state.config.overpay_before_lowering_sat_per_eh_day;
+  const overpayDelta = primary.price_sat - desiredPrice;
+  const alreadyProposingEdit = proposals.some((p) => p.kind === 'EDIT_PRICE');
+  if (!overrideActive && overpayDelta > lowerMargin && !alreadyProposingEdit) {
+    const lowerEdit: Proposal = {
+      kind: 'EDIT_PRICE',
+      braiins_order_id: primary.braiins_order_id,
+      new_price_sat: desiredPrice,
+      old_price_sat: primary.price_sat,
+      reason: `market_drop: overpaying by ${overpayDelta} > safety margin ${lowerMargin} — lowering to target ${desiredPrice}`,
+    };
+    proposals.push(lowerEdit);
+  }
+  void EDIT_PRICE_TOLERANCE_PCT;
 
   return proposals;
 }
@@ -162,20 +185,18 @@ function computeEffectiveCap(state: State): number {
 }
 
 /**
- * Escalation target: if we've been unfilled past the escalation window,
- * allow a bid at `current_price + fill_escalation_step_sat_per_eh_day`.
- * Returns 0 if no escalation applies (= no upward push from this function).
+ * Escalation target: +1 step above the current bid once we've been
+ * stuck below floor for a full window. Repeated escalations are
+ * controlled by the tick driver via `manual_override_until_ms`, which
+ * locks in each escalated price for a full window before another
+ * escalation may fire. Returns 0 when no escalation applies.
  */
 function computeEscalation(state: State, currentBidPriceSat: number): number {
   if (state.below_floor_since === null) return 0;
   const elapsedMinutes = (state.tick_at - state.below_floor_since) / 60_000;
   if (elapsedMinutes < state.config.fill_escalation_after_minutes) return 0;
   if (currentBidPriceSat <= 0) return 0;
-  // Compound escalation over multiple windows since below-floor start.
-  const windowsElapsed = Math.floor(
-    elapsedMinutes / state.config.fill_escalation_after_minutes,
-  );
-  return currentBidPriceSat + windowsElapsed * state.config.fill_escalation_step_sat_per_eh_day;
+  return currentBidPriceSat + state.config.fill_escalation_step_sat_per_eh_day;
 }
 
 // Re-export a type the tick driver consumes alongside decide():

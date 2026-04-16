@@ -4,7 +4,13 @@ import { useNavigate } from 'react-router-dom';
 
 import { HashrateChart } from '../components/HashrateChart';
 import { ModeBadge } from '../components/ModeBadge';
-import { api, UnauthorizedError, type ProposalView, type StatusResponse } from '../lib/api';
+import {
+  api,
+  UnauthorizedError,
+  type PayoutsResponse,
+  type ProposalView,
+  type StatusResponse,
+} from '../lib/api';
 import {
   formatAge,
   formatHashratePH,
@@ -65,24 +71,20 @@ export function Status() {
     refetchInterval: 15_000,
   });
 
-  const operatorMutation = useMutation({
-    mutationFn: (available: boolean) => api.setOperatorAvailable(available),
-    onMutate: async (newAvailable) => {
-      await qc.cancelQueries({ queryKey: ['status'] });
-      const previous = qc.getQueryData<StatusResponse>(['status']);
-      if (previous) {
-        qc.setQueryData<StatusResponse>(['status'], {
-          ...previous,
-          operator_available: newAvailable,
-        });
-      }
-      return { previous };
-    },
-    onError: (_err, _vars, ctx) => {
-      if (ctx?.previous) qc.setQueryData(['status'], ctx.previous);
-    },
-    onSettled: () => qc.invalidateQueries({ queryKey: ['status'] }),
+  const payoutsQuery = useQuery({
+    queryKey: ['payouts'],
+    queryFn: api.payouts,
+    refetchInterval: 60_000,
   });
+
+  const scanPayoutsMutation = useMutation({
+    mutationFn: () => api.scanPayouts(),
+    onSettled: () => qc.invalidateQueries({ queryKey: ['payouts'] }),
+  });
+
+  // Operator availability removed from the UI (API bids bypass 2FA;
+  // see research.md §0.9). Backend field remains in case Braiins
+  // changes policy. The endpoint still exists for future use.
 
   if (query.isError && query.error instanceof UnauthorizedError) {
     navigate('/login');
@@ -107,50 +109,50 @@ export function Status() {
         </div>
       </header>
 
-      <OperationsCard
-        s={s}
-        onRunMode={(m) => runModeMutation.mutate(m)}
-        runModePending={runModeMutation.isPending}
-        onOperatorAvailable={(v) => operatorMutation.mutate(v)}
-        operatorPending={operatorMutation.isPending}
-      />
-
-      <NextActionCard
-        s={s}
-        onTickNow={() => tickNowMutation.mutate()}
-        tickPending={tickNowMutation.isPending}
-        tickResult={tickNowMutation.data}
-        onBump={() => bumpMutation.mutate()}
-        bumpPending={bumpMutation.isPending}
-        bumpResult={bumpMutation.data}
-      />
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <OperationsCard
+          s={s}
+          onRunMode={(m) => runModeMutation.mutate(m)}
+          runModePending={runModeMutation.isPending}
+        />
+        <div className="lg:col-span-2">
+          <NextActionCard
+            s={s}
+            onTickNow={() => tickNowMutation.mutate()}
+            tickPending={tickNowMutation.isPending}
+            tickResult={tickNowMutation.data}
+            onBump={() => bumpMutation.mutate()}
+            bumpPending={bumpMutation.isPending}
+            bumpResult={bumpMutation.data}
+          />
+        </div>
+      </section>
 
       {metricsQuery.data && metricsQuery.data.points.length > 0 && (
         <HashrateChart points={metricsQuery.data.points} />
       )}
 
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        <Card title="Hashrate">
+        <Card title="Hashrate & market">
           <Row k="delivered" v={formatHashratePH(s.actual_hashrate_ph)} />
           <Row k="target" v={formatHashratePH(s.config_summary.target_hashrate_ph)} />
           <Row k="floor" v={formatHashratePH(s.config_summary.minimum_floor_hashrate_ph)} />
           {s.below_floor_since && (
-            <div className="text-xs text-amber-400 mt-2">
+            <div className="text-xs text-amber-400 mt-1">
               below floor since {formatAge(s.below_floor_since)}
             </div>
           )}
+          <div className="border-t border-slate-800 mt-2 pt-2">
+            <Row k="best bid" v={formatSatPerPH(s.market?.best_bid_sat_per_ph_day ?? null)} />
+            <Row k="best ask" v={formatSatPerPH(s.market?.best_ask_sat_per_ph_day ?? null)} />
+          </div>
         </Card>
-        <Card title="Market">
-          <Row k="best bid" v={formatSatPerPH(s.market?.best_bid_sat_per_ph_day ?? null)} />
-          <Row k="best ask" v={formatSatPerPH(s.market?.best_ask_sat_per_ph_day ?? null)} />
-        </Card>
-        <Card title="Balance">
+        <Card title="Braiins balance">
           {s.balances.length === 0 ? (
             <div className="text-slate-500 text-sm">—</div>
           ) : (
             s.balances.map((b) => (
               <div key={b.subaccount}>
-                <div className="text-xs text-slate-500">{b.subaccount}</div>
                 <Row k="available" v={formatSats(b.available_balance_sat)} />
                 <Row k="blocked" v={formatSats(b.blocked_balance_sat)} />
                 <Row k="total" v={formatSats(b.total_balance_sat)} />
@@ -158,6 +160,11 @@ export function Status() {
             ))
           )}
         </Card>
+        <CollectedBtcCard
+          data={payoutsQuery.data}
+          onRescan={() => scanPayoutsMutation.mutate()}
+          rescanPending={scanPayoutsMutation.isPending}
+        />
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-3">
@@ -243,13 +250,9 @@ export function Status() {
         )}
       </section>
 
-      <section>
-        <h3 className="text-sm text-slate-400 mb-2">Last tick proposals</h3>
-        {s.last_proposals.length === 0 ? (
-          <div className="bg-slate-900 border border-slate-800 rounded-lg p-3 text-slate-500 text-sm">
-            (none — nothing to propose)
-          </div>
-        ) : (
+      {s.last_proposals.length > 0 && (
+        <section>
+          <h3 className="text-sm text-slate-400 mb-2">Last tick proposals</h3>
           <ul className="space-y-1">
             {s.last_proposals.map((p, i) => (
               <li key={i}>
@@ -257,8 +260,8 @@ export function Status() {
               </li>
             ))}
           </ul>
-        )}
-      </section>
+        </section>
+      )}
     </div>
   );
 }
@@ -271,14 +274,10 @@ function OperationsCard({
   s,
   onRunMode,
   runModePending,
-  onOperatorAvailable,
-  operatorPending,
 }: {
   s: StatusResponse;
   onRunMode: (m: (typeof RUN_MODES)[number]) => void;
   runModePending: boolean;
-  onOperatorAvailable: (v: boolean) => void;
-  operatorPending: boolean;
 }) {
   const heroColors: Record<StatusResponse['run_mode'], string> = {
     DRY_RUN: 'from-sky-900/60 to-sky-950/40 border-sky-700/40',
@@ -300,61 +299,17 @@ function OperationsCard({
 
   return (
     <section
-      className={`bg-gradient-to-br ${heroColors[s.run_mode]} border rounded-xl p-5`}
+      className={`bg-gradient-to-br ${heroColors[s.run_mode]} border rounded-xl p-5 h-full flex flex-col justify-center`}
     >
-      <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-6">
-        <div className="flex flex-col items-start">
-          <div className={`text-5xl font-semibold tracking-wide ${heroTextColors[s.run_mode]}`}>
-            {heroLabels[s.run_mode]}
-          </div>
-          <RunModeToggle current={s.run_mode} onChange={onRunMode} disabled={runModePending} />
-          {actionVisible && (
-            <div className="mt-3 text-sm text-amber-200">
-              ⚠ {actionModeLabel(s.action_mode)}
-            </div>
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <div>
-            <div className="text-xs uppercase tracking-wider text-slate-400 mb-1">
-              Quiet hours
-            </div>
-            <div className="text-slate-100 text-lg">
-              {s.config_summary.quiet_hours_start} – {s.config_summary.quiet_hours_end}
-            </div>
-            <div className="text-xs text-slate-400">{s.config_summary.quiet_hours_timezone}</div>
-            <div className="text-xs text-slate-500 mt-1">
-              During this window, creates/edits are deferred so you aren't woken for 2FA.
-            </div>
-          </div>
-
-          <div>
-            <div className="text-xs uppercase tracking-wider text-slate-400 mb-1">
-              Operator availability
-            </div>
-            <button
-              onClick={() => onOperatorAvailable(!s.operator_available)}
-              disabled={operatorPending}
-              className={
-                'w-full px-3 py-2 text-sm rounded-md border transition ' +
-                (s.operator_available
-                  ? 'bg-emerald-900/50 border-emerald-700 text-emerald-100 hover:bg-emerald-900/70'
-                  : 'bg-amber-900/50 border-amber-700 text-amber-100 hover:bg-amber-900/70')
-              }
-            >
-              {operatorPending
-                ? '…'
-                : s.operator_available
-                  ? '✓ available — click to mark away'
-                  : "I'm available — retry pending"}
-            </button>
-            <div className="text-xs text-slate-500 mt-1">
-              Tells the autopilot you're near your Telegram and can approve 2FA prompts.
-            </div>
-          </div>
-        </div>
+      <div className={`text-4xl font-semibold tracking-wide ${heroTextColors[s.run_mode]}`}>
+        {heroLabels[s.run_mode]}
       </div>
+      <RunModeToggle current={s.run_mode} onChange={onRunMode} disabled={runModePending} />
+      {actionVisible && (
+        <div className="mt-2 text-sm text-amber-200">
+          ⚠ {actionModeLabel(s.action_mode)}
+        </div>
+      )}
     </section>
   );
 }
@@ -464,6 +419,59 @@ function NextActionCard({
 // ---------------------------------------------------------------------------
 // Small helpers
 // ---------------------------------------------------------------------------
+
+function CollectedBtcCard({
+  data,
+  onRescan,
+  rescanPending,
+}: {
+  data: PayoutsResponse | undefined;
+  onRescan: () => void;
+  rescanPending: boolean;
+}) {
+  const hasScan = data?.checked_at !== null && data?.checked_at !== undefined;
+  const hasError = !!data?.last_error;
+  const amountSat = data?.total_unspent_sat;
+  const source = data?.source;
+
+  return (
+    <Card title="Collected BTC (on-chain)">
+      <div className="text-2xl font-mono text-emerald-300">
+        {amountSat !== null && amountSat !== undefined ? formatSats(amountSat) : '—'}
+      </div>
+      <div className="text-xs text-slate-500 mt-1">
+        {hasScan ? (
+          <>
+            {source === 'electrs' ? (
+              <span className="text-sky-400">via Electrs</span>
+            ) : source === 'bitcoind' ? (
+              <span className="text-amber-400">via bitcoind</span>
+            ) : null}
+            {source && ' · '}
+            checked {formatAge(data.checked_at)}
+            {source === 'bitcoind' && data.scanned_block_height !== null && (
+              <> · block {data.scanned_block_height}</>
+            )}
+          </>
+        ) : (
+          'waiting for first scan…'
+        )}
+      </div>
+      {hasError && (
+        <div className="text-xs text-amber-400 mt-1">
+          last scan issue: {data.last_error}
+        </div>
+      )}
+      <button
+        onClick={onRescan}
+        disabled={rescanPending}
+        className="mt-2 px-2 py-1 text-xs rounded border border-slate-700 text-slate-300 hover:bg-slate-800 disabled:opacity-50"
+      >
+        {rescanPending ? 'scanning…' : 'rescan now'}
+      </button>
+    </Card>
+  );
+}
 
 function PoolCard({
   url,

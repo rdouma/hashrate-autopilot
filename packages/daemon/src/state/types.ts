@@ -40,7 +40,10 @@ export interface ConfigTable {
   fill_escalation_step_sat_per_eh_day: number;
   fill_escalation_after_minutes: number;
   max_overpay_vs_ask_sat_per_eh_day: number;
+  overpay_before_lowering_sat_per_eh_day: number;
   hibernate_on_expensive_market: 0 | 1;
+  electrs_host: string | null;
+  electrs_port: number | null;
   updated_at: number;
 }
 

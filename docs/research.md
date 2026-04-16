@@ -681,3 +681,4 @@ Sources that were blocked / gaps:
 |---------|------------|-------------------------------------------------------------------------------------|
 | 1.0     | 2026-04-14 | Initial version                                                                     |
 | 1.1     | 2026-04-16 | Empirical correction: owner-token API bids bypass Telegram 2FA; documented in §0.9. |
+| 1.2     | 2026-04-16 | Empirical gotcha: Ocean TIDES worker identity must be `<btc-address>.<label>`. A bare label (no period) runs hashrate but credits zero shares to any payout address. Validated in Config page + first-run CLI. |
