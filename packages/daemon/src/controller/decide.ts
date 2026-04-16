@@ -34,6 +34,17 @@ import type { Proposal, State } from './types.js';
  */
 const EDIT_PRICE_TOLERANCE_PCT = 0.005;
 
+/**
+ * Format a sat/EH/day value as `12,345 sat/PH/day` for human-readable
+ * `reason` strings. The dashboard surfaces these verbatim — keeping the
+ * unit consistent with the rest of the UI (which is sat/PH/day) avoids
+ * the operator having to convert in their head.
+ */
+function fmtPricePH(satPerEhDay: number): string {
+  const ph = Math.round(satPerEhDay / 1000);
+  return `${ph.toLocaleString('en-US')} sat/PH/day`;
+}
+
 export function decide(state: State): readonly Proposal[] {
   // 1. Unknown-order ambiguity trumps all other rules (SPEC §9).
   if (state.unknown_bids.length > 0) {
@@ -72,7 +83,7 @@ export function decide(state: State): readonly Proposal[] {
       return [
         {
           kind: 'PAUSE',
-          reason: `market_too_expensive: needed ${desiredPrice} > cap ${effectiveCap} (cheapest ask ${cheapestAvailable})`,
+          reason: `market_too_expensive: needed ${fmtPricePH(desiredPrice)} > cap ${fmtPricePH(effectiveCap)} (cheapest ask ${fmtPricePH(cheapestAvailable)})`,
         },
       ];
     }
@@ -94,7 +105,7 @@ export function decide(state: State): readonly Proposal[] {
         speed_limit_ph: speedLimitPh,
         dest_pool_url: config.destination_pool_url,
         dest_worker_name: config.destination_pool_worker_name,
-        reason: `cheapest_available_ask=${cheapestAvailable}; target=${targetPrice}`,
+        reason: `cheapest_available_ask=${fmtPricePH(cheapestAvailable)}; target=${fmtPricePH(targetPrice)}`,
       },
     ];
   }
@@ -140,8 +151,8 @@ export function decide(state: State): readonly Proposal[] {
         old_price_sat: primary.price_sat,
         reason:
           config.escalation_mode === 'market'
-            ? `escalation[market]: stuck below floor — jumping to target ${escalatedPrice}`
-            : `escalation[dampened]: stuck below floor — stepping up to ${escalatedPrice}`,
+            ? `escalation[market]: stuck below floor — jumping to target ${fmtPricePH(escalatedPrice)}`
+            : `escalation[dampened]: stuck below floor — stepping up to ${fmtPricePH(escalatedPrice)}`,
       });
     }
   }
@@ -163,7 +174,7 @@ export function decide(state: State): readonly Proposal[] {
       braiins_order_id: primary.braiins_order_id,
       new_price_sat: targetPrice,
       old_price_sat: primary.price_sat,
-      reason: `market_drop: paying ${primary.price_sat} > target ${targetPrice} (delta > ${lowerThreshold}) — lowering to target`,
+      reason: `market_drop: paying ${fmtPricePH(primary.price_sat)} > target ${fmtPricePH(targetPrice)} (delta > ${fmtPricePH(lowerThreshold)}) — lowering to target`,
     });
   }
   void EDIT_PRICE_TOLERANCE_PCT;
