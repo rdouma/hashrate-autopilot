@@ -5,7 +5,13 @@
  * X-axis aligns visually when stacked.
  */
 
-import { useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
+
+import {
+  formatTimeTick,
+  localAlignedTimeTicks,
+  pickTimeTickInterval,
+} from '@braiins-hashrate/shared';
 
 import type { BidEventView, MetricPoint } from '../lib/api';
 import { formatNumber, formatTimestamp, formatTimestampUtc } from '../lib/format';
@@ -114,8 +120,10 @@ export function PriceChart({
     yTicks.push(priceMin + ((priceMax - priceMin) / ticks) * i);
   }
 
-  const firstTs = formatTimestamp(minX);
-  const lastTs = formatTimestamp(maxX);
+  // Same X-axis ticks as the HashrateChart above so events on this
+  // chart line up vertically with hashrate dips/spikes on that one.
+  const xTickInterval = pickTimeTickInterval(maxX - minX);
+  const xTicks = localAlignedTimeTicks(minX, maxX, xTickInterval);
 
   const visibleEvents = showEvents
     ? events.filter((e) => e.occurred_at >= minX && e.occurred_at <= maxX)
@@ -138,10 +146,11 @@ export function PriceChart({
     return before?.v ?? after?.v ?? null;
   };
 
+  // Tooltip lives in a portal-style fixed-position node so it's free of
+  // the chart container's overflow/clip and can flip near the viewport
+  // edges. Coords stored are viewport-absolute (e.clientX/Y).
   const onMarkerEnter = (event: BidEventView) => (e: React.MouseEvent) => {
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    setHovered({ event, x: e.clientX - rect.left, y: e.clientY - rect.top });
+    setHovered({ event, x: e.clientX, y: e.clientY });
   };
   const onMarkerLeave = () => setHovered(null);
 
@@ -266,12 +275,31 @@ export function PriceChart({
           strokeWidth="1"
         />
 
-        <text x={PADDING.left} y={HEIGHT - 6} fontSize="10" fill="#64748b" fontFamily="monospace">
-          {firstTs}
-        </text>
-        <text x={WIDTH - PADDING.right} y={HEIGHT - 6} textAnchor="end" fontSize="10" fill="#64748b" fontFamily="monospace">
-          {lastTs}
-        </text>
+        {xTicks.map((t) => {
+          const x = xScale(t);
+          return (
+            <g key={`x-${t}`}>
+              <line
+                x1={x}
+                x2={x}
+                y1={HEIGHT - PADDING.bottom}
+                y2={HEIGHT - PADDING.bottom + 3}
+                stroke="#475569"
+                strokeWidth="1"
+              />
+              <text
+                x={x}
+                y={HEIGHT - 8}
+                textAnchor="middle"
+                fontSize="10"
+                fill="#64748b"
+                fontFamily="monospace"
+              >
+                {formatTimeTick(t, xTickInterval, intlLocale)}
+              </text>
+            </g>
+          );
+        })}
 
         {hasPrice && (
           <text
@@ -294,6 +322,43 @@ export function PriceChart({
 }
 
 function EventTooltip({ tip }: { tip: HoveredTooltip }) {
+  const ref = useRef<HTMLDivElement>(null);
+  // Initial render at the cursor's natural offset (right + below).
+  // useLayoutEffect then measures and flips horizontally / vertically
+  // if the tooltip would clip the viewport. Hidden until ready so the
+  // user never sees the wrong-position frame.
+  const [pos, setPos] = useState<{ left: number; top: number; ready: boolean }>({
+    left: tip.x + 12,
+    top: tip.y + 12,
+    ready: false,
+  });
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const margin = 12;
+    const safeEdge = 8;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    let left = tip.x + margin;
+    if (left + rect.width > vw - safeEdge) {
+      // Flip to the left side of the cursor.
+      left = tip.x - rect.width - margin;
+    }
+    if (left < safeEdge) left = safeEdge;
+
+    let top = tip.y + margin;
+    if (top + rect.height > vh - safeEdge) {
+      // Flip above the cursor.
+      top = tip.y - rect.height - margin;
+    }
+    if (top < safeEdge) top = safeEdge;
+
+    setPos({ left, top, ready: true });
+  }, [tip.x, tip.y, tip.event.id]);
+
   const e = tip.event;
   const sourceLabel = e.source === 'OPERATOR' ? 'manual' : 'automatic';
   const kindLabel =
@@ -307,11 +372,13 @@ function EventTooltip({ tip }: { tip: HoveredTooltip }) {
 
   return (
     <div
-      className="absolute z-10 bg-slate-950 border border-slate-700 rounded-lg shadow-lg p-3 text-xs pointer-events-none max-w-xs"
-      style={{
-        left: Math.min(tip.x + 12, (typeof window !== 'undefined' ? window.innerWidth : 1000) - 280),
-        top: tip.y + 12,
-      }}
+      ref={ref}
+      // `fixed` so positioning is purely viewport-relative — no chart
+      // container clip / scroll math. `whitespace-nowrap` on the body
+      // means data lines (price/delta/budget/id) never wrap; the reason
+      // line opts back into wrapping below.
+      className={`fixed z-50 bg-slate-950 border border-slate-700 rounded-lg shadow-lg p-3 text-xs pointer-events-none whitespace-nowrap ${pos.ready ? '' : 'invisible'}`}
+      style={{ left: pos.left, top: pos.top }}
     >
       <div className={`font-semibold uppercase tracking-wider ${headerColor}`}>
         {kindLabel} · {sourceLabel}
@@ -345,12 +412,17 @@ function EventTooltip({ tip }: { tip: HoveredTooltip }) {
       )}
 
       {e.braiins_order_id && (
-        <div className="mt-2 text-[10px] font-mono text-slate-500 break-all">
+        <div className="mt-2 text-[10px] font-mono text-slate-500">
           id {e.braiins_order_id}
         </div>
       )}
       {e.reason && (
-        <div className="mt-2 text-[11px] text-slate-400 italic">{e.reason}</div>
+        // Reason is the only freeform string; allow it to wrap so a
+        // long sentence doesn't blow the tooltip off-screen, but cap
+        // the width so it stays readable.
+        <div className="mt-2 text-[11px] text-slate-400 italic whitespace-normal max-w-[20rem]">
+          {e.reason}
+        </div>
       )}
     </div>
   );

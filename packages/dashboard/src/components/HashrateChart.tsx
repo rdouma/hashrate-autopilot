@@ -8,11 +8,14 @@
 import {
   CHART_RANGES,
   CHART_RANGE_SPECS,
+  formatTimeTick,
+  localAlignedTimeTicks,
+  pickTimeTickInterval,
   type ChartRange,
 } from '@braiins-hashrate/shared';
 
 import type { MetricPoint } from '../lib/api';
-import { formatNumber, formatTimestamp } from '../lib/format';
+import { formatNumber } from '../lib/format';
 import { useLocale } from '../lib/locale';
 
 const WIDTH = 880;
@@ -103,8 +106,10 @@ export function HashrateChart({
     yTicks.push(yMin + ((yMax - yMin) / ticks) * i);
   }
 
-  const firstTs = formatTimestamp(minX);
-  const lastTs = formatTimestamp(maxX);
+  // X-axis: round local-time ticks (08:00, 09:00, ...) instead of the
+  // arbitrary first/last timestamps. Same ticks shared with PriceChart.
+  const xTickInterval = pickTimeTickInterval(maxX - minX);
+  const xTicks = localAlignedTimeTicks(minX, maxX, xTickInterval);
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
@@ -173,12 +178,31 @@ export function HashrateChart({
           strokeWidth="1"
         />
 
-        <text x={PADDING.left} y={HEIGHT - 6} fontSize="10" fill="#64748b" fontFamily="monospace">
-          {firstTs}
-        </text>
-        <text x={WIDTH - PADDING.right} y={HEIGHT - 6} textAnchor="end" fontSize="10" fill="#64748b" fontFamily="monospace">
-          {lastTs}
-        </text>
+        {xTicks.map((t) => {
+          const x = xScale(t);
+          return (
+            <g key={`x-${t}`}>
+              <line
+                x1={x}
+                x2={x}
+                y1={HEIGHT - PADDING.bottom}
+                y2={HEIGHT - PADDING.bottom + 3}
+                stroke="#475569"
+                strokeWidth="1"
+              />
+              <text
+                x={x}
+                y={HEIGHT - 8}
+                textAnchor="middle"
+                fontSize="10"
+                fill="#64748b"
+                fontFamily="monospace"
+              >
+                {formatTimeTick(t, xTickInterval, intlLocale)}
+              </text>
+            </g>
+          );
+        })}
 
         <text
           x={14}
