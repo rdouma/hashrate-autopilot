@@ -130,6 +130,7 @@ export interface StatusResponse {
     minimum_floor_hashrate_ph: number;
     max_price_sat_per_ph_day: number;
     emergency_max_price_sat_per_ph_day: number;
+    fill_escalation_step_sat_per_ph_day: number;
     bid_budget_sat: number;
     pool_url: string;
     quiet_hours_start: string;

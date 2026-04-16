@@ -14,6 +14,15 @@ const WIDTH = 880;
 const HEIGHT = 220;
 const PADDING = { top: 12, right: 16, bottom: 24, left: 44 };
 
+function formatDuration(ms: number): string {
+  const totalMinutes = Math.max(0, Math.round(ms / 60_000));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours === 0) return `${minutes}m`;
+  if (minutes === 0) return `${hours}h`;
+  return `${hours}h ${minutes}m`;
+}
+
 export function HashrateChart({ points }: { points: readonly MetricPoint[] }) {
   if (points.length < 2) {
     return (
@@ -71,7 +80,7 @@ export function HashrateChart({ points }: { points: readonly MetricPoint[] }) {
     <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-xs uppercase tracking-wider text-slate-400">
-          Delivered hashrate (last {Math.round((maxX - minX) / 60_000)} min)
+          Delivered hashrate (last {formatDuration(maxX - minX)})
         </h3>
         <div className="flex gap-3 text-xs">
           <Legend color="#34d399" label="delivered" />
@@ -158,14 +167,15 @@ export function HashrateChart({ points }: { points: readonly MetricPoint[] }) {
           {lastTs}
         </text>
 
-        {/* Y-axis unit label */}
+        {/* Y-axis unit label — rotated along the axis to avoid overlapping tick numbers */}
         <text
-          x={PADDING.left - 4}
-          y={PADDING.top + 8}
-          textAnchor="end"
-          fontSize="9"
+          x={14}
+          y={PADDING.top + (HEIGHT - PADDING.top - PADDING.bottom) / 2}
+          textAnchor="middle"
+          fontSize="10"
           fill="#64748b"
           fontFamily="monospace"
+          transform={`rotate(-90 14 ${PADDING.top + (HEIGHT - PADDING.top - PADDING.bottom) / 2})`}
         >
           PH/s
         </text>

@@ -124,6 +124,7 @@ export function Status() {
             onBump={() => bumpMutation.mutate()}
             bumpPending={bumpMutation.isPending}
             bumpResult={bumpMutation.data}
+            escalationStepSatPerPh={s.config_summary.fill_escalation_step_sat_per_ph_day}
           />
         </div>
       </section>
@@ -198,6 +199,7 @@ export function Status() {
                   <th className="text-right py-2 px-3">price</th>
                   <th className="text-right py-2 px-3">delivered / cap</th>
                   <th className="text-right py-2 px-3">budget</th>
+                  <th className="text-left py-2 px-3 w-32">progress</th>
                   <th className="text-left py-2 px-3">status</th>
                 </tr>
               </thead>
@@ -238,6 +240,9 @@ export function Status() {
                     </td>
                     <td className="py-2 px-3 text-right">
                       {formatNumber(b.amount_sat, {}, intlLocale)}
+                    </td>
+                    <td className="py-2 px-3">
+                      <BidProgress pct={b.progress_pct} />
                     </td>
                     <td className={`py-2 px-3 text-xs ${bidStatusClass(b.status)}`}>
                       {bidStatusLabel(b.status)}
@@ -326,6 +331,7 @@ function NextActionCard({
   onBump,
   bumpPending,
   bumpResult,
+  escalationStepSatPerPh,
 }: {
   s: StatusResponse;
   onTickNow: () => void;
@@ -336,6 +342,7 @@ function NextActionCard({
   bumpResult:
     | { ok: boolean; error?: string; new_price_sat_per_eh_day?: number }
     | undefined;
+  escalationStepSatPerPh: number;
 }) {
   const secondsUntilTick = s.next_tick_at
     ? Math.max(0, Math.round((s.next_tick_at - Date.now()) / 1000))
@@ -369,7 +376,7 @@ function NextActionCard({
           disabled={tickPending}
           className="px-3 py-1.5 text-xs rounded border border-slate-700 text-slate-200 hover:bg-slate-800 disabled:opacity-50"
         >
-          {tickPending ? 'ticking…' : 'Run tick now'}
+          {tickPending ? 'ticking…' : 'Run decision now'}
         </button>
         <button
           onClick={onBump}
@@ -381,7 +388,9 @@ function NextActionCard({
           }
           className="px-3 py-1.5 text-xs rounded border border-amber-800 text-amber-200 hover:bg-amber-900/40 disabled:opacity-50"
         >
-          {bumpPending ? 'bumping…' : 'Bump price +1 step'}
+          {bumpPending
+            ? 'bumping…'
+            : `Bump price +${formatNumber(escalationStepSatPerPh)} sat/PH/day`}
         </button>
         <span className="text-xs text-slate-500 self-center">
           Manual overrides — use when you want action sooner than the tick cadence.
@@ -526,6 +535,21 @@ function PoolCard({
           {copied ? '✓ copied' : 'copy'}
         </button>
       </div>
+    </div>
+  );
+}
+
+function BidProgress({ pct }: { pct: number | null }) {
+  if (pct === null || pct === undefined) return <span className="text-slate-600 text-xs">—</span>;
+  const clamped = Math.max(0, Math.min(100, pct));
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex-1 h-1.5 bg-slate-800 rounded overflow-hidden">
+        <div className="h-full bg-emerald-500" style={{ width: `${clamped}%` }} />
+      </div>
+      <span className="text-xs text-slate-400 font-mono tabular-nums w-9 text-right">
+        {clamped.toFixed(0)}%
+      </span>
     </div>
   );
 }
