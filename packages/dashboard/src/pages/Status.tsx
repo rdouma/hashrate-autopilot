@@ -20,6 +20,7 @@ import {
   type MetricPoint,
   type NextActionView,
   type ProposalView,
+  type StatsResponse,
   type StatusResponse,
 } from '../lib/api';
 import {
@@ -106,6 +107,13 @@ export function Status() {
     refetchInterval: 60_000,
   });
 
+  const statsQuery = useQuery({
+    queryKey: ['stats', chartRange],
+    queryFn: () => api.stats(chartRange),
+    // Cached 60s server-side; poll every 60s client-side to match.
+    refetchInterval: 60_000,
+  });
+
   const financeQuery = useQuery({
     queryKey: ['finance'],
     queryFn: api.finance,
@@ -170,10 +178,7 @@ export function Status() {
         showEvents={CHART_RANGE_SPECS[chartRange].showEvents}
       />
 
-      <StatsBar
-        points={metricsQuery.data?.points ?? []}
-        events={bidEventsQuery.data?.events ?? []}
-      />
+      <StatsBar statsData={statsQuery.data} />
 
       {/* Three-column row: market context | Braiins wallet | financial
           P&L. Money panel reads top-to-bottom (cost → incomes → net).
@@ -740,101 +745,52 @@ function formatRemaining(ms: number): string {
 // ---------------------------------------------------------------------------
 
 /**
- * Four KPIs computed client-side from the same tick_metrics +
- * bid_events the charts already consume. Responds to the chart range
- * filter so the operator can compare stats across 6h/24h/1w etc.
- * when tuning escalation window, overpay, and lowering parameters.
+ * Four KPIs from the server-side `/api/stats` endpoint. The server
+ * computes duration-weighted averages from the raw tick_metrics table
+ * using SQL LEAD() window function, so each tick is weighted by its
+ * actual duration — not an equal-weight approximation that distorts
+ * on pre-aggregated chart buckets (1w/1m).
+ *
+ * Responds to the chart range filter (same query param) so the
+ * operator can compare stats across 6h/24h/1w etc.
  */
-function StatsBar({
-  points,
-  events,
-}: {
-  points: readonly MetricPoint[];
-  events: readonly BidEventView[];
-}) {
+function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
   const { intlLocale } = useLocale();
 
-  const stats = useMemo(() => {
-    if (points.length < 2) return null;
+  if (!statsData || statsData.tick_count < 2) return null;
 
-    // 1. Uptime % — fraction of ticks with delivered hashrate > 0
-    const hashingTicks = points.filter((p) => p.delivered_ph > 0).length;
-    const uptimePct = (hashingTicks / points.length) * 100;
-
-    // 2. Avg overpay vs fillable — how much more we paid than the depth-aware market price
-    const overpayPairs = points.filter(
-      (p) =>
-        Number.isFinite(p.our_primary_price_sat_per_ph_day) &&
-        Number.isFinite(p.fillable_ask_sat_per_ph_day),
-    );
-    const avgOverpay =
-      overpayPairs.length > 0
-        ? overpayPairs.reduce(
-            (s, p) => s + (p.our_primary_price_sat_per_ph_day! - p.fillable_ask_sat_per_ph_day!),
-            0,
-          ) / overpayPairs.length
-        : null;
-
-    // 3. Avg cost per PH delivered — weighted average price across all delivering ticks
-    const delivering = points.filter(
-      (p) => p.delivered_ph > 0 && Number.isFinite(p.our_primary_price_sat_per_ph_day),
-    );
-    const totalWeighted = delivering.reduce(
-      (s, p) => s + p.our_primary_price_sat_per_ph_day! * p.delivered_ph,
-      0,
-    );
-    const totalPh = delivering.reduce((s, p) => s + p.delivered_ph, 0);
-    const avgCostPerPh = totalPh > 0 ? totalWeighted / totalPh : null;
-
-    // 4. Avg time-to-fill after CREATE/EDIT events — how long from an
-    //    event until the next tick with delivered_ph > 0. Measures how
-    //    quickly the market fills our bids at current settings.
-    const fillable = events.filter(
-      (e) => e.kind === 'CREATE_BID' || e.kind === 'EDIT_PRICE',
-    );
-    const fillTimes: number[] = [];
-    for (const ev of fillable) {
-      const firstFill = points.find(
-        (p) => p.tick_at > ev.occurred_at && p.delivered_ph > 0,
-      );
-      if (firstFill) {
-        fillTimes.push(firstFill.tick_at - ev.occurred_at);
-      }
-    }
-    const avgFillMs =
-      fillTimes.length > 0
-        ? fillTimes.reduce((a, b) => a + b, 0) / fillTimes.length
-        : null;
-
-    return { uptimePct, avgOverpay, avgCostPerPh, avgFillMs };
-  }, [points, events]);
-
-  if (!stats) return null;
-
-  const { uptimePct, avgOverpay, avgCostPerPh, avgFillMs } = stats;
+  const { uptime_pct, avg_overpay_sat_per_ph_day, avg_cost_per_ph_sat_per_ph_day, avg_time_to_fill_ms } = statsData;
   const fmt = (n: number) => formatNumber(Math.round(n), {}, intlLocale);
 
   return (
     <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
       <StatCard
         label="uptime"
-        value={`${uptimePct.toFixed(1)}%`}
-        tooltip="% of ticks in this range with delivered hashrate > 0. Low = bids not filling or escalation too slow."
-        color={uptimePct >= 90 ? 'text-emerald-300' : uptimePct >= 50 ? 'text-amber-300' : 'text-red-300'}
+        value={uptime_pct !== null ? `${uptime_pct.toFixed(1)}%` : '—'}
+        tooltip="Duration-weighted % of time with delivered hashrate > 0. Each tick is weighted by its actual duration (time until the next tick) so gaps after restarts count proportionally."
+        color={
+          uptime_pct === null
+            ? 'text-slate-400'
+            : uptime_pct >= 90
+              ? 'text-emerald-300'
+              : uptime_pct >= 50
+                ? 'text-amber-300'
+                : 'text-red-300'
+        }
       />
       <StatCard
         label="avg overpay vs fillable"
-        value={avgOverpay !== null ? `${fmt(avgOverpay)} sat/PH/day` : '—'}
-        tooltip="Average of (our price − fillable ask) across ticks where both are known. High = overpay too generous or lowering too slow."
+        value={avg_overpay_sat_per_ph_day !== null ? `${fmt(avg_overpay_sat_per_ph_day)} sat/PH/day` : '—'}
+        tooltip="Duration-weighted average of (our price − fillable ask). Each tick weighted by its actual duration. High = overpay too generous or lowering too slow."
       />
       <StatCard
         label="avg cost / PH delivered"
-        value={avgCostPerPh !== null ? `${fmt(avgCostPerPh)} sat/PH/day` : '—'}
-        tooltip="Weighted average price across all delivering ticks: sum(price × delivered) / sum(delivered). The efficiency metric."
+        value={avg_cost_per_ph_sat_per_ph_day !== null ? `${fmt(avg_cost_per_ph_sat_per_ph_day)} sat/PH/day` : '—'}
+        tooltip="Duration-weighted average price per PH delivered: sum(price × delivered × duration) / sum(delivered × duration). The efficiency metric."
       />
       <StatCard
         label="avg time to fill"
-        value={avgFillMs !== null ? formatFillTime(avgFillMs) : '—'}
+        value={avg_time_to_fill_ms !== null ? formatFillTime(avg_time_to_fill_ms) : '—'}
         tooltip="Average time from a CREATE/EDIT event to the first tick with delivered hashrate > 0. Measures how quickly the market fills at your current settings."
       />
     </section>

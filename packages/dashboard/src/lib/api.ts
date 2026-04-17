@@ -251,9 +251,20 @@ export const api = {
   payouts: () => request<PayoutsResponse>('/api/payouts'),
   scanPayouts: () => request<{ ok: boolean; error?: string }>('/api/payouts/scan', { method: 'POST' }),
   finance: () => request<FinanceResponse>('/api/finance'),
+  stats: (range: ChartRange) =>
+    request<StatsResponse>(`/api/stats?range=${encodeURIComponent(range)}`),
   // Test-auth call: hits /api/status to validate credentials.
   checkAuth: () => request<StatusResponse>('/api/status'),
 };
+
+export interface StatsResponse {
+  uptime_pct: number | null;
+  avg_overpay_sat_per_ph_day: number | null;
+  avg_cost_per_ph_sat_per_ph_day: number | null;
+  avg_time_to_fill_ms: number | null;
+  range: ChartRange;
+  tick_count: number;
+}
 
 export interface FinanceResponse {
   spent_sat: number;

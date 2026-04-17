@@ -17,6 +17,8 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import { readdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
+import type { Kysely } from 'kysely';
+
 import type { Controller } from '../controller/tick.js';
 import type { BidEventsRepo } from '../state/repos/bid_events.js';
 import type { ConfigRepo } from '../state/repos/config.js';
@@ -24,6 +26,7 @@ import type { DecisionsRepo } from '../state/repos/decisions.js';
 import type { OwnedBidsRepo } from '../state/repos/owned_bids.js';
 import type { RuntimeStateRepo } from '../state/repos/runtime_state.js';
 import type { TickMetricsRepo } from '../state/repos/tick_metrics.js';
+import type { Database } from '../state/types.js';
 import type { AccountSpendService } from '../services/account-spend.js';
 import type { OceanClient } from '../services/ocean.js';
 import type { PayoutObserver } from '../services/payout-observer.js';
@@ -36,6 +39,7 @@ import { registerMetricsRoute } from './routes/metrics.js';
 import { registerOperatorRoutes } from './routes/operator.js';
 import { registerPayoutsRoute } from './routes/payouts.js';
 import { registerRunModeRoute } from './routes/run-mode.js';
+import { registerStatsRoute } from './routes/stats.js';
 import { registerStatusRoute } from './routes/status.js';
 
 export interface HttpServerDeps {
@@ -49,6 +53,7 @@ export interface HttpServerDeps {
   readonly payoutObserver: PayoutObserver | null;
   readonly oceanClient: OceanClient | null;
   readonly accountSpend: AccountSpendService | null;
+  readonly db: Kysely<Database>;
   readonly password: string;
   readonly tickIntervalMs: number;
   readonly secretsPath: string;
@@ -98,6 +103,7 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<HttpServer
   await registerMetricsRoute(app, deps);
   await registerBidEventsRoute(app, deps);
   await registerPayoutsRoute(app, { payoutObserver: deps.payoutObserver });
+  await registerStatsRoute(app, { db: deps.db, bidEventsDb: deps.db });
   await registerFinanceRoute(app, {
     ownedBidsRepo: deps.ownedBidsRepo,
     configRepo: deps.configRepo,

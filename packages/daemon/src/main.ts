@@ -162,6 +162,7 @@ async function main(): Promise<void> {
     payoutObserver,
     oceanClient,
     accountSpend,
+    db: handle.db,
     password: secrets.dashboard_password,
     tickIntervalMs: DEFAULT_TICK_INTERVAL_MS,
     secretsPath,
