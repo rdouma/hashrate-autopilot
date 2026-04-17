@@ -15,6 +15,7 @@ import { createBraiinsClient } from '@braiins-hashrate/braiins-client';
 import { loadSecrets } from './config/secrets.js';
 import { createHttpServer } from './http/server.js';
 import { AccountSpendService } from './services/account-spend.js';
+import { BtcPriceService } from './services/btc-price.js';
 import { BraiinsService } from './services/braiins-service.js';
 import { createOceanClient } from './services/ocean.js';
 import { PayoutObserver } from './services/payout-observer.js';
@@ -150,6 +151,9 @@ async function main(): Promise<void> {
   // the owner-token client so it can read /v1/account/transaction.
   const accountSpend = new AccountSpendService(braiinsClient);
 
+  // BTC/USD price oracle — purely a dashboard display convenience.
+  const btcPriceService = new BtcPriceService();
+
   // HTTP server (dashboard API + static).
   const httpServer = await createHttpServer({
     controller,
@@ -162,6 +166,7 @@ async function main(): Promise<void> {
     payoutObserver,
     oceanClient,
     accountSpend,
+    btcPriceService,
     db: handle.db,
     password: secrets.dashboard_password,
     tickIntervalMs: DEFAULT_TICK_INTERVAL_MS,

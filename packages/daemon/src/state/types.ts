@@ -49,6 +49,7 @@ export interface ConfigTable {
   electrs_port: number | null;
   boot_mode: 'ALWAYS_DRY_RUN' | 'LAST_MODE' | 'ALWAYS_LIVE';
   spent_scope: 'autopilot' | 'account';
+  btc_price_source: 'none' | 'coingecko' | 'coinbase' | 'bitstamp' | 'kraken';
   updated_at: number;
 }
 

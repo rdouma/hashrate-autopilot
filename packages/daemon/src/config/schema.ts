@@ -123,6 +123,11 @@ export const AppConfigSchema = z.object({
   //   covering the full account history. Pairs honestly with Ocean's
   //   lifetime earnings on the income side.
   spent_scope: z.enum(['autopilot', 'account']).default('autopilot'),
+
+  // BTC/USD price oracle. 'none' disables the price fetcher; other
+  // values name the exchange API to poll. Feeds the dashboard's
+  // denomination toggle (sats <-> USD).
+  btc_price_source: z.enum(['none', 'coingecko', 'coinbase', 'bitstamp', 'kraken']).default('none'),
 });
 
 export type AppConfig = z.infer<typeof AppConfigSchema>;
@@ -187,4 +192,5 @@ export const APP_CONFIG_DEFAULTS: Omit<
 
   boot_mode: 'ALWAYS_DRY_RUN',
   spent_scope: 'autopilot',
+  btc_price_source: 'none',
 };

@@ -47,6 +47,7 @@ describe('openDatabase — migrations', () => {
       '0016_bid_events_allow_edit_speed.sql',
       '0017_owned_bids_consumed.sql',
       '0018_spent_scope.sql',
+      '0019_btc_price_source.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });

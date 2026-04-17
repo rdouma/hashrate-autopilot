@@ -28,10 +28,12 @@ import type { RuntimeStateRepo } from '../state/repos/runtime_state.js';
 import type { TickMetricsRepo } from '../state/repos/tick_metrics.js';
 import type { Database } from '../state/types.js';
 import type { AccountSpendService } from '../services/account-spend.js';
+import type { BtcPriceService } from '../services/btc-price.js';
 import type { OceanClient } from '../services/ocean.js';
 import type { PayoutObserver } from '../services/payout-observer.js';
 import { registerActionRoutes } from './routes/actions.js';
 import { registerBidEventsRoute } from './routes/bid-events.js';
+import { registerBtcPriceRoute } from './routes/btc-price.js';
 import { registerConfigRoutes } from './routes/config.js';
 import { registerDecisionsRoutes } from './routes/decisions.js';
 import { registerFinanceRoute } from './routes/finance.js';
@@ -53,6 +55,7 @@ export interface HttpServerDeps {
   readonly payoutObserver: PayoutObserver | null;
   readonly oceanClient: OceanClient | null;
   readonly accountSpend: AccountSpendService | null;
+  readonly btcPriceService: BtcPriceService;
   readonly db: Kysely<Database>;
   readonly password: string;
   readonly tickIntervalMs: number;
@@ -110,6 +113,10 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<HttpServer
     payoutObserver: deps.payoutObserver,
     oceanClient: deps.oceanClient,
     accountSpend: deps.accountSpend,
+  });
+  await registerBtcPriceRoute(app, {
+    btcPriceService: deps.btcPriceService,
+    configRepo: deps.configRepo,
   });
 
   // Serve built dashboard if present.

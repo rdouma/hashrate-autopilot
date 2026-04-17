@@ -249,6 +249,26 @@ const SECTIONS: Section[] = [
       },
     ],
   },
+  {
+    title: 'BTC price oracle',
+    description:
+      'Fetches the BTC/USD spot price from a public exchange API. Enables a sats/USD denomination toggle in the dashboard header. No API key required — uses unauthenticated public endpoints.',
+    fields: [
+      {
+        key: 'btc_price_source',
+        label: 'Price source',
+        kind: 'select',
+        options: [
+          { value: 'none', label: 'Disabled (sats only)' },
+          { value: 'coingecko', label: 'CoinGecko' },
+          { value: 'coinbase', label: 'Coinbase' },
+          { value: 'bitstamp', label: 'Bitstamp' },
+          { value: 'kraken', label: 'Kraken' },
+        ],
+        help: 'Polled every 5 minutes. The daemon never makes decisions based on fiat price — this is purely a display convenience. Set to "Disabled" if you want a sats-only dashboard.',
+      },
+    ],
+  },
 ];
 
 export function Config() {

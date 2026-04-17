@@ -207,6 +207,7 @@ export interface AppConfig {
   electrs_port: number | null;
   boot_mode: 'ALWAYS_DRY_RUN' | 'LAST_MODE' | 'ALWAYS_LIVE';
   spent_scope: 'autopilot' | 'account';
+  btc_price_source: 'none' | 'coingecko' | 'coinbase' | 'bitstamp' | 'kraken';
 }
 
 export interface ConfigResponse {
@@ -250,6 +251,7 @@ export const api = {
     ),
   payouts: () => request<PayoutsResponse>('/api/payouts'),
   scanPayouts: () => request<{ ok: boolean; error?: string }>('/api/payouts/scan', { method: 'POST' }),
+  btcPrice: () => request<BtcPriceResponse>('/api/btc-price'),
   finance: () => request<FinanceResponse>('/api/finance'),
   stats: (range: ChartRange) =>
     request<StatsResponse>(`/api/stats?range=${encodeURIComponent(range)}`),
@@ -264,6 +266,12 @@ export interface StatsResponse {
   avg_time_to_fill_ms: number | null;
   range: ChartRange;
   tick_count: number;
+}
+
+export interface BtcPriceResponse {
+  usd_per_btc: number | null;
+  source: string;
+  fetched_at_ms: number | null;
 }
 
 export interface FinanceResponse {

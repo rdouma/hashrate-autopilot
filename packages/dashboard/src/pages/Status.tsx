@@ -32,6 +32,7 @@ import {
   formatTimestamp,
   formatTimestampUtc,
 } from '../lib/format';
+import { useDenomination } from '../lib/denomination';
 import { actionModeLabel, bidStatusClass, bidStatusLabel } from '../lib/labels';
 import { useLocale } from '../lib/locale';
 
@@ -47,6 +48,7 @@ export function Status() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { intlLocale } = useLocale();
+  const denomination = useDenomination();
 
   const [chartRange, setChartRangeState] = useState<ChartRange>(() => readStoredChartRange());
   useEffect(() => {
@@ -194,28 +196,28 @@ export function Status() {
             </div>
           )}
           <div className="border-t border-slate-800 mt-2 pt-2">
-            <Row k="best bid" v={formatSatPerPH(s.market?.best_bid_sat_per_ph_day ?? null)} />
-            <Row k="best ask" v={formatSatPerPH(s.market?.best_ask_sat_per_ph_day ?? null)} />
+            <Row k="best bid" v={denomination.formatSatPerPhDay(s.market?.best_bid_sat_per_ph_day ?? null, intlLocale)} />
+            <Row k="best ask" v={denomination.formatSatPerPhDay(s.market?.best_ask_sat_per_ph_day ?? null, intlLocale)} />
             <Row
               k={`fillable @ ${formatHashratePH(s.config_summary.target_hashrate_ph)}`}
               v={
                 s.market?.fillable_ask_sat_per_ph_day != null
-                  ? formatSatPerPH(s.market.fillable_ask_sat_per_ph_day) +
+                  ? denomination.formatSatPerPhDay(s.market.fillable_ask_sat_per_ph_day, intlLocale) +
                     (s.market.fillable_thin ? ' (thin)' : '')
-                  : '—'
+                  : '\u2014'
               }
             />
           </div>
         </Card>
         <Card title="Braiins balance">
           {s.balances.length === 0 ? (
-            <div className="text-slate-500 text-sm">—</div>
+            <div className="text-slate-500 text-sm">{'\u2014'}</div>
           ) : (
             s.balances.map((b) => (
               <div key={b.subaccount}>
-                <Row k="available" v={formatSats(b.available_balance_sat)} />
-                <Row k="blocked" v={formatSats(b.blocked_balance_sat)} />
-                <Row k="total" v={formatSats(b.total_balance_sat)} />
+                <Row k="available" v={denomination.formatSat(b.available_balance_sat, intlLocale)} />
+                <Row k="blocked" v={denomination.formatSat(b.blocked_balance_sat, intlLocale)} />
+                <Row k="total" v={denomination.formatSat(b.total_balance_sat, intlLocale)} />
               </div>
             ))
           )}
@@ -275,7 +277,7 @@ export function Status() {
                       )}
                     </td>
                     <td className="py-2 px-3 text-right">
-                      {formatSatPerPH(b.price_sat_per_ph_day)}
+                      {denomination.formatSatPerPhDay(b.price_sat_per_ph_day, intlLocale)}
                     </td>
                     <td className="py-2 px-3 text-right">
                       {formatHashratePH(b.avg_speed_ph)}
@@ -285,7 +287,7 @@ export function Status() {
                       </span>
                     </td>
                     <td className="py-2 px-3 text-right">
-                      {formatNumber(b.amount_sat, {}, intlLocale)}
+                      {denomination.formatSat(b.amount_sat, intlLocale)}
                     </td>
                     <td className="py-2 px-3">
                       <BidProgress pct={b.progress_pct} />
@@ -309,8 +311,8 @@ export function Status() {
           lastOkAt={s.pool.last_ok_at}
         />
         <Card title="Caps">
-          <Row k="max bid" v={formatSatPerPH(s.config_summary.max_bid_sat_per_ph_day)} />
-          <Row k="budget" v={formatSats(s.config_summary.bid_budget_sat)} />
+          <Row k="max bid" v={denomination.formatSatPerPhDay(s.config_summary.max_bid_sat_per_ph_day, intlLocale)} />
+          <Row k="budget" v={denomination.formatSat(s.config_summary.bid_budget_sat, intlLocale)} />
         </Card>
       </section>
 
@@ -350,6 +352,7 @@ function OperationsCard({
   runModePending: boolean;
 }) {
   const { intlLocale } = useLocale();
+  const denomination = useDenomination();
 
   const actionVisible = s.action_mode !== 'NORMAL';
 
@@ -393,7 +396,14 @@ function OperationsCard({
                 regardless of how wide the badge gets (e.g. "+9" vs "+126"). */}
             <div className="relative leading-none">
               <span className="text-4xl font-mono font-semibold text-slate-100 tabular-nums">
-                {formatNumber(Math.round(currentPricePH), {}, intlLocale)}
+                {denomination.mode === 'usd' && denomination.btcPrice !== null
+                  ? new Intl.NumberFormat(intlLocale, {
+                      style: 'currency',
+                      currency: 'USD',
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    }).format((Math.round(currentPricePH) / 100_000_000) * denomination.btcPrice)
+                  : formatNumber(Math.round(currentPricePH), {}, intlLocale)}
               </span>
               <span className="absolute left-full top-1/2 -translate-y-1/2 ml-1.5 whitespace-nowrap">
                 <PriceDeltaVsFillable
@@ -404,7 +414,7 @@ function OperationsCard({
               </span>
             </div>
             <div className="text-xs text-slate-400 mt-1">
-              sat/PH/day
+              {denomination.mode === 'usd' ? 'USD' : 'sat'}/PH/day
               {activeOwned.length > 1 ? ` · avg/${activeOwned.length}` : ''}
             </div>
           </div>
@@ -756,6 +766,7 @@ function formatRemaining(ms: number): string {
  */
 function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
   const { intlLocale } = useLocale();
+  const denomination = useDenomination();
 
   if (!statsData) {
     return (
@@ -770,13 +781,12 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
   if (statsData.tick_count < 2) return null;
 
   const { uptime_pct, avg_overpay_sat_per_ph_day, avg_cost_per_ph_sat_per_ph_day, avg_time_to_fill_ms } = statsData;
-  const fmt = (n: number) => formatNumber(Math.round(n), {}, intlLocale);
 
   return (
     <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
       <StatCard
         label="uptime"
-        value={uptime_pct !== null ? `${uptime_pct.toFixed(1)}%` : '—'}
+        value={uptime_pct !== null ? `${uptime_pct.toFixed(1)}%` : '\u2014'}
         tooltip="Duration-weighted % of time with delivered hashrate > 0. Each tick is weighted by its actual duration (time until the next tick) so gaps after restarts count proportionally."
         color={
           uptime_pct === null
@@ -790,17 +800,17 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
       />
       <StatCard
         label="avg overpay vs fillable"
-        value={avg_overpay_sat_per_ph_day !== null ? `${fmt(avg_overpay_sat_per_ph_day)} sat/PH/day` : '—'}
+        value={avg_overpay_sat_per_ph_day !== null ? denomination.formatSatPerPhDay(Math.round(avg_overpay_sat_per_ph_day), intlLocale) : '\u2014'}
         tooltip="Duration-weighted average of (our price − fillable ask). Each tick weighted by its actual duration. High = overpay too generous or lowering too slow."
       />
       <StatCard
         label="avg cost / PH delivered"
-        value={avg_cost_per_ph_sat_per_ph_day !== null ? `${fmt(avg_cost_per_ph_sat_per_ph_day)} sat/PH/day` : '—'}
+        value={avg_cost_per_ph_sat_per_ph_day !== null ? denomination.formatSatPerPhDay(Math.round(avg_cost_per_ph_sat_per_ph_day), intlLocale) : '\u2014'}
         tooltip="Duration-weighted average price per PH delivered: sum(price × delivered × duration) / sum(delivered × duration). The efficiency metric."
       />
       <StatCard
         label="avg time to fill"
-        value={avg_time_to_fill_ms !== null ? formatFillTime(avg_time_to_fill_ms) : '—'}
+        value={avg_time_to_fill_ms !== null ? formatFillTime(avg_time_to_fill_ms) : '\u2014'}
         tooltip="Average time from a CREATE/EDIT event to the first tick with delivered hashrate > 0. Measures how quickly the market fills at your current settings."
       />
     </section>
@@ -890,6 +900,7 @@ function FinancePanel({
   refreshing: boolean;
 }) {
   const { intlLocale } = useLocale();
+  const denomination = useDenomination();
 
   if (!data) {
     return (
@@ -1006,21 +1017,25 @@ function FinancePanel({
           {dailyIncomeSat !== null && (
             <FinanceFootnote
               label="income/day"
-              value={`${formatNumber(dailyIncomeSat, {}, intlLocale)} sat`}
+              value={denomination.formatSat(dailyIncomeSat, intlLocale)}
               tooltip="Ocean's estimated earnings per day at the address's 3-hour hashrate."
             />
           )}
           {hasDailySpend && (
             <FinanceFootnote
               label="spend/day"
-              value={`${formatNumber(Math.round(dailySpendSat), {}, intlLocale)} sat`}
+              value={denomination.formatSat(Math.round(dailySpendSat), intlLocale)}
               tooltip="Cost per day at current bid price × delivered hashrate, summed across active owned bids. Braiins only debits for hashrate actually delivered, so this tracks reality (not the speed-limit cap)."
             />
           )}
           {dailyNetSat !== null && (
             <FinanceFootnote
               label="net/day"
-              value={`${dailyNetSat >= 0 ? '+' : ''}${formatNumber(dailyNetSat, {}, intlLocale)} sat`}
+              value={
+                denomination.mode === 'usd' && denomination.btcPrice !== null
+                  ? `${dailyNetSat >= 0 ? '+' : ''}${denomination.formatSat(dailyNetSat, intlLocale)}`
+                  : `${dailyNetSat >= 0 ? '+' : ''}${formatNumber(dailyNetSat, {}, intlLocale)} sat`
+              }
               tooltip="Income/day − spend/day. Positive = the autopilot is profitable at current rates; negative = burning money per day. Don't confuse with the lifetime net above."
               valueClass={dailyNetColor}
             />
@@ -1028,7 +1043,7 @@ function FinancePanel({
           {data.ocean?.lifetime_sat != null && (
             <FinanceFootnote
               label="ocean lifetime"
-              value={`${formatNumber(data.ocean.lifetime_sat, {}, intlLocale)} sat`}
+              value={denomination.formatSat(data.ocean.lifetime_sat, intlLocale)}
               tooltip="Total earned at this address since first share, per Ocean."
             />
           )}
@@ -1062,10 +1077,13 @@ function FinanceRow({
   valueClass?: string;
 }) {
   const { intlLocale } = useLocale();
+  const denomination = useDenomination();
   // Match the size + label-color of the standard <Row> used by the
   // sibling Hashrate-and-market and Braiins-balance cards so the three
   // panels read as a set. Only the value's *color* varies (caller can
   // override via valueClass — used for the green/red net bottom line).
+  const formatted = denomination.formatSat(value, intlLocale);
+  const split = splitUnit(formatted);
   return (
     <div
       className="cursor-help flex justify-between text-sm py-0.5"
@@ -1074,14 +1092,14 @@ function FinanceRow({
       <span className="text-slate-400">{label}</span>
       <span className={`font-mono ${valueClass}`}>
         {value === null ? (
-          '—'
-        ) : (
+          '\u2014'
+        ) : split ? (
           <>
-            {formatNumber(value, {}, intlLocale)}
-            {/* Single muted "sat" suffix — formatSats() already appends
-                one, so we use raw formatNumber here. */}
-            <span className="text-slate-500 text-[11px] ml-1">sat</span>
+            {split.num}
+            <span className="text-slate-500 text-[11px] ml-1">{split.unit}</span>
           </>
+        ) : (
+          formatted
         )}
       </span>
     </div>
@@ -1266,15 +1284,20 @@ function Row({ k, v }: { k: string; v: string }) {
 /**
  * Split a pre-formatted display value like "45,662 sat/PH/day" into
  * `{ num: "45,662", unit: "sat/PH/day" }` so the caller can render
- * the unit in a muted style. Returns null for values without a
- * recognised unit suffix.
+ * the unit in a muted style. Also handles USD-denominated strings
+ * like "$4.75/PH/day" (splits at the /PH/day suffix) and "$1.28 sat"
+ * equivalents. Returns null for values without a recognised unit suffix.
  */
 function splitUnit(v: string): { num: string; unit: string } | null {
   // Order matters: longest match first so "sat/PH/day" isn't
   // partially matched as "sat".
+  // Also match USD-denominated /PH/day suffix (e.g. "$4.75/PH/day").
   const m = v.match(/^(.+?)\s+(sat\/PH\/day|PH\/s|sat)(\s*(?:\(.*\))?)$/);
-  if (!m || !m[1]) return null;
-  return { num: m[1], unit: m[2] + (m[3] ?? '') };
+  if (m?.[1] && m[2]) return { num: m[1], unit: m[2] + (m[3] ?? '') };
+  // USD with /PH/day suffix: "$4.75/PH/day" → { num: "$4.75", unit: "/PH/day" }
+  const usdPhDay = v.match(/^(.+?)(\/PH\/day)$/);
+  if (usdPhDay?.[1] && usdPhDay[2]) return { num: usdPhDay[1], unit: usdPhDay[2] };
+  return null;
 }
 
 function ProposalLine({ p }: { p: ProposalView }) {

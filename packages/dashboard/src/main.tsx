@@ -6,6 +6,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { RequireAuth } from './components/RequireAuth';
 import './index.css';
+import { DenominationProvider } from './lib/denomination';
 import { LocaleContext, useLocaleState } from './lib/locale';
 import { Config } from './pages/Config';
 import { Decisions } from './pages/Decisions';
@@ -29,23 +30,25 @@ function AppShell() {
   return (
     <LocaleContext.Provider value={locale}>
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route
-              element={
-                <RequireAuth>
-                  <Layout />
-                </RequireAuth>
-              }
-            >
-              <Route index element={<Status />} />
-              <Route path="/decisions" element={<Decisions />} />
-              <Route path="/config" element={<Config />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Route>
-          </Routes>
-        </BrowserRouter>
+        <DenominationProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route
+                element={
+                  <RequireAuth>
+                    <Layout />
+                  </RequireAuth>
+                }
+              >
+                <Route index element={<Status />} />
+                <Route path="/decisions" element={<Decisions />} />
+                <Route path="/config" element={<Config />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Route>
+            </Routes>
+          </BrowserRouter>
+        </DenominationProvider>
       </QueryClientProvider>
     </LocaleContext.Provider>
   );

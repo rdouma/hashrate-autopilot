@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 import { api } from '../lib/api';
 import { clearPassword } from '../lib/auth';
+import { useDenomination } from '../lib/denomination';
 import { formatNumber } from '../lib/format';
 import { useLocale } from '../lib/locale';
 import { ModeBadge } from './ModeBadge';
@@ -97,6 +98,8 @@ export function Layout() {
               </span>
             ) : null}
 
+            <DenominationToggle />
+
             {/* Number/date format picker moved to Config → Display
                 so it's a one-time preference, not a piece of permanent
                 header chrome. The "Nederlands" label dropping out of
@@ -122,5 +125,44 @@ export function Layout() {
         </div>
       </main>
     </div>
+  );
+}
+
+/**
+ * Segmented "sats | USD" toggle. Hidden when btcPrice is null (source
+ * is 'none' or API down) — when there's no price, the toggle makes no
+ * sense and showing it would be misleading.
+ */
+function DenominationToggle() {
+  const { mode, toggle, btcPrice } = useDenomination();
+  if (btcPrice === null) return null;
+
+  return (
+    <button
+      onClick={toggle}
+      className="inline-flex items-center border border-slate-700 rounded-md overflow-hidden text-[11px] leading-none"
+      title={`BTC/USD: $${btcPrice.toLocaleString('en-US', { maximumFractionDigits: 0 })} — click to toggle denomination`}
+    >
+      <span
+        className={
+          'px-2 py-1 transition ' +
+          (mode === 'sats'
+            ? 'bg-amber-400 text-slate-900 font-medium'
+            : 'text-slate-400 hover:bg-slate-800')
+        }
+      >
+        sats
+      </span>
+      <span
+        className={
+          'px-2 py-1 transition ' +
+          (mode === 'usd'
+            ? 'bg-amber-400 text-slate-900 font-medium'
+            : 'text-slate-400 hover:bg-slate-800')
+        }
+      >
+        USD
+      </span>
+    </button>
   );
 }
