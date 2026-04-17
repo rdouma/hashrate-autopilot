@@ -47,13 +47,11 @@ export const HashrateChart = memo(function HashrateChart({
   range,
   onRangeChange,
   simMode = false,
-  onSimModeChange,
 }: {
   points: readonly MetricPoint[];
   range: ChartRange;
   onRangeChange: (r: ChartRange) => void;
   simMode?: boolean;
-  onSimModeChange?: (v: boolean) => void;
 }) {
   const { intlLocale } = useLocale();
 
@@ -111,7 +109,6 @@ export const HashrateChart = memo(function HashrateChart({
           <h3 className="text-xs uppercase tracking-wider text-slate-100">
             Delivered hashrate
           </h3>
-          {onSimModeChange && <SimToggle active={simMode} onChange={onSimModeChange} />}
           <RangePicker current={range} onChange={onRangeChange} />
         </div>
         <div className="mt-4 text-sm text-slate-500">
@@ -124,16 +121,15 @@ export const HashrateChart = memo(function HashrateChart({
   const { minX, maxX, xScale, yScale, deliveredPath, targetPath, floorPath, yTicks, xTickInterval, xTicks } = chartData;
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
+    <div className={`bg-slate-900 border rounded-lg p-4 ${simMode ? 'border-amber-800/40' : 'border-slate-800'}`}>
       <div className="flex items-center justify-between mb-2 gap-3 flex-wrap">
         <h3 className="text-xs uppercase tracking-wider text-slate-100">
-          Delivered hashrate
+          {simMode ? 'Simulated hashrate' : 'Delivered hashrate'}
         </h3>
         <div className="flex items-center gap-3 text-xs flex-wrap">
-          <Legend color={COLOR_DELIVERED} label={simMode ? 'simulated' : 'delivered'} />
+          <Legend color={simMode ? '#fbbf24' : COLOR_DELIVERED} label={simMode ? 'simulated' : 'delivered'} />
           <Legend color={COLOR_TARGET} label="target" dashed />
           <Legend color={COLOR_FLOOR} label="floor" dashed />
-          {onSimModeChange && <SimToggle active={simMode} onChange={onSimModeChange} />}
           <RangePicker current={range} onChange={onRangeChange} />
         </div>
       </div>
@@ -170,15 +166,19 @@ export const HashrateChart = memo(function HashrateChart({
 
         <path
           d={`${deliveredPath} L${xScale(maxX).toFixed(1)},${yScale(0)} L${xScale(minX).toFixed(1)},${yScale(0)} Z`}
-          fill="url(#deliveredFill)"
+          fill={simMode ? 'url(#simFill)' : 'url(#deliveredFill)'}
           opacity="0.5"
         />
-        <path d={deliveredPath} stroke={COLOR_DELIVERED} strokeWidth="1.8" fill="none" />
+        <path d={deliveredPath} stroke={simMode ? '#fbbf24' : COLOR_DELIVERED} strokeWidth="1.8" fill="none" />
 
         <defs>
           <linearGradient id="deliveredFill" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={COLOR_DELIVERED} stopOpacity="0.45" />
             <stop offset="100%" stopColor={COLOR_DELIVERED} stopOpacity="0" />
+          </linearGradient>
+          <linearGradient id="simFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#fbbf24" stopOpacity="0.35" />
+            <stop offset="100%" stopColor="#fbbf24" stopOpacity="0" />
           </linearGradient>
         </defs>
 
@@ -232,25 +232,6 @@ export const HashrateChart = memo(function HashrateChart({
     </div>
   );
 });
-
-function SimToggle({ active, onChange }: { active: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <div className="flex rounded overflow-hidden border border-slate-700 text-[10px]">
-      <button
-        onClick={() => onChange(false)}
-        className={`px-2 py-0.5 ${!active ? 'bg-emerald-700 text-emerald-100' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
-      >
-        Real-time
-      </button>
-      <button
-        onClick={() => onChange(true)}
-        className={`px-2 py-0.5 ${active ? 'bg-amber-700 text-amber-100' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
-      >
-        Simulation
-      </button>
-    </div>
-  );
-}
 
 function Legend({ color, label, dashed }: { color: string; label: string; dashed?: boolean }) {
   return (

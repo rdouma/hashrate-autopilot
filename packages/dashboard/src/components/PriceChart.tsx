@@ -51,10 +51,12 @@ export const PriceChart = memo(function PriceChart({
   points,
   events = [],
   showEvents,
+  simMode = false,
 }: {
   points: readonly MetricPoint[];
   events?: readonly BidEventView[];
   showEvents: boolean;
+  simMode?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [hovered, setHovered] = useState<HoveredTooltip | null>(null);
@@ -201,11 +203,11 @@ export const PriceChart = memo(function PriceChart({
   };
 
   return (
-    <div ref={containerRef} className="bg-slate-900 border border-slate-800 rounded-lg p-4 relative">
+    <div ref={containerRef} className={`bg-slate-900 border rounded-lg p-4 relative ${simMode ? 'border-amber-800/40' : 'border-slate-800'}`}>
       <div className="flex items-center justify-between mb-2 gap-3 flex-wrap">
-        <h3 className="text-xs uppercase tracking-wider text-slate-100">Price</h3>
+        <h3 className="text-xs uppercase tracking-wider text-slate-100">{simMode ? 'Simulated price' : 'Price'}</h3>
         <div className="flex items-center gap-3 text-xs flex-wrap">
-          <Legend color={COLOR_PRICE} label="our bid" />
+          <Legend color={simMode ? '#fbbf24' : COLOR_PRICE} label={simMode ? 'simulated bid' : 'our bid'} />
           <Legend color={COLOR_FILLABLE} label="fillable" dashed />
           <Legend color={COLOR_HASHPRICE} label="hashprice" dashed />
           <Legend color={COLOR_MAXBID} label="max bid" dashed />
@@ -290,7 +292,7 @@ export const PriceChart = memo(function PriceChart({
           </>
         )}
         {pricePath && (
-          <path d={pricePath} stroke={COLOR_PRICE} strokeWidth="1.8" fill="none" opacity="0.95" />
+          <path d={pricePath} stroke={simMode ? '#fbbf24' : COLOR_PRICE} strokeWidth="1.8" fill="none" opacity="0.95" />
         )}
 
         <defs>

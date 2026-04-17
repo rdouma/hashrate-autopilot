@@ -417,7 +417,7 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
       const patienceEtaMs = state.tick_at + patienceRemaining;
       const minsLeft = Math.max(1, Math.ceil(patienceRemaining / 60_000));
       return {
-        summary: `Overpaying by ${overpayPH.toLocaleString('en-US')} sat/PH/day vs target — waiting for lower-patience window.`,
+        summary: `Overpaying by ${overpayPH.toLocaleString('en-US')} sat/PH/day vs target — waiting to settle before lowering.`,
         detail: `Will lower to ${targetPricePH.toLocaleString('en-US')} sat/PH/day after ~${minsLeft} min above floor.`,
         eta_ms: patienceEtaMs,
         event_started_ms: aboveFloorSince,

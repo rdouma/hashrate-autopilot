@@ -199,6 +199,47 @@ export function Status() {
     });
   }, [simQuery.data, metricsQuery.data]);
 
+  // Generate synthetic bid events from simulated price trace
+  const simEvents: BidEventView[] = useMemo(() => {
+    const ticks = simQuery.data?.ticks;
+    if (!ticks || ticks.length === 0) return [];
+    const events: BidEventView[] = [];
+    let prevPrice: number | null = null;
+    for (let i = 0; i < ticks.length; i++) {
+      const t = ticks[i]!;
+      const price = Math.round(t.simulated_price_sat_per_ph_day);
+      if (prevPrice === null && price > 0) {
+        events.push({
+          id: -(i + 1),
+          occurred_at: t.tick_at,
+          source: 'AUTOPILOT',
+          kind: 'CREATE_BID',
+          braiins_order_id: null,
+          old_price_sat_per_ph_day: null,
+          new_price_sat_per_ph_day: price,
+          speed_limit_ph: null,
+          amount_sat: null,
+          reason: 'simulated create',
+        });
+      } else if (prevPrice !== null && price !== prevPrice && price > 0) {
+        events.push({
+          id: -(i + 1),
+          occurred_at: t.tick_at,
+          source: 'AUTOPILOT',
+          kind: 'EDIT_PRICE',
+          braiins_order_id: null,
+          old_price_sat_per_ph_day: prevPrice,
+          new_price_sat_per_ph_day: price,
+          speed_limit_ph: null,
+          amount_sat: null,
+          reason: price > prevPrice ? 'simulated escalation' : 'simulated lower',
+        });
+      }
+      if (price > 0) prevPrice = price;
+    }
+    return events;
+  }, [simQuery.data]);
+
   // Convert sim stats to StatsResponse shape
   const simStatsData: StatsResponse | undefined = useMemo(() => {
     const sim = simQuery.data?.simulated;
@@ -260,28 +301,56 @@ export function Status() {
         </div>
       </section>
 
-      <StatsBar statsData={simMode ? simStatsData : statsQuery.data} />
+      <FilterBar
+        range={chartRange}
+        onRangeChange={setChartRange}
+        simMode={simMode}
+        onSimModeChange={setSimMode}
+      />
 
       {simMode && simParams && configQuery.data && (
         <SimParamBar
           params={simParams}
           config={configQuery.data.config}
           onChange={setSimParam}
+          onReset={() => {
+            const c = configQuery.data!.config;
+            setSimParams({
+              overpay_sat_per_eh_day: c.overpay_sat_per_eh_day,
+              max_bid_sat_per_eh_day: c.max_bid_sat_per_eh_day,
+              fill_escalation_step_sat_per_eh_day: c.fill_escalation_step_sat_per_eh_day,
+              fill_escalation_after_minutes: c.fill_escalation_after_minutes,
+              lower_patience_minutes: c.lower_patience_minutes,
+              min_lower_delta_sat_per_eh_day: c.min_lower_delta_sat_per_eh_day,
+            });
+          }}
+          onApply={async () => {
+            if (!simParams || !configQuery.data) return;
+            const updated = { ...configQuery.data.config, ...simParams };
+            await api.updateConfig(updated);
+            qc.invalidateQueries({ queryKey: ['config'] });
+            qc.invalidateQueries({ queryKey: ['status'] });
+          }}
           loading={simQuery.isFetching}
+          dirty={simParams !== null && configQuery.data !== undefined && Object.keys(simParams).some(
+            (k) => simParams[k] !== (configQuery.data!.config as unknown as Record<string, number>)[k],
+          )}
         />
       )}
+
+      <StatsBar statsData={simMode ? simStatsData : statsQuery.data} />
 
       <HashrateChart
         points={(simMode && simMetricPoints ? simMetricPoints : metricsQuery.data?.points) ?? []}
         range={chartRange}
         onRangeChange={setChartRange}
         simMode={simMode}
-        onSimModeChange={setSimMode}
       />
       <PriceChart
         points={(simMode && simMetricPoints ? simMetricPoints : metricsQuery.data?.points) ?? []}
-        events={simMode ? [] : (bidEventsQuery.data?.events ?? [])}
-        showEvents={!simMode && CHART_RANGE_SPECS[chartRange].showEvents}
+        events={simMode ? simEvents : (bidEventsQuery.data?.events ?? [])}
+        showEvents={simMode || CHART_RANGE_SPECS[chartRange].showEvents}
+        simMode={simMode}
       />
 
       {/* Three-column row: market context | Braiins wallet | financial
@@ -873,55 +942,129 @@ function formatRemaining(ms: number): string {
 
 const EH_PER_PH = 1000;
 
-const SIM_SLIDERS = [
-  { key: 'overpay_sat_per_eh_day', label: 'Overpay', min: 0, max: 2_000_000, step: 50_000, ehToPh: true },
-  { key: 'max_bid_sat_per_eh_day', label: 'Max bid', min: 10_000_000, max: 100_000_000, step: 1_000_000, ehToPh: true },
-  { key: 'fill_escalation_step_sat_per_eh_day', label: 'Esc. step', min: 50_000, max: 2_000_000, step: 50_000, ehToPh: true },
-  { key: 'fill_escalation_after_minutes', label: 'Esc. window', min: 1, max: 60, step: 1, ehToPh: false },
-  { key: 'lower_patience_minutes', label: 'Wait to lower', min: 0, max: 60, step: 1, ehToPh: false },
-  { key: 'min_lower_delta_sat_per_eh_day', label: 'Min lower delta', min: 0, max: 2_000_000, step: 50_000, ehToPh: true },
+const SIM_FIELDS = [
+  { key: 'overpay_sat_per_eh_day', label: 'Overpay', step: 50_000, ehToPh: true, unit: 'sat/PH/day' },
+  { key: 'max_bid_sat_per_eh_day', label: 'Max bid', step: 1_000_000, ehToPh: true, unit: 'sat/PH/day' },
+  { key: 'fill_escalation_step_sat_per_eh_day', label: 'Esc. step', step: 50_000, ehToPh: true, unit: 'sat/PH/day' },
+  { key: 'fill_escalation_after_minutes', label: 'Esc. window', step: 1, ehToPh: false, unit: 'min' },
+  { key: 'lower_patience_minutes', label: 'Wait to lower', step: 1, ehToPh: false, unit: 'min' },
+  { key: 'min_lower_delta_sat_per_eh_day', label: 'Min lower delta', step: 50_000, ehToPh: true, unit: 'sat/PH/day' },
 ] as const;
+
+function FilterBar({
+  range,
+  onRangeChange,
+  simMode,
+  onSimModeChange,
+}: {
+  range: ChartRange;
+  onRangeChange: (r: ChartRange) => void;
+  simMode: boolean;
+  onSimModeChange: (v: boolean) => void;
+}) {
+  return (
+    <section className="flex items-center justify-between flex-wrap gap-2">
+      <div className="flex rounded overflow-hidden border border-slate-700 text-xs">
+        <button
+          onClick={() => onSimModeChange(false)}
+          className={`px-3 py-1.5 ${!simMode ? 'bg-emerald-700 text-emerald-100' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
+        >
+          Real-time
+        </button>
+        <button
+          onClick={() => onSimModeChange(true)}
+          className={`px-3 py-1.5 ${simMode ? 'bg-amber-700 text-amber-100' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
+        >
+          Simulation
+        </button>
+      </div>
+      <div className="flex gap-1">
+        {(['6h', '12h', '24h', '1w', '1m', '1y', 'all'] as ChartRange[]).map((r) => (
+          <button
+            key={r}
+            onClick={() => onRangeChange(r)}
+            className={`text-xs px-2 py-1 rounded ${
+              r === range
+                ? 'bg-emerald-700 text-emerald-100'
+                : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+            }`}
+          >
+            {r === 'all' ? 'All' : r}
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 function SimParamBar({
   params,
   config,
   onChange,
+  onReset,
+  onApply,
   loading,
+  dirty,
 }: {
   params: Record<string, number>;
   config: object;
   onChange: (key: string, value: number) => void;
+  onReset: () => void;
+  onApply: () => void;
   loading: boolean;
+  dirty: boolean;
 }) {
   return (
     <section className="bg-slate-900/50 border border-amber-800/30 rounded-lg p-3">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-xs uppercase tracking-wider text-amber-300">Simulation parameters</span>
-        {loading && <span className="text-xs text-amber-400 animate-pulse">simulating...</span>}
+        <div className="flex items-center gap-3">
+          <span className="text-xs uppercase tracking-wider text-amber-300">Simulation parameters</span>
+          {loading && <span className="text-xs text-amber-400 animate-pulse">simulating...</span>}
+        </div>
+        <div className="flex items-center gap-2">
+          {dirty && (
+            <>
+              <button
+                onClick={onReset}
+                className="text-[10px] px-2 py-1 rounded bg-slate-800 border border-slate-700 text-slate-400 hover:bg-slate-700"
+              >
+                Reset
+              </button>
+              <button
+                onClick={onApply}
+                className="text-[10px] px-2 py-1 rounded bg-amber-800/60 border border-amber-700/50 text-amber-200 hover:bg-amber-700/60"
+              >
+                Apply to config
+              </button>
+            </>
+          )}
+        </div>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        {SIM_SLIDERS.map((s) => {
-          const value = params[s.key] ?? 0;
-          const configVal = (config as unknown as Record<string, number>)[s.key] ?? 0;
-          const display = s.ehToPh ? Math.round(value / EH_PER_PH) : value;
-          const changed = value !== configVal;
+        {SIM_FIELDS.map((f) => {
+          const rawValue = params[f.key] ?? 0;
+          const configVal = (config as unknown as Record<string, number>)[f.key] ?? 0;
+          const displayValue = f.ehToPh ? Math.round(rawValue / EH_PER_PH) : rawValue;
+          const changed = rawValue !== configVal;
           return (
-            <div key={s.key}>
-              <div className="flex items-center justify-between mb-0.5">
-                <span className="text-[10px] text-slate-500">{s.label}</span>
-                <span className={`text-xs font-mono tabular-nums ${changed ? 'text-amber-300' : 'text-slate-300'}`}>
-                  {formatNumber(display)}{s.ehToPh ? '' : ' min'}
-                </span>
+            <div key={f.key}>
+              <label className="text-[10px] text-slate-500 block mb-0.5">{f.label}</label>
+              <div className="flex items-center gap-1">
+                <input
+                  type="number"
+                  value={displayValue}
+                  step={f.ehToPh ? Math.round(f.step / EH_PER_PH) : f.step}
+                  min={0}
+                  onChange={(e) => {
+                    const v = Number(e.target.value) || 0;
+                    onChange(f.key, f.ehToPh ? v * EH_PER_PH : v);
+                  }}
+                  className={`w-full bg-slate-800 border rounded px-2 py-1 text-xs font-mono tabular-nums text-right ${
+                    changed ? 'border-amber-600 text-amber-300' : 'border-slate-700 text-slate-300'
+                  }`}
+                />
+                <span className="text-[9px] text-slate-600 whitespace-nowrap">{f.unit}</span>
               </div>
-              <input
-                type="range"
-                min={s.min}
-                max={s.max}
-                step={s.step}
-                value={value}
-                onChange={(e) => onChange(s.key, Number(e.target.value))}
-                className="w-full accent-amber-400 h-1 cursor-pointer"
-              />
             </div>
           );
         })}
