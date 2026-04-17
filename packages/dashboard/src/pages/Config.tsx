@@ -146,7 +146,7 @@ const SECTIONS: Section[] = [
       },
       {
         key: 'lower_patience_minutes',
-        label: 'Lower patience',
+        label: 'Wait before lowering',
         kind: 'integer',
         unit: 'min',
         help: 'How long the autopilot must be continuously above floor before it will lower the bid price. Prevents chasing short market dips that reverse within minutes — each unnecessary lower burns the Braiins 10-min price-decrease cooldown.',
