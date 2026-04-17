@@ -125,7 +125,7 @@ export const HashrateChart = memo(function HashrateChart({
     <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
       <div className="flex items-center justify-between mb-2 gap-3 flex-wrap">
         <h3 className="text-xs uppercase tracking-wider text-slate-100">
-          Delivered hashrate (last {formatDuration(maxX - minX)})
+          Delivered hashrate
         </h3>
         <div className="flex items-center gap-3 text-xs flex-wrap">
           <Legend color={COLOR_DELIVERED} label="delivered" />
