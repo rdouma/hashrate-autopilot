@@ -772,8 +772,8 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
 
   if (!statsData) {
     return (
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {['uptime', 'avg overpay vs fillable', 'avg cost / PH delivered', 'avg time to fill'].map((label) => (
+      <section className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        {['uptime', 'avg hashrate', 'avg cost / PH delivered', 'avg overpay vs fillable', 'avg time to fill'].map((label) => (
           <StatCard key={label} label={label} value="—" tooltip="Loading or daemon restart required." />
         ))}
       </section>
@@ -782,10 +782,10 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
 
   if (statsData.tick_count < 2) return null;
 
-  const { uptime_pct, avg_overpay_sat_per_ph_day, avg_cost_per_ph_sat_per_ph_day, avg_time_to_fill_ms } = statsData;
+  const { uptime_pct, avg_hashrate_ph, avg_overpay_sat_per_ph_day, avg_cost_per_ph_sat_per_ph_day, avg_time_to_fill_ms } = statsData;
 
   return (
-    <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <section className="grid grid-cols-2 lg:grid-cols-5 gap-3">
       <StatCard
         label="uptime"
         value={uptime_pct !== null ? `${uptime_pct.toFixed(1)}%` : '\u2014'}
@@ -801,14 +801,19 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
         }
       />
       <StatCard
-        label="avg overpay vs fillable"
-        value={avg_overpay_sat_per_ph_day !== null ? denomination.formatSatPerPhDay(Math.round(avg_overpay_sat_per_ph_day), intlLocale) : '\u2014'}
-        tooltip="Duration-weighted average of (our price − fillable ask). Each tick weighted by its actual duration. High = overpay too generous or lowering too slow."
+        label="avg hashrate"
+        value={avg_hashrate_ph !== null ? `${avg_hashrate_ph.toFixed(2)} PH/s` : '\u2014'}
+        tooltip="Duration-weighted average hashrate across the selected range, including downtime (where delivered = 0). Reflects real throughput — not just the moments you were hashing."
       />
       <StatCard
         label="avg cost / PH delivered"
         value={avg_cost_per_ph_sat_per_ph_day !== null ? denomination.formatSatPerPhDay(Math.round(avg_cost_per_ph_sat_per_ph_day), intlLocale) : '\u2014'}
         tooltip="Duration-weighted average price per PH delivered: sum(price × delivered × duration) / sum(delivered × duration). The efficiency metric."
+      />
+      <StatCard
+        label="avg overpay vs fillable"
+        value={avg_overpay_sat_per_ph_day !== null ? denomination.formatSatPerPhDay(Math.round(avg_overpay_sat_per_ph_day), intlLocale) : '\u2014'}
+        tooltip="Duration-weighted average of (our price − fillable ask). Each tick weighted by its actual duration. High = overpay too generous or lowering too slow."
       />
       <StatCard
         label="avg time to fill"
