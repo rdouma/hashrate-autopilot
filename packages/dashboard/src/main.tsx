@@ -11,6 +11,7 @@ import { LocaleContext, useLocaleState } from './lib/locale';
 import { Config } from './pages/Config';
 import { Decisions } from './pages/Decisions';
 import { Login } from './pages/Login';
+import { Simulate } from './pages/Simulate';
 import { Status } from './pages/Status';
 
 const queryClient = new QueryClient({
@@ -43,6 +44,7 @@ function AppShell() {
               >
                 <Route index element={<Status />} />
                 <Route path="/decisions" element={<Decisions />} />
+                <Route path="/simulate" element={<Simulate />} />
                 <Route path="/config" element={<Config />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Route>

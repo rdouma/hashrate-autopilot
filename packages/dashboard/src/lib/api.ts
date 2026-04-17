@@ -265,6 +265,11 @@ export const api = {
   finance: () => request<FinanceResponse>('/api/finance'),
   stats: (range: ChartRange) =>
     request<StatsResponse>(`/api/stats?range=${encodeURIComponent(range)}`),
+  simulate: (params: SimulateRequest) =>
+    request<SimulateResponse>('/api/simulate', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    }),
   // Test-auth call: hits /api/status to validate credentials.
   checkAuth: () => request<StatusResponse>('/api/status'),
 };
@@ -303,4 +308,35 @@ export interface FinanceResponse {
     fetched_at_ms: number | null;
   } | null;
   checked_at_ms: number;
+}
+
+export interface SimulateRequest {
+  range?: string;
+  overpay_sat_per_eh_day: number;
+  max_bid_sat_per_eh_day: number;
+  fill_escalation_step_sat_per_eh_day: number;
+  fill_escalation_after_minutes: number;
+  lower_patience_minutes: number;
+  min_lower_delta_sat_per_eh_day: number;
+}
+
+interface SimulateSummary {
+  uptime_pct: number | null;
+  avg_cost_sat_per_eh_day: number | null;
+  gap_count: number;
+  gap_minutes: number;
+}
+
+export interface SimulatedTick {
+  tick_at: number;
+  simulated_price_sat_per_eh_day: number;
+  filled: boolean;
+}
+
+export interface SimulateResponse {
+  actual: SimulateSummary;
+  simulated: SimulateSummary;
+  ticks: SimulatedTick[];
+  tick_count: number;
+  range: string;
 }
