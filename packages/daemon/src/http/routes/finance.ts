@@ -25,6 +25,7 @@
 import type { FastifyInstance } from 'fastify';
 
 import type { AccountSpendService } from '../../services/account-spend.js';
+import type { HashpriceCache } from '../../services/hashprice-cache.js';
 import type { OceanClient } from '../../services/ocean.js';
 import type { PayoutObserver } from '../../services/payout-observer.js';
 import type { OwnedBidsRepo } from '../../state/repos/owned_bids.js';
@@ -55,6 +56,7 @@ export interface FinanceDeps {
   readonly payoutObserver: PayoutObserver | null;
   readonly oceanClient: OceanClient | null;
   readonly accountSpend: AccountSpendService | null;
+  readonly hashpriceCache: HashpriceCache | null;
 }
 
 export async function registerFinanceRoute(
@@ -82,6 +84,12 @@ export async function registerFinanceRoute(
     let oceanStats: Awaited<ReturnType<OceanClient['fetchStats']>> | null = null;
     if (deps.oceanClient && config?.btc_payout_address) {
       oceanStats = await deps.oceanClient.fetchStats(config.btc_payout_address);
+    }
+
+    // Feed the hashprice cache so the controller can use it for
+    // cheap-hashrate scaling decisions (issue #13).
+    if (oceanStats?.hashprice_sat_per_ph_day != null && deps.hashpriceCache) {
+      deps.hashpriceCache.set(oceanStats.hashprice_sat_per_ph_day);
     }
 
     const expected_sat = oceanStats?.unpaid_sat ?? null;

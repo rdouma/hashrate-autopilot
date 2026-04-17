@@ -159,6 +159,8 @@ export interface StatusResponse {
     quiet_hours_start: string;
     quiet_hours_end: string;
     quiet_hours_timezone: string;
+    effective_target_hashrate_ph: number;
+    cheap_mode_active: boolean;
   };
 }
 
@@ -208,6 +210,8 @@ export interface AppConfig {
   boot_mode: 'ALWAYS_DRY_RUN' | 'LAST_MODE' | 'ALWAYS_LIVE';
   spent_scope: 'autopilot' | 'account';
   btc_price_source: 'none' | 'coingecko' | 'coinbase' | 'bitstamp' | 'kraken';
+  cheap_target_hashrate_ph: number;
+  cheap_threshold_pct: number;
 }
 
 export interface ConfigResponse {

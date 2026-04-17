@@ -190,7 +190,14 @@ export function Status() {
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         <Card title="Hashrate & market">
           <Row k="delivered" v={formatHashratePH(s.actual_hashrate_ph)} />
-          <Row k="target" v={formatHashratePH(s.config_summary.target_hashrate_ph)} />
+          <Row
+            k="target"
+            v={
+              s.config_summary.cheap_mode_active
+                ? `${formatHashratePH(s.config_summary.effective_target_hashrate_ph)} (cheap mode)`
+                : formatHashratePH(s.config_summary.target_hashrate_ph)
+            }
+          />
           <Row k="floor" v={formatHashratePH(s.config_summary.minimum_floor_hashrate_ph)} />
           {s.below_floor_since && (
             <div className="text-xs text-amber-400 mt-1">
@@ -201,7 +208,7 @@ export function Status() {
             <Row k="best bid" v={denomination.formatSatPerPhDay(s.market?.best_bid_sat_per_ph_day ?? null, intlLocale)} />
             <Row k="best ask" v={denomination.formatSatPerPhDay(s.market?.best_ask_sat_per_ph_day ?? null, intlLocale)} />
             <Row
-              k={`fillable @ ${formatHashratePH(s.config_summary.target_hashrate_ph)}`}
+              k={`fillable @ ${formatHashratePH(s.config_summary.effective_target_hashrate_ph)}`}
               v={
                 s.market?.fillable_ask_sat_per_ph_day != null
                   ? denomination.formatSatPerPhDay(s.market.fillable_ask_sat_per_ph_day, intlLocale) +
@@ -209,6 +216,12 @@ export function Status() {
                   : '\u2014'
               }
             />
+            {financeQuery.data?.ocean?.hashprice_sat_per_ph_day != null && (
+              <Row
+                k="hashprice"
+                v={denomination.formatSatPerPhDay(financeQuery.data.ocean.hashprice_sat_per_ph_day, intlLocale)}
+              />
+            )}
           </div>
         </Card>
         <Card title="Braiins balance">
@@ -840,7 +853,7 @@ function StatCard({
   const split = splitUnit(value);
   return (
     <div
-      className="bg-slate-900 border border-slate-800 rounded-lg p-4 cursor-help"
+      className="bg-slate-900 border border-slate-800 rounded-lg p-4 cursor-help text-center"
       title={tooltip}
     >
       <div className="text-xs uppercase tracking-wider text-slate-100 mb-2">{label}</div>

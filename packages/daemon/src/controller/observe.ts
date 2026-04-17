@@ -48,6 +48,8 @@ export interface ObserveInputs {
   readonly previousAboveFloorTicks: number;
   /** Manual-override-until timestamp from the controller, carried through. */
   readonly manualOverrideUntilMs: number | null;
+  /** Break-even hashprice in sat/PH/day from Ocean stats (null if unknown). */
+  readonly hashpriceSatPerPhDay: number | null;
 }
 
 /**
@@ -187,6 +189,7 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
     above_floor_ticks: floorCheck.above_floor_ticks,
     pool,
     last_api_ok_at: deps.braiins.getLastApiOkAt(),
+    hashprice_sat_per_ph_day: inputs.hashpriceSatPerPhDay,
   };
 }
 

@@ -128,6 +128,13 @@ export const AppConfigSchema = z.object({
   // values name the exchange API to poll. Feeds the dashboard's
   // denomination toggle (sats <-> USD).
   btc_price_source: z.enum(['none', 'coingecko', 'coinbase', 'bitstamp', 'kraken']).default('none'),
+
+  // Opportunistic hashrate scaling (issue #13).
+  // When the market price is cheap vs the break-even hashprice, scale
+  // up to cheap_target_hashrate_ph instead of the normal target.
+  // Both values must be non-zero to activate.
+  cheap_target_hashrate_ph: z.number().nonnegative().default(0),
+  cheap_threshold_pct: z.number().int().nonnegative().max(100).default(0),
 });
 
 export type AppConfig = z.infer<typeof AppConfigSchema>;
@@ -193,4 +200,7 @@ export const APP_CONFIG_DEFAULTS: Omit<
   boot_mode: 'ALWAYS_DRY_RUN',
   spent_scope: 'autopilot',
   btc_price_source: 'none',
+
+  cheap_target_hashrate_ph: 0,
+  cheap_threshold_pct: 0,
 };

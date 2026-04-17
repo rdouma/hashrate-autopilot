@@ -67,14 +67,46 @@ export function decide(state: State): readonly Proposal[] {
   //    hashrate is fillable. Replaces the old "first ask with any
   //    non-zero supply" lookup, which was fooled by slivers of supply
   //    at the top of the book.
-  const fillable = cheapestAskForDepth(asks, config.target_hashrate_ph);
-  const cheapestAvailable = fillable.price_sat;
+  const baseFillable = cheapestAskForDepth(asks, config.target_hashrate_ph);
+  const cheapestAvailable = baseFillable.price_sat;
   if (cheapestAvailable === null) return []; // nothing for sale
+
+  // Opportunistic scaling (issue #13): when the market price is cheap
+  // relative to the break-even hashprice, scale up to a larger target.
+  // The comparison uses the cheapest ask for the *normal* target — if
+  // that's below the threshold, the market is genuinely cheap.
+  const hashpriceSatPerPhDay = state.hashprice_sat_per_ph_day;
+  // Convert hashprice from sat/PH/day to sat/EH/day for comparison
+  // with ask prices (which are in sat/EH/day internally).
+  const hashpriceSatEh =
+    hashpriceSatPerPhDay !== null ? hashpriceSatPerPhDay * 1000 : null;
+  const cheapEnabled =
+    config.cheap_threshold_pct > 0 &&
+    config.cheap_target_hashrate_ph > config.target_hashrate_ph &&
+    hashpriceSatEh !== null &&
+    hashpriceSatEh > 0;
+
+  let effectiveTargetPh = config.target_hashrate_ph;
+  let cheapModeActive = false;
+  if (cheapEnabled) {
+    const threshold = hashpriceSatEh! * (config.cheap_threshold_pct / 100);
+    if (cheapestAvailable < threshold) {
+      effectiveTargetPh = config.cheap_target_hashrate_ph;
+      cheapModeActive = true;
+    }
+  }
+
+  // If cheap mode activated, re-lookup fillable with the larger target
+  // so pricing accounts for the deeper depth needed.
+  const fillable = cheapModeActive
+    ? cheapestAskForDepth(asks, effectiveTargetPh)
+    : baseFillable;
+  const effectiveCheapestAvailable = fillable.price_sat ?? cheapestAvailable;
 
   // 3. Target = min(fillable + overpay, max_bid). Simple and direct.
   const effectiveCap = config.max_bid_sat_per_eh_day;
   const overpayAllowance = config.overpay_sat_per_eh_day;
-  const desiredPrice = cheapestAvailable + overpayAllowance;
+  const desiredPrice = effectiveCheapestAvailable + overpayAllowance;
   const targetPrice = Math.min(desiredPrice, effectiveCap);
   const isMarketTooExpensive = desiredPrice > effectiveCap;
 
@@ -83,7 +115,7 @@ export function decide(state: State): readonly Proposal[] {
       return [
         {
           kind: 'PAUSE',
-          reason: `market_too_expensive: needed ${fmtPricePH(desiredPrice)} > cap ${fmtPricePH(effectiveCap)} (cheapest ask ${fmtPricePH(cheapestAvailable)})`,
+          reason: `market_too_expensive: needed ${fmtPricePH(desiredPrice)} > cap ${fmtPricePH(effectiveCap)} (cheapest ask ${fmtPricePH(effectiveCheapestAvailable)})`,
         },
       ];
     }
@@ -93,7 +125,7 @@ export function decide(state: State): readonly Proposal[] {
 
   const tickSize = market.settings.tick_size_sat ?? 1000;
   const minBidSpeed = Math.max(1.0, market.settings.min_bid_speed_limit_ph ?? 1.0);
-  const speedLimitPh = Math.max(minBidSpeed, config.target_hashrate_ph);
+  const speedLimitPh = Math.max(minBidSpeed, effectiveTargetPh);
 
   // Case: no owned bids → CREATE.
   if (owned_bids.length === 0) {
@@ -105,7 +137,7 @@ export function decide(state: State): readonly Proposal[] {
         speed_limit_ph: speedLimitPh,
         dest_pool_url: config.destination_pool_url,
         dest_worker_name: config.destination_pool_worker_name,
-        reason: `cheapest_available_ask=${fmtPricePH(cheapestAvailable)}; target=${fmtPricePH(targetPrice)}`,
+        reason: `cheapest_available_ask=${fmtPricePH(effectiveCheapestAvailable)}; target=${fmtPricePH(targetPrice)}${cheapModeActive ? ` (cheap mode: ${effectiveTargetPh} PH/s)` : ''}`,
       },
     ];
   }
@@ -196,7 +228,7 @@ export function decide(state: State): readonly Proposal[] {
       braiins_order_id: primary.braiins_order_id,
       new_speed_limit_ph: desiredSpeed,
       old_speed_limit_ph: primary.speed_limit_ph,
-      reason: `target_hashrate change: speed ${primary.speed_limit_ph} → ${desiredSpeed} PH/s`,
+      reason: `target_hashrate change: speed ${primary.speed_limit_ph} → ${desiredSpeed} PH/s${cheapModeActive ? ' (cheap mode)' : ''}`,
     });
   }
 

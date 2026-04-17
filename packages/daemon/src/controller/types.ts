@@ -108,6 +108,13 @@ export interface State {
 
   /** Last successful API read timestamp (ms). */
   readonly last_api_ok_at: number | null;
+
+  /**
+   * Break-even hashprice from the Ocean pool stats (sat/PH/day).
+   * Used by the cheap-hashrate scaling logic to decide whether
+   * the market is cheap enough to scale up. null when unavailable.
+   */
+  readonly hashprice_sat_per_ph_day: number | null;
 }
 
 // ---------------------------------------------------------------------------

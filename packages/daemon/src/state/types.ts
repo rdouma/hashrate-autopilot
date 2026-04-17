@@ -50,6 +50,8 @@ export interface ConfigTable {
   boot_mode: 'ALWAYS_DRY_RUN' | 'LAST_MODE' | 'ALWAYS_LIVE';
   spent_scope: 'autopilot' | 'account';
   btc_price_source: 'none' | 'coingecko' | 'coinbase' | 'bitstamp' | 'kraken';
+  cheap_target_hashrate_ph: number;
+  cheap_threshold_pct: number;
   updated_at: number;
 }
 

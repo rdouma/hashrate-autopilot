@@ -29,6 +29,7 @@ import type { TickMetricsRepo } from '../state/repos/tick_metrics.js';
 import type { Database } from '../state/types.js';
 import type { AccountSpendService } from '../services/account-spend.js';
 import type { BtcPriceService } from '../services/btc-price.js';
+import type { HashpriceCache } from '../services/hashprice-cache.js';
 import type { OceanClient } from '../services/ocean.js';
 import type { PayoutObserver } from '../services/payout-observer.js';
 import { registerActionRoutes } from './routes/actions.js';
@@ -56,6 +57,7 @@ export interface HttpServerDeps {
   readonly oceanClient: OceanClient | null;
   readonly accountSpend: AccountSpendService | null;
   readonly btcPriceService: BtcPriceService;
+  readonly hashpriceCache: HashpriceCache;
   readonly db: Kysely<Database>;
   readonly password: string;
   readonly tickIntervalMs: number;
@@ -113,6 +115,7 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<HttpServer
     payoutObserver: deps.payoutObserver,
     oceanClient: deps.oceanClient,
     accountSpend: deps.accountSpend,
+    hashpriceCache: deps.hashpriceCache,
   });
   await registerBtcPriceRoute(app, {
     btcPriceService: deps.btcPriceService,

@@ -51,6 +51,7 @@ function state(overrides: Partial<State> = {}): State {
     manual_override_until_ms: null,
     pool: { reachable: true, last_ok_at: 1_700_000_000_000, consecutive_failures: 0 },
     last_api_ok_at: 1_700_000_000_000,
+    hashprice_sat_per_ph_day: null,
     ...overrides,
   };
 }

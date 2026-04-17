@@ -22,6 +22,8 @@ import type { ExecutionResult, GateOutcome, Proposal, State } from './types.js';
 
 export interface TickDeps extends ObserveDeps, ExecuteDeps {
   readonly tickMetricsRepo: TickMetricsRepo;
+  /** Sync read of the latest hashprice from Ocean stats (sat/PH/day). */
+  readonly getHashprice?: () => number | null;
 }
 
 export interface TickResult {
@@ -85,6 +87,7 @@ export class Controller {
       previousBelowFloorSince: this.belowFloorSince,
       previousAboveFloorTicks: this.aboveFloorTicks,
       manualOverrideUntilMs: this.manualOverrideUntilMs,
+      hashpriceSatPerPhDay: this.deps.getHashprice?.() ?? null,
     });
     this.belowFloorSince = state.below_floor_since;
     this.aboveFloorTicks = state.above_floor_ticks;

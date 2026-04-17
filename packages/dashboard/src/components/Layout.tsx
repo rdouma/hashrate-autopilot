@@ -76,18 +76,6 @@ export function Layout() {
           </nav>
 
           <div className="flex items-center gap-3 ml-auto text-xs">
-            {primaryBalance ? (
-              <span
-                className="text-slate-400 hidden lg:inline cursor-help"
-                title={`blocked ${denomination.formatSat(primaryBalance.blocked_balance_sat)} · total ${denomination.formatSat(primaryBalance.total_balance_sat)}`}
-              >
-                available{' '}
-                <span className="text-slate-100 font-mono">
-                  {denomination.formatSat(primaryBalance.available_balance_sat)}
-                </span>
-              </span>
-            ) : null}
-
             <DenominationToggle />
 
             {/* Number/date format picker moved to Config → Display

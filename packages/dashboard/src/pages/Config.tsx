@@ -55,6 +55,20 @@ const SECTIONS: Section[] = [
     fields: [
       { key: 'target_hashrate_ph', label: 'Target hashrate', kind: 'decimal', unit: 'PH/s' },
       { key: 'minimum_floor_hashrate_ph', label: 'Minimum floor', kind: 'decimal', unit: 'PH/s' },
+      {
+        key: 'cheap_target_hashrate_ph',
+        label: 'Cheap-mode target',
+        kind: 'decimal',
+        unit: 'PH/s',
+        help: 'When the market is cheap (below the hashprice threshold), scale up to this target instead of the normal one. Set to 0 to disable.',
+      },
+      {
+        key: 'cheap_threshold_pct',
+        label: 'Cheap threshold',
+        kind: 'integer',
+        unit: '%',
+        help: '0 = disabled. Example: 95 = activate cheap mode when the fillable ask is below 95% of the break-even hashprice from Ocean.',
+      },
     ],
   },
   {

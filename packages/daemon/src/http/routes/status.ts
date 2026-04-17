@@ -57,7 +57,7 @@ export async function registerStatusRoute(
         actual_hashrate_ph: 0,
         below_floor_since: null,
         last_proposals: [],
-        config_summary: summariseConfig(config),
+        config_summary: summariseConfig(config, deps.hashpriceCache?.get() ?? null, null),
       };
     }
 
@@ -117,6 +117,14 @@ export async function registerStatusRoute(
         blocked_balance_sat: a.blocked_balance_sat,
       })) ?? [];
 
+    // Compute fillable before the response so we can share it with
+    // both the market view and the config summary (cheap-mode check).
+    const fillable = state.market
+      ? cheapestAskForDepth(state.market.orderbook.asks, config.target_hashrate_ph)
+      : null;
+
+    const hashpriceSatPerPhDay = deps.hashpriceCache?.get() ?? null;
+
     return {
       run_mode: liveRunMode,
       action_mode: liveActionMode,
@@ -130,26 +138,20 @@ export async function registerStatusRoute(
         last_executed: summariseLastExecuted(state.tick_at, executed),
       },
       balances,
-      market: state.market
-        ? (() => {
-            const fillable = cheapestAskForDepth(
-              state.market.orderbook.asks,
-              config.target_hashrate_ph,
-            );
-            return {
-              best_bid_sat_per_ph_day:
-                state.market.best_bid_sat !== null
-                  ? state.market.best_bid_sat / EH_PER_PH
-                  : null,
-              best_ask_sat_per_ph_day:
-                state.market.best_ask_sat !== null
-                  ? state.market.best_ask_sat / EH_PER_PH
-                  : null,
-              fillable_ask_sat_per_ph_day:
-                fillable.price_sat !== null ? fillable.price_sat / EH_PER_PH : null,
-              fillable_thin: fillable.thin,
-            };
-          })()
+      market: state.market && fillable
+        ? {
+            best_bid_sat_per_ph_day:
+              state.market.best_bid_sat !== null
+                ? state.market.best_bid_sat / EH_PER_PH
+                : null,
+            best_ask_sat_per_ph_day:
+              state.market.best_ask_sat !== null
+                ? state.market.best_ask_sat / EH_PER_PH
+                : null,
+            fillable_ask_sat_per_ph_day:
+              fillable.price_sat !== null ? fillable.price_sat / EH_PER_PH : null,
+            fillable_thin: fillable.thin,
+          }
         : null,
       pool: {
         reachable: state.pool.reachable,
@@ -160,7 +162,11 @@ export async function registerStatusRoute(
       actual_hashrate_ph: state.actual_hashrate.total_ph,
       below_floor_since: state.below_floor_since,
       last_proposals,
-      config_summary: summariseConfig(config),
+      config_summary: summariseConfig(
+        config,
+        hashpriceSatPerPhDay,
+        fillable?.price_sat ?? null,
+      ),
     };
   });
 }
@@ -406,17 +412,42 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
   };
 }
 
-function summariseConfig(config: {
-  target_hashrate_ph: number;
-  minimum_floor_hashrate_ph: number;
-  max_bid_sat_per_eh_day: number;
-  fill_escalation_step_sat_per_eh_day: number;
-  bid_budget_sat: number;
-  destination_pool_url: string;
-  quiet_hours_start: string;
-  quiet_hours_end: string;
-  quiet_hours_timezone: string;
-}): StatusResponse['config_summary'] {
+function summariseConfig(
+  config: {
+    target_hashrate_ph: number;
+    minimum_floor_hashrate_ph: number;
+    max_bid_sat_per_eh_day: number;
+    fill_escalation_step_sat_per_eh_day: number;
+    bid_budget_sat: number;
+    destination_pool_url: string;
+    quiet_hours_start: string;
+    quiet_hours_end: string;
+    quiet_hours_timezone: string;
+    cheap_target_hashrate_ph: number;
+    cheap_threshold_pct: number;
+  },
+  hashpriceSatPerPhDay: number | null,
+  cheapestAskSatEhDay: number | null,
+): StatusResponse['config_summary'] {
+  // Mirror the cheap-mode logic from decide.ts to expose which
+  // target is active in the status summary.
+  const hashpriceSatEh =
+    hashpriceSatPerPhDay !== null ? hashpriceSatPerPhDay * EH_PER_PH : null;
+  const cheapEnabled =
+    config.cheap_threshold_pct > 0 &&
+    config.cheap_target_hashrate_ph > config.target_hashrate_ph &&
+    hashpriceSatEh !== null &&
+    hashpriceSatEh > 0;
+  let cheapModeActive = false;
+  let effectiveTargetPh = config.target_hashrate_ph;
+  if (cheapEnabled && cheapestAskSatEhDay !== null) {
+    const threshold = hashpriceSatEh! * (config.cheap_threshold_pct / 100);
+    if (cheapestAskSatEhDay < threshold) {
+      cheapModeActive = true;
+      effectiveTargetPh = config.cheap_target_hashrate_ph;
+    }
+  }
+
   return {
     target_hashrate_ph: config.target_hashrate_ph,
     minimum_floor_hashrate_ph: config.minimum_floor_hashrate_ph,
@@ -427,5 +458,7 @@ function summariseConfig(config: {
     quiet_hours_start: config.quiet_hours_start,
     quiet_hours_end: config.quiet_hours_end,
     quiet_hours_timezone: config.quiet_hours_timezone,
+    effective_target_hashrate_ph: effectiveTargetPh,
+    cheap_mode_active: cheapModeActive,
   };
 }

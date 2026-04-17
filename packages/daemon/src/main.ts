@@ -17,6 +17,7 @@ import { createHttpServer } from './http/server.js';
 import { AccountSpendService } from './services/account-spend.js';
 import { BtcPriceService } from './services/btc-price.js';
 import { BraiinsService } from './services/braiins-service.js';
+import { HashpriceCache } from './services/hashprice-cache.js';
 import { createOceanClient } from './services/ocean.js';
 import { PayoutObserver } from './services/payout-observer.js';
 import { PoolHealthTracker } from './services/pool-health.js';
@@ -119,6 +120,10 @@ async function main(): Promise<void> {
     log('payout: using bitcoind scantxoutset (set electrs_host/port in Config for faster lookups)');
   }
 
+  // Hashprice cache — updated by the finance route (Ocean stats),
+  // read by the controller for cheap-hashrate scaling (issue #13).
+  const hashpriceCache = new HashpriceCache();
+
   const controller = new Controller({
     braiins,
     braiinsClient,
@@ -130,6 +135,7 @@ async function main(): Promise<void> {
     tickMetricsRepo,
     bidEventsRepo,
     now: () => Date.now(),
+    getHashprice: () => hashpriceCache.get(),
   });
   // Restore floor-tracking state so the escalation timer keeps counting
   // across daemon restarts (#11).
@@ -167,6 +173,7 @@ async function main(): Promise<void> {
     oceanClient,
     accountSpend,
     btcPriceService,
+    hashpriceCache,
     db: handle.db,
     password: secrets.dashboard_password,
     tickIntervalMs: DEFAULT_TICK_INTERVAL_MS,
