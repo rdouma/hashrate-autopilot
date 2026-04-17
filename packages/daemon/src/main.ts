@@ -83,19 +83,8 @@ async function main(): Promise<void> {
     log('bitcoind credentials seeded from secrets into config');
   }
 
-  // Auto-detect payout_source from existing config fields when it's
-  // still at the default 'none' (migration back-fill for existing installs).
-  if (cfg.payout_source === 'none') {
-    if (cfg.electrs_host && cfg.electrs_port) {
-      await configRepo.upsert({ ...cfg, payout_source: 'electrs' });
-      cfg = (await configRepo.get())!;
-      log('payout_source auto-set to electrs (electrs fields already configured)');
-    } else if (cfg.bitcoind_rpc_url || secrets.bitcoind_rpc_url) {
-      await configRepo.upsert({ ...cfg, payout_source: 'bitcoind' });
-      cfg = (await configRepo.get())!;
-      log('payout_source auto-set to bitcoind (bitcoind fields already configured)');
-    }
-  }
+  // payout_source auto-detection moved to migration 0022 (runs once).
+  // No per-boot override — operator's choice sticks.
 
   log(`config:   target=${cfg.target_hashrate_ph} PH/s  floor=${cfg.minimum_floor_hashrate_ph} PH/s`);
 
