@@ -26,7 +26,7 @@ const HEIGHT = 200;
 // and the X-axis lines up tick-for-tick. Right padding is small now that
 // the price-side Y-axis moved to the left — just enough to keep the
 // rightmost timestamp from clipping the edge.
-const PADDING = { top: 16, right: 16, bottom: 24, left: 64 };
+const PADDING = { top: 16, right: 16, bottom: 24, left: 80 };
 
 const COLOR_DELIVERED = '#34d399';
 const COLOR_TARGET = '#94a3b8';

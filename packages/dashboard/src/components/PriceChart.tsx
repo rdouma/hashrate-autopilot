@@ -23,7 +23,7 @@ const HEIGHT = 200;
 // Match HashrateChart's padding exactly so the two charts stack with a
 // pixel-perfect X-axis alignment. Y labels are on the left; right
 // padding only needs to keep the last X-axis timestamp from clipping.
-const PADDING = { top: 16, right: 16, bottom: 24, left: 64 };
+const PADDING = { top: 16, right: 16, bottom: 24, left: 80 };
 
 const COLOR_PRICE = '#fbbf24';
 const COLOR_FILLABLE = '#f97316';

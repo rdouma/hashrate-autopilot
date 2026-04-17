@@ -1,66 +1,39 @@
 /**
- * Tiny Ocean-pool stats client.
+ * Ocean pool stats client using the public JSON API at api.ocean.xyz.
  *
- * Ocean (ocean.xyz) doesn't publish a JSON API — its own dashboard polls
- * three HTML template fragments per address, each containing a few
- * labelled "blocks-label" + "<span>X.XXXXXXXX BTC</span>" pairs:
+ * Primary endpoint: GET /v1/statsnap/<address> — returns unpaid
+ * earnings, estimated next-block earnings, shares in the TIDES
+ * reward window.
  *
- *   /template/workers/payoutcards?user=<address>     — Unpaid Earnings,
- *                                                      Estimated Payout
- *                                                      Next Block,
- *                                                      Estimated Time
- *                                                      Until Minimum
- *                                                      Payout
- *   /template/workers/lifetimecards?user=<address>   — Share Log %,
- *                                                      Estimated Earnings
- *                                                      Per Day, Lifetime
- *                                                      Earnings
- *   /template/workers/earningscards?user=<address>   — Shares In Reward
- *                                                      Window, Estimated
- *                                                      Rewards In Window,
- *                                                      Estimated Earnings
- *                                                      Next Block
+ * Secondary: GET /v1/user_hashrate/<address> — multi-interval
+ * hashrates + active worker count. Used for the daily-earnings
+ * estimate and share-log %.
  *
- * The fragments are tiny (sub-1 KB each) so even three serial GETs are
- * cheap. We cache the merged result in-memory with a TTL since the
- * underlying numbers only update on Ocean's share submission cadence
- * (multi-second).
+ * GET /v1/pool_stat — pool-wide stats for share-log % computation.
  *
- * Output amounts are sat (integer). All BTC values from Ocean are
- * floating-point with 8 decimals — converted via Math.round(btc * 1e8).
+ * All endpoints are unauthenticated, per-address. No rate-limit
+ * headers observed; we cache with a 5-min TTL to be polite.
+ *
+ * Previous version scraped HTML templates from ocean.xyz (fragments
+ * at /template/workers/*). Replaced per issue #9 — the JSON API is
+ * more reliable and returns structured data.
  */
 
-const OCEAN_BASE = 'https://ocean.xyz';
-// Ocean's block-find threshold for an on-chain payout. Quoted on the
-// dashboard itself ("The on-chain payout threshold is 0.01048576 BTC").
+const OCEAN_API_BASE = 'https://api.ocean.xyz/v1';
 const PAYOUT_THRESHOLD_SAT = 1_048_576;
-
-const DEFAULT_CACHE_TTL_MS = 5 * 60 * 1000; // 5 min
-
+const DEFAULT_CACHE_TTL_MS = 5 * 60 * 1000;
 const SAT_PER_BTC = 100_000_000;
+const BLOCKS_PER_DAY = 144;
 
 export interface OceanStats {
-  /** Unpaid earnings — what would land on-chain at the next payout. */
   readonly unpaid_sat: number | null;
-  /** Lifetime earnings — total ever earned at this address. */
   readonly lifetime_sat: number | null;
-  /** Estimated rewards from shares already in the reward window. */
   readonly rewards_in_window_sat: number | null;
-  /** Estimated earnings if a block is found right now. */
   readonly next_block_sat: number | null;
-  /** Estimated earnings per day at the address's 3 h hashrate. */
   readonly daily_estimate_sat: number | null;
-  /**
-   * Time-until-payout text from Ocean ("11 days", "Below threshold",
-   * etc.). Rendered verbatim — Ocean already formats it humanly and
-   * the strings vary too much to safely re-parse.
-   */
   readonly time_to_payout_text: string | null;
-  /** Share-log fraction, surfaced for a sanity-check sub-line. */
   readonly share_log_pct: number | null;
-  /** Pool's published payout threshold, repeated here for the UI. */
   readonly payout_threshold_sat: number;
-  /** ms when this snapshot was fetched. */
   readonly fetched_at_ms: number;
 }
 
@@ -87,30 +60,87 @@ export function createOceanClient(opts: OceanClientOptions = {}): OceanClient {
       if (cached && now() - cached.fetched_at_ms < ttl) return cached;
 
       try {
-        const [payout, lifetime, earnings] = await Promise.all([
-          getFragment(fetchImpl, `/template/workers/payoutcards?user=${address}`),
-          getFragment(fetchImpl, `/template/workers/lifetimecards?user=${address}`),
-          getFragment(fetchImpl, `/template/workers/earningscards?user=${address}`),
+        const [statsnap, hashrate, poolStat] = await Promise.all([
+          getJson(fetchImpl, `${OCEAN_API_BASE}/statsnap/${address}`),
+          getJson(fetchImpl, `${OCEAN_API_BASE}/user_hashrate/${address}`),
+          getJson(fetchImpl, `${OCEAN_API_BASE}/pool_stat`),
         ]);
 
+        const snap = (statsnap?.result ?? {}) as Record<string, string>;
+        const hr = (hashrate?.result ?? {}) as Record<string, string>;
+        const pool = (poolStat?.result ?? {}) as Record<string, string>;
+
+        const unpaidBtc = parseFloat(snap.unpaid ?? '');
+        const unpaid_sat = Number.isFinite(unpaidBtc)
+          ? Math.round(unpaidBtc * SAT_PER_BTC)
+          : null;
+
+        const nextBlockBtc = parseFloat(snap.estimated_total_earn_next_block ?? '');
+        const next_block_sat = Number.isFinite(nextBlockBtc)
+          ? Math.round(nextBlockBtc * SAT_PER_BTC)
+          : null;
+
+        // Shares in TIDES window
+        const sharesInTides = Number(snap.shares_in_tides ?? 0);
+        const poolShares = Number(pool.current_tides_shares ?? 0);
+        const share_log_pct =
+          poolShares > 0 ? (sharesInTides / poolShares) * 100 : null;
+
+        // Estimated rewards in window (share % * estimated block reward)
+        const blockRewardBtc = parseFloat(pool.current_estimated_block_reward ?? '');
+        const rewards_in_window_sat =
+          share_log_pct !== null && Number.isFinite(blockRewardBtc)
+            ? Math.round((share_log_pct / 100) * blockRewardBtc * SAT_PER_BTC)
+            : null;
+
+        // Daily estimate: user's share of pool hashrate × blocks/day × reward
+        const userHash3h = Number(hr.hashrate_10800s ?? 0);
+        const networkDifficulty = Number(pool.network_difficulty ?? 0);
+        const networkHashrate =
+          networkDifficulty > 0
+            ? (networkDifficulty * 2 ** 32) / 600
+            : 0;
+        const daily_estimate_sat =
+          networkHashrate > 0 && userHash3h > 0 && Number.isFinite(blockRewardBtc)
+            ? Math.round(
+                (userHash3h / networkHashrate) *
+                  BLOCKS_PER_DAY *
+                  blockRewardBtc *
+                  SAT_PER_BTC,
+              )
+            : null;
+
+        // Time to payout: (threshold − unpaid) / daily_rate
+        let time_to_payout_text: string | null = null;
+        if (unpaid_sat !== null && daily_estimate_sat !== null && daily_estimate_sat > 0) {
+          const remainingSat = PAYOUT_THRESHOLD_SAT - unpaid_sat;
+          if (remainingSat <= 0) {
+            time_to_payout_text = 'Next block';
+          } else {
+            const daysRemaining = remainingSat / daily_estimate_sat;
+            if (daysRemaining < 1) {
+              const hours = Math.max(1, Math.round(daysRemaining * 24));
+              time_to_payout_text = `${hours} hours`;
+            } else {
+              time_to_payout_text = `${Math.round(daysRemaining)} days`;
+            }
+          }
+        }
+
         const stats: OceanStats = {
-          unpaid_sat: parseBtcLabel(payout, 'Unpaid Earnings'),
-          time_to_payout_text:
-            parseRawSpanLabel(payout, 'Estimated Time Until Minimum Payout') ??
-            parseRawSpanLabel(payout, 'Estimated Payout Next Block'),
-          lifetime_sat: parseBtcLabel(lifetime, 'Lifetime Earnings'),
-          daily_estimate_sat: parseBtcLabel(lifetime, 'Estimated Earnings Per Day'),
-          share_log_pct: parsePctLabel(lifetime, 'Share Log %'),
-          rewards_in_window_sat: parseBtcLabel(earnings, 'Estimated Rewards In Window'),
-          next_block_sat: parseBtcLabel(earnings, 'Estimated Earnings Next Block'),
+          unpaid_sat,
+          lifetime_sat: null, // Not available via API; would need HTML scrape
+          rewards_in_window_sat,
+          next_block_sat,
+          daily_estimate_sat,
+          time_to_payout_text,
+          share_log_pct,
           payout_threshold_sat: PAYOUT_THRESHOLD_SAT,
           fetched_at_ms: now(),
         };
         cache.set(address, stats);
         return stats;
       } catch (err) {
-        // Surface for the daemon log but don't crash the tick. The
-        // dashboard treats `null` as "Ocean unavailable".
         console.warn(
           `[ocean] fetchStats(${address}) failed: ${(err as Error).message}`,
         );
@@ -120,78 +150,19 @@ export function createOceanClient(opts: OceanClientOptions = {}): OceanClient {
   };
 }
 
-async function getFragment(
+async function getJson(
   fetchImpl: typeof fetch,
-  path: string,
-): Promise<string> {
-  const res = await fetchImpl(`${OCEAN_BASE}${path}`, {
-    headers: { 'user-agent': 'braiins-hashrate-autopilot/0.1' },
+  url: string,
+): Promise<Record<string, unknown> | null> {
+  const res = await fetchImpl(url, {
+    headers: {
+      accept: 'application/json',
+      'user-agent': 'braiins-hashrate-autopilot/0.1',
+    },
+    signal: AbortSignal.timeout(10_000),
   });
   if (!res.ok) {
-    throw new Error(`GET ${path} returned ${res.status}`);
+    throw new Error(`GET ${url} returned ${res.status}`);
   }
-  return res.text();
-}
-
-/**
- * Find the value `<span>0.00356948 BTC</span>` that follows a
- * `<div class="blocks-label">Unpaid Earnings ...` block. Robust to
- * tooltip nesting and whitespace; case-sensitive on the label so we
- * don't accidentally pick up "Estimated Payout..." when looking for
- * "Estimated Earnings...".
- */
-function parseBtcLabel(html: string, label: string): number | null {
-  const re = new RegExp(
-    String.raw`blocks-label">\s*` +
-      escapeRegex(label) +
-      String.raw`[\s\S]*?<span>\s*([\d.]+)\s*BTC\s*</span>`,
-  );
-  const m = html.match(re);
-  if (!m || !m[1]) return null;
-  const btc = Number.parseFloat(m[1]);
-  if (!Number.isFinite(btc)) return null;
-  return Math.round(btc * SAT_PER_BTC);
-}
-
-function parsePctLabel(html: string, label: string): number | null {
-  const re = new RegExp(
-    String.raw`blocks-label">\s*` +
-      escapeRegex(label) +
-      String.raw`[\s\S]*?<span>\s*([\d.]+)\s*%\s*</span>`,
-  );
-  const m = html.match(re);
-  if (!m || !m[1]) return null;
-  const pct = Number.parseFloat(m[1]);
-  return Number.isFinite(pct) ? pct : null;
-}
-
-/**
- * Generic "label -> text inside the value <span>". Used for the
- * time-until-payout and threshold-status text which aren't BTC values
- * (e.g. "11 days", "Below threshold").
- *
- * Subtle bug worth keeping commented: the .blocks-label DIV nests a
- * `tooltip tooltip-info` block whose `<span class="tooltiptext">...`
- * comes BEFORE the actual value `<span>`. Any pattern that accepts
- * `<span[^>]*>` matches the tooltip first and we end up rendering
- * Ocean's hover help-text on the dashboard instead of "11 days".
- * Constrain to bare `<span>` with no attributes — that's the value
- * convention Ocean's templates use throughout.
- */
-function parseRawSpanLabel(html: string, label: string): string | null {
-  const re = new RegExp(
-    String.raw`blocks-label">\s*` +
-      escapeRegex(label) +
-      String.raw`[\s\S]*?<span>([\s\S]*?)</span>`,
-  );
-  const m = html.match(re);
-  if (!m || !m[1]) return null;
-  // Strip nested anchors / tags (the "Below threshold" branch wraps
-  // the text in an <a>).
-  const text = m[1].replace(/<[^>]+>/g, '').trim();
-  return text.length > 0 ? text : null;
-}
-
-function escapeRegex(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return res.json() as Promise<Record<string, unknown>>;
 }

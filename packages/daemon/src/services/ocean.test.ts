@@ -2,106 +2,89 @@ import { describe, expect, it } from 'vitest';
 
 import { createOceanClient } from './ocean.js';
 
-// Real HTML fragments captured 2026-04-16 against ocean.xyz/template/...
-// Trimmed to the relevant blocks; full files were a few hundred bytes
-// each. Embedded as fixtures so tests don't need network access.
+// Fixtures matching the real api.ocean.xyz/v1/ JSON responses
+// captured 2026-04-16.
 
-const PAYOUT_FRAGMENT = `
-<div class="blocks dashboard-container">
-  <div class="blocks-label">Unpaid Earnings
-      <div class="tooltip tooltip-info">
-        <span class="tooltiptext">Earnings below threshold pending payment</span>
-      </div>
-  </div>
-    <span>0.00356948 BTC</span>
-</div>
-<div class="blocks dashboard-container">
-  <div class="blocks-label">Estimated Payout Next Block
-      <div class="tooltip tooltip-info">
-        <span class="tooltiptext">The on-chain payout threshold is 0.01048576 BTC</span>
-      </div>
-  </div>
-    <span><a class="undecorated text-dark" href="/#faq-threshold">Below threshold</a></span>
-</div>
-<div class="blocks dashboard-container">
-  <div class="blocks-label">Estimated Time Until Minimum Payout
-  </div>
-    <span>11 days</span>
-</div>
-`;
+const STATSNAP = {
+  result: {
+    unpaid: '0.00385090',
+    estimated_earn_next_block: '0.00028745',
+    estimated_total_earn_next_block: '0.00028745',
+    shares_in_tides: '103027310592',
+  },
+};
 
-const LIFETIME_FRAGMENT = `
-<div class="blocks dashboard-container">
-  <div class="blocks-label">Share Log %
-  </div>
-    <span>0.009%</span>
-</div>
-<div class="blocks dashboard-container">
-  <div class="blocks-label">Estimated Earnings Per Day
-  </div>
-    <span>0.00058339 BTC</span>
-</div>
-<div class="blocks dashboard-container">
-  <div class="blocks-label">Lifetime Earnings
-  </div>
-    <span>0.00356948 BTC</span>
-</div>
-`;
+const USER_HASHRATE = {
+  result: {
+    hashrate_10800s: '1849290596989010',
+    active_worker_count: 1,
+  },
+};
 
-const EARNINGS_FRAGMENT = `
-<div class="blocks dashboard-container">
-  <div class="blocks-label">Estimated Rewards In Window
-  </div>
-    <span>0.00226499 BTC</span>
-</div>
-<div class="blocks dashboard-container">
-  <div class="blocks-label">Estimated Earnings Next Block
-  </div>
-    <span>0.00028374 BTC</span>
-</div>
-`;
+const POOL_STAT = {
+  result: {
+    network_difficulty: '138966872071213.02',
+    current_tides_shares: '1111734976569704',
+    current_estimated_block_reward: '3.13312160',
+  },
+};
 
-function fakeFetch(map: Record<string, string>): typeof fetch {
+function fakeApiFetch(overrides: Record<string, unknown> = {}): typeof fetch {
   return (async (url: string) => {
-    for (const [path, body] of Object.entries(map)) {
-      if (url.includes(path)) {
-        return {
-          ok: true,
-          status: 200,
-          text: async () => body,
-        } as Response;
-      }
-    }
-    return { ok: false, status: 404, text: async () => '' } as Response;
+    const u = String(url);
+    let body: unknown;
+    if (u.includes('/statsnap/')) body = overrides['statsnap'] ?? STATSNAP;
+    else if (u.includes('/user_hashrate/')) body = overrides['hashrate'] ?? USER_HASHRATE;
+    else if (u.includes('/pool_stat')) body = overrides['pool'] ?? POOL_STAT;
+    else return { ok: false, status: 404, json: async () => ({}) } as Response;
+    return {
+      ok: true,
+      status: 200,
+      json: async () => body,
+    } as Response;
   }) as unknown as typeof fetch;
 }
 
-describe('OceanClient', () => {
-  it('parses all four BTC fields + the time-to-payout text', async () => {
-    const client = createOceanClient({
-      fetch: fakeFetch({
-        '/template/workers/payoutcards': PAYOUT_FRAGMENT,
-        '/template/workers/lifetimecards': LIFETIME_FRAGMENT,
-        '/template/workers/earningscards': EARNINGS_FRAGMENT,
-      }),
-    });
+describe('OceanClient (JSON API)', () => {
+  it('parses unpaid earnings from statsnap', async () => {
+    const client = createOceanClient({ fetch: fakeApiFetch() });
     const stats = await client.fetchStats('bc1qaddress');
     expect(stats).not.toBeNull();
-    expect(stats!.unpaid_sat).toBe(356_948);
-    expect(stats!.lifetime_sat).toBe(356_948);
-    expect(stats!.daily_estimate_sat).toBe(58_339);
-    expect(stats!.rewards_in_window_sat).toBe(226_499);
-    expect(stats!.next_block_sat).toBe(28_374);
-    expect(stats!.share_log_pct).toBeCloseTo(0.009, 5);
-    // "Estimated Time Until Minimum Payout" wins over the
-    // "Estimated Payout Next Block" branch when both are present.
-    expect(stats!.time_to_payout_text).toBe('11 days');
-    expect(stats!.payout_threshold_sat).toBe(1_048_576);
+    expect(stats!.unpaid_sat).toBe(385_090);
   });
 
-  it('returns null on any HTTP failure', async () => {
+  it('parses estimated next-block earnings', async () => {
+    const client = createOceanClient({ fetch: fakeApiFetch() });
+    const stats = await client.fetchStats('bc1qaddress');
+    expect(stats!.next_block_sat).toBe(28_745);
+  });
+
+  it('computes share log percentage from user + pool shares', async () => {
+    const client = createOceanClient({ fetch: fakeApiFetch() });
+    const stats = await client.fetchStats('bc1qaddress');
+    expect(stats!.share_log_pct).toBeGreaterThan(0);
+    expect(stats!.share_log_pct).toBeLessThan(1);
+  });
+
+  it('computes daily estimate from hashrate + network difficulty', async () => {
+    const client = createOceanClient({ fetch: fakeApiFetch() });
+    const stats = await client.fetchStats('bc1qaddress');
+    expect(stats!.daily_estimate_sat).toBeGreaterThan(0);
+  });
+
+  it('computes time-to-payout from unpaid + daily rate', async () => {
+    const client = createOceanClient({ fetch: fakeApiFetch() });
+    const stats = await client.fetchStats('bc1qaddress');
+    expect(stats!.time_to_payout_text).toMatch(/^\d+ (days|hours)$/);
+  });
+
+  it('returns null on HTTP failure', async () => {
     const client = createOceanClient({
-      fetch: (async () => ({ ok: false, status: 500, text: async () => '' })) as unknown as typeof fetch,
+      fetch: (async () => ({
+        ok: false,
+        status: 500,
+        json: async () => ({}),
+      })) as unknown as typeof fetch,
     });
     expect(await client.fetchStats('bc1qaddress')).toBeNull();
   });
@@ -111,10 +94,8 @@ describe('OceanClient', () => {
     const client = createOceanClient({
       fetch: (async (url: string) => {
         calls++;
-        if (url.includes('/payoutcards')) return resp(PAYOUT_FRAGMENT);
-        if (url.includes('/lifetimecards')) return resp(LIFETIME_FRAGMENT);
-        if (url.includes('/earningscards')) return resp(EARNINGS_FRAGMENT);
-        return { ok: false, status: 404, text: async () => '' } as Response;
+        const f = fakeApiFetch();
+        return f(url, {} as RequestInit);
       }) as unknown as typeof fetch,
       cacheTtlMs: 60_000,
       now: () => 1_700_000_000_000,
@@ -122,60 +103,18 @@ describe('OceanClient', () => {
     await client.fetchStats('bc1qaddress');
     const callsAfterFirst = calls;
     await client.fetchStats('bc1qaddress');
-    expect(calls).toBe(callsAfterFirst); // no extra fetches
+    expect(calls).toBe(callsAfterFirst);
   });
 
-  it('does not pick up tooltip help-text as the value (regression)', async () => {
-    // Earlier bug: the parser matched `<span[^>]*>...` and so found the
-    // `<span class="tooltiptext">...` *before* the bare `<span>11 days
-    // </span>` value. Real-world result was the dashboard rendering
-    // "Time at 3-hour hashrate until earnings exceed payout threshold
-    // (0.01048576 BTC)" as if it were the value.
-    const fragmentWithTooltip = `
-      <div class="blocks-label">Estimated Time Until Minimum Payout
-        <div class="tooltip tooltip-info">
-          <span class="tooltiptext">Time at 3-hour hashrate until earnings exceed payout threshold (0.01048576 BTC)</span>
-        </div>
-      </div>
-        <span>11 days</span>
-    `;
-    const client = createOceanClient({
-      fetch: fakeFetch({
-        '/template/workers/payoutcards': fragmentWithTooltip,
-        '/template/workers/lifetimecards': LIFETIME_FRAGMENT,
-        '/template/workers/earningscards': EARNINGS_FRAGMENT,
-      }),
-    });
+  it('lifetime_sat is null (not available via JSON API)', async () => {
+    const client = createOceanClient({ fetch: fakeApiFetch() });
     const stats = await client.fetchStats('bc1qaddress');
-    expect(stats!.time_to_payout_text).toBe('11 days');
-    expect(stats!.time_to_payout_text).not.toContain('hashrate');
+    expect(stats!.lifetime_sat).toBeNull();
   });
 
-  it('returns "Below threshold" branch when the time-text is missing', async () => {
-    const payoutWithoutTime = `
-      <div class="blocks dashboard-container">
-        <div class="blocks-label">Unpaid Earnings
-        </div>
-          <span>0.00100000 BTC</span>
-      </div>
-      <div class="blocks dashboard-container">
-        <div class="blocks-label">Estimated Payout Next Block
-        </div>
-          <span><a class="undecorated text-dark" href="/x">Below threshold</a></span>
-      </div>
-    `;
-    const client = createOceanClient({
-      fetch: fakeFetch({
-        '/template/workers/payoutcards': payoutWithoutTime,
-        '/template/workers/lifetimecards': LIFETIME_FRAGMENT,
-        '/template/workers/earningscards': EARNINGS_FRAGMENT,
-      }),
-    });
+  it('reports payout threshold', async () => {
+    const client = createOceanClient({ fetch: fakeApiFetch() });
     const stats = await client.fetchStats('bc1qaddress');
-    expect(stats!.time_to_payout_text).toBe('Below threshold');
+    expect(stats!.payout_threshold_sat).toBe(1_048_576);
   });
 });
-
-function resp(body: string): Response {
-  return { ok: true, status: 200, text: async () => body } as Response;
-}
