@@ -318,6 +318,7 @@ export interface SimulateRequest {
   fill_escalation_after_minutes: number;
   lower_patience_minutes: number;
   min_lower_delta_sat_per_eh_day: number;
+  escalation_mode: 'market' | 'dampened';
 }
 
 export interface SimStatsSummary {

@@ -34,6 +34,7 @@ interface SimulateRequest {
   fill_escalation_after_minutes: number;
   lower_patience_minutes: number;
   min_lower_delta_sat_per_eh_day: number;
+  escalation_mode: 'market' | 'dampened';
 }
 
 interface SimulatedTick {
@@ -127,6 +128,7 @@ export async function registerSimulateRoute(
         escalationWindowMs: body.fill_escalation_after_minutes * 60_000,
         lowerPatienceMs: body.lower_patience_minutes * 60_000,
         minLowerDelta: body.min_lower_delta_sat_per_eh_day,
+        escalationMode: body.escalation_mode ?? 'dampened',
       });
 
       const simulated = computeStats(rows, (_r, i) => ({
@@ -157,6 +159,7 @@ interface SimParams {
   escalationWindowMs: number;
   lowerPatienceMs: number;
   minLowerDelta: number;
+  escalationMode: 'market' | 'dampened';
 }
 
 interface SimResult {
@@ -204,7 +207,9 @@ function simulate(rows: TickRow[], params: SimParams): SimResult {
       if (belowFloorSince !== null) {
         const elapsed = r.tick_at - belowFloorSince;
         if (elapsed >= params.escalationWindowMs && bidPrice < targetPrice) {
-          bidPrice = Math.min(bidPrice + params.escalationStep, targetPrice);
+          bidPrice = params.escalationMode === 'market'
+            ? targetPrice
+            : Math.min(bidPrice + params.escalationStep, targetPrice);
           overrideUntil = r.tick_at + params.escalationWindowMs;
         }
       }

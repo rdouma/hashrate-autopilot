@@ -151,6 +151,7 @@ export function Status() {
         fill_escalation_after_minutes: c.fill_escalation_after_minutes,
         lower_patience_minutes: c.lower_patience_minutes,
         min_lower_delta_sat_per_eh_day: c.min_lower_delta_sat_per_eh_day,
+        escalation_mode: c.escalation_mode === 'market' ? 1 : 0,
       });
     }
   }, [simMode, configQuery.data, simParams]);
@@ -171,6 +172,7 @@ export function Status() {
       fill_escalation_after_minutes: simParamsDebounced!.fill_escalation_after_minutes!,
       lower_patience_minutes: simParamsDebounced!.lower_patience_minutes!,
       min_lower_delta_sat_per_eh_day: simParamsDebounced!.min_lower_delta_sat_per_eh_day!,
+      escalation_mode: simParamsDebounced!.escalation_mode ? 'market' : 'dampened',
     }),
     enabled: simMode && !!simParamsDebounced,
     staleTime: 30_000,
@@ -322,11 +324,17 @@ export function Status() {
               fill_escalation_after_minutes: c.fill_escalation_after_minutes,
               lower_patience_minutes: c.lower_patience_minutes,
               min_lower_delta_sat_per_eh_day: c.min_lower_delta_sat_per_eh_day,
+              escalation_mode: c.escalation_mode === 'market' ? 1 : 0,
             });
           }}
           onApply={async () => {
             if (!simParams || !configQuery.data) return;
-            const updated = { ...configQuery.data.config, ...simParams };
+            const { escalation_mode: escNum, ...numericParams } = simParams;
+            const updated = {
+              ...configQuery.data.config,
+              ...numericParams,
+              escalation_mode: escNum ? 'market' as const : 'dampened' as const,
+            };
             await api.updateConfig(updated);
             qc.invalidateQueries({ queryKey: ['config'] });
             qc.invalidateQueries({ queryKey: ['status'] });
@@ -942,7 +950,7 @@ function formatRemaining(ms: number): string {
 
 const EH_PER_PH = 1000;
 
-const SIM_FIELDS = [
+const SIM_NUMBER_FIELDS = [
   { key: 'overpay_sat_per_eh_day', label: 'Overpay', step: 50_000, ehToPh: true, unit: 'sat/PH/day' },
   { key: 'max_bid_sat_per_eh_day', label: 'Max bid', step: 1_000_000, ehToPh: true, unit: 'sat/PH/day' },
   { key: 'fill_escalation_step_sat_per_eh_day', label: 'Esc. step', step: 50_000, ehToPh: true, unit: 'sat/PH/day' },
@@ -1040,8 +1048,8 @@ function SimParamBar({
           )}
         </div>
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        {SIM_FIELDS.map((f) => {
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+        {SIM_NUMBER_FIELDS.map((f) => {
           const rawValue = params[f.key] ?? 0;
           const configVal = (config as unknown as Record<string, number>)[f.key] ?? 0;
           const displayValue = f.ehToPh ? Math.round(rawValue / EH_PER_PH) : rawValue;
@@ -1068,6 +1076,23 @@ function SimParamBar({
             </div>
           );
         })}
+        <div>
+          <label className="text-[10px] text-slate-500 block mb-0.5">Esc. mode</label>
+          <div className="flex rounded overflow-hidden border border-slate-700 text-[10px] h-[26px]">
+            <button
+              onClick={() => onChange('escalation_mode', 0)}
+              className={`flex-1 px-1.5 ${!params.escalation_mode ? 'bg-amber-800/60 text-amber-200' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
+            >
+              Dampened
+            </button>
+            <button
+              onClick={() => onChange('escalation_mode', 1)}
+              className={`flex-1 px-1.5 ${params.escalation_mode ? 'bg-amber-800/60 text-amber-200' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
+            >
+              Market
+            </button>
+          </div>
+        </div>
       </div>
     </section>
   );

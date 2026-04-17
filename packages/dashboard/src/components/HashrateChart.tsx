@@ -109,7 +109,6 @@ export const HashrateChart = memo(function HashrateChart({
           <h3 className="text-xs uppercase tracking-wider text-slate-100">
             Delivered hashrate
           </h3>
-          <RangePicker current={range} onChange={onRangeChange} />
         </div>
         <div className="mt-4 text-sm text-slate-500">
           Not enough data in this range yet.
@@ -130,7 +129,6 @@ export const HashrateChart = memo(function HashrateChart({
           <Legend color={simMode ? '#fbbf24' : COLOR_DELIVERED} label={simMode ? 'simulated' : 'delivered'} />
           <Legend color={COLOR_TARGET} label="target" dashed />
           <Legend color={COLOR_FLOOR} label="floor" dashed />
-          <RangePicker current={range} onChange={onRangeChange} />
         </div>
       </div>
       <svg
