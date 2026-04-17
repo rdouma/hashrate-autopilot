@@ -928,7 +928,7 @@ function FinancePanel({
   if (!data) {
     return (
       <section className="bg-slate-900 border border-slate-800 rounded-lg p-4">
-        <div className="text-xs uppercase tracking-wider text-slate-100 mb-2">Money</div>
+        <div className="text-xs uppercase tracking-wider text-slate-100 mb-2">Profit &amp; Loss</div>
         <div className="text-slate-500 text-sm">loading…</div>
       </section>
     );
@@ -978,7 +978,7 @@ function FinancePanel({
   return (
     <section className="bg-slate-900 border border-slate-800 rounded-lg p-4 flex flex-col">
       <div className="flex items-baseline justify-between mb-3">
-        <div className="text-xs uppercase tracking-wider text-slate-100">Money</div>
+        <div className="text-xs uppercase tracking-wider text-slate-100">Profit &amp; Loss</div>
         <div className="flex items-center gap-2 text-[11px] text-slate-500">
           <TickingAge epochMs={data.checked_at_ms} />
           <button
@@ -997,7 +997,7 @@ function FinancePanel({
         value={data.spent_sat}
         tooltip={
           data.spent_scope === 'account'
-            ? 'Sum of every "(Partial) order settlement (brutto price)" on /v1/account/transaction — covers all bids the Braiins account has ever settled, including any that existed before the autopilot was switched on. Switch via Config → Money panel.'
+            ? 'Sum of every "(Partial) order settlement (brutto price)" on /v1/account/transaction — covers all bids the Braiins account has ever settled, including any that existed before the autopilot was switched on. Switch via Config → P&L panel.'
             : 'Lifetime sum of (amount_sat − amount_remaining_sat) across every bid the autopilot has tagged. Excludes any bids placed before the autopilot was switched on. Switch to "whole account" via Config → Money panel.'
         }
       />

@@ -233,9 +233,9 @@ const SECTIONS: Section[] = [
     ],
   },
   {
-    title: 'Money panel',
+    title: 'Profit & Loss',
     description:
-      'Controls how the Money panel computes the "spent" figure that feeds the net result.',
+      'Controls how the P&L panel computes the "spent" figure that feeds the net result.',
     fields: [
       {
         key: 'spent_scope',
@@ -287,7 +287,7 @@ export function Config() {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl pb-24">
+    <div className="space-y-6 max-w-3xl mx-auto pb-24">
       <header className="flex items-baseline justify-between">
         <div>
           <h2 className="text-2xl text-slate-100">Configuration</h2>
