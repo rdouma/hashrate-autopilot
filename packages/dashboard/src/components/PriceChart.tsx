@@ -45,17 +45,20 @@ interface PricePoint {
 }
 
 const COLOR_HASHPRICE = '#a78bfa'; // violet-400
+const COLOR_MAXBID = '#f87171'; // red-400
 
 export const PriceChart = memo(function PriceChart({
   points,
   events = [],
   showEvents,
   hashpriceSatPerPhDay = null,
+  maxBidSatPerPhDay = null,
 }: {
   points: readonly MetricPoint[];
   events?: readonly BidEventView[];
   showEvents: boolean;
   hashpriceSatPerPhDay?: number | null;
+  maxBidSatPerPhDay?: number | null;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [hovered, setHovered] = useState<HoveredTooltip | null>(null);
@@ -131,7 +134,7 @@ export const PriceChart = memo(function PriceChart({
       ? events.filter((e) => e.occurred_at >= minX && e.occurred_at <= maxX)
       : [];
 
-    return { pricePoints, fillablePoints, minX, maxX, hasPrice, xScale, yScale, pricePath, fillablePath, yTicks, xTickInterval, xTicks, visibleEvents };
+    return { pricePoints, fillablePoints, minX, maxX, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, fillablePath, yTicks, xTickInterval, xTicks, visibleEvents };
   }, [points, events, showEvents, hashpriceSatPerPhDay]);
 
   const eventPriceAt = useCallback((e: BidEventView): number | null => {
@@ -171,7 +174,7 @@ export const PriceChart = memo(function PriceChart({
     );
   }
 
-  const { pricePoints, fillablePoints, hasPrice, xScale, yScale, pricePath, fillablePath, yTicks, xTickInterval, xTicks, visibleEvents } = chartData;
+  const { pricePoints, fillablePoints, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, fillablePath, yTicks, xTickInterval, xTicks, visibleEvents } = chartData;
 
   // Format Y-axis tick values: in USD mode convert sat/PH/day to $/PH/day
   const priceFmt = (v: number): string => {
@@ -196,6 +199,9 @@ export const PriceChart = memo(function PriceChart({
           <Legend color={COLOR_FILLABLE} label="fillable" dashed />
           {hashpriceSatPerPhDay !== null && (
             <Legend color={COLOR_HASHPRICE} label="hashprice" dashed />
+          )}
+          {maxBidSatPerPhDay !== null && (
+            <Legend color={COLOR_MAXBID} label="max bid" dashed />
           )}
           {showEvents && <EventLegend />}
         </div>
@@ -240,6 +246,24 @@ export const PriceChart = memo(function PriceChart({
             strokeWidth="1.2"
             strokeDasharray="6 4"
             opacity="0.7"
+          />
+        )}
+        {/* Max bid ceiling — only shown when it falls within the
+            chart's visible Y-range. Don't force the chart to zoom
+            out to show it; just render when it's naturally visible
+            (i.e., the data is already near the ceiling). */}
+        {maxBidSatPerPhDay !== null &&
+          maxBidSatPerPhDay >= priceMin &&
+          maxBidSatPerPhDay <= priceMax && (
+          <line
+            x1={PADDING.left}
+            x2={WIDTH - PADDING.right}
+            y1={yScale(maxBidSatPerPhDay)}
+            y2={yScale(maxBidSatPerPhDay)}
+            stroke={COLOR_MAXBID}
+            strokeWidth="1.2"
+            strokeDasharray="3 5"
+            opacity="0.6"
           />
         )}
         {fillablePath && (

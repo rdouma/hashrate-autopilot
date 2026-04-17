@@ -180,6 +180,7 @@ export function Status() {
         events={bidEventsQuery.data?.events ?? []}
         showEvents={CHART_RANGE_SPECS[chartRange].showEvents}
         hashpriceSatPerPhDay={financeQuery.data?.ocean?.hashprice_sat_per_ph_day ?? null}
+        maxBidSatPerPhDay={s.config_summary.max_bid_sat_per_ph_day}
       />
 
       <StatsBar statsData={statsQuery.data} />
