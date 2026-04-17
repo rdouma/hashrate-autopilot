@@ -284,6 +284,7 @@ export interface FinanceResponse {
   ocean: {
     lifetime_sat: number | null;
     daily_estimate_sat: number | null;
+    hashprice_sat_per_ph_day: number | null;
     rewards_in_window_sat: number | null;
     time_to_payout_text: string | null;
     payout_threshold_sat: number;

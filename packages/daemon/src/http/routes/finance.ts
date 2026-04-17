@@ -40,6 +40,7 @@ export interface FinanceResponse {
   readonly ocean: {
     readonly lifetime_sat: number | null;
     readonly daily_estimate_sat: number | null;
+    readonly hashprice_sat_per_ph_day: number | null;
     readonly rewards_in_window_sat: number | null;
     readonly time_to_payout_text: string | null;
     readonly payout_threshold_sat: number;
@@ -104,6 +105,7 @@ export async function registerFinanceRoute(
         ? {
             lifetime_sat: oceanStats.lifetime_sat,
             daily_estimate_sat: oceanStats.daily_estimate_sat,
+            hashprice_sat_per_ph_day: oceanStats.hashprice_sat_per_ph_day,
             rewards_in_window_sat: oceanStats.rewards_in_window_sat,
             time_to_payout_text: oceanStats.time_to_payout_text,
             payout_threshold_sat: oceanStats.payout_threshold_sat,

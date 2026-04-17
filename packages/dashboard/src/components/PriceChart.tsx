@@ -43,14 +43,18 @@ interface PricePoint {
   v: number;
 }
 
+const COLOR_HASHPRICE = '#a78bfa'; // violet-400
+
 export const PriceChart = memo(function PriceChart({
   points,
   events = [],
   showEvents,
+  hashpriceSatPerPhDay = null,
 }: {
   points: readonly MetricPoint[];
   events?: readonly BidEventView[];
   showEvents: boolean;
+  hashpriceSatPerPhDay?: number | null;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [hovered, setHovered] = useState<HoveredTooltip | null>(null);
@@ -83,6 +87,8 @@ export const PriceChart = memo(function PriceChart({
       ...pricePoints.map((p) => p.v),
       ...fillablePoints.map((p) => p.v),
       ...eventPrices,
+      // Include hashprice so the Y-axis range accommodates the line
+      ...(hashpriceSatPerPhDay !== null ? [hashpriceSatPerPhDay] : []),
     ];
     const hasPrice = priceSample.length > 0;
     const priceMinRaw = hasPrice ? Math.min(...priceSample) : 0;
@@ -125,7 +131,7 @@ export const PriceChart = memo(function PriceChart({
       : [];
 
     return { pricePoints, fillablePoints, minX, maxX, hasPrice, xScale, yScale, pricePath, fillablePath, yTicks, xTickInterval, xTicks, visibleEvents };
-  }, [points, events, showEvents]);
+  }, [points, events, showEvents, hashpriceSatPerPhDay]);
 
   const eventPriceAt = useCallback((e: BidEventView): number | null => {
     const pricePoints = chartData?.pricePoints ?? [];
@@ -187,6 +193,9 @@ export const PriceChart = memo(function PriceChart({
         <div className="flex items-center gap-3 text-xs flex-wrap">
           <Legend color={COLOR_PRICE} label="our bid" />
           <Legend color={COLOR_FILLABLE} label="fillable" dashed />
+          {hashpriceSatPerPhDay !== null && (
+            <Legend color={COLOR_HASHPRICE} label="hashprice" dashed />
+          )}
           {showEvents && <EventLegend />}
         </div>
       </div>
@@ -218,6 +227,20 @@ export const PriceChart = memo(function PriceChart({
           </g>
         ))}
 
+        {/* Hashprice break-even line — horizontal across the full chart
+            width. Below this line = profitable, above = unprofitable. */}
+        {hashpriceSatPerPhDay !== null && (
+          <line
+            x1={PADDING.left}
+            x2={WIDTH - PADDING.right}
+            y1={yScale(hashpriceSatPerPhDay)}
+            y2={yScale(hashpriceSatPerPhDay)}
+            stroke={COLOR_HASHPRICE}
+            strokeWidth="1.2"
+            strokeDasharray="6 4"
+            opacity="0.7"
+          />
+        )}
         {fillablePath && (
           <path
             d={fillablePath}

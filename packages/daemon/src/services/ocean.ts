@@ -31,6 +31,15 @@ export interface OceanStats {
   readonly rewards_in_window_sat: number | null;
   readonly next_block_sat: number | null;
   readonly daily_estimate_sat: number | null;
+  /**
+   * Break-even hashprice: revenue per PH/s per day from mining at
+   * the current network difficulty and block reward. If you're
+   * buying hashrate ABOVE this, you're paying more than mining
+   * earns — unprofitable. Below = profitable.
+   *
+   * Formula: (block_reward_sat × 144 blocks/day) / network_hashrate_ph
+   */
+  readonly hashprice_sat_per_ph_day: number | null;
   readonly time_to_payout_text: string | null;
   readonly share_log_pct: number | null;
   readonly payout_threshold_sat: number;
@@ -110,6 +119,18 @@ export function createOceanClient(opts: OceanClientOptions = {}): OceanClient {
               )
             : null;
 
+        // Hashprice: revenue per PH/s per day at current difficulty.
+        // This is the break-even line — if you're buying above this,
+        // mining costs more than it earns.
+        const networkHashratePh = networkHashrate / 1e15;
+        const hashprice_sat_per_ph_day =
+          networkHashratePh > 0 && Number.isFinite(blockRewardBtc)
+            ? Math.round(
+                (BLOCKS_PER_DAY * blockRewardBtc * SAT_PER_BTC) /
+                  networkHashratePh,
+              )
+            : null;
+
         // Time to payout: (threshold − unpaid) / daily_rate
         let time_to_payout_text: string | null = null;
         if (unpaid_sat !== null && daily_estimate_sat !== null && daily_estimate_sat > 0) {
@@ -129,10 +150,11 @@ export function createOceanClient(opts: OceanClientOptions = {}): OceanClient {
 
         const stats: OceanStats = {
           unpaid_sat,
-          lifetime_sat: null, // Not available via API; would need HTML scrape
+          lifetime_sat: null,
           rewards_in_window_sat,
           next_block_sat,
           daily_estimate_sat,
+          hashprice_sat_per_ph_day,
           time_to_payout_text,
           share_log_pct,
           payout_threshold_sat: PAYOUT_THRESHOLD_SAT,

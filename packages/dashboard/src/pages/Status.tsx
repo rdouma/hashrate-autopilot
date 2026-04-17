@@ -178,6 +178,7 @@ export function Status() {
         points={metricsQuery.data?.points ?? []}
         events={bidEventsQuery.data?.events ?? []}
         showEvents={CHART_RANGE_SPECS[chartRange].showEvents}
+        hashpriceSatPerPhDay={financeQuery.data?.ocean?.hashprice_sat_per_ph_day ?? null}
       />
 
       <StatsBar statsData={statsQuery.data} />
@@ -1052,6 +1053,13 @@ function FinancePanel({
               }
               tooltip="Income/day − spend/day. Positive = the autopilot is profitable at current rates; negative = burning money per day. Don't confuse with the lifetime net above."
               valueClass={dailyNetColor}
+            />
+          )}
+          {data.ocean?.hashprice_sat_per_ph_day != null && (
+            <FinanceFootnote
+              label="hashprice (break-even)"
+              value={denomination.formatSatPerPhDay(data.ocean.hashprice_sat_per_ph_day, intlLocale)}
+              tooltip="Revenue per PH/s per day from mining at the current network difficulty + block reward. If you're paying ABOVE this for hashrate, you're spending more than mining earns. Below = profitable."
             />
           )}
           {data.ocean?.lifetime_sat != null && (
