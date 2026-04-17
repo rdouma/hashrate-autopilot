@@ -94,15 +94,31 @@ async function computeMetrics(
   avg_cost_per_ph_sat_per_ph_day: number | null;
   tick_count: number;
 }> {
-  // Single query using LEAD() to compute per-tick duration, then
-  // duration-weighted averages across all three metrics.
-  const row = await sql<{
-    tick_count: number;
-    uptime_pct: number | null;
-    avg_overpay: number | null;
-    avg_cost: number | null;
-  }>`
-    WITH ticks AS (
+  // Use Kysely's raw SQL but inline the sinceMs literal so the CTE +
+  // window function works reliably across different SQLite/driver
+  // combos. Bound parameters inside CTEs can trip some prepared-
+  // statement parsers.
+  const queryText = `
+    SELECT
+      COUNT(*) AS tick_count,
+
+      CASE WHEN SUM(dur) > 0 THEN
+        SUM(CASE WHEN delivered_ph > 0 THEN dur ELSE 0 END) * 100.0 / SUM(dur)
+      ELSE NULL END AS uptime_pct,
+
+      CASE WHEN SUM(CASE WHEN price IS NOT NULL AND fillable IS NOT NULL THEN dur ELSE 0 END) > 0 THEN
+        CAST(SUM(CASE WHEN price IS NOT NULL AND fillable IS NOT NULL
+            THEN (price - fillable) * dur ELSE 0 END) AS REAL)
+        / SUM(CASE WHEN price IS NOT NULL AND fillable IS NOT NULL THEN dur ELSE 0 END)
+      ELSE NULL END AS avg_overpay,
+
+      CASE WHEN SUM(CASE WHEN delivered_ph > 0 AND price IS NOT NULL THEN delivered_ph * dur ELSE 0 END) > 0 THEN
+        CAST(SUM(CASE WHEN delivered_ph > 0 AND price IS NOT NULL
+            THEN price * delivered_ph * dur ELSE 0 END) AS REAL)
+        / SUM(CASE WHEN delivered_ph > 0 AND price IS NOT NULL
+            THEN delivered_ph * dur ELSE 0 END)
+      ELSE NULL END AS avg_cost
+    FROM (
       SELECT
         tick_at,
         delivered_ph,
@@ -115,28 +131,8 @@ async function computeMetrics(
       FROM tick_metrics
       WHERE tick_at >= ${sinceMs}
     )
-    SELECT
-      COUNT(*) AS tick_count,
-
-      CASE WHEN SUM(dur) > 0 THEN
-        SUM(CASE WHEN delivered_ph > 0 THEN dur ELSE 0 END) * 100.0 / SUM(dur)
-      ELSE NULL END AS uptime_pct,
-
-      CASE WHEN SUM(CASE WHEN price IS NOT NULL AND fillable IS NOT NULL THEN dur ELSE 0 END) > 0 THEN
-        SUM(CASE WHEN price IS NOT NULL AND fillable IS NOT NULL
-            THEN (price - fillable) * dur ELSE 0 END)
-        / SUM(CASE WHEN price IS NOT NULL AND fillable IS NOT NULL THEN dur ELSE 0 END)
-        / ${EH_PER_PH}.0
-      ELSE NULL END AS avg_overpay,
-
-      CASE WHEN SUM(CASE WHEN delivered_ph > 0 AND price IS NOT NULL THEN delivered_ph * dur ELSE 0 END) > 0 THEN
-        SUM(CASE WHEN delivered_ph > 0 AND price IS NOT NULL
-            THEN price * delivered_ph * dur ELSE 0 END)
-        / SUM(CASE WHEN delivered_ph > 0 AND price IS NOT NULL
-            THEN delivered_ph * dur ELSE 0 END)
-        / ${EH_PER_PH}.0
-      ELSE NULL END AS avg_cost
-  `.execute(db);
+  `;
+  const row = await sql.raw(queryText).execute(db);
 
   const r = (row as unknown as { rows: Array<Record<string, number | null>> }).rows?.[0];
   if (!r) {
@@ -146,8 +142,9 @@ async function computeMetrics(
   return {
     tick_count: Number(r['tick_count'] ?? 0),
     uptime_pct: r['uptime_pct'] !== null ? Number(r['uptime_pct']) : null,
-    avg_overpay_sat_per_ph_day: r['avg_overpay'] !== null ? Number(r['avg_overpay']) : null,
-    avg_cost_per_ph_sat_per_ph_day: r['avg_cost'] !== null ? Number(r['avg_cost']) : null,
+    // SQL returns sat/EH/day; convert to sat/PH/day for the dashboard.
+    avg_overpay_sat_per_ph_day: r['avg_overpay'] !== null ? Number(r['avg_overpay']) / EH_PER_PH : null,
+    avg_cost_per_ph_sat_per_ph_day: r['avg_cost'] !== null ? Number(r['avg_cost']) / EH_PER_PH : null,
   };
 }
 
