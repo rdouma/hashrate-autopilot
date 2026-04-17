@@ -7,6 +7,7 @@ import { useDenomination } from '../lib/denomination';
 import { formatNumber } from '../lib/format';
 import { useLocale } from '../lib/locale';
 import { ModeBadge } from './ModeBadge';
+import { SatSymbol } from './SatSymbol';
 
 const NAV_ITEMS: Array<{ label: string; to: string }> = [
   { label: 'Status', to: '/' },
@@ -145,7 +146,7 @@ function DenominationToggle() {
             : 'text-slate-400 hover:bg-slate-800')
         }
       >
-        sats
+        <SatSymbol /> sats
       </span>
       <span
         className={

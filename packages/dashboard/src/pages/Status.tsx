@@ -12,6 +12,7 @@ import {
 import { HashrateChart } from '../components/HashrateChart';
 import { PriceChart } from '../components/PriceChart';
 import { ModeBadge } from '../components/ModeBadge';
+import { SatSymbol } from '../components/SatSymbol';
 import {
   api,
   UnauthorizedError,
@@ -847,7 +848,7 @@ function StatCard({
         {split ? (
           <>
             {split.num}
-            <span className="text-slate-500 text-sm ml-1">{split.unit}</span>
+            <span className="text-slate-500 text-sm ml-1"><SatUnit unit={split.unit} /></span>
           </>
         ) : (
           value
@@ -1118,7 +1119,7 @@ function FinanceRow({
         ) : split ? (
           <>
             {split.num}
-            <span className="text-slate-500 text-[11px] ml-1">{split.unit}</span>
+            <span className="text-slate-500 text-[11px] ml-1"><SatUnit unit={split.unit} /></span>
           </>
         ) : (
           formatted
@@ -1147,7 +1148,7 @@ function FinanceFootnote({
         {split ? (
           <>
             {split.num}
-            <span className="text-slate-500 text-[11px] ml-1">{split.unit}</span>
+            <span className="text-slate-500 text-[11px] ml-1"><SatUnit unit={split.unit} /></span>
           </>
         ) : (
           value
@@ -1279,6 +1280,24 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
 }
 
 /**
+ * Renders a unit string with "sat" replaced by the ₿-style sat
+ * symbol icon. Handles "sat", "sat/PH/day", "PH/s" (no replacement
+ * for non-sat units). Only applies in sats mode — USD values like
+ * "$4.75/PH/day" don't match splitUnit so they render as plain text.
+ */
+function SatUnit({ unit }: { unit: string }) {
+  if (unit.startsWith('sat')) {
+    return (
+      <>
+        <SatSymbol className="opacity-70" />
+        {unit.slice(3)}
+      </>
+    );
+  }
+  return <>{unit}</>;
+}
+
+/**
  * Key-value row used across all info cards. Detects trailing unit
  * suffixes (sat, PH/s, sat/PH/day) and renders them in a muted
  * smaller style so the number pops and the unit recedes — matching
@@ -1293,7 +1312,7 @@ function Row({ k, v }: { k: string; v: string }) {
         {split ? (
           <>
             {split.num}
-            <span className="text-slate-500 text-[11px] ml-1">{split.unit}</span>
+            <span className="text-slate-500 text-[11px] ml-1"><SatUnit unit={split.unit} /></span>
           </>
         ) : (
           v
