@@ -923,14 +923,21 @@ function FinancePanel({
   // Run-rate view: what's this autopilot costing/earning *right now*,
   // per day? Distinct from the lifetime P&L above. Sum across active
   // owned bids of (price × delivered_hashrate) — Braiins only debits
-  // for hashrate actually delivered, so avg_speed_ph (not speed_limit)
-  // is the truthful "what am I being charged for" multiplier.
+  // Billing is capped at speed_limit_ph — Braiins won't charge for
+  // more than the limit even if the rolling avg_speed_ph temporarily
+  // overshoots (measurement artifact from burst-then-gap delivery).
+  // Use min(avg_speed, speed_limit) for the spend estimate.
   const { dailySpendSat, hasDailySpend, dailyIncomeSat, dailyNetSat, dailyNetColor } = useMemo(() => {
     const ownedActive = status.bids.filter(
       (b) => b.is_owned && b.status === 'BID_STATUS_ACTIVE',
     );
     const _dailySpendSat = ownedActive.reduce(
-      (sum, b) => sum + b.price_sat_per_ph_day * b.avg_speed_ph,
+      (sum, b) => {
+        const effectiveSpeed = b.speed_limit_ph !== null
+          ? Math.min(b.avg_speed_ph, b.speed_limit_ph)
+          : b.avg_speed_ph;
+        return sum + b.price_sat_per_ph_day * effectiveSpeed;
+      },
       0,
     );
     const _hasDailySpend = ownedActive.length > 0 && _dailySpendSat > 0;
