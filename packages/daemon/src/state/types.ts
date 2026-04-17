@@ -55,6 +55,7 @@ export interface ConfigTable {
   bitcoind_rpc_url: string;
   bitcoind_rpc_user: string;
   bitcoind_rpc_password: string;
+  payout_source: 'none' | 'electrs' | 'bitcoind';
   updated_at: number;
 }
 

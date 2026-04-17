@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { NumberField } from '../components/NumberField';
@@ -219,52 +219,6 @@ const SECTIONS: Section[] = [
     ],
   },
   {
-    title: 'Bitcoin node (optional)',
-    description:
-      'Two options for checking your on-chain payouts. Electrs (recommended) is fast and lightweight — polled every minute. Bitcoin Core RPC is a fallback that uses scantxoutset (CPU-heavy, 30+ seconds per scan) — polled hourly. Both are read-only. Set one or both.',
-    fields: [
-      {
-        key: 'btc_payout_address',
-        label: 'BTC payout address',
-        kind: 'text',
-        help: 'The same address used in your worker identity (bech32 only — bc1q… / bc1p…).',
-        fullWidth: true,
-      },
-      {
-        key: 'electrs_host',
-        label: 'Electrs host (recommended)',
-        kind: 'text',
-        help: 'e.g. 192.168.1.121 or umbrel.local — leave empty to use bitcoind only.',
-      },
-      {
-        key: 'electrs_port',
-        label: 'Electrs port',
-        kind: 'integer',
-        unit: '',
-        help: 'Default 50001.',
-        noGrouping: true,
-      },
-      {
-        key: 'bitcoind_rpc_url',
-        label: 'Bitcoin Core RPC URL',
-        kind: 'text',
-        help: 'e.g. http://192.168.1.121:8332 — your Bitcoin Core RPC endpoint.',
-      },
-      {
-        key: 'bitcoind_rpc_user',
-        label: 'RPC username',
-        kind: 'text',
-        help: 'RPC username from your bitcoin.conf.',
-      },
-      {
-        key: 'bitcoind_rpc_password',
-        label: 'RPC password',
-        kind: 'text',
-        help: 'RPC password — stored in the config database, not in logs.',
-      },
-    ],
-  },
-  {
     title: 'Profit & Loss',
     description:
       'Controls how the P&L panel computes the "spent" figure that feeds the net result.',
@@ -376,26 +330,38 @@ export function Config() {
 
       <DisplaySettingsSection />
 
-      {SECTIONS.map((section) => (
-        <section key={section.title} className="bg-slate-900 border border-slate-800 rounded-lg p-4">
-          <header className="mb-3">
-            <h3 className="text-sm uppercase tracking-wider text-amber-400">{section.title}</h3>
-            {section.description && (
-              <p className="text-xs text-slate-500 mt-1">{section.description}</p>
-            )}
-          </header>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
-            {section.fields.map((f) => (
-              <div
-                key={f.key as string}
-                className={f.fullWidth ? 'sm:col-span-2' : ''}
-              >
-                <Field spec={f} draft={draft} locale={intlLocale} onChange={update} />
-              </div>
-            ))}
-          </div>
-        </section>
-      ))}
+      {SECTIONS.map((section) => {
+        const el = (
+          <section key={section.title} className="bg-slate-900 border border-slate-800 rounded-lg p-4">
+            <header className="mb-3">
+              <h3 className="text-sm uppercase tracking-wider text-amber-400">{section.title}</h3>
+              {section.description && (
+                <p className="text-xs text-slate-500 mt-1">{section.description}</p>
+              )}
+            </header>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+              {section.fields.map((f) => (
+                <div
+                  key={f.key as string}
+                  className={f.fullWidth ? 'sm:col-span-2' : ''}
+                >
+                  <Field spec={f} draft={draft} locale={intlLocale} onChange={update} />
+                </div>
+              ))}
+            </div>
+          </section>
+        );
+        // Insert the custom payout-source section right before "Profit & Loss"
+        if (section.title === 'Profit & Loss') {
+          return (
+            <React.Fragment key={`payout-then-${section.title}`}>
+              <PayoutSourceSection draft={draft} locale={intlLocale} onChange={update} />
+              {el}
+            </React.Fragment>
+          );
+        }
+        return el;
+      })}
     </div>
   );
 }
@@ -437,6 +403,175 @@ function DisplaySettingsSection() {
           to a specific format regardless of browser language.
         </span>
       </label>
+    </section>
+  );
+}
+
+/**
+ * Custom section for payout observation source selection. Replaces the
+ * old flat "Bitcoin node (optional)" section with a radio-driven layout
+ * that shows only the fields relevant to the selected backend.
+ */
+function PayoutSourceSection({
+  draft,
+  locale,
+  onChange,
+}: {
+  draft: AppConfig;
+  locale: string | undefined;
+  onChange: <K extends keyof AppConfig>(k: K, v: AppConfig[K]) => void;
+}) {
+  const source = draft.payout_source;
+
+  const PAYOUT_OPTIONS: ReadonlyArray<{
+    value: AppConfig['payout_source'];
+    label: string;
+    help: string;
+  }> = [
+    {
+      value: 'none',
+      label: 'Do not scan',
+      help: "No on-chain balance tracking. The Profit & Loss panel won't show collected BTC.",
+    },
+    {
+      value: 'electrs',
+      label: 'Electrs (recommended)',
+      help: 'Fast and lightweight. Polled every minute. Instant balance lookups via your Electrum server.',
+    },
+    {
+      value: 'bitcoind',
+      label: 'Bitcoin Core RPC',
+      help: 'Uses scantxoutset -- CPU-heavy, 30+ seconds per scan. Polled hourly. Use only if you don\'t have Electrs.',
+    },
+  ];
+
+  return (
+    <section className="bg-slate-900 border border-slate-800 rounded-lg p-4">
+      <header className="mb-3">
+        <h3 className="text-sm uppercase tracking-wider text-amber-400">On-chain payouts</h3>
+        <p className="text-xs text-slate-500 mt-1">
+          How the daemon checks your BTC payout balance. Pick a backend and fill in the
+          connection details. Requires a restart to take effect.
+        </p>
+      </header>
+
+      <div className="space-y-4">
+        {/* BTC payout address — always visible */}
+        <label className="block">
+          <span className="block text-sm text-slate-300 mb-1">BTC payout address</span>
+          <input
+            type="text"
+            value={(draft.btc_payout_address as string) ?? ''}
+            onChange={(e) => onChange('btc_payout_address', e.target.value as never)}
+            className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm font-mono"
+          />
+          <span className="block text-xs text-slate-500 mt-1">
+            The same address used in your worker identity (bech32 only — bc1q... / bc1p...).
+          </span>
+        </label>
+
+        {/* Source radio */}
+        <fieldset>
+          <legend className="block text-sm text-slate-300 mb-2">Balance-check backend</legend>
+          <div className="space-y-2">
+            {PAYOUT_OPTIONS.map((opt) => (
+              <label
+                key={opt.value}
+                className={
+                  'flex items-start gap-2 p-2 rounded border cursor-pointer transition ' +
+                  (source === opt.value
+                    ? 'border-amber-500 bg-amber-950/20'
+                    : 'border-slate-800 hover:bg-slate-800/40')
+                }
+              >
+                <input
+                  type="radio"
+                  name="payout_source"
+                  value={opt.value}
+                  checked={source === opt.value}
+                  onChange={() => onChange('payout_source', opt.value as never)}
+                  className="mt-1 accent-amber-400"
+                />
+                <span>
+                  <span className="text-sm text-slate-200">{opt.label}</span>
+                  <span className="block text-xs text-slate-500 mt-0.5">{opt.help}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        {/* Electrs fields */}
+        {source === 'electrs' && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 pt-1">
+            <label className="block">
+              <span className="block text-sm text-slate-300 mb-1">Electrs host</span>
+              <input
+                type="text"
+                value={(draft.electrs_host as string | null) ?? ''}
+                onChange={(e) => onChange('electrs_host', (e.target.value || null) as never)}
+                className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm font-mono"
+              />
+              <span className="block text-xs text-slate-500 mt-1">
+                e.g. 192.168.1.121 or umbrel.local
+              </span>
+            </label>
+            <label className="block">
+              <span className="block text-sm text-slate-300 mb-1">Electrs port</span>
+              <NumberField
+                value={(draft.electrs_port as number | null) ?? 0}
+                onChange={(n) => onChange('electrs_port', (n || null) as never)}
+                step="integer"
+                locale={locale}
+                noGrouping
+              />
+              <span className="block text-xs text-slate-500 mt-1">Default 50001.</span>
+            </label>
+          </div>
+        )}
+
+        {/* Bitcoin Core RPC fields */}
+        {source === 'bitcoind' && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 pt-1">
+            <label className="block sm:col-span-2">
+              <span className="block text-sm text-slate-300 mb-1">Bitcoin Core RPC URL</span>
+              <input
+                type="text"
+                value={draft.bitcoind_rpc_url ?? ''}
+                onChange={(e) => onChange('bitcoind_rpc_url', e.target.value as never)}
+                className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm font-mono"
+              />
+              <span className="block text-xs text-slate-500 mt-1">
+                e.g. http://192.168.1.121:8332 — your Bitcoin Core RPC endpoint.
+              </span>
+            </label>
+            <label className="block">
+              <span className="block text-sm text-slate-300 mb-1">RPC username</span>
+              <input
+                type="text"
+                value={draft.bitcoind_rpc_user ?? ''}
+                onChange={(e) => onChange('bitcoind_rpc_user', e.target.value as never)}
+                className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm font-mono"
+              />
+              <span className="block text-xs text-slate-500 mt-1">
+                RPC username from your bitcoin.conf.
+              </span>
+            </label>
+            <label className="block">
+              <span className="block text-sm text-slate-300 mb-1">RPC password</span>
+              <input
+                type="password"
+                value={draft.bitcoind_rpc_password ?? ''}
+                onChange={(e) => onChange('bitcoind_rpc_password', e.target.value as never)}
+                className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm font-mono"
+              />
+              <span className="block text-xs text-slate-500 mt-1">
+                RPC password — stored in the config database, not in logs.
+              </span>
+            </label>
+          </div>
+        )}
+      </div>
     </section>
   );
 }

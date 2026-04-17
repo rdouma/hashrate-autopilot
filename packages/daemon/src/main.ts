@@ -83,6 +83,20 @@ async function main(): Promise<void> {
     log('bitcoind credentials seeded from secrets into config');
   }
 
+  // Auto-detect payout_source from existing config fields when it's
+  // still at the default 'none' (migration back-fill for existing installs).
+  if (cfg.payout_source === 'none') {
+    if (cfg.electrs_host && cfg.electrs_port) {
+      await configRepo.upsert({ ...cfg, payout_source: 'electrs' });
+      cfg = (await configRepo.get())!;
+      log('payout_source auto-set to electrs (electrs fields already configured)');
+    } else if (cfg.bitcoind_rpc_url || secrets.bitcoind_rpc_url) {
+      await configRepo.upsert({ ...cfg, payout_source: 'bitcoind' });
+      cfg = (await configRepo.get())!;
+      log('payout_source auto-set to bitcoind (bitcoind fields already configured)');
+    }
+  }
+
   log(`config:   target=${cfg.target_hashrate_ph} PH/s  floor=${cfg.minimum_floor_hashrate_ph} PH/s`);
 
   await runtimeRepo.initializeIfMissing();
@@ -116,25 +130,30 @@ async function main(): Promise<void> {
   const braiins = new BraiinsService({ client: braiinsClient });
   const poolTracker = new PoolHealthTracker();
 
-  const rpcUrl = cfg.bitcoind_rpc_url || secrets.bitcoind_rpc_url;
-  const rpcUser = cfg.bitcoind_rpc_user || secrets.bitcoind_rpc_user;
-  const rpcPass = cfg.bitcoind_rpc_password || secrets.bitcoind_rpc_password;
-  const bitcoindClient = createBitcoindClient({
-    url: rpcUrl,
-    username: rpcUser,
-    password: rpcPass,
-  });
-  const payoutObserver = new PayoutObserver({
-    client: bitcoindClient,
-    getAddress: () => cfg.btc_payout_address,
-    electrsHost: cfg.electrs_host,
-    electrsPort: cfg.electrs_port,
-    log: (m) => log(m),
-  });
-  if (cfg.electrs_host && cfg.electrs_port) {
-    log(`payout: using Electrs at ${cfg.electrs_host}:${cfg.electrs_port}`);
+  let payoutObserver: PayoutObserver | null = null;
+  if (cfg.payout_source !== 'none' && cfg.btc_payout_address) {
+    const rpcUrl = cfg.bitcoind_rpc_url || secrets.bitcoind_rpc_url;
+    const rpcUser = cfg.bitcoind_rpc_user || secrets.bitcoind_rpc_user;
+    const rpcPass = cfg.bitcoind_rpc_password || secrets.bitcoind_rpc_password;
+    const bitcoindClient = createBitcoindClient({
+      url: rpcUrl,
+      username: rpcUser,
+      password: rpcPass,
+    });
+    payoutObserver = new PayoutObserver({
+      client: bitcoindClient,
+      getAddress: () => cfg.btc_payout_address,
+      electrsHost: cfg.payout_source === 'electrs' ? cfg.electrs_host : null,
+      electrsPort: cfg.payout_source === 'electrs' ? cfg.electrs_port : null,
+      log: (m) => log(m),
+    });
+    if (cfg.payout_source === 'electrs') {
+      log(`payout: using Electrs at ${cfg.electrs_host}:${cfg.electrs_port}`);
+    } else {
+      log('payout: using bitcoind scantxoutset (CPU-heavy, polled hourly)');
+    }
   } else {
-    log('payout: using bitcoind scantxoutset (set electrs_host/port in Config for faster lookups)');
+    log('payout: disabled (payout_source=none)');
   }
 
   // Hashprice cache — updated by the finance route (Ocean stats),
@@ -208,7 +227,7 @@ async function main(): Promise<void> {
     if (shuttingDown) return;
     shuttingDown = true;
     log(`received ${signal}; draining loop`);
-    payoutObserver.stop();
+    payoutObserver?.stop();
     await loop.stop();
     try {
       await httpServer.stop();
@@ -227,7 +246,7 @@ async function main(): Promise<void> {
   process.on('SIGTERM', () => void shutdown('SIGTERM'));
 
   loop.start();
-  payoutObserver.start();
+  payoutObserver?.start();
   log(`daemon ready (${bootMode}). Ctrl+C to stop.`);
 }
 

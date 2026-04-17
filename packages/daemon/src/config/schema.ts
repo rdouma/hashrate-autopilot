@@ -142,6 +142,11 @@ export const AppConfigSchema = z.object({
   bitcoind_rpc_url: z.string().default(''),
   bitcoind_rpc_user: z.string().default(''),
   bitcoind_rpc_password: z.string().default(''),
+
+  // Payout observation source — which backend to use for on-chain balance
+  // tracking. 'none' disables tracking entirely; 'electrs' uses the fast
+  // Electrum-style indexed lookup; 'bitcoind' falls back to scantxoutset.
+  payout_source: z.enum(['none', 'electrs', 'bitcoind']).default('none'),
 });
 
 export type AppConfig = z.infer<typeof AppConfigSchema>;
@@ -214,4 +219,6 @@ export const APP_CONFIG_DEFAULTS: Omit<
   bitcoind_rpc_url: '',
   bitcoind_rpc_user: '',
   bitcoind_rpc_password: '',
+
+  payout_source: 'none',
 };
