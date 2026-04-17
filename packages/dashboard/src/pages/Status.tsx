@@ -416,7 +416,7 @@ function OperationsCard({
               </span>
             </div>
             <div className="text-xs text-slate-400 mt-1">
-              {denomination.mode === 'usd' ? 'USD' : 'sat'}/PH/day
+              {denomination.mode === 'usd' ? 'USD' : <><SatSymbol /></>}/PH/day
               {activeOwned.length > 1 ? ` · avg/${activeOwned.length}` : ''}
             </div>
           </div>

@@ -76,11 +76,6 @@ export function Layout() {
           </nav>
 
           <div className="flex items-center gap-3 ml-auto text-xs">
-            {status.data ? (
-              <ModeBadge runMode={status.data.run_mode} />
-            ) : (
-              <span className="text-slate-500">loading…</span>
-            )}
             {primaryBalance ? (
               <span
                 className="text-slate-400 hidden lg:inline cursor-help"

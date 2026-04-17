@@ -14,5 +14,5 @@ export const SatSymbol = memo(function SatSymbol({
 }: {
   className?: string;
 }) {
-  return <i className={`fak fa-light ${className}`} aria-label="sat" />;
+  return <i className={`fak fa-regular ${className}`} aria-label="sat" />;
 });
