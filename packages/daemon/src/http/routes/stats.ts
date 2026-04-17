@@ -34,6 +34,7 @@ export interface StatsResponse {
   readonly avg_hashrate_ph: number | null;
   readonly total_ph_hours: number | null;
   readonly avg_overpay_sat_per_ph_day: number | null;
+  readonly avg_overpay_vs_hashprice_sat_per_ph_day: number | null;
   readonly avg_cost_per_ph_sat_per_ph_day: number | null;
   readonly avg_time_to_fill_ms: number | null;
   readonly range: ChartRange;
@@ -78,6 +79,7 @@ export async function registerStatsRoute(
         avg_hashrate_ph: metrics.avg_hashrate_ph,
         total_ph_hours: metrics.total_ph_hours,
         avg_overpay_sat_per_ph_day: metrics.avg_overpay_sat_per_ph_day,
+        avg_overpay_vs_hashprice_sat_per_ph_day: metrics.avg_overpay_vs_hashprice_sat_per_ph_day,
         avg_cost_per_ph_sat_per_ph_day: metrics.avg_cost_per_ph_sat_per_ph_day,
         avg_time_to_fill_ms: avgFillMs,
         range,
@@ -97,6 +99,7 @@ async function computeMetrics(
   avg_hashrate_ph: number | null;
   total_ph_hours: number | null;
   avg_overpay_sat_per_ph_day: number | null;
+  avg_overpay_vs_hashprice_sat_per_ph_day: number | null;
   avg_cost_per_ph_sat_per_ph_day: number | null;
   tick_count: number;
 }> {
@@ -124,6 +127,12 @@ async function computeMetrics(
         / SUM(CASE WHEN price IS NOT NULL AND fillable IS NOT NULL THEN dur ELSE 0 END)
       ELSE NULL END AS avg_overpay,
 
+      CASE WHEN SUM(CASE WHEN price IS NOT NULL AND hashprice IS NOT NULL THEN dur ELSE 0 END) > 0 THEN
+        CAST(SUM(CASE WHEN price IS NOT NULL AND hashprice IS NOT NULL
+            THEN (price - hashprice) * dur ELSE 0 END) AS REAL)
+        / SUM(CASE WHEN price IS NOT NULL AND hashprice IS NOT NULL THEN dur ELSE 0 END)
+      ELSE NULL END AS avg_overpay_vs_hashprice,
+
       CASE WHEN SUM(CASE WHEN delivered_ph > 0 AND price IS NOT NULL THEN delivered_ph * dur ELSE 0 END) > 0 THEN
         CAST(SUM(CASE WHEN delivered_ph > 0 AND price IS NOT NULL
             THEN price * delivered_ph * dur ELSE 0 END) AS REAL)
@@ -136,6 +145,7 @@ async function computeMetrics(
         delivered_ph,
         our_primary_price_sat_per_eh_day AS price,
         fillable_ask_sat_per_eh_day AS fillable,
+        hashprice_sat_per_eh_day AS hashprice,
         COALESCE(
           LEAD(tick_at) OVER (ORDER BY tick_at) - tick_at,
           60000
@@ -148,7 +158,7 @@ async function computeMetrics(
 
   const r = (row as unknown as { rows: Array<Record<string, number | null>> }).rows?.[0];
   if (!r) {
-    return { tick_count: 0, uptime_pct: null, avg_hashrate_ph: null, total_ph_hours: null, avg_overpay_sat_per_ph_day: null, avg_cost_per_ph_sat_per_ph_day: null };
+    return { tick_count: 0, uptime_pct: null, avg_hashrate_ph: null, total_ph_hours: null, avg_overpay_sat_per_ph_day: null, avg_overpay_vs_hashprice_sat_per_ph_day: null, avg_cost_per_ph_sat_per_ph_day: null };
   }
 
   return {
@@ -158,6 +168,7 @@ async function computeMetrics(
     total_ph_hours: r['total_ph_hours'] !== null ? Number(r['total_ph_hours']) : null,
     // SQL returns sat/EH/day; convert to sat/PH/day for the dashboard.
     avg_overpay_sat_per_ph_day: r['avg_overpay'] !== null ? Number(r['avg_overpay']) / EH_PER_PH : null,
+    avg_overpay_vs_hashprice_sat_per_ph_day: r['avg_overpay_vs_hashprice'] !== null ? Number(r['avg_overpay_vs_hashprice']) / EH_PER_PH : null,
     avg_cost_per_ph_sat_per_ph_day: r['avg_cost'] !== null ? Number(r['avg_cost']) / EH_PER_PH : null,
   };
 }

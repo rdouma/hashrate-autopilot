@@ -51,14 +51,10 @@ export const PriceChart = memo(function PriceChart({
   points,
   events = [],
   showEvents,
-  hashpriceSatPerPhDay = null,
-  maxBidSatPerPhDay = null,
 }: {
   points: readonly MetricPoint[];
   events?: readonly BidEventView[];
   showEvents: boolean;
-  hashpriceSatPerPhDay?: number | null;
-  maxBidSatPerPhDay?: number | null;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [hovered, setHovered] = useState<HoveredTooltip | null>(null);
@@ -78,6 +74,14 @@ export const PriceChart = memo(function PriceChart({
       .filter((p) => Number.isFinite(p.fillable_ask_sat_per_ph_day))
       .map((p) => ({ t: p.tick_at, v: p.fillable_ask_sat_per_ph_day as number }));
 
+    const hashpricePoints: PricePoint[] = points
+      .filter((p) => Number.isFinite(p.hashprice_sat_per_ph_day))
+      .map((p) => ({ t: p.tick_at, v: p.hashprice_sat_per_ph_day as number }));
+
+    const maxBidPoints: PricePoint[] = points
+      .filter((p) => Number.isFinite(p.max_bid_sat_per_ph_day))
+      .map((p) => ({ t: p.tick_at, v: p.max_bid_sat_per_ph_day as number }));
+
     if (points.length < 2) return null;
 
     const xs = points.map((p) => p.tick_at);
@@ -90,9 +94,9 @@ export const PriceChart = memo(function PriceChart({
     const priceSample = [
       ...pricePoints.map((p) => p.v),
       ...fillablePoints.map((p) => p.v),
+      ...hashpricePoints.map((p) => p.v),
+      ...maxBidPoints.map((p) => p.v),
       ...eventPrices,
-      // Include hashprice so the Y-axis range accommodates the line
-      ...(hashpriceSatPerPhDay !== null ? [hashpriceSatPerPhDay] : []),
     ];
     const hasPrice = priceSample.length > 0;
     const priceMinRaw = hasPrice ? Math.min(...priceSample) : 0;
@@ -125,8 +129,14 @@ export const PriceChart = memo(function PriceChart({
       .map((p, i) => `${i === 0 ? 'M' : 'L'}${xScale(p.t).toFixed(1)},${yScale(p.v).toFixed(1)}`)
       .join(' ');
 
-    // Same X-axis ticks as the HashrateChart above so events on this
-    // chart line up vertically with hashrate dips/spikes on that one.
+    const hashpricePath = hashpricePoints
+      .map((p, i) => `${i === 0 ? 'M' : 'L'}${xScale(p.t).toFixed(1)},${yScale(p.v).toFixed(1)}`)
+      .join(' ');
+
+    const maxBidPath = maxBidPoints
+      .map((p, i) => `${i === 0 ? 'M' : 'L'}${xScale(p.t).toFixed(1)},${yScale(p.v).toFixed(1)}`)
+      .join(' ');
+
     const xTickInterval = pickTimeTickInterval(maxX - minX);
     const xTicks = localAlignedTimeTicks(minX, maxX, xTickInterval);
 
@@ -134,8 +144,8 @@ export const PriceChart = memo(function PriceChart({
       ? events.filter((e) => e.occurred_at >= minX && e.occurred_at <= maxX)
       : [];
 
-    return { pricePoints, fillablePoints, minX, maxX, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, fillablePath, yTicks, xTickInterval, xTicks, visibleEvents };
-  }, [points, events, showEvents, hashpriceSatPerPhDay]);
+    return { pricePoints, fillablePoints, minX, maxX, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, fillablePath, hashpricePath, maxBidPath, yTicks, xTickInterval, xTicks, visibleEvents };
+  }, [points, events, showEvents]);
 
   const eventPriceAt = useCallback((e: BidEventView): number | null => {
     const pricePoints = chartData?.pricePoints ?? [];
@@ -174,7 +184,7 @@ export const PriceChart = memo(function PriceChart({
     );
   }
 
-  const { pricePoints, fillablePoints, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, fillablePath, yTicks, xTickInterval, xTicks, visibleEvents } = chartData;
+  const { pricePoints, fillablePoints, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, fillablePath, hashpricePath, maxBidPath, yTicks, xTickInterval, xTicks, visibleEvents } = chartData;
 
   // Format Y-axis tick values: in USD mode convert sat/PH/day to $/PH/day
   const priceFmt = (v: number): string => {
@@ -197,12 +207,8 @@ export const PriceChart = memo(function PriceChart({
         <div className="flex items-center gap-3 text-xs flex-wrap">
           <Legend color={COLOR_PRICE} label="our bid" />
           <Legend color={COLOR_FILLABLE} label="fillable" dashed />
-          {hashpriceSatPerPhDay !== null && (
-            <Legend color={COLOR_HASHPRICE} label="hashprice" dashed />
-          )}
-          {maxBidSatPerPhDay !== null && (
-            <Legend color={COLOR_MAXBID} label="max bid" dashed />
-          )}
+          <Legend color={COLOR_HASHPRICE} label="hashprice" dashed />
+          <Legend color={COLOR_MAXBID} label="max bid" dashed />
           {showEvents && <EventLegend />}
         </div>
       </div>
@@ -234,35 +240,29 @@ export const PriceChart = memo(function PriceChart({
           </g>
         ))}
 
-        {/* Hashprice break-even line — horizontal across the full chart
-            width. Below this line = profitable, above = unprofitable. */}
-        {hashpriceSatPerPhDay !== null && (
-          <line
-            x1={PADDING.left}
-            x2={WIDTH - PADDING.right}
-            y1={yScale(hashpriceSatPerPhDay)}
-            y2={yScale(hashpriceSatPerPhDay)}
+        {/* Hashprice break-even line — now a time series, not a static
+            horizontal line. Moves with difficulty adjustments + block
+            reward fluctuations. Below = profitable, above = unprofitable. */}
+        {hashpricePath && (
+          <path
+            d={hashpricePath}
             stroke={COLOR_HASHPRICE}
             strokeWidth="1.2"
             strokeDasharray="6 4"
+            fill="none"
             opacity="0.7"
           />
         )}
-        {/* Max bid ceiling — only shown when it falls within the
-            chart's visible Y-range. Don't force the chart to zoom
-            out to show it; just render when it's naturally visible
-            (i.e., the data is already near the ceiling). */}
-        {maxBidSatPerPhDay !== null &&
-          maxBidSatPerPhDay >= priceMin &&
-          maxBidSatPerPhDay <= priceMax && (
-          <line
-            x1={PADDING.left}
-            x2={WIDTH - PADDING.right}
-            y1={yScale(maxBidSatPerPhDay)}
-            y2={yScale(maxBidSatPerPhDay)}
+        {/* Max bid ceiling — historical time series. Tracks config
+            changes over time so the operator can see when they
+            tightened or loosened the cap. */}
+        {maxBidPath && (
+          <path
+            d={maxBidPath}
             stroke={COLOR_MAXBID}
             strokeWidth="1.2"
             strokeDasharray="3 5"
+            fill="none"
             opacity="0.6"
           />
         )}

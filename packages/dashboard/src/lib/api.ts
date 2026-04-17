@@ -81,6 +81,8 @@ export interface MetricPoint {
   best_bid_sat_per_ph_day: number | null;
   best_ask_sat_per_ph_day: number | null;
   fillable_ask_sat_per_ph_day: number | null;
+  hashprice_sat_per_ph_day: number | null;
+  max_bid_sat_per_ph_day: number | null;
   available_balance_sat: number | null;
 }
 
@@ -271,6 +273,7 @@ export interface StatsResponse {
   avg_hashrate_ph: number | null;
   total_ph_hours: number | null;
   avg_overpay_sat_per_ph_day: number | null;
+  avg_overpay_vs_hashprice_sat_per_ph_day: number | null;
   avg_cost_per_ph_sat_per_ph_day: number | null;
   avg_time_to_fill_ms: number | null;
   range: ChartRange;

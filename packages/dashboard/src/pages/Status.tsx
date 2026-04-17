@@ -181,8 +181,6 @@ export function Status() {
         points={metricsQuery.data?.points ?? []}
         events={bidEventsQuery.data?.events ?? []}
         showEvents={CHART_RANGE_SPECS[chartRange].showEvents}
-        hashpriceSatPerPhDay={financeQuery.data?.ocean?.hashprice_sat_per_ph_day ?? null}
-        maxBidSatPerPhDay={s.config_summary.max_bid_sat_per_ph_day}
       />
 
       {/* Three-column row: market context | Braiins wallet | financial
@@ -789,7 +787,7 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
   if (!statsData) {
     return (
       <section className="grid grid-cols-2 lg:grid-cols-6 gap-3">
-        {['uptime', 'avg hashrate', 'total PH·h', 'avg cost / PH delivered', 'avg overpay vs fillable', 'avg time to fill'].map((label) => (
+        {['uptime', 'avg hashrate', 'total PH·h', 'avg cost / PH delivered', 'avg overpay vs fillable', 'avg overpay vs hashprice'].map((label) => (
           <StatCard key={label} label={label} value="—" tooltip="Loading or daemon restart required." />
         ))}
       </section>
@@ -798,7 +796,7 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
 
   if (statsData.tick_count < 2) return null;
 
-  const { uptime_pct, avg_hashrate_ph, total_ph_hours, avg_overpay_sat_per_ph_day, avg_cost_per_ph_sat_per_ph_day, avg_time_to_fill_ms } = statsData;
+  const { uptime_pct, avg_hashrate_ph, total_ph_hours, avg_overpay_sat_per_ph_day, avg_cost_per_ph_sat_per_ph_day, avg_overpay_vs_hashprice_sat_per_ph_day } = statsData;
 
   return (
     <section className="grid grid-cols-2 lg:grid-cols-6 gap-3">
@@ -837,9 +835,9 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
         tooltip="Duration-weighted average of (our price − fillable ask). Each tick weighted by its actual duration. High = overpay too generous or lowering too slow."
       />
       <StatCard
-        label="avg time to fill"
-        value={avg_time_to_fill_ms !== null ? formatFillTime(avg_time_to_fill_ms) : '\u2014'}
-        tooltip="Average time from a CREATE/EDIT event to the first tick with delivered hashrate > 0. Measures how quickly the market fills at your current settings."
+        label="avg overpay vs hashprice"
+        value={avg_overpay_vs_hashprice_sat_per_ph_day !== null ? denomination.formatSatPerPhDay(Math.round(avg_overpay_vs_hashprice_sat_per_ph_day), intlLocale) : '\u2014'}
+        tooltip="Duration-weighted average of (our price − hashprice). Shows how much above break-even you pay on average. High = you're paying well above what mining would cost at current difficulty."
       />
     </section>
   );

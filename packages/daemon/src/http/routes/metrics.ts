@@ -39,6 +39,8 @@ export interface MetricPoint {
   readonly best_bid_sat_per_ph_day: number | null;
   readonly best_ask_sat_per_ph_day: number | null;
   readonly fillable_ask_sat_per_ph_day: number | null;
+  readonly hashprice_sat_per_ph_day: number | null;
+  readonly max_bid_sat_per_ph_day: number | null;
   readonly available_balance_sat: number | null;
 }
 
@@ -95,6 +97,8 @@ function toMetricPoint(r: {
   best_bid_sat_per_eh_day: number | null;
   best_ask_sat_per_eh_day: number | null;
   fillable_ask_sat_per_eh_day: number | null;
+  hashprice_sat_per_eh_day: number | null;
+  max_bid_sat_per_eh_day: number | null;
   available_balance_sat: number | null;
 }): MetricPoint {
   return {
@@ -113,6 +117,14 @@ function toMetricPoint(r: {
     fillable_ask_sat_per_ph_day:
       r.fillable_ask_sat_per_eh_day !== null
         ? r.fillable_ask_sat_per_eh_day / EH_PER_PH
+        : null,
+    hashprice_sat_per_ph_day:
+      r.hashprice_sat_per_eh_day !== null
+        ? r.hashprice_sat_per_eh_day / EH_PER_PH
+        : null,
+    max_bid_sat_per_ph_day:
+      r.max_bid_sat_per_eh_day !== null
+        ? r.max_bid_sat_per_eh_day / EH_PER_PH
         : null,
     available_balance_sat: r.available_balance_sat,
   };

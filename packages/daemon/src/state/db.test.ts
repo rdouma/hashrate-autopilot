@@ -51,6 +51,8 @@ describe('openDatabase — migrations', () => {
       '0020_cheap_hashrate.sql',
       '0021_bitcoind_config.sql',
       '0022_payout_source.sql',
+      '0023_tick_metrics_hashprice.sql',
+      '0024_tick_metrics_max_bid.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });

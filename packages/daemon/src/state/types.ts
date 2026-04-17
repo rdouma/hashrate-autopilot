@@ -232,6 +232,8 @@ export interface TickMetricsTable {
   best_bid_sat_per_eh_day: number | null;
   best_ask_sat_per_eh_day: number | null;
   fillable_ask_sat_per_eh_day: number | null;
+  hashprice_sat_per_eh_day: number | null;
+  max_bid_sat_per_eh_day: number | null;
   available_balance_sat: number | null;
   run_mode: RunMode;
   action_mode: ActionMode;

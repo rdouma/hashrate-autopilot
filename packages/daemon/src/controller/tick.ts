@@ -189,6 +189,10 @@ export class Controller {
         best_bid_sat_per_eh_day: state.market?.best_bid_sat ?? null,
         best_ask_sat_per_eh_day: state.market?.best_ask_sat ?? null,
         fillable_ask_sat_per_eh_day: fillable?.price_sat ?? null,
+        hashprice_sat_per_eh_day: state.hashprice_sat_per_ph_day !== null
+          ? state.hashprice_sat_per_ph_day * 1000
+          : null,
+        max_bid_sat_per_eh_day: state.config.max_bid_sat_per_eh_day,
         available_balance_sat: primaryBalance?.available_balance_sat ?? null,
         run_mode: state.run_mode,
         action_mode: state.action_mode,

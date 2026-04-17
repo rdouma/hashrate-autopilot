@@ -26,6 +26,8 @@ export interface InsertTickMetricArgs {
   readonly best_bid_sat_per_eh_day: number | null;
   readonly best_ask_sat_per_eh_day: number | null;
   readonly fillable_ask_sat_per_eh_day: number | null;
+  readonly hashprice_sat_per_eh_day: number | null;
+  readonly max_bid_sat_per_eh_day: number | null;
   readonly available_balance_sat: number | null;
   readonly run_mode: TickMetricsTable['run_mode'];
   readonly action_mode: TickMetricsTable['action_mode'];
@@ -47,6 +49,8 @@ export interface AggregatedTickMetricRow {
   best_bid_sat_per_eh_day: number | null;
   best_ask_sat_per_eh_day: number | null;
   fillable_ask_sat_per_eh_day: number | null;
+  hashprice_sat_per_eh_day: number | null;
+  max_bid_sat_per_eh_day: number | null;
   available_balance_sat: number | null;
 }
 
@@ -97,6 +101,8 @@ export class TickMetricsRepo {
         best_bid_sat_per_eh_day: r.best_bid_sat_per_eh_day,
         best_ask_sat_per_eh_day: r.best_ask_sat_per_eh_day,
         fillable_ask_sat_per_eh_day: r.fillable_ask_sat_per_eh_day,
+        hashprice_sat_per_eh_day: r.hashprice_sat_per_eh_day,
+        max_bid_sat_per_eh_day: r.max_bid_sat_per_eh_day,
         available_balance_sat: r.available_balance_sat,
       }));
     }
@@ -115,6 +121,12 @@ export class TickMetricsRepo {
         sql<number | null>`AVG(best_ask_sat_per_eh_day)`.as('best_ask_sat_per_eh_day'),
         sql<number | null>`AVG(fillable_ask_sat_per_eh_day)`.as(
           'fillable_ask_sat_per_eh_day',
+        ),
+        sql<number | null>`AVG(hashprice_sat_per_eh_day)`.as(
+          'hashprice_sat_per_eh_day',
+        ),
+        sql<number | null>`AVG(max_bid_sat_per_eh_day)`.as(
+          'max_bid_sat_per_eh_day',
         ),
         sql<number | null>`AVG(available_balance_sat)`.as('available_balance_sat'),
       ])
