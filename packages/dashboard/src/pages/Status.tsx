@@ -807,35 +807,33 @@ function StatsBar({
   const fmt = (n: number) => formatNumber(Math.round(n), {}, intlLocale);
 
   return (
-    <section className="bg-slate-900 border border-slate-800 rounded-lg px-4 py-3">
-      <div className="flex flex-wrap gap-x-8 gap-y-2 text-sm">
-        <StatChip
-          label="uptime"
-          value={`${uptimePct.toFixed(1)}%`}
-          tooltip="% of ticks in this range with delivered hashrate > 0. Low = bids not filling or escalation too slow."
-          color={uptimePct >= 90 ? 'text-emerald-300' : uptimePct >= 50 ? 'text-amber-300' : 'text-red-300'}
-        />
-        <StatChip
-          label="avg overpay vs fillable"
-          value={avgOverpay !== null ? `${fmt(avgOverpay)} sat/PH/day` : '—'}
-          tooltip="Average of (our price − fillable ask) across ticks where both are known. High = overpay too generous or lowering too slow."
-        />
-        <StatChip
-          label="avg cost / PH delivered"
-          value={avgCostPerPh !== null ? `${fmt(avgCostPerPh)} sat/PH/day` : '—'}
-          tooltip="Weighted average price across all delivering ticks: sum(price × delivered) / sum(delivered). The efficiency metric."
-        />
-        <StatChip
-          label="avg time to fill"
-          value={avgFillMs !== null ? formatFillTime(avgFillMs) : '—'}
-          tooltip="Average time from a CREATE/EDIT event to the first tick with delivered hashrate > 0. Measures how quickly the market fills at your current settings."
-        />
-      </div>
+    <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <StatCard
+        label="uptime"
+        value={`${uptimePct.toFixed(1)}%`}
+        tooltip="% of ticks in this range with delivered hashrate > 0. Low = bids not filling or escalation too slow."
+        color={uptimePct >= 90 ? 'text-emerald-300' : uptimePct >= 50 ? 'text-amber-300' : 'text-red-300'}
+      />
+      <StatCard
+        label="avg overpay vs fillable"
+        value={avgOverpay !== null ? `${fmt(avgOverpay)} sat/PH/day` : '—'}
+        tooltip="Average of (our price − fillable ask) across ticks where both are known. High = overpay too generous or lowering too slow."
+      />
+      <StatCard
+        label="avg cost / PH delivered"
+        value={avgCostPerPh !== null ? `${fmt(avgCostPerPh)} sat/PH/day` : '—'}
+        tooltip="Weighted average price across all delivering ticks: sum(price × delivered) / sum(delivered). The efficiency metric."
+      />
+      <StatCard
+        label="avg time to fill"
+        value={avgFillMs !== null ? formatFillTime(avgFillMs) : '—'}
+        tooltip="Average time from a CREATE/EDIT event to the first tick with delivered hashrate > 0. Measures how quickly the market fills at your current settings."
+      />
     </section>
   );
 }
 
-function StatChip({
+function StatCard({
   label,
   value,
   tooltip,
@@ -848,13 +846,16 @@ function StatChip({
 }) {
   const split = splitUnit(value);
   return (
-    <div className="cursor-help" title={tooltip}>
-      <div className="text-xs uppercase tracking-wider text-slate-100">{label}</div>
-      <div className={`font-mono ${color}`}>
+    <div
+      className="bg-slate-900 border border-slate-800 rounded-lg p-4 cursor-help"
+      title={tooltip}
+    >
+      <div className="text-xs uppercase tracking-wider text-slate-100 mb-2">{label}</div>
+      <div className={`text-2xl font-mono tabular-nums ${color}`}>
         {split ? (
           <>
             {split.num}
-            <span className="text-slate-500 text-[11px] ml-1">{split.unit}</span>
+            <span className="text-slate-500 text-sm ml-1">{split.unit}</span>
           </>
         ) : (
           value
