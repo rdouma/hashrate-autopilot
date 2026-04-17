@@ -788,8 +788,8 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
 
   if (!statsData) {
     return (
-      <section className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-        {['uptime', 'avg hashrate', 'avg cost / PH delivered', 'avg overpay vs fillable', 'avg time to fill'].map((label) => (
+      <section className="grid grid-cols-2 lg:grid-cols-6 gap-3">
+        {['uptime', 'avg hashrate', 'total PH·h', 'avg cost / PH delivered', 'avg overpay vs fillable', 'avg time to fill'].map((label) => (
           <StatCard key={label} label={label} value="—" tooltip="Loading or daemon restart required." />
         ))}
       </section>
@@ -798,10 +798,10 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
 
   if (statsData.tick_count < 2) return null;
 
-  const { uptime_pct, avg_hashrate_ph, avg_overpay_sat_per_ph_day, avg_cost_per_ph_sat_per_ph_day, avg_time_to_fill_ms } = statsData;
+  const { uptime_pct, avg_hashrate_ph, total_ph_hours, avg_overpay_sat_per_ph_day, avg_cost_per_ph_sat_per_ph_day, avg_time_to_fill_ms } = statsData;
 
   return (
-    <section className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+    <section className="grid grid-cols-2 lg:grid-cols-6 gap-3">
       <StatCard
         label="uptime"
         value={uptime_pct !== null ? `${uptime_pct.toFixed(1)}%` : '\u2014'}
@@ -820,6 +820,11 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
         label="avg hashrate"
         value={avg_hashrate_ph !== null ? `${avg_hashrate_ph.toFixed(2)} PH/s` : '\u2014'}
         tooltip="Duration-weighted average hashrate across the selected range, including downtime (where delivered = 0). Reflects real throughput — not just the moments you were hashing."
+      />
+      <StatCard
+        label="total PH·h"
+        value={total_ph_hours !== null ? `${total_ph_hours.toFixed(1)} PH·h` : '\u2014'}
+        tooltip="Total petahash-hours contributed in this range. Each hour at 1 PH/s = 1 PH·h. Measures your cumulative work submission to the network."
       />
       <StatCard
         label="avg cost / PH delivered"
@@ -1009,7 +1014,7 @@ function FinancePanel({
         }
       />
       <FinanceRow
-        label="expected (Ocean)"
+        label="unpaid earnings (Ocean)"
         value={data.expected_sat}
         tooltip={
           data.ocean

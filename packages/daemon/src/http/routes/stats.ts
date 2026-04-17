@@ -32,6 +32,7 @@ const CACHE_TTL_MS = 60_000;
 export interface StatsResponse {
   readonly uptime_pct: number | null;
   readonly avg_hashrate_ph: number | null;
+  readonly total_ph_hours: number | null;
   readonly avg_overpay_sat_per_ph_day: number | null;
   readonly avg_cost_per_ph_sat_per_ph_day: number | null;
   readonly avg_time_to_fill_ms: number | null;
@@ -75,6 +76,7 @@ export async function registerStatsRoute(
       const data: StatsResponse = {
         uptime_pct: metrics.uptime_pct,
         avg_hashrate_ph: metrics.avg_hashrate_ph,
+        total_ph_hours: metrics.total_ph_hours,
         avg_overpay_sat_per_ph_day: metrics.avg_overpay_sat_per_ph_day,
         avg_cost_per_ph_sat_per_ph_day: metrics.avg_cost_per_ph_sat_per_ph_day,
         avg_time_to_fill_ms: avgFillMs,
@@ -93,6 +95,7 @@ async function computeMetrics(
 ): Promise<{
   uptime_pct: number | null;
   avg_hashrate_ph: number | null;
+  total_ph_hours: number | null;
   avg_overpay_sat_per_ph_day: number | null;
   avg_cost_per_ph_sat_per_ph_day: number | null;
   tick_count: number;
@@ -112,6 +115,8 @@ async function computeMetrics(
       CASE WHEN SUM(dur) > 0 THEN
         CAST(SUM(delivered_ph * dur) AS REAL) / SUM(dur)
       ELSE NULL END AS avg_hashrate,
+
+      CAST(SUM(delivered_ph * dur) AS REAL) / 3600000.0 AS total_ph_hours,
 
       CASE WHEN SUM(CASE WHEN price IS NOT NULL AND fillable IS NOT NULL THEN dur ELSE 0 END) > 0 THEN
         CAST(SUM(CASE WHEN price IS NOT NULL AND fillable IS NOT NULL
@@ -143,13 +148,14 @@ async function computeMetrics(
 
   const r = (row as unknown as { rows: Array<Record<string, number | null>> }).rows?.[0];
   if (!r) {
-    return { tick_count: 0, uptime_pct: null, avg_hashrate_ph: null, avg_overpay_sat_per_ph_day: null, avg_cost_per_ph_sat_per_ph_day: null };
+    return { tick_count: 0, uptime_pct: null, avg_hashrate_ph: null, total_ph_hours: null, avg_overpay_sat_per_ph_day: null, avg_cost_per_ph_sat_per_ph_day: null };
   }
 
   return {
     tick_count: Number(r['tick_count'] ?? 0),
     uptime_pct: r['uptime_pct'] !== null ? Number(r['uptime_pct']) : null,
     avg_hashrate_ph: r['avg_hashrate'] !== null ? Number(r['avg_hashrate']) : null,
+    total_ph_hours: r['total_ph_hours'] !== null ? Number(r['total_ph_hours']) : null,
     // SQL returns sat/EH/day; convert to sat/PH/day for the dashboard.
     avg_overpay_sat_per_ph_day: r['avg_overpay'] !== null ? Number(r['avg_overpay']) / EH_PER_PH : null,
     avg_cost_per_ph_sat_per_ph_day: r['avg_cost'] !== null ? Number(r['avg_cost']) / EH_PER_PH : null,

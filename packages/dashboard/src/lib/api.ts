@@ -269,6 +269,7 @@ export const api = {
 export interface StatsResponse {
   uptime_pct: number | null;
   avg_hashrate_ph: number | null;
+  total_ph_hours: number | null;
   avg_overpay_sat_per_ph_day: number | null;
   avg_cost_per_ph_sat_per_ph_day: number | null;
   avg_time_to_fill_ms: number | null;
