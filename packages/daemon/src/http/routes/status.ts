@@ -329,10 +329,20 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
     const elapsedMs = startMs ? state.tick_at - startMs : 0;
     const remainingMs = windowMs - elapsedMs;
 
+    // If the market is too expensive (fillable + overpay > max_bid),
+    // decide.ts returns [] — no escalation, no CREATE. The bid sits
+    // at its current price and we wait for the market to drop. Don't
+    // predict "will jump to max_bid" — that move would never fire.
+    if (cappedByMax) {
+      return {
+        summary: `Bid filling below target (${primary.avg_speed_ph.toFixed(2)}/${ph} PH/s).`,
+        detail: `Market above your maximum (${Math.round(desiredPriceEH / EH_PER_PH).toLocaleString('en-US')} vs cap ${Math.round(state.config.max_bid_sat_per_eh_day / EH_PER_PH).toLocaleString('en-US')} sat/PH/day). Waiting for prices to drop.`,
+        ...noEvent,
+      };
+    }
+
     // If current price is already at or above the target, escalation
     // won't actually fire (decide.ts checks primary < targetPrice).
-    // Don't say "will escalate to X" when X is lower — that's
-    // nonsensical. Instead explain we're waiting for the fill.
     if (primary.price_sat >= targetPriceEH) {
       return {
         summary: `Bid filling below target (${primary.avg_speed_ph.toFixed(2)}/${ph} PH/s).`,
