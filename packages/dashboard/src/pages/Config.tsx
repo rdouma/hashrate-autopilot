@@ -277,6 +277,8 @@ export function Config() {
       setError(null);
       qc.invalidateQueries({ queryKey: ['config'] });
       qc.invalidateQueries({ queryKey: ['status'] });
+      qc.invalidateQueries({ queryKey: ['finance'] });
+      qc.invalidateQueries({ queryKey: ['stats'] });
     },
     onError: (err: Error) => setError(err.message),
   });

@@ -139,13 +139,18 @@ export class Controller {
       );
     state = { ...state, owned_bids: patchedOwnedBids };
 
-    // After any EDIT_PRICE that actually fired, lock the new price in
-    // for one full escalation window. Prevents same-window re-escalation
-    // and blocks any automatic revert. Manual bumps already set this
-    // via the actions route.
+    // After any CREATE or EDIT_PRICE that actually fired, lock the
+    // price for one full escalation window. Prevents:
+    // - same-window re-escalation after an upward EDIT
+    // - immediate lowering after a CREATE at a high price (the fill
+    //   needs time to establish before we start chasing the market
+    //   back down and burning the Braiins 10-min decrease cooldown)
     const windowMs = state.config.fill_escalation_after_minutes * 60_000;
     for (const e of executed) {
-      if (e.proposal.kind === 'EDIT_PRICE' && e.outcome === 'EXECUTED') {
+      if (
+        (e.proposal.kind === 'EDIT_PRICE' || e.proposal.kind === 'CREATE_BID') &&
+        e.outcome === 'EXECUTED'
+      ) {
         this.manualOverrideUntilMs = state.tick_at + windowMs;
         break;
       }
