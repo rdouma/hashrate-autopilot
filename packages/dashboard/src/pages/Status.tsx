@@ -613,15 +613,16 @@ function PriceDeltaVsFillable({
   fillablePH: number | null;
   intlLocale: string | undefined;
 }) {
+  const denomination = useDenomination();
   if (fillablePH === null) return null;
   const delta = Math.round(currentPH - fillablePH);
-  const fillablePretty = formatNumber(Math.round(fillablePH), {}, intlLocale);
+  const fillablePretty = denomination.formatSatPerPhDay(Math.round(fillablePH));
 
   if (delta === 0) {
     return (
       <span
         className="text-xs font-mono text-slate-400 cursor-help"
-        title={`Paying exactly the fillable ask (${fillablePretty} sat/PH/day) — the cheapest price at which the full target hashrate is available.`}
+        title={`Paying exactly the fillable ask (${fillablePretty}) — the cheapest price at which the full target hashrate is available.`}
       >
         ±0
       </span>
@@ -629,18 +630,19 @@ function PriceDeltaVsFillable({
   }
 
   const sign = delta > 0 ? '+' : '−';
-  // Overpaying = red; underpaying (rare, mid-market move) = emerald.
   const color = delta > 0 ? 'text-red-300' : 'text-emerald-300';
   const verb = delta > 0 ? 'over' : 'under';
+  const deltaFormatted = denomination.formatSatPerPhDay(Math.abs(delta));
   const tooltip =
-    `Currently paying ${sign}${formatNumber(Math.abs(delta), {}, intlLocale)} sat/PH/day ` +
-    `${verb} the fillable ask (${fillablePretty}) (the cheapest price at which ` +
-    `your full target hashrate is available in the orderbook).`;
+    `Currently paying ${sign}${deltaFormatted} ` +
+    `${verb} the fillable ask (${fillablePretty}) — the cheapest price at which ` +
+    `your full target hashrate is available in the orderbook.`;
 
   return (
     <span className={`text-xs font-mono ${color} cursor-help`} title={tooltip}>
-      {sign}
-      {formatNumber(Math.abs(delta), {}, intlLocale)}
+      {sign}{denomination.mode === 'usd' && denomination.btcPrice
+        ? denomination.formatSatPerPhDay(Math.abs(delta)).replace(/\/PH\/day$/, '')
+        : formatNumber(Math.abs(delta), {}, intlLocale)}
     </span>
   );
 }

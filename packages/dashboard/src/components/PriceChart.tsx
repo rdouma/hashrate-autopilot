@@ -14,6 +14,7 @@ import {
 } from '@braiins-hashrate/shared';
 
 import type { BidEventView, MetricPoint } from '../lib/api';
+import { useDenomination } from '../lib/denomination';
 import { formatNumber, formatTimestamp, formatTimestampUtc } from '../lib/format';
 import { useLocale } from '../lib/locale';
 
@@ -54,6 +55,7 @@ export const PriceChart = memo(function PriceChart({
   const containerRef = useRef<HTMLDivElement>(null);
   const [hovered, setHovered] = useState<HoveredTooltip | null>(null);
   const { intlLocale } = useLocale();
+  const denomination = useDenomination();
 
   const chartData = useMemo(() => {
     // Older daemon builds may omit `fillable_ask_sat_per_ph_day` entirely
@@ -164,7 +166,19 @@ export const PriceChart = memo(function PriceChart({
 
   const { pricePoints, fillablePoints, hasPrice, xScale, yScale, pricePath, fillablePath, yTicks, xTickInterval, xTicks, visibleEvents } = chartData;
 
-  const priceFmt = (v: number): string => formatNumber(Math.round(v), {}, intlLocale);
+  // Format Y-axis tick values: in USD mode convert sat/PH/day to $/PH/day
+  const priceFmt = (v: number): string => {
+    if (denomination.mode === 'usd' && denomination.btcPrice !== null) {
+      const usd = (v / 100_000_000) * denomination.btcPrice;
+      return new Intl.NumberFormat(intlLocale, {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: usd >= 1 ? 2 : 4,
+        maximumFractionDigits: usd >= 1 ? 2 : 4,
+      }).format(usd);
+    }
+    return formatNumber(Math.round(v), {}, intlLocale);
+  };
 
   return (
     <div ref={containerRef} className="bg-slate-900 border border-slate-800 rounded-lg p-4 relative">
@@ -342,7 +356,7 @@ export const PriceChart = memo(function PriceChart({
             fontFamily="monospace"
             transform={`rotate(-90 14 ${PADDING.top + (HEIGHT - PADDING.top - PADDING.bottom) / 2})`}
           >
-            sat/PH/day
+            {denomination.mode === 'usd' ? '$/PH/day' : 'sat/PH/day'}
           </text>
         )}
       </svg>

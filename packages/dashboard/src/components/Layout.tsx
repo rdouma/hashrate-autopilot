@@ -18,6 +18,7 @@ export function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { intlLocale } = useLocale();
+  const denomination = useDenomination();
 
   // Status powers the global header (mode badge + balance) on every
   // page. 30 s mirrors the Status-page polling cadence — header
@@ -79,22 +80,15 @@ export function Layout() {
             ) : (
               <span className="text-slate-500">loading…</span>
             )}
-            {status.data && (
-              <span className="text-slate-500 hidden md:inline">
-                action: <span className="text-slate-300">{status.data.action_mode}</span>
-              </span>
-            )}
-
             {primaryBalance ? (
               <span
                 className="text-slate-400 hidden lg:inline cursor-help"
-                title={`blocked ${formatNumber(primaryBalance.blocked_balance_sat, {}, intlLocale)} sat · total ${formatNumber(primaryBalance.total_balance_sat, {}, intlLocale)} sat`}
+                title={`blocked ${denomination.formatSat(primaryBalance.blocked_balance_sat)} · total ${denomination.formatSat(primaryBalance.total_balance_sat)}`}
               >
                 available{' '}
                 <span className="text-slate-100 font-mono">
-                  {formatNumber(primaryBalance.available_balance_sat, {}, intlLocale)}
-                </span>{' '}
-                sat
+                  {denomination.formatSat(primaryBalance.available_balance_sat)}
+                </span>
               </span>
             ) : null}
 
