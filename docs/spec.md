@@ -169,7 +169,6 @@ full `target_hashrate_ph` is available (walks asks cumulatively by unmatched sup
 - `fill_escalation_step_sat_per_eh_day` — step size for dampened mode.
 - `fill_escalation_after_minutes` — window before escalation kicks in.
 - `min_lower_delta_sat_per_eh_day` — deadband: only auto-lower when overpay vs target exceeds this. Default 200 sat/PH/day. Avoids burning the Braiins 10-min decrease cooldown for a few-sat saving.
-- `hibernate_on_expensive_market` — pause bidding rather than overpay when the market blows past the configured cap.
 - `handover_window_minutes` — manual-override suppression window.
 
 Lowering: when overpay vs target exceeds `min_lower_delta`, jump directly to target (no dampening downward — trust the `overpay` setting).

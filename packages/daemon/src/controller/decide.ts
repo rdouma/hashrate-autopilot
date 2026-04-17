@@ -9,9 +9,7 @@
  *      supply" approach strands us when the cheapest ask offers only
  *      a sliver of hashrate.
  *   2. `target_price = min(fillable + overpay, max_bid)`.
- *   3. If fillable + overpay > max_bid:
- *      - if `hibernate_on_expensive_market`: propose PAUSE.
- *      - else: don't propose CREATE this tick.
+ *   3. If fillable + overpay > max_bid: skip this tick silently.
  *   4. Escalation (upward adjustments): when below floor too long:
  *      - 'market' mode: jump directly to target_price (track market)
  *      - 'dampened' mode: step from current_bid + escalation_step
@@ -110,18 +108,8 @@ export function decide(state: State): readonly Proposal[] {
   const targetPrice = Math.min(desiredPrice, effectiveCap);
   const isMarketTooExpensive = desiredPrice > effectiveCap;
 
-  if (isMarketTooExpensive) {
-    if (state.config.hibernate_on_expensive_market) {
-      return [
-        {
-          kind: 'PAUSE',
-          reason: `market_too_expensive: needed ${fmtPricePH(desiredPrice)} > cap ${fmtPricePH(effectiveCap)} (cheapest ask ${fmtPricePH(effectiveCheapestAvailable)})`,
-        },
-      ];
-    }
-    // No PAUSE configured → just don't bid this tick. Next tick re-evaluates.
-    return [];
-  }
+  // Market too expensive → silently skip this tick. Next tick re-evaluates.
+  if (isMarketTooExpensive) return [];
 
   const tickSize = market.settings.tick_size_sat ?? 1000;
   const minBidSpeed = Math.max(1.0, market.settings.min_bid_speed_limit_ph ?? 1.0);

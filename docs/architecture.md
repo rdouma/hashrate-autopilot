@@ -197,7 +197,7 @@ CREATE TABLE config (
   fill_escalation_after_minutes INTEGER NOT NULL,
   overpay_sat_per_eh_day INTEGER NOT NULL,
   escalation_mode TEXT NOT NULL DEFAULT 'dampened',  -- 'market' | 'dampened'
-  hibernate_on_expensive_market INTEGER NOT NULL,  -- bool
+  hibernate_on_expensive_market INTEGER NOT NULL,  -- DEPRECATED: kept for NOT NULL; ignored by the app
   btc_payout_address TEXT NOT NULL,
   electrs_host TEXT,       -- optional, for fast balance lookups
   electrs_port INTEGER,

@@ -148,25 +148,11 @@ describe('decide — CREATE path', () => {
   });
 });
 
-describe('decide — hibernate when too expensive', () => {
-  it('proposes PAUSE when target > max_bid AND hibernate is enabled', () => {
+describe('decide — market too expensive', () => {
+  it('silently skips the tick when target > max_bid', () => {
     const cappedCfg = { ...BASE_CONFIG, max_bid_sat_per_eh_day: 44_000_000 };
-    const proposals = decide(state({ config: cappedCfg }));
-    expect(proposals).toHaveLength(1);
-    expect(proposals[0]).toMatchObject({ kind: 'PAUSE' });
-    const pause = proposals[0]! as { reason: string };
-    expect(pause.reason).toMatch(/market_too_expensive/);
-  });
-
-  it('emits no proposal (silently waits) when target > max_bid AND hibernate disabled', () => {
-    const cappedCfg = {
-      ...BASE_CONFIG,
-      max_bid_sat_per_eh_day: 44_000_000,
-      hibernate_on_expensive_market: false,
-    };
     expect(decide(state({ config: cappedCfg }))).toEqual([]);
   });
-
 });
 
 describe('decide — EDIT / CANCEL paths', () => {

@@ -204,7 +204,6 @@ export interface AppConfig {
   overpay_sat_per_eh_day: number;
   escalation_mode: 'market' | 'dampened';
   min_lower_delta_sat_per_eh_day: number;
-  hibernate_on_expensive_market: boolean;
   electrs_host: string | null;
   electrs_port: number | null;
   boot_mode: 'ALWAYS_DRY_RUN' | 'LAST_MODE' | 'ALWAYS_LIVE';

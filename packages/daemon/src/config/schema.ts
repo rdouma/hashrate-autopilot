@@ -103,7 +103,6 @@ export const AppConfigSchema = z.object({
   // Avoids micro-edits that burn the Braiins 10-min decrease cooldown for
   // a few sat of savings.
   min_lower_delta_sat_per_eh_day: nonNegativeInt,
-  hibernate_on_expensive_market: z.boolean(),
 
   // Electrs (optional, for fast balance lookups)
   electrs_host: z.string().nullable().default(null),
@@ -204,7 +203,6 @@ export const APP_CONFIG_DEFAULTS: Omit<
   overpay_sat_per_eh_day: 500_000,
   escalation_mode: 'dampened',
   min_lower_delta_sat_per_eh_day: 200_000,
-  hibernate_on_expensive_market: true,
 
   electrs_host: null,
   electrs_port: null,

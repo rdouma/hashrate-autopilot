@@ -44,6 +44,7 @@ export interface ConfigTable {
   overpay_sat_per_eh_day: number;
   escalation_mode: 'market' | 'dampened';
   min_lower_delta_sat_per_eh_day: number;
+  /** @deprecated Legacy column — kept for NOT NULL; ignored by the app. */
   hibernate_on_expensive_market: 0 | 1;
   electrs_host: string | null;
   electrs_port: number | null;
