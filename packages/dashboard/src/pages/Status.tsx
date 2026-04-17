@@ -757,7 +757,17 @@ function formatRemaining(ms: number): string {
 function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
   const { intlLocale } = useLocale();
 
-  if (!statsData || statsData.tick_count < 2) return null;
+  if (!statsData) {
+    return (
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {['uptime', 'avg overpay vs fillable', 'avg cost / PH delivered', 'avg time to fill'].map((label) => (
+          <StatCard key={label} label={label} value="—" tooltip="Loading or daemon restart required." />
+        ))}
+      </section>
+    );
+  }
+
+  if (statsData.tick_count < 2) return null;
 
   const { uptime_pct, avg_overpay_sat_per_ph_day, avg_cost_per_ph_sat_per_ph_day, avg_time_to_fill_ms } = statsData;
   const fmt = (n: number) => formatNumber(Math.round(n), {}, intlLocale);
