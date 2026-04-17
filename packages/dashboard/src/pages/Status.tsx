@@ -170,6 +170,8 @@ export function Status() {
         </div>
       </section>
 
+      <StatsBar statsData={statsQuery.data} />
+
       <HashrateChart
         points={metricsQuery.data?.points ?? []}
         range={chartRange}
@@ -182,8 +184,6 @@ export function Status() {
         hashpriceSatPerPhDay={financeQuery.data?.ocean?.hashprice_sat_per_ph_day ?? null}
         maxBidSatPerPhDay={s.config_summary.max_bid_sat_per_ph_day}
       />
-
-      <StatsBar statsData={statsQuery.data} />
 
       {/* Three-column row: market context | Braiins wallet | financial
           P&L. Money panel reads top-to-bottom (cost → incomes → net).
