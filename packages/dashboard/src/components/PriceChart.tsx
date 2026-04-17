@@ -5,7 +5,7 @@
  * X-axis aligns visually when stacked.
  */
 
-import { useLayoutEffect, useRef, useState } from 'react';
+import { memo, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import {
   formatTimeTick,
@@ -42,7 +42,7 @@ interface PricePoint {
   v: number;
 }
 
-export function PriceChart({
+export const PriceChart = memo(function PriceChart({
   points,
   events = [],
   showEvents,
@@ -55,82 +55,78 @@ export function PriceChart({
   const [hovered, setHovered] = useState<HoveredTooltip | null>(null);
   const { intlLocale } = useLocale();
 
-  // Older daemon builds may omit `fillable_ask_sat_per_ph_day` entirely
-  // (i.e. the field is `undefined`, not `null`). Use Number.isFinite so we
-  // don't generate bogus path coords when the column hasn't been
-  // backfilled yet.
-  const pricePoints: PricePoint[] = points
-    .filter((p) => Number.isFinite(p.our_primary_price_sat_per_ph_day))
-    .map((p) => ({ t: p.tick_at, v: p.our_primary_price_sat_per_ph_day as number }));
+  const chartData = useMemo(() => {
+    // Older daemon builds may omit `fillable_ask_sat_per_ph_day` entirely
+    // (i.e. the field is `undefined`, not `null`). Use Number.isFinite so we
+    // don't generate bogus path coords when the column hasn't been
+    // backfilled yet.
+    const pricePoints: PricePoint[] = points
+      .filter((p) => Number.isFinite(p.our_primary_price_sat_per_ph_day))
+      .map((p) => ({ t: p.tick_at, v: p.our_primary_price_sat_per_ph_day as number }));
 
-  const fillablePoints: PricePoint[] = points
-    .filter((p) => Number.isFinite(p.fillable_ask_sat_per_ph_day))
-    .map((p) => ({ t: p.tick_at, v: p.fillable_ask_sat_per_ph_day as number }));
+    const fillablePoints: PricePoint[] = points
+      .filter((p) => Number.isFinite(p.fillable_ask_sat_per_ph_day))
+      .map((p) => ({ t: p.tick_at, v: p.fillable_ask_sat_per_ph_day as number }));
 
-  if (points.length < 2) {
-    return (
-      <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
-        <h3 className="text-xs uppercase tracking-wider text-slate-100">Price</h3>
-        <div className="mt-4 text-sm text-slate-500">
-          Not enough data in this range yet.
-        </div>
-      </div>
-    );
-  }
+    if (points.length < 2) return null;
 
-  const xs = points.map((p) => p.tick_at);
-  const minX = xs[0]!;
-  const maxX = xs[xs.length - 1]!;
+    const xs = points.map((p) => p.tick_at);
+    const minX = xs[0]!;
+    const maxX = xs[xs.length - 1]!;
 
-  const eventPrices = events
-    .flatMap((e) => [e.old_price_sat_per_ph_day, e.new_price_sat_per_ph_day])
-    .filter((p): p is number => p !== null && Number.isFinite(p));
-  const priceSample = [
-    ...pricePoints.map((p) => p.v),
-    ...fillablePoints.map((p) => p.v),
-    ...eventPrices,
-  ];
-  const hasPrice = priceSample.length > 0;
-  const priceMinRaw = hasPrice ? Math.min(...priceSample) : 0;
-  const priceMaxRaw = hasPrice ? Math.max(...priceSample) : 1;
-  const priceSpan = Math.max(1, priceMaxRaw - priceMinRaw);
-  const priceMin = Math.max(0, priceMinRaw - priceSpan * 0.1);
-  const priceMax = priceMaxRaw + priceSpan * 0.15;
+    const eventPrices = events
+      .flatMap((e) => [e.old_price_sat_per_ph_day, e.new_price_sat_per_ph_day])
+      .filter((p): p is number => p !== null && Number.isFinite(p));
+    const priceSample = [
+      ...pricePoints.map((p) => p.v),
+      ...fillablePoints.map((p) => p.v),
+      ...eventPrices,
+    ];
+    const hasPrice = priceSample.length > 0;
+    const priceMinRaw = hasPrice ? Math.min(...priceSample) : 0;
+    const priceMaxRaw = hasPrice ? Math.max(...priceSample) : 1;
+    const priceSpan = Math.max(1, priceMaxRaw - priceMinRaw);
+    const priceMin = Math.max(0, priceMinRaw - priceSpan * 0.1);
+    const priceMax = priceMaxRaw + priceSpan * 0.15;
 
-  const xScale = (x: number): number => {
-    const usable = WIDTH - PADDING.left - PADDING.right;
-    if (maxX === minX) return PADDING.left + usable / 2;
-    return PADDING.left + ((x - minX) / (maxX - minX)) * usable;
-  };
-  const yScale = (v: number): number => {
-    const usable = HEIGHT - PADDING.top - PADDING.bottom;
-    if (priceMax === priceMin) return HEIGHT - PADDING.bottom - usable / 2;
-    return HEIGHT - PADDING.bottom - ((v - priceMin) / (priceMax - priceMin)) * usable;
-  };
+    const xScale = (x: number): number => {
+      const usable = WIDTH - PADDING.left - PADDING.right;
+      if (maxX === minX) return PADDING.left + usable / 2;
+      return PADDING.left + ((x - minX) / (maxX - minX)) * usable;
+    };
+    const yScale = (v: number): number => {
+      const usable = HEIGHT - PADDING.top - PADDING.bottom;
+      if (priceMax === priceMin) return HEIGHT - PADDING.bottom - usable / 2;
+      return HEIGHT - PADDING.bottom - ((v - priceMin) / (priceMax - priceMin)) * usable;
+    };
 
-  const pricePath = pricePoints
-    .map((p, i) => `${i === 0 ? 'M' : 'L'}${xScale(p.t).toFixed(1)},${yScale(p.v).toFixed(1)}`)
-    .join(' ');
-  const fillablePath = fillablePoints
-    .map((p, i) => `${i === 0 ? 'M' : 'L'}${xScale(p.t).toFixed(1)},${yScale(p.v).toFixed(1)}`)
-    .join(' ');
+    const pricePath = pricePoints
+      .map((p, i) => `${i === 0 ? 'M' : 'L'}${xScale(p.t).toFixed(1)},${yScale(p.v).toFixed(1)}`)
+      .join(' ');
+    const fillablePath = fillablePoints
+      .map((p, i) => `${i === 0 ? 'M' : 'L'}${xScale(p.t).toFixed(1)},${yScale(p.v).toFixed(1)}`)
+      .join(' ');
 
-  const ticks = 4;
-  const yTicks: number[] = [];
-  for (let i = 0; i <= ticks; i++) {
-    yTicks.push(priceMin + ((priceMax - priceMin) / ticks) * i);
-  }
+    const ticks = 4;
+    const yTicks: number[] = [];
+    for (let i = 0; i <= ticks; i++) {
+      yTicks.push(priceMin + ((priceMax - priceMin) / ticks) * i);
+    }
 
-  // Same X-axis ticks as the HashrateChart above so events on this
-  // chart line up vertically with hashrate dips/spikes on that one.
-  const xTickInterval = pickTimeTickInterval(maxX - minX);
-  const xTicks = localAlignedTimeTicks(minX, maxX, xTickInterval);
+    // Same X-axis ticks as the HashrateChart above so events on this
+    // chart line up vertically with hashrate dips/spikes on that one.
+    const xTickInterval = pickTimeTickInterval(maxX - minX);
+    const xTicks = localAlignedTimeTicks(minX, maxX, xTickInterval);
 
-  const visibleEvents = showEvents
-    ? events.filter((e) => e.occurred_at >= minX && e.occurred_at <= maxX)
-    : [];
+    const visibleEvents = showEvents
+      ? events.filter((e) => e.occurred_at >= minX && e.occurred_at <= maxX)
+      : [];
 
-  const eventPriceAt = (e: BidEventView): number | null => {
+    return { pricePoints, fillablePoints, minX, maxX, hasPrice, xScale, yScale, pricePath, fillablePath, yTicks, xTickInterval, xTicks, visibleEvents };
+  }, [points, events, showEvents]);
+
+  const eventPriceAt = useCallback((e: BidEventView): number | null => {
+    const pricePoints = chartData?.pricePoints ?? [];
     if (e.new_price_sat_per_ph_day !== null) return e.new_price_sat_per_ph_day;
     if (e.old_price_sat_per_ph_day !== null) return e.old_price_sat_per_ph_day;
     if (pricePoints.length === 0) return null;
@@ -145,15 +141,28 @@ export function PriceChart({
       return before.v + (after.v - before.v) * ratio;
     }
     return before?.v ?? after?.v ?? null;
-  };
+  }, [chartData?.pricePoints]);
 
   // Tooltip lives in a portal-style fixed-position node so it's free of
   // the chart container's overflow/clip and can flip near the viewport
   // edges. Coords stored are viewport-absolute (e.clientX/Y).
-  const onMarkerEnter = (event: BidEventView) => (e: React.MouseEvent) => {
+  const onMarkerEnter = useCallback((event: BidEventView) => (e: React.MouseEvent) => {
     setHovered({ event, x: e.clientX, y: e.clientY });
-  };
-  const onMarkerLeave = () => setHovered(null);
+  }, []);
+  const onMarkerLeave = useCallback(() => setHovered(null), []);
+
+  if (!chartData) {
+    return (
+      <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
+        <h3 className="text-xs uppercase tracking-wider text-slate-100">Price</h3>
+        <div className="mt-4 text-sm text-slate-500">
+          Not enough data in this range yet.
+        </div>
+      </div>
+    );
+  }
+
+  const { pricePoints, fillablePoints, hasPrice, xScale, yScale, pricePath, fillablePath, yTicks, xTickInterval, xTicks, visibleEvents } = chartData;
 
   const priceFmt = (v: number): string => formatNumber(Math.round(v), {}, intlLocale);
 
@@ -341,7 +350,7 @@ export function PriceChart({
       {hovered && <EventTooltip tip={hovered} />}
     </div>
   );
-}
+});
 
 function EventTooltip({ tip }: { tip: HoveredTooltip }) {
   const ref = useRef<HTMLDivElement>(null);

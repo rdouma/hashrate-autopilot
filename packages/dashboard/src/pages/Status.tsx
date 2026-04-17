@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import {
@@ -329,6 +329,12 @@ export function Status() {
 // Hero operations card — run mode, action mode, operator avail, quiet hours.
 // ---------------------------------------------------------------------------
 
+const heroColors: Record<StatusResponse['run_mode'], string> = {
+  DRY_RUN: 'from-sky-900/60 to-sky-950/40 border-sky-700/40',
+  LIVE: 'from-emerald-900/60 to-emerald-950/40 border-emerald-700/40',
+  PAUSED: 'from-amber-900/60 to-amber-950/40 border-amber-700/40',
+};
+
 function OperationsCard({
   s,
   onRunMode,
@@ -339,12 +345,6 @@ function OperationsCard({
   runModePending: boolean;
 }) {
   const { intlLocale } = useLocale();
-
-  const heroColors: Record<StatusResponse['run_mode'], string> = {
-    DRY_RUN: 'from-sky-900/60 to-sky-950/40 border-sky-700/40',
-    LIVE: 'from-emerald-900/60 to-emerald-950/40 border-emerald-700/40',
-    PAUSED: 'from-amber-900/60 to-amber-950/40 border-amber-700/40',
-  };
 
   const actionVisible = s.action_mode !== 'NORMAL';
 
@@ -753,57 +753,65 @@ function StatsBar({
   events: readonly BidEventView[];
 }) {
   const { intlLocale } = useLocale();
-  if (points.length < 2) return null;
 
-  // 1. Uptime % — fraction of ticks with delivered hashrate > 0
-  const hashingTicks = points.filter((p) => p.delivered_ph > 0).length;
-  const uptimePct = (hashingTicks / points.length) * 100;
+  const stats = useMemo(() => {
+    if (points.length < 2) return null;
 
-  // 2. Avg overpay vs fillable — how much more we paid than the depth-aware market price
-  const overpayPairs = points.filter(
-    (p) =>
-      Number.isFinite(p.our_primary_price_sat_per_ph_day) &&
-      Number.isFinite(p.fillable_ask_sat_per_ph_day),
-  );
-  const avgOverpay =
-    overpayPairs.length > 0
-      ? overpayPairs.reduce(
-          (s, p) => s + (p.our_primary_price_sat_per_ph_day! - p.fillable_ask_sat_per_ph_day!),
-          0,
-        ) / overpayPairs.length
-      : null;
+    // 1. Uptime % — fraction of ticks with delivered hashrate > 0
+    const hashingTicks = points.filter((p) => p.delivered_ph > 0).length;
+    const uptimePct = (hashingTicks / points.length) * 100;
 
-  // 3. Avg cost per PH delivered — weighted average price across all delivering ticks
-  const delivering = points.filter(
-    (p) => p.delivered_ph > 0 && Number.isFinite(p.our_primary_price_sat_per_ph_day),
-  );
-  const totalWeighted = delivering.reduce(
-    (s, p) => s + p.our_primary_price_sat_per_ph_day! * p.delivered_ph,
-    0,
-  );
-  const totalPh = delivering.reduce((s, p) => s + p.delivered_ph, 0);
-  const avgCostPerPh = totalPh > 0 ? totalWeighted / totalPh : null;
-
-  // 4. Avg time-to-fill after CREATE/EDIT events — how long from an
-  //    event until the next tick with delivered_ph > 0. Measures how
-  //    quickly the market fills our bids at current settings.
-  const fillable = events.filter(
-    (e) => e.kind === 'CREATE_BID' || e.kind === 'EDIT_PRICE',
-  );
-  const fillTimes: number[] = [];
-  for (const ev of fillable) {
-    const firstFill = points.find(
-      (p) => p.tick_at > ev.occurred_at && p.delivered_ph > 0,
+    // 2. Avg overpay vs fillable — how much more we paid than the depth-aware market price
+    const overpayPairs = points.filter(
+      (p) =>
+        Number.isFinite(p.our_primary_price_sat_per_ph_day) &&
+        Number.isFinite(p.fillable_ask_sat_per_ph_day),
     );
-    if (firstFill) {
-      fillTimes.push(firstFill.tick_at - ev.occurred_at);
-    }
-  }
-  const avgFillMs =
-    fillTimes.length > 0
-      ? fillTimes.reduce((a, b) => a + b, 0) / fillTimes.length
-      : null;
+    const avgOverpay =
+      overpayPairs.length > 0
+        ? overpayPairs.reduce(
+            (s, p) => s + (p.our_primary_price_sat_per_ph_day! - p.fillable_ask_sat_per_ph_day!),
+            0,
+          ) / overpayPairs.length
+        : null;
 
+    // 3. Avg cost per PH delivered — weighted average price across all delivering ticks
+    const delivering = points.filter(
+      (p) => p.delivered_ph > 0 && Number.isFinite(p.our_primary_price_sat_per_ph_day),
+    );
+    const totalWeighted = delivering.reduce(
+      (s, p) => s + p.our_primary_price_sat_per_ph_day! * p.delivered_ph,
+      0,
+    );
+    const totalPh = delivering.reduce((s, p) => s + p.delivered_ph, 0);
+    const avgCostPerPh = totalPh > 0 ? totalWeighted / totalPh : null;
+
+    // 4. Avg time-to-fill after CREATE/EDIT events — how long from an
+    //    event until the next tick with delivered_ph > 0. Measures how
+    //    quickly the market fills our bids at current settings.
+    const fillable = events.filter(
+      (e) => e.kind === 'CREATE_BID' || e.kind === 'EDIT_PRICE',
+    );
+    const fillTimes: number[] = [];
+    for (const ev of fillable) {
+      const firstFill = points.find(
+        (p) => p.tick_at > ev.occurred_at && p.delivered_ph > 0,
+      );
+      if (firstFill) {
+        fillTimes.push(firstFill.tick_at - ev.occurred_at);
+      }
+    }
+    const avgFillMs =
+      fillTimes.length > 0
+        ? fillTimes.reduce((a, b) => a + b, 0) / fillTimes.length
+        : null;
+
+    return { uptimePct, avgOverpay, avgCostPerPh, avgFillMs };
+  }, [points, events]);
+
+  if (!stats) return null;
+
+  const { uptimePct, avgOverpay, avgCostPerPh, avgFillMs } = stats;
   const fmt = (n: number) => formatNumber(Math.round(n), {}, intlLocale);
 
   return (
@@ -938,25 +946,34 @@ function FinancePanel({
   // owned bids of (price × delivered_hashrate) — Braiins only debits
   // for hashrate actually delivered, so avg_speed_ph (not speed_limit)
   // is the truthful "what am I being charged for" multiplier.
-  const ownedActive = status.bids.filter(
-    (b) => b.is_owned && b.status === 'BID_STATUS_ACTIVE',
-  );
-  const dailySpendSat = ownedActive.reduce(
-    (sum, b) => sum + b.price_sat_per_ph_day * b.avg_speed_ph,
-    0,
-  );
-  const hasDailySpend = ownedActive.length > 0 && dailySpendSat > 0;
-  const dailyIncomeSat = data.ocean?.daily_estimate_sat ?? null;
-  const dailyNetSat =
-    hasDailySpend && dailyIncomeSat !== null
-      ? Math.round(dailyIncomeSat - dailySpendSat)
-      : null;
-  const dailyNetColor =
-    dailyNetSat === null
-      ? ''
-      : dailyNetSat >= 0
-        ? 'text-emerald-300'
-        : 'text-red-300';
+  const { dailySpendSat, hasDailySpend, dailyIncomeSat, dailyNetSat, dailyNetColor } = useMemo(() => {
+    const ownedActive = status.bids.filter(
+      (b) => b.is_owned && b.status === 'BID_STATUS_ACTIVE',
+    );
+    const _dailySpendSat = ownedActive.reduce(
+      (sum, b) => sum + b.price_sat_per_ph_day * b.avg_speed_ph,
+      0,
+    );
+    const _hasDailySpend = ownedActive.length > 0 && _dailySpendSat > 0;
+    const _dailyIncomeSat = data?.ocean?.daily_estimate_sat ?? null;
+    const _dailyNetSat =
+      _hasDailySpend && _dailyIncomeSat !== null
+        ? Math.round(_dailyIncomeSat - _dailySpendSat)
+        : null;
+    const _dailyNetColor =
+      _dailyNetSat === null
+        ? ''
+        : _dailyNetSat >= 0
+          ? 'text-emerald-300'
+          : 'text-red-300';
+    return {
+      dailySpendSat: _dailySpendSat,
+      hasDailySpend: _hasDailySpend,
+      dailyIncomeSat: _dailyIncomeSat,
+      dailyNetSat: _dailyNetSat,
+      dailyNetColor: _dailyNetColor,
+    };
+  }, [status.bids, data?.ocean?.daily_estimate_sat]);
 
   return (
     <section className="bg-slate-900 border border-slate-800 rounded-lg p-4 flex flex-col">
@@ -1155,6 +1172,14 @@ function formatNextPayout(raw: string): string {
   return `${raw} · ~${date}`;
 }
 
+const DURATION_UNIT_MS: Record<string, number> = {
+  minute: 60_000,
+  hour: 3_600_000,
+  day: 86_400_000,
+  week: 7 * 86_400_000,
+  month: 30 * 86_400_000,
+};
+
 function parseDurationMs(raw: string): number | null {
   // Ocean uses friendly units: "11 days", "5 hours", "30 minutes",
   // "2 weeks". Single + plural; case-insensitive on the unit.
@@ -1162,14 +1187,7 @@ function parseDurationMs(raw: string): number | null {
   if (!m || !m[1] || !m[2]) return null;
   const n = Number.parseInt(m[1], 10);
   if (!Number.isFinite(n)) return null;
-  const unitMs: Record<string, number> = {
-    minute: 60_000,
-    hour: 3_600_000,
-    day: 86_400_000,
-    week: 7 * 86_400_000,
-    month: 30 * 86_400_000,
-  };
-  const u = unitMs[m[2].toLowerCase()];
+  const u = DURATION_UNIT_MS[m[2].toLowerCase()];
   return u ? n * u : null;
 }
 

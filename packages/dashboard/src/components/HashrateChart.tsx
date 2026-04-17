@@ -5,6 +5,8 @@
  * — both charts share the same time-range filter and X-axis layout.
  */
 
+import { memo, useMemo } from 'react';
+
 import {
   CHART_RANGES,
   CHART_RANGE_SPECS,
@@ -39,7 +41,7 @@ function formatDuration(ms: number): string {
   return `${hours}h ${minutes}m`;
 }
 
-export function HashrateChart({
+export const HashrateChart = memo(function HashrateChart({
   points,
   range,
   onRangeChange,
@@ -50,7 +52,58 @@ export function HashrateChart({
 }) {
   const { intlLocale } = useLocale();
 
-  if (points.length < 2) {
+  const chartData = useMemo(() => {
+    if (points.length < 2) return null;
+
+    const xs = points.map((p) => p.tick_at);
+    const ys = points.map((p) => p.delivered_ph);
+    const targets = points.map((p) => p.target_ph);
+    const floors = points.map((p) => p.floor_ph);
+
+    const minX = xs[0]!;
+    const maxX = xs[xs.length - 1]!;
+
+    const yMaxData = Math.max(...ys, ...targets, ...floors);
+    const yMax = yMaxData > 0 ? yMaxData * 1.15 : 1;
+    const yMin = 0;
+
+    const xScale = (x: number): number => {
+      const usable = WIDTH - PADDING.left - PADDING.right;
+      if (maxX === minX) return PADDING.left + usable / 2;
+      return PADDING.left + ((x - minX) / (maxX - minX)) * usable;
+    };
+    const yScale = (y: number): number => {
+      const usable = HEIGHT - PADDING.top - PADDING.bottom;
+      return HEIGHT - PADDING.bottom - ((y - yMin) / (yMax - yMin)) * usable;
+    };
+
+    const hashratePath = (values: readonly number[]): string =>
+      values
+        .map((v, i) => {
+          const cmd = i === 0 ? 'M' : 'L';
+          return `${cmd}${xScale(xs[i]!).toFixed(1)},${yScale(v).toFixed(1)}`;
+        })
+        .join(' ');
+
+    const deliveredPath = hashratePath(ys);
+    const targetPath = hashratePath(targets);
+    const floorPath = hashratePath(floors);
+
+    const ticks = 4;
+    const yTicks: number[] = [];
+    for (let i = 0; i <= ticks; i++) {
+      yTicks.push(yMin + ((yMax - yMin) / ticks) * i);
+    }
+
+    // X-axis: round local-time ticks (08:00, 09:00, ...) instead of the
+    // arbitrary first/last timestamps. Same ticks shared with PriceChart.
+    const xTickInterval = pickTimeTickInterval(maxX - minX);
+    const xTicks = localAlignedTimeTicks(minX, maxX, xTickInterval);
+
+    return { xs, minX, maxX, yMax, yMin, xScale, yScale, deliveredPath, targetPath, floorPath, yTicks, xTickInterval, xTicks };
+  }, [points]);
+
+  if (!chartData) {
     return (
       <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
         <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -66,50 +119,7 @@ export function HashrateChart({
     );
   }
 
-  const xs = points.map((p) => p.tick_at);
-  const ys = points.map((p) => p.delivered_ph);
-  const targets = points.map((p) => p.target_ph);
-  const floors = points.map((p) => p.floor_ph);
-
-  const minX = xs[0]!;
-  const maxX = xs[xs.length - 1]!;
-
-  const yMaxData = Math.max(...ys, ...targets, ...floors);
-  const yMax = yMaxData > 0 ? yMaxData * 1.15 : 1;
-  const yMin = 0;
-
-  const xScale = (x: number): number => {
-    const usable = WIDTH - PADDING.left - PADDING.right;
-    if (maxX === minX) return PADDING.left + usable / 2;
-    return PADDING.left + ((x - minX) / (maxX - minX)) * usable;
-  };
-  const yScale = (y: number): number => {
-    const usable = HEIGHT - PADDING.top - PADDING.bottom;
-    return HEIGHT - PADDING.bottom - ((y - yMin) / (yMax - yMin)) * usable;
-  };
-
-  const hashratePath = (values: readonly number[]): string =>
-    values
-      .map((v, i) => {
-        const cmd = i === 0 ? 'M' : 'L';
-        return `${cmd}${xScale(xs[i]!).toFixed(1)},${yScale(v).toFixed(1)}`;
-      })
-      .join(' ');
-
-  const deliveredPath = hashratePath(ys);
-  const targetPath = hashratePath(targets);
-  const floorPath = hashratePath(floors);
-
-  const ticks = 4;
-  const yTicks: number[] = [];
-  for (let i = 0; i <= ticks; i++) {
-    yTicks.push(yMin + ((yMax - yMin) / ticks) * i);
-  }
-
-  // X-axis: round local-time ticks (08:00, 09:00, ...) instead of the
-  // arbitrary first/last timestamps. Same ticks shared with PriceChart.
-  const xTickInterval = pickTimeTickInterval(maxX - minX);
-  const xTicks = localAlignedTimeTicks(minX, maxX, xTickInterval);
+  const { minX, maxX, xScale, yScale, deliveredPath, targetPath, floorPath, yTicks, xTickInterval, xTicks } = chartData;
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
@@ -218,7 +228,7 @@ export function HashrateChart({
       </svg>
     </div>
   );
-}
+});
 
 function Legend({ color, label, dashed }: { color: string; label: string; dashed?: boolean }) {
   return (

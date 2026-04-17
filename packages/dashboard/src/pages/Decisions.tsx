@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { api, UnauthorizedError, type DecisionDetail, type DecisionSummary } from '../lib/api';
@@ -39,9 +39,11 @@ export function Decisions() {
 
   // Auto-select the most recent non-empty tick once data arrives.
   const firstMatchId = filtered[0]?.id ?? null;
-  if (selectedId === null && firstMatchId !== null) {
-    setSelectedId(firstMatchId);
-  }
+  useEffect(() => {
+    if (selectedId === null && firstMatchId !== null) {
+      setSelectedId(firstMatchId);
+    }
+  }, [selectedId, firstMatchId]);
 
   if (list.isError && list.error instanceof UnauthorizedError) {
     navigate('/login');
