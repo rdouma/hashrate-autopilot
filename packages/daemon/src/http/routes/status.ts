@@ -291,8 +291,13 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
       ...noEvent,
     };
   }
-  const targetPriceEH = cheapestAsk + state.config.overpay_sat_per_eh_day;
+  // Mirror decide.ts: target = min(fillable + overpay, max_bid).
+  // Without the cap, the prediction text can show prices above max_bid
+  // which the autopilot would never actually bid.
+  const desiredPriceEH = cheapestAsk + state.config.overpay_sat_per_eh_day;
+  const targetPriceEH = Math.min(desiredPriceEH, state.config.max_bid_sat_per_eh_day);
   const targetPricePH = Math.round(targetPriceEH / EH_PER_PH);
+  const cappedByMax = desiredPriceEH > state.config.max_bid_sat_per_eh_day;
 
   if (state.owned_bids.length === 0) {
     const verb = runMode === 'LIVE' ? 'place' : 'log (dry-run)';
@@ -349,12 +354,13 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
     const nextEditPH = Math.round(nextEditEH / EH_PER_PH);
     const ceilingPH = targetPricePH;
     const modeWord = state.config.escalation_mode === 'market' ? 'market' : 'dampened';
+    const capLabel = cappedByMax ? ' (capped by max bid)' : ' (fillable + overpay)';
     const stepDescription =
       state.config.escalation_mode === 'market'
-        ? `will jump to ${nextEditPH.toLocaleString('en-US')} (fillable + overpay).`
+        ? `will jump to ${nextEditPH.toLocaleString('en-US')}${capLabel}.`
         : nextEditPH < ceilingPH
-          ? `will step up by ${Math.round(escalationStep / EH_PER_PH).toLocaleString('en-US')} to ${nextEditPH.toLocaleString('en-US')} (cap ${ceilingPH.toLocaleString('en-US')}).`
-          : `will reach the cap ${ceilingPH.toLocaleString('en-US')} (one step gets us there).`;
+          ? `will step up by ${Math.round(escalationStep / EH_PER_PH).toLocaleString('en-US')} to ${nextEditPH.toLocaleString('en-US')}${capLabel}.`
+          : `will reach ${ceilingPH.toLocaleString('en-US')}${capLabel}.`;
 
     return {
       summary: `Bid filling below target (${primary.avg_speed_ph.toFixed(2)}/${ph} PH/s).`,
