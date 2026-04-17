@@ -862,15 +862,11 @@ function StatCard({
     >
       <div className="text-xs uppercase tracking-wider text-slate-100 mb-2">{label}</div>
       <div className={`text-2xl font-mono tabular-nums ${color}`}>
-        {split ? (
-          <>
-            {split.num}
-            <span className="text-slate-500 text-sm ml-1"><SatUnit unit={split.unit} /></span>
-          </>
-        ) : (
-          value
-        )}
+        {split ? split.num : value}
       </div>
+      {split && (
+        <div className="text-xs text-slate-500 mt-0.5"><SatUnit unit={split.unit} /></div>
+      )}
     </div>
   );
 }
@@ -1371,7 +1367,7 @@ function splitUnit(v: string): { num: string; unit: string } | null {
   // Order matters: longest match first so "sat/PH/day" isn't
   // partially matched as "sat".
   // Also match USD-denominated /PH/day suffix (e.g. "$4.75/PH/day").
-  const m = v.match(/^(.+?)\s+(sat\/PH\/day|PH\/s|sat)(\s*(?:\(.*\))?)$/);
+  const m = v.match(/^(.+?)\s+(sat\/PH\/day|PH\/s|PH·h|sat)(\s*(?:\(.*\))?)$/);
   if (m?.[1] && m[2]) return { num: m[1], unit: m[2] + (m[3] ?? '') };
   // USD with /PH/day suffix: "$4.75/PH/day" → { num: "$4.75", unit: "/PH/day" }
   const usdPhDay = v.match(/^(.+?)(\/PH\/day)$/);
