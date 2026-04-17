@@ -1019,7 +1019,11 @@ function FinancePanel({
       <FinanceRow
         label="collected (on-chain)"
         value={data.collected_sat}
-        tooltip="UTXOs at the configured payout address. Read via Electrs (preferred, instant) or bitcoind RPC (slower)."
+        tooltip={
+          data.collected_sat !== null
+            ? 'UTXOs at the configured payout address. Read via Electrs (preferred, instant) or bitcoind RPC (slower).'
+            : 'Not configured. Go to Config → On-chain payouts and select Electrs or Bitcoin Core RPC to track your on-chain balance.'
+        }
       />
 
       <div className="mt-3 pt-3 border-t border-slate-800">
