@@ -109,6 +109,43 @@ export function localAlignedTimeTicks(
  * intervals get `HH:mm`; day-and-up get `dd MMM` (no year — the chart
  * never spans more than ~12 months in our worst case).
  */
+/**
+ * Generate "nice" Y-axis ticks — round numbers that a human would
+ * pick (0, 1, 2, 3 or 45,000, 45,500, 46,000, not 45,127, 45,893).
+ *
+ * Algorithm: find a step size from the 1-2-5 series that yields
+ * roughly `targetCount` ticks, then snap min down and max up to
+ * multiples of that step.
+ */
+export function niceYTicks(
+  dataMin: number,
+  dataMax: number,
+  targetCount = 5,
+): number[] {
+  if (dataMax <= dataMin) return [dataMin];
+  const rawStep = (dataMax - dataMin) / Math.max(1, targetCount - 1);
+  const step = niceStep(rawStep);
+  const lo = Math.floor(dataMin / step) * step;
+  const hi = Math.ceil(dataMax / step) * step;
+  const ticks: number[] = [];
+  // +0.5*step guards against floating-point drift skipping the last tick
+  for (let v = lo; v <= hi + step * 0.01; v += step) {
+    ticks.push(Math.round(v * 1e10) / 1e10); // kill FP noise
+  }
+  return ticks;
+}
+
+function niceStep(raw: number): number {
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const norm = raw / mag;
+  let nice: number;
+  if (norm <= 1.5) nice = 1;
+  else if (norm <= 3.5) nice = 2;
+  else if (norm <= 7.5) nice = 5;
+  else nice = 10;
+  return nice * mag;
+}
+
 export function formatTimeTick(
   tickMs: number,
   intervalMs: number,

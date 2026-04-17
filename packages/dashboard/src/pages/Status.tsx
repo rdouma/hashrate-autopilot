@@ -278,8 +278,8 @@ export function Status() {
                         <span className="text-slate-600">—</span>
                       )}
                     </td>
-                    <td className="py-2 px-3 text-right">
-                      {denomination.formatSatPerPhDay(b.price_sat_per_ph_day, intlLocale)}
+                    <td className="py-2 px-3 text-right font-mono">
+                      <FormattedValue v={denomination.formatSatPerPhDay(b.price_sat_per_ph_day, intlLocale)} />
                     </td>
                     <td className="py-2 px-3 text-right">
                       {formatHashratePH(b.avg_speed_ph)}
@@ -288,8 +288,8 @@ export function Status() {
                         / {b.speed_limit_ph ? formatHashratePH(b.speed_limit_ph) : '∞'}
                       </span>
                     </td>
-                    <td className="py-2 px-3 text-right">
-                      {denomination.formatSat(b.amount_sat, intlLocale)}
+                    <td className="py-2 px-3 text-right font-mono">
+                      <FormattedValue v={denomination.formatSat(b.amount_sat, intlLocale)} />
                     </td>
                     <td className="py-2 px-3">
                       <BidProgress pct={b.progress_pct} />
@@ -1276,6 +1276,23 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
       <div className="text-xs uppercase tracking-wider text-slate-100 mb-2">{title}</div>
       {children}
     </div>
+  );
+}
+
+/**
+ * Renders a pre-formatted value string (e.g. "45,662 sat/PH/day")
+ * with the unit muted and the "sat" word replaced by the icon.
+ * Use this anywhere a denomination-formatted string is rendered
+ * outside of Row/FinanceRow/StatCard (which do their own splitting).
+ */
+function FormattedValue({ v, className = '' }: { v: string; className?: string }) {
+  const split = splitUnit(v);
+  if (!split) return <span className={className}>{v}</span>;
+  return (
+    <span className={className}>
+      {split.num}
+      <span className="text-slate-500 text-[11px] ml-1"><SatUnit unit={split.unit} /></span>
+    </span>
   );
 }
 

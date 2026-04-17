@@ -12,6 +12,7 @@ import {
   CHART_RANGE_SPECS,
   formatTimeTick,
   localAlignedTimeTicks,
+  niceYTicks,
   pickTimeTickInterval,
   type ChartRange,
 } from '@braiins-hashrate/shared';
@@ -64,8 +65,10 @@ export const HashrateChart = memo(function HashrateChart({
     const maxX = xs[xs.length - 1]!;
 
     const yMaxData = Math.max(...ys, ...targets, ...floors);
-    const yMax = yMaxData > 0 ? yMaxData * 1.15 : 1;
-    const yMin = 0;
+
+    const yTicks = niceYTicks(0, yMaxData > 0 ? yMaxData * 1.1 : 1, 5);
+    const yMin = yTicks[0] ?? 0;
+    const yMax = yTicks[yTicks.length - 1] ?? 1;
 
     const xScale = (x: number): number => {
       const usable = WIDTH - PADDING.left - PADDING.right;
@@ -88,12 +91,6 @@ export const HashrateChart = memo(function HashrateChart({
     const deliveredPath = hashratePath(ys);
     const targetPath = hashratePath(targets);
     const floorPath = hashratePath(floors);
-
-    const ticks = 4;
-    const yTicks: number[] = [];
-    for (let i = 0; i <= ticks; i++) {
-      yTicks.push(yMin + ((yMax - yMin) / ticks) * i);
-    }
 
     // X-axis: round local-time ticks (08:00, 09:00, ...) instead of the
     // arbitrary first/last timestamps. Same ticks shared with PriceChart.

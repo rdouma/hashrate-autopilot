@@ -10,6 +10,7 @@ import { memo, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'r
 import {
   formatTimeTick,
   localAlignedTimeTicks,
+  niceYTicks,
   pickTimeTickInterval,
 } from '@braiins-hashrate/shared';
 
@@ -94,8 +95,14 @@ export const PriceChart = memo(function PriceChart({
     const priceMinRaw = hasPrice ? Math.min(...priceSample) : 0;
     const priceMaxRaw = hasPrice ? Math.max(...priceSample) : 1;
     const priceSpan = Math.max(1, priceMaxRaw - priceMinRaw);
-    const priceMin = Math.max(0, priceMinRaw - priceSpan * 0.1);
-    const priceMax = priceMaxRaw + priceSpan * 0.15;
+
+    const yTicks = niceYTicks(
+      Math.max(0, priceMinRaw - priceSpan * 0.1),
+      priceMaxRaw + priceSpan * 0.15,
+      5,
+    );
+    const priceMin = yTicks[0] ?? 0;
+    const priceMax = yTicks[yTicks.length - 1] ?? 1;
 
     const xScale = (x: number): number => {
       const usable = WIDTH - PADDING.left - PADDING.right;
@@ -114,12 +121,6 @@ export const PriceChart = memo(function PriceChart({
     const fillablePath = fillablePoints
       .map((p, i) => `${i === 0 ? 'M' : 'L'}${xScale(p.t).toFixed(1)},${yScale(p.v).toFixed(1)}`)
       .join(' ');
-
-    const ticks = 4;
-    const yTicks: number[] = [];
-    for (let i = 0; i <= ticks; i++) {
-      yTicks.push(priceMin + ((priceMax - priceMin) / ticks) * i);
-    }
 
     // Same X-axis ticks as the HashrateChart above so events on this
     // chart line up vertically with hashrate dips/spikes on that one.
