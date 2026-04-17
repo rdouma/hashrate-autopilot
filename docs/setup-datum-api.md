@@ -191,6 +191,30 @@ it does, this is the cleaner long-term solution.
 5. Status card shows the Datum-reported hashrate alongside Braiins's
    figure for a quick sanity check.
 
+## Future: Pool & Datum statistics panel
+
+Once the Datum API is exposed, the current minimal "Pool" card
+(which only shows "reachable" + uptime) could grow into a richer
+statistics panel. Ideas to explore:
+
+- **Datum-reported hashrate** vs Braiins-reported — plotted on the
+  hashrate chart as a third line so discrepancies are visible.
+- **Connected workers** count from Datum (active miners on your
+  gateway).
+- **Block finder detection** — poll `GET /v1/blocks/0/5/0` from
+  the Ocean API periodically. Each block includes `username` (BTC
+  address) + `workername`. If the operator's `btc_payout_address`
+  matches, surface a celebratory notification on the dashboard.
+  At ~1-2 PH/s vs Ocean's ~12.7 EH/s, odds per block are ~1 in
+  12,700 — rare but worth celebrating when it hits.
+- **Share rejection rate** from Datum (accepted vs rejected shares).
+- **Upstream latency** — Datum knows the round-trip time to Ocean's
+  stratum endpoint.
+
+None of this requires Braiins API changes — it's all Datum-local
+or Ocean public API. The bottleneck is the port-7152 exposure
+documented above.
+
 ## Probe script
 
 A ready-to-run probe script exists at `scripts/probe-datum.ts`:
