@@ -323,16 +323,24 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
     const startMs = state.below_floor_since;
     const elapsedMs = startMs ? state.tick_at - startMs : 0;
     const remainingMs = windowMs - elapsedMs;
+
+    // If current price is already at or above the target, escalation
+    // won't actually fire (decide.ts checks primary < targetPrice).
+    // Don't say "will escalate to X" when X is lower — that's
+    // nonsensical. Instead explain we're waiting for the fill.
+    if (primary.price_sat >= targetPriceEH) {
+      return {
+        summary: `Bid filling below target (${primary.avg_speed_ph.toFixed(2)}/${ph} PH/s).`,
+        detail: `Already priced at ${currentPricePH.toLocaleString('en-US')} sat/PH/day (above target ${targetPricePH.toLocaleString('en-US')}). Waiting for hashrate to arrive.`,
+        ...noEvent,
+      };
+    }
+
     const countdownText =
       remainingMs > 0
         ? `Escalation in ${Math.max(1, Math.ceil(remainingMs / 60_000))} min`
         : `Escalation overdue by ${Math.max(1, Math.ceil(-remainingMs / 60_000))} min`;
 
-    // Predict the *actual* next-edit price, mirroring decide.ts. In
-    // `dampened` mode this is current+step (capped at fillable cap);
-    // in `market` mode it jumps straight to the cap. Reporting just
-    // the cap would mislead — the operator chose dampened precisely so
-    // the autopilot doesn't jump there in one go.
     const escalationStep = state.config.fill_escalation_step_sat_per_eh_day;
     const nextEditEH =
       state.config.escalation_mode === 'market'
@@ -351,8 +359,6 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
     return {
       summary: `Bid filling below target (${primary.avg_speed_ph.toFixed(2)}/${ph} PH/s).`,
       detail: `${countdownText} if still under floor. Current ${currentPricePH.toLocaleString('en-US')} sat/PH/day; ${modeWord} mode ${stepDescription}`,
-      // Only emit a progress bar when we know when the timer started —
-      // otherwise the bar has no meaningful start anchor.
       eta_ms: startMs !== null ? startMs + windowMs : null,
       event_started_ms: startMs,
       event_kind: startMs !== null ? 'escalation' : null,
