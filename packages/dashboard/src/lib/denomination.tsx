@@ -102,7 +102,12 @@ export function DenominationProvider({ children }: { children: ReactNode }) {
     queryKey: ['btc-price'],
     queryFn: api.btcPrice,
     refetchInterval: POLL_INTERVAL_MS,
-    // Don't refetch on window focus — 5 min interval is enough.
+    // Keep retrying even after errors — the first request fires before
+    // login (401) and React Query would otherwise give up and not retry
+    // until the user manually triggers a refetch. With retryDelay at 30s
+    // the price loads within half a minute of logging in.
+    retry: true,
+    retryDelay: 30_000,
     refetchOnWindowFocus: false,
   });
 
