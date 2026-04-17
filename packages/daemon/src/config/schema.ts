@@ -135,6 +135,13 @@ export const AppConfigSchema = z.object({
   // Both values must be non-zero to activate.
   cheap_target_hashrate_ph: z.number().nonnegative().default(0),
   cheap_threshold_pct: z.number().int().nonnegative().max(100).default(0),
+
+  // Bitcoin Core RPC credentials (issue #14).
+  // Seeded from secrets on first boot; editable from the dashboard afterwards.
+  // Empty strings mean "not configured" — the daemon falls back to secrets.
+  bitcoind_rpc_url: z.string().default(''),
+  bitcoind_rpc_user: z.string().default(''),
+  bitcoind_rpc_password: z.string().default(''),
 });
 
 export type AppConfig = z.infer<typeof AppConfigSchema>;
@@ -203,4 +210,8 @@ export const APP_CONFIG_DEFAULTS: Omit<
 
   cheap_target_hashrate_ph: 0,
   cheap_threshold_pct: 0,
+
+  bitcoind_rpc_url: '',
+  bitcoind_rpc_user: '',
+  bitcoind_rpc_password: '',
 };

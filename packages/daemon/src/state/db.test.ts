@@ -49,6 +49,7 @@ describe('openDatabase — migrations', () => {
       '0018_spent_scope.sql',
       '0019_btc_price_source.sql',
       '0020_cheap_hashrate.sql',
+      '0021_bitcoind_config.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });

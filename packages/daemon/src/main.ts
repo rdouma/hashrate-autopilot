@@ -67,8 +67,22 @@ async function main(): Promise<void> {
   const tickMetricsRepo = new TickMetricsRepo(handle.db);
   const bidEventsRepo = new BidEventsRepo(handle.db);
 
-  const cfg = await configRepo.get();
+  let cfg = await configRepo.get();
   if (!cfg) throw new Error('config row missing — run `pnpm -w run setup` first');
+
+  // Seed bitcoind credentials from secrets into config on first boot
+  // so they become dashboard-editable (issue #14).
+  if (!cfg.bitcoind_rpc_url && secrets.bitcoind_rpc_url) {
+    await configRepo.upsert({
+      ...cfg,
+      bitcoind_rpc_url: secrets.bitcoind_rpc_url,
+      bitcoind_rpc_user: secrets.bitcoind_rpc_user,
+      bitcoind_rpc_password: secrets.bitcoind_rpc_password,
+    });
+    cfg = (await configRepo.get())!;
+    log('bitcoind credentials seeded from secrets into config');
+  }
+
   log(`config:   target=${cfg.target_hashrate_ph} PH/s  floor=${cfg.minimum_floor_hashrate_ph} PH/s`);
 
   await runtimeRepo.initializeIfMissing();
@@ -102,10 +116,13 @@ async function main(): Promise<void> {
   const braiins = new BraiinsService({ client: braiinsClient });
   const poolTracker = new PoolHealthTracker();
 
+  const rpcUrl = cfg.bitcoind_rpc_url || secrets.bitcoind_rpc_url;
+  const rpcUser = cfg.bitcoind_rpc_user || secrets.bitcoind_rpc_user;
+  const rpcPass = cfg.bitcoind_rpc_password || secrets.bitcoind_rpc_password;
   const bitcoindClient = createBitcoindClient({
-    url: secrets.bitcoind_rpc_url,
-    username: secrets.bitcoind_rpc_user,
-    password: secrets.bitcoind_rpc_password,
+    url: rpcUrl,
+    username: rpcUser,
+    password: rpcPass,
   });
   const payoutObserver = new PayoutObserver({
     client: bitcoindClient,

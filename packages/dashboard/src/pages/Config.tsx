@@ -221,7 +221,7 @@ const SECTIONS: Section[] = [
   {
     title: 'Bitcoin node (optional)',
     description:
-      'Enter your BTC payout address to see what you have collected on-chain. Electrs is much faster and polled every minute; plain bitcoind uses scantxoutset (heavy) and is polled hourly.',
+      'Two options for checking your on-chain payouts. Electrs (recommended) is fast and lightweight — polled every minute. Bitcoin Core RPC is a fallback that uses scantxoutset (CPU-heavy, 30+ seconds per scan) — polled hourly. Both are read-only. Set one or both.',
     fields: [
       {
         key: 'btc_payout_address',
@@ -243,6 +243,24 @@ const SECTIONS: Section[] = [
         unit: '',
         help: 'Default 50001.',
         noGrouping: true,
+      },
+      {
+        key: 'bitcoind_rpc_url',
+        label: 'Bitcoin Core RPC URL',
+        kind: 'text',
+        help: 'e.g. http://192.168.1.121:8332 — your Bitcoin Core RPC endpoint.',
+      },
+      {
+        key: 'bitcoind_rpc_user',
+        label: 'RPC username',
+        kind: 'text',
+        help: 'RPC username from your bitcoin.conf.',
+      },
+      {
+        key: 'bitcoind_rpc_password',
+        label: 'RPC password',
+        kind: 'text',
+        help: 'RPC password — stored in the config database, not in logs.',
       },
     ],
   },

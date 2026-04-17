@@ -52,6 +52,9 @@ export interface ConfigTable {
   btc_price_source: 'none' | 'coingecko' | 'coinbase' | 'bitstamp' | 'kraken';
   cheap_target_hashrate_ph: number;
   cheap_threshold_pct: number;
+  bitcoind_rpc_url: string;
+  bitcoind_rpc_user: string;
+  bitcoind_rpc_password: string;
   updated_at: number;
 }
 
