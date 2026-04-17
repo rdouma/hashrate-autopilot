@@ -23,7 +23,7 @@ if [[ -f "$PID_FILE" ]]; then
 fi
 
 cd "$ROOT"
-nohup pnpm -w run daemon >> "$LOG_FILE" 2>&1 &
+HTTP_PORT="${HTTP_PORT:-3010}" nohup pnpm -w run daemon >> "$LOG_FILE" 2>&1 &
 echo $! > "$PID_FILE"
 sleep 0.3
 echo "daemon started  (PID $(cat "$PID_FILE"))"

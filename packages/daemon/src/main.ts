@@ -33,7 +33,7 @@ import { TickLoop } from './controller/loop.js';
 import type { TickResult } from './controller/tick.js';
 
 const DEFAULT_TICK_INTERVAL_MS = Number.parseInt(process.env['TICK_INTERVAL_MS'] ?? '60000', 10);
-const HTTP_PORT = Number.parseInt(process.env['HTTP_PORT'] ?? '3000', 10);
+const HTTP_PORT = Number.parseInt(process.env['HTTP_PORT'] ?? '3010', 10);
 const HTTP_HOST = process.env['HTTP_HOST'] ?? '0.0.0.0';
 const DASHBOARD_STATIC = process.env['DASHBOARD_STATIC'] ?? 'packages/dashboard/dist';
 
