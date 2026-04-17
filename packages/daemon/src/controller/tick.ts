@@ -35,6 +35,7 @@ export interface TickResult {
 
 export class Controller {
   private belowFloorSince: number | null = null;
+  private aboveFloorSince: number | null = null;
   private aboveFloorTicks: number = 0;
   private manualOverrideUntilMs: number | null = null;
   private lastResult: TickResult | null = null;
@@ -89,8 +90,16 @@ export class Controller {
       manualOverrideUntilMs: this.manualOverrideUntilMs,
       hashpriceSatPerPhDay: this.deps.getHashprice?.() ?? null,
     });
+    const wasBelow = this.belowFloorSince !== null;
     this.belowFloorSince = state.below_floor_since;
     this.aboveFloorTicks = state.above_floor_ticks;
+
+    if (state.below_floor_since !== null) {
+      this.aboveFloorSince = null;
+    } else if (wasBelow || this.aboveFloorSince === null) {
+      this.aboveFloorSince = state.tick_at;
+    }
+    state = { ...state, above_floor_since: this.aboveFloorSince };
 
     const proposals = decide(state);
     const gated = gate(proposals, state);

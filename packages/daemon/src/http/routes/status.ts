@@ -398,8 +398,6 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
 
     if (overrideActive) {
       const minsLeft = Math.max(1, Math.ceil((overrideUntil! - state.tick_at) / 60_000));
-      // Approx: bar fills from one escalation window before the unlock
-      // (when the override was set) to the unlock time.
       const windowMs = state.config.fill_escalation_after_minutes * 60_000;
       return {
         summary: `Overpaying by ${overpayPH.toLocaleString('en-US')} sat/PH/day vs target — held by override lock.`,
@@ -409,6 +407,24 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
         event_kind: 'lower_after_override',
       };
     }
+
+    const patienceMs = state.config.lower_patience_minutes * 60_000;
+    const aboveFloorSince = state.above_floor_since;
+    const patienceRemaining = aboveFloorSince !== null
+      ? Math.max(0, patienceMs - (state.tick_at - aboveFloorSince))
+      : patienceMs;
+    if (patienceRemaining > 0) {
+      const patienceEtaMs = state.tick_at + patienceRemaining;
+      const minsLeft = Math.max(1, Math.ceil(patienceRemaining / 60_000));
+      return {
+        summary: `Overpaying by ${overpayPH.toLocaleString('en-US')} sat/PH/day vs target — waiting for lower-patience window.`,
+        detail: `Will lower to ${targetPricePH.toLocaleString('en-US')} sat/PH/day after ~${minsLeft} min above floor.`,
+        eta_ms: patienceEtaMs,
+        event_started_ms: aboveFloorSince,
+        event_kind: 'lower_after_override',
+      };
+    }
+
     if (cooldownRemainsMs > 0 && cooldownEndsMs !== null && lastDecrease !== null) {
       const minsLeft = Math.max(1, Math.ceil(cooldownRemainsMs / 60_000));
       return {

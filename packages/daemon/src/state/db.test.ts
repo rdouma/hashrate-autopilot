@@ -53,6 +53,7 @@ describe('openDatabase — migrations', () => {
       '0022_payout_source.sql',
       '0023_tick_metrics_hashprice.sql',
       '0024_tick_metrics_max_bid.sql',
+      '0025_lower_patience.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });

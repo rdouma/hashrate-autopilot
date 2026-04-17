@@ -103,6 +103,11 @@ export const AppConfigSchema = z.object({
   // Avoids micro-edits that burn the Braiins 10-min decrease cooldown for
   // a few sat of savings.
   min_lower_delta_sat_per_eh_day: nonNegativeInt,
+  // How long (minutes) the autopilot must be continuously above floor
+  // before it considers lowering the price. Prevents chasing short market
+  // dips that reverse within minutes — each unnecessary lower burns the
+  // Braiins 10-min price-decrease cooldown.
+  lower_patience_minutes: nonNegativeInt,
 
   // Electrs (optional, for fast balance lookups)
   electrs_host: z.string().nullable().default(null),
@@ -203,6 +208,7 @@ export const APP_CONFIG_DEFAULTS: Omit<
   overpay_sat_per_eh_day: 500_000,
   escalation_mode: 'dampened',
   min_lower_delta_sat_per_eh_day: 200_000,
+  lower_patience_minutes: 15,
 
   electrs_host: null,
   electrs_port: null,

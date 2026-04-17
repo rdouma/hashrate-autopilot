@@ -95,6 +95,8 @@ export interface State {
   readonly actual_hashrate: ActualHashrate;
   /** When we first observed hashrate below floor, or null if currently OK. */
   readonly below_floor_since: number | null;
+  /** When we last transitioned to above floor, or null if currently below. */
+  readonly above_floor_since: number | null;
   /**
    * Consecutive ticks observed at-or-above floor. Required for debouncing
    * the below_floor_since timer against transient `avg_speed_ph` spikes
