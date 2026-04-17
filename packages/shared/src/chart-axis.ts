@@ -152,9 +152,24 @@ export function formatTimeTick(
   locale?: string,
 ): string {
   const d = new Date(tickMs);
-  const showDate = intervalMs >= DAY;
-  const opts: Intl.DateTimeFormatOptions = showDate
-    ? { day: '2-digit', month: 'short' }
-    : { hour: '2-digit', minute: '2-digit', hour12: false };
+  let opts: Intl.DateTimeFormatOptions;
+
+  if (intervalMs >= 30 * DAY) {
+    // Month-level: "Jan 2026" or "Jan '26"
+    opts = { month: 'short', year: '2-digit' };
+  } else if (intervalMs >= 7 * DAY) {
+    // Week-level: "01 Jan"
+    opts = { day: '2-digit', month: 'short' };
+  } else if (intervalMs >= DAY) {
+    // Day-level: "Mon 01" or "01 Jan"
+    opts = { weekday: 'short', day: '2-digit' };
+  } else if (intervalMs >= 6 * HOUR) {
+    // Multi-day span but sub-day interval: show "Mon 12:00"
+    opts = { weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false };
+  } else {
+    // Intraday: "12:00"
+    opts = { hour: '2-digit', minute: '2-digit', hour12: false };
+  }
+
   return new Intl.DateTimeFormat(locale, opts).format(d);
 }

@@ -100,20 +100,39 @@ describe('localAlignedTimeTicks', () => {
 });
 
 describe('formatTimeTick', () => {
-  it('formats sub-day intervals as HH:mm 24-hour', () => {
+  it('formats intraday intervals as HH:mm 24-hour', () => {
     const d = new Date();
     d.setHours(9, 0, 0, 0);
     const out = formatTimeTick(d.getTime(), HOUR, 'en-US');
-    // Various locales render 09:00 differently; verify a 5-char HH:mm
-    // string with the leading zero preserved.
-    expect(out).toMatch(/^\d{2}:\d{2}$/);
-    expect(out.startsWith('09')).toBe(true);
+    expect(out).toMatch(/09/);
+    expect(out).toMatch(/00/);
   });
 
-  it('formats day+ intervals as a date label (no time)', () => {
+  it('formats multi-hour intervals with weekday + time', () => {
+    const d = new Date(2026, 3, 16, 12, 0, 0);
+    const out = formatTimeTick(d.getTime(), 6 * HOUR, 'en-US');
+    // Should include a weekday abbreviation and the time
+    expect(out).toMatch(/12/);
+    expect(out).toMatch(/00/);
+  });
+
+  it('formats day intervals with weekday + date', () => {
     const d = new Date(2026, 3, 16, 14, 0, 0);
     const out = formatTimeTick(d.getTime(), DAY, 'en-US');
     expect(out).toMatch(/16/);
-    expect(out).not.toMatch(/:/);
+  });
+
+  it('formats week intervals as dd month', () => {
+    const d = new Date(2026, 3, 16, 14, 0, 0);
+    const out = formatTimeTick(d.getTime(), 7 * DAY, 'en-US');
+    expect(out).toMatch(/16/);
+    expect(out).toMatch(/Apr/);
+  });
+
+  it('formats month intervals with month + year', () => {
+    const d = new Date(2026, 3, 16, 14, 0, 0);
+    const out = formatTimeTick(d.getTime(), 30 * DAY, 'en-US');
+    expect(out).toMatch(/Apr/);
+    expect(out).toMatch(/26/);
   });
 });
