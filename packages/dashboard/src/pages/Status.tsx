@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import {
@@ -21,6 +21,8 @@ import {
   type MetricPoint,
   type NextActionView,
   type ProposalView,
+  type SimStatsSummary,
+  type SimulateResponse,
   type StatsResponse,
   type StatusResponse,
 } from '../lib/api';
@@ -126,6 +128,94 @@ export function Status() {
     refetchInterval: 3_600_000,
   });
 
+  // ---- Simulation mode ----
+  const [simMode, setSimMode] = useState(false);
+  const [simParams, setSimParams] = useState<Record<string, number> | null>(null);
+  const [simParamsDebounced, setSimParamsDebounced] = useState<Record<string, number> | null>(null);
+
+  const configQuery = useQuery({
+    queryKey: ['config'],
+    queryFn: () => api.config(),
+    staleTime: 60_000,
+    enabled: simMode,
+  });
+
+  // Seed sim params from config on first activation
+  useEffect(() => {
+    if (simMode && configQuery.data && !simParams) {
+      const c = configQuery.data.config;
+      setSimParams({
+        overpay_sat_per_eh_day: c.overpay_sat_per_eh_day,
+        max_bid_sat_per_eh_day: c.max_bid_sat_per_eh_day,
+        fill_escalation_step_sat_per_eh_day: c.fill_escalation_step_sat_per_eh_day,
+        fill_escalation_after_minutes: c.fill_escalation_after_minutes,
+        lower_patience_minutes: c.lower_patience_minutes,
+        min_lower_delta_sat_per_eh_day: c.min_lower_delta_sat_per_eh_day,
+      });
+    }
+  }, [simMode, configQuery.data, simParams]);
+
+  useEffect(() => {
+    if (!simParams) return;
+    const t = setTimeout(() => setSimParamsDebounced(simParams), 400);
+    return () => clearTimeout(t);
+  }, [simParams]);
+
+  const simQuery = useQuery({
+    queryKey: ['simulate', chartRange, simParamsDebounced],
+    queryFn: () => api.simulate({
+      range: chartRange,
+      overpay_sat_per_eh_day: simParamsDebounced!.overpay_sat_per_eh_day!,
+      max_bid_sat_per_eh_day: simParamsDebounced!.max_bid_sat_per_eh_day!,
+      fill_escalation_step_sat_per_eh_day: simParamsDebounced!.fill_escalation_step_sat_per_eh_day!,
+      fill_escalation_after_minutes: simParamsDebounced!.fill_escalation_after_minutes!,
+      lower_patience_minutes: simParamsDebounced!.lower_patience_minutes!,
+      min_lower_delta_sat_per_eh_day: simParamsDebounced!.min_lower_delta_sat_per_eh_day!,
+    }),
+    enabled: simMode && !!simParamsDebounced,
+    staleTime: 30_000,
+  });
+
+  const setSimParam = useCallback((key: string, value: number) => {
+    setSimParams((prev) => prev ? { ...prev, [key]: value } : prev);
+  }, []);
+
+  // Build simulated MetricPoints by overlaying simulated price/hashrate
+  // on the real metric points.
+  const simMetricPoints: MetricPoint[] | null = useMemo(() => {
+    const ticks = simQuery.data?.ticks;
+    const realPoints = metricsQuery.data?.points;
+    if (!ticks || !realPoints || ticks.length === 0) return null;
+
+    const simByTime = new Map(ticks.map((t) => [t.tick_at, t]));
+    return realPoints.map((p) => {
+      const sim = simByTime.get(p.tick_at);
+      if (!sim) return p;
+      return {
+        ...p,
+        our_primary_price_sat_per_ph_day: sim.simulated_price_sat_per_ph_day,
+        delivered_ph: sim.delivered_ph,
+      };
+    });
+  }, [simQuery.data, metricsQuery.data]);
+
+  // Convert sim stats to StatsResponse shape
+  const simStatsData: StatsResponse | undefined = useMemo(() => {
+    const sim = simQuery.data?.simulated;
+    if (!sim) return undefined;
+    return {
+      uptime_pct: sim.uptime_pct,
+      avg_hashrate_ph: sim.avg_hashrate_ph,
+      total_ph_hours: sim.total_ph_hours,
+      avg_cost_per_ph_sat_per_ph_day: sim.avg_cost_per_ph_sat_per_ph_day,
+      avg_overpay_sat_per_ph_day: sim.avg_overpay_sat_per_ph_day,
+      avg_overpay_vs_hashprice_sat_per_ph_day: sim.avg_overpay_vs_hashprice_sat_per_ph_day,
+      avg_time_to_fill_ms: null,
+      range: chartRange,
+      tick_count: simQuery.data?.tick_count ?? 0,
+    };
+  }, [simQuery.data, chartRange]);
+
   // Operator availability removed from the UI (API bids bypass 2FA;
   // see research.md §0.9). Backend field remains in case Braiins
   // changes policy. The endpoint still exists for future use.
@@ -170,17 +260,28 @@ export function Status() {
         </div>
       </section>
 
-      <StatsBar statsData={statsQuery.data} />
+      <StatsBar statsData={simMode ? simStatsData : statsQuery.data} />
+
+      {simMode && simParams && configQuery.data && (
+        <SimParamBar
+          params={simParams}
+          config={configQuery.data.config}
+          onChange={setSimParam}
+          loading={simQuery.isFetching}
+        />
+      )}
 
       <HashrateChart
-        points={metricsQuery.data?.points ?? []}
+        points={(simMode && simMetricPoints ? simMetricPoints : metricsQuery.data?.points) ?? []}
         range={chartRange}
         onRangeChange={setChartRange}
+        simMode={simMode}
+        onSimModeChange={setSimMode}
       />
       <PriceChart
-        points={metricsQuery.data?.points ?? []}
-        events={bidEventsQuery.data?.events ?? []}
-        showEvents={CHART_RANGE_SPECS[chartRange].showEvents}
+        points={(simMode && simMetricPoints ? simMetricPoints : metricsQuery.data?.points) ?? []}
+        events={simMode ? [] : (bidEventsQuery.data?.events ?? [])}
+        showEvents={!simMode && CHART_RANGE_SPECS[chartRange].showEvents}
       />
 
       {/* Three-column row: market context | Braiins wallet | financial
@@ -769,6 +870,65 @@ function formatRemaining(ms: number): string {
 // ---------------------------------------------------------------------------
 // Tuning stats bar (between charts and cards)
 // ---------------------------------------------------------------------------
+
+const EH_PER_PH = 1000;
+
+const SIM_SLIDERS = [
+  { key: 'overpay_sat_per_eh_day', label: 'Overpay', min: 0, max: 2_000_000, step: 50_000, ehToPh: true },
+  { key: 'max_bid_sat_per_eh_day', label: 'Max bid', min: 10_000_000, max: 100_000_000, step: 1_000_000, ehToPh: true },
+  { key: 'fill_escalation_step_sat_per_eh_day', label: 'Esc. step', min: 50_000, max: 2_000_000, step: 50_000, ehToPh: true },
+  { key: 'fill_escalation_after_minutes', label: 'Esc. window', min: 1, max: 60, step: 1, ehToPh: false },
+  { key: 'lower_patience_minutes', label: 'Wait to lower', min: 0, max: 60, step: 1, ehToPh: false },
+  { key: 'min_lower_delta_sat_per_eh_day', label: 'Min lower delta', min: 0, max: 2_000_000, step: 50_000, ehToPh: true },
+] as const;
+
+function SimParamBar({
+  params,
+  config,
+  onChange,
+  loading,
+}: {
+  params: Record<string, number>;
+  config: object;
+  onChange: (key: string, value: number) => void;
+  loading: boolean;
+}) {
+  return (
+    <section className="bg-slate-900/50 border border-amber-800/30 rounded-lg p-3">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs uppercase tracking-wider text-amber-300">Simulation parameters</span>
+        {loading && <span className="text-xs text-amber-400 animate-pulse">simulating...</span>}
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        {SIM_SLIDERS.map((s) => {
+          const value = params[s.key] ?? 0;
+          const configVal = (config as unknown as Record<string, number>)[s.key] ?? 0;
+          const display = s.ehToPh ? Math.round(value / EH_PER_PH) : value;
+          const changed = value !== configVal;
+          return (
+            <div key={s.key}>
+              <div className="flex items-center justify-between mb-0.5">
+                <span className="text-[10px] text-slate-500">{s.label}</span>
+                <span className={`text-xs font-mono tabular-nums ${changed ? 'text-amber-300' : 'text-slate-300'}`}>
+                  {formatNumber(display)}{s.ehToPh ? '' : ' min'}
+                </span>
+              </div>
+              <input
+                type="range"
+                min={s.min}
+                max={s.max}
+                step={s.step}
+                value={value}
+                onChange={(e) => onChange(s.key, Number(e.target.value))}
+                className="w-full accent-amber-400 h-1 cursor-pointer"
+              />
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
 
 /**
  * Four KPIs from the server-side `/api/stats` endpoint. The server

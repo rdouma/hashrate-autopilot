@@ -34,3 +34,4 @@ data/
 **/.claude/*
 !**/.claude/commands/
 
+braiins_hashrate_control.iml

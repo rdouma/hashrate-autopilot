@@ -3,8 +3,7 @@
  *
  * Stateless backtest: replays historical tick_metrics with a set of
  * candidate autopilot parameters and returns simulated uptime, cost,
- * and a tick-by-tick price trace the dashboard can overlay on the
- * price chart.
+ * and a tick-by-tick price trace the dashboard overlays on the charts.
  *
  * The operator's 1 PH/s bid is a price-taker — it doesn't move the
  * market — so the counterfactual is reliable: "if my bid had been X
@@ -25,6 +24,8 @@ import {
 
 import type { Database } from '../../state/types.js';
 
+const EH_PER_PH = 1000;
+
 interface SimulateRequest {
   range?: string;
   overpay_sat_per_eh_day: number;
@@ -37,23 +38,24 @@ interface SimulateRequest {
 
 interface SimulatedTick {
   tick_at: number;
-  simulated_price_sat_per_eh_day: number;
-  filled: boolean;
+  simulated_price_sat_per_ph_day: number;
+  delivered_ph: number;
+}
+
+interface StatsSummary {
+  uptime_pct: number | null;
+  avg_hashrate_ph: number | null;
+  total_ph_hours: number | null;
+  avg_cost_per_ph_sat_per_ph_day: number | null;
+  avg_overpay_sat_per_ph_day: number | null;
+  avg_overpay_vs_hashprice_sat_per_ph_day: number | null;
+  gap_count: number;
+  gap_minutes: number;
 }
 
 export interface SimulateResponse {
-  actual: {
-    uptime_pct: number | null;
-    avg_cost_sat_per_eh_day: number | null;
-    gap_count: number;
-    gap_minutes: number;
-  };
-  simulated: {
-    uptime_pct: number | null;
-    avg_cost_sat_per_eh_day: number | null;
-    gap_count: number;
-    gap_minutes: number;
-  };
+  actual: StatsSummary;
+  simulated: StatsSummary;
   ticks: SimulatedTick[];
   tick_count: number;
   range: ChartRange;
@@ -62,10 +64,11 @@ export interface SimulateResponse {
 interface TickRow {
   tick_at: number;
   delivered_ph: number;
+  target_ph: number;
+  floor_ph: number;
   fillable_ask_sat_per_eh_day: number | null;
   our_primary_price_sat_per_eh_day: number | null;
-  max_bid_sat_per_eh_day: number | null;
-  floor_ph: number;
+  hashprice_sat_per_eh_day: number | null;
 }
 
 export async function registerSimulateRoute(
@@ -86,27 +89,38 @@ export async function registerSimulateRoute(
         .select([
           'tick_at',
           'delivered_ph',
+          'target_ph',
+          'floor_ph',
           'fillable_ask_sat_per_eh_day',
           'our_primary_price_sat_per_eh_day',
-          'max_bid_sat_per_eh_day',
-          'floor_ph',
+          'hashprice_sat_per_eh_day',
         ])
         .where('tick_at', '>=', sinceMs)
         .orderBy('tick_at', 'asc')
         .execute();
 
+      const empty: StatsSummary = {
+        uptime_pct: null,
+        avg_hashrate_ph: null,
+        total_ph_hours: null,
+        avg_cost_per_ph_sat_per_ph_day: null,
+        avg_overpay_sat_per_ph_day: null,
+        avg_overpay_vs_hashprice_sat_per_ph_day: null,
+        gap_count: 0,
+        gap_minutes: 0,
+      };
+
       if (rows.length < 2) {
-        return {
-          actual: { uptime_pct: null, avg_cost_sat_per_eh_day: null, gap_count: 0, gap_minutes: 0 },
-          simulated: { uptime_pct: null, avg_cost_sat_per_eh_day: null, gap_count: 0, gap_minutes: 0 },
-          ticks: [],
-          tick_count: 0,
-          range,
-        };
+        return { actual: empty, simulated: empty, ticks: [], tick_count: 0, range };
       }
 
-      const actual = computeActual(rows);
-      const { summary: simulated, ticks } = simulate(rows, {
+      const actual = computeStats(rows, (r) => ({
+        price_eh: r.our_primary_price_sat_per_eh_day,
+        delivered: r.delivered_ph,
+        target: r.target_ph,
+      }));
+
+      const simResult = simulate(rows, {
         overpay: body.overpay_sat_per_eh_day,
         maxBid: body.max_bid_sat_per_eh_day,
         escalationStep: body.fill_escalation_step_sat_per_eh_day,
@@ -115,10 +129,26 @@ export async function registerSimulateRoute(
         minLowerDelta: body.min_lower_delta_sat_per_eh_day,
       });
 
+      const simulated = computeStats(rows, (_r, i) => ({
+        price_eh: simResult.prices[i]!,
+        delivered: simResult.filled[i]! ? rows[i]!.target_ph : 0,
+        target: rows[i]!.target_ph,
+      }));
+      simulated.gap_count = simResult.gapCount;
+      simulated.gap_minutes = simResult.gapMinutes;
+
+      const ticks: SimulatedTick[] = rows.map((r, i) => ({
+        tick_at: r.tick_at,
+        simulated_price_sat_per_ph_day: simResult.prices[i]! / EH_PER_PH,
+        delivered_ph: simResult.filled[i]! ? r.target_ph : 0,
+      }));
+
       return { actual, simulated, ticks, tick_count: rows.length, range };
     },
   );
 }
+
+// -------------------------------------------------------------------------
 
 interface SimParams {
   overpay: number;
@@ -129,76 +159,36 @@ interface SimParams {
   minLowerDelta: number;
 }
 
-function computeActual(rows: TickRow[]) {
-  let uptimeDur = 0;
-  let totalDur = 0;
-  let costWeighted = 0;
-  let costDur = 0;
-  let gapCount = 0;
-  let gapMs = 0;
-  let inGap = false;
-
-  for (let i = 0; i < rows.length; i++) {
-    const dur = i < rows.length - 1 ? rows[i + 1]!.tick_at - rows[i]!.tick_at : 60_000;
-    const r = rows[i]!;
-    totalDur += dur;
-
-    if (r.delivered_ph > 0) {
-      uptimeDur += dur;
-      if (inGap) inGap = false;
-    } else {
-      gapMs += dur;
-      if (!inGap) { gapCount++; inGap = true; }
-    }
-
-    if (r.our_primary_price_sat_per_eh_day !== null && r.delivered_ph > 0) {
-      costWeighted += r.our_primary_price_sat_per_eh_day * dur;
-      costDur += dur;
-    }
-  }
-
-  return {
-    uptime_pct: totalDur > 0 ? (uptimeDur / totalDur) * 100 : null,
-    avg_cost_sat_per_eh_day: costDur > 0 ? costWeighted / costDur : null,
-    gap_count: gapCount,
-    gap_minutes: Math.round(gapMs / 60_000),
-  };
+interface SimResult {
+  prices: number[];   // simulated bid price (sat/EH/day) per tick
+  filled: boolean[];  // whether each tick would be filled
+  gapCount: number;
+  gapMinutes: number;
 }
 
-function simulate(rows: TickRow[], params: SimParams) {
+function simulate(rows: TickRow[], params: SimParams): SimResult {
+  const prices: number[] = [];
+  const filled: boolean[] = [];
   let bidPrice: number | null = null;
   let belowFloorSince: number | null = null;
   let aboveFloorSince: number | null = null;
   let overrideUntil: number | null = null;
-
-  let uptimeDur = 0;
-  let totalDur = 0;
-  let costWeighted = 0;
-  let costDur = 0;
   let gapCount = 0;
   let gapMs = 0;
   let inGap = false;
-
-  const ticks: SimulatedTick[] = [];
 
   for (let i = 0; i < rows.length; i++) {
     const r = rows[i]!;
     const dur = i < rows.length - 1 ? rows[i + 1]!.tick_at - r.tick_at : 60_000;
     const fillable = r.fillable_ask_sat_per_eh_day;
 
-    // Clear expired override
     if (overrideUntil !== null && overrideUntil <= r.tick_at) {
       overrideUntil = null;
     }
 
     if (fillable === null) {
-      // No market data — carry forward
-      ticks.push({
-        tick_at: r.tick_at,
-        simulated_price_sat_per_eh_day: bidPrice ?? 0,
-        filled: false,
-      });
-      totalDur += dur;
+      prices.push(bidPrice ?? 0);
+      filled.push(false);
       gapMs += dur;
       if (!inGap) { gapCount++; inGap = true; }
       continue;
@@ -208,46 +198,31 @@ function simulate(rows: TickRow[], params: SimParams) {
     const overrideActive = overrideUntil !== null && overrideUntil > r.tick_at;
 
     if (bidPrice === null) {
-      // No bid yet — create
       bidPrice = targetPrice;
       overrideUntil = r.tick_at + params.escalationWindowMs;
     } else if (!overrideActive) {
-      // Escalation: if below floor long enough and underbidding
       if (belowFloorSince !== null) {
         const elapsed = r.tick_at - belowFloorSince;
         if (elapsed >= params.escalationWindowMs && bidPrice < targetPrice) {
-          const stepped = Math.min(bidPrice + params.escalationStep, targetPrice);
-          bidPrice = stepped;
+          bidPrice = Math.min(bidPrice + params.escalationStep, targetPrice);
           overrideUntil = r.tick_at + params.escalationWindowMs;
         }
       }
 
-      // Lowering: if above floor long enough and overpaying
       const aboveFloorLongEnough =
         aboveFloorSince !== null &&
         (r.tick_at - aboveFloorSince) >= params.lowerPatienceMs;
-      if (
-        aboveFloorLongEnough &&
-        bidPrice > targetPrice + params.minLowerDelta
-      ) {
+      if (aboveFloorLongEnough && bidPrice > targetPrice + params.minLowerDelta) {
         bidPrice = targetPrice;
         overrideUntil = r.tick_at + params.escalationWindowMs;
       }
     }
 
-    const filled = bidPrice >= fillable;
+    const isFilled = bidPrice >= fillable;
+    prices.push(bidPrice);
+    filled.push(isFilled);
 
-    ticks.push({
-      tick_at: r.tick_at,
-      simulated_price_sat_per_eh_day: bidPrice,
-      filled,
-    });
-
-    totalDur += dur;
-
-    // Track floor state using actual floor from config
-    if (filled) {
-      uptimeDur += dur;
+    if (isFilled) {
       if (inGap) inGap = false;
       if (belowFloorSince !== null) {
         belowFloorSince = null;
@@ -255,8 +230,6 @@ function simulate(rows: TickRow[], params: SimParams) {
       } else if (aboveFloorSince === null) {
         aboveFloorSince = r.tick_at;
       }
-      costWeighted += bidPrice * dur;
-      costDur += dur;
     } else {
       gapMs += dur;
       if (!inGap) { gapCount++; inGap = true; }
@@ -267,13 +240,71 @@ function simulate(rows: TickRow[], params: SimParams) {
     }
   }
 
+  return { prices, filled, gapCount, gapMinutes: Math.round(gapMs / 60_000) };
+}
+
+// -------------------------------------------------------------------------
+
+function computeStats(
+  rows: TickRow[],
+  extract: (r: TickRow, i: number) => {
+    price_eh: number | null;
+    delivered: number;
+    target: number;
+  },
+): StatsSummary {
+  let uptimeDur = 0;
+  let totalDur = 0;
+  let hashrateWeighted = 0;
+  let costWeighted = 0;
+  let costDur = 0;
+  let overpayWeighted = 0;
+  let overpayDur = 0;
+  let overpayHpWeighted = 0;
+  let overpayHpDur = 0;
+  let gapCount = 0;
+  let gapMs = 0;
+  let inGap = false;
+
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i]!;
+    const dur = i < rows.length - 1 ? rows[i + 1]!.tick_at - r.tick_at : 60_000;
+    const { price_eh, delivered } = extract(r, i);
+    totalDur += dur;
+    hashrateWeighted += delivered * dur;
+
+    if (delivered > 0) {
+      uptimeDur += dur;
+      if (inGap) inGap = false;
+    } else {
+      gapMs += dur;
+      if (!inGap) { gapCount++; inGap = true; }
+    }
+
+    if (price_eh !== null && delivered > 0) {
+      costWeighted += price_eh * delivered * dur;
+      costDur += delivered * dur;
+    }
+
+    if (price_eh !== null && r.fillable_ask_sat_per_eh_day !== null) {
+      overpayWeighted += (price_eh - r.fillable_ask_sat_per_eh_day) * dur;
+      overpayDur += dur;
+    }
+
+    if (price_eh !== null && r.hashprice_sat_per_eh_day !== null) {
+      overpayHpWeighted += (price_eh - r.hashprice_sat_per_eh_day) * dur;
+      overpayHpDur += dur;
+    }
+  }
+
   return {
-    summary: {
-      uptime_pct: totalDur > 0 ? (uptimeDur / totalDur) * 100 : null,
-      avg_cost_sat_per_eh_day: costDur > 0 ? costWeighted / costDur : null,
-      gap_count: gapCount,
-      gap_minutes: Math.round(gapMs / 60_000),
-    },
-    ticks,
+    uptime_pct: totalDur > 0 ? (uptimeDur / totalDur) * 100 : null,
+    avg_hashrate_ph: totalDur > 0 ? hashrateWeighted / totalDur : null,
+    total_ph_hours: hashrateWeighted / 3_600_000,
+    avg_cost_per_ph_sat_per_ph_day: costDur > 0 ? costWeighted / costDur / EH_PER_PH : null,
+    avg_overpay_sat_per_ph_day: overpayDur > 0 ? overpayWeighted / overpayDur / EH_PER_PH : null,
+    avg_overpay_vs_hashprice_sat_per_ph_day: overpayHpDur > 0 ? overpayHpWeighted / overpayHpDur / EH_PER_PH : null,
+    gap_count: gapCount,
+    gap_minutes: Math.round(gapMs / 60_000),
   };
 }

@@ -12,7 +12,6 @@ import { SatSymbol } from './SatSymbol';
 const NAV_ITEMS: Array<{ label: string; to: string }> = [
   { label: 'Status', to: '/' },
   { label: 'Decisions', to: '/decisions' },
-  { label: 'Simulate', to: '/simulate' },
   { label: 'Config', to: '/config' },
 ];
 

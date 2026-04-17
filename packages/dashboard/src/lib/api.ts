@@ -320,22 +320,26 @@ export interface SimulateRequest {
   min_lower_delta_sat_per_eh_day: number;
 }
 
-interface SimulateSummary {
+export interface SimStatsSummary {
   uptime_pct: number | null;
-  avg_cost_sat_per_eh_day: number | null;
+  avg_hashrate_ph: number | null;
+  total_ph_hours: number | null;
+  avg_cost_per_ph_sat_per_ph_day: number | null;
+  avg_overpay_sat_per_ph_day: number | null;
+  avg_overpay_vs_hashprice_sat_per_ph_day: number | null;
   gap_count: number;
   gap_minutes: number;
 }
 
 export interface SimulatedTick {
   tick_at: number;
-  simulated_price_sat_per_eh_day: number;
-  filled: boolean;
+  simulated_price_sat_per_ph_day: number;
+  delivered_ph: number;
 }
 
 export interface SimulateResponse {
-  actual: SimulateSummary;
-  simulated: SimulateSummary;
+  actual: SimStatsSummary;
+  simulated: SimStatsSummary;
   ticks: SimulatedTick[];
   tick_count: number;
   range: string;

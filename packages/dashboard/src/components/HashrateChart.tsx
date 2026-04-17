@@ -46,10 +46,14 @@ export const HashrateChart = memo(function HashrateChart({
   points,
   range,
   onRangeChange,
+  simMode = false,
+  onSimModeChange,
 }: {
   points: readonly MetricPoint[];
   range: ChartRange;
   onRangeChange: (r: ChartRange) => void;
+  simMode?: boolean;
+  onSimModeChange?: (v: boolean) => void;
 }) {
   const { intlLocale } = useLocale();
 
@@ -107,6 +111,7 @@ export const HashrateChart = memo(function HashrateChart({
           <h3 className="text-xs uppercase tracking-wider text-slate-100">
             Delivered hashrate
           </h3>
+          {onSimModeChange && <SimToggle active={simMode} onChange={onSimModeChange} />}
           <RangePicker current={range} onChange={onRangeChange} />
         </div>
         <div className="mt-4 text-sm text-slate-500">
@@ -125,9 +130,10 @@ export const HashrateChart = memo(function HashrateChart({
           Delivered hashrate
         </h3>
         <div className="flex items-center gap-3 text-xs flex-wrap">
-          <Legend color={COLOR_DELIVERED} label="delivered" />
+          <Legend color={COLOR_DELIVERED} label={simMode ? 'simulated' : 'delivered'} />
           <Legend color={COLOR_TARGET} label="target" dashed />
           <Legend color={COLOR_FLOOR} label="floor" dashed />
+          {onSimModeChange && <SimToggle active={simMode} onChange={onSimModeChange} />}
           <RangePicker current={range} onChange={onRangeChange} />
         </div>
       </div>
@@ -226,6 +232,25 @@ export const HashrateChart = memo(function HashrateChart({
     </div>
   );
 });
+
+function SimToggle({ active, onChange }: { active: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <div className="flex rounded overflow-hidden border border-slate-700 text-[10px]">
+      <button
+        onClick={() => onChange(false)}
+        className={`px-2 py-0.5 ${!active ? 'bg-emerald-700 text-emerald-100' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
+      >
+        Real-time
+      </button>
+      <button
+        onClick={() => onChange(true)}
+        className={`px-2 py-0.5 ${active ? 'bg-amber-700 text-amber-100' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
+      >
+        Simulation
+      </button>
+    </div>
+  );
+}
 
 function Legend({ color, label, dashed }: { color: string; label: string; dashed?: boolean }) {
   return (
