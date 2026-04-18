@@ -13,6 +13,7 @@ import { HashrateChart } from '../components/HashrateChart';
 import { PriceChart } from '../components/PriceChart';
 import { ModeBadge } from '../components/ModeBadge';
 import { SatSymbol } from '../components/SatSymbol';
+import { Tooltip } from '../components/Tooltip';
 import {
   api,
   UnauthorizedError,
@@ -831,11 +832,13 @@ function PriceDeltaVsFillable({
     `your full target hashrate is available in the orderbook.`;
 
   return (
-    <span className={`text-xs font-mono ${color} cursor-help`} title={tooltip}>
-      {sign}{denomination.mode === 'usd' && denomination.btcPrice
-        ? denomination.formatSatPerPhDay(Math.abs(delta)).replace(/\/PH\/day$/, '')
-        : formatNumber(Math.abs(delta), {}, intlLocale)}
-    </span>
+    <Tooltip text={tooltip}>
+      <span className={`text-xs font-mono ${color} cursor-help`}>
+        {sign}{denomination.mode === 'usd' && denomination.btcPrice
+          ? denomination.formatSatPerPhDay(Math.abs(delta)).replace(/\/PH\/day$/, '')
+          : formatNumber(Math.abs(delta), {}, intlLocale)}
+      </span>
+    </Tooltip>
   );
 }
 
@@ -1184,18 +1187,17 @@ function StatCard({
 }) {
   const split = splitUnit(value);
   return (
-    <div
-      className="bg-slate-900 border border-slate-800 rounded-lg p-4 cursor-help text-center"
-      title={tooltip}
-    >
-      <div className="text-xs uppercase tracking-wider text-slate-100 mb-2">{label}</div>
-      <div className={`text-2xl font-mono tabular-nums ${color}`}>
-        {split ? split.num : value}
+    <Tooltip text={tooltip}>
+      <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 cursor-help text-center">
+        <div className="text-xs uppercase tracking-wider text-slate-100 mb-2">{label}</div>
+        <div className={`text-2xl font-mono tabular-nums ${color}`}>
+          {split ? split.num : value}
+        </div>
+        {split && (
+          <div className="text-xs text-slate-500 mt-0.5"><SatUnit unit={split.unit} /></div>
+        )}
       </div>
-      {split && (
-        <div className="text-xs text-slate-500 mt-0.5"><SatUnit unit={split.unit} /></div>
-      )}
-    </div>
+    </Tooltip>
   );
 }
 
@@ -1453,24 +1455,23 @@ function FinanceRow({
   const formatted = denomination.formatSat(value, intlLocale);
   const split = splitUnit(formatted);
   return (
-    <div
-      className="cursor-help flex justify-between text-sm py-0.5"
-      title={tooltip}
-    >
-      <span className="text-slate-400">{label}</span>
-      <span className={`font-mono ${valueClass}`}>
-        {value === null ? (
-          '\u2014'
-        ) : split ? (
-          <>
-            {split.num}
-            <span className="text-slate-500 text-[11px] ml-1"><SatUnit unit={split.unit} /></span>
-          </>
-        ) : (
-          formatted
-        )}
-      </span>
-    </div>
+    <Tooltip text={tooltip}>
+      <div className="cursor-help flex justify-between text-sm py-0.5">
+        <span className="text-slate-400">{label}</span>
+        <span className={`font-mono ${valueClass}`}>
+          {value === null ? (
+            '\u2014'
+          ) : split ? (
+            <>
+              {split.num}
+              <span className="text-slate-500 text-[11px] ml-1"><SatUnit unit={split.unit} /></span>
+            </>
+          ) : (
+            formatted
+          )}
+        </span>
+      </div>
+    </Tooltip>
   );
 }
 
@@ -1487,19 +1488,21 @@ function FinanceFootnote({
 }) {
   const split = splitUnit(value);
   return (
-    <div className="cursor-help flex items-baseline justify-between gap-2" title={tooltip}>
-      <span>{label}</span>
-      <span className={`text-right ${valueClass}`}>
-        {split ? (
-          <>
-            {split.num}
-            <span className="text-slate-500 text-[11px] ml-1"><SatUnit unit={split.unit} /></span>
-          </>
-        ) : (
-          value
-        )}
-      </span>
-    </div>
+    <Tooltip text={tooltip}>
+      <div className="cursor-help flex items-baseline justify-between gap-2">
+        <span>{label}</span>
+        <span className={`text-right ${valueClass}`}>
+          {split ? (
+            <>
+              {split.num}
+              <span className="text-slate-500 text-[11px] ml-1"><SatUnit unit={split.unit} /></span>
+            </>
+          ) : (
+            value
+          )}
+        </span>
+      </div>
+    </Tooltip>
   );
 }
 
