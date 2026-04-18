@@ -1074,7 +1074,7 @@ function SimParamBar({
                     changed ? 'border-amber-600 text-amber-300' : 'border-slate-700 text-slate-300'
                   }`}
                 />
-                <span className="text-[9px] text-slate-600 whitespace-nowrap">{f.unit}</span>
+                <span className="text-[9px] text-slate-600 whitespace-nowrap"><SatUnit unit={f.unit} /></span>
               </div>
             </div>
           );
