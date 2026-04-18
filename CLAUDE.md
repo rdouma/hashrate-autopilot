@@ -32,6 +32,13 @@ Match existing style — subject line in the imperative, short summary,
 body explains the "why" not just the "what," Co-Authored-By trailer on
 Claude-assisted commits.
 
+## Build number
+
+`BUILD_NUMBER` in the repo root is an integer shown in the dashboard
+footer (`build 42 · abc1234`). Increment it in every commit that
+changes dashboard or daemon code. Read the current value, add 1, write
+it back. Skip for doc-only or config-only changes.
+
 ## Parallel sessions
 
 Another Claude session is often editing `packages/**` in parallel.

@@ -102,6 +102,9 @@ export function Layout() {
           <Outlet />
         </div>
       </main>
+      <footer className="text-center text-[10px] text-slate-600 py-1">
+        build {__BUILD_NUMBER__} · {__BUILD_HASH__}
+      </footer>
     </div>
   );
 }
