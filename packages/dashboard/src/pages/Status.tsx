@@ -363,9 +363,9 @@ export function Status() {
         simMode={simMode}
       />
 
-      <section className="grid grid-cols-1 lg:grid-cols-4 gap-3">
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         <OceanPanel />
-        <Card title="Hashrate & market">
+        <Card title="Braiins">
           <Row k="delivered" v={formatHashratePH(s.actual_hashrate_ph)} />
           <Row
             k="target"
@@ -400,19 +400,19 @@ export function Status() {
               />
             )}
           </div>
-        </Card>
-        <Card title="Braiins balance">
-          {s.balances.length === 0 ? (
-            <div className="text-slate-500 text-sm">{'\u2014'}</div>
-          ) : (
-            s.balances.map((b) => (
-              <div key={b.subaccount}>
-                <Row k="available" v={denomination.formatSat(b.available_balance_sat, intlLocale)} />
-                <Row k="blocked" v={denomination.formatSat(b.blocked_balance_sat, intlLocale)} />
-                <Row k="total" v={denomination.formatSat(b.total_balance_sat, intlLocale)} />
-              </div>
-            ))
-          )}
+          <div className="border-t border-slate-800 mt-2 pt-2">
+            {s.balances.length === 0 ? (
+              <div className="text-slate-500 text-sm">{'\u2014'}</div>
+            ) : (
+              s.balances.map((b) => (
+                <div key={b.subaccount}>
+                  <Row k="available" v={denomination.formatSat(b.available_balance_sat, intlLocale)} />
+                  <Row k="blocked" v={denomination.formatSat(b.blocked_balance_sat, intlLocale)} />
+                  <Row k="total" v={denomination.formatSat(b.total_balance_sat, intlLocale)} />
+                </div>
+              ))
+            )}
+          </div>
         </Card>
         <FinancePanel
           data={financeQuery.data}
