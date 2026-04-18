@@ -91,7 +91,9 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<HttpServer
         throw new Error('unauthorised');
       }
     },
-    authenticate: { realm: 'Braiins Hashrate Autopilot' },
+    // No `authenticate` option — we don't want the WWW-Authenticate
+    // header in 401 responses. That header triggers the browser's
+    // native auth dialog, which conflicts with our React login page.
   });
 
   // Guard all /api/* routes with Basic Auth. basicAuth expects the
