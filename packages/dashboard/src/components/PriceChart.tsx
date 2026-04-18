@@ -97,7 +97,6 @@ export const PriceChart = memo(function PriceChart({
       ...pricePoints.map((p) => p.v),
       ...fillablePoints.map((p) => p.v),
       ...hashpricePoints.map((p) => p.v),
-      ...maxBidPoints.map((p) => p.v),
       ...eventPrices,
     ];
     const hasPrice = priceSample.length > 0;
