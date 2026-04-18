@@ -50,7 +50,7 @@ export function Tooltip({
   return (
     <div
       ref={ref}
-      className="inline-block"
+      className="contents"
       onMouseEnter={() => setShow(true)}
       onMouseLeave={() => { setShow(false); setPos(null); }}
     >
