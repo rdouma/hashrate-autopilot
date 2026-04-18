@@ -21,6 +21,7 @@ import {
   type FinanceResponse,
   type MetricPoint,
   type NextActionView,
+  type OceanResponse,
   type ProposalView,
   type SimStatsSummary,
   type SimulateResponse,
@@ -362,10 +363,8 @@ export function Status() {
         simMode={simMode}
       />
 
-      {/* Three-column row: market context | Braiins wallet | financial
-          P&L. Money panel reads top-to-bottom (cost → incomes → net).
-          On narrow screens the columns stack. */}
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+      <section className="grid grid-cols-1 lg:grid-cols-4 gap-3">
+        <OceanPanel />
         <Card title="Hashrate & market">
           <Row k="delivered" v={formatHashratePH(s.actual_hashrate_ph)} />
           <Row
@@ -1240,6 +1239,66 @@ function TickingAge({ epochMs }: { epochMs: number }) {
  * Each input renders "—" when its source isn't reporting yet; net
  * stays "—" until both income halves have at least one observation.
  */
+function OceanPanel() {
+  const { intlLocale } = useLocale();
+  const denomination = useDenomination();
+
+  const oceanQuery = useQuery({
+    queryKey: ['ocean'],
+    queryFn: api.ocean,
+    refetchInterval: 5 * 60_000,
+  });
+
+  const o = oceanQuery.data;
+
+  if (!o || !o.configured) {
+    return (
+      <Card title="Ocean">
+        <div className="text-slate-500 text-sm">Not configured</div>
+      </Card>
+    );
+  }
+
+  return (
+    <Card title="Ocean">
+      {o.last_block ? (
+        <>
+          <Row k="last block" v={`#${o.last_block.height.toLocaleString(intlLocale)}`} />
+          <Row k="found" v={o.last_block.ago_text} />
+          <Row k="reward" v={denomination.formatSat(o.last_block.total_reward_sat, intlLocale)} />
+        </>
+      ) : (
+        <Row k="last block" v={'\u2014'} />
+      )}
+      <Row k="blocks 24h" v={String(o.blocks_24h)} />
+      <Row k="blocks 7d" v={String(o.blocks_7d)} />
+      <div className="border-t border-slate-800 mt-2 pt-2">
+        {o.user && (
+          <>
+            <Row k="share log" v={o.user.share_log_pct !== null ? `${o.user.share_log_pct.toFixed(4)}%` : '\u2014'} />
+            <Row k="unpaid" v={denomination.formatSat(o.user.unpaid_sat, intlLocale)} />
+            <Row k="next block est." v={denomination.formatSat(o.user.next_block_sat, intlLocale)} />
+            <Row k="income/day est." v={denomination.formatSat(o.user.daily_estimate_sat, intlLocale)} />
+            {o.user.time_to_payout_text && (
+              <Row k="next payout" v={o.user.time_to_payout_text} />
+            )}
+          </>
+        )}
+      </div>
+      {o.pool && (
+        <div className="border-t border-slate-800 mt-2 pt-2">
+          {o.pool.active_users !== null && (
+            <Row k="pool users" v={o.pool.active_users.toLocaleString(intlLocale)} />
+          )}
+          {o.pool.active_workers !== null && (
+            <Row k="pool workers" v={o.pool.active_workers.toLocaleString(intlLocale)} />
+          )}
+        </div>
+      )}
+    </Card>
+  );
+}
+
 function FinancePanel({
   data,
   status,

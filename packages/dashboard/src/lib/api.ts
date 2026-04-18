@@ -270,6 +270,7 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(params),
     }),
+  ocean: () => request<OceanResponse>('/api/ocean'),
   // Test-auth call: hits /api/status to validate credentials.
   checkAuth: () => request<StatusResponse>('/api/status'),
 };
@@ -344,4 +345,45 @@ export interface SimulateResponse {
   ticks: SimulatedTick[];
   tick_count: number;
   range: string;
+}
+
+export interface OceanBlockView {
+  height: number;
+  timestamp_ms: number;
+  total_reward_sat: number;
+  subsidy_sat: number;
+  fees_sat: number;
+  worker: string;
+}
+
+export interface OceanResponse {
+  configured: boolean;
+  last_block: {
+    height: number;
+    timestamp_ms: number;
+    total_reward_sat: number;
+    ago_text: string;
+  } | null;
+  blocks_24h: number;
+  blocks_7d: number;
+  recent_blocks: OceanBlockView[];
+  pool: {
+    active_users: number | null;
+    active_workers: number | null;
+    network_difficulty: number | null;
+    pool_hashrate_ph: number | null;
+    estimated_block_reward_sat: number | null;
+  } | null;
+  user: {
+    unpaid_sat: number | null;
+    next_block_sat: number | null;
+    daily_estimate_sat: number | null;
+    hashprice_sat_per_ph_day: number | null;
+    time_to_payout_text: string | null;
+    share_log_pct: number | null;
+    hashrate_th: number | null;
+    payout_threshold_sat: number;
+    rewards_in_window_sat: number | null;
+  } | null;
+  fetched_at_ms: number | null;
 }

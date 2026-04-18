@@ -25,6 +25,23 @@ const DEFAULT_CACHE_TTL_MS = 5 * 60 * 1000;
 const SAT_PER_BTC = 100_000_000;
 const BLOCKS_PER_DAY = 144;
 
+export interface OceanBlock {
+  readonly height: number;
+  readonly timestamp_ms: number;
+  readonly total_reward_sat: number;
+  readonly subsidy_sat: number;
+  readonly fees_sat: number;
+  readonly worker: string;
+}
+
+export interface OceanPoolInfo {
+  readonly active_users: number | null;
+  readonly active_workers: number | null;
+  readonly network_difficulty: number | null;
+  readonly pool_hashrate_ph: number | null;
+  readonly estimated_block_reward_sat: number | null;
+}
+
 export interface OceanStats {
   readonly unpaid_sat: number | null;
   readonly lifetime_sat: number | null;
@@ -43,6 +60,9 @@ export interface OceanStats {
   readonly time_to_payout_text: string | null;
   readonly share_log_pct: number | null;
   readonly payout_threshold_sat: number;
+  readonly recent_blocks: readonly OceanBlock[];
+  readonly pool: OceanPoolInfo;
+  readonly user_hashrate_th: number | null;
   readonly fetched_at_ms: number;
 }
 
@@ -69,10 +89,11 @@ export function createOceanClient(opts: OceanClientOptions = {}): OceanClient {
       if (cached && now() - cached.fetched_at_ms < ttl) return cached;
 
       try {
-        const [statsnap, hashrate, poolStat] = await Promise.all([
+        const [statsnap, hashrate, poolStat, blocksResp] = await Promise.all([
           getJson(fetchImpl, `${OCEAN_API_BASE}/statsnap/${address}`),
           getJson(fetchImpl, `${OCEAN_API_BASE}/user_hashrate/${address}`),
           getJson(fetchImpl, `${OCEAN_API_BASE}/pool_stat`),
+          getJson(fetchImpl, `${OCEAN_API_BASE}/blocks`).catch(() => null),
         ]);
 
         const snap = (statsnap?.result ?? {}) as Record<string, string>;
@@ -148,6 +169,41 @@ export function createOceanClient(opts: OceanClientOptions = {}): OceanClient {
           }
         }
 
+        // Parse recent blocks
+        const rawBlocks = (blocksResp?.result as Record<string, unknown>)?.blocks;
+        const recent_blocks: OceanBlock[] = Array.isArray(rawBlocks)
+          ? (rawBlocks as Record<string, unknown>[]).slice(0, 15).map((b) => ({
+              height: Number(b.height ?? 0),
+              timestamp_ms: new Date(String(b.ts ?? '')).getTime() || 0,
+              total_reward_sat: Number(b.total_reward_sats ?? 0),
+              subsidy_sat: Number(b.subsidy_sats ?? 0),
+              fees_sat: Number(b.txn_fees_sats ?? 0),
+              worker: String(b.workername ?? ''),
+            }))
+          : [];
+
+        // Pool info
+        const activeUsers = parseInt(String(pool.active_users ?? ''), 10);
+        const activeWorkers = parseInt(String(pool.active_workers ?? ''), 10);
+        const estimatedRewardBtc = parseFloat(pool.current_estimated_block_reward ?? '');
+
+        // User hashrate (3h window, in H/s from the API)
+        const userHash3hRaw = Number(hr.hashrate_10800s ?? 0);
+        const user_hashrate_th = userHash3hRaw > 0 ? userHash3hRaw / 1e12 : null;
+
+        // Pool hashrate estimate: difficulty × 2^32 / 600 gives
+        // network H/s. Pool hashrate isn't directly exposed; we'd
+        // need the pool's share of blocks. For now expose network stats.
+        const poolInfo: OceanPoolInfo = {
+          active_users: Number.isFinite(activeUsers) ? activeUsers : null,
+          active_workers: Number.isFinite(activeWorkers) ? activeWorkers : null,
+          network_difficulty: networkDifficulty > 0 ? networkDifficulty : null,
+          pool_hashrate_ph: null,
+          estimated_block_reward_sat: Number.isFinite(estimatedRewardBtc)
+            ? Math.round(estimatedRewardBtc * SAT_PER_BTC)
+            : null,
+        };
+
         const stats: OceanStats = {
           unpaid_sat,
           lifetime_sat: null,
@@ -158,6 +214,9 @@ export function createOceanClient(opts: OceanClientOptions = {}): OceanClient {
           time_to_payout_text,
           share_log_pct,
           payout_threshold_sat: PAYOUT_THRESHOLD_SAT,
+          recent_blocks,
+          pool: poolInfo,
+          user_hashrate_th,
           fetched_at_ms: now(),
         };
         cache.set(address, stats);

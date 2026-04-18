@@ -39,6 +39,7 @@ import { registerConfigRoutes } from './routes/config.js';
 import { registerDecisionsRoutes } from './routes/decisions.js';
 import { registerFinanceRoute } from './routes/finance.js';
 import { registerMetricsRoute } from './routes/metrics.js';
+import { registerOceanRoute } from './routes/ocean.js';
 import { registerOperatorRoutes } from './routes/operator.js';
 import { registerPayoutsRoute } from './routes/payouts.js';
 import { registerRunModeRoute } from './routes/run-mode.js';
@@ -111,6 +112,10 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<HttpServer
   await registerPayoutsRoute(app, { payoutObserver: deps.payoutObserver });
   await registerStatsRoute(app, { db: deps.db, bidEventsDb: deps.db });
   await registerSimulateRoute(app, { db: deps.db });
+  await registerOceanRoute(app, {
+    oceanClient: deps.oceanClient,
+    configRepo: deps.configRepo,
+  });
   await registerFinanceRoute(app, {
     ownedBidsRepo: deps.ownedBidsRepo,
     configRepo: deps.configRepo,
