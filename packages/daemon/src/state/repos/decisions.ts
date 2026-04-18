@@ -28,7 +28,7 @@ export class DecisionsRepo {
       .insertInto('decisions')
       .values({
         tick_at: args.state.tick_at,
-        observed_json: JSON.stringify(args.state),
+        observed_json: JSON.stringify(trimStateForStorage(args.state)),
         proposed_json: JSON.stringify(args.proposals),
         gated_json: JSON.stringify(args.gated),
         executed_json: JSON.stringify(args.executed),
@@ -75,4 +75,45 @@ function safeJsonParse<T>(s: string, fallback: T): T {
   } catch {
     return fallback;
   }
+}
+
+/**
+ * Strip bulky data from the State before storing in the decisions
+ * table. The full order book (150+ bid levels, market settings, fee
+ * schedule) accounts for ~90% of the JSON but is never needed for
+ * forensic analysis. Keep the asks (used by decide()), drop the bids,
+ * drop static settings/fees, and trim balance to essentials.
+ */
+function trimStateForStorage(state: State): unknown {
+  const { market, balance, config, ...rest } = state;
+  return {
+    ...rest,
+    config: {
+      target_hashrate_ph: config.target_hashrate_ph,
+      minimum_floor_hashrate_ph: config.minimum_floor_hashrate_ph,
+      max_bid_sat_per_eh_day: config.max_bid_sat_per_eh_day,
+      overpay_sat_per_eh_day: config.overpay_sat_per_eh_day,
+      fill_escalation_step_sat_per_eh_day: config.fill_escalation_step_sat_per_eh_day,
+      fill_escalation_after_minutes: config.fill_escalation_after_minutes,
+      escalation_mode: config.escalation_mode,
+      min_lower_delta_sat_per_eh_day: config.min_lower_delta_sat_per_eh_day,
+      lower_patience_minutes: config.lower_patience_minutes,
+      bid_budget_sat: config.bid_budget_sat,
+      cheap_target_hashrate_ph: config.cheap_target_hashrate_ph,
+      cheap_threshold_pct: config.cheap_threshold_pct,
+    },
+    market: market
+      ? {
+          best_bid_sat: market.best_bid_sat,
+          best_ask_sat: market.best_ask_sat,
+          asks: market.orderbook.asks,
+          tick_size_sat: market.settings.tick_size_sat,
+          min_bid_speed_limit_ph: market.settings.min_bid_speed_limit_ph,
+        }
+      : null,
+    balance: balance?.accounts?.map((a) => ({
+      available_balance_sat: a.available_balance_sat,
+      blocked_balance_sat: a.blocked_balance_sat,
+    })) ?? null,
+  };
 }
