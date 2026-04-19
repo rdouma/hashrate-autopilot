@@ -1,10 +1,14 @@
-# Hashrate Autopilot — Specification (v1.1)
+# Hashrate Autopilot — Specification (v1.8)
 
-> Status: post-empirical rewrite. v1.0 (2026-04-14) was built around a constraint — that Braiins requires 2FA on
-> every `POST`/`PUT` on the Hashpower API — which empirical testing on a live account on 2026-04-15 disproved for
-> the owner-scope API token. This version removes the confirmation bot, quiet-hours machinery,
-> pending-confirmation / confirmation-timeout action modes, and operator-availability flag that constraint required,
-> and describes the simpler fully-autonomous architecture now in the code.
+> Status: post-empirical rewrite, extended with features shipped through mid-April 2026. v1.0 (2026-04-14) was built
+> around a constraint — that Braiins requires 2FA on every `POST`/`PUT` on the Hashpower API — which empirical
+> testing on a live account on 2026-04-15 disproved for the owner-scope API token. v1.1 removed the confirmation
+> bot, quiet-hours machinery, pending-confirmation / confirmation-timeout action modes, and operator-availability
+> flag that constraint required, and described the simpler fully-autonomous architecture now in the code.
+> v1.2–1.8 layered on the depth-aware pricing rewrite, the simplified target-price formula, the `lower_patience`
+> dampener, cheap-mode opportunistic scaling, the Ocean and Datum Gateway integrations, the what-if simulator, the
+> hashprice-relative dynamic cap, and retention-managed persistence. See the document history at the bottom for the
+> per-version breakdown.
 
 ## 1. Purpose
 
@@ -135,7 +139,11 @@ All values change on the next control-loop tick without restart.
 
 **Pricing (unit: sat per EH/day, matching Braiins `price_sat` / `hr_unit = "EH/day"`):**
 
-- `max_price_sat_per_eh_day` — hard cap for all target-hashrate orders
+- `max_bid_sat_per_eh_day` — fixed hard cap for all target-hashrate orders.
+- `max_overpay_vs_hashprice_sat_per_eh_day` *(optional, default null / disabled)* — dynamic hashprice-relative cap.
+  When set, the effective per-tick ceiling becomes `min(max_bid, hashprice + max_overpay_vs_hashprice)`. Prevents the
+  autopilot from massively overpaying during a hashprice crash when the fixed `max_bid` alone would still allow it.
+  Null / 0 falls back to the fixed `max_bid`; also falls back when Ocean hashprice data is unavailable.
 
 **Budget:**
 
@@ -169,6 +177,10 @@ full `target_hashrate_ph` is available (walks asks cumulatively by unmatched sup
 - `fill_escalation_step_sat_per_eh_day` — step size for dampened mode.
 - `fill_escalation_after_minutes` — window before escalation kicks in.
 - `min_lower_delta_sat_per_eh_day` — deadband: only auto-lower when overpay vs target exceeds this. Default 200 sat/PH/day. Avoids burning the Braiins 10-min decrease cooldown for a few-sat saving.
+- `lower_patience_minutes` — how long the autopilot must be continuously above floor before it will consider lowering
+  the price. Prevents chasing short market dips that reverse within minutes — each unnecessary lower would burn the
+  Braiins 10-min price-decrease cooldown. The `above_floor_since` timer that drives this is persisted to
+  `runtime_state` so a daemon restart does not silently reset the window.
 - `handover_window_minutes` — manual-override suppression window.
 
 Lowering: when overpay vs target exceeds `min_lower_delta`, jump directly to target (no dampening downward — trust the `overpay` setting).
@@ -177,12 +189,36 @@ Lowering: when overpay vs target exceeds `min_lower_delta`, jump directly to tar
 
 - `boot_mode` — `ALWAYS_DRY_RUN` (default, safest) | `LAST_MODE` (resume, with PAUSED → DRY_RUN) | `ALWAYS_LIVE`.
 
+**Opportunistic scaling (cheap-mode):**
+
+- `cheap_target_hashrate_ph` — higher-than-normal target to run when the market is cheap (default 0 = disabled).
+- `cheap_threshold_pct` — cheap-mode activates when the fillable price drops below `hashprice × (cheap_threshold_pct
+  / 100)`. Both knobs must be non-zero to activate.
+
+**Datum Gateway integration (optional, informational only):**
+
+- `datum_api_url` — HTTP base URL of the Datum Gateway's `/umbrel-api` endpoint. When null, the dashboard's Datum
+  panel shows a "not configured" empty state and the daemon writes `null` to `tick_metrics.datum_hashrate_ph`.
+  Integration is never on the control path — if Datum is unreachable the control loop continues unchanged.
+  See `docs/setup-datum-api.md` for the Umbrel-side port-exposure recipe.
+
+**Retention (append-only tables):**
+
+- `tick_metrics_retention_days` — default 7. 0 disables pruning.
+- `decisions_uneventful_retention_days` — default 7 (rows with no proposals).
+- `decisions_eventful_retention_days` — default 90 (rows with at least one proposal — forensic value).
+
+The daemon runs a pruning pass once per hour; the controller is untouched by retention.
+
 **Integrations:**
 
 - `btc_payout_address`
-- `bitcoind_rpc_endpoint` + credentials
+- `bitcoind_rpc_url` + `bitcoind_rpc_user` + `bitcoind_rpc_password` (live-editable; seeded from sops secrets on
+  first boot)
 - Optional `electrs_host` + `electrs_port` (preferred over `bitcoind` RPC for balance lookups — instant)
-- Braiins `owner_access_token` + optional `read_only_access_token`
+- `payout_source` — `none` | `electrs` | `bitcoind`
+- `btc_price_source` — `none` | `coingecko` | `coinbase` | `bitstamp` | `kraken` (feeds the dashboard sat↔USD toggle)
+- Braiins `owner_access_token` + optional `read_only_access_token` (stored in sops secrets, not the config table)
 
 ## 9. Reliability & outage policy
 
@@ -346,3 +382,4 @@ Still open:
 | 1.5     | 2026-04-16 | Depth-aware pricing: the autopilot no longer targets "cheapest ask with any non-zero supply". Instead it walks asks cumulatively and targets the cheapest price at which the full `target_hashrate_ph` is fillable. Empirical trigger: live orderbook 2026-04-16 had a sliver ask at 45,070 with the real supply at 47,803 — the old logic targeted 45,070 and stranded the fill. Dashboard gains a "fillable @ target" row in the Hashrate & Market card. |
 | 1.6     | 2026-04-16 | Simplified pricing model: target = min(fillable + max_overpay, max_bid). Renamed `max_price_sat_per_eh_day` → `max_bid_sat_per_eh_day`, `max_overpay_vs_ask` → `max_overpay`. Removed `overpay_before_lowering` and `max_lowering_step` dampeners — downward adjustments now jump directly to target. Added `escalation_mode` config: `market` (jump to target) or `dampened` (step up). User interview drove the simplification: all thresholds relative to fillable, no stacked margins. |
 | 1.7     | 2026-04-16 | Renamed `max_overpay_sat_per_eh_day` → `overpay_sat_per_eh_day`. The "max_" prefix was misleading — the field is the (fixed) overpay we always aim for, not the upper bound of a varying amount. The only "max" semantic is the absolute `max_bid` cap that clips overheated markets. |
+| 1.8     | 2026-04-19 | Composite roll-up of features shipped 2026-04-16 to 2026-04-19: (a) `lower_patience_minutes` — required above-floor duration before lowering, persisted across restarts in `runtime_state.above_floor_since_ms`; (b) Ocean integration — `/api/ocean` surfaces hashprice, pool stats, recent blocks (including own-found markers on the hashrate chart), and time-to-payout; hashprice is recorded on every `tick_metrics` row and plotted historically; (c) `max_overpay_vs_hashprice_sat_per_eh_day` — optional dynamic cap, effective cap becomes `min(max_bid, hashprice + this)`; simulator mirrors the same skip-tick guard; (d) opportunistic cheap-mode scaling (`cheap_target_hashrate_ph`, `cheap_threshold_pct`) — scales above the normal target when the market is cheap vs hashprice; (e) what-if simulator (`POST /api/simulate`) — stateless backtest over historical `tick_metrics` with candidate strategy parameters, surfaced on the Status page as a toggleable overlay on the live charts; (f) retention pruning (`tick_metrics_retention_days`, `decisions_uneventful_retention_days`, `decisions_eventful_retention_days`) — hourly pruner service; (g) Datum Gateway integration (optional) — `datum_api_url` enables polling `/umbrel-api` each tick, records `tick_metrics.datum_hashrate_ph` alongside Braiins's reading, surfaces connected workers + gateway-measured hashrate on a dedicated Datum panel. Integration is informational-only; control loop never depends on Datum being reachable. See `docs/setup-datum-api.md` for the Umbrel port-exposure recipe (tested and running stable since 2026-04-19). |

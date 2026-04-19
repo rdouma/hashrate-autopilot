@@ -1,10 +1,14 @@
 # Exposing the Datum Gateway API on Umbrel
 
-> **Status:** **WORKING as of 2026-04-19.** The recipe below is the
-> verified path. It differs from the original research notes in two
-> important ways — the `sed` pattern must match the quoted form,
-> and the restart must be a full OS reboot (not `umbreld apps.restart`).
-> See "What NOT to do" below before improvising.
+> **Status:** **WORKING and stable.** Verified live on 2026-04-19
+> and running uninterrupted since — the daemon has been polling
+> `/umbrel-api` every tick, recording `datum_hashrate_ph` on every
+> `tick_metrics` row, with zero post-setup interventions needed. The
+> recipe below is the verified path. It differs from the original
+> research notes in two important ways — the `sed` pattern must match
+> the quoted form, and the restart must be a full OS reboot (not
+> `umbreld apps.restart`). See "What NOT to do" below before
+> improvising.
 
 ## Background
 

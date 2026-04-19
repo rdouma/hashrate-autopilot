@@ -1,4 +1,4 @@
-# Hashrate Autopilot — Architecture (v1.1)
+# Hashrate Autopilot — Architecture (v1.2)
 
 > Concretion of `docs/spec.md` into module boundaries, data flow, deployment shape, and a milestone-ordered build plan.
 > v1.0 was built around a 2FA gate on mutations that, on empirical verification, turns out not to apply to the
@@ -80,7 +80,13 @@ hashrate-autopilot/
 │   │   ├── src/services/
 │   │   │   ├── braiins-service.ts
 │   │   │   ├── payout-observer.ts  (Electrs-preferred; bitcoind fallback)
-│   │   │   └── pool-health.ts      (TCP probe of Datum Gateway :23334)
+│   │   │   ├── pool-health.ts      (TCP probe of Datum Gateway :23334)
+│   │   │   ├── ocean.ts            (Ocean pool REST client: stats, blocks, earnings)
+│   │   │   ├── datum.ts            (optional /umbrel-api poller — gateway-measured hashrate + workers)
+│   │   │   ├── hashprice-cache.ts  (in-memory hashprice cache, fed from Ocean)
+│   │   │   ├── btc-price.ts        (BTC/USD oracle — CoinGecko / Coinbase / Bitstamp / Kraken)
+│   │   │   ├── account-spend.ts    (whole-account spend ledger from /v1/account/transaction)
+│   │   │   └── retention.ts        (hourly pruner for tick_metrics + decisions)
 │   │   ├── src/controller/
 │   │   │   ├── loop.ts             (tick driver)
 │   │   │   ├── tick.ts
@@ -90,7 +96,8 @@ hashrate-autopilot/
 │   │   │   └── execute.ts          (calls Braiins API with dry-run/live split)
 │   │   └── src/http/               (Fastify; dashboard API)
 │   │       ├── server.ts
-│   │       └── routes/             (status, config, decisions, actions, operator, metrics, run-mode)
+│   │       └── routes/             (status, config, decisions, actions, operator, metrics, run-mode,
+│   │                                finance, stats, bid-events, ocean, payouts, btc-price, simulate)
 │   │
 │   └── dashboard/                  React SPA
 │       ├── src/main.tsx
@@ -303,13 +310,26 @@ CREATE TABLE fee_schedule_cache (
 );
 ```
 
-Migration history in `packages/daemon/src/state/migrations/`:
+Migration history in `packages/daemon/src/state/migrations/` — forward-only, applied in filename order on
+startup. See `packages/daemon/src/state/db.test.ts` for the authoritative expected list. Grouped by concern:
 
-- `0001_initial.sql` — base schema.
-- `0002_strategy_knobs.sql` — empirical strategy columns (overpay deadband, escalation).
-- `0003_null_empty_cl_order_id.sql` — unique-constraint fix.
-- `0004_tick_metrics.sql` — time-series for the hashrate chart.
-- (Later migrations: electrs config, run_mode index, overpay margin — see git.)
+- **Baseline (0001–0004):** initial schema, strategy knobs (overpay deadband, escalation),
+  `cl_order_id` unique-constraint fix, `tick_metrics` time-series.
+- **Payout observation (0005, 0021–0022):** electrs config, bitcoind RPC in the config table, `payout_source`
+  selector.
+- **Runtime state (0006, 0008, 0014, 0031):** `run_mode` index, `boot_mode`, persistent floor state,
+  `above_floor_since_ms` (so `lower_patience` survives restarts).
+- **Pricing simplification (0007, 0010–0011, 0013, 0015):** overpay-before-lowering, lowering-step dampener,
+  v1.6 formula rewrite, `min_lower_delta`, `max_overpay_sat_per_eh_day` rename.
+- **Bid events + ownership (0009, 0016–0017, 0026):** bid-event log, edit-speed kind, `owned_bids` consumed column,
+  terminal-bid cache.
+- **Accounting (0018–0019):** `spent_scope` toggle (`autopilot` vs `account`), BTC/USD price source.
+- **Ocean / hashprice (0012, 0023–0024):** `fillable_ask_sat_per_eh_day` column, per-tick hashprice record,
+  per-tick max-bid record.
+- **Cheap-mode scaling (0020, 0025):** `cheap_target_hashrate_ph` + `cheap_threshold_pct`; `lower_patience_minutes`.
+- **Retention (0027):** `tick_metrics_retention_days`, `decisions_{uneventful,eventful}_retention_days`.
+- **Datum integration (0028–0029):** `datum_api_url` in config, `datum_hashrate_ph` on `tick_metrics`.
+- **Dynamic cap (0030):** `max_overpay_vs_hashprice_sat_per_eh_day` hashprice-relative ceiling.
 
 ## 6. External integrations
 
@@ -441,3 +461,4 @@ All milestones M1–M6 are shipped as of v1.1 (commit `4cc8ad5`). Remaining work
 |---------|------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | 1.0     | 2026-04-14 | Initial version.                                                                                                                                                                           |
 | 1.1     | 2026-04-16 | Post-empirical rewrite: removed the confirmation bot, quiet-hours buffering, `PENDING_CONFIRMATION` / `CONFIRMATION_TIMEOUT` action modes, operator-availability flag. Updated milestones, schema, diagrams, and risk register to reflect the fully-autonomous gate now in the code. |
+| 1.2     | 2026-04-19 | Refreshed the service inventory and HTTP-route listing in §2 to reflect everything shipped through mid-April: `ocean` + `datum` + `hashprice-cache` + `btc-price` + `account-spend` + `retention` services, and the `finance` / `stats` / `bid-events` / `ocean` / `payouts` / `btc-price` / `simulate` HTTP routes. Rewrote the migration summary in §5 with concern-grouped coverage of 0001–0031 instead of the stale "see git" placeholder. No schema or control-loop shape changes — this is a documentation catch-up, not a design revision. |
