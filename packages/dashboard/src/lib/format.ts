@@ -122,3 +122,30 @@ export function formatAge(ms: number | null | undefined, now: number = Date.now(
   const days = Math.round(hours / 24);
   return `${days}d ago`;
 }
+
+/**
+ * Two-unit age — "45s ago", "12m 17s ago", "3h 4m ago", "2d 5h ago".
+ * Re-render once per second and the seconds digit ticks visibly; the
+ * single-unit {@link formatAge} rounds and so feels frozen mid-minute.
+ */
+export function formatAgePrecise(
+  ms: number | null | undefined,
+  now: number = Date.now(),
+): string {
+  if (!ms) return '—';
+  const totalSec = Math.max(0, Math.floor((now - ms) / 1000));
+  if (totalSec < 60) return `${totalSec}s ago`;
+  const totalMin = Math.floor(totalSec / 60);
+  if (totalMin < 60) {
+    const s = totalSec - totalMin * 60;
+    return `${totalMin}m ${s}s ago`;
+  }
+  const totalHr = Math.floor(totalMin / 60);
+  if (totalHr < 24) {
+    const m = totalMin - totalHr * 60;
+    return `${totalHr}h ${m}m ago`;
+  }
+  const totalDay = Math.floor(totalHr / 24);
+  const h = totalHr - totalDay * 24;
+  return `${totalDay}d ${h}h ago`;
+}

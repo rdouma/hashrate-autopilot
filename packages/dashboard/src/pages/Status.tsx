@@ -30,6 +30,7 @@ import {
 } from '../lib/api';
 import {
   formatAge,
+  formatAgePrecise,
   formatHashratePH,
   formatNumber,
   formatSatPerPH,
@@ -374,7 +375,7 @@ export function Status() {
        * pipeline, not a pipeline step.
        */}
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <Card title="Braiins">
+        <Card title="Braiins" updatedAtMs={s.tick_at}>
           <Row k="delivered" v={formatHashratePH(s.actual_hashrate_ph)} />
           <Row
             k="target"
@@ -433,8 +434,7 @@ export function Status() {
           consecutiveFailures={s.pool.consecutive_failures}
           lastOkAt={s.pool.last_ok_at}
           datum={s.datum}
-          nextTickAt={s.next_tick_at}
-          tickIntervalMs={s.tick_interval_ms}
+          tickAt={s.tick_at}
         />
         <OceanPanel />
       </section>
@@ -1240,13 +1240,13 @@ function formatFillTime(ms: number): string {
  * operator actually sees the age climb (previously it was pinned to
  * "0s ago" because `checked_at_ms` was Date.now() on every response).
  */
-function TickingAge({ epochMs }: { epochMs: number }) {
+function TickingAge({ epochMs }: { epochMs: number | null | undefined }) {
   const [, setTick] = useState(0);
   useEffect(() => {
     const id = setInterval(() => setTick((n) => n + 1), 1_000);
     return () => clearInterval(id);
   }, []);
-  return <span>updated {formatAge(epochMs)}</span>;
+  return <span>updated {formatAgePrecise(epochMs)}</span>;
 }
 
 /**
@@ -1284,7 +1284,7 @@ function OceanPanel() {
   }
 
   return (
-    <Card title="Ocean">
+    <Card title="Ocean" updatedAtMs={o.fetched_at_ms}>
       {o.last_block ? (
         <>
           <Row k="last block" v={`#${o.last_block.height.toLocaleString(intlLocale)}`} />
@@ -1748,31 +1748,21 @@ function DatumPanel({
   consecutiveFailures,
   lastOkAt,
   datum,
-  nextTickAt,
-  tickIntervalMs,
+  tickAt,
 }: {
   url: string;
   reachable: boolean;
   consecutiveFailures: number;
   lastOkAt: number | null;
   datum: StatusResponse['datum'];
-  nextTickAt: number | null;
-  tickIntervalMs: number;
+  tickAt: number | null;
 }) {
   const [copied, setCopied] = useState(false);
-  // Live 1-second countdown to the next poll. The poll is tied to the
-  // control-loop tick, so we derive the ETA from next_tick_at (falling
-  // back to tick_interval_ms) and re-render once a second client-side
-  // so the number looks alive without a server round-trip.
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, []);
-  const refreshEta =
-    nextTickAt ?? (lastOkAt !== null ? lastOkAt + tickIntervalMs : null);
-  const refreshInSec =
-    refreshEta !== null ? Math.max(0, Math.ceil((refreshEta - now) / 1000)) : null;
+  // Prefer the Datum poll's own last-ok timestamp (when configured)
+  // for the header age — it's the truest "when did I last see fresh
+  // stats" answer. Fall back to the tick_at and then to the stratum
+  // probe when Datum isn't wired up yet.
+  const updatedAt = datum?.last_ok_at ?? tickAt ?? lastOkAt ?? null;
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(url);
@@ -1785,7 +1775,14 @@ function DatumPanel({
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
-      <div className="text-xs uppercase tracking-wider text-slate-100 mb-2">Datum Gateway</div>
+      <div className="flex items-baseline justify-between mb-2">
+        <div className="text-xs uppercase tracking-wider text-slate-100">Datum Gateway</div>
+        {updatedAt != null && (
+          <div className="text-[11px] text-slate-500 font-mono">
+            <TickingAge epochMs={updatedAt} />
+          </div>
+        )}
+      </div>
       <div className="flex items-center gap-2 mb-2 flex-wrap">
         <span
           className={
@@ -1794,7 +1791,7 @@ function DatumPanel({
               ? 'border-emerald-700 bg-emerald-900/30 text-emerald-300'
               : 'border-red-700 bg-red-900/30 text-red-300')
           }
-          title="TCP probe of the stratum port"
+          title={`TCP probe of the stratum port. Stratum last ok: ${formatAge(lastOkAt)}`}
         >
           <span
             className={
@@ -1822,7 +1819,6 @@ function DatumPanel({
             stats {datum.reachable ? 'reachable' : `unreachable (${datum.consecutive_failures})`}
           </span>
         )}
-        <span className="text-xs text-slate-500">stratum last ok: {formatAge(lastOkAt)}</span>
       </div>
       <div className="flex items-center gap-2 mb-2">
         <div className="text-sm text-slate-300 font-mono break-all flex-1">{url}</div>
@@ -1843,14 +1839,6 @@ function DatumPanel({
           <div className="text-slate-400">datum hashrate</div>
           <div className="text-right font-mono text-slate-200">
             {datum.hashrate_ph !== null ? formatHashratePH(datum.hashrate_ph) : '—'}
-          </div>
-          <div className="text-slate-400">stats last ok</div>
-          <div className="text-right font-mono text-slate-500 text-xs">
-            {formatAge(datum.last_ok_at)}
-          </div>
-          <div className="text-slate-400">refreshes in</div>
-          <div className="text-right font-mono text-slate-500 text-xs tabular-nums">
-            {refreshInSec !== null ? `${refreshInSec}s` : '—'}
           </div>
         </div>
       ) : (
@@ -1879,10 +1867,26 @@ function BidProgress({ pct }: { pct: number | null }) {
   );
 }
 
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
+function Card({
+  title,
+  updatedAtMs,
+  children,
+}: {
+  title: string;
+  /** When set, renders a live "updated Xm Ys ago" counter in the header. */
+  updatedAtMs?: number | null;
+  children: React.ReactNode;
+}) {
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
-      <div className="text-xs uppercase tracking-wider text-slate-100 mb-2">{title}</div>
+      <div className="flex items-baseline justify-between mb-2">
+        <div className="text-xs uppercase tracking-wider text-slate-100">{title}</div>
+        {updatedAtMs != null && (
+          <div className="text-[11px] text-slate-500 font-mono">
+            <TickingAge epochMs={updatedAtMs} />
+          </div>
+        )}
+      </div>
       {children}
     </div>
   );
