@@ -139,6 +139,16 @@ export interface State {
    * the market is cheap enough to scale up. null when unavailable.
    */
   readonly hashprice_sat_per_ph_day: number | null;
+
+  /**
+   * One-shot operator override — when true, decide() skips its own
+   * patience / escalation timers and executes whatever EDIT_PRICE
+   * move the current state would justify on a settled basis. Set by
+   * the "Run decision now" button (`/api/actions/tick-now`) and
+   * cleared by the controller after the tick returns. Has no effect
+   * on server-side gates (Braiins cooldown, run_mode checks).
+   */
+  readonly bypass_pacing: boolean;
 }
 
 // ---------------------------------------------------------------------------

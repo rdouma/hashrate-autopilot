@@ -38,9 +38,27 @@ export class Controller {
   private aboveFloorSince: number | null = null;
   private aboveFloorTicks: number = 0;
   private manualOverrideUntilMs: number | null = null;
+  /**
+   * One-shot flag set by `bypassPacingOnce()` — consumed by the next
+   * tick() and cleared immediately, so a manual "Run decision now"
+   * override doesn't leak into the following automatic tick.
+   */
+  private bypassPacingNextTick = false;
   private lastResult: TickResult | null = null;
 
   constructor(private readonly deps: TickDeps) {}
+
+  /**
+   * Arm a one-shot pacing bypass for the next tick — decide() will
+   * skip its self-imposed patience and escalation timers. Called by
+   * the "Run decision now" route (`/api/actions/tick-now`) so the
+   * operator can realise a pending decision without waiting out the
+   * full patience window. No effect on server-side gates (Braiins
+   * cooldown, run_mode).
+   */
+  bypassPacingOnce(): void {
+    this.bypassPacingNextTick = true;
+  }
 
   /**
    * Seed in-memory floor-state from the persisted `runtime_state` row.
@@ -84,11 +102,14 @@ export class Controller {
     if (this.manualOverrideUntilMs !== null && this.manualOverrideUntilMs <= this.deps.now()) {
       this.manualOverrideUntilMs = null;
     }
+    const bypassPacing = this.bypassPacingNextTick;
+    this.bypassPacingNextTick = false;
     let state = await observe(this.deps, {
       previousBelowFloorSince: this.belowFloorSince,
       previousAboveFloorTicks: this.aboveFloorTicks,
       manualOverrideUntilMs: this.manualOverrideUntilMs,
       hashpriceSatPerPhDay: this.deps.getHashprice?.() ?? null,
+      bypassPacing,
     });
     const wasBelow = this.belowFloorSince !== null;
     this.belowFloorSince = state.below_floor_since;

@@ -58,6 +58,11 @@ export interface ObserveInputs {
   readonly manualOverrideUntilMs: number | null;
   /** Break-even hashprice in sat/PH/day from Ocean stats (null if unknown). */
   readonly hashpriceSatPerPhDay: number | null;
+  /**
+   * One-shot operator override — forwarded into State.bypass_pacing for
+   * decide() to skip its self-imposed patience / escalation timers.
+   */
+  readonly bypassPacing: boolean;
 }
 
 /**
@@ -207,6 +212,7 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
     datum,
     last_api_ok_at: deps.braiins.getLastApiOkAt(),
     hashprice_sat_per_ph_day: inputs.hashpriceSatPerPhDay,
+    bypass_pacing: inputs.bypassPacing,
   };
 }
 

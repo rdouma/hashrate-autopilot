@@ -64,13 +64,6 @@ export interface TickNowResponse {
   error?: string;
 }
 
-export interface BumpPriceResponse {
-  ok: boolean;
-  braiins_order_id?: string;
-  old_price_sat_per_eh_day?: number;
-  new_price_sat_per_eh_day?: number;
-  error?: string;
-}
 
 export interface MetricPoint {
   tick_at: number;
@@ -258,7 +251,6 @@ export const api = {
       body: JSON.stringify({ available }),
     }),
   tickNow: () => request<TickNowResponse>('/api/actions/tick-now', { method: 'POST' }),
-  bumpPrice: () => request<BumpPriceResponse>('/api/actions/bump-price', { method: 'POST' }),
   metrics: (range: ChartRange) =>
     request<{ points: MetricPoint[]; range: ChartRange | null }>(
       `/api/metrics?range=${encodeURIComponent(range)}`,

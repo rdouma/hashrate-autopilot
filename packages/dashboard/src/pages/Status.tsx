@@ -94,13 +94,6 @@ export function Status() {
     onSettled: () => qc.invalidateQueries({ queryKey: ['status'] }),
   });
 
-  const bumpMutation = useMutation({
-    mutationFn: () => api.bumpPrice(),
-    onSettled: () => {
-      qc.invalidateQueries({ queryKey: ['status'] });
-    },
-  });
-
   const metricsQuery = useQuery({
     queryKey: ['metrics', chartRange],
     queryFn: () => api.metrics(chartRange),
@@ -303,10 +296,6 @@ export function Status() {
             onTickNow={() => tickNowMutation.mutate()}
             tickPending={tickNowMutation.isPending}
             tickResult={tickNowMutation.data}
-            onBump={() => bumpMutation.mutate()}
-            bumpPending={bumpMutation.isPending}
-            bumpResult={bumpMutation.data}
-            escalationStepSatPerPh={s.config_summary.fill_escalation_step_sat_per_ph_day}
           />
         </div>
       </section>
@@ -662,25 +651,12 @@ function NextActionCard({
   onTickNow,
   tickPending,
   tickResult,
-  onBump,
-  bumpPending,
-  bumpResult,
-  escalationStepSatPerPh,
 }: {
   s: StatusResponse;
   onTickNow: () => void;
   tickPending: boolean;
   tickResult: { ok: boolean; error?: string; proposals?: number } | undefined;
-  onBump: () => void;
-  bumpPending: boolean;
-  bumpResult:
-    | { ok: boolean; error?: string; new_price_sat_per_eh_day?: number }
-    | undefined;
-  escalationStepSatPerPh: number;
 }) {
-  const { intlLocale } = useLocale();
-  const canBump = s.run_mode === 'LIVE' && s.bids.some((b) => b.is_owned);
-
   return (
     <section className="bg-slate-900 border border-slate-800 rounded-lg p-4 h-full flex flex-col">
       <div>
@@ -697,24 +673,10 @@ function NextActionCard({
         <button
           onClick={onTickNow}
           disabled={tickPending}
-          title="Run a full observe-decide-execute tick now, instead of waiting for the next interval blip."
+          title="Run the pending decision immediately — clears the post-edit lock and bypasses the patience/escalation timers so a waiting-to-settle EDIT_PRICE fires on this tick instead of after the full window."
           className="px-3 py-1.5 text-xs rounded border border-slate-700 text-slate-200 hover:bg-slate-800 disabled:opacity-50"
         >
           {tickPending ? 'ticking…' : 'Run decision now'}
-        </button>
-        <button
-          onClick={onBump}
-          disabled={bumpPending || !canBump}
-          title={
-            canBump
-              ? 'Manually raise the current bid by one escalation step (overrides the auto-edit lock for one tick).'
-              : 'Requires LIVE mode with an owned bid.'
-          }
-          className="px-3 py-1.5 text-xs rounded border border-amber-800 text-amber-200 hover:bg-amber-900/40 disabled:opacity-50"
-        >
-          {bumpPending
-            ? 'bumping…'
-            : `Bump price +${formatNumber(escalationStepSatPerPh)} sat/PH/day`}
         </button>
       </div>
 
@@ -727,21 +689,6 @@ function NextActionCard({
           {tickResult.ok
             ? `tick ok — ${tickResult.proposals ?? 0} proposals`
             : `tick failed: ${tickResult.error}`}
-        </div>
-      )}
-      {bumpResult && (
-        <div
-          className={
-            'mt-2 text-xs ' + (bumpResult.ok ? 'text-emerald-300' : 'text-red-400')
-          }
-        >
-          {bumpResult.ok
-            ? `price bumped to ${formatNumber(
-                Math.round((bumpResult.new_price_sat_per_eh_day ?? 0) / 1000),
-                {},
-                intlLocale,
-              )} sat/PH/day`
-            : `bump failed: ${bumpResult.error}`}
         </div>
       )}
 

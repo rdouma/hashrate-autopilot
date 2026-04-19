@@ -154,7 +154,7 @@ export function decide(state: State): readonly Proposal[] {
   // Mode determines escalation behavior:
   // - 'market': jump directly to targetPrice (track market)
   // - 'dampened': step from current_bid + escalation_step (avoid chasing)
-  const shouldEscalate = shouldTriggerEscalation(state);
+  const shouldEscalate = shouldTriggerEscalation(state) || state.bypass_pacing;
   if (!overrideActive && shouldEscalate && primary.price_sat < targetPrice) {
     const escalatedPrice =
       config.escalation_mode === 'market'
@@ -194,7 +194,7 @@ export function decide(state: State): readonly Proposal[] {
     !overrideActive &&
     primary.price_sat > targetPrice + lowerThreshold &&
     !alreadyProposingEdit &&
-    aboveFloorLongEnough
+    (aboveFloorLongEnough || state.bypass_pacing)
   ) {
     proposals.push({
       kind: 'EDIT_PRICE',
