@@ -466,8 +466,8 @@ export function Status() {
               <tbody>
                 {s.bids.map((b) => (
                   <tr key={b.braiins_order_id} className="border-t border-slate-800">
-                    <td className="py-2 px-3 font-mono text-xs">
-                      {b.braiins_order_id.slice(0, 10)}…
+                    <td className="py-2 px-3 font-mono text-xs break-all">
+                      {b.braiins_order_id}
                     </td>
                     <td className="py-2 px-3">
                       {b.is_owned ? (
