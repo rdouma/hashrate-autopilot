@@ -29,8 +29,13 @@ Pick labels freely from the current `gh label list` when filing or
 triaging issues — no need to show the chosen set for approval
 beforehand. Include workflow-stage (`backlog`/`todo`/`in-progress`/
 `review`/etc.), type (`bug`/`feature`/`infra`/`discuss`), and
-triage/routing labels (`agent-ready`/`human-only`/`user-request`/
-`hold`/`waiting-for`) as they apply. Use judgment.
+triage/routing labels (`agent-ready`/`human-only`/`hold`/
+`waiting-for`) as they apply. Use judgment.
+
+**Never apply `user-request`.** That label is reserved for issues
+raised by external users; the operator applies it manually on the
+rare occasion it fits. Everything the operator (or you on the
+operator's behalf) files is not a `user-request`.
 
 ## Label taxonomy
 
