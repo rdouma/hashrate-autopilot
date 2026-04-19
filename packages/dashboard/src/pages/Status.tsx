@@ -1804,6 +1804,13 @@ function DatumPanel({
   // stats" answer. Fall back to the tick_at and then to the stratum
   // probe when Datum isn't wired up yet.
   const updatedAt = datum?.last_ok_at ?? tickAt ?? lastOkAt ?? null;
+
+  // Split the pool URL into scheme / host / port so the card doesn't
+  // wrap an unreadable 60-character string. Pool URLs on Ocean look
+  // like stratum+tcp://alkimia.mynetgear.com:23334 — we care about
+  // the host most, the scheme rarely, the port sometimes. Rendering
+  // three aligned rows beats a wrapped monofont URL every time.
+  const urlParts = splitPoolUrl(url);
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(url);
@@ -1861,14 +1868,27 @@ function DatumPanel({
           </span>
         )}
       </div>
-      <div className="flex items-center gap-2 mb-2">
-        <div className="text-sm text-slate-300 font-mono break-all flex-1">{url}</div>
+      <div className="mt-2 pt-2 border-t border-slate-800">
+        <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+          <div className="text-slate-400">protocol</div>
+          <div className="text-right font-mono text-slate-200 break-all">
+            {urlParts.scheme ?? '\u2014'}
+          </div>
+          <div className="text-slate-400">host</div>
+          <div className="text-right font-mono text-slate-200 break-all">
+            {urlParts.host ?? '\u2014'}
+          </div>
+          <div className="text-slate-400">port</div>
+          <div className="text-right font-mono text-slate-200">
+            {urlParts.port ?? '\u2014'}
+          </div>
+        </div>
         <button
           onClick={copy}
           title="Copy pool URL to clipboard"
-          className="shrink-0 px-2 py-1 text-xs rounded border border-slate-700 text-slate-300 hover:bg-slate-800"
+          className="mt-2 w-full px-2 py-1 text-xs rounded border border-slate-700 text-slate-300 hover:bg-slate-800"
         >
-          {copied ? '✓ copied' : 'copy'}
+          {copied ? '✓ copied URL' : 'copy URL'}
         </button>
       </div>
       {datum ? (
@@ -1906,6 +1926,30 @@ function BidProgress({ pct }: { pct: number | null }) {
       </span>
     </div>
   );
+}
+
+/**
+ * Parse a pool URL like `stratum+tcp://alkimia.example.com:23334`
+ * into its three human-readable pieces. Any part that can't be
+ * extracted comes back null (the component renders "—" for missing
+ * pieces). This is cosmetic-only — the copy button still copies the
+ * original unparsed string.
+ */
+function splitPoolUrl(url: string): {
+  scheme: string | null;
+  host: string | null;
+  port: string | null;
+} {
+  if (!url) return { scheme: null, host: null, port: null };
+  const schemeMatch = /^([a-zA-Z][\w+.-]*):\/\//.exec(url);
+  const scheme = schemeMatch ? schemeMatch[1] : null;
+  const rest = schemeMatch ? url.slice(schemeMatch[0].length) : url;
+  const [hostPart, portPart] = rest.split(':', 2);
+  return {
+    scheme: scheme ?? null,
+    host: hostPart || null,
+    port: portPart ? portPart.split('/')[0] || null : null,
+  };
 }
 
 function Card({
