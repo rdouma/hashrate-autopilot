@@ -5,7 +5,7 @@
  * X-axis aligns visually when stacked.
  */
 
-import { memo, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import {
   formatTimeTick,
@@ -33,10 +33,11 @@ const COLOR_EDIT = '#fbbf24';
 const COLOR_EDIT_SPEED = '#60a5fa';
 const COLOR_CANCEL = '#f87171';
 
-interface HoveredTooltip {
+interface TooltipState {
   event: BidEventView;
   x: number;
   y: number;
+  pinned: boolean;
 }
 
 interface PricePoint {
@@ -59,7 +60,7 @@ export const PriceChart = memo(function PriceChart({
   simMode?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [hovered, setHovered] = useState<HoveredTooltip | null>(null);
+  const [tooltip, setTooltip] = useState<TooltipState | null>(null);
   const { intlLocale } = useLocale();
   const denomination = useDenomination();
 
@@ -169,10 +170,41 @@ export const PriceChart = memo(function PriceChart({
   // Tooltip lives in a portal-style fixed-position node so it's free of
   // the chart container's overflow/clip and can flip near the viewport
   // edges. Coords stored are viewport-absolute (e.clientX/Y).
+  //
+  // Hover opens a transient tooltip; clicking a marker pins it — pinned
+  // tooltips stay until the × is clicked, another marker is clicked, or
+  // the user clicks outside. Pinned also exposes a "copy JSON" button.
   const onMarkerEnter = useCallback((event: BidEventView) => (e: React.MouseEvent) => {
-    setHovered({ event, x: e.clientX, y: e.clientY });
+    setTooltip((prev) => {
+      if (prev?.pinned) return prev;
+      return { event, x: e.clientX, y: e.clientY, pinned: false };
+    });
   }, []);
-  const onMarkerLeave = useCallback(() => setHovered(null), []);
+  const onMarkerLeave = useCallback(() => {
+    setTooltip((prev) => (prev?.pinned ? prev : null));
+  }, []);
+  const onMarkerClick = useCallback((event: BidEventView) => (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setTooltip({ event, x: e.clientX, y: e.clientY, pinned: true });
+  }, []);
+  const closeTooltip = useCallback(() => setTooltip(null), []);
+
+  useEffect(() => {
+    if (!tooltip?.pinned) return;
+    const onDocClick = (ev: MouseEvent) => {
+      const target = ev.target as Node | null;
+      if (target && document.getElementById('price-chart-pinned-tooltip')?.contains(target)) {
+        return;
+      }
+      setTooltip(null);
+    };
+    // Defer so the click that opened the pin doesn't immediately close it.
+    const id = window.setTimeout(() => document.addEventListener('click', onDocClick), 0);
+    return () => {
+      window.clearTimeout(id);
+      document.removeEventListener('click', onDocClick);
+    };
+  }, [tooltip?.pinned]);
 
   if (!chartData) {
     return (
@@ -308,6 +340,7 @@ export const PriceChart = memo(function PriceChart({
           const common = {
             onMouseEnter: onMarkerEnter(e),
             onMouseLeave: onMarkerLeave,
+            onClick: onMarkerClick(e),
             style: { cursor: 'pointer' },
           };
           if (e.kind === 'CREATE_BID') {
@@ -410,13 +443,14 @@ export const PriceChart = memo(function PriceChart({
         )}
       </svg>
 
-      {hovered && <EventTooltip tip={hovered} />}
+      {tooltip && <EventTooltip tip={tooltip} onClose={closeTooltip} />}
     </div>
   );
 });
 
-function EventTooltip({ tip }: { tip: HoveredTooltip }) {
+function EventTooltip({ tip, onClose }: { tip: TooltipState; onClose: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
+  const [copied, setCopied] = useState(false);
   // Initial render at the cursor's natural offset (right + below).
   // useLayoutEffect then measures and flips horizontally / vertically
   // if the tooltip would clip the viewport. Hidden until ready so the
@@ -472,18 +506,57 @@ function EventTooltip({ tip }: { tip: HoveredTooltip }) {
           ? 'text-sky-300'
           : 'text-red-300';
 
+  const copyJson = async () => {
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(e, null, 2));
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Older browsers / insecure contexts — fall back to a selection.
+      const text = JSON.stringify(e, null, 2);
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        setCopied(true);
+        window.setTimeout(() => setCopied(false), 1500);
+      } finally {
+        document.body.removeChild(ta);
+      }
+    }
+  };
+
   return (
     <div
       ref={ref}
+      id={tip.pinned ? 'price-chart-pinned-tooltip' : undefined}
       // `fixed` so positioning is purely viewport-relative — no chart
       // container clip / scroll math. `whitespace-nowrap` on the body
       // means data lines (price/delta/budget/id) never wrap; the reason
       // line opts back into wrapping below.
-      className={`fixed z-50 bg-slate-950 border border-slate-700 rounded-lg shadow-lg p-3 text-xs pointer-events-none whitespace-nowrap ${pos.ready ? '' : 'invisible'}`}
+      //
+      // When pinned the tooltip is interactive (close/copy buttons), so
+      // pointer-events are enabled only then. Hover tooltips stay
+      // pointer-events-none to avoid blocking the marker underneath.
+      className={`fixed z-50 bg-slate-950 border rounded-lg shadow-lg p-3 text-xs whitespace-nowrap ${tip.pinned ? 'border-slate-500 pointer-events-auto' : 'border-slate-700 pointer-events-none'} ${pos.ready ? '' : 'invisible'}`}
       style={{ left: pos.left, top: pos.top }}
     >
-      <div className={`font-semibold uppercase tracking-wider ${headerColor}`}>
-        {kindLabel} · {sourceLabel}
+      <div className="flex items-start justify-between gap-3">
+        <div className={`font-semibold uppercase tracking-wider ${headerColor}`}>
+          {kindLabel} · {sourceLabel}
+        </div>
+        {tip.pinned && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="close"
+            className="text-slate-500 hover:text-slate-200 leading-none text-base -mt-0.5 -mr-0.5"
+          >
+            ×
+          </button>
+        )}
       </div>
       <div className="text-slate-300 mt-1">{formatTimestamp(e.occurred_at)}</div>
       <div className="text-slate-500 text-[10px]">{formatTimestampUtc(e.occurred_at)}</div>
@@ -530,6 +603,20 @@ function EventTooltip({ tip }: { tip: HoveredTooltip }) {
         // the width so it stays readable.
         <div className="mt-2 text-[11px] text-slate-400 italic whitespace-normal max-w-[20rem]">
           {e.reason}
+        </div>
+      )}
+      {tip.pinned && (
+        <div className="mt-3 pt-2 border-t border-slate-800 flex items-center justify-between gap-3">
+          <span className="text-[10px] text-slate-500">
+            click outside to close
+          </span>
+          <button
+            type="button"
+            onClick={copyJson}
+            className="text-[11px] px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700"
+          >
+            {copied ? 'copied' : 'copy JSON'}
+          </button>
         </div>
       )}
     </div>

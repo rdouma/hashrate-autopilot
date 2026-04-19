@@ -97,7 +97,6 @@ export function Status() {
     mutationFn: () => api.bumpPrice(),
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ['status'] });
-      qc.invalidateQueries({ queryKey: ['decisions'] });
     },
   });
 

@@ -165,7 +165,7 @@ Two tiers of config:
 - **Framework**: React 18 + Vite. Served as static files from Fastify in production, or a Vite dev server against the
   daemon API in development.
 - **State management**: TanStack Query for server state; Zustand for transient UI state.
-- **Routing**: `react-router`. Pages: `/status`, `/decisions`, `/config`, `/login`.
+- **Routing**: `react-router`. Pages: `/status`, `/config`, `/login`. Per-decision inspection is on the Status page: clicking a marker on the price chart pins its tooltip and exposes a "copy JSON" button that copies the underlying bid event.
 - **Auth**: single shared password, checked by Fastify middleware; session cookie. Tailscale/VPN is the real
   perimeter; the password is a second factor against someone on the LAN.
 - **Live updates**: polling via TanStack Query (`refetchInterval` ~5s on status screens). No WebSocket/SSE in v1.
