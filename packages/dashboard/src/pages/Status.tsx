@@ -387,11 +387,34 @@ export function Status() {
          * The simulator now respects the dynamic hashprice+max_overpay
          * cap (matching decide()), so the chart can use the same
          * effective-cap line in both real-time and simulation modes.
-         * Pulls from config_summary so the line is always in sync with
-         * whatever the operator's live setting is.
+         * In real-time mode it reads from the live config_summary; in
+         * simulation mode from the current sim param (0 means
+         * disabled, matching how the daemon coerces the field). The
+         * line then honours whatever parameter is under test so the
+         * operator can see whether their tweak pushes the cap up or
+         * down in the relevant market context.
          */
         maxOverpayVsHashpriceSatPerPhDay={
-          s.config_summary.max_overpay_vs_hashprice_sat_per_ph_day
+          simMode
+            ? ((simParamsDebounced?.max_overpay_vs_hashprice_sat_per_eh_day ?? 0) > 0
+                ? (simParamsDebounced!.max_overpay_vs_hashprice_sat_per_eh_day as number) / 1000
+                : null)
+            : s.config_summary.max_overpay_vs_hashprice_sat_per_ph_day
+        }
+        /*
+         * In simulation mode, the "max bid" line must reflect the
+         * simulated max_bid — not the historical one recorded on
+         * each tick_metrics row. Without this, raising Max bid from
+         * 49,000 to 52,000 in the sim inputs leaves the red line on
+         * the chart stuck at the historical 49,000 and the simulated
+         * escalations look clipped below it. Real-time mode passes
+         * null and the chart falls back to the per-tick historical
+         * value as before.
+         */
+        maxBidSatPerPhDay={
+          simMode
+            ? (simParamsDebounced?.max_bid_sat_per_eh_day ?? 0) / 1000
+            : null
         }
         /*
          * Overpay allowance surfaced on the pinned event tooltip so the

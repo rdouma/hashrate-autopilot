@@ -55,6 +55,7 @@ export const PriceChart = memo(function PriceChart({
   showEvents,
   simMode = false,
   maxOverpayVsHashpriceSatPerPhDay = null,
+  maxBidSatPerPhDay = null,
   overpaySatPerPhDay = null,
 }: {
   points: readonly MetricPoint[];
@@ -71,6 +72,18 @@ export const PriceChart = memo(function PriceChart({
    * value.
    */
   maxOverpayVsHashpriceSatPerPhDay?: number | null;
+  /**
+   * Override for the fixed `max_bid` component of the effective-cap
+   * line. In real-time mode (null) the chart uses the historical
+   * `max_bid_sat_per_ph_day` column from `tick_metrics` — what the
+   * autopilot was actually configured to use at each tick. In
+   * simulation mode, pass the simulated `max_bid` so the cap line
+   * (and the shaded "excluded zone" above it) reflects the parameter
+   * under test, not the historical config. The effective cap is
+   * still `min(this, hashprice + maxOverpayVsHashprice)` when the
+   * dynamic cap is set; this just replaces the fixed-cap input.
+   */
+  maxBidSatPerPhDay?: number | null;
   /**
    * The overpay allowance active when the event ran — live config
    * value in real-time mode, simulation param in sim mode. Shown on
@@ -108,9 +121,16 @@ export const PriceChart = memo(function PriceChart({
     // cap isn't configured, this collapses to max_bid and the line
     // looks exactly like the previous "max bid" line.
     const capPoints: PricePoint[] = points
-      .filter((p) => Number.isFinite(p.max_bid_sat_per_ph_day))
+      .filter((p) =>
+        maxBidSatPerPhDay !== null
+          ? true
+          : Number.isFinite(p.max_bid_sat_per_ph_day),
+      )
       .map((p) => {
-        const fixed = p.max_bid_sat_per_ph_day as number;
+        const fixed =
+          maxBidSatPerPhDay !== null
+            ? maxBidSatPerPhDay
+            : (p.max_bid_sat_per_ph_day as number);
         const hashprice = Number.isFinite(p.hashprice_sat_per_ph_day)
           ? (p.hashprice_sat_per_ph_day as number)
           : null;
