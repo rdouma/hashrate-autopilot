@@ -4,6 +4,14 @@ A personal-scale autopilot and monitor for the [Braiins Hashpower marketplace](h
 Keeps your rented-hashrate orders continuously active and cost-optimized within a tolerance you control, so purchased
 hashrate keeps landing at your own Datum-connected pool without manual babysitting.
 
+![Dashboard in real-time mode](docs/images/dashboard.jpg)
+
+The Status page is a single scroll: a hero card with the live bid price, delivered hashrate, and the DRY-RUN /
+LIVE / PAUSED switch on the left; the Next Action panel on the right explaining what the autopilot is about to do
+and when. Below that sit range-selectable hashrate and price charts overlayed with bid events, a stats strip
+(uptime, avg hashrate Braiins-vs-Datum, mutation count, cost per PH delivered, overpay vs fillable and vs hashprice),
+service panels for Braiins / Datum Gateway / Ocean, the active bids table, and per-day and lifetime P&L.
+
 ## Why this exists
 
 The Braiins Hashpower marketplace works well, but orders cancel overnight, prices move, and fills thrash when bids are
@@ -66,6 +74,15 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
 - **What-if simulator** — replays historical `tick_metrics` against a candidate set of strategy parameters and shows
   the simulated uptime, cost, P&L, and tick-by-tick price trace overlaid on the live charts. Lets you backtest a new
   max-bid / overpay / patience setting against real recent market conditions before committing to it.
+
+  ![What-if simulator on the Status page](docs/images/simulator.jpg)
+
+  Flip the Real-time / Simulation toggle at the top of the Status page and the charts redraw against a synthetic
+  bid trace computed from the current parameter bar — Overpay, Max bid, Max over hashprice, Esc. step, Esc. window,
+  Wait to lower, Min lower delta, and dampened-vs-market escalation mode. Stats recalculate in place (uptime,
+  mutation count, avg cost, avg overpay), the simulated cap line and excluded zone follow the sim `Max bid` so you
+  can see whether your ceiling would have clipped real escalations, and the "Apply to config" button writes the
+  validated set back to the live daemon once you're happy.
 - **Dashboard** — hashrate and price charts with time-range picker, bid event markers, pinned-tooltip JSON export,
   stats bar (uptime, avg hashrate — Braiins and Datum side-by-side when Datum is on, cost metrics, mutation count),
   split P&L panels (period and lifetime), live bid table with full IDs, and a full config editor with live reload.
@@ -73,6 +90,23 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
   (CoinGecko, Coinbase, Bitstamp, or Kraken).
 - **Operator overrides** — bump price, trigger an immediate decision tick (bypasses the patience window for one
   tick), pause/resume, or switch between dry-run and live from the dashboard.
+
+## Configuration
+
+Everything that influences the controller — hashrate targets, pricing caps, escalation strategy, budget and alert
+timers, boot mode, payout-source backend, retention windows, the optional Datum and Ocean endpoints — is
+live-editable from the Config page. Values are validated against the same Zod schema the daemon uses at startup;
+Save writes the new row and the next tick picks it up. No daemon restart needed for any value on this page.
+
+![Configuration page — all tunables in one place](docs/images/config.jpg)
+
+Sections map directly to the spec: **Hashrate targets** (including the cheap-mode scale-up), **Pool destination**
+(pool URL, worker identity, Datum stats API URL), **Pricing caps** (fixed `max_bid` plus the optional dynamic
+`max_overpay_vs_hashprice`), **Fill strategy** (overpay, min lower delta, escalation mode + step + window, wait
+before lowering), **Budget**, **Alerts & timers**, **Daemon startup** (boot mode — always dry-run / resume last /
+always live), **On-chain payouts** (payout address + Electrs-or-bitcoind backend), **Profit & Loss** spend scope,
+**BTC price oracle** (feeds the sat↔USD toggle), and **Log retention** for the append-only `tick_metrics` and
+`decisions` tables.
 
 ## Tech stack
 
