@@ -9,26 +9,25 @@ function makeClient(listBids: BraiinsClient['listBids']): BraiinsClient {
 }
 
 function bid({
-  amount,
-  remaining,
+  consumed,
   is_current = false,
 }: {
-  amount: number;
-  remaining: number;
+  consumed: number;
   is_current?: boolean;
 }): BidItem {
-  // Braiins's generated TS type omits amount_sat/is_current (the
-  // OpenAPI spec's required list mentions them but the properties
-  // block doesn't). Mirror the production cast so the test exercises
-  // the same shape the service reads.
+  // Mirror the shape the real list endpoint returns, per the daemon
+  // log sample 2026-04-19: only `counters_committed` is populated on
+  // /spot/bid — `counters_estimate` and `state_estimate` are absent.
   return {
-    bid: { amount_sat: amount, is_current } as unknown as BidItem['bid'],
-    counters_estimate: {} as unknown as BidItem['counters_estimate'],
-    counters_committed: {} as unknown as BidItem['counters_committed'],
-    state_estimate: {
-      amount_remaining_sat: remaining,
-    } as unknown as BidItem['state_estimate'],
-  };
+    bid: { is_current } as unknown as BidItem['bid'],
+    counters_committed: {
+      shares_purchased_m: 0,
+      shares_accepted_m: 0,
+      shares_rejected_m: 0,
+      fee_paid_sat: 0,
+      amount_consumed_sat: consumed,
+    } as unknown as BidItem['counters_committed'],
+  } as unknown as BidItem;
 }
 
 function pageOf(bids: BidItem[]): BidsResponse {
@@ -36,16 +35,9 @@ function pageOf(bids: BidItem[]): BidsResponse {
 }
 
 describe('AccountSpendService', () => {
-  it('sums amount_sat - amount_remaining_sat across every bid', async () => {
-    // Why this formula, not counters_estimate.amount_consumed_sat:
-    // empirically the list endpoint returns counters all-zeros even
-    // for clearly-consuming bids. The controller already uses this
-    // derivation in observe.ts:247.
+  it('sums counters_committed.amount_consumed_sat across every bid', async () => {
     const listBids = vi.fn(async () =>
-      pageOf([
-        bid({ amount: 1000, remaining: 700 }),  // consumed 300
-        bid({ amount: 2000, remaining: 0 }),    // consumed 2000 (fulfilled)
-      ]),
+      pageOf([bid({ consumed: 300 }), bid({ consumed: 2000 })]),
     );
     const svc = new AccountSpendService(makeClient(listBids));
     const snap = await svc.getLifetimeSpend();
@@ -56,10 +48,10 @@ describe('AccountSpendService', () => {
   it('splits spend into closed vs active using bid.is_current', async () => {
     const listBids = vi.fn(async () =>
       pageOf([
-        bid({ amount: 1000, remaining: 900, is_current: true }),   // active, 100
-        bid({ amount: 500, remaining: 0, is_current: false }),     // closed, 500
-        bid({ amount: 200, remaining: 150, is_current: true }),    // active, 50
-        bid({ amount: 300, remaining: 50, is_current: false }),    // closed, 250
+        bid({ consumed: 100, is_current: true }),   // active
+        bid({ consumed: 500, is_current: false }),  // closed
+        bid({ consumed: 50, is_current: true }),    // active
+        bid({ consumed: 250, is_current: false }),  // closed
       ]),
     );
     const svc = new AccountSpendService(makeClient(listBids));
@@ -70,10 +62,8 @@ describe('AccountSpendService', () => {
   });
 
   it('paginates until a short page is returned', async () => {
-    const fullPage = pageOf(
-      Array.from({ length: 200 }, () => bid({ amount: 10, remaining: 0 })),
-    );
-    const partial = pageOf([bid({ amount: 1, remaining: 0 })]);
+    const fullPage = pageOf(Array.from({ length: 200 }, () => bid({ consumed: 10 })));
+    const partial = pageOf([bid({ consumed: 1 })]);
     const listBids = vi
       .fn<BraiinsClient['listBids']>()
       .mockResolvedValueOnce(fullPage)
@@ -96,12 +86,10 @@ describe('AccountSpendService', () => {
     expect(listBids).toHaveBeenCalledTimes(1);
   });
 
-  it('treats missing state_estimate as "nothing consumed"', async () => {
-    // The list endpoint occasionally omits state_estimate; we should
-    // degrade to 0 (not NaN) rather than poison the total.
+  it('treats missing counters_committed as zero (degrade, not poison)', async () => {
     const items: BidItem[] = [
-      bid({ amount: 500, remaining: 200 }), // consumed 300
-      { bid: { amount_sat: 1000, is_current: true } } as unknown as BidItem,
+      bid({ consumed: 300 }),
+      { bid: { is_current: false } } as unknown as BidItem, // no counters_committed
     ];
     const listBids = vi.fn(async () => ({ items }) satisfies BidsResponse);
     const svc = new AccountSpendService(makeClient(listBids));
@@ -115,13 +103,13 @@ describe('AccountSpendService', () => {
     const svc = new AccountSpendService(makeClient(listBids));
     expect(await svc.getLifetimeSpend()).toBeNull();
     // Next call retries (the null result was not cached).
-    listBids.mockResolvedValueOnce(pageOf([bid({ amount: 42, remaining: 0 })]));
+    listBids.mockResolvedValueOnce(pageOf([bid({ consumed: 42 })]));
     const snap = await svc.getLifetimeSpend();
     expect(snap?.total_settlement_sat).toBe(42);
   });
 
   it('caches successful results within the TTL', async () => {
-    const listBids = vi.fn(async () => pageOf([bid({ amount: 100, remaining: 0 })]));
+    const listBids = vi.fn(async () => pageOf([bid({ consumed: 100 })]));
     let now = 1_700_000_000_000;
     const svc = new AccountSpendService(makeClient(listBids), {
       cacheTtlMs: 60_000,

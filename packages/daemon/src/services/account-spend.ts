@@ -8,11 +8,14 @@
  *
  * Source: `GET /spot/bid` with pagination.
  *
- * Per-bid spend formula: `bid.amount_sat - state_estimate.amount_remaining_sat`.
- * Empirically, `counters_estimate.amount_consumed_sat` on the list
- * endpoint is not populated (stays at 0 even for clearly-consuming
- * bids), so we use the same `amount_sat − amount_remaining_sat`
- * derivation the controller already applies in observe.ts:247.
+ * Per-bid spend: `counters_committed.amount_consumed_sat`. Empirically
+ * (daemon log 2026-04-19 build 12) the list endpoint returns *only*
+ * `counters_committed` per item — `counters_estimate` and
+ * `state_estimate` are populated solely on `/spot/bid/detail/{id}`.
+ * The OpenAPI spec promises all three; the wire only delivers the
+ * committed counter. `counters_committed.amount_consumed_sat` matches
+ * the final spend on terminal bids and is Braiins's best settled-only
+ * figure for active bids (may lag the latest hour's consumption).
  *
  * Splits: each bid is also categorised by `bid.is_current` — `true`
  * for non-terminal statuses (ACTIVE, CREATED, PAUSED, PENDING_CANCEL,
@@ -101,27 +104,6 @@ export class AccountSpendService {
         return null;
       }
       const items: BidItem[] = res.items ?? [];
-      // One-shot diagnostic on the very first response: dumps the raw
-      // page shape so we can see whether `/spot/bid` returns the same
-      // envelope as `/spot/bid/current`, and whether items include the
-      // `amount_sat` / `state_estimate.amount_remaining_sat` fields we
-      // rely on. Previous build showed spent=0 even on an account with
-      // obvious spend. One log line per daemon process.
-      if (i === 0 && !AccountSpendService.loggedSample) {
-        AccountSpendService.loggedSample = true;
-        console.warn(
-          `[account-spend] first /spot/bid response: itemsCount=${items.length} rawKeys=${Object.keys(res as unknown as object).join(',')}`,
-        );
-        if (items.length > 0) {
-          console.warn(
-            `[account-spend] first /spot/bid item sample: ${JSON.stringify(items[0])}`,
-          );
-        } else {
-          console.warn(
-            `[account-spend] raw response body (first 2KB): ${JSON.stringify(res).slice(0, 2048)}`,
-          );
-        }
-      }
       if (items.length === 0) break;
 
       for (const item of items) {
@@ -154,32 +136,23 @@ export class AccountSpendService {
     };
   }
 
-  // Class-level flag so the sample is logged once per daemon lifetime,
-  // not once per fetch cycle.
-  private static loggedSample = false;
 }
 
 /**
- * consumed = amount_sat - amount_remaining_sat, floored at 0.
- * Resilient to the list endpoint occasionally omitting `state_estimate`
- * (treated as "nothing consumed yet"). Does NOT use
- * `counters_estimate.amount_consumed_sat` — empirically that field
- * returns 0 on the list endpoint even for clearly-consuming bids.
- *
- * Why the cast: Braiins's OpenAPI spec lists `amount_sat` as required
- * on SpotMarketBid but omits it from the properties block, so the
- * generated TS type doesn't carry it. observe.ts:217 works around
- * the same gap the same way. The field exists on the wire.
+ * Read `counters_committed.amount_consumed_sat`, floored at 0.
+ * The list endpoint returns this field on every item; other counter
+ * variants (estimate / state_estimate) are absent.
  */
 function consumedSatFor(item: BidItem): number {
-  const bid = item.bid as unknown as { amount_sat?: number; is_current?: boolean } | undefined;
-  const total = Number(bid?.amount_sat ?? 0);
-  const remaining = Number(item.state_estimate?.amount_remaining_sat ?? total);
-  if (!Number.isFinite(total) || !Number.isFinite(remaining)) return 0;
-  return Math.max(0, total - remaining);
+  const consumed = Number(item.counters_committed?.amount_consumed_sat ?? 0);
+  if (!Number.isFinite(consumed)) return 0;
+  return Math.max(0, consumed);
 }
 
 function isCurrentBid(item: BidItem): boolean {
+  // `is_current` is listed as required on SpotMarketBid in the
+  // OpenAPI spec but absent from the generated TS properties block,
+  // same codegen gap as `amount_sat` (worked around in observe.ts).
   const bid = item.bid as unknown as { is_current?: boolean } | undefined;
   return Boolean(bid?.is_current);
 }

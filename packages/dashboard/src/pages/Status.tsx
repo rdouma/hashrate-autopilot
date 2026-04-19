@@ -1402,7 +1402,7 @@ function FinancePanel({
         value={data.spent_sat}
         tooltip={
           data.spent_scope === 'account'
-            ? 'Sum of (amount_sat − amount_remaining_sat) across every bid on /v1/spot/bid — covers active + historical bids, including any that existed before the autopilot was switched on, and reflects in-flight consumption before the hourly settlement ledger catches up. Switch via Config → P&L panel.'
+            ? 'Sum of counters_committed.amount_consumed_sat across every bid on /v1/spot/bid — covers active + historical bids, including any that existed before the autopilot was switched on. May lag the latest hour of active-bid consumption (Braiins only updates committed counters on each hourly settlement tick). Switch via Config → P&L panel.'
             : 'Lifetime sum of (amount_sat − amount_remaining_sat) across every bid the autopilot has tagged. Excludes any bids placed before the autopilot was switched on. Switch to "whole account" via Config → Money panel.'
         }
       />
