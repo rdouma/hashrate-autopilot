@@ -42,6 +42,12 @@ export interface MetricPoint {
   readonly hashprice_sat_per_ph_day: number | null;
   readonly max_bid_sat_per_ph_day: number | null;
   readonly available_balance_sat: number | null;
+  /**
+   * Hashrate Datum reports for its own connected workers, PH/s.
+   * Null when the Datum integration is disabled, the poll failed
+   * for that tick, or the tick predates migration 0029.
+   */
+  readonly datum_hashrate_ph: number | null;
 }
 
 export async function registerMetricsRoute(
@@ -100,6 +106,7 @@ function toMetricPoint(r: {
   hashprice_sat_per_eh_day: number | null;
   max_bid_sat_per_eh_day: number | null;
   available_balance_sat: number | null;
+  datum_hashrate_ph: number | null;
 }): MetricPoint {
   return {
     tick_at: r.tick_at,
@@ -127,6 +134,7 @@ function toMetricPoint(r: {
         ? r.max_bid_sat_per_eh_day / EH_PER_PH
         : null,
     available_balance_sat: r.available_balance_sat,
+    datum_hashrate_ph: r.datum_hashrate_ph,
   };
 }
 

@@ -1,8 +1,12 @@
 /**
- * Hashrate-only chart: delivered (filled green area) with target + floor as
- * dashed reference lines. Pairs with `PriceChart` rendered immediately
- * below it so price moves can be matched up against fill events visually
- * — both charts share the same time-range filter and X-axis layout.
+ * Hashrate-only chart: Braiins-delivered hashrate as a filled area,
+ * Datum-measured hashrate as a second line when the Datum integration
+ * is active, and target + floor as dashed reference lines. The two
+ * series let the operator eyeball the gap between what Braiins bills
+ * for and what Datum actually sees arrive at the gateway. Pairs with
+ * `PriceChart` rendered immediately below it so price moves can be
+ * matched against fill events visually — both charts share the same
+ * time-range filter and X-axis layout.
  */
 
 import { memo, useMemo } from 'react';
@@ -30,6 +34,7 @@ const HEIGHT = 200;
 const PADDING = { top: 16, right: 16, bottom: 24, left: 80 };
 
 const COLOR_DELIVERED = '#34d399';
+const COLOR_DATUM = '#38bdf8';
 const COLOR_TARGET = '#94a3b8';
 const COLOR_FLOOR = '#64748b';
 
@@ -62,11 +67,17 @@ export const HashrateChart = memo(function HashrateChart({
     const ys = points.map((p) => p.delivered_ph);
     const targets = points.map((p) => p.target_ph);
     const floors = points.map((p) => p.floor_ph);
+    const datumYs = points.map((p) => p.datum_hashrate_ph);
+    const datumMax = datumYs.reduce<number>(
+      (acc, v) => (v !== null && v > acc ? v : acc),
+      0,
+    );
+    const hasDatum = datumYs.some((v) => v !== null);
 
     const minX = xs[0]!;
     const maxX = xs[xs.length - 1]!;
 
-    const yMaxData = Math.max(...ys, ...targets, ...floors);
+    const yMaxData = Math.max(...ys, ...targets, ...floors, datumMax);
 
     const yTicks = niceYTicks(0, yMaxData > 0 ? yMaxData * 1.1 : 1, 5);
     const yMin = yTicks[0] ?? 0;
@@ -90,6 +101,29 @@ export const HashrateChart = memo(function HashrateChart({
         })
         .join(' ');
 
+    // Datum path: break into segments on null. Without this, SVG would
+    // render a straight line across gaps (pre-migration data, poll
+    // failures) and make those gaps look like real data.
+    const datumPath = (() => {
+      const segments: string[] = [];
+      let current = '';
+      for (let i = 0; i < datumYs.length; i += 1) {
+        const v = datumYs[i];
+        if (v === null || v === undefined) {
+          if (current) {
+            segments.push(current);
+            current = '';
+          }
+          continue;
+        }
+        const x = xScale(xs[i]!).toFixed(1);
+        const y = yScale(v).toFixed(1);
+        current += `${current ? 'L' : 'M'}${x},${y} `;
+      }
+      if (current) segments.push(current);
+      return segments.join(' ');
+    })();
+
     const deliveredPath = hashratePath(ys);
     const targetPath = hashratePath(targets);
     const floorPath = hashratePath(floors);
@@ -99,7 +133,23 @@ export const HashrateChart = memo(function HashrateChart({
     const xTickInterval = pickTimeTickInterval(maxX - minX);
     const xTicks = localAlignedTimeTicks(minX, maxX, xTickInterval);
 
-    return { xs, minX, maxX, yMax, yMin, xScale, yScale, deliveredPath, targetPath, floorPath, yTicks, xTickInterval, xTicks };
+    return {
+      xs,
+      minX,
+      maxX,
+      yMax,
+      yMin,
+      xScale,
+      yScale,
+      deliveredPath,
+      datumPath,
+      hasDatum,
+      targetPath,
+      floorPath,
+      yTicks,
+      xTickInterval,
+      xTicks,
+    };
   }, [points]);
 
   if (!chartData) {
@@ -107,7 +157,7 @@ export const HashrateChart = memo(function HashrateChart({
       <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <h3 className="text-xs uppercase tracking-wider text-slate-100">
-            Delivered hashrate
+            Hashrate
           </h3>
         </div>
         <div className="mt-4 text-sm text-slate-500">
@@ -117,16 +167,19 @@ export const HashrateChart = memo(function HashrateChart({
     );
   }
 
-  const { minX, maxX, xScale, yScale, deliveredPath, targetPath, floorPath, yTicks, xTickInterval, xTicks } = chartData;
+  const { minX, maxX, xScale, yScale, deliveredPath, datumPath, hasDatum, targetPath, floorPath, yTicks, xTickInterval, xTicks } = chartData;
 
   return (
     <div className={`bg-slate-900 border rounded-lg p-4 ${simMode ? 'border-amber-800/40' : 'border-slate-800'}`}>
       <div className="flex items-center justify-between mb-2 gap-3 flex-wrap">
         <h3 className="text-xs uppercase tracking-wider text-slate-100">
-          {simMode ? 'Simulated hashrate' : 'Delivered hashrate'}
+          {simMode ? 'Simulated hashrate' : 'Hashrate'}
         </h3>
         <div className="flex items-center gap-3 text-xs flex-wrap">
-          <Legend color={simMode ? '#fbbf24' : COLOR_DELIVERED} label={simMode ? 'simulated' : 'delivered'} />
+          <Legend color={simMode ? '#fbbf24' : COLOR_DELIVERED} label={simMode ? 'simulated' : 'delivered (Braiins)'} />
+          {!simMode && hasDatum && (
+            <Legend color={COLOR_DATUM} label="received (Datum)" />
+          )}
           <Legend color={COLOR_TARGET} label="target" dashed />
           <Legend color={COLOR_FLOOR} label="floor" dashed />
         </div>
@@ -168,6 +221,16 @@ export const HashrateChart = memo(function HashrateChart({
           opacity="0.5"
         />
         <path d={deliveredPath} stroke={simMode ? '#fbbf24' : COLOR_DELIVERED} strokeWidth="1.8" fill="none" />
+        {!simMode && hasDatum && (
+          <path
+            d={datumPath}
+            stroke={COLOR_DATUM}
+            strokeWidth="1.6"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        )}
 
         <defs>
           <linearGradient id="deliveredFill" x1="0" y1="0" x2="0" y2="1">
