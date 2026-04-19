@@ -1414,11 +1414,19 @@ function FinancePanel({
         ? 'text-emerald-300'
         : 'text-red-300';
 
+  const hasPerDay =
+    dailyIncomeSat !== null ||
+    hasDailySpend ||
+    dailyNetSat !== null ||
+    data.ocean?.hashprice_sat_per_ph_day != null ||
+    data.ocean?.lifetime_sat != null ||
+    !!data.ocean?.time_to_payout_text;
+
   return (
     <section className="bg-slate-900 border border-slate-800 rounded-lg p-4 flex flex-col">
       <div className="flex items-baseline justify-between mb-3">
         <div className="text-xs uppercase tracking-wider text-slate-100">Profit &amp; Loss</div>
-        <div className="flex items-center gap-2 text-[11px] text-slate-500">
+        <div className="flex items-center gap-2 text-[11px] text-slate-500 font-mono">
           <TickingAge epochMs={data.checked_at_ms} />
           <button
             onClick={onRefresh}
@@ -1441,128 +1449,143 @@ function FinancePanel({
         </div>
       </div>
 
-      {/* The P&L panel reads as the arithmetic of the net line: an
-          explicit leading sign tells the operator which side of the
-          ledger each row sits on. Spent is the only subtraction; Ocean
-          + on-chain are the additions; the bottom line is the sum. */}
-      <FinanceRow
-        sign="minus"
-        label={data.spent_scope === 'account' ? 'spent (whole account)' : 'spent (autopilot)'}
-        value={data.spent_sat}
-        tooltip={
-          data.spent_scope === 'account'
-            ? 'Sum of counters_committed.amount_consumed_sat across every bid on /v1/spot/bid — covers active + historical bids, including any that existed before the autopilot was switched on. May lag the latest hour of active-bid consumption (Braiins only updates committed counters on each hourly settlement tick). Switch via Config → P&L panel.'
-            : 'Lifetime sum of (amount_sat − amount_remaining_sat) across every bid the autopilot has tagged. Excludes any bids placed before the autopilot was switched on. Switch to "whole account" via Config → Money panel.'
-        }
-      />
-      {data.spent_scope === 'account' &&
-        data.spent_closed_sat !== null &&
-        data.spent_active_sat !== null && (
-          <>
-            <FinanceSubRow
-              label="closed bids"
-              value={data.spent_closed_sat}
-              tooltip="Sum across terminal bids — status CANCELED or FULFILLED (is_current=false). Money that has definitively left the account."
-            />
-            <FinanceSubRow
-              label="active (in-flight)"
-              value={data.spent_active_sat}
-              tooltip="Sum across still-running bids — status ACTIVE / PAUSED / etc. (is_current=true). Live in-flight consumption; not yet settled in Braiins' hourly ledger."
-            />
-          </>
-        )}
-      <FinanceRow
-        sign="plus"
-        label="unpaid earnings (Ocean)"
-        value={data.expected_sat}
-        tooltip={
-          data.ocean
-            ? `Ocean's Unpaid Earnings — what will land on-chain at the next payout. Threshold: ${formatSats(data.ocean.payout_threshold_sat)} sat (~0.01 BTC).`
-            : 'Ocean stats unavailable.'
-        }
-      />
-      <FinanceRow
-        sign="plus"
-        label="collected (on-chain)"
-        value={data.collected_sat}
-        tooltip={
-          data.collected_sat !== null
-            ? 'UTXOs at the configured payout address. Read via Electrs (preferred, instant) or bitcoind RPC (slower).'
-            : 'Not configured. Go to Config → On-chain payouts and select Electrs or Bitcoin Core RPC to track your on-chain balance.'
-        }
-      />
-
-      <div className="mt-3 pt-3 border-t border-slate-800">
-        <FinanceRow
-          sign="equals"
-          label="net"
-          value={data.net_sat}
-          // Only the bottom-line gets a sentiment color — green when
-          // the autopilot has paid for itself, red when it's still
-          // digging out of the initial deposit. Keeps the rest of the
-          // panel calm so the eye lands on the conclusion.
-          valueClass={netColor}
-          tooltip="Collected on-chain + Ocean's unpaid earnings − spent on bids. Negative = still recouping the initial deposit."
-        />
-      </div>
-
-      {(data.ocean || hasDailySpend) && (
-        <div className="mt-3 pt-3 border-t border-slate-800 space-y-1 text-[11px] text-slate-500 font-mono">
-          {/* Run-rate: what the autopilot costs / earns *right now*
-              at current bid price + delivered hashrate, vs Ocean's
-              estimated daily earnings at the same hashrate. The net
-              tells the operator if the autopilot is profitable per day
-              under present conditions — distinct from the lifetime
-              P&L above. */}
-          {dailyIncomeSat !== null && (
-            <FinanceFootnote
-              label="income/day"
-              value={denomination.formatSat(dailyIncomeSat, intlLocale)}
-              tooltip="Ocean's estimated earnings per day at the address's 3-hour hashrate."
-            />
-          )}
-          {hasDailySpend && (
-            <FinanceFootnote
-              label="spend/day"
-              value={denomination.formatSat(Math.round(dailySpendSat), intlLocale)}
-              tooltip="Cost per day at current bid price × delivered hashrate, summed across active owned bids. Braiins only debits for hashrate actually delivered, so this tracks reality (not the speed-limit cap)."
-            />
-          )}
-          {dailyNetSat !== null && (
-            <FinanceFootnote
-              label="net/day"
-              value={
-                denomination.mode === 'usd' && denomination.btcPrice !== null
-                  ? `${dailyNetSat >= 0 ? '+' : ''}${denomination.formatSat(dailyNetSat, intlLocale)}`
-                  : `${dailyNetSat >= 0 ? '+' : ''}${formatNumber(dailyNetSat, {}, intlLocale)} sat`
-              }
-              tooltip="Income/day − spend/day. Positive = the autopilot is profitable at current rates; negative = burning money per day. Don't confuse with the lifetime net above."
-              valueClass={dailyNetColor}
-            />
-          )}
-          {data.ocean?.hashprice_sat_per_ph_day != null && (
-            <FinanceFootnote
-              label="hashprice (break-even)"
-              value={denomination.formatSatPerPhDay(data.ocean.hashprice_sat_per_ph_day, intlLocale)}
-              tooltip="Revenue per PH/s per day from mining at the current network difficulty + block reward. If you're paying ABOVE this for hashrate, you're spending more than mining earns. Below = profitable."
-            />
-          )}
-          {data.ocean?.lifetime_sat != null && (
-            <FinanceFootnote
-              label="ocean lifetime"
-              value={denomination.formatSat(data.ocean.lifetime_sat, intlLocale)}
-              tooltip="Total earned at this address since first share, per Ocean."
-            />
-          )}
-          {data.ocean?.time_to_payout_text && (
-            <FinanceFootnote
-              label="next payout"
-              value={formatNextPayout(data.ocean.time_to_payout_text)}
-              tooltip="Ocean's estimate at the address's 3-hour hashrate until earnings cross the payout threshold (0.01048576 BTC). The timestamp is computed from this duration plus the current time — slides earlier as hashrate climbs, later as it drops."
-            />
+      {/*
+       * Two-column split per operator request: left = per-day run-rate
+       * (what the autopilot is costing/earning RIGHT NOW), right =
+       * lifetime totals (the actual P&L ledger). Same panel because the
+       * two views inform each other — if net/day is positive but the
+       * lifetime net is deep red, you're on the road out. On narrow
+       * viewports the columns stack vertically (single grid column).
+       */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4">
+        {/* Left column — per-day run-rate */}
+        <div>
+          <div className="text-[10px] uppercase tracking-wider text-slate-500 mb-2">per day (now)</div>
+          {hasPerDay ? (
+            <div className="space-y-1 text-[11px] text-slate-500 font-mono">
+              {dailyIncomeSat !== null && (
+                <FinanceFootnote
+                  label="income/day"
+                  value={denomination.formatSat(dailyIncomeSat, intlLocale)}
+                  tooltip="Ocean's estimated earnings per day at the address's 3-hour hashrate."
+                />
+              )}
+              {hasDailySpend && (
+                <FinanceFootnote
+                  label="spend/day"
+                  value={denomination.formatSat(Math.round(dailySpendSat), intlLocale)}
+                  tooltip="Cost per day at current bid price × delivered hashrate, summed across active owned bids. Braiins only debits for hashrate actually delivered, so this tracks reality (not the speed-limit cap)."
+                />
+              )}
+              {dailyNetSat !== null && (
+                <FinanceFootnote
+                  label="net/day"
+                  value={
+                    denomination.mode === 'usd' && denomination.btcPrice !== null
+                      ? `${dailyNetSat >= 0 ? '+' : ''}${denomination.formatSat(dailyNetSat, intlLocale)}`
+                      : `${dailyNetSat >= 0 ? '+' : ''}${formatNumber(dailyNetSat, {}, intlLocale)} sat`
+                  }
+                  tooltip="Income/day − spend/day. Positive = the autopilot is profitable at current rates; negative = burning money per day. Don't confuse with the lifetime net on the right."
+                  valueClass={dailyNetColor}
+                />
+              )}
+              {data.ocean?.hashprice_sat_per_ph_day != null && (
+                <FinanceFootnote
+                  label="hashprice (break-even)"
+                  value={denomination.formatSatPerPhDay(data.ocean.hashprice_sat_per_ph_day, intlLocale)}
+                  tooltip="Revenue per PH/s per day from mining at the current network difficulty + block reward. If you're paying ABOVE this for hashrate, you're spending more than mining earns. Below = profitable."
+                />
+              )}
+              {data.ocean?.lifetime_sat != null && (
+                <FinanceFootnote
+                  label="ocean lifetime"
+                  value={denomination.formatSat(data.ocean.lifetime_sat, intlLocale)}
+                  tooltip="Total earned at this address since first share, per Ocean."
+                />
+              )}
+              {data.ocean?.time_to_payout_text && (
+                <FinanceFootnote
+                  label="next payout"
+                  value={formatNextPayout(data.ocean.time_to_payout_text)}
+                  tooltip="Ocean's estimate at the address's 3-hour hashrate until earnings cross the payout threshold (0.01048576 BTC). The timestamp is computed from this duration plus the current time — slides earlier as hashrate climbs, later as it drops."
+                />
+              )}
+            </div>
+          ) : (
+            <div className="text-[11px] text-slate-600">no active bids</div>
           )}
         </div>
-      )}
+
+        {/* Right column — lifetime totals (the actual P&L ledger) */}
+        <div>
+          <div className="text-[10px] uppercase tracking-wider text-slate-500 mb-2">lifetime totals</div>
+          {/* The P&L panel reads as the arithmetic of the net line: an
+              explicit leading sign tells the operator which side of the
+              ledger each row sits on. Spent is the only subtraction;
+              Ocean + on-chain are the additions; the bottom line is the
+              sum. */}
+          <FinanceRow
+            sign="minus"
+            label={data.spent_scope === 'account' ? 'spent (whole account)' : 'spent (autopilot)'}
+            value={data.spent_sat}
+            tooltip={
+              data.spent_scope === 'account'
+                ? 'Sum of counters_committed.amount_consumed_sat across every bid on /v1/spot/bid — covers active + historical bids, including any that existed before the autopilot was switched on. May lag the latest hour of active-bid consumption (Braiins only updates committed counters on each hourly settlement tick). Switch via Config → P&L panel.'
+                : 'Lifetime sum of (amount_sat − amount_remaining_sat) across every bid the autopilot has tagged. Excludes any bids placed before the autopilot was switched on. Switch to "whole account" via Config → Money panel.'
+            }
+          />
+          {data.spent_scope === 'account' &&
+            data.spent_closed_sat !== null &&
+            data.spent_active_sat !== null && (
+              <>
+                <FinanceSubRow
+                  label="closed bids"
+                  value={data.spent_closed_sat}
+                  tooltip="Sum across terminal bids — status CANCELED or FULFILLED (is_current=false). Money that has definitively left the account."
+                />
+                <FinanceSubRow
+                  label="active (in-flight)"
+                  value={data.spent_active_sat}
+                  tooltip="Sum across still-running bids — status ACTIVE / PAUSED / etc. (is_current=true). Live in-flight consumption; not yet settled in Braiins' hourly ledger."
+                />
+              </>
+            )}
+          <FinanceRow
+            sign="plus"
+            label="unpaid earnings (Ocean)"
+            value={data.expected_sat}
+            tooltip={
+              data.ocean
+                ? `Ocean's Unpaid Earnings — what will land on-chain at the next payout. Threshold: ${formatSats(data.ocean.payout_threshold_sat)} sat (~0.01 BTC).`
+                : 'Ocean stats unavailable.'
+            }
+          />
+          <FinanceRow
+            sign="plus"
+            label="collected (on-chain)"
+            value={data.collected_sat}
+            tooltip={
+              data.collected_sat !== null
+                ? 'UTXOs at the configured payout address. Read via Electrs (preferred, instant) or bitcoind RPC (slower).'
+                : 'Not configured. Go to Config → On-chain payouts and select Electrs or Bitcoin Core RPC to track your on-chain balance.'
+            }
+          />
+
+          <div className="mt-3 pt-3 border-t border-slate-800">
+            <FinanceRow
+              sign="equals"
+              label="net"
+              value={data.net_sat}
+              // Only the bottom-line gets a sentiment color — green when
+              // the autopilot has paid for itself, red when it's still
+              // digging out of the initial deposit. Keeps the rest of
+              // the panel calm so the eye lands on the conclusion.
+              valueClass={netColor}
+              tooltip="Collected on-chain + Ocean's unpaid earnings − spent on bids. Negative = still recouping the initial deposit."
+            />
+          </div>
+        </div>
+      </div>
     </section>
   );
 }
