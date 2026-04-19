@@ -46,6 +46,7 @@ import { useLocale } from '../lib/locale';
 
 const RUN_MODES = ['DRY_RUN', 'LIVE', 'PAUSED'] as const;
 const CHART_RANGE_STORAGE_KEY = 'hashrate-chart-range';
+const STATUS_QUERY_KEY = ['status'] as const;
 
 function readStoredChartRange(): ChartRange {
   if (typeof window === 'undefined') return DEFAULT_CHART_RANGE;
@@ -419,6 +420,7 @@ export function Status() {
         <Card
           title="Braiins"
           nextRefreshAtMs={s.next_tick_at}
+          refetchQueryKey={STATUS_QUERY_KEY}
           badges={
             <ReachabilityBadge
               label="API reachable"
@@ -1389,12 +1391,36 @@ function TickingAge({ epochMs }: { epochMs: number | null | undefined }) {
  * predictable cadence — operators want to know how long until new
  * data, not how old the current data is.
  */
-function RefreshCountdown({ nextAtMs }: { nextAtMs: number | null | undefined }) {
+function RefreshCountdown({
+  nextAtMs,
+  refetchQueryKey,
+}: {
+  nextAtMs: number | null | undefined;
+  /**
+   * When the countdown hits zero, invalidate this query so the
+   * panel's data catches up without waiting for react-query's next
+   * scheduled poll. Needed on panels whose `nextAtMs` tracks a
+   * server-side cadence (daemon tick) that's faster than the
+   * dashboard's background poll interval — otherwise "refreshing…"
+   * sits on screen for up to the poll interval (30s for /api/status)
+   * even when the underlying data source is instant.
+   */
+  refetchQueryKey?: readonly unknown[];
+}) {
+  const qc = useQueryClient();
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1_000);
     return () => clearInterval(id);
   }, []);
+  useEffect(() => {
+    if (!refetchQueryKey || nextAtMs == null) return;
+    const delay = Math.max(0, nextAtMs - Date.now()) + 300;
+    const id = setTimeout(() => {
+      qc.invalidateQueries({ queryKey: refetchQueryKey });
+    }, delay);
+    return () => clearTimeout(id);
+  }, [nextAtMs, refetchQueryKey, qc]);
   if (nextAtMs == null) return <span>—</span>;
   const msUntil = nextAtMs - now;
   // Once the countdown crosses zero we're waiting on either the
@@ -2044,7 +2070,7 @@ function DatumPanel({
       <div className="flex items-baseline justify-between mb-2">
         <div className="text-xs uppercase tracking-wider text-slate-100">Datum Gateway</div>
         <div className="text-[11px] text-slate-500 font-mono">
-          <RefreshCountdown nextAtMs={nextTickAt} />
+          <RefreshCountdown nextAtMs={nextTickAt} refetchQueryKey={STATUS_QUERY_KEY} />
         </div>
       </div>
       <div className="flex items-center gap-2 mb-2 flex-wrap">
@@ -2056,9 +2082,9 @@ function DatumPanel({
         />
         {datum && (
           <ReachabilityBadge
-            label="stats reachable"
+            label="API reachable"
             reachable={datum.reachable}
-            downLabel={`stats unreachable (${datum.consecutive_failures})`}
+            downLabel={`API unreachable (${datum.consecutive_failures})`}
             title="Datum /umbrel-api HTTP poll."
           />
         )}
@@ -2161,12 +2187,15 @@ function splitPoolUrl(url: string): {
 function Card({
   title,
   nextRefreshAtMs,
+  refetchQueryKey,
   badges,
   children,
 }: {
   title: string;
   /** When set, renders a "refreshes in X" countdown in the header. */
   nextRefreshAtMs?: number | null;
+  /** Query key to invalidate when the countdown hits zero. */
+  refetchQueryKey?: readonly unknown[];
   /** Optional reachability pills rendered under the title. */
   badges?: React.ReactNode;
   children: React.ReactNode;
@@ -2177,7 +2206,7 @@ function Card({
         <div className="text-xs uppercase tracking-wider text-slate-100">{title}</div>
         {nextRefreshAtMs != null && (
           <div className="text-[11px] text-slate-500 font-mono">
-            <RefreshCountdown nextAtMs={nextRefreshAtMs} />
+            <RefreshCountdown nextAtMs={nextRefreshAtMs} refetchQueryKey={refetchQueryKey} />
           </div>
         )}
       </div>
