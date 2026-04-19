@@ -1343,22 +1343,6 @@ function FinancePanel({
     }
   };
 
-  if (!data) {
-    return (
-      <section className="bg-slate-900 border border-slate-800 rounded-lg p-4">
-        <div className="text-xs uppercase tracking-wider text-slate-100 mb-2">Profit &amp; Loss</div>
-        <div className="text-slate-500 text-sm">loading…</div>
-      </section>
-    );
-  }
-
-  const netColor =
-    data.net_sat === null
-      ? 'text-slate-400'
-      : data.net_sat >= 0
-        ? 'text-emerald-300'
-        : 'text-red-300';
-
   // Run-rate view: what's this autopilot costing/earning *right now*,
   // per day? Distinct from the lifetime P&L above. Sum across active
   // owned bids of (price × delivered_hashrate) — Braiins only debits
@@ -1366,6 +1350,10 @@ function FinancePanel({
   // more than the limit even if the rolling avg_speed_ph temporarily
   // overshoots (measurement artifact from burst-then-gap delivery).
   // Use min(avg_speed, speed_limit) for the spend estimate.
+  //
+  // Must be computed BEFORE the `!data` early return so hook count is
+  // stable across the null → defined transition of `data` (React error
+  // #310). The callback tolerates `data` being undefined.
   const { dailySpendSat, hasDailySpend, dailyIncomeSat, dailyNetSat, dailyNetColor } = useMemo(() => {
     const ownedActive = status.bids.filter(
       (b) => b.is_owned && b.status === 'BID_STATUS_ACTIVE',
@@ -1399,6 +1387,22 @@ function FinancePanel({
       dailyNetColor: _dailyNetColor,
     };
   }, [status.bids, data?.ocean?.daily_estimate_sat]);
+
+  if (!data) {
+    return (
+      <section className="bg-slate-900 border border-slate-800 rounded-lg p-4">
+        <div className="text-xs uppercase tracking-wider text-slate-100 mb-2">Profit &amp; Loss</div>
+        <div className="text-slate-500 text-sm">loading…</div>
+      </section>
+    );
+  }
+
+  const netColor =
+    data.net_sat === null
+      ? 'text-slate-400'
+      : data.net_sat >= 0
+        ? 'text-emerald-300'
+        : 'text-red-300';
 
   return (
     <section className="bg-slate-900 border border-slate-800 rounded-lg p-4 flex flex-col">
