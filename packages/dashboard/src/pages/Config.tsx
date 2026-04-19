@@ -313,13 +313,30 @@ export function Config() {
   }, [query.data]);
 
   const mutation = useMutation({
-    mutationFn: (cfg: AppConfig) => api.updateConfig(cfg),
+    mutationFn: async (cfg: AppConfig) => {
+      const result = await api.updateConfig(cfg);
+      // Force a tick immediately so any observe-time config (e.g.
+      // datum_api_url, pool URL) produces fresh numbers before the
+      // next interval fires. Without this, the Status page sits on
+      // the last-tick snapshot for up to a full tick interval after
+      // the save and the "nothing changed" feel is jarring. tick-now
+      // is the same endpoint the manual operator button uses — safe
+      // to call; best-effort so a tick failure doesn't mask the
+      // successful save.
+      try {
+        await api.tickNow();
+      } catch {
+        /* best-effort — next regular tick will pick the change up */
+      }
+      return result;
+    },
     onSuccess: () => {
       setError(null);
       qc.invalidateQueries({ queryKey: ['config'] });
       qc.invalidateQueries({ queryKey: ['status'] });
       qc.invalidateQueries({ queryKey: ['finance'] });
       qc.invalidateQueries({ queryKey: ['stats'] });
+      qc.invalidateQueries({ queryKey: ['metrics'] });
     },
     onError: (err: Error) => setError(err.message),
   });
