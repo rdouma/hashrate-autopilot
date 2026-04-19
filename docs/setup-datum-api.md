@@ -1,9 +1,10 @@
 # Exposing the Datum Gateway API on Umbrel
 
-> **Status:** researched 2026-04-16, not yet applied. Steps verified
-> against the live Umbrel box (192.168.1.121) but the port change has
-> NOT been made yet — Datum has connected clients and should only be
-> restarted during a planned maintenance window.
+> **Status:** **WORKING as of 2026-04-19.** The recipe below is the
+> verified path. It differs from the original research notes in two
+> important ways — the `sed` pattern must match the quoted form,
+> and the restart must be a full OS reboot (not `umbreld apps.restart`).
+> See "What NOT to do" below before improvising.
 
 ## Background
 
@@ -15,21 +16,26 @@ hashrate — but the Umbrel app package only maps the stratum port
 (23334) to the host network. The API port is live inside the Docker
 container but unreachable from the LAN.
 
-## What we found
+The fix is a one-line edit to the Datum app's `docker-compose.yml`
+to add a second host→container port mapping, followed by a full
+umbrelOS reboot so Docker re-reads the file.
 
-### Network topology
+## Network topology
 
 ```
-Daemon machine   192.168.1.166  (remco's Mac, runs the autopilot)
+Daemon machine   192.168.1.166  (operator's Mac, runs the autopilot)
 Umbrel node      192.168.1.121  (runs Datum in Docker)
 Stratum port     23334          (port-forwarded, reachable publicly
-                                 via alkimia.mynetgear.com:23334)
+                                 via a DDNS hostname:23334)
 Datum API port   21000 inside   (Umbrel's packager overrode the
                  the container   default 7152 → 21000 to match the
                                  app-proxy config)
+Exposed API port 7152           (what this doc adds — maps host:7152
+                                 → container:21000, bypassing the
+                                 app-proxy auth layer)
 ```
 
-### Datum config on the Umbrel box
+## Datum config on the Umbrel box
 
 Path: `/home/umbrel/umbrel/app-data/datum/data/settings/datum_gateway_config.json`
 
@@ -42,73 +48,46 @@ Relevant excerpt:
 }
 ```
 
-### Docker compose (official Umbrel app)
+## Docker compose (official Umbrel app)
 
 Path: `/home/umbrel/umbrel/app-data/datum/docker-compose.yml`
-Source: https://github.com/getumbrel/umbrel-apps/blob/master/datum/docker-compose.yml
+
+The stock file exposes only the stratum port:
 
 ```yaml
 services:
-  app_proxy:
-    environment:
-      APP_HOST: datum_datum_1
-      APP_PORT: 21000       # app-proxy routes to container's 21000
-
   datum:
     image: ghcr.io/retropex/datum:v1.14
     ports:
-      - 23334:23334         # stratum only — API NOT exposed
+      - '23334:23334'         # stratum only — API NOT exposed
 ```
 
 The `app_proxy` container (port 21000 on the host) reverse-proxies
 to the Datum container's port 21000 — but adds Umbrel's
 authentication layer, which redirects unauthenticated requests to
-the Umbrel login page. Not usable for machine-to-machine API calls.
+the Umbrel login page (port 2000). Not usable for machine-to-machine
+API calls. That's why we add a direct `7152:21000` mapping instead.
 
-### Containers running
-
-```
-ebf2b668e7f2  getumbrel/tor:0.4.7.8      datum-tor_server-1
-cb0d8718b8eb  ghcr.io/retropex/datum:v1.14  datum_datum_1
-              ports: 0.0.0.0:23334->23334/tcp
-a9f4bbb1ab03  getumbrel/app-proxy:1.0.0    datum_app_proxy_1
-              ports: 0.0.0.0:21000->21000/tcp
-```
-
-### API endpoint shape
-
-`/umbrel-api` returns JSON (confirmed via Insomnia from the LAN):
-
-```json
-{
-  "type": "three-stats",
-  "items": [
-    {"title": "Connections", ...},
-    {"title": "Hashrate", ...}
-  ]
-}
-```
-
-Hashrate is in Th/s. The daemon will convert to PH/s (÷ 1000) for
-the chart.
-
-## The fix (one-time, ~2 minutes, requires Datum restart)
+## The fix (~2 minutes, requires a full umbrelOS reboot)
 
 ### Prerequisites
 
-- SSH access to the Umbrel box (`ssh umbrel@192.168.1.121`)
-- Root privileges (`sudo su`)
-- A maintenance window where restarting Datum is acceptable (connected
-  miners will briefly disconnect and auto-reconnect)
+- SSH access to the Umbrel box (`ssh umbrel@<umbrel-ip>`). On
+  umbrelOS 1.5, SSH is disabled by default — enable it via
+  Settings → Advanced → SSH before starting.
+- Root privileges (`sudo su`).
+- A maintenance window where a full Umbrel reboot is acceptable
+  (bitcoind, LND, and all apps briefly go offline; bitcoind may do
+  a short chainstate verification on restart).
 
 ### Step 1 — Edit the compose file
 
-Map the container's internal API port (21000) to a free host port
-(7152). This bypasses the app-proxy auth layer and gives the daemon
-direct LAN access.
+Add a second port mapping under the `datum` service. Use this exact
+`sed` — the pattern matches the quoted form that umbrelOS 1.5
+actually writes:
 
 ```bash
-sed -i 's/- 23334:23334/- 23334:23334\n      - 7152:21000/' \
+sed -i "s/- '23334:23334'/- '23334:23334'\n      - '7152:21000'/" \
   /home/umbrel/umbrel/app-data/datum/docker-compose.yml
 ```
 
@@ -118,24 +97,29 @@ sed -i 's/- 23334:23334/- 23334:23334\n      - 7152:21000/' \
 cat /home/umbrel/umbrel/app-data/datum/docker-compose.yml
 ```
 
-Expected result — the `ports` section should now read:
+The `ports:` block under the `datum` service must now read:
 
 ```yaml
     ports:
-      # datum gateway port
-      - 23334:23334
-      - 7152:21000
+      - '23334:23334'
+      - '7152:21000'
 ```
 
-### Step 3 — Restart the Datum container
+If the file is unchanged, the pattern did not match — check that
+the existing line really is `- '23334:23334'` with single quotes.
 
-```bash
-cd /home/umbrel/umbrel
-docker compose -f /home/umbrel/umbrel/app-data/datum/docker-compose.yml up -d datum
-```
+### Step 3 — Reboot the Umbrel
 
-Connected miners will see a brief disconnect (~5–10 s) and
-auto-reconnect. No configuration change on the miner side is needed.
+**Do this via a full OS reboot, not `umbreld apps.restart`.** See
+the "What NOT to do" section below for why. Two options:
+
+- **Preferred:** Umbrel dashboard → Settings → **Restart** button.
+- **Fallback** (only if the dashboard is unresponsive): press and
+  hold the physical power button ~10 seconds until it powers off,
+  wait 30 seconds, power back on.
+
+Plan for ~5–15 minutes of downtime. bitcoind will do a short
+chainstate verification and then all apps will come up cleanly.
 
 ### Step 4 — Verify from the daemon's machine
 
@@ -143,77 +127,117 @@ auto-reconnect. No configuration change on the miner side is needed.
 curl -s http://192.168.1.121:7152/umbrel-api | python3 -m json.tool
 ```
 
-Should return the three-stats JSON with Connections and Hashrate.
+Expected response:
+
+```json
+{
+    "type": "three-stats",
+    "refresh": "30s",
+    "items": [
+        {"title": "Connections", "text": "1", "subtext": "Worker"},
+        {"title": "Hashrate", "text": "0.00", "subtext": "Th/s"}
+    ]
+}
+```
+
+Hashrate is in Th/s. The daemon converts to PH/s (÷ 1000) for the
+chart.
 
 ### Step 5 — Configure the autopilot
 
-In the dashboard's Config page, set:
+In the dashboard Config page (or `config.json`), set:
 
 ```
 Datum API URL: http://192.168.1.121:7152
 ```
 
-(This config field will be added as part of the implementation;
-it doesn't exist yet.)
+Leaving this empty disables the integration — the dashboard shows
+a "Datum not configured" empty state and the daemon records nothing
+for Datum hashrate. This is intentional: the integration is
+informational-only and fully optional.
+
+## ⚠️ What NOT to do
+
+Two things went sideways during the first live attempt on
+2026-04-19. Both have since been fixed in this doc, but they're
+worth flagging for anyone improvising.
+
+### Don't use `umbreld client apps.restart.mutate`
+
+On umbrelOS 1.5 this does **not** simply bounce the container. It
+re-provisions the app, which regenerates `docker-compose.yml` from
+the app-store metadata and wipes any manual edits. In the
+2026-04-19 attempt it also hung indefinitely, held system-wide
+locks, and made the entire Umbrel unresponsive (no SSH, no HTTP,
+no ping). A hard power-cycle was needed to recover.
+
+Use the dashboard **Restart** button (or a cold-boot as last
+resort) for a full OS reboot instead. Docker re-reads the compose
+file on its own process startup — no app-level re-provisioning
+needed.
+
+### Don't use unquoted `sed` patterns
+
+The stock compose file on umbrelOS 1.5 uses single-quoted port
+strings (`- '23334:23334'`), not the unquoted form the original
+research notes used. An unquoted `sed` pattern silently no-op's —
+`sed` returns success, but the file is unchanged. Always `cat` the
+file after the edit to verify the new line is really there.
+
+### Don't use raw `docker compose up -d` to restart the app
+
+Running `docker compose -f /home/umbrel/umbrel/app-data/datum/docker-compose.yml up -d datum`
+directly fails on umbrelOS 1.5 because `app_proxy` in that compose
+has no `image` field (umbreld injects it at runtime) and
+`APP_DATA_DIR` isn't set outside umbreld's invocation environment.
+A full OS reboot is the simplest correct restart.
 
 ## Caveat: Umbrel app updates
 
-When Umbrel updates the Datum app, it may overwrite the
-`docker-compose.yml` and remove the `7152:21000` port mapping.
-If the Datum hashrate line disappears from the chart after an
-update, re-apply step 1–3.
+When Umbrel updates the Datum app, it may overwrite
+`docker-compose.yml` and remove the `7152:21000` mapping. If the
+Datum hashrate stops updating after an app update, re-apply step 1
+and reboot.
 
-A more durable alternative would be to use a Docker Compose
-override file (`docker-compose.override.yml` in the same
-directory), which survives app updates:
+A more durable alternative may be a Docker Compose override file:
 
 ```yaml
 # /home/umbrel/umbrel/app-data/datum/docker-compose.override.yml
 services:
   datum:
     ports:
-      - 7152:21000
+      - '7152:21000'
 ```
 
-Whether Umbrel honours override files depends on the version. If
-it does, this is the cleaner long-term solution.
+Whether umbrelOS honours override files across app updates has
+not yet been verified — the direct edit is known to work within a
+given app version, and that's enough for now.
 
-## What the daemon will do once the API is reachable
+## What the daemon does with the API
 
-1. New config field `datum_api_url` (nullable, default empty).
-2. New service `services/datum.ts` that polls `/umbrel-api` every
-   tick, parses the hashrate from the JSON, converts Th/s → PH/s.
-3. New column `datum_hashrate_ph REAL` in `tick_metrics` (migration).
-4. Hashrate chart gains a third line: "datum" (dashed, distinct
-   colour) alongside "delivered" (Braiins) and the existing
-   target/floor references. Both perspectives on the same axis so
-   discrepancies are immediately visible.
-5. Status card shows the Datum-reported hashrate alongside Braiins's
-   figure for a quick sanity check.
+1. Config field `datum_api_url` (nullable string, default null —
+   integration is disabled when unset).
+2. Service `packages/daemon/src/services/datum.ts` polls
+   `{datum_api_url}/umbrel-api` each tick, parses the three-stats
+   JSON, extracts connection count and hashrate (Th/s), and
+   converts hashrate to PH/s.
+3. Column `datum_hashrate_ph REAL` on `tick_metrics` (migration
+   0029) stores the per-tick Datum-reported hashrate, null when
+   the integration is disabled or the poll failed.
+4. The Pool card on the Status page is replaced by a Datum panel
+   showing reachability, connected workers, and Datum-reported
+   hashrate — with a "not configured" empty state when
+   `datum_api_url` is null.
 
-## Future: Pool & Datum statistics panel
+## Future enhancements
 
-Once the Datum API is exposed, the current minimal "Pool" card
-(which only shows "reachable" + uptime) could grow into a richer
-statistics panel. Ideas to explore:
+Once the Datum API is exposed, the panel could grow:
 
-- **Datum-reported hashrate** vs Braiins-reported — plotted on the
-  hashrate chart as a third line so discrepancies are visible.
-- **Connected workers** count from Datum (active miners on your
-  gateway).
-- **Block finder detection** — poll `GET /v1/blocks/0/5/0` from
-  the Ocean API periodically. Each block includes `username` (BTC
-  address) + `workername`. If the operator's `btc_payout_address`
-  matches, surface a celebratory notification on the dashboard.
-  At ~1-2 PH/s vs Ocean's ~12.7 EH/s, odds per block are ~1 in
-  12,700 — rare but worth celebrating when it hits.
-- **Share rejection rate** from Datum (accepted vs rejected shares).
-- **Upstream latency** — Datum knows the round-trip time to Ocean's
+- **Datum-reported hashrate vs Braiins-reported** — overlay on the
+  hashrate chart as a dashed line.
+- **Share rejection rate** from Datum, if exposed.
+- **Upstream latency** — Datum's round-trip time to Ocean's
   stratum endpoint.
-
-None of this requires Braiins API changes — it's all Datum-local
-or Ocean public API. The bottleneck is the port-7152 exposure
-documented above.
 
 ## Probe script
 
