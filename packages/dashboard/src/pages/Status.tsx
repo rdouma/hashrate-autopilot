@@ -1402,10 +1402,26 @@ function FinancePanel({
         value={data.spent_sat}
         tooltip={
           data.spent_scope === 'account'
-            ? 'Sum of counters_estimate.amount_consumed_sat across every bid on /v1/spot/bid — covers active + historical bids, including any that existed before the autopilot was switched on, and reflects in-flight consumption before the hourly settlement ledger catches up. Switch via Config → P&L panel.'
+            ? 'Sum of (amount_sat − amount_remaining_sat) across every bid on /v1/spot/bid — covers active + historical bids, including any that existed before the autopilot was switched on, and reflects in-flight consumption before the hourly settlement ledger catches up. Switch via Config → P&L panel.'
             : 'Lifetime sum of (amount_sat − amount_remaining_sat) across every bid the autopilot has tagged. Excludes any bids placed before the autopilot was switched on. Switch to "whole account" via Config → Money panel.'
         }
       />
+      {data.spent_scope === 'account' &&
+        data.spent_closed_sat !== null &&
+        data.spent_active_sat !== null && (
+          <>
+            <FinanceSubRow
+              label="closed bids"
+              value={data.spent_closed_sat}
+              tooltip="Sum across terminal bids — status CANCELED or FULFILLED (is_current=false). Money that has definitively left the account."
+            />
+            <FinanceSubRow
+              label="active (in-flight)"
+              value={data.spent_active_sat}
+              tooltip="Sum across still-running bids — status ACTIVE / PAUSED / etc. (is_current=true). Live in-flight consumption; not yet settled in Braiins' hourly ledger."
+            />
+          </>
+        )}
       <FinanceRow
         sign="plus"
         label="unpaid earnings (Ocean)"
@@ -1556,6 +1572,46 @@ function FinanceRow({
             <>
               {split.num}
               <span className="text-slate-500 text-[11px] ml-1"><SatUnit unit={split.unit} /></span>
+            </>
+          ) : (
+            formatted
+          )}
+        </span>
+      </div>
+    </Tooltip>
+  );
+}
+
+/**
+ * Indented sub-line under a main FinanceRow. Used to break "spent
+ * (whole account)" into its closed vs active halves without competing
+ * for visual weight with the top-level additions and subtraction.
+ * No arithmetic sign — it's a breakdown, not another operand.
+ */
+function FinanceSubRow({
+  label,
+  value,
+  tooltip,
+}: {
+  label: string;
+  value: number | null;
+  tooltip: string;
+}) {
+  const { intlLocale } = useLocale();
+  const denomination = useDenomination();
+  const formatted = denomination.formatSat(value, intlLocale);
+  const split = splitUnit(formatted);
+  return (
+    <Tooltip text={tooltip}>
+      <div className="cursor-help flex items-baseline text-[11px] py-0 pl-7 gap-2 text-slate-500">
+        <span className="flex-1">{label}</span>
+        <span className="font-mono">
+          {value === null ? (
+            '\u2014'
+          ) : split ? (
+            <>
+              {split.num}
+              <span className="text-slate-600 text-[10px] ml-1"><SatUnit unit={split.unit} /></span>
             </>
           ) : (
             formatted

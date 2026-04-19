@@ -292,6 +292,8 @@ export interface BtcPriceResponse {
 export interface FinanceResponse {
   spent_sat: number;
   spent_scope: 'autopilot' | 'account';
+  spent_closed_sat: number | null;
+  spent_active_sat: number | null;
   collected_sat: number | null;
   expected_sat: number | null;
   net_sat: number | null;

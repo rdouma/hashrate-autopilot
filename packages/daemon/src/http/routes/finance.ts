@@ -35,6 +35,15 @@ export interface FinanceResponse {
   readonly spent_sat: number;
   /** Which scope produced `spent_sat`. Mirrors the config field. */
   readonly spent_scope: 'autopilot' | 'account';
+  /**
+   * Breakdown of `spent_sat` into closed (terminal) vs active
+   * (is_current) bids. Only populated under `spent_scope = 'account'`;
+   * null under autopilot scope (we'd need to walk each owned bid's
+   * status to split it, and it's not needed for that view). The
+   * dashboard surfaces these as sub-rows under the spent line.
+   */
+  readonly spent_closed_sat: number | null;
+  readonly spent_active_sat: number | null;
   readonly collected_sat: number | null;
   readonly expected_sat: number | null;
   readonly net_sat: number | null;
@@ -68,13 +77,19 @@ export async function registerFinanceRoute(
     const scope = config?.spent_scope ?? 'autopilot';
 
     let spent_sat: number;
+    let spent_closed_sat: number | null = null;
+    let spent_active_sat: number | null = null;
     if (scope === 'account' && deps.accountSpend) {
       const snap = await deps.accountSpend.getLifetimeSpend();
-      // Fall back to autopilot-scope if the bid list fetch is
-      // unavailable rather than falsely reporting 0 spent.
-      spent_sat =
-        snap?.total_settlement_sat ??
-        (await deps.ownedBidsRepo.sumLifetimeConsumedSat());
+      if (snap) {
+        spent_sat = snap.total_settlement_sat;
+        spent_closed_sat = snap.closed_sat;
+        spent_active_sat = snap.active_sat;
+      } else {
+        // Fall back to autopilot-scope if the bid list fetch is
+        // unavailable rather than falsely reporting 0 spent.
+        spent_sat = await deps.ownedBidsRepo.sumLifetimeConsumedSat();
+      }
     } else {
       spent_sat = await deps.ownedBidsRepo.sumLifetimeConsumedSat();
     }
@@ -106,6 +121,8 @@ export async function registerFinanceRoute(
     return {
       spent_sat,
       spent_scope: scope,
+      spent_closed_sat,
+      spent_active_sat,
       collected_sat,
       expected_sat,
       net_sat,
