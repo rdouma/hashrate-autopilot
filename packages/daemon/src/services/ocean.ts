@@ -32,6 +32,11 @@ export interface OceanBlock {
   readonly subsidy_sat: number;
   readonly fees_sat: number;
   readonly worker: string;
+  /** Finder's BTC payout address (Ocean's `username` field). Used to
+   *  tag blocks our own wallet submitted the winning share for. */
+  readonly username: string;
+  /** Block hash for explorer links / tooltip context. */
+  readonly block_hash: string;
 }
 
 export interface OceanPoolInfo {
@@ -186,6 +191,8 @@ export function createOceanClient(opts: OceanClientOptions = {}): OceanClient {
               subsidy_sat: Number(b.subsidy_sats ?? 0),
               fees_sat: Number(b.txn_fees_sats ?? 0),
               worker: String(b.workername ?? ''),
+              username: String(b.username ?? ''),
+              block_hash: String(b.block_hash ?? ''),
             }))
           : [];
 

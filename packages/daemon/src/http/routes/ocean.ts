@@ -11,6 +11,14 @@ import type { FastifyInstance } from 'fastify';
 import type { ConfigRepo } from '../../state/repos/config.js';
 import type { OceanClient, OceanBlock, OceanPoolInfo } from '../../services/ocean.js';
 
+export interface OurBlock {
+  height: number;
+  timestamp_ms: number;
+  total_reward_sat: number;
+  block_hash: string;
+  worker: string;
+}
+
 export interface OceanResponse {
   configured: boolean;
   last_block: {
@@ -22,6 +30,13 @@ export interface OceanResponse {
   blocks_24h: number;
   blocks_7d: number;
   recent_blocks: readonly OceanBlock[];
+  /**
+   * Subset of `recent_blocks` where the finder's username is the
+   * operator's `btc_payout_address`. This is the rare celebratory
+   * event ("we won the lottery") — expect 0 in almost every call
+   * and 1+ only on a very lucky day.
+   */
+  our_recent_blocks: readonly OurBlock[];
   pool: OceanPoolInfo | null;
   user: {
     unpaid_sat: number | null;
@@ -52,6 +67,7 @@ export async function registerOceanRoute(
         blocks_24h: 0,
         blocks_7d: 0,
         recent_blocks: [],
+        our_recent_blocks: [],
         pool: null,
         user: null,
         fetched_at_ms: null,
@@ -67,6 +83,7 @@ export async function registerOceanRoute(
         blocks_24h: 0,
         blocks_7d: 0,
         recent_blocks: [],
+        our_recent_blocks: [],
         pool: null,
         user: null,
         fetched_at_ms: null,
@@ -81,6 +98,7 @@ export async function registerOceanRoute(
         blocks_24h: 0,
         blocks_7d: 0,
         recent_blocks: [],
+        our_recent_blocks: [],
         pool: null,
         user: null,
         fetched_at_ms: null,
@@ -97,6 +115,15 @@ export async function registerOceanRoute(
     const blocks_7d = stats.recent_blocks.filter(
       (b) => b.timestamp_ms > 0 && now - b.timestamp_ms < 7 * DAY_MS,
     ).length;
+    const our_recent_blocks: OurBlock[] = stats.recent_blocks
+      .filter((b) => b.username === address)
+      .map((b) => ({
+        height: b.height,
+        timestamp_ms: b.timestamp_ms,
+        total_reward_sat: b.total_reward_sat,
+        block_hash: b.block_hash,
+        worker: b.worker,
+      }));
 
     return {
       configured: true,
@@ -111,6 +138,7 @@ export async function registerOceanRoute(
       blocks_24h,
       blocks_7d,
       recent_blocks: stats.recent_blocks,
+      our_recent_blocks,
       pool: stats.pool,
       user: {
         unpaid_sat: stats.unpaid_sat,

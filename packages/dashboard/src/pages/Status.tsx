@@ -114,6 +114,15 @@ export function Status() {
     refetchInterval: 60_000,
   });
 
+  // Shared query instance for the Ocean panel AND the hashrate chart
+  // marker overlay. React-query dedupes by queryKey so the Ocean card
+  // and the chart use the same network call.
+  const oceanQuery = useQuery({
+    queryKey: ['ocean'],
+    queryFn: api.ocean,
+    refetchInterval: 5 * 60_000,
+  });
+
   const financeQuery = useQuery({
     queryKey: ['finance'],
     queryFn: api.finance,
@@ -350,6 +359,7 @@ export function Status() {
         range={chartRange}
         onRangeChange={setChartRange}
         simMode={simMode}
+        ourBlocks={oceanQuery.data?.our_recent_blocks ?? []}
       />
       <PriceChart
         points={(simMode && simMetricPoints ? simMetricPoints : metricsQuery.data?.points) ?? []}
@@ -1232,6 +1242,9 @@ function OceanPanel() {
   const { intlLocale } = useLocale();
   const denomination = useDenomination();
 
+  // React-query dedupes by queryKey, so this shares the in-flight
+  // fetch + cached response with the parent's own `['ocean']` query
+  // (used for the hashrate-chart block markers).
   const oceanQuery = useQuery({
     queryKey: ['ocean'],
     queryFn: api.ocean,

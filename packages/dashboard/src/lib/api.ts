@@ -364,6 +364,19 @@ export interface OceanBlockView {
   worker: string;
 }
 
+/**
+ * Block found by a worker belonging to the operator's payout wallet —
+ * the "we won the lottery" event surfaced as a marker on the Hashrate
+ * chart. Sparse: ~0 in most requests, 1+ on a very lucky day.
+ */
+export interface OurBlockMarker {
+  height: number;
+  timestamp_ms: number;
+  total_reward_sat: number;
+  block_hash: string;
+  worker: string;
+}
+
 export interface OceanResponse {
   configured: boolean;
   last_block: {
@@ -375,6 +388,7 @@ export interface OceanResponse {
   blocks_24h: number;
   blocks_7d: number;
   recent_blocks: OceanBlockView[];
+  our_recent_blocks: OurBlockMarker[];
   pool: {
     active_users: number | null;
     active_workers: number | null;

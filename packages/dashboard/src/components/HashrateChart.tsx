@@ -21,7 +21,7 @@ import {
   type ChartRange,
 } from '@braiins-hashrate/shared';
 
-import type { MetricPoint } from '../lib/api';
+import type { MetricPoint, OurBlockMarker } from '../lib/api';
 import { formatNumber } from '../lib/format';
 import { useLocale } from '../lib/locale';
 
@@ -37,6 +37,10 @@ const COLOR_DELIVERED = '#34d399';
 const COLOR_DATUM = '#38bdf8';
 const COLOR_TARGET = '#94a3b8';
 const COLOR_FLOOR = '#64748b';
+// Gold — distinct from every other chart colour, reads as "jackpot"
+// against the dark background. Used for the rare "we found a block"
+// markers Ocean credits to the operator's wallet.
+const COLOR_OUR_BLOCK = '#fbbf24';
 
 function formatDuration(ms: number): string {
   const totalMinutes = Math.max(0, Math.round(ms / 60_000));
@@ -52,11 +56,16 @@ export const HashrateChart = memo(function HashrateChart({
   range,
   onRangeChange,
   simMode = false,
+  ourBlocks = [],
 }: {
   points: readonly MetricPoint[];
   range: ChartRange;
   onRangeChange: (r: ChartRange) => void;
   simMode?: boolean;
+  /** Blocks Ocean credited to the operator's wallet, rendered as
+   *  vertical gold markers when their timestamps fall inside the
+   *  chart range. Sparse — typically zero; rare celebratory event. */
+  ourBlocks?: readonly OurBlockMarker[];
 }) {
   const { intlLocale } = useLocale();
 
@@ -182,6 +191,10 @@ export const HashrateChart = memo(function HashrateChart({
           )}
           <Legend color={COLOR_TARGET} label="target" dashed />
           <Legend color={COLOR_FLOOR} label="floor" dashed />
+          {!simMode &&
+            ourBlocks.some((b) => b.timestamp_ms >= chartData.minX && b.timestamp_ms <= chartData.maxX) && (
+              <Legend color={COLOR_OUR_BLOCK} label="block found" dashed />
+            )}
         </div>
       </div>
       <svg
@@ -231,6 +244,39 @@ export const HashrateChart = memo(function HashrateChart({
             strokeLinejoin="round"
           />
         )}
+
+        {!simMode &&
+          ourBlocks
+            .filter((b) => b.timestamp_ms >= minX && b.timestamp_ms <= maxX)
+            .map((b) => {
+              const x = xScale(b.timestamp_ms);
+              return (
+                <g key={b.block_hash || b.height}>
+                  <title>
+                    {`Block #${b.height.toLocaleString()} — found ${new Date(b.timestamp_ms).toLocaleString()}\nreward ${b.total_reward_sat.toLocaleString()} sat\nworker ${b.worker || '—'}\nhash ${b.block_hash.slice(0, 16)}…`}
+                  </title>
+                  <line
+                    x1={x}
+                    x2={x}
+                    y1={PADDING.top}
+                    y2={HEIGHT - PADDING.bottom}
+                    stroke={COLOR_OUR_BLOCK}
+                    strokeWidth="1.5"
+                    strokeDasharray="4 2"
+                    opacity="0.9"
+                  />
+                  <text
+                    x={x}
+                    y={PADDING.top - 2}
+                    textAnchor="middle"
+                    fontSize="11"
+                    fill={COLOR_OUR_BLOCK}
+                  >
+                    ₿
+                  </text>
+                </g>
+              );
+            })}
 
         <defs>
           <linearGradient id="deliveredFill" x1="0" y1="0" x2="0" y2="1">
