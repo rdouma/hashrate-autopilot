@@ -358,6 +358,8 @@ export interface SimStatsSummary {
   avg_overpay_vs_hashprice_sat_per_ph_day: number | null;
   gap_count: number;
   gap_minutes: number;
+  /** CREATE + EDIT_PRICE events the simulator would have issued. */
+  mutation_count: number;
 }
 
 export interface SimulatedTick {

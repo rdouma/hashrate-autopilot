@@ -60,6 +60,14 @@ interface StatsSummary {
   avg_overpay_vs_hashprice_sat_per_ph_day: number | null;
   gap_count: number;
   gap_minutes: number;
+  /**
+   * Count of simulated bid mutations in this range — each CREATE or
+   * EDIT_PRICE the sim would have issued. Lets the Mutations stat card
+   * answer "how much churn does this parameter set produce?" at a glance.
+   * Zero for `actual` (we don't re-derive real mutations here; the live
+   * stats endpoint does that from bid_events).
+   */
+  mutation_count: number;
 }
 
 export interface SimulateResponse {
@@ -117,6 +125,7 @@ export async function registerSimulateRoute(
         avg_overpay_vs_hashprice_sat_per_ph_day: null,
         gap_count: 0,
         gap_minutes: 0,
+        mutation_count: 0,
       };
 
       if (rows.length < 2) {
@@ -147,6 +156,7 @@ export async function registerSimulateRoute(
       }));
       simulated.gap_count = simResult.gapCount;
       simulated.gap_minutes = simResult.gapMinutes;
+      simulated.mutation_count = simResult.mutationCount;
 
       const ticks: SimulatedTick[] = rows.map((r, i) => ({
         tick_at: r.tick_at,
@@ -178,6 +188,8 @@ interface SimResult {
   filled: boolean[];  // whether each tick would be filled
   gapCount: number;
   gapMinutes: number;
+  /** CREATE (null→price) + EDIT_PRICE (price→different price) events. */
+  mutationCount: number;
 }
 
 function simulate(rows: TickRow[], params: SimParams): SimResult {
@@ -190,6 +202,7 @@ function simulate(rows: TickRow[], params: SimParams): SimResult {
   let gapCount = 0;
   let gapMs = 0;
   let inGap = false;
+  let mutationCount = 0;
 
   for (let i = 0; i < rows.length; i++) {
     const r = rows[i]!;
@@ -234,13 +247,17 @@ function simulate(rows: TickRow[], params: SimParams): SimResult {
       if (bidPrice === null) {
         bidPrice = targetPrice;
         overrideUntil = r.tick_at + params.escalationWindowMs;
+        mutationCount++;
       } else if (!overrideActive) {
+        const current: number = bidPrice;
         if (belowFloorSince !== null) {
           const elapsed = r.tick_at - belowFloorSince;
-          if (elapsed >= params.escalationWindowMs && bidPrice < targetPrice) {
-            bidPrice = params.escalationMode === 'market'
+          if (elapsed >= params.escalationWindowMs && current < targetPrice) {
+            const nextPrice: number = params.escalationMode === 'market'
               ? targetPrice
-              : Math.min(bidPrice + params.escalationStep, targetPrice);
+              : Math.min(current + params.escalationStep, targetPrice);
+            if (nextPrice !== current) mutationCount++;
+            bidPrice = nextPrice;
             overrideUntil = r.tick_at + params.escalationWindowMs;
           }
         }
@@ -248,7 +265,8 @@ function simulate(rows: TickRow[], params: SimParams): SimResult {
         const aboveFloorLongEnough =
           aboveFloorSince !== null &&
           (r.tick_at - aboveFloorSince) >= params.lowerPatienceMs;
-        if (aboveFloorLongEnough && bidPrice > targetPrice + params.minLowerDelta) {
+        if (aboveFloorLongEnough && bidPrice !== null && bidPrice > targetPrice + params.minLowerDelta) {
+          if (targetPrice !== bidPrice) mutationCount++;
           bidPrice = targetPrice;
           overrideUntil = r.tick_at + params.escalationWindowMs;
         }
@@ -277,7 +295,7 @@ function simulate(rows: TickRow[], params: SimParams): SimResult {
     }
   }
 
-  return { prices, filled, gapCount, gapMinutes: Math.round(gapMs / 60_000) };
+  return { prices, filled, gapCount, gapMinutes: Math.round(gapMs / 60_000), mutationCount };
 }
 
 // -------------------------------------------------------------------------
@@ -343,5 +361,11 @@ function computeStats(
     avg_overpay_vs_hashprice_sat_per_ph_day: overpayHpDur > 0 ? overpayHpWeighted / overpayHpDur / EH_PER_PH : null,
     gap_count: gapCount,
     gap_minutes: Math.round(gapMs / 60_000),
+    // computeStats doesn't see the tick-to-tick bid transitions; the
+    // simulate() loop owns `mutation_count`, and the route overwrites
+    // `simulated.mutation_count` before returning. Zero is correct for
+    // `actual`, which comes from here (real-mode mutation counts live
+    // in the /api/stats endpoint, derived from bid_events).
+    mutation_count: 0,
   };
 }

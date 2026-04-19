@@ -278,9 +278,7 @@ export function Status() {
       avg_overpay_sat_per_ph_day: sim.avg_overpay_sat_per_ph_day,
       avg_overpay_vs_hashprice_sat_per_ph_day: sim.avg_overpay_vs_hashprice_sat_per_ph_day,
       avg_time_to_fill_ms: null,
-      // Simulation doesn't have a bid-events stream — there are no
-      // real mutations in a replay. Zero is honest.
-      mutation_count: 0,
+      mutation_count: sim.mutation_count,
       range: chartRange,
       tick_count: simQuery.data?.tick_count ?? 0,
     };
@@ -1087,8 +1085,8 @@ const SIM_NUMBER_FIELDS = [
   { key: 'overpay_sat_per_eh_day', label: 'Overpay', step: 50_000, ehToPh: true, unit: 'sat/PH/day' },
   { key: 'max_bid_sat_per_eh_day', label: 'Max bid', step: 1_000_000, ehToPh: true, unit: 'sat/PH/day' },
   { key: 'fill_escalation_step_sat_per_eh_day', label: 'Esc. step', step: 50_000, ehToPh: true, unit: 'sat/PH/day' },
-  { key: 'fill_escalation_after_minutes', label: 'Esc. window', step: 1, ehToPh: false, unit: 'min' },
-  { key: 'lower_patience_minutes', label: 'Wait to lower', step: 1, ehToPh: false, unit: 'min' },
+  { key: 'fill_escalation_after_minutes', label: 'Esc. window', step: 5, ehToPh: false, unit: 'min' },
+  { key: 'lower_patience_minutes', label: 'Wait to lower', step: 5, ehToPh: false, unit: 'min' },
   { key: 'min_lower_delta_sat_per_eh_day', label: 'Min lower delta', step: 50_000, ehToPh: true, unit: 'sat/PH/day' },
 ] as const;
 
