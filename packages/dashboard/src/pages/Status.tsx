@@ -1120,17 +1120,23 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
 
   if (statsData.tick_count < 2) return null;
 
-  const { uptime_pct, avg_hashrate_ph, avg_datum_hashrate_ph, total_ph_hours, avg_overpay_sat_per_ph_day, avg_cost_per_ph_sat_per_ph_day, avg_overpay_vs_hashprice_sat_per_ph_day, mutation_count } = statsData;
+  const { uptime_pct, avg_hashrate_ph, avg_datum_hashrate_ph, avg_overpay_sat_per_ph_day, avg_cost_per_ph_sat_per_ph_day, avg_overpay_vs_hashprice_sat_per_ph_day, mutation_count } = statsData;
+  // total_ph_hours is intentionally unread — the Total PH·h card was
+  // hidden to make the stat bar fit on one row. Server still emits it
+  // so the metric is available if we bring the card back.
+  void statsData.total_ph_hours;
 
-  // Show "2.56 / 2.12" when Datum is reporting, plain "2.56" otherwise.
+  // Show "2.56/2.12" when Datum is reporting, plain "2.56" otherwise.
   // A sustained gap between the two is the operator's "am I getting
   // what Braiins is billing me for" signal. Unit stays attached to the
-  // right-hand number so it reads as "Braiins / Datum PH/s" as a pair.
+  // right-hand number so it reads as "Braiins/Datum PH/s" as a pair.
+  // Slash has no surrounding spaces — the card is already narrow and
+  // the pair belongs tight together visually.
   const avgHashrateText =
     avg_hashrate_ph === null
       ? '\u2014'
       : avg_datum_hashrate_ph !== null
-        ? `${avg_hashrate_ph.toFixed(2)} / ${avg_datum_hashrate_ph.toFixed(2)} PH/s`
+        ? `${avg_hashrate_ph.toFixed(2)}/${avg_datum_hashrate_ph.toFixed(2)} PH/s`
         : `${avg_hashrate_ph.toFixed(2)} PH/s`;
   const avgHashrateTooltip =
     avg_datum_hashrate_ph !== null
@@ -1138,7 +1144,7 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
       : 'Duration-weighted average hashrate across the selected range, including downtime (where delivered = 0). Reflects real throughput — not just the moments you were hashing.';
 
   return (
-    <section className="grid grid-cols-2 lg:grid-cols-7 gap-3">
+    <section className="grid grid-cols-2 lg:grid-cols-6 gap-3">
       <StatCard
         label="uptime"
         value={uptime_pct !== null ? `${uptime_pct.toFixed(1)}%` : '\u2014'}
@@ -1157,11 +1163,6 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
         label="avg hashrate"
         value={avgHashrateText}
         tooltip={avgHashrateTooltip}
-      />
-      <StatCard
-        label="total PH·h"
-        value={total_ph_hours !== null ? `${total_ph_hours.toFixed(1)} PH·h` : '\u2014'}
-        tooltip="Total petahash-hours contributed in this range. Each hour at 1 PH/s = 1 PH·h. Measures your cumulative work submission to the network."
       />
       <StatCard
         label="mutations"
