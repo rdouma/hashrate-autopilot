@@ -5,6 +5,7 @@
  * X-axis aligns visually when stacked.
  */
 
+import { useQuery } from '@tanstack/react-query';
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import {
@@ -14,9 +15,9 @@ import {
   pickTimeTickInterval,
 } from '@braiins-hashrate/shared';
 
-import type { BidEventView, MetricPoint } from '../lib/api';
+import { api, type BidEventView, type DecisionDetail, type DecisionSummary, type MetricPoint } from '../lib/api';
 import { useDenomination } from '../lib/denomination';
-import { formatNumber, formatTimestamp, formatTimestampUtc } from '../lib/format';
+import { formatNumber, formatTimestamp, formatTimestampHuman, formatTimestampUtc } from '../lib/format';
 import { useLocale } from '../lib/locale';
 
 const WIDTH = 880;
@@ -448,9 +449,85 @@ export const PriceChart = memo(function PriceChart({
   );
 });
 
+// Walk a plain-data object and, for any numeric field whose name ends
+// in `_at`, inject a sibling `<field>_hr` with a locale-aware human
+// string including the timezone. Non-destructive — returns a new
+// object. Used to enrich the copy-JSON payload so raw unix-ms fields
+// are readable without mental math.
+function withHumanTimestamps<T>(obj: T): T {
+  if (obj === null || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) {
+    return obj.map((v) => withHumanTimestamps(v)) as unknown as T;
+  }
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+    out[k] = withHumanTimestamps(v);
+    if (/_at$/.test(k) && typeof v === 'number' && Number.isFinite(v) && v > 1_000_000_000_000) {
+      out[`${k}_hr`] = formatTimestampHuman(v);
+    }
+  }
+  return out as T;
+}
+
+function CopyIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+      <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 6L9 17l-5-5" />
+    </svg>
+  );
+}
+
 function EventTooltip({ tip, onClose }: { tip: TooltipState; onClose: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
+
+  // Prefetch recent decisions + the specific matched detail so the copy
+  // payload reflects the rich context the operator saw in the old
+  // Decisions tab. Only runs once pinned — hover-only tooltips don't
+  // need the extra round-trips.
+  const decisionsList = useQuery({
+    queryKey: ['decisions-for-chart'],
+    queryFn: () => api.decisions(500),
+    enabled: tip.pinned,
+    staleTime: 60_000,
+  });
+
+  const matchedDecisionId = useMemo<number | null>(() => {
+    if (!tip.pinned || !decisionsList.data) return null;
+    // Autopilot bid events are emitted from the same tick that produced
+    // the decision record, so `tick_at` should be the closest <= event
+    // timestamp. Cap the match window so operator bumps don't silently
+    // latch onto an unrelated earlier tick.
+    const target = tip.event.occurred_at;
+    const WINDOW_MS = 5 * 60 * 1000;
+    let best: DecisionSummary | null = null;
+    let bestDiff = Infinity;
+    for (const d of decisionsList.data) {
+      const diff = target - d.tick_at;
+      if (diff < -30_000 || diff > WINDOW_MS) continue;
+      if (Math.abs(diff) < bestDiff) {
+        best = d;
+        bestDiff = Math.abs(diff);
+      }
+    }
+    return best?.id ?? null;
+  }, [tip.pinned, tip.event.occurred_at, decisionsList.data]);
+
+  const decisionDetailQuery = useQuery({
+    queryKey: ['decision-detail', matchedDecisionId],
+    queryFn: () => api.decision(matchedDecisionId!),
+    enabled: matchedDecisionId !== null,
+    staleTime: 5 * 60_000,
+  });
   // Initial render at the cursor's natural offset (right + below).
   // useLayoutEffect then measures and flips horizontally / vertically
   // if the tooltip would clip the viewport. Hidden until ready so the
@@ -507,13 +584,22 @@ function EventTooltip({ tip, onClose }: { tip: TooltipState; onClose: () => void
           : 'text-red-300';
 
   const copyJson = async () => {
+    const detail: DecisionDetail | null = decisionDetailQuery.data ?? null;
+    const payload = {
+      event: withHumanTimestamps(e),
+      // Decision is null for operator-initiated events (bumps) that
+      // weren't produced by an autopilot tick, or when the match
+      // window missed. Keep the key so downstream consumers can tell
+      // "no decision found" from "decision still loading".
+      decision: detail ? withHumanTimestamps(detail) : null,
+    };
+    const text = JSON.stringify(payload, null, 2);
     try {
-      await navigator.clipboard.writeText(JSON.stringify(e, null, 2));
+      await navigator.clipboard.writeText(text);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1500);
     } catch {
       // Older browsers / insecure contexts — fall back to a selection.
-      const text = JSON.stringify(e, null, 2);
       const ta = document.createElement('textarea');
       ta.value = text;
       document.body.appendChild(ta);
@@ -527,6 +613,9 @@ function EventTooltip({ tip, onClose }: { tip: TooltipState; onClose: () => void
       }
     }
   };
+
+  const detailLoading =
+    tip.pinned && matchedDecisionId !== null && decisionDetailQuery.isLoading;
 
   return (
     <div
@@ -608,14 +697,16 @@ function EventTooltip({ tip, onClose }: { tip: TooltipState; onClose: () => void
       {tip.pinned && (
         <div className="mt-3 pt-2 border-t border-slate-800 flex items-center justify-between gap-3">
           <span className="text-[10px] text-slate-500">
-            click outside to close
+            {detailLoading ? 'loading decision…' : 'click outside to close'}
           </span>
           <button
             type="button"
             onClick={copyJson}
-            className="text-[11px] px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700"
+            aria-label={copied ? 'copied' : 'copy JSON'}
+            title={copied ? 'copied' : 'copy JSON'}
+            className={`px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 ${copied ? 'text-emerald-300' : 'text-slate-200'}`}
           >
-            {copied ? 'copied' : 'copy JSON'}
+            {copied ? <CheckIcon /> : <CopyIcon />}
           </button>
         </div>
       )}

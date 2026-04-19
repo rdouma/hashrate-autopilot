@@ -70,6 +70,37 @@ export function formatTimestamp(
 }
 
 /**
+ * Human-readable timestamp with explicit local timezone, e.g.
+ * `"2026-04-19 01:30:45 CEST"`. Used inside JSON payloads copied from
+ * the dashboard so someone reading the dump later can orient without
+ * converting a unix ms integer in their head.
+ */
+export function formatTimestampHuman(ms: number | null | undefined): string {
+  if (!ms) return '';
+  const d = new Date(ms);
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  const date = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const time = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  // Intl is the only reliable way to get a locale-independent short
+  // timezone name (e.g. "CEST"/"EST"). Fall back to the numeric offset
+  // if the runtime doesn't expose a named zone.
+  let tz = '';
+  try {
+    const parts = new Intl.DateTimeFormat(undefined, { timeZoneName: 'short' }).formatToParts(d);
+    tz = parts.find((p) => p.type === 'timeZoneName')?.value ?? '';
+  } catch {
+    // ignore — fall through to offset-based string below
+  }
+  if (!tz) {
+    const off = -d.getTimezoneOffset();
+    const sign = off >= 0 ? '+' : '-';
+    const abs = Math.abs(off);
+    tz = `UTC${sign}${pad(Math.floor(abs / 60))}:${pad(abs % 60)}`;
+  }
+  return `${date} ${time} ${tz}`;
+}
+
+/**
  * UTC-only short format, handy for matching the Braiins dashboard (which
  * is always UTC). Always `YYYY-MM-DD HH:MM:SS UTC`, no locale conversion.
  */

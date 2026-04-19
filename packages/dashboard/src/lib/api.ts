@@ -166,6 +166,21 @@ export interface StatusResponse {
   };
 }
 
+export interface DecisionSummary {
+  id: number;
+  tick_at: number;
+  run_mode: string;
+  action_mode: string;
+  proposal_count: number;
+}
+
+export interface DecisionDetail extends DecisionSummary {
+  observed: unknown;
+  proposed: unknown;
+  gated: unknown;
+  executed: unknown;
+}
+
 export interface AppConfig {
   target_hashrate_ph: number;
   minimum_floor_hashrate_ph: number;
@@ -211,6 +226,9 @@ export interface ConfigResponse {
 
 export const api = {
   status: () => request<StatusResponse>('/api/status'),
+  decisions: (limit = 500) =>
+    request<DecisionSummary[]>(`/api/decisions?limit=${limit}`),
+  decision: (id: number) => request<DecisionDetail>(`/api/decisions/${id}`),
   config: () => request<ConfigResponse>('/api/config'),
   updateConfig: (cfg: AppConfig) =>
     request<ConfigResponse>('/api/config', {
