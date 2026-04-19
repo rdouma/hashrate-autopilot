@@ -19,9 +19,15 @@ Issues sit in `review` until the operator confirms the fix is live and
 behaving as intended, then the operator closes.
 
 When you start implementing work for an issue, move it to
-`in-progress` immediately (remove `backlog` / `todo` / `queued` as
-applicable) without asking first. When the work ships, swap
-`in-progress` for `review` as described above.
+`in-progress` immediately (remove `backlog` / `todo` / `queued` /
+`agent-ready` as applicable) without asking first. When the work
+ships, swap `in-progress` for `review` as described above.
+
+`agent-ready` means "ready to be picked up by an agent" — it's an
+*inbox* signal set by the operator after they finish triaging an
+issue. Once an agent starts on it (and certainly once the work
+ships) the label is stale and must be removed. Never leave
+`agent-ready` on an issue that is `in-progress` or `review`.
 
 ## Picking labels
 
