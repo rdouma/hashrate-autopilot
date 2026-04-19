@@ -251,6 +251,9 @@ export function Status() {
     return {
       uptime_pct: sim.uptime_pct,
       avg_hashrate_ph: sim.avg_hashrate_ph,
+      // Simulation doesn't model Datum — the replay has no way to
+      // synthesize what Datum would have reported.
+      avg_datum_hashrate_ph: null,
       total_ph_hours: sim.total_ph_hours,
       avg_cost_per_ph_sat_per_ph_day: sim.avg_cost_per_ph_sat_per_ph_day,
       avg_overpay_sat_per_ph_day: sim.avg_overpay_sat_per_ph_day,
@@ -1139,7 +1142,22 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
 
   if (statsData.tick_count < 2) return null;
 
-  const { uptime_pct, avg_hashrate_ph, total_ph_hours, avg_overpay_sat_per_ph_day, avg_cost_per_ph_sat_per_ph_day, avg_overpay_vs_hashprice_sat_per_ph_day, mutation_count } = statsData;
+  const { uptime_pct, avg_hashrate_ph, avg_datum_hashrate_ph, total_ph_hours, avg_overpay_sat_per_ph_day, avg_cost_per_ph_sat_per_ph_day, avg_overpay_vs_hashprice_sat_per_ph_day, mutation_count } = statsData;
+
+  // Show "2.56 / 2.12" when Datum is reporting, plain "2.56" otherwise.
+  // A sustained gap between the two is the operator's "am I getting
+  // what Braiins is billing me for" signal. Unit stays attached to the
+  // right-hand number so it reads as "Braiins / Datum PH/s" as a pair.
+  const avgHashrateText =
+    avg_hashrate_ph === null
+      ? '\u2014'
+      : avg_datum_hashrate_ph !== null
+        ? `${avg_hashrate_ph.toFixed(2)} / ${avg_datum_hashrate_ph.toFixed(2)} PH/s`
+        : `${avg_hashrate_ph.toFixed(2)} PH/s`;
+  const avgHashrateTooltip =
+    avg_datum_hashrate_ph !== null
+      ? 'Left: duration-weighted average hashrate Braiins reports delivering (delivered_ph). Right: average hashrate Datum measures at the gateway (datum_hashrate_ph). A sustained gap means Braiins is billing for hashrate the gateway never saw.'
+      : 'Duration-weighted average hashrate across the selected range, including downtime (where delivered = 0). Reflects real throughput — not just the moments you were hashing.';
 
   return (
     <section className="grid grid-cols-2 lg:grid-cols-7 gap-3">
@@ -1159,8 +1177,8 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
       />
       <StatCard
         label="avg hashrate"
-        value={avg_hashrate_ph !== null ? `${avg_hashrate_ph.toFixed(2)} PH/s` : '\u2014'}
-        tooltip="Duration-weighted average hashrate across the selected range, including downtime (where delivered = 0). Reflects real throughput — not just the moments you were hashing."
+        value={avgHashrateText}
+        tooltip={avgHashrateTooltip}
       />
       <StatCard
         label="total PH·h"
