@@ -1414,7 +1414,10 @@ function OceanPanel() {
             <Row k="next block est." v={denomination.formatSat(o.user.next_block_sat, intlLocale)} />
             <Row k="income/day est." v={denomination.formatSat(o.user.daily_estimate_sat, intlLocale)} />
             {o.user.time_to_payout_text && (
-              <Row k="next payout" v={o.user.time_to_payout_text} />
+              <Row
+                k="next payout"
+                v={formatNextPayout(o.user.time_to_payout_text)}
+              />
             )}
           </>
         )}
@@ -1576,30 +1579,37 @@ function FinancePanel({
           {headerControls}
         </div>
         {hasPerDay ? (
-          <div className="space-y-1 text-[11px] text-slate-500 font-mono">
+          // Per-day values are all projections / estimates (Ocean's
+          // 3h-hashrate extrapolation for income, live bid price ×
+          // delivered for spend). Label them "projected" so the
+          // operator reads them as forecasts rather than facts. The
+          // exceptions — hashprice (current market break-even) and
+          // ocean lifetime (actual earnings) — keep their existing
+          // plain labels.
+          <div className="space-y-1.5 text-sm font-mono">
             {dailyIncomeSat !== null && (
               <FinanceFootnote
-                label="income/day"
+                label="projected income/day"
                 value={denomination.formatSat(dailyIncomeSat, intlLocale)}
-                tooltip="Ocean's estimated earnings per day at the address's 3-hour hashrate."
+                tooltip="Projection. Ocean's estimated earnings per day at the address's 3-hour hashrate. Slides as that rate moves."
               />
             )}
             {hasDailySpend && (
               <FinanceFootnote
-                label="spend/day"
+                label="projected spend/day"
                 value={denomination.formatSat(Math.round(dailySpendSat), intlLocale)}
-                tooltip="Cost per day at current bid price × delivered hashrate, summed across active owned bids. Braiins only debits for hashrate actually delivered, so this tracks reality (not the speed-limit cap)."
+                tooltip="Projection. Cost per day at current bid price × delivered hashrate, summed across active owned bids. Braiins only debits for hashrate actually delivered, so this tracks reality (not the speed-limit cap)."
               />
             )}
             {dailyNetSat !== null && (
               <FinanceFootnote
-                label="net/day"
+                label="projected net/day"
                 value={
                   denomination.mode === 'usd' && denomination.btcPrice !== null
                     ? `${dailyNetSat >= 0 ? '+' : ''}${denomination.formatSat(dailyNetSat, intlLocale)}`
                     : `${dailyNetSat >= 0 ? '+' : ''}${formatNumber(dailyNetSat, {}, intlLocale)} sat`
                 }
-                tooltip="Income/day − spend/day. Positive = the autopilot is profitable at current rates; negative = burning money per day. Don't confuse with the lifetime net on the other panel."
+                tooltip="Projection. Income/day − spend/day. Positive = the autopilot is profitable at current rates; negative = burning money per day. Don't confuse with the lifetime net on the other panel."
                 valueClass={dailyNetColor}
               />
             )}
@@ -1607,7 +1617,7 @@ function FinancePanel({
               <FinanceFootnote
                 label="hashprice (break-even)"
                 value={denomination.formatSatPerPhDay(data.ocean.hashprice_sat_per_ph_day, intlLocale)}
-                tooltip="Revenue per PH/s per day from mining at the current network difficulty + block reward. If you're paying ABOVE this for hashrate, you're spending more than mining earns. Below = profitable."
+                tooltip="Current market break-even. Revenue per PH/s per day from mining at the current network difficulty + block reward. If you're paying ABOVE this for hashrate, you're spending more than mining earns. Below = profitable."
               />
             )}
             {data.ocean?.lifetime_sat != null && (
@@ -1617,16 +1627,9 @@ function FinancePanel({
                 tooltip="Total earned at this address since first share, per Ocean."
               />
             )}
-            {data.ocean?.time_to_payout_text && (
-              <FinanceFootnote
-                label="next payout"
-                value={formatNextPayout(data.ocean.time_to_payout_text)}
-                tooltip="Ocean's estimate at the address's 3-hour hashrate until earnings cross the payout threshold (0.01048576 BTC). The timestamp is computed from this duration plus the current time — slides earlier as hashrate climbs, later as it drops."
-              />
-            )}
           </div>
         ) : (
-          <div className="text-[11px] text-slate-600">no active bids</div>
+          <div className="text-sm text-slate-600">no active bids</div>
         )}
       </div>
 
