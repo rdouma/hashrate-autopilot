@@ -259,6 +259,10 @@ export const api = {
   scanPayouts: () => request<{ ok: boolean; error?: string }>('/api/payouts/scan', { method: 'POST' }),
   btcPrice: () => request<BtcPriceResponse>('/api/btc-price'),
   finance: () => request<FinanceResponse>('/api/finance'),
+  rebuildSpendCache: () =>
+    request<{ ok: boolean; error?: string }>('/api/finance/spend/rebuild', {
+      method: 'POST',
+    }),
   stats: (range: ChartRange) =>
     request<StatsResponse>(`/api/stats?range=${encodeURIComponent(range)}`),
   simulate: (params: SimulateRequest) =>

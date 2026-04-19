@@ -251,6 +251,20 @@ export interface MigrationsTable {
 }
 
 // ---------------------------------------------------------------------------
+// closed_bids_cache — persistent sum cache for AccountSpendService.
+// Terminal (CANCELED / FULFILLED) Braiins bids' consumed counter is
+// immutable, so we store the amount once and never re-fetch it.
+// Active bids are NOT cached here — they're always re-read live.
+// ---------------------------------------------------------------------------
+
+export interface ClosedBidsCacheTable {
+  braiins_order_id: string;
+  amount_consumed_sat: number;
+  first_seen_at: number;
+  last_seen_at: number;
+}
+
+// ---------------------------------------------------------------------------
 // Kysely database descriptor
 // ---------------------------------------------------------------------------
 
@@ -267,5 +281,6 @@ export interface Database {
   fee_schedule_cache: FeeScheduleCacheTable;
   tick_metrics: TickMetricsTable;
   bid_events: BidEventsTable;
+  closed_bids_cache: ClosedBidsCacheTable;
   _migrations: MigrationsTable;
 }

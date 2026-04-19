@@ -1317,6 +1317,22 @@ function FinancePanel({
 }) {
   const { intlLocale } = useLocale();
   const denomination = useDenomination();
+  const qc = useQueryClient();
+  const [rebuilding, setRebuilding] = useState(false);
+
+  const handleRebuild = async () => {
+    if (rebuilding) return;
+    if (!window.confirm('Wipe the local terminal-bid cache and re-paginate every bid from Braiins on the next refresh? This is safe but slower than a normal refresh.')) {
+      return;
+    }
+    setRebuilding(true);
+    try {
+      await api.rebuildSpendCache();
+      qc.invalidateQueries({ queryKey: ['finance'] });
+    } finally {
+      setRebuilding(false);
+    }
+  };
 
   if (!data) {
     return (
@@ -1389,6 +1405,16 @@ function FinancePanel({
           >
             {refreshing ? '…' : '↻'}
           </button>
+          {data.spent_scope === 'account' && (
+            <button
+              onClick={handleRebuild}
+              disabled={rebuilding}
+              className="px-1.5 py-0.5 rounded border border-slate-700 text-slate-400 hover:bg-slate-800 disabled:opacity-50"
+              title="Wipe the local terminal-bid cache and re-paginate every bid from Braiins on the next refresh. Use if the 'spent (whole account)' figure looks wrong."
+            >
+              {rebuilding ? '…' : 'rebuild'}
+            </button>
+          )}
         </div>
       </div>
 

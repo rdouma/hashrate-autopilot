@@ -6,40 +6,38 @@
  * hashrate." Covers bids placed before the autopilot was switched on,
  * so it pairs honestly with Ocean's lifetime earnings.
  *
- * Source: `GET /spot/bid` with pagination.
+ * Source: `GET /spot/bid` with pagination, plus a persistent
+ * `closed_bids_cache` (see state/repos/closed_bids_cache.ts).
  *
  * Per-bid spend: `counters_committed.amount_consumed_sat`. Empirically
- * (daemon log 2026-04-19 build 12) the list endpoint returns *only*
- * `counters_committed` per item — `counters_estimate` and
- * `state_estimate` are populated solely on `/spot/bid/detail/{id}`.
- * The OpenAPI spec promises all three; the wire only delivers the
- * committed counter. `counters_committed.amount_consumed_sat` matches
- * the final spend on terminal bids and is Braiins's best settled-only
- * figure for active bids (may lag the latest hour's consumption).
+ * the list endpoint returns only `counters_committed` per item —
+ * `counters_estimate` and `state_estimate` are populated solely on
+ * `/spot/bid/detail/{id}`. The OpenAPI spec promises all three; the
+ * wire only delivers the committed counter.
  *
- * Splits: each bid is also categorised by `bid.is_current` — `true`
- * for non-terminal statuses (ACTIVE, CREATED, PAUSED, PENDING_CANCEL,
- * FROZEN), `false` for CANCELED / FULFILLED. So the snapshot carries
- * both a closed total and an active (still-in-flight) total, which
- * the panel surfaces as sub-rows. `total_settlement_sat` is the sum
- * of the two.
+ * Caching strategy:
+ *   - Terminal bids (is_current=false) are immutable after the status
+ *     flips. We upsert each one into `closed_bids_cache` the first
+ *     time we see it, then count them from the DB sum on every
+ *     subsequent refresh — never re-reading their consumed value.
+ *   - Active bids (is_current=true) are always read live from the
+ *     wire; their consumed counter updates hourly as Braiins settles.
+ *   - Pagination short-circuits: once a page produces zero new
+ *     terminal bids, every older terminal is already cached, so we
+ *     stop walking. First boot walks everything; steady-state walks
+ *     one page per 5 min.
  *
- * Pagination + cache:
- *   - Walk pages of 200 until a partial page signals end of history.
- *   - Cap at 1000 pages (~200k bids) to stop a misbehaving endpoint
- *     from spinning forever.
- *   - 5-min in-memory cache; inflight-dedup so concurrent requests
- *     share one fetch. A restart re-fetches.
+ * A small in-memory 5-min snapshot cache sits on top so back-to-back
+ * dashboard refreshes don't hit the repo + wire every poll.
  *
- * Prior implementation summed `/v1/account/transaction` rows of type
- * "(Partial) order settlement (brutto price)". That was correct but
- * lagged the real spend by up to one settlement interval (hourly), and
- * didn't pick up brand-new bids before their first settlement tick.
- * Switching to the bid list removes both gaps and lets us drop the
- * magic-string tx-type match.
+ * Operator-facing "rebuild" path: `rebuild()` wipes the repo and
+ * forces a full re-paginate on the next fetch. Exposed via the
+ * finance route so a button on the dashboard can trigger it.
  */
 
 import type { BidItem, BraiinsClient } from '@braiins-hashrate/braiins-client';
+
+import type { ClosedBidsCacheRepo } from '../state/repos/closed_bids_cache.js';
 
 const PAGE_SIZE = 200;
 const MAX_PAGES = 1000;
@@ -63,35 +61,63 @@ export interface AccountSpendOptions {
 
 export class AccountSpendService {
   private readonly client: BraiinsClient;
+  private readonly repo: ClosedBidsCacheRepo;
   private readonly cacheTtlMs: number;
   private readonly now: () => number;
-  private cache: AccountSpendSnapshot | null = null;
+  private snapshotCache: AccountSpendSnapshot | null = null;
   private inflight: Promise<AccountSpendSnapshot | null> | null = null;
 
-  constructor(client: BraiinsClient, opts: AccountSpendOptions = {}) {
+  constructor(
+    client: BraiinsClient,
+    repo: ClosedBidsCacheRepo,
+    opts: AccountSpendOptions = {},
+  ) {
     this.client = client;
+    this.repo = repo;
     this.cacheTtlMs = opts.cacheTtlMs ?? DEFAULT_CACHE_TTL_MS;
     this.now = opts.now ?? (() => Date.now());
   }
 
   async getLifetimeSpend(): Promise<AccountSpendSnapshot | null> {
-    const fresh = this.cache && this.now() - this.cache.fetched_at_ms < this.cacheTtlMs;
-    if (fresh) return this.cache;
+    const fresh =
+      this.snapshotCache && this.now() - this.snapshotCache.fetched_at_ms < this.cacheTtlMs;
+    if (fresh) return this.snapshotCache;
     if (this.inflight) return this.inflight;
 
     this.inflight = this.fetchAndSum().finally(() => {
       this.inflight = null;
     });
     const result = await this.inflight;
-    if (result) this.cache = result;
+    if (result) this.snapshotCache = result;
     return result;
   }
 
+  /**
+   * Wipe the persistent cache and the in-memory snapshot so the very
+   * next `getLifetimeSpend` call re-paginates everything from the wire
+   * and re-populates the cache. Safety net for the unlikely case of
+   * Braiins retroactively adjusting a terminal bid, a schema bug we
+   * discover later, or the operator flat-out wanting fresh numbers.
+   */
+  async rebuild(): Promise<void> {
+    await this.repo.clear();
+    this.snapshotCache = null;
+    // Don't await any in-flight fetch — just invalidate and let the
+    // next call trigger a new one.
+  }
+
   private async fetchAndSum(): Promise<AccountSpendSnapshot | null> {
-    let closed = 0;
+    // Start with the already-cached terminal sum. We'll only *add*
+    // newly-discovered terminals on top of this — never re-read
+    // existing cached rows.
+    const closedFromCache = await this.repo.sumConsumedSat();
+    const cachedIds = await this.repo.allIds();
+
+    let closedNew = 0;
     let active = 0;
     let seen = 0;
     let offset = 0;
+    const fetchStart = this.now();
 
     for (let i = 0; i < MAX_PAGES; i++) {
       let res;
@@ -106,43 +132,58 @@ export class AccountSpendService {
       const items: BidItem[] = res.items ?? [];
       if (items.length === 0) break;
 
+      let newTerminalsOnThisPage = 0;
+
       for (const item of items) {
         seen++;
         const consumed = consumedSatFor(item);
         if (!Number.isFinite(consumed) || consumed <= 0) continue;
+
         if (isCurrentBid(item)) {
+          // Active — always counted live, never cached.
           active += consumed;
         } else {
-          closed += consumed;
+          const id = bidIdOf(item);
+          if (!id) continue; // terminal with no ID — shouldn't happen, but skip defensively
+          if (!cachedIds.has(id)) {
+            closedNew += consumed;
+            cachedIds.add(id);
+            await this.repo.upsert(
+              { braiins_order_id: id, amount_consumed_sat: consumed },
+              fetchStart,
+            );
+            newTerminalsOnThisPage++;
+          }
         }
       }
+
+      // Short-circuit: if this whole page had zero new terminals, the
+      // older tail is definitely already in the cache. Note that a
+      // page can still contain new *active* bids — those are at the
+      // top (newest created) and we always process them. We only
+      // terminate the pagination when terminals stop appearing fresh.
+      if (newTerminalsOnThisPage === 0) break;
 
       // End-of-history signal: a partial page means we got everything.
       if (items.length < PAGE_SIZE) break;
       offset += items.length;
     }
 
-    console.warn(
-      `[account-spend] /spot/bid summary: seen=${seen} closed_sat=${Math.round(closed)} active_sat=${Math.round(active)} total_sat=${Math.round(closed + active)}`,
-    );
-
+    const closed = closedFromCache + closedNew;
     const total = closed + active;
+    console.warn(
+      `[account-spend] summary: seen=${seen} cached_terminals=${cachedIds.size} closed_sat=${Math.round(closed)} active_sat=${Math.round(active)} total_sat=${Math.round(total)}`,
+    );
     return {
       total_settlement_sat: Math.round(total),
       closed_sat: Math.round(closed),
       active_sat: Math.round(active),
       transactions_seen: seen,
-      fetched_at_ms: this.now(),
+      fetched_at_ms: fetchStart,
     };
   }
-
 }
 
-/**
- * Read `counters_committed.amount_consumed_sat`, floored at 0.
- * The list endpoint returns this field on every item; other counter
- * variants (estimate / state_estimate) are absent.
- */
 function consumedSatFor(item: BidItem): number {
   const consumed = Number(item.counters_committed?.amount_consumed_sat ?? 0);
   if (!Number.isFinite(consumed)) return 0;
@@ -155,4 +196,9 @@ function isCurrentBid(item: BidItem): boolean {
   // same codegen gap as `amount_sat` (worked around in observe.ts).
   const bid = item.bid as unknown as { is_current?: boolean } | undefined;
   return Boolean(bid?.is_current);
+}
+
+function bidIdOf(item: BidItem): string | null {
+  const id = item.bid?.id;
+  return typeof id === 'string' && id.length > 0 ? id : null;
 }

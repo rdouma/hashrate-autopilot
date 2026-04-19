@@ -72,6 +72,17 @@ export async function registerFinanceRoute(
   app: FastifyInstance,
   deps: FinanceDeps,
 ): Promise<void> {
+  app.post('/api/finance/spend/rebuild', async () => {
+    // Force the closed-bids cache to repaginate from scratch on the
+    // next /api/finance hit. Operator-triggered safety net when the
+    // cached sum is ever suspected stale.
+    if (!deps.accountSpend) {
+      return { ok: false, error: 'account-spend service not configured' };
+    }
+    await deps.accountSpend.rebuild();
+    return { ok: true };
+  });
+
   app.get('/api/finance', async (): Promise<FinanceResponse> => {
     const config = await deps.configRepo.get();
     const scope = config?.spent_scope ?? 'autopilot';

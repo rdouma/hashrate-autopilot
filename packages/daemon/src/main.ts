@@ -23,6 +23,7 @@ import { PayoutObserver } from './services/payout-observer.js';
 import { PoolHealthTracker } from './services/pool-health.js';
 import { closeDatabase, openDatabase } from './state/db.js';
 import { BidEventsRepo } from './state/repos/bid_events.js';
+import { ClosedBidsCacheRepo } from './state/repos/closed_bids_cache.js';
 import { ConfigRepo } from './state/repos/config.js';
 import { DecisionsRepo } from './state/repos/decisions.js';
 import { OwnedBidsRepo } from './state/repos/owned_bids.js';
@@ -66,6 +67,7 @@ async function main(): Promise<void> {
   const decisionsRepo = new DecisionsRepo(handle.db);
   const tickMetricsRepo = new TickMetricsRepo(handle.db);
   const bidEventsRepo = new BidEventsRepo(handle.db);
+  const closedBidsCacheRepo = new ClosedBidsCacheRepo(handle.db);
 
   let cfg = await configRepo.get();
   if (!cfg) throw new Error('config row missing — run `pnpm -w run setup` first');
@@ -177,10 +179,11 @@ async function main(): Promise<void> {
   // finance panel just won't have an "expected income" figure then).
   const oceanClient = createOceanClient();
 
-  // Account-lifetime spend tracker — sums Braiins's transaction
-  // ledger when the operator picks `spent_scope = 'account'`. Uses
-  // the owner-token client so it can read /v1/account/transaction.
-  const accountSpend = new AccountSpendService(braiinsClient);
+  // Account-lifetime spend tracker — sums counters_committed.amount_consumed_sat
+  // across every Braiins bid (active + historical). Terminal bids are
+  // persisted in closed_bids_cache so steady-state refreshes only
+  // paginate the tail, not every bid the account has ever owned.
+  const accountSpend = new AccountSpendService(braiinsClient, closedBidsCacheRepo);
 
   // BTC/USD price oracle — purely a dashboard display convenience.
   const btcPriceService = new BtcPriceService();
