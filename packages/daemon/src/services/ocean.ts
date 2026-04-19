@@ -169,12 +169,19 @@ export function createOceanClient(opts: OceanClientOptions = {}): OceanClient {
           }
         }
 
-        // Parse recent blocks
+        // Parse recent blocks.
+        // Ocean's /v1/blocks returns ts as a bare ISO datetime with
+        // microsecond precision and no timezone suffix, e.g.
+        // "2026-04-18T10:54:28.021400". JavaScript's Date parser treats
+        // such a string as *local time*, which made our "found X ago"
+        // display drift by whatever TZ the daemon host was in — a block
+        // mined minutes ago could appear hours off, sometimes even
+        // inverting the monotonic height/time ordering. Force UTC.
         const rawBlocks = (blocksResp?.result as Record<string, unknown>)?.blocks;
         const recent_blocks: OceanBlock[] = Array.isArray(rawBlocks)
           ? (rawBlocks as Record<string, unknown>[]).slice(0, 15).map((b) => ({
               height: Number(b.height ?? 0),
-              timestamp_ms: new Date(String(b.ts ?? '')).getTime() || 0,
+              timestamp_ms: parseOceanTs(b.ts),
               total_reward_sat: Number(b.total_reward_sats ?? 0),
               subsidy_sat: Number(b.subsidy_sats ?? 0),
               fees_sat: Number(b.txn_fees_sats ?? 0),
@@ -229,6 +236,20 @@ export function createOceanClient(opts: OceanClientOptions = {}): OceanClient {
       }
     },
   };
+}
+
+/**
+ * Ocean returns ts like "2026-04-18T10:54:28.021400" — bare ISO with
+ * no timezone suffix. Treat it as UTC by appending "Z" unless the
+ * string already carries an offset. Return 0 on parse failure (our
+ * caller converts that into a "never" in the UI).
+ */
+export function parseOceanTs(raw: unknown): number {
+  if (typeof raw !== 'string' || raw.length === 0) return 0;
+  const hasTz = /Z$|[+-]\d{2}:?\d{2}$/.test(raw);
+  const normalised = hasTz ? raw : raw + 'Z';
+  const t = new Date(normalised).getTime();
+  return Number.isFinite(t) ? t : 0;
 }
 
 async function getJson(

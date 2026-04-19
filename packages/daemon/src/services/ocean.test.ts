@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { createOceanClient } from './ocean.js';
+import { createOceanClient, parseOceanTs } from './ocean.js';
 
 // Fixtures matching the real api.ocean.xyz/v1/ JSON responses
 // captured 2026-04-16.
@@ -116,5 +116,41 @@ describe('OceanClient (JSON API)', () => {
     const client = createOceanClient({ fetch: fakeApiFetch() });
     const stats = await client.fetchStats('bc1qaddress');
     expect(stats!.payout_threshold_sat).toBe(1_048_576);
+  });
+});
+
+describe('parseOceanTs', () => {
+  it('treats bare ISO datetime as UTC (not local)', () => {
+    // Regression: /v1/blocks returns ts without a timezone suffix.
+    // new Date(str) interprets that as local time, making the "found X
+    // ago" display drift by the host's UTC offset — sometimes enough
+    // that a later block appeared older than an earlier one.
+    const ms = parseOceanTs('2026-04-18T10:54:28.021400');
+    expect(new Date(ms).toISOString()).toBe('2026-04-18T10:54:28.021Z');
+  });
+
+  it('preserves explicit Z suffix', () => {
+    const ms = parseOceanTs('2026-04-18T10:54:28.021Z');
+    expect(new Date(ms).toISOString()).toBe('2026-04-18T10:54:28.021Z');
+  });
+
+  it('preserves explicit offset', () => {
+    const ms = parseOceanTs('2026-04-18T12:54:28.021+02:00');
+    expect(new Date(ms).toISOString()).toBe('2026-04-18T10:54:28.021Z');
+  });
+
+  it('returns 0 for empty or unparseable input', () => {
+    expect(parseOceanTs('')).toBe(0);
+    expect(parseOceanTs(null)).toBe(0);
+    expect(parseOceanTs(undefined)).toBe(0);
+    expect(parseOceanTs('not a date')).toBe(0);
+  });
+
+  it('preserves monotonic height→time ordering on real fixtures', () => {
+    // Captured from api.ocean.xyz/v1/blocks 2026-04-19. With the old
+    // local-TZ parser these two could invert depending on host TZ.
+    const a = parseOceanTs('2026-04-18T10:54:28.021400'); // height 945606
+    const b = parseOceanTs('2026-04-17T11:05:47.630700'); // height 945475
+    expect(a).toBeGreaterThan(b);
   });
 });
