@@ -120,14 +120,16 @@ export async function registerFinanceRoute(
 
     const expected_sat = oceanStats?.unpaid_sat ?? null;
 
-    // Net only makes sense when we have *both* halves of the income
-    // side. Showing "(spent) − null" as "(spent) more in the red" is
-    // misleading — defer the verdict until the dashboards have real
-    // numbers to add up.
+    // Net = (collected + expected) − spent. `collected_sat` null means
+    // on-chain tracking isn't configured (payout_source=none) or the
+    // observer hasn't fetched yet; we treat it as 0 for the arithmetic
+    // so the net line still makes sense — the "collected: —" row on
+    // the panel already tells the operator that piece is missing.
+    // Only surface net=null when the *income* side is unavailable
+    // (Ocean unreachable): without unpaid earnings we genuinely can't
+    // reason about whether we're in the black.
     const net_sat =
-      collected_sat !== null && expected_sat !== null
-        ? collected_sat + expected_sat - spent_sat
-        : null;
+      expected_sat !== null ? (collected_sat ?? 0) + expected_sat - spent_sat : null;
 
     return {
       spent_sat,
