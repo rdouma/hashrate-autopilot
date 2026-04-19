@@ -80,6 +80,7 @@ export interface RuntimeStateTable {
   last_rpc_ok_at: number | null;
   last_pool_ok_at: number | null;
   below_floor_since_ms: number | null;
+  above_floor_since_ms: number | null;
   above_floor_ticks: number;
 }
 

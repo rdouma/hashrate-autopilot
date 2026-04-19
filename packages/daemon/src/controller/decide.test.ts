@@ -149,6 +149,46 @@ describe('decide — CREATE path', () => {
   });
 });
 
+describe('decide — bypass_pacing (run-decision-now) lowers immediately', () => {
+  // Mirror of the "auto-lowers when overpaying" test from the EDIT/CANCEL
+  // path, but with above_floor_since set so recently that the normal
+  // patience gate would block the lower. With bypass_pacing=true the
+  // gate is overridden and the EDIT_PRICE still fires — that's the
+  // operator's expectation when they click "Run decision now".
+  it('fires EDIT_PRICE lowering even when above_floor_since is within the patience window', () => {
+    const overpayAmount = 2_000_000;
+    const tickAt = 1_700_000_000_000;
+    // above_floor_since 30s ago — far below the 15-minute default
+    // patience, so `aboveFloorLongEnough` is false. Lowering should
+    // still fire because bypass_pacing=true.
+    const s = state({
+      tick_at: tickAt,
+      above_floor_since: tickAt - 30_000,
+      owned_bids: [owned({ price_sat: EXPECTED_TARGET + overpayAmount })],
+      bypass_pacing: true,
+    } as Partial<State>);
+    const proposals = decide(s);
+    const edit = proposals.find((p) => p.kind === 'EDIT_PRICE') as
+      | { new_price_sat: number }
+      | undefined;
+    expect(edit).toBeDefined();
+    expect(edit?.new_price_sat).toBe(EXPECTED_TARGET);
+  });
+
+  it('does NOT fire when bypass_pacing is false and the patience window has not elapsed', () => {
+    const overpayAmount = 2_000_000;
+    const tickAt = 1_700_000_000_000;
+    const s = state({
+      tick_at: tickAt,
+      above_floor_since: tickAt - 30_000,
+      owned_bids: [owned({ price_sat: EXPECTED_TARGET + overpayAmount })],
+      bypass_pacing: false,
+    } as Partial<State>);
+    const proposals = decide(s);
+    expect(proposals.find((p) => p.kind === 'EDIT_PRICE')).toBeUndefined();
+  });
+});
+
 describe('decide — market too expensive', () => {
   it('silently skips the tick when target > max_bid', () => {
     const cappedCfg = { ...BASE_CONFIG, max_bid_sat_per_eh_day: 44_000_000 };

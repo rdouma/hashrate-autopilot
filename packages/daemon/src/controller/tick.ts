@@ -69,6 +69,7 @@ export class Controller {
     const row = await this.deps.runtimeRepo.get();
     if (!row) return;
     this.belowFloorSince = row.below_floor_since_ms;
+    this.aboveFloorSince = row.above_floor_since_ms;
     this.aboveFloorTicks = row.above_floor_ticks;
   }
 
@@ -193,6 +194,7 @@ export class Controller {
       last_api_ok_at: state.last_api_ok_at,
       last_pool_ok_at: state.pool.last_ok_at,
       below_floor_since_ms: this.belowFloorSince,
+      above_floor_since_ms: this.aboveFloorSince,
       above_floor_ticks: this.aboveFloorTicks,
     });
 

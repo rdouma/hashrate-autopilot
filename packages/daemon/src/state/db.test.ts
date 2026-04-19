@@ -59,6 +59,7 @@ describe('openDatabase — migrations', () => {
       '0028_datum_api_url.sql',
       '0029_tick_metrics_datum_hashrate.sql',
       '0030_max_overpay_vs_hashprice.sql',
+      '0031_persist_above_floor_since.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });

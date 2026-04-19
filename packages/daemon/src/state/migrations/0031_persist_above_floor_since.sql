@@ -1,0 +1,11 @@
+-- Persist the "above-floor since" timestamp so the lower_patience
+-- window survives daemon restarts. Without this, restarting the
+-- daemon while the autopilot was waiting out the patience window
+-- reset the clock — a bid that was 2 minutes from lowering would
+-- get pushed back out to the full `lower_patience_minutes` again,
+-- which operators rightly found un-robust.
+--
+-- Null means "currently below floor" (consistent with the in-memory
+-- semantics). Migration 0014 already added `below_floor_since_ms`
+-- and `above_floor_ticks`; this completes the set.
+ALTER TABLE runtime_state ADD COLUMN above_floor_since_ms INTEGER;
