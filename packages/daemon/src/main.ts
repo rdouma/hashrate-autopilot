@@ -15,6 +15,7 @@ import { createBraiinsClient } from '@braiins-hashrate/braiins-client';
 import { loadSecrets } from './config/secrets.js';
 import { createHttpServer } from './http/server.js';
 import { AccountSpendService } from './services/account-spend.js';
+import { RetentionService } from './services/retention.js';
 import { BtcPriceService } from './services/btc-price.js';
 import { BraiinsService } from './services/braiins-service.js';
 import { HashpriceCache } from './services/hashprice-cache.js';
@@ -188,6 +189,17 @@ async function main(): Promise<void> {
   // BTC/USD price oracle — purely a dashboard display convenience.
   const btcPriceService = new BtcPriceService();
 
+  // Append-only log retention. Periodically prunes tick_metrics +
+  // decisions rows older than the configured cutoffs. Runs once on
+  // boot + every hour thereafter (issue #21).
+  const retentionService = new RetentionService(
+    configRepo,
+    tickMetricsRepo,
+    decisionsRepo,
+    { log: (m) => log(m) },
+  );
+  retentionService.start();
+
   // HTTP server (dashboard API + static).
   const httpServer = await createHttpServer({
     controller,
@@ -220,6 +232,7 @@ async function main(): Promise<void> {
     shuttingDown = true;
     log(`received ${signal}; draining loop`);
     payoutObserver?.stop();
+    retentionService.stop();
     await loop.stop();
     try {
       await httpServer.stop();

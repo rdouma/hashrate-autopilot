@@ -151,6 +151,20 @@ export const AppConfigSchema = z.object({
   // tracking. 'none' disables tracking entirely; 'electrs' uses the fast
   // Electrum-style indexed lookup; 'bitcoind' falls back to scantxoutset.
   payout_source: z.enum(['none', 'electrs', 'bitcoind']).default('none'),
+
+  // Retention windows for the append-only tables (issue #21).
+  //
+  // `tick_metrics` grows at 1 row/tick/day (~1,440/day). Chart data is
+  // the only consumer; a week of history already covers every default
+  // range on the dashboard. `decisions` similarly grows 1 row/tick/day
+  // but with heavy JSON payloads; we retain "uneventful" (no-proposal)
+  // rows for only a few days and keep decision-bearing rows longer
+  // because those are the actionable forensic records.
+  //
+  // Set to 0 to disable pruning for that table (keep forever).
+  tick_metrics_retention_days: nonNegativeInt.default(7),
+  decisions_uneventful_retention_days: nonNegativeInt.default(7),
+  decisions_eventful_retention_days: nonNegativeInt.default(90),
 });
 
 export type AppConfig = z.infer<typeof AppConfigSchema>;
@@ -225,4 +239,8 @@ export const APP_CONFIG_DEFAULTS: Omit<
   bitcoind_rpc_password: '',
 
   payout_source: 'none',
+
+  tick_metrics_retention_days: 7,
+  decisions_uneventful_retention_days: 7,
+  decisions_eventful_retention_days: 90,
 };

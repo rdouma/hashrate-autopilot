@@ -67,6 +67,51 @@ export class DecisionsRepo {
       proposal_count: safeJsonParse<unknown[]>(r.proposed_json, []).length,
     }));
   }
+
+  /**
+   * Delete every decision row with tick_at < cutoffMs, regardless of
+   * whether it carried proposals. Use via the uneventful/eventful
+   * variants below; this is the raw primitive.
+   */
+  async pruneOlderThan(cutoffMs: number): Promise<number> {
+    const result = await this.db
+      .deleteFrom('decisions')
+      .where('tick_at', '<', cutoffMs)
+      .executeTakeFirst();
+    return Number(result.numDeletedRows ?? 0);
+  }
+
+  /**
+   * Delete "uneventful" decisions (empty proposed_json array) older
+   * than cutoffMs. These are the vast majority of rows and carry no
+   * forensic value — the tick saw nothing to do.
+   */
+  async pruneUneventfulOlderThan(cutoffMs: number): Promise<number> {
+    // SQLite has no JSON array-length in every build, but
+    // proposed_json = '[]' for every uneventful tick (both the empty
+    // array path and a missing-proposals-array path resolve to '[]'
+    // after JSON.stringify). Match the literal.
+    const result = await this.db
+      .deleteFrom('decisions')
+      .where('tick_at', '<', cutoffMs)
+      .where('proposed_json', '=', '[]')
+      .executeTakeFirst();
+    return Number(result.numDeletedRows ?? 0);
+  }
+
+  /**
+   * Delete decision-bearing rows (proposed_json != '[]') older than
+   * cutoffMs. Should run with a much longer retention than the
+   * uneventful prune — these are the forensic records.
+   */
+  async pruneEventfulOlderThan(cutoffMs: number): Promise<number> {
+    const result = await this.db
+      .deleteFrom('decisions')
+      .where('tick_at', '<', cutoffMs)
+      .where('proposed_json', '!=', '[]')
+      .executeTakeFirst();
+    return Number(result.numDeletedRows ?? 0);
+  }
 }
 
 function safeJsonParse<T>(s: string, fallback: T): T {

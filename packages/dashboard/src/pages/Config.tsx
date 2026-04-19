@@ -261,6 +261,34 @@ const SECTIONS: Section[] = [
       },
     ],
   },
+  {
+    title: 'Log retention',
+    description:
+      'How long the daemon keeps append-only log rows. Tick records are pruned hourly once older than the cutoff. 0 = keep forever.',
+    fields: [
+      {
+        key: 'tick_metrics_retention_days',
+        label: 'Tick metrics',
+        kind: 'integer',
+        unit: 'days',
+        help: 'tick_metrics rows drive the hashrate / price / overpay charts. One row per tick (~1,440/day). Default 7 covers every standard chart range.',
+      },
+      {
+        key: 'decisions_uneventful_retention_days',
+        label: 'Uneventful decisions',
+        kind: 'integer',
+        unit: 'days',
+        help: 'decisions rows with empty proposed_json — ticks where the controller had nothing to do. These are the vast majority; prune aggressively.',
+      },
+      {
+        key: 'decisions_eventful_retention_days',
+        label: 'Eventful decisions',
+        kind: 'integer',
+        unit: 'days',
+        help: 'decisions rows that proposed at least one action. Forensic records for figuring out why the autopilot did something weeks later.',
+      },
+    ],
+  },
 ];
 
 export function Config() {

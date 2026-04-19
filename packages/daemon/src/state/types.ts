@@ -58,6 +58,9 @@ export interface ConfigTable {
   bitcoind_rpc_user: string;
   bitcoind_rpc_password: string;
   payout_source: 'none' | 'electrs' | 'bitcoind';
+  tick_metrics_retention_days: number;
+  decisions_uneventful_retention_days: number;
+  decisions_eventful_retention_days: number;
   updated_at: number;
 }
 
