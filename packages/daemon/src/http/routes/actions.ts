@@ -30,10 +30,15 @@ export async function registerActionRoutes(
 ): Promise<void> {
   app.post('/api/actions/tick-now', async (_req, reply) => {
     try {
-      // Manual operator action — bypass any stale post-edit lock so the
-      // controller is free to make its current best decision instead of
-      // sitting on its hands until the auto-set window expires.
+      // Manual operator action — bypass every piece of self-imposed
+      // pacing so "Run decision now" actually runs the decision. That
+      // means clearing the post-edit override lock AND arming a one-
+      // shot pacing bypass so decide() skips its patience / escalation
+      // timers on this tick. Server-side gates (Braiins price-decrease
+      // cooldown, run_mode) are untouched — we don't override
+      // upstream's rules, just our own waiting-room logic.
       const clearedOverrideUntil = deps.controller.clearManualOverride();
+      deps.controller.bypassPacingOnce();
       const result = await deps.controller.tick();
       return {
         ok: true,
@@ -43,6 +48,17 @@ export async function registerActionRoutes(
         executed: result.executed.map((e) => ({
           kind: e.proposal.kind,
           outcome: e.outcome,
+          // Surface the gate reason on BLOCKED (e.g. Braiins's 10-min
+          // price-decrease cooldown) and the error text on FAILED so
+          // the dashboard can tell the operator exactly why the
+          // decision didn't land, instead of just "tick ok — 0
+          // proposals" with no explanation.
+          reason:
+            e.outcome === 'BLOCKED'
+              ? e.reason
+              : e.outcome === 'FAILED'
+                ? e.error
+                : null,
         })),
       };
     } catch (err) {

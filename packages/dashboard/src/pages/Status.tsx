@@ -26,6 +26,7 @@ import {
   type SimStatsSummary,
   type SimulateResponse,
   type StatsResponse,
+  type TickNowResponse,
   type StatusResponse,
 } from '../lib/api';
 import {
@@ -152,6 +153,13 @@ export function Status() {
       setSimParams({
         overpay_sat_per_eh_day: c.overpay_sat_per_eh_day,
         max_bid_sat_per_eh_day: c.max_bid_sat_per_eh_day,
+        // Inherits the live config — simulator now uses the same
+        // dynamic cap (hashprice + allowance) as decide(). Stored as
+        // 0 when disabled (null in config) so simParams stays a plain
+        // Record<string, number>; 0 is coerced back to null server-
+        // side via the Zod preprocess on the request body.
+        max_overpay_vs_hashprice_sat_per_eh_day:
+          c.max_overpay_vs_hashprice_sat_per_eh_day ?? 0,
         fill_escalation_step_sat_per_eh_day: c.fill_escalation_step_sat_per_eh_day,
         fill_escalation_after_minutes: c.fill_escalation_after_minutes,
         lower_patience_minutes: c.lower_patience_minutes,
@@ -173,6 +181,13 @@ export function Status() {
       range: chartRange,
       overpay_sat_per_eh_day: simParamsDebounced!.overpay_sat_per_eh_day!,
       max_bid_sat_per_eh_day: simParamsDebounced!.max_bid_sat_per_eh_day!,
+      // Inherit the live config's dynamic-cap allowance so simulated
+      // escalations can't cross a ceiling the real controller would
+      // refuse. Not a sim tuning knob yet — just passed through.
+      max_overpay_vs_hashprice_sat_per_eh_day:
+        (simParamsDebounced!.max_overpay_vs_hashprice_sat_per_eh_day ?? 0) > 0
+          ? simParamsDebounced!.max_overpay_vs_hashprice_sat_per_eh_day!
+          : null,
       fill_escalation_step_sat_per_eh_day: simParamsDebounced!.fill_escalation_step_sat_per_eh_day!,
       fill_escalation_after_minutes: simParamsDebounced!.fill_escalation_after_minutes!,
       lower_patience_minutes: simParamsDebounced!.lower_patience_minutes!,
@@ -327,6 +342,8 @@ export function Status() {
             setSimParams({
               overpay_sat_per_eh_day: c.overpay_sat_per_eh_day,
               max_bid_sat_per_eh_day: c.max_bid_sat_per_eh_day,
+              max_overpay_vs_hashprice_sat_per_eh_day:
+                c.max_overpay_vs_hashprice_sat_per_eh_day ?? 0,
               fill_escalation_step_sat_per_eh_day: c.fill_escalation_step_sat_per_eh_day,
               fill_escalation_after_minutes: c.fill_escalation_after_minutes,
               lower_patience_minutes: c.lower_patience_minutes,
@@ -368,14 +385,14 @@ export function Status() {
         showEvents={simMode || CHART_RANGE_SPECS[chartRange].showEvents}
         simMode={simMode}
         /*
-         * In simulation mode the cap line needs to reflect what the
-         * *simulator* uses as its ceiling — raw max_bid, since the
-         * simulator doesn't model the dynamic hashprice+max_overpay
-         * cap. Passing null here drops back to the flat max_bid time
-         * series and keeps the visual in sync with the simulated bid.
+         * The simulator now respects the dynamic hashprice+max_overpay
+         * cap (matching decide()), so the chart can use the same
+         * effective-cap line in both real-time and simulation modes.
+         * Pulls from config_summary so the line is always in sync with
+         * whatever the operator's live setting is.
          */
         maxOverpayVsHashpriceSatPerPhDay={
-          simMode ? null : s.config_summary.max_overpay_vs_hashprice_sat_per_ph_day
+          s.config_summary.max_overpay_vs_hashprice_sat_per_ph_day
         }
       />
 
@@ -714,7 +731,7 @@ function NextActionCard({
   s: StatusResponse;
   onTickNow: () => void;
   tickPending: boolean;
-  tickResult: { ok: boolean; error?: string; proposals?: number } | undefined;
+  tickResult: TickNowResponse | undefined;
 }) {
   return (
     <section className="bg-slate-900 border border-slate-800 rounded-lg p-4 h-full flex flex-col">
@@ -746,7 +763,21 @@ function NextActionCard({
           }
         >
           {tickResult.ok
-            ? `tick ok — ${tickResult.proposals ?? 0} proposals`
+            ? (() => {
+                const executed = tickResult.executed ?? [];
+                if (executed.length === 0) {
+                  return 'tick ok — no action needed on this tick';
+                }
+                // Condense each executed entry to kind + outcome and
+                // append any blocking reason so the operator can see
+                // "BLOCKED: PRICE_DECREASE_COOLDOWN" when Braiins's
+                // 10-min floor is what's keeping the lower in its box.
+                const lines = executed.map((e) => {
+                  const reason = e.reason ? ` (${e.reason})` : '';
+                  return `${e.kind}: ${e.outcome}${reason}`;
+                });
+                return `tick ok — ${lines.join(' · ')}`;
+              })()
             : `tick failed: ${tickResult.error}`}
         </div>
       )}

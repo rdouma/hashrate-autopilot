@@ -56,11 +56,17 @@ export interface BidView {
   created_at_ms: number | null;
 }
 
+export interface TickNowExecutedEntry {
+  kind: string;
+  outcome: 'DRY_RUN' | 'EXECUTED' | 'BLOCKED' | 'FAILED';
+  reason: string | null;
+}
+
 export interface TickNowResponse {
   ok: boolean;
   tick_at?: number;
   proposals?: number;
-  executed?: unknown[];
+  executed?: TickNowExecutedEntry[];
   error?: string;
 }
 
@@ -191,6 +197,9 @@ export interface AppConfig {
   destination_pool_url: string;
   destination_pool_worker_name: string;
   max_bid_sat_per_eh_day: number;
+  // Nullable dynamic-cap config. Server coerces 0 → null via Zod
+  // preprocess; keep the wider type here so existing callers don't
+  // need to special-case the UI's "disabled" representation.
   max_overpay_vs_hashprice_sat_per_eh_day: number | null;
   monthly_budget_ceiling_sat: number;
   bid_budget_sat: number;
@@ -327,6 +336,12 @@ export interface SimulateRequest {
   range?: string;
   overpay_sat_per_eh_day: number;
   max_bid_sat_per_eh_day: number;
+  /**
+   * Dynamic hashprice-relative cap allowance. When non-null, the
+   * simulator uses min(max_bid, hashprice + this) as the per-tick
+   * effective cap — matching decide()'s behaviour. Null/0 disables.
+   */
+  max_overpay_vs_hashprice_sat_per_eh_day: number | null;
   fill_escalation_step_sat_per_eh_day: number;
   fill_escalation_after_minutes: number;
   lower_patience_minutes: number;
