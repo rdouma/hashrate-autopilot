@@ -1188,7 +1188,13 @@ function StatCard({
   return (
     <Tooltip text={tooltip}>
       <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 cursor-help text-center">
-        <div className="text-xs uppercase tracking-wider text-slate-100 mb-2">{label}</div>
+        {/* Reserve two lines for the label so single-line cards
+            ("uptime") line up with two-line cards ("avg cost / PH
+            delivered") — otherwise the big numbers underneath
+            don't share a baseline. */}
+        <div className="text-xs uppercase tracking-wider text-slate-100 mb-2 min-h-8 leading-4 flex items-start justify-center">
+          <span>{label}</span>
+        </div>
         <div className={`text-2xl font-mono tabular-nums ${color}`}>
           {split ? split.num : value}
         </div>
