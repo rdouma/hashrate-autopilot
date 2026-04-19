@@ -1413,11 +1413,41 @@ function RefreshCountdown({
   }, []);
   useEffect(() => {
     if (!refetchQueryKey || nextAtMs == null) return;
-    const delay = Math.max(0, nextAtMs - Date.now()) + 300;
-    const id = setTimeout(() => {
-      qc.invalidateQueries({ queryKey: refetchQueryKey });
-    }, delay);
-    return () => clearTimeout(id);
+    // Self-rescheduling timer. Naive setTimeout(..., msUntil + 300) is
+    // not enough: `next_tick_at` is derived from `runtime.last_tick_at
+    // + tickIntervalMs`, and `last_tick_at` is only written *after*
+    // the tick's observe/decide/execute/persist chain finishes. If the
+    // refetch lands while the daemon is mid-tick, the response still
+    // carries the previous `next_tick_at` — same number as before, so
+    // the effect-deps don't change, and the countdown stays on
+    // "refreshing…" until the next react-query poll (up to
+    // refetchInterval, i.e. 30 s for /api/status). Instead we keep
+    // invalidating every 2 s while the current `nextAtMs` is still in
+    // the past; the first fresh response updates `nextAtMs`, the
+    // effect re-runs with a new dep value, and the polling stops.
+    let cancelled = false;
+    let handle: ReturnType<typeof setTimeout>;
+    const schedule = (delayMs: number) => {
+      handle = setTimeout(() => {
+        if (cancelled) return;
+        const msUntil = nextAtMs - Date.now();
+        if (msUntil > 0) {
+          // Not yet expired. This can only happen on the first fire
+          // (initial schedule) if the clock jumped, or if the tab was
+          // backgrounded and the timer fired late. Reschedule to the
+          // real expiry.
+          schedule(msUntil + 300);
+          return;
+        }
+        qc.invalidateQueries({ queryKey: refetchQueryKey });
+        schedule(2_000);
+      }, Math.max(0, delayMs));
+    };
+    schedule(Math.max(300, nextAtMs - Date.now() + 300));
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
   }, [nextAtMs, refetchQueryKey, qc]);
   if (nextAtMs == null) return <span>—</span>;
   const msUntil = nextAtMs - now;
