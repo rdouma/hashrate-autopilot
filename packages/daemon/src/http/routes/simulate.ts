@@ -30,6 +30,14 @@ interface SimulateRequest {
   range?: string;
   overpay_sat_per_eh_day: number;
   max_bid_sat_per_eh_day: number;
+  /**
+   * Dynamic-cap allowance (issue #27). When non-null, effective cap
+   * per tick = min(max_bid, hashprice + this). Matches decide()'s
+   * `effectiveCap` computation so the simulator can't escalate
+   * above a ceiling the real controller would refuse to cross.
+   * Null / 0 disables the dynamic cap and falls back to max_bid.
+   */
+  max_overpay_vs_hashprice_sat_per_eh_day: number | null;
   fill_escalation_step_sat_per_eh_day: number;
   fill_escalation_after_minutes: number;
   lower_patience_minutes: number;
@@ -124,6 +132,7 @@ export async function registerSimulateRoute(
       const simResult = simulate(rows, {
         overpay: body.overpay_sat_per_eh_day,
         maxBid: body.max_bid_sat_per_eh_day,
+        maxOverpayVsHashprice: body.max_overpay_vs_hashprice_sat_per_eh_day ?? null,
         escalationStep: body.fill_escalation_step_sat_per_eh_day,
         escalationWindowMs: body.fill_escalation_after_minutes * 60_000,
         lowerPatienceMs: body.lower_patience_minutes * 60_000,
@@ -155,6 +164,8 @@ export async function registerSimulateRoute(
 interface SimParams {
   overpay: number;
   maxBid: number;
+  /** Null disables; otherwise effective cap per tick uses hashprice + this. */
+  maxOverpayVsHashprice: number | null;
   escalationStep: number;
   escalationWindowMs: number;
   lowerPatienceMs: number;
@@ -197,7 +208,18 @@ function simulate(rows: TickRow[], params: SimParams): SimResult {
       continue;
     }
 
-    const targetPrice = Math.min(fillable + params.overpay, params.maxBid);
+    // Effective cap per tick — mirrors decide.ts's `effectiveCap`.
+    // When the dynamic cap is configured AND hashprice is known for
+    // this tick, use the tighter of the two ceilings. Otherwise fall
+    // back to the fixed max_bid.
+    const hashprice = r.hashprice_sat_per_eh_day;
+    const dynamicCap =
+      params.maxOverpayVsHashprice !== null && hashprice !== null
+        ? hashprice + params.maxOverpayVsHashprice
+        : null;
+    const effectiveCap =
+      dynamicCap !== null ? Math.min(params.maxBid, dynamicCap) : params.maxBid;
+    const targetPrice = Math.min(fillable + params.overpay, effectiveCap);
     const overrideActive = overrideUntil !== null && overrideUntil > r.tick_at;
 
     if (bidPrice === null) {
