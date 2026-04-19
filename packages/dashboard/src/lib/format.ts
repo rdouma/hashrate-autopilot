@@ -149,3 +149,29 @@ export function formatAgePrecise(
   const h = totalHr - totalDay * 24;
   return `${totalDay}d ${h}h ago`;
 }
+
+/**
+ * Two-unit forward duration — "45s", "12m 17s", "3h 4m", "2d 5h".
+ * Used for the "refreshes in X" countdown in panel headers. Rounds
+ * fractional seconds up so a 950ms remainder shows as 1s (not 0s)
+ * and the counter doesn't flicker down to 0 while the timer fires.
+ * Returns "now" when the target has already passed.
+ */
+export function formatCountdownPrecise(msUntil: number): string {
+  if (msUntil <= 0) return 'now';
+  const totalSec = Math.ceil(msUntil / 1000);
+  if (totalSec < 60) return `${totalSec}s`;
+  const totalMin = Math.floor(totalSec / 60);
+  if (totalMin < 60) {
+    const s = totalSec - totalMin * 60;
+    return `${totalMin}m ${s}s`;
+  }
+  const totalHr = Math.floor(totalMin / 60);
+  if (totalHr < 24) {
+    const m = totalMin - totalHr * 60;
+    return `${totalHr}h ${m}m`;
+  }
+  const totalDay = Math.floor(totalHr / 24);
+  const h = totalHr - totalDay * 24;
+  return `${totalDay}d ${h}h`;
+}

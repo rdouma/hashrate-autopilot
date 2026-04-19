@@ -31,6 +31,7 @@ import {
 import {
   formatAge,
   formatAgePrecise,
+  formatCountdownPrecise,
   formatHashratePH,
   formatNumber,
   formatSatPerPH,
@@ -377,7 +378,18 @@ export function Status() {
        * pipeline, not a pipeline step.
        */}
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <Card title="Braiins" updatedAtMs={s.tick_at}>
+        <Card
+          title="Braiins"
+          nextRefreshAtMs={s.next_tick_at}
+          badges={
+            <ReachabilityBadge
+              label="API reachable"
+              reachable={s.market !== null}
+              downLabel="API DOWN"
+              title="Braiins marketplace API — reachable when the last observe() read market/orderbook/balance without error."
+            />
+          }
+        >
           <Row k="delivered" v={formatHashratePH(s.actual_hashrate_ph)} />
           <Row
             k="target"
@@ -455,9 +467,8 @@ export function Status() {
           url={s.config_summary.pool_url}
           reachable={s.pool.reachable}
           consecutiveFailures={s.pool.consecutive_failures}
-          lastOkAt={s.pool.last_ok_at}
           datum={s.datum}
-          tickAt={s.tick_at}
+          nextTickAt={s.next_tick_at}
         />
         <OceanPanel />
       </section>
@@ -1247,6 +1258,78 @@ function TickingAge({ epochMs }: { epochMs: number | null | undefined }) {
 }
 
 /**
+ * Forward countdown — "refreshes in 42s", "refreshes in 2m 13s".
+ * The panel decides when it will next fetch and hands us that
+ * timestamp; we re-render once per second so the digits tick visibly.
+ * Prefer this over {@link TickingAge} on panels that refresh on a
+ * predictable cadence — operators want to know how long until new
+ * data, not how old the current data is.
+ */
+function RefreshCountdown({ nextAtMs }: { nextAtMs: number | null | undefined }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1_000);
+    return () => clearInterval(id);
+  }, []);
+  if (nextAtMs == null) return <span>—</span>;
+  return <span>refreshes in {formatCountdownPrecise(nextAtMs - now)}</span>;
+}
+
+function CopyIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+      <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M20 6L9 17l-5-5" />
+    </svg>
+  );
+}
+
+/**
+ * Pill-style status indicator used across Braiins / Datum / Ocean
+ * panels to show reachability of the underlying external service.
+ * Renders a coloured dot + label inside a bordered chip.
+ */
+function ReachabilityBadge({
+  label,
+  reachable,
+  downLabel,
+  title,
+}: {
+  label: string;
+  reachable: boolean;
+  /** Override for the text when !reachable (e.g. "DOWN (3 consecutive)"). */
+  downLabel?: string;
+  title?: string;
+}) {
+  return (
+    <span
+      className={
+        'inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs border ' +
+        (reachable
+          ? 'border-emerald-700 bg-emerald-900/30 text-emerald-300'
+          : 'border-red-700 bg-red-900/30 text-red-300')
+      }
+      title={title}
+    >
+      <span
+        className={
+          'w-1.5 h-1.5 rounded-full ' + (reachable ? 'bg-emerald-400' : 'bg-red-400')
+        }
+      />
+      {reachable ? label : (downLabel ?? `${label} DOWN`)}
+    </span>
+  );
+}
+
+/**
  * Vertical money panel: cost on top, then the two income sources,
  * then net at the bottom. Reads naturally as a profit-and-loss page —
  * the two incomes obviously add up to "what we'll have", which is
@@ -1283,8 +1366,25 @@ function OceanPanel() {
     );
   }
 
+  // Ocean refreshes every 5 minutes client-side (and server caches for
+  // the same). Countdown = last fetch + 5 min; reachable whenever the
+  // last response carried data.
+  const nextOceanRefreshMs =
+    o.fetched_at_ms !== null ? o.fetched_at_ms + 5 * 60_000 : null;
+
   return (
-    <Card title="Ocean" updatedAtMs={o.fetched_at_ms}>
+    <Card
+      title="Ocean"
+      nextRefreshAtMs={nextOceanRefreshMs}
+      badges={
+        <ReachabilityBadge
+          label="API reachable"
+          reachable={o.fetched_at_ms !== null && o.pool !== null}
+          downLabel="API DOWN"
+          title="Ocean stats API — reachable when the last /api/ocean fetch returned a pool snapshot."
+        />
+      }
+    >
       {o.last_block ? (
         <>
           <Row k="last block" v={`#${o.last_block.height.toLocaleString(intlLocale)}`} />
@@ -1769,23 +1869,16 @@ function DatumPanel({
   url,
   reachable,
   consecutiveFailures,
-  lastOkAt,
   datum,
-  tickAt,
+  nextTickAt,
 }: {
   url: string;
   reachable: boolean;
   consecutiveFailures: number;
-  lastOkAt: number | null;
   datum: StatusResponse['datum'];
-  tickAt: number | null;
+  nextTickAt: number | null;
 }) {
   const [copied, setCopied] = useState(false);
-  // Prefer the Datum poll's own last-ok timestamp (when configured)
-  // for the header age — it's the truest "when did I last see fresh
-  // stats" answer. Fall back to the tick_at and then to the stratum
-  // probe when Datum isn't wired up yet.
-  const updatedAt = datum?.last_ok_at ?? tickAt ?? lastOkAt ?? null;
 
   // Split the pool URL into scheme / host / port so the card doesn't
   // wrap an unreadable 60-character string. Pool URLs on Ocean look
@@ -1807,50 +1900,63 @@ function DatumPanel({
     <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
       <div className="flex items-baseline justify-between mb-2">
         <div className="text-xs uppercase tracking-wider text-slate-100">Datum Gateway</div>
-        {updatedAt != null && (
-          <div className="text-[11px] text-slate-500 font-mono">
-            <TickingAge epochMs={updatedAt} />
-          </div>
-        )}
+        <div className="text-[11px] text-slate-500 font-mono">
+          <RefreshCountdown nextAtMs={nextTickAt} />
+        </div>
       </div>
       <div className="flex items-center gap-2 mb-2 flex-wrap">
-        <span
-          className={
-            'inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs border ' +
-            (reachable
-              ? 'border-emerald-700 bg-emerald-900/30 text-emerald-300'
-              : 'border-red-700 bg-red-900/30 text-red-300')
-          }
-          title={`TCP probe of the stratum port. Stratum last ok: ${formatAge(lastOkAt)}`}
-        >
-          <span
-            className={
-              'w-1.5 h-1.5 rounded-full ' + (reachable ? 'bg-emerald-400' : 'bg-red-400')
-            }
-          />
-          stratum {reachable ? 'reachable' : `DOWN (${consecutiveFailures} consecutive)`}
-        </span>
+        <ReachabilityBadge
+          label="stratum reachable"
+          reachable={reachable}
+          downLabel={`stratum DOWN (${consecutiveFailures} consecutive)`}
+          title="TCP probe of the Datum gateway's stratum port."
+        />
         {datum && (
-          <span
-            className={
-              'inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs border ' +
-              (datum.reachable
-                ? 'border-emerald-700 bg-emerald-900/30 text-emerald-300'
-                : 'border-amber-700 bg-amber-900/30 text-amber-300')
-            }
-            title="Datum /umbrel-api HTTP poll"
-          >
-            <span
-              className={
-                'w-1.5 h-1.5 rounded-full ' +
-                (datum.reachable ? 'bg-emerald-400' : 'bg-amber-400')
-              }
-            />
-            stats {datum.reachable ? 'reachable' : `unreachable (${datum.consecutive_failures})`}
-          </span>
+          <ReachabilityBadge
+            label="stats reachable"
+            reachable={datum.reachable}
+            downLabel={`stats unreachable (${datum.consecutive_failures})`}
+            title="Datum /umbrel-api HTTP poll."
+          />
         )}
       </div>
-      <div className="mt-2 pt-2 border-t border-slate-800">
+      {datum ? (
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+          <div className="text-slate-400">datum hashrate</div>
+          <div className="text-right font-mono text-slate-200">
+            {datum.hashrate_ph !== null ? formatHashratePH(datum.hashrate_ph) : '—'}
+          </div>
+          <div className="text-slate-400">workers connected</div>
+          <div className="text-right font-mono text-slate-200">
+            {datum.connections ?? '—'}
+          </div>
+        </div>
+      ) : (
+        <div className="text-xs text-slate-500">
+          Datum stats not configured — set <span className="font-mono text-slate-400">datum_api_url</span>{' '}
+          in Config to display connected workers and reported hashrate. See{' '}
+          <span className="font-mono text-slate-400">docs/setup-datum-api.md</span>.
+        </div>
+      )}
+      {/* Pool info lives at the bottom — stratum URL rarely changes
+          after initial setup, so it deserves less visual weight than
+          the live numbers above. Icon-only copy button keeps the
+          footprint small. */}
+      <div className="mt-3 pt-2 border-t border-slate-800">
+        <div className="flex items-start justify-between gap-2 mb-1">
+          <div className="text-[10px] uppercase tracking-wider text-slate-500">pool</div>
+          <button
+            onClick={copy}
+            aria-label={copied ? 'copied URL' : 'copy URL'}
+            title={copied ? 'copied URL' : 'copy URL'}
+            className={
+              'shrink-0 p-1 rounded border border-slate-700 hover:bg-slate-800 ' +
+              (copied ? 'text-emerald-300' : 'text-slate-400')
+            }
+          >
+            {copied ? <CheckIcon /> : <CopyIcon />}
+          </button>
+        </div>
         <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
           <div className="text-slate-400">protocol</div>
           <div className="text-right font-mono text-slate-200 break-all">
@@ -1865,32 +1971,7 @@ function DatumPanel({
             {urlParts.port ?? '\u2014'}
           </div>
         </div>
-        <button
-          onClick={copy}
-          title="Copy pool URL to clipboard"
-          className="mt-2 w-full px-2 py-1 text-xs rounded border border-slate-700 text-slate-300 hover:bg-slate-800"
-        >
-          {copied ? '✓ copied URL' : 'copy URL'}
-        </button>
       </div>
-      {datum ? (
-        <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 pt-2 border-t border-slate-800 text-sm">
-          <div className="text-slate-400">workers connected</div>
-          <div className="text-right font-mono text-slate-200">
-            {datum.connections ?? '—'}
-          </div>
-          <div className="text-slate-400">datum hashrate</div>
-          <div className="text-right font-mono text-slate-200">
-            {datum.hashrate_ph !== null ? formatHashratePH(datum.hashrate_ph) : '—'}
-          </div>
-        </div>
-      ) : (
-        <div className="mt-2 pt-2 border-t border-slate-800 text-xs text-slate-500">
-          Datum stats not configured — set <span className="font-mono text-slate-400">datum_api_url</span>{' '}
-          in Config to display connected workers and reported hashrate. See{' '}
-          <span className="font-mono text-slate-400">docs/setup-datum-api.md</span>.
-        </div>
-      )}
     </div>
   );
 }
@@ -1936,24 +2017,28 @@ function splitPoolUrl(url: string): {
 
 function Card({
   title,
-  updatedAtMs,
+  nextRefreshAtMs,
+  badges,
   children,
 }: {
   title: string;
-  /** When set, renders a live "updated Xm Ys ago" counter in the header. */
-  updatedAtMs?: number | null;
+  /** When set, renders a "refreshes in X" countdown in the header. */
+  nextRefreshAtMs?: number | null;
+  /** Optional reachability pills rendered under the title. */
+  badges?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
       <div className="flex items-baseline justify-between mb-2">
         <div className="text-xs uppercase tracking-wider text-slate-100">{title}</div>
-        {updatedAtMs != null && (
+        {nextRefreshAtMs != null && (
           <div className="text-[11px] text-slate-500 font-mono">
-            <TickingAge epochMs={updatedAtMs} />
+            <RefreshCountdown nextAtMs={nextRefreshAtMs} />
           </div>
         )}
       </div>
+      {badges && <div className="flex items-center gap-2 mb-2 flex-wrap">{badges}</div>}
       {children}
     </div>
   );
