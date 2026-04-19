@@ -44,6 +44,21 @@ interface UmbrelApiResponse {
   items?: UmbrelApiItem[];
 }
 
+/**
+ * Multiplier to convert a Datum-reported hashrate to PH/s, keyed by
+ * the unit Datum prints in `subtext`. Datum picks the unit based on
+ * magnitude — below ~1 PH/s it reports Th/s, above that it reports
+ * Ph/s. Case-insensitive match (observed "Ph/s" in the wild, but the
+ * capitalisation is not contractual — `"TH/s"`, `"th/s"`, etc. all
+ * seen across similar tools).
+ */
+const HASHRATE_UNIT_TO_PH: Record<string, number> = {
+  'gh/s': 1 / 1_000_000,
+  'th/s': 1 / 1_000,
+  'ph/s': 1,
+  'eh/s': 1_000,
+};
+
 export class DatumService {
   private readonly apiUrl: string;
   private readonly timeoutMs: number;
@@ -70,8 +85,7 @@ export class DatumService {
       }
       const payload = (await response.json()) as UmbrelApiResponse;
       const connections = extractNumber(payload, 'Connections');
-      const hashrateThs = extractNumber(payload, 'Hashrate');
-      const hashrate_ph = hashrateThs !== null ? hashrateThs / 1000 : null;
+      const hashrate_ph = extractHashratePh(payload);
       this.lastOkAt = checkedAt;
       this.consecutiveFailures = 0;
       return {
@@ -112,6 +126,28 @@ function extractNumber(payload: UmbrelApiResponse, title: string): number | null
   if (!item?.text) return null;
   const n = Number.parseFloat(item.text);
   return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * Parse the Hashrate item's text + subtext and convert to PH/s. Datum
+ * switches the unit between Th/s and Ph/s based on magnitude — an
+ * unconditional ÷ 1000 would silently report a ~1.3 PH/s rig as
+ * "0.00 PH/s" once it crosses the boundary.
+ */
+function extractHashratePh(payload: UmbrelApiResponse): number | null {
+  const item = payload.items?.find((i) => i?.title === 'Hashrate');
+  if (!item?.text) return null;
+  const n = Number.parseFloat(item.text);
+  if (!Number.isFinite(n)) return null;
+  const unit = item.subtext?.toLowerCase().trim() ?? '';
+  const multiplier = HASHRATE_UNIT_TO_PH[unit];
+  if (multiplier === undefined) {
+    // Unknown unit — fall back to the pre-fix behaviour (assume Th/s)
+    // rather than returning null, so a future Datum label change
+    // degrades gracefully instead of blanking the field.
+    return n / 1_000;
+  }
+  return n * multiplier;
 }
 
 /**
