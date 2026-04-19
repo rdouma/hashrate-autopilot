@@ -255,6 +255,9 @@ export function Status() {
       avg_overpay_sat_per_ph_day: sim.avg_overpay_sat_per_ph_day,
       avg_overpay_vs_hashprice_sat_per_ph_day: sim.avg_overpay_vs_hashprice_sat_per_ph_day,
       avg_time_to_fill_ms: null,
+      // Simulation doesn't have a bid-events stream — there are no
+      // real mutations in a replay. Zero is honest.
+      mutation_count: 0,
       range: chartRange,
       tick_count: simQuery.data?.tick_count ?? 0,
     };
@@ -1115,8 +1118,8 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
 
   if (!statsData) {
     return (
-      <section className="grid grid-cols-2 lg:grid-cols-6 gap-3">
-        {['uptime', 'avg hashrate', 'total PH·h', 'avg cost / PH delivered', 'avg overpay vs fillable', 'avg overpay vs hashprice'].map((label) => (
+      <section className="grid grid-cols-2 lg:grid-cols-7 gap-3">
+        {['uptime', 'avg hashrate', 'total PH·h', 'mutations', 'avg cost / PH delivered', 'avg overpay vs fillable', 'avg overpay vs hashprice'].map((label) => (
           <StatCard key={label} label={label} value="—" tooltip="Loading or daemon restart required." />
         ))}
       </section>
@@ -1125,10 +1128,10 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
 
   if (statsData.tick_count < 2) return null;
 
-  const { uptime_pct, avg_hashrate_ph, total_ph_hours, avg_overpay_sat_per_ph_day, avg_cost_per_ph_sat_per_ph_day, avg_overpay_vs_hashprice_sat_per_ph_day } = statsData;
+  const { uptime_pct, avg_hashrate_ph, total_ph_hours, avg_overpay_sat_per_ph_day, avg_cost_per_ph_sat_per_ph_day, avg_overpay_vs_hashprice_sat_per_ph_day, mutation_count } = statsData;
 
   return (
-    <section className="grid grid-cols-2 lg:grid-cols-6 gap-3">
+    <section className="grid grid-cols-2 lg:grid-cols-7 gap-3">
       <StatCard
         label="uptime"
         value={uptime_pct !== null ? `${uptime_pct.toFixed(1)}%` : '\u2014'}
@@ -1152,6 +1155,11 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
         label="total PH·h"
         value={total_ph_hours !== null ? `${total_ph_hours.toFixed(1)} PH·h` : '\u2014'}
         tooltip="Total petahash-hours contributed in this range. Each hour at 1 PH/s = 1 PH·h. Measures your cumulative work submission to the network."
+      />
+      <StatCard
+        label="mutations"
+        value={mutation_count.toString()}
+        tooltip="Number of successful bid mutations (create / edit price / edit speed / cancel) executed in this range. Read from the bid_events log — DRY_RUN and blocked proposals are excluded. High = autopilot is churning; low = market is quiet or it's stuck."
       />
       <StatCard
         label="avg cost / PH delivered"

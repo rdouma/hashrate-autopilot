@@ -286,6 +286,7 @@ export interface StatsResponse {
   avg_overpay_vs_hashprice_sat_per_ph_day: number | null;
   avg_cost_per_ph_sat_per_ph_day: number | null;
   avg_time_to_fill_ms: number | null;
+  mutation_count: number;
   range: ChartRange;
   tick_count: number;
 }

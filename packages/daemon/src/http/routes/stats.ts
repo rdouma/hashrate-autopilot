@@ -37,6 +37,13 @@ export interface StatsResponse {
   readonly avg_overpay_vs_hashprice_sat_per_ph_day: number | null;
   readonly avg_cost_per_ph_sat_per_ph_day: number | null;
   readonly avg_time_to_fill_ms: number | null;
+  /**
+   * Count of bid_events (CREATE / EDIT_PRICE / EDIT_SPEED / CANCEL)
+   * that actually executed in the range. bid_events is append-only
+   * and only written on success, so this is a count of "what the
+   * controller actually did" — not proposals, not DRY_RUN attempts.
+   */
+  readonly mutation_count: number;
   readonly range: ChartRange;
   readonly tick_count: number;
 }
@@ -73,6 +80,7 @@ export async function registerStatsRoute(
 
       const metrics = await computeMetrics(deps.db, sinceMs);
       const avgFillMs = await computeAvgTimeToFill(deps.db, deps.bidEventsDb, sinceMs);
+      const mutationCount = await computeMutationCount(deps.bidEventsDb, sinceMs);
 
       const data: StatsResponse = {
         uptime_pct: metrics.uptime_pct,
@@ -82,6 +90,7 @@ export async function registerStatsRoute(
         avg_overpay_vs_hashprice_sat_per_ph_day: metrics.avg_overpay_vs_hashprice_sat_per_ph_day,
         avg_cost_per_ph_sat_per_ph_day: metrics.avg_cost_per_ph_sat_per_ph_day,
         avg_time_to_fill_ms: avgFillMs,
+        mutation_count: mutationCount,
         range,
         tick_count: metrics.tick_count,
       };
@@ -171,6 +180,25 @@ async function computeMetrics(
     avg_overpay_vs_hashprice_sat_per_ph_day: r['avg_overpay_vs_hashprice'] !== null ? Number(r['avg_overpay_vs_hashprice']) / EH_PER_PH : null,
     avg_cost_per_ph_sat_per_ph_day: r['avg_cost'] !== null ? Number(r['avg_cost']) / EH_PER_PH : null,
   };
+}
+
+/**
+ * Count every successful bid mutation (CREATE / EDIT_PRICE /
+ * EDIT_SPEED / CANCEL) recorded in `bid_events` during the range.
+ * bid_events is append-only and only populated on successful wire
+ * execution, so this is a clean count of "what the controller
+ * actually did" — DRY_RUN / BLOCKED proposals never get here.
+ */
+async function computeMutationCount(
+  db: Kysely<Database>,
+  sinceMs: number,
+): Promise<number> {
+  const row = await db
+    .selectFrom('bid_events')
+    .select(sql<number>`COUNT(*)`.as('count'))
+    .where('occurred_at', '>=', sinceMs)
+    .executeTakeFirst();
+  return Number(row?.count ?? 0);
 }
 
 /**
