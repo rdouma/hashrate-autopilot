@@ -18,6 +18,20 @@ When a commit resolves an issue:
 Issues sit in `review` until the operator confirms the fix is live and
 behaving as intended, then the operator closes.
 
+When you start implementing work for an issue, move it to
+`in-progress` immediately (remove `backlog` / `todo` / `queued` as
+applicable) without asking first. When the work ships, swap
+`in-progress` for `review` as described above.
+
+## Picking labels
+
+Pick labels freely from the current `gh label list` when filing or
+triaging issues — no need to show the chosen set for approval
+beforehand. Include workflow-stage (`backlog`/`todo`/`in-progress`/
+`review`/etc.), type (`bug`/`feature`/`infra`/`discuss`), and
+triage/routing labels (`agent-ready`/`human-only`/`user-request`/
+`hold`/`waiting-for`) as they apply. Use judgment.
+
 ## Label taxonomy
 
 Imported from the VoicePaste workflow. Workflow stages:
@@ -46,6 +60,14 @@ Before committing anything touching `packages/daemon/src/config/schema.ts`,
 `packages/daemon/src/state/migrations/`, or the dashboard pages, check
 `git status` and avoid capturing half-written code from the other
 session. Doc-only and commands-only commits are always safe.
+
+## Writing GitHub issue/PR bodies
+
+Prefer `gh issue create --body-file <path>` (or `--body-file -` via
+stdin) over the `-b "$(cat <<'EOF' ... EOF)"` trick. Bodies contain
+backticks in fenced code blocks, which break shell command
+substitution even with a single-quoted heredoc delimiter. Write the
+body to a temp file first, then pass `--body-file`.
 
 ## Running the daemon
 
