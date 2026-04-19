@@ -101,6 +101,27 @@ export class AccountSpendService {
         return null;
       }
       const items: BidItem[] = res.items ?? [];
+      // One-shot diagnostic on the very first response: dumps the raw
+      // page shape so we can see whether `/spot/bid` returns the same
+      // envelope as `/spot/bid/current`, and whether items include the
+      // `amount_sat` / `state_estimate.amount_remaining_sat` fields we
+      // rely on. Previous build showed spent=0 even on an account with
+      // obvious spend. One log line per daemon process.
+      if (i === 0 && !AccountSpendService.loggedSample) {
+        AccountSpendService.loggedSample = true;
+        console.warn(
+          `[account-spend] first /spot/bid response: itemsCount=${items.length} rawKeys=${Object.keys(res as unknown as object).join(',')}`,
+        );
+        if (items.length > 0) {
+          console.warn(
+            `[account-spend] first /spot/bid item sample: ${JSON.stringify(items[0])}`,
+          );
+        } else {
+          console.warn(
+            `[account-spend] raw response body (first 2KB): ${JSON.stringify(res).slice(0, 2048)}`,
+          );
+        }
+      }
       if (items.length === 0) break;
 
       for (const item of items) {
@@ -119,6 +140,10 @@ export class AccountSpendService {
       offset += items.length;
     }
 
+    console.warn(
+      `[account-spend] /spot/bid summary: seen=${seen} closed_sat=${Math.round(closed)} active_sat=${Math.round(active)} total_sat=${Math.round(closed + active)}`,
+    );
+
     const total = closed + active;
     return {
       total_settlement_sat: Math.round(total),
@@ -128,6 +153,10 @@ export class AccountSpendService {
       fetched_at_ms: this.now(),
     };
   }
+
+  // Class-level flag so the sample is logged once per daemon lifetime,
+  // not once per fetch cycle.
+  private static loggedSample = false;
 }
 
 /**
