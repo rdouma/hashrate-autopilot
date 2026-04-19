@@ -70,8 +70,8 @@ export async function registerFinanceRoute(
     let spent_sat: number;
     if (scope === 'account' && deps.accountSpend) {
       const snap = await deps.accountSpend.getLifetimeSpend();
-      // Fall back to autopilot-scope if Braiins's transaction ledger
-      // is unavailable rather than falsely reporting 0 spent.
+      // Fall back to autopilot-scope if the bid list fetch is
+      // unavailable rather than falsely reporting 0 spent.
       spent_sat =
         snap?.total_settlement_sat ??
         (await deps.ownedBidsRepo.sumLifetimeConsumedSat());

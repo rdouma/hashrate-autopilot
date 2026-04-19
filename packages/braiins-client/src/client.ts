@@ -77,6 +77,19 @@ export interface BraiinsClient {
   getFee(): Promise<FeeSchedule>;
   getBalance(): Promise<AccountBalances>;
   getCurrentBids(): Promise<BidsResponse>;
+  /**
+   * List the user's bids — historical + active — with pagination.
+   *
+   * Mirrors the OpenAPI `GET /spot/bid` endpoint. `limit` is capped at
+   * 1000 by the server; default 200 to stay polite. Default order is
+   * descending by creation time; set `reverse: true` for ascending.
+   */
+  listBids(opts?: {
+    limit?: number;
+    offset?: number;
+    reverse?: boolean;
+    exclude_active?: boolean;
+  }): Promise<BidsResponse>;
   getTransactions(opts?: { limit?: number; offset?: number }): Promise<TransactionsResponse>;
   getBidDetail(orderId: string): Promise<BidDetail>;
   placeBid(request: PlaceBidRequest): Promise<PlaceBidResponse>;
@@ -221,6 +234,21 @@ export function createBraiinsClient(config: BraiinsClientConfig = {}): BraiinsCl
       read('/spot/bid/current', async () => {
         const res = await api.GET('/spot/bid/current', { headers: authHeaders('READ_ONLY') });
         return unwrap<BidsResponse>('/spot/bid/current', res);
+      }),
+
+    listBids: ({ limit = 200, offset = 0, reverse, exclude_active } = {}) =>
+      read('/spot/bid', async () => {
+        // Build query object with only the fields set — passing
+        // `undefined` through openapi-fetch's query serializer renders
+        // as `&reverse=undefined`, which some servers reject.
+        const query: Record<string, string | number | boolean> = { limit, offset };
+        if (reverse !== undefined) query.reverse = reverse;
+        if (exclude_active !== undefined) query.exclude_active = exclude_active;
+        const res = await api.GET('/spot/bid', {
+          params: { query },
+          headers: authHeaders('READ_ONLY'),
+        });
+        return unwrap<BidsResponse>('/spot/bid', res);
       }),
 
     getTransactions: ({ limit = 200, offset = 0 } = {}) =>

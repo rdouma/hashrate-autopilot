@@ -1392,16 +1392,22 @@ function FinancePanel({
         </div>
       </div>
 
+      {/* The P&L panel reads as the arithmetic of the net line: an
+          explicit leading sign tells the operator which side of the
+          ledger each row sits on. Spent is the only subtraction; Ocean
+          + on-chain are the additions; the bottom line is the sum. */}
       <FinanceRow
+        sign="minus"
         label={data.spent_scope === 'account' ? 'spent (whole account)' : 'spent (autopilot)'}
         value={data.spent_sat}
         tooltip={
           data.spent_scope === 'account'
-            ? 'Sum of every "(Partial) order settlement (brutto price)" on /v1/account/transaction — covers all bids the Braiins account has ever settled, including any that existed before the autopilot was switched on. Switch via Config → P&L panel.'
+            ? 'Sum of counters_estimate.amount_consumed_sat across every bid on /v1/spot/bid — covers active + historical bids, including any that existed before the autopilot was switched on, and reflects in-flight consumption before the hourly settlement ledger catches up. Switch via Config → P&L panel.'
             : 'Lifetime sum of (amount_sat − amount_remaining_sat) across every bid the autopilot has tagged. Excludes any bids placed before the autopilot was switched on. Switch to "whole account" via Config → Money panel.'
         }
       />
       <FinanceRow
+        sign="plus"
         label="unpaid earnings (Ocean)"
         value={data.expected_sat}
         tooltip={
@@ -1411,6 +1417,7 @@ function FinancePanel({
         }
       />
       <FinanceRow
+        sign="plus"
         label="collected (on-chain)"
         value={data.collected_sat}
         tooltip={
@@ -1422,6 +1429,7 @@ function FinancePanel({
 
       <div className="mt-3 pt-3 border-t border-slate-800">
         <FinanceRow
+          sign="equals"
           label="net"
           value={data.net_sat}
           // Only the bottom-line gets a sentiment color — green when
@@ -1504,11 +1512,15 @@ function FinanceRow({
   value,
   tooltip,
   valueClass = 'text-slate-100',
+  sign,
 }: {
   label: string;
   value: number | null;
   tooltip: string;
   valueClass?: string;
+  /** Leading arithmetic sign. Turns the panel into a readable sum
+   *  rather than a dictionary of unrelated figures. */
+  sign?: 'plus' | 'minus' | 'equals';
 }) {
   const { intlLocale } = useLocale();
   const denomination = useDenomination();
@@ -1518,10 +1530,25 @@ function FinanceRow({
   // override via valueClass — used for the green/red net bottom line).
   const formatted = denomination.formatSat(value, intlLocale);
   const split = splitUnit(formatted);
+  const signChar = sign === 'plus' ? '+' : sign === 'minus' ? '−' : sign === 'equals' ? '=' : '';
+  const signColor =
+    sign === 'plus'
+      ? 'text-emerald-400'
+      : sign === 'minus'
+        ? 'text-red-400'
+        : 'text-slate-500';
   return (
     <Tooltip text={tooltip}>
-      <div className="cursor-help flex justify-between text-sm py-0.5">
-        <span className="text-slate-400">{label}</span>
+      <div className="cursor-help flex items-baseline text-sm py-0.5 gap-2">
+        {sign && (
+          <span
+            className={`font-mono tabular-nums w-3 text-center ${signColor}`}
+            aria-hidden="true"
+          >
+            {signChar}
+          </span>
+        )}
+        <span className="text-slate-400 flex-1">{label}</span>
         <span className={`font-mono ${valueClass}`}>
           {value === null ? (
             '\u2014'

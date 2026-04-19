@@ -236,7 +236,7 @@ const SECTIONS: Section[] = [
           { value: 'autopilot', label: 'Autopilot only (autopilot-tagged bids)' },
           { value: 'account', label: 'Whole account (all settled bids ever)' },
         ],
-        help: '"Autopilot only" sums consumed across bids the daemon has tagged in its ledger — accurate for what *this* autopilot has cost. "Whole account" sums every settlement on /v1/account/transaction — covers bids that existed before the autopilot was switched on, so it pairs honestly with Ocean\'s lifetime earnings.',
+        help: '"Autopilot only" sums consumed across bids the daemon has tagged in its ledger — accurate for what *this* autopilot has cost. "Whole account" sums counters_estimate.amount_consumed_sat across every bid on /v1/spot/bid — covers active + historical bids (including any placed before the autopilot was switched on) and reflects in-flight consumption before the hourly settlement ledger catches up.',
       },
     ],
   },

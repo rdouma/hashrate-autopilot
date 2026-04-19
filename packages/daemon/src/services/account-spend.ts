@@ -1,42 +1,39 @@
 /**
  * Account-lifetime spend tracker.
  *
- * Sums Braiins' transaction ledger to derive *total BTC paid out for
- * hashrate*, including bids that existed before the autopilot. The
- * autopilot's own `owned_bids` ledger only knows about bids it
- * created/tagged — when the user has a long Braiins history (e.g.
- * many manual bids before the autopilot was switched on), the
- * autopilot-only "spent" figure understates reality and makes the net
- * P&L look unrealistically positive. This service is the alternative
- * source the operator can flip to via `spent_scope = 'account'`.
+ * Sums `counters_estimate.amount_consumed_sat` across every bid the
+ * Braiins account has ever owned — active + historical — to derive
+ * the true "total BTC paid out for hashrate." Covers bids placed
+ * before the autopilot was switched on, so it pairs honestly with
+ * Ocean's lifetime earnings.
  *
- * How:
- *   /v1/account/transaction returns rows of:
- *     { tx_type, amount_sat, timestamp, details }
- *   The `tx_type` we care about is exactly:
- *     "(Partial) order settlement (brutto price)"
- *   Empirical 2026-04-16 — that's the line that fires every hour as
- *   Braiins debits the bid's blocked balance to pay the hashrate
- *   seller. Anything else (cancellations, "Blocked amount" reservations,
- *   payouts, fees, deposits) is *not* spend on hashrate and gets
- *   ignored.
+ * Source: `GET /spot/bid` with pagination. The endpoint returns bids
+ * sorted by creation time, each with a `counters_estimate` subobject
+ * carrying `amount_consumed_sat` — Braiins's live running total of
+ * spend on that bid, including the most recent in-flight consumption
+ * that hasn't yet hit the hourly settlement ledger. `counters_committed`
+ * is the settled-only counterpart; we deliberately use the estimate so
+ * the panel isn't up to an hour behind reality.
  *
  * Pagination + cache:
- *   - The endpoint takes limit/offset; we walk pages of 200 until an
- *     empty page (or pageSize-rejection) signals end of history.
- *   - Result cached for `cacheTtlMs` (default 5 min) — operator
- *     pulls the panel hourly at most, no need to thrash the API.
- *   - Cache survives within a single daemon process; a restart
- *     re-fetches. Persisting the running total + last-seen timestamp
- *     so we could fetch only deltas would be a follow-up; today's
- *     account has ~hundreds of transactions which fits in 1-2 GETs
- *     and takes <500 ms.
+ *   - Walk pages of 200 until a partial page signals end of history.
+ *   - Cap at 1000 pages (~200k bids) to stop a misbehaving endpoint
+ *     from spinning forever — orders of magnitude beyond anything real.
+ *   - 5-min in-memory cache; inflight-dedup so concurrent requests
+ *     share one fetch. A restart re-fetches.
+ *
+ * Prior implementation summed `/v1/account/transaction` rows of type
+ * "(Partial) order settlement (brutto price)". That was correct but
+ * lagged the real spend by up to one settlement interval (hourly), and
+ * didn't pick up brand-new bids before their first settlement tick.
+ * Switching to the bid list removes both gaps and lets us drop the
+ * magic-string tx-type match.
  */
 
-import type { BraiinsClient, Transaction } from '@braiins-hashrate/braiins-client';
+import type { BidItem, BraiinsClient } from '@braiins-hashrate/braiins-client';
 
-const SETTLEMENT_TX_TYPE = '(Partial) order settlement (brutto price)';
 const PAGE_SIZE = 200;
+const MAX_PAGES = 1000;
 const DEFAULT_CACHE_TTL_MS = 5 * 60_000;
 
 export interface AccountSpendSnapshot {
@@ -80,29 +77,25 @@ export class AccountSpendService {
     let total = 0;
     let seen = 0;
     let offset = 0;
-    // Bounded by page count — without this a misbehaving endpoint that
-    // never returns < PAGE_SIZE could spin forever. 1000 pages = 200k
-    // transactions, several years of hourly settlements; way past
-    // anything realistic.
-    const maxPages = 1000;
 
-    for (let i = 0; i < maxPages; i++) {
+    for (let i = 0; i < MAX_PAGES; i++) {
       let res;
       try {
-        res = await this.client.getTransactions({ limit: PAGE_SIZE, offset });
+        res = await this.client.listBids({ limit: PAGE_SIZE, offset });
       } catch (err) {
         console.warn(
-          `[account-spend] /account/transaction page offset=${offset} failed: ${(err as Error).message}`,
+          `[account-spend] /spot/bid page offset=${offset} failed: ${(err as Error).message}`,
         );
         return null;
       }
-      const items: Transaction[] = res.transactions ?? [];
+      const items: BidItem[] = res.items ?? [];
       if (items.length === 0) break;
 
-      for (const t of items) {
+      for (const item of items) {
         seen++;
-        if (t.tx_type === SETTLEMENT_TX_TYPE) {
-          total += t.amount_sat ?? 0;
+        const consumed = Number(item.counters_estimate?.amount_consumed_sat ?? 0);
+        if (Number.isFinite(consumed) && consumed > 0) {
+          total += consumed;
         }
       }
 
@@ -112,7 +105,7 @@ export class AccountSpendService {
     }
 
     return {
-      total_settlement_sat: total,
+      total_settlement_sat: Math.round(total),
       transactions_seen: seen,
       fetched_at_ms: this.now(),
     };
