@@ -197,7 +197,12 @@ function simulate(rows: TickRow[], params: SimParams): SimResult {
   const filled: boolean[] = [];
   let bidPrice: number | null = null;
   let belowFloorSince: number | null = null;
-  let aboveFloorSince: number | null = null;
+  // Lower-ready timer: set when the current simulated bid is priced
+  // above (fillable + overpay) by more than `minLowerDelta` — mirrors
+  // the real controller's `lowerReadySince`. Reset when the condition
+  // breaks so a brief market dip that reverses inside the patience
+  // window can't trigger a lower.
+  let lowerReadySince: number | null = null;
   let overrideUntil: number | null = null;
   let gapCount = 0;
   let gapMs = 0;
@@ -262,10 +267,10 @@ function simulate(rows: TickRow[], params: SimParams): SimResult {
           }
         }
 
-        const aboveFloorLongEnough =
-          aboveFloorSince !== null &&
-          (r.tick_at - aboveFloorSince) >= params.lowerPatienceMs;
-        if (aboveFloorLongEnough && bidPrice !== null && bidPrice > targetPrice + params.minLowerDelta) {
+        const lowerReadyLongEnough =
+          lowerReadySince !== null &&
+          (r.tick_at - lowerReadySince) >= params.lowerPatienceMs;
+        if (lowerReadyLongEnough && bidPrice !== null && bidPrice > targetPrice + params.minLowerDelta) {
           if (targetPrice !== bidPrice) mutationCount++;
           bidPrice = targetPrice;
           overrideUntil = r.tick_at + params.escalationWindowMs;
@@ -277,21 +282,26 @@ function simulate(rows: TickRow[], params: SimParams): SimResult {
     prices.push(bidPrice ?? 0);
     filled.push(isFilled);
 
+    // Advance the lower-ready timer based on the END-OF-TICK bid price.
+    // Evaluating before the tick's own mutations would mean an
+    // escalation that happened on this tick couldn't contribute to a
+    // later lower, which is fine (the override lock prevents immediate
+    // lowering anyway), but using end-of-tick keeps the timer in
+    // lockstep with the real controller's tick.ts, which updates
+    // lowerReadySince after the tick's state settles.
+    if (bidPrice !== null && bidPrice > targetPrice + params.minLowerDelta) {
+      if (lowerReadySince === null) lowerReadySince = r.tick_at;
+    } else {
+      lowerReadySince = null;
+    }
+
     if (isFilled) {
       if (inGap) inGap = false;
-      if (belowFloorSince !== null) {
-        belowFloorSince = null;
-        aboveFloorSince = r.tick_at;
-      } else if (aboveFloorSince === null) {
-        aboveFloorSince = r.tick_at;
-      }
+      if (belowFloorSince !== null) belowFloorSince = null;
     } else {
       gapMs += dur;
       if (!inGap) { gapCount++; inGap = true; }
-      if (belowFloorSince === null) {
-        belowFloorSince = r.tick_at;
-        aboveFloorSince = null;
-      }
+      if (belowFloorSince === null) belowFloorSince = r.tick_at;
     }
   }
 

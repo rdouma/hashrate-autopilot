@@ -3,12 +3,22 @@
  *
  * Pure-ish orchestration layer; hosts no business logic itself.
  *
- * Controller state (`belowFloorSince`, `aboveFloorTicks`) is mirrored to
- * `runtime_state` on every tick and seeded from there via `hydrate()` on
- * boot, so the escalation timer survives restarts (issue #11). The
- * `manualOverrideUntilMs` lock is intentionally *not* persisted — it
- * exists to bound a single operator/escalation interaction and a
- * restart is a clean reset point for that.
+ * Controller state (`belowFloorSince`, `lowerReadySince`, `aboveFloorTicks`)
+ * is mirrored to `runtime_state` on every tick and seeded from there via
+ * `hydrate()` on boot, so the escalation timer and the lower-patience
+ * timer both survive restarts (issue #11). The `manualOverrideUntilMs`
+ * lock is intentionally *not* persisted — it exists to bound a single
+ * operator/escalation interaction and a restart is a clean reset point
+ * for that.
+ *
+ * `lowerReadySince` tracks "time since the market has been continuously
+ * cheap enough that lowering would save at least `min_lower_delta`".
+ * The older heuristic (time since hashrate came back above floor) fired
+ * too readily on bids that were filling but only marginally overpriced;
+ * operators reported lowering kicking in after just a few minutes when
+ * they'd set `lower_patience_minutes` to 30. The timer resets the
+ * instant the condition becomes false, so a short market dip that
+ * reverses inside the patience window can't trigger a lower.
  */
 
 import type { TickMetricsRepo } from '../state/repos/tick_metrics.js';
@@ -35,7 +45,7 @@ export interface TickResult {
 
 export class Controller {
   private belowFloorSince: number | null = null;
-  private aboveFloorSince: number | null = null;
+  private lowerReadySince: number | null = null;
   private aboveFloorTicks: number = 0;
   private manualOverrideUntilMs: number | null = null;
   /**
@@ -69,7 +79,7 @@ export class Controller {
     const row = await this.deps.runtimeRepo.get();
     if (!row) return;
     this.belowFloorSince = row.below_floor_since_ms;
-    this.aboveFloorSince = row.above_floor_since_ms;
+    this.lowerReadySince = row.lower_ready_since_ms;
     this.aboveFloorTicks = row.above_floor_ticks;
   }
 
@@ -112,16 +122,26 @@ export class Controller {
       hashpriceSatPerPhDay: this.deps.getHashprice?.() ?? null,
       bypassPacing,
     });
-    const wasBelow = this.belowFloorSince !== null;
     this.belowFloorSince = state.below_floor_since;
     this.aboveFloorTicks = state.above_floor_ticks;
 
-    if (state.below_floor_since !== null) {
-      this.aboveFloorSince = null;
-    } else if (wasBelow || this.aboveFloorSince === null) {
-      this.aboveFloorSince = state.tick_at;
+    // Lower-ready timer: continuously true when our primary bid is
+    // priced high enough above (fillable + overpay) that lowering
+    // would save at least `min_lower_delta_sat_per_eh_day`. When the
+    // condition flips false the timer resets — so a brief market dip
+    // that reverses inside `lower_patience_minutes` can't trigger a
+    // lower and burn the Braiins 10-min decrease cooldown. This
+    // mirrors the lowering condition in decide() exactly (modulo the
+    // capped-target edge case: when the market is too expensive
+    // decide() returns [] without touching the bid, so the timer's
+    // value is irrelevant).
+    const lowerReadyNow = computeLowerReady(state);
+    if (lowerReadyNow) {
+      if (this.lowerReadySince === null) this.lowerReadySince = state.tick_at;
+    } else {
+      this.lowerReadySince = null;
     }
-    state = { ...state, above_floor_since: this.aboveFloorSince };
+    state = { ...state, lower_ready_since: this.lowerReadySince };
 
     const proposals = decide(state);
     const gated = gate(proposals, state);
@@ -194,7 +214,7 @@ export class Controller {
       last_api_ok_at: state.last_api_ok_at,
       last_pool_ok_at: state.pool.last_ok_at,
       below_floor_since_ms: this.belowFloorSince,
-      above_floor_since_ms: this.aboveFloorSince,
+      lower_ready_since_ms: this.lowerReadySince,
       above_floor_ticks: this.aboveFloorTicks,
     });
 
@@ -246,4 +266,36 @@ export class Controller {
   getLastResult(): TickResult | null {
     return this.lastResult;
   }
+}
+
+/**
+ * Mirror of decide()'s lowering condition, used to drive the
+ * `lower_ready_since` patience timer. Returns true when lowering the
+ * primary bid to (fillable + overpay) would save more than
+ * `min_lower_delta_sat_per_eh_day`. Kept close to decide.ts so the
+ * two stay in lockstep — any change to the lowering gate there should
+ * update this predicate too.
+ *
+ * Returns false when: no market snapshot, no asks, no primary bid, or
+ * the saving is under the deadband. Does NOT consult the effective
+ * cap — on ticks where the market is too expensive decide() returns
+ * [] without lowering anyway, so the timer's value is unused there;
+ * keeping this predicate simple means `lower_ready_since` has a
+ * straightforward "market is genuinely cheaper than my bid" meaning.
+ */
+function computeLowerReady(state: State): boolean {
+  if (!state.market) return false;
+  const asks = state.market.orderbook.asks ?? [];
+  if (asks.length === 0) return false;
+  if (state.owned_bids.length === 0) return false;
+  const fillable = cheapestAskForDepth(asks, state.config.target_hashrate_ph);
+  if (fillable.price_sat === null) return false;
+  const desiredPrice = fillable.price_sat + state.config.overpay_sat_per_eh_day;
+  const primary = [...state.owned_bids].sort((a, b) =>
+    a.braiins_order_id.localeCompare(b.braiins_order_id),
+  )[0];
+  if (!primary || primary.price_sat === null) return false;
+  const tickSize = state.market.settings.tick_size_sat ?? 1000;
+  const lowerThreshold = Math.max(tickSize, state.config.min_lower_delta_sat_per_eh_day);
+  return primary.price_sat > desiredPrice + lowerThreshold;
 }

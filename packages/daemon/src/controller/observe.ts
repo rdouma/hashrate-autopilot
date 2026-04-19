@@ -206,7 +206,7 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
     unknown_bids,
     actual_hashrate,
     below_floor_since: floorCheck.below_floor_since,
-    above_floor_since: null,
+    lower_ready_since: null,
     above_floor_ticks: floorCheck.above_floor_ticks,
     pool,
     datum,

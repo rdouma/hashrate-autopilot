@@ -419,18 +419,18 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
     }
 
     const patienceMs = state.config.lower_patience_minutes * 60_000;
-    const aboveFloorSince = state.above_floor_since;
-    const patienceRemaining = aboveFloorSince !== null
-      ? Math.max(0, patienceMs - (state.tick_at - aboveFloorSince))
+    const lowerReadySince = state.lower_ready_since;
+    const patienceRemaining = lowerReadySince !== null
+      ? Math.max(0, patienceMs - (state.tick_at - lowerReadySince))
       : patienceMs;
     if (patienceRemaining > 0) {
       const patienceEtaMs = state.tick_at + patienceRemaining;
       const minsLeft = Math.max(1, Math.ceil(patienceRemaining / 60_000));
       return {
-        summary: `Overpaying by ${overpayPH.toLocaleString('en-US')} sat/PH/day vs target — waiting to settle before lowering.`,
-        detail: `Will lower to ${targetPricePH.toLocaleString('en-US')} sat/PH/day after ~${minsLeft} min above floor.`,
+        summary: `Overpaying by ${overpayPH.toLocaleString('en-US')} sat/PH/day vs target — waiting for the market to settle before lowering.`,
+        detail: `Will lower to ${targetPricePH.toLocaleString('en-US')} sat/PH/day after ~${minsLeft} more min of the market staying this cheap.`,
         eta_ms: patienceEtaMs,
-        event_started_ms: aboveFloorSince,
+        event_started_ms: lowerReadySince,
         event_kind: 'lower_after_override',
       };
     }

@@ -198,19 +198,22 @@ export function decide(state: State): readonly Proposal[] {
   // `min_lower_delta_sat_per_eh_day` — avoids burning the 10-min Braiins
   // price-decrease cooldown for a few sat. tickSize is the absolute floor
   // (Braiins rejects sub-tick prices anyway).
-  // Patience gate: don't lower until we've been continuously above floor
-  // for `lower_patience_minutes`. Prevents chasing short market dips that
-  // reverse within minutes.
+  // Patience gate: don't lower until the lowering-ready condition
+  // (same overpay-vs-target check) has been continuously true for
+  // `lower_patience_minutes`. Prevents chasing short market dips that
+  // reverse within minutes. The controller populates
+  // `state.lower_ready_since` each tick based on exactly this condition,
+  // so the gate just reads the elapsed time.
   const alreadyProposingEdit = proposals.some((p) => p.kind === 'EDIT_PRICE');
   const lowerThreshold = Math.max(tickSize, config.min_lower_delta_sat_per_eh_day);
-  const aboveFloorLongEnough =
-    state.above_floor_since !== null &&
-    (state.tick_at - state.above_floor_since) >= config.lower_patience_minutes * 60_000;
+  const lowerReadyLongEnough =
+    state.lower_ready_since !== null &&
+    (state.tick_at - state.lower_ready_since) >= config.lower_patience_minutes * 60_000;
   if (
     !overrideActive &&
     primary.price_sat > targetPrice + lowerThreshold &&
     !alreadyProposingEdit &&
-    (aboveFloorLongEnough || state.bypass_pacing)
+    (lowerReadyLongEnough || state.bypass_pacing)
   ) {
     proposals.push({
       kind: 'EDIT_PRICE',

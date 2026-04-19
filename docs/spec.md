@@ -1,4 +1,4 @@
-# Hashrate Autopilot — Specification (v1.8)
+# Hashrate Autopilot — Specification (v1.9)
 
 > Status: post-empirical rewrite, extended with features shipped through mid-April 2026. v1.0 (2026-04-14) was built
 > around a constraint — that Braiins requires 2FA on every `POST`/`PUT` on the Hashpower API — which empirical
@@ -177,10 +177,14 @@ full `target_hashrate_ph` is available (walks asks cumulatively by unmatched sup
 - `fill_escalation_step_sat_per_eh_day` — step size for dampened mode.
 - `fill_escalation_after_minutes` — window before escalation kicks in.
 - `min_lower_delta_sat_per_eh_day` — deadband: only auto-lower when overpay vs target exceeds this. Default 200 sat/PH/day. Avoids burning the Braiins 10-min decrease cooldown for a few-sat saving.
-- `lower_patience_minutes` — how long the autopilot must be continuously above floor before it will consider lowering
-  the price. Prevents chasing short market dips that reverse within minutes — each unnecessary lower would burn the
-  Braiins 10-min price-decrease cooldown. The `above_floor_since` timer that drives this is persisted to
-  `runtime_state` so a daemon restart does not silently reset the window.
+- `lower_patience_minutes` — how long the **lowering-ready** condition must have been continuously true before the
+  autopilot will actually lower the bid price. Lowering-ready means the current bid sits more than
+  `min_lower_delta_sat_per_eh_day` above `fillable + overpay` — i.e. the market is genuinely cheaper than what we're
+  paying by a meaningful margin. The instant the market catches up (fillable rises, or hashprice crashes pulling the
+  dynamic cap inward), the timer resets, so a short dip that reverses inside the patience window can never trigger a
+  lower. The `lower_ready_since_ms` timer is persisted to `runtime_state` so a daemon restart does not silently reset
+  the window. (Prior versions used an "above-floor" proxy, which fired too readily on bids that were barely
+  overpaying but happened to be filling.)
 - `handover_window_minutes` — manual-override suppression window.
 
 Lowering: when overpay vs target exceeds `min_lower_delta`, jump directly to target (no dampening downward — trust the `overpay` setting).
@@ -382,4 +386,5 @@ Still open:
 | 1.5     | 2026-04-16 | Depth-aware pricing: the autopilot no longer targets "cheapest ask with any non-zero supply". Instead it walks asks cumulatively and targets the cheapest price at which the full `target_hashrate_ph` is fillable. Empirical trigger: live orderbook 2026-04-16 had a sliver ask at 45,070 with the real supply at 47,803 — the old logic targeted 45,070 and stranded the fill. Dashboard gains a "fillable @ target" row in the Hashrate & Market card. |
 | 1.6     | 2026-04-16 | Simplified pricing model: target = min(fillable + max_overpay, max_bid). Renamed `max_price_sat_per_eh_day` → `max_bid_sat_per_eh_day`, `max_overpay_vs_ask` → `max_overpay`. Removed `overpay_before_lowering` and `max_lowering_step` dampeners — downward adjustments now jump directly to target. Added `escalation_mode` config: `market` (jump to target) or `dampened` (step up). User interview drove the simplification: all thresholds relative to fillable, no stacked margins. |
 | 1.7     | 2026-04-16 | Renamed `max_overpay_sat_per_eh_day` → `overpay_sat_per_eh_day`. The "max_" prefix was misleading — the field is the (fixed) overpay we always aim for, not the upper bound of a varying amount. The only "max" semantic is the absolute `max_bid` cap that clips overheated markets. |
+| 1.9     | 2026-04-19 | Repurposed `lower_patience_minutes`: the patience window now measures continuous lowering-readiness (primary > fillable + overpay + min_lower_delta), not continuous above-floor time. The old semantics fired lowering after a few minutes of a bid filling at marginal overpay; the new semantics require the market to be *meaningfully* cheaper than the current bid for the full window before lowering. Column `runtime_state.above_floor_since_ms` renamed to `lower_ready_since_ms` (migration 0032). Behaviour change, not a config-shape change — existing `lower_patience_minutes` values keep their meaning in wall-clock minutes. |
 | 1.8     | 2026-04-19 | Composite roll-up of features shipped 2026-04-16 to 2026-04-19: (a) `lower_patience_minutes` — required above-floor duration before lowering, persisted across restarts in `runtime_state.above_floor_since_ms`; (b) Ocean integration — `/api/ocean` surfaces hashprice, pool stats, recent blocks (including own-found markers on the hashrate chart), and time-to-payout; hashprice is recorded on every `tick_metrics` row and plotted historically; (c) `max_overpay_vs_hashprice_sat_per_eh_day` — optional dynamic cap, effective cap becomes `min(max_bid, hashprice + this)`; simulator mirrors the same skip-tick guard; (d) opportunistic cheap-mode scaling (`cheap_target_hashrate_ph`, `cheap_threshold_pct`) — scales above the normal target when the market is cheap vs hashprice; (e) what-if simulator (`POST /api/simulate`) — stateless backtest over historical `tick_metrics` with candidate strategy parameters, surfaced on the Status page as a toggleable overlay on the live charts; (f) retention pruning (`tick_metrics_retention_days`, `decisions_uneventful_retention_days`, `decisions_eventful_retention_days`) — hourly pruner service; (g) Datum Gateway integration (optional) — `datum_api_url` enables polling `/umbrel-api` each tick, records `tick_metrics.datum_hashrate_ph` alongside Braiins's reading, surfaces connected workers + gateway-measured hashrate on a dedicated Datum panel. Integration is informational-only; control loop never depends on Datum being reachable. See `docs/setup-datum-api.md` for the Umbrel port-exposure recipe (tested and running stable since 2026-04-19). |

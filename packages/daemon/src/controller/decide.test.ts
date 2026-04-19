@@ -47,7 +47,7 @@ function state(overrides: Partial<State> = {}): State {
     unknown_bids: [],
     actual_hashrate: { owned_ph: 0, unknown_ph: 0, total_ph: 0 },
     below_floor_since: null,
-    above_floor_since: 1_700_000_000_000 - 30 * 60_000,
+    lower_ready_since: 1_700_000_000_000 - 30 * 60_000,
     above_floor_ticks: 0,
     manual_override_until_ms: null,
     pool: { reachable: true, last_ok_at: 1_700_000_000_000, consecutive_failures: 0 },
@@ -151,19 +151,19 @@ describe('decide — CREATE path', () => {
 
 describe('decide — bypass_pacing (run-decision-now) lowers immediately', () => {
   // Mirror of the "auto-lowers when overpaying" test from the EDIT/CANCEL
-  // path, but with above_floor_since set so recently that the normal
+  // path, but with lower_ready_since set so recently that the normal
   // patience gate would block the lower. With bypass_pacing=true the
   // gate is overridden and the EDIT_PRICE still fires — that's the
   // operator's expectation when they click "Run decision now".
-  it('fires EDIT_PRICE lowering even when above_floor_since is within the patience window', () => {
+  it('fires EDIT_PRICE lowering even when lower_ready_since is within the patience window', () => {
     const overpayAmount = 2_000_000;
     const tickAt = 1_700_000_000_000;
-    // above_floor_since 30s ago — far below the 15-minute default
+    // lower_ready_since 30s ago — far below the 15-minute default
     // patience, so `aboveFloorLongEnough` is false. Lowering should
     // still fire because bypass_pacing=true.
     const s = state({
       tick_at: tickAt,
-      above_floor_since: tickAt - 30_000,
+      lower_ready_since: tickAt - 30_000,
       owned_bids: [owned({ price_sat: EXPECTED_TARGET + overpayAmount })],
       bypass_pacing: true,
     } as Partial<State>);
@@ -180,7 +180,7 @@ describe('decide — bypass_pacing (run-decision-now) lowers immediately', () =>
     const tickAt = 1_700_000_000_000;
     const s = state({
       tick_at: tickAt,
-      above_floor_since: tickAt - 30_000,
+      lower_ready_since: tickAt - 30_000,
       owned_bids: [owned({ price_sat: EXPECTED_TARGET + overpayAmount })],
       bypass_pacing: false,
     } as Partial<State>);

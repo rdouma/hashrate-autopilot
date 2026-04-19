@@ -20,21 +20,21 @@ describe('RuntimeStateRepo — floor-state persistence (#11)', () => {
   it('starts with null below_floor_since_ms and 0 above_floor_ticks', async () => {
     const row = await repo.get();
     expect(row?.below_floor_since_ms).toBeNull();
-    expect(row?.above_floor_since_ms).toBeNull();
+    expect(row?.lower_ready_since_ms).toBeNull();
     expect(row?.above_floor_ticks).toBe(0);
   });
 
-  it('round-trips above_floor_since_ms (issue: patience window survives restart)', async () => {
+  it('round-trips lower_ready_since_ms (issue: patience window survives restart)', async () => {
     const sinceMs = 1_700_000_000_000;
-    await repo.patch({ above_floor_since_ms: sinceMs });
+    await repo.patch({ lower_ready_since_ms: sinceMs });
     const row = await repo.get();
-    expect(row?.above_floor_since_ms).toBe(sinceMs);
+    expect(row?.lower_ready_since_ms).toBe(sinceMs);
 
     // And a fresh repo against the same db reads it back — the
     // single-process approximation of a daemon restart.
     const reborn = new RuntimeStateRepo(handle.db);
     const rebornRow = await reborn.get();
-    expect(rebornRow?.above_floor_since_ms).toBe(sinceMs);
+    expect(rebornRow?.lower_ready_since_ms).toBe(sinceMs);
   });
 
   it('round-trips both fields via patch + get', async () => {

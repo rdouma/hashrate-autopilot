@@ -80,7 +80,14 @@ export interface RuntimeStateTable {
   last_rpc_ok_at: number | null;
   last_pool_ok_at: number | null;
   below_floor_since_ms: number | null;
-  above_floor_since_ms: number | null;
+  /**
+   * Timestamp when `primary.price_sat > fillable + overpay + min_lower_delta`
+   * became continuously true. Drives the `lower_patience_minutes` gate
+   * in decide(). Null means the condition is currently false — the
+   * market is not cheap enough to justify lowering, or there's no
+   * primary bid to lower.
+   */
+  lower_ready_since_ms: number | null;
   above_floor_ticks: number;
 }
 
