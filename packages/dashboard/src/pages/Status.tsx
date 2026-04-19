@@ -722,6 +722,30 @@ function OperationsCard({
 // Next action card
 // ---------------------------------------------------------------------------
 
+const TICK_RESULT_STALE_MS = 30_000;
+
+const TICK_RESULT_KIND_LABELS: Record<string, string> = {
+  CREATE_BID: 'Create bid',
+  EDIT_PRICE: 'Edit price',
+  EDIT_SPEED: 'Edit speed',
+  CANCEL_BID: 'Cancel bid',
+  PAUSE: 'Pause',
+};
+
+const TICK_RESULT_OUTCOME_STYLES: Record<string, string> = {
+  EXECUTED: 'bg-emerald-900/40 text-emerald-300 border-emerald-700',
+  DRY_RUN: 'bg-slate-800 text-slate-300 border-slate-700',
+  BLOCKED: 'bg-amber-900/40 text-amber-300 border-amber-700',
+  FAILED: 'bg-red-900/40 text-red-300 border-red-700',
+};
+
+const TICK_RESULT_REASON_LABELS: Record<string, string> = {
+  RUN_MODE_NOT_LIVE: 'not in LIVE mode',
+  RUN_MODE_PAUSED: 'paused',
+  ACTION_MODE_BLOCKS_CREATE_OR_EDIT: 'action mode blocks this',
+  PRICE_DECREASE_COOLDOWN: 'Braiins 10-min cooldown',
+};
+
 function NextActionCard({
   s,
   onTickNow,
@@ -733,6 +757,22 @@ function NextActionCard({
   tickPending: boolean;
   tickResult: TickNowResponse | undefined;
 }) {
+  // Auto-fade the tick-result banner after a short window. Without
+  // this the "Edit price: executed" line sits there long after the
+  // decision ran and confuses "what just happened" with "what's
+  // currently happening".
+  const [tickResultStale, setTickResultStale] = useState(false);
+  useEffect(() => {
+    if (!tickResult) {
+      setTickResultStale(false);
+      return;
+    }
+    setTickResultStale(false);
+    const id = setTimeout(() => setTickResultStale(true), TICK_RESULT_STALE_MS);
+    return () => clearTimeout(id);
+  }, [tickResult]);
+  const showTickResult = tickResult && !tickResultStale;
+
   return (
     <section className="bg-slate-900 border border-slate-800 rounded-lg p-4 h-full flex flex-col">
       <div>
@@ -756,29 +796,49 @@ function NextActionCard({
         </button>
       </div>
 
-      {tickResult && (
-        <div
-          className={
-            'mt-2 text-xs ' + (tickResult.ok ? 'text-emerald-300' : 'text-red-400')
-          }
-        >
+      {showTickResult && tickResult && (
+        <div className="mt-2 text-xs">
           {tickResult.ok
             ? (() => {
                 const executed = tickResult.executed ?? [];
                 if (executed.length === 0) {
-                  return 'tick ok — no action needed on this tick';
+                  return (
+                    <span className="text-slate-400">No action needed this tick.</span>
+                  );
                 }
-                // Condense each executed entry to kind + outcome and
-                // append any blocking reason so the operator can see
-                // "BLOCKED: PRICE_DECREASE_COOLDOWN" when Braiins's
-                // 10-min floor is what's keeping the lower in its box.
-                const lines = executed.map((e) => {
-                  const reason = e.reason ? ` (${e.reason})` : '';
-                  return `${e.kind}: ${e.outcome}${reason}`;
-                });
-                return `tick ok — ${lines.join(' · ')}`;
+                return (
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {executed.map((e, i) => {
+                      const label = TICK_RESULT_KIND_LABELS[e.kind] ?? e.kind;
+                      const pillClass =
+                        TICK_RESULT_OUTCOME_STYLES[e.outcome] ??
+                        'bg-slate-800 text-slate-300 border-slate-700';
+                      const outcomeLabel = e.outcome.toLowerCase();
+                      const reasonLabel = e.reason
+                        ? TICK_RESULT_REASON_LABELS[e.reason] ?? e.reason
+                        : null;
+                      return (
+                        <span key={i} className="inline-flex items-center gap-1.5">
+                          <span className="text-slate-300">{label}</span>
+                          <span
+                            className={`px-1.5 py-0.5 rounded border text-[10px] uppercase tracking-wider ${pillClass}`}
+                          >
+                            {outcomeLabel}
+                          </span>
+                          {reasonLabel && (
+                            <span className="text-slate-500 text-[11px]">
+                              — {reasonLabel}
+                            </span>
+                          )}
+                        </span>
+                      );
+                    })}
+                  </div>
+                );
               })()
-            : `tick failed: ${tickResult.error}`}
+            : (
+              <span className="text-red-400">tick failed: {tickResult.error}</span>
+            )}
         </div>
       )}
 
@@ -832,10 +892,15 @@ function NextActionFooter({
         )}
       </span>
       <span>
-        next in{' '}
-        <span className="text-slate-300 tabular-nums">
-          {remainingSec !== null ? `${remainingSec}s` : '—'}
-        </span>
+        {remainingSec === null
+          ? '—'
+          : remainingSec > 0 ? (
+              <>
+                next in{' '}
+                <span className="text-slate-300 tabular-nums">{remainingSec}s</span>
+              </>
+            )
+          : <span className="text-slate-400">refreshing…</span>}
       </span>
     </div>
   );
@@ -1320,7 +1385,14 @@ function RefreshCountdown({ nextAtMs }: { nextAtMs: number | null | undefined })
     return () => clearInterval(id);
   }, []);
   if (nextAtMs == null) return <span>—</span>;
-  return <span>refreshes in {formatCountdownPrecise(nextAtMs - now)}</span>;
+  const msUntil = nextAtMs - now;
+  // Once the countdown crosses zero we're waiting on either the
+  // server's next tick (which runs on the interval timer) or the
+  // dashboard's next react-query poll. Either way "now" stuck on
+  // screen for 30 seconds reads as broken; "refreshing…" is honest
+  // about what's happening.
+  if (msUntil <= 0) return <span>refreshing…</span>;
+  return <span>refreshes in {formatCountdownPrecise(msUntil)}</span>;
 }
 
 function CopyIcon() {
