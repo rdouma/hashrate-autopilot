@@ -360,10 +360,9 @@ export const PriceChart = memo(function PriceChart({
           <path
             d={capPath}
             stroke={COLOR_MAXBID}
-            strokeWidth="1.2"
-            strokeDasharray="3 5"
+            strokeWidth="1.4"
             fill="none"
-            opacity="0.6"
+            opacity="0.85"
           />
         )}
         {fillablePath && (

@@ -367,8 +367,15 @@ export function Status() {
         events={simMode ? simEvents : (bidEventsQuery.data?.events ?? [])}
         showEvents={simMode || CHART_RANGE_SPECS[chartRange].showEvents}
         simMode={simMode}
+        /*
+         * In simulation mode the cap line needs to reflect what the
+         * *simulator* uses as its ceiling — raw max_bid, since the
+         * simulator doesn't model the dynamic hashprice+max_overpay
+         * cap. Passing null here drops back to the flat max_bid time
+         * series and keeps the visual in sync with the simulated bid.
+         */
         maxOverpayVsHashpriceSatPerPhDay={
-          s.config_summary.max_overpay_vs_hashprice_sat_per_ph_day
+          simMode ? null : s.config_summary.max_overpay_vs_hashprice_sat_per_ph_day
         }
       />
 
