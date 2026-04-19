@@ -365,8 +365,15 @@ export function Status() {
         simMode={simMode}
       />
 
+      {/*
+       * Pipeline order: Braiins → Datum → Ocean (a share travels
+       * Braiins-marketplace → Datum-gateway → Ocean-pool). Caps
+       * live inside the Braiins card because they only describe
+       * what we do in the marketplace. P&L sits below Bids as its
+       * own full-width section; it's a financial summary of the
+       * pipeline, not a pipeline step.
+       */}
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <OceanPanel />
         <Card title="Braiins">
           <Row k="delivered" v={formatHashratePH(s.actual_hashrate_ph)} />
           <Row
@@ -415,13 +422,19 @@ export function Status() {
               ))
             )}
           </div>
+          <div className="border-t border-slate-800 mt-2 pt-2">
+            <Row k="max bid" v={denomination.formatSatPerPhDay(s.config_summary.max_bid_sat_per_ph_day, intlLocale)} />
+            <Row k="budget" v={denomination.formatSat(s.config_summary.bid_budget_sat, intlLocale)} />
+          </div>
         </Card>
-        <FinancePanel
-          data={financeQuery.data}
-          status={s}
-          onRefresh={() => qc.invalidateQueries({ queryKey: ['finance'] })}
-          refreshing={financeQuery.isFetching}
+        <DatumPanel
+          url={s.config_summary.pool_url}
+          reachable={s.pool.reachable}
+          consecutiveFailures={s.pool.consecutive_failures}
+          lastOkAt={s.pool.last_ok_at}
+          datum={s.datum}
         />
+        <OceanPanel />
       </section>
 
       <section>
@@ -497,18 +510,13 @@ export function Status() {
         )}
       </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <DatumPanel
-          url={s.config_summary.pool_url}
-          reachable={s.pool.reachable}
-          consecutiveFailures={s.pool.consecutive_failures}
-          lastOkAt={s.pool.last_ok_at}
-          datum={s.datum}
+      <section>
+        <FinancePanel
+          data={financeQuery.data}
+          status={s}
+          onRefresh={() => qc.invalidateQueries({ queryKey: ['finance'] })}
+          refreshing={financeQuery.isFetching}
         />
-        <Card title="Caps">
-          <Row k="max bid" v={denomination.formatSatPerPhDay(s.config_summary.max_bid_sat_per_ph_day, intlLocale)} />
-          <Row k="budget" v={denomination.formatSat(s.config_summary.bid_budget_sat, intlLocale)} />
-        </Card>
       </section>
 
       {s.last_proposals.length > 0 && (
@@ -1757,7 +1765,7 @@ function DatumPanel({
   };
 
   return (
-    <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-lg p-4">
+    <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
       <div className="text-xs uppercase tracking-wider text-slate-100 mb-2">Datum Gateway</div>
       <div className="flex items-center gap-2 mb-2 flex-wrap">
         <span
