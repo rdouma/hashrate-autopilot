@@ -405,9 +405,23 @@ export function Status() {
               below floor since {formatAge(s.below_floor_since)}
             </div>
           )}
+          {/*
+           * Market + pricing block — ordered by how often the operator
+           * looks at each line. Hashprice (break-even revenue) is the
+           * most-referenced number when reasoning about whether a bid
+           * is even worth placing, so it leads. Fillable-at-target
+           * follows (what we'd actually pay). Then max-bid (+ its
+           * dynamic sibling) because they're the ceiling. Best bid /
+           * best ask are market color at the bottom — peripheral once
+           * the operator has a bid in flight.
+           */}
           <div className="border-t border-slate-800 mt-2 pt-2">
-            <Row k="best bid" v={denomination.formatSatPerPhDay(s.market?.best_bid_sat_per_ph_day ?? null, intlLocale)} />
-            <Row k="best ask" v={denomination.formatSatPerPhDay(s.market?.best_ask_sat_per_ph_day ?? null, intlLocale)} />
+            {financeQuery.data?.ocean?.hashprice_sat_per_ph_day != null && (
+              <Row
+                k="hashprice"
+                v={denomination.formatSatPerPhDay(financeQuery.data.ocean.hashprice_sat_per_ph_day, intlLocale)}
+              />
+            )}
             <Row
               k={`fillable @ ${formatHashratePH(s.config_summary.effective_target_hashrate_ph)}`}
               v={
@@ -417,27 +431,6 @@ export function Status() {
                   : '\u2014'
               }
             />
-            {financeQuery.data?.ocean?.hashprice_sat_per_ph_day != null && (
-              <Row
-                k="hashprice"
-                v={denomination.formatSatPerPhDay(financeQuery.data.ocean.hashprice_sat_per_ph_day, intlLocale)}
-              />
-            )}
-          </div>
-          <div className="border-t border-slate-800 mt-2 pt-2">
-            {s.balances.length === 0 ? (
-              <div className="text-slate-500 text-sm">{'\u2014'}</div>
-            ) : (
-              s.balances.map((b) => (
-                <div key={b.subaccount}>
-                  <Row k="available" v={denomination.formatSat(b.available_balance_sat, intlLocale)} />
-                  <Row k="blocked" v={denomination.formatSat(b.blocked_balance_sat, intlLocale)} />
-                  <Row k="total" v={denomination.formatSat(b.total_balance_sat, intlLocale)} />
-                </div>
-              ))
-            )}
-          </div>
-          <div className="border-t border-slate-800 mt-2 pt-2">
             <Row
               k={`max bid${s.config_summary.binding_cap === 'fixed' ? ' (binding)' : ''}`}
               v={denomination.formatSatPerPhDay(s.config_summary.max_bid_sat_per_ph_day, intlLocale)}
@@ -460,7 +453,21 @@ export function Status() {
                 />
               </>
             )}
-            <Row k="budget" v={denomination.formatSat(s.config_summary.bid_budget_sat, intlLocale)} />
+            <Row k="best bid" v={denomination.formatSatPerPhDay(s.market?.best_bid_sat_per_ph_day ?? null, intlLocale)} />
+            <Row k="best ask" v={denomination.formatSatPerPhDay(s.market?.best_ask_sat_per_ph_day ?? null, intlLocale)} />
+          </div>
+          <div className="border-t border-slate-800 mt-2 pt-2">
+            {s.balances.length === 0 ? (
+              <div className="text-slate-500 text-sm">{'\u2014'}</div>
+            ) : (
+              s.balances.map((b) => (
+                <div key={b.subaccount}>
+                  <Row k="available" v={denomination.formatSat(b.available_balance_sat, intlLocale)} />
+                  <Row k="blocked" v={denomination.formatSat(b.blocked_balance_sat, intlLocale)} />
+                  <Row k="total" v={denomination.formatSat(b.total_balance_sat, intlLocale)} />
+                </div>
+              ))
+            )}
           </div>
         </Card>
         <DatumPanel
