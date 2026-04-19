@@ -182,9 +182,10 @@ export function Status() {
       range: chartRange,
       overpay_sat_per_eh_day: simParamsDebounced!.overpay_sat_per_eh_day!,
       max_bid_sat_per_eh_day: simParamsDebounced!.max_bid_sat_per_eh_day!,
-      // Inherit the live config's dynamic-cap allowance so simulated
-      // escalations can't cross a ceiling the real controller would
-      // refuse. Not a sim tuning knob yet — just passed through.
+      // Dynamic-cap allowance — a live sim tuning knob now. 0 means
+      // disabled (coerced to null server-side); any positive value
+      // clamps the per-tick effective cap at hashprice + this. Exposed
+      // in SIM_NUMBER_FIELDS as "Max over hashprice".
       max_overpay_vs_hashprice_sat_per_eh_day:
         (simParamsDebounced!.max_overpay_vs_hashprice_sat_per_eh_day ?? 0) > 0
           ? simParamsDebounced!.max_overpay_vs_hashprice_sat_per_eh_day!
@@ -1107,6 +1108,10 @@ const EH_PER_PH = 1000;
 const SIM_NUMBER_FIELDS = [
   { key: 'overpay_sat_per_eh_day', label: 'Overpay', step: 50_000, ehToPh: true, unit: 'sat/PH/day' },
   { key: 'max_bid_sat_per_eh_day', label: 'Max bid', step: 1_000_000, ehToPh: true, unit: 'sat/PH/day' },
+  // 0 = disabled (the daemon's Zod preprocess coerces 0 → null on
+  // save); any positive value caps the per-tick effective ceiling at
+  // hashprice + this.
+  { key: 'max_overpay_vs_hashprice_sat_per_eh_day', label: 'Max over hashprice', step: 50_000, ehToPh: true, unit: 'sat/PH/day' },
   { key: 'fill_escalation_step_sat_per_eh_day', label: 'Esc. step', step: 50_000, ehToPh: true, unit: 'sat/PH/day' },
   { key: 'fill_escalation_after_minutes', label: 'Esc. window', step: 5, ehToPh: false, unit: 'min' },
   { key: 'lower_patience_minutes', label: 'Wait to lower', step: 5, ehToPh: false, unit: 'min' },
@@ -1202,7 +1207,7 @@ function SimParamBar({
           )}
         </div>
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
         {SIM_NUMBER_FIELDS.map((f) => {
           const rawValue = params[f.key] ?? 0;
           const configVal = (config as unknown as Record<string, number>)[f.key] ?? 0;
