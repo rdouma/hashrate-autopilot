@@ -219,34 +219,44 @@ function simulate(rows: TickRow[], params: SimParams): SimResult {
         : null;
     const effectiveCap =
       dynamicCap !== null ? Math.min(params.maxBid, dynamicCap) : params.maxBid;
-    const targetPrice = Math.min(fillable + params.overpay, effectiveCap);
+    const desiredPrice = fillable + params.overpay;
+    const targetPrice = Math.min(desiredPrice, effectiveCap);
+    // Mirror decide.ts's `isMarketTooExpensive` guard: when the price
+    // the operator would aim for (fillable + overpay) exceeds the
+    // effective cap, the real controller returns [] — it refuses to
+    // create or escalate a bid that would sit above the cap. The
+    // simulator must do the same, otherwise it paints escalations at
+    // exactly the cap on ticks the real autopilot would have skipped.
+    const marketTooExpensive = desiredPrice > effectiveCap;
     const overrideActive = overrideUntil !== null && overrideUntil > r.tick_at;
 
-    if (bidPrice === null) {
-      bidPrice = targetPrice;
-      overrideUntil = r.tick_at + params.escalationWindowMs;
-    } else if (!overrideActive) {
-      if (belowFloorSince !== null) {
-        const elapsed = r.tick_at - belowFloorSince;
-        if (elapsed >= params.escalationWindowMs && bidPrice < targetPrice) {
-          bidPrice = params.escalationMode === 'market'
-            ? targetPrice
-            : Math.min(bidPrice + params.escalationStep, targetPrice);
+    if (!marketTooExpensive) {
+      if (bidPrice === null) {
+        bidPrice = targetPrice;
+        overrideUntil = r.tick_at + params.escalationWindowMs;
+      } else if (!overrideActive) {
+        if (belowFloorSince !== null) {
+          const elapsed = r.tick_at - belowFloorSince;
+          if (elapsed >= params.escalationWindowMs && bidPrice < targetPrice) {
+            bidPrice = params.escalationMode === 'market'
+              ? targetPrice
+              : Math.min(bidPrice + params.escalationStep, targetPrice);
+            overrideUntil = r.tick_at + params.escalationWindowMs;
+          }
+        }
+
+        const aboveFloorLongEnough =
+          aboveFloorSince !== null &&
+          (r.tick_at - aboveFloorSince) >= params.lowerPatienceMs;
+        if (aboveFloorLongEnough && bidPrice > targetPrice + params.minLowerDelta) {
+          bidPrice = targetPrice;
           overrideUntil = r.tick_at + params.escalationWindowMs;
         }
       }
-
-      const aboveFloorLongEnough =
-        aboveFloorSince !== null &&
-        (r.tick_at - aboveFloorSince) >= params.lowerPatienceMs;
-      if (aboveFloorLongEnough && bidPrice > targetPrice + params.minLowerDelta) {
-        bidPrice = targetPrice;
-        overrideUntil = r.tick_at + params.escalationWindowMs;
-      }
     }
 
-    const isFilled = bidPrice >= fillable;
-    prices.push(bidPrice);
+    const isFilled = bidPrice !== null && bidPrice >= fillable;
+    prices.push(bidPrice ?? 0);
     filled.push(isFilled);
 
     if (isFilled) {
