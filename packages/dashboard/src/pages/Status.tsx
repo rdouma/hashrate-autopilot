@@ -433,6 +433,8 @@ export function Status() {
           consecutiveFailures={s.pool.consecutive_failures}
           lastOkAt={s.pool.last_ok_at}
           datum={s.datum}
+          nextTickAt={s.next_tick_at}
+          tickIntervalMs={s.tick_interval_ms}
         />
         <OceanPanel />
       </section>
@@ -1746,14 +1748,31 @@ function DatumPanel({
   consecutiveFailures,
   lastOkAt,
   datum,
+  nextTickAt,
+  tickIntervalMs,
 }: {
   url: string;
   reachable: boolean;
   consecutiveFailures: number;
   lastOkAt: number | null;
   datum: StatusResponse['datum'];
+  nextTickAt: number | null;
+  tickIntervalMs: number;
 }) {
   const [copied, setCopied] = useState(false);
+  // Live 1-second countdown to the next poll. The poll is tied to the
+  // control-loop tick, so we derive the ETA from next_tick_at (falling
+  // back to tick_interval_ms) and re-render once a second client-side
+  // so the number looks alive without a server round-trip.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const refreshEta =
+    nextTickAt ?? (lastOkAt !== null ? lastOkAt + tickIntervalMs : null);
+  const refreshInSec =
+    refreshEta !== null ? Math.max(0, Math.ceil((refreshEta - now) / 1000)) : null;
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(url);
@@ -1828,6 +1847,10 @@ function DatumPanel({
           <div className="text-slate-400">stats last ok</div>
           <div className="text-right font-mono text-slate-500 text-xs">
             {formatAge(datum.last_ok_at)}
+          </div>
+          <div className="text-slate-400">refreshes in</div>
+          <div className="text-right font-mono text-slate-500 text-xs tabular-nums">
+            {refreshInSec !== null ? `${refreshInSec}s` : '—'}
           </div>
         </div>
       ) : (
