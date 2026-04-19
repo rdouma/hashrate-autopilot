@@ -54,11 +54,22 @@ export const PriceChart = memo(function PriceChart({
   events = [],
   showEvents,
   simMode = false,
+  maxOverpayVsHashpriceSatPerPhDay = null,
 }: {
   points: readonly MetricPoint[];
   events?: readonly BidEventView[];
   showEvents: boolean;
   simMode?: boolean;
+  /**
+   * Current config's dynamic-cap allowance. When set, the cap line is
+   * computed per-tick as `min(max_bid, hashprice + this)` rather than
+   * the flat `max_bid` — matches what decide() actually uses each
+   * tick. Null → fall back to max_bid. Applied as a constant across
+   * the history (we don't store historical config per tick), so past
+   * effective caps are approximate if the operator changed this
+   * value.
+   */
+  maxOverpayVsHashpriceSatPerPhDay?: number | null;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
@@ -82,9 +93,25 @@ export const PriceChart = memo(function PriceChart({
       .filter((p) => Number.isFinite(p.hashprice_sat_per_ph_day))
       .map((p) => ({ t: p.tick_at, v: p.hashprice_sat_per_ph_day as number }));
 
-    const maxBidPoints: PricePoint[] = points
+    // The line the operator actually cares about: the effective cap
+    // that decide() uses each tick, which is the tighter of the fixed
+    // max_bid and the dynamic hashprice+max_overpay. When the dynamic
+    // cap isn't configured, this collapses to max_bid and the line
+    // looks exactly like the previous "max bid" line.
+    const capPoints: PricePoint[] = points
       .filter((p) => Number.isFinite(p.max_bid_sat_per_ph_day))
-      .map((p) => ({ t: p.tick_at, v: p.max_bid_sat_per_ph_day as number }));
+      .map((p) => {
+        const fixed = p.max_bid_sat_per_ph_day as number;
+        const hashprice = Number.isFinite(p.hashprice_sat_per_ph_day)
+          ? (p.hashprice_sat_per_ph_day as number)
+          : null;
+        const dynamic =
+          maxOverpayVsHashpriceSatPerPhDay !== null && hashprice !== null
+            ? hashprice + maxOverpayVsHashpriceSatPerPhDay
+            : null;
+        const v = dynamic !== null ? Math.min(fixed, dynamic) : fixed;
+        return { t: p.tick_at, v };
+      });
 
     if (points.length < 2) return null;
 
@@ -99,6 +126,7 @@ export const PriceChart = memo(function PriceChart({
       ...pricePoints.map((p) => p.v),
       ...fillablePoints.map((p) => p.v),
       ...hashpricePoints.map((p) => p.v),
+      ...capPoints.map((p) => p.v),
       ...eventPrices,
     ];
     const hasPrice = priceSample.length > 0;
@@ -136,9 +164,33 @@ export const PriceChart = memo(function PriceChart({
       .map((p, i) => `${i === 0 ? 'M' : 'L'}${xScale(p.t).toFixed(1)},${yScale(p.v).toFixed(1)}`)
       .join(' ');
 
-    const maxBidPath = maxBidPoints
+    const capPath = capPoints
       .map((p, i) => `${i === 0 ? 'M' : 'L'}${xScale(p.t).toFixed(1)},${yScale(p.v).toFixed(1)}`)
       .join(' ');
+
+    // Polygon tracing the "excluded" region above the cap — the chart
+    // top edge along the top, then the cap curve in reverse along the
+    // bottom. Filled with a red-to-transparent linear gradient so the
+    // operator sees at a glance that anything above the line is off-
+    // limits. Only rendered when we actually have cap points; empty
+    // when the column was backfilled as null for pre-migration ticks.
+    const capExclusionPolygon =
+      capPoints.length > 0
+        ? (() => {
+            const top = PADDING.top;
+            const leftEdgeX = xScale(capPoints[0]!.t).toFixed(1);
+            const rightEdgeX = xScale(capPoints[capPoints.length - 1]!.t).toFixed(1);
+            const capTrace = capPoints
+              .map((p, i) => `${i === 0 ? 'M' : 'L'}${xScale(p.t).toFixed(1)},${yScale(p.v).toFixed(1)}`)
+              .join(' ');
+            // Start at the first cap point (already M), go up to the
+            // chart top, across to the right edge, and close back down
+            // to the last cap point — that seals the polygon above
+            // the cap curve.
+            const close = ` L${rightEdgeX},${top} L${leftEdgeX},${top} Z`;
+            return capTrace + close;
+          })()
+        : null;
 
     const xTickInterval = pickTimeTickInterval(maxX - minX);
     const xTicks = localAlignedTimeTicks(minX, maxX, xTickInterval);
@@ -147,7 +199,7 @@ export const PriceChart = memo(function PriceChart({
       ? events.filter((e) => e.occurred_at >= minX && e.occurred_at <= maxX)
       : [];
 
-    return { pricePoints, fillablePoints, minX, maxX, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, fillablePath, hashpricePath, maxBidPath, yTicks, xTickInterval, xTicks, visibleEvents };
+    return { pricePoints, fillablePoints, minX, maxX, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, fillablePath, hashpricePath, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents };
   }, [points, events, showEvents]);
 
   const eventPriceAt = useCallback((e: BidEventView): number | null => {
@@ -218,7 +270,7 @@ export const PriceChart = memo(function PriceChart({
     );
   }
 
-  const { pricePoints, fillablePoints, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, fillablePath, hashpricePath, maxBidPath, yTicks, xTickInterval, xTicks, visibleEvents } = chartData;
+  const { pricePoints, fillablePoints, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, fillablePath, hashpricePath, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents } = chartData;
 
   // Format Y-axis tick values: in USD mode convert sat/PH/day to $/PH/day
   const priceFmt = (v: number): string => {
@@ -287,12 +339,26 @@ export const PriceChart = memo(function PriceChart({
             opacity="0.7"
           />
         )}
-        {/* Max bid ceiling — historical time series. Tracks config
-            changes over time so the operator can see when they
-            tightened or loosened the cap. */}
-        {maxBidPath && (
+        {/* Effective cap — the tighter of fixed max_bid and the
+            dynamic hashprice+max_overpay cap. Anything above this
+            line is the "off-limits" region, shaded with a red
+            gradient that fades down to transparent at the cap curve
+            so the operator reads it as "walled off" without obscuring
+            detail near the cap. */}
+        {capExclusionPolygon && (
+          <>
+            <defs>
+              <linearGradient id="capExclusion" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={COLOR_MAXBID} stopOpacity="0.28" />
+                <stop offset="100%" stopColor={COLOR_MAXBID} stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            <path d={capExclusionPolygon} fill="url(#capExclusion)" stroke="none" />
+          </>
+        )}
+        {capPath && (
           <path
-            d={maxBidPath}
+            d={capPath}
             stroke={COLOR_MAXBID}
             strokeWidth="1.2"
             strokeDasharray="3 5"

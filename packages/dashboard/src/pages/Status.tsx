@@ -367,6 +367,9 @@ export function Status() {
         events={simMode ? simEvents : (bidEventsQuery.data?.events ?? [])}
         showEvents={simMode || CHART_RANGE_SPECS[chartRange].showEvents}
         simMode={simMode}
+        maxOverpayVsHashpriceSatPerPhDay={
+          s.config_summary.max_overpay_vs_hashprice_sat_per_ph_day
+        }
       />
 
       {/*
