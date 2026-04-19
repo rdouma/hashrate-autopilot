@@ -702,11 +702,12 @@ function EventTooltip({ tip, onClose }: { tip: TooltipState; onClose: () => void
           <button
             type="button"
             onClick={copyJson}
-            aria-label={copied ? 'copied' : 'copy JSON'}
-            title={copied ? 'copied' : 'copy JSON'}
-            className={`px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 ${copied ? 'text-emerald-300' : 'text-slate-200'}`}
+            aria-label={copied ? 'copied JSON' : 'copy JSON'}
+            title={copied ? 'copied JSON' : 'copy JSON'}
+            className={`px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 inline-flex items-center gap-1.5 text-[11px] ${copied ? 'text-emerald-300' : 'text-slate-200'}`}
           >
             {copied ? <CheckIcon /> : <CopyIcon />}
+            <span>JSON</span>
           </button>
         </div>
       )}
