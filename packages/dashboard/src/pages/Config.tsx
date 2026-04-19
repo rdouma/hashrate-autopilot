@@ -92,6 +92,13 @@ const SECTIONS: Section[] = [
         help: 'For Ocean TIDES this must be "<your BTC payout address>.<label>" — e.g. bc1qxyz….rig1. Without the address prefix your hashrate is credited to no one.',
         fullWidth: true,
       },
+      {
+        key: 'datum_api_url',
+        label: 'Datum stats API (optional)',
+        kind: 'text',
+        help: 'Optional. Datum Gateway\'s /umbrel-api endpoint — e.g. http://192.168.1.121:7152. Leave empty to disable; the Datum panel will show "not configured". See docs/setup-datum-api.md for the Umbrel-side port-exposure recipe.',
+        fullWidth: true,
+      },
     ],
   },
   {

@@ -147,6 +147,13 @@ export interface StatusResponse {
     last_ok_at: number | null;
     consecutive_failures: number;
   };
+  datum: {
+    reachable: boolean;
+    connections: number | null;
+    hashrate_ph: number | null;
+    last_ok_at: number | null;
+    consecutive_failures: number;
+  } | null;
   bids: BidView[];
   actual_hashrate_ph: number;
   below_floor_since: number | null;
@@ -221,6 +228,7 @@ export interface AppConfig {
   tick_metrics_retention_days: number;
   decisions_uneventful_retention_days: number;
   decisions_eventful_retention_days: number;
+  datum_api_url: string | null;
 }
 
 export interface ConfigResponse {

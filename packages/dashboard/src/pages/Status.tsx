@@ -498,11 +498,12 @@ export function Status() {
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <PoolCard
+        <DatumPanel
           url={s.config_summary.pool_url}
           reachable={s.pool.reachable}
           consecutiveFailures={s.pool.consecutive_failures}
           lastOkAt={s.pool.last_ok_at}
+          datum={s.datum}
         />
         <Card title="Caps">
           <Row k="max bid" v={denomination.formatSatPerPhDay(s.config_summary.max_bid_sat_per_ph_day, intlLocale)} />
@@ -1727,16 +1728,18 @@ function parseDurationMs(raw: string): number | null {
   return u ? n * u : null;
 }
 
-function PoolCard({
+function DatumPanel({
   url,
   reachable,
   consecutiveFailures,
   lastOkAt,
+  datum,
 }: {
   url: string;
   reachable: boolean;
   consecutiveFailures: number;
   lastOkAt: number | null;
+  datum: StatusResponse['datum'];
 }) {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
@@ -1751,8 +1754,8 @@ function PoolCard({
 
   return (
     <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-lg p-4">
-      <div className="text-xs uppercase tracking-wider text-slate-100 mb-2">Pool</div>
-      <div className="flex items-center gap-2 mb-2">
+      <div className="text-xs uppercase tracking-wider text-slate-100 mb-2">Datum Gateway</div>
+      <div className="flex items-center gap-2 mb-2 flex-wrap">
         <span
           className={
             'inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs border ' +
@@ -1760,17 +1763,37 @@ function PoolCard({
               ? 'border-emerald-700 bg-emerald-900/30 text-emerald-300'
               : 'border-red-700 bg-red-900/30 text-red-300')
           }
+          title="TCP probe of the stratum port"
         >
           <span
             className={
               'w-1.5 h-1.5 rounded-full ' + (reachable ? 'bg-emerald-400' : 'bg-red-400')
             }
           />
-          {reachable ? 'reachable' : `DOWN (${consecutiveFailures} consecutive)`}
+          stratum {reachable ? 'reachable' : `DOWN (${consecutiveFailures} consecutive)`}
         </span>
-        <span className="text-xs text-slate-500">last ok: {formatAge(lastOkAt)}</span>
+        {datum && (
+          <span
+            className={
+              'inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs border ' +
+              (datum.reachable
+                ? 'border-emerald-700 bg-emerald-900/30 text-emerald-300'
+                : 'border-amber-700 bg-amber-900/30 text-amber-300')
+            }
+            title="Datum /umbrel-api HTTP poll"
+          >
+            <span
+              className={
+                'w-1.5 h-1.5 rounded-full ' +
+                (datum.reachable ? 'bg-emerald-400' : 'bg-amber-400')
+              }
+            />
+            stats {datum.reachable ? 'reachable' : `unreachable (${datum.consecutive_failures})`}
+          </span>
+        )}
+        <span className="text-xs text-slate-500">stratum last ok: {formatAge(lastOkAt)}</span>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 mb-2">
         <div className="text-sm text-slate-300 font-mono break-all flex-1">{url}</div>
         <button
           onClick={copy}
@@ -1780,6 +1803,28 @@ function PoolCard({
           {copied ? '✓ copied' : 'copy'}
         </button>
       </div>
+      {datum ? (
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 pt-2 border-t border-slate-800 text-sm">
+          <div className="text-slate-400">workers connected</div>
+          <div className="text-right font-mono text-slate-200">
+            {datum.connections ?? '—'}
+          </div>
+          <div className="text-slate-400">datum hashrate</div>
+          <div className="text-right font-mono text-slate-200">
+            {datum.hashrate_ph !== null ? formatHashratePH(datum.hashrate_ph) : '—'}
+          </div>
+          <div className="text-slate-400">stats last ok</div>
+          <div className="text-right font-mono text-slate-500 text-xs">
+            {formatAge(datum.last_ok_at)}
+          </div>
+        </div>
+      ) : (
+        <div className="mt-2 pt-2 border-t border-slate-800 text-xs text-slate-500">
+          Datum stats not configured — set <span className="font-mono text-slate-400">datum_api_url</span>{' '}
+          in Config to display connected workers and reported hashrate. See{' '}
+          <span className="font-mono text-slate-400">docs/setup-datum-api.md</span>.
+        </div>
+      )}
     </div>
   );
 }
