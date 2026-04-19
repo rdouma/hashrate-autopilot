@@ -426,7 +426,28 @@ export function Status() {
             )}
           </div>
           <div className="border-t border-slate-800 mt-2 pt-2">
-            <Row k="max bid" v={denomination.formatSatPerPhDay(s.config_summary.max_bid_sat_per_ph_day, intlLocale)} />
+            <Row
+              k={`max bid${s.config_summary.binding_cap === 'fixed' ? ' (binding)' : ''}`}
+              v={denomination.formatSatPerPhDay(s.config_summary.max_bid_sat_per_ph_day, intlLocale)}
+            />
+            {s.config_summary.max_overpay_vs_hashprice_sat_per_ph_day !== null && (
+              <>
+                <Row
+                  k="max over hashprice"
+                  v={denomination.formatSatPerPhDay(
+                    s.config_summary.max_overpay_vs_hashprice_sat_per_ph_day,
+                    intlLocale,
+                  )}
+                />
+                <Row
+                  k={`effective cap${s.config_summary.binding_cap === 'dynamic' ? ' (binding)' : ''}`}
+                  v={denomination.formatSatPerPhDay(
+                    s.config_summary.effective_cap_sat_per_ph_day,
+                    intlLocale,
+                  )}
+                />
+              </>
+            )}
             <Row k="budget" v={denomination.formatSat(s.config_summary.bid_budget_sat, intlLocale)} />
           </div>
         </Card>

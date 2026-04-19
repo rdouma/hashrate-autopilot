@@ -120,6 +120,14 @@ export interface StatusResponse {
     readonly target_hashrate_ph: number;
     readonly minimum_floor_hashrate_ph: number;
     readonly max_bid_sat_per_ph_day: number;
+    /** Hashprice-relative cap (null when disabled). */
+    readonly max_overpay_vs_hashprice_sat_per_ph_day: number | null;
+    /** Tighter of the two caps for this tick, shown to the operator so
+     *  they can see which one is actually binding. Falls back to the
+     *  fixed cap when the dynamic cap is disabled or hashprice is
+     *  unavailable. */
+    readonly effective_cap_sat_per_ph_day: number;
+    readonly binding_cap: 'fixed' | 'dynamic';
     readonly fill_escalation_step_sat_per_ph_day: number;
     readonly bid_budget_sat: number;
     readonly pool_url: string;

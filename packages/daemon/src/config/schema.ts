@@ -66,6 +66,20 @@ export const AppConfigSchema = z.object({
 
   // Pricing ceilings (sat per EH per day)
   max_bid_sat_per_eh_day: positiveInt,
+  // Hashprice-relative cap (issue #27). When set, the effective price
+  // ceiling on each tick becomes min(max_bid, hashprice + this). Null
+  // disables it, falling back to the fixed max_bid. Also falls back
+  // when hashprice is unavailable (Ocean stats down). Stops the
+  // autopilot from wildly overpaying when hashprice drops sharply and
+  // the fixed max_bid alone would still allow it. 0 from the
+  // dashboard is coerced to null so a blank field in the UI reads as
+  // "disabled" end-to-end.
+  max_overpay_vs_hashprice_sat_per_eh_day: z
+    .preprocess(
+      (v) => (v === 0 ? null : v),
+      positiveInt.nullable(),
+    )
+    .default(null),
 
   // Budgeting
   monthly_budget_ceiling_sat: positiveInt,
@@ -213,6 +227,9 @@ export const APP_CONFIG_DEFAULTS: Omit<
 
   // Sensible upper bound; operator will tune once live market data is in view.
   max_bid_sat_per_eh_day: 60_000_000,
+  // Dynamic hashprice-relative cap — disabled by default so existing
+  // installs see no behaviour change. Operator opts in from Config.
+  max_overpay_vs_hashprice_sat_per_eh_day: null,
 
   monthly_budget_ceiling_sat: 500_000,
   bid_budget_sat: 50_000,

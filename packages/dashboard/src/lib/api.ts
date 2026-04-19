@@ -156,6 +156,9 @@ export interface StatusResponse {
     target_hashrate_ph: number;
     minimum_floor_hashrate_ph: number;
     max_bid_sat_per_ph_day: number;
+    max_overpay_vs_hashprice_sat_per_ph_day: number | null;
+    effective_cap_sat_per_ph_day: number;
+    binding_cap: 'fixed' | 'dynamic';
     fill_escalation_step_sat_per_ph_day: number;
     bid_budget_sat: number;
     pool_url: string;
@@ -188,6 +191,7 @@ export interface AppConfig {
   destination_pool_url: string;
   destination_pool_worker_name: string;
   max_bid_sat_per_eh_day: number;
+  max_overpay_vs_hashprice_sat_per_eh_day: number | null;
   monthly_budget_ceiling_sat: number;
   bid_budget_sat: number;
   wallet_runway_alert_days: number;

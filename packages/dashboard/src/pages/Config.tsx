@@ -111,6 +111,12 @@ const SECTIONS: Section[] = [
         kind: 'price_sat_per_eh_day',
         help: 'Hard ceiling. Above this the autopilot silently skips the tick.',
       },
+      {
+        key: 'max_overpay_vs_hashprice_sat_per_eh_day',
+        label: 'Max premium over hashprice',
+        kind: 'price_sat_per_eh_day',
+        help: 'Optional dynamic ceiling. On each tick the effective cap = min(Maximum, hashprice + this). Stops the autopilot from wildly overpaying when hashprice drops sharply and the fixed Maximum alone would still allow it. Set to 0 to disable.',
+      },
     ],
   },
   {
@@ -817,14 +823,20 @@ function Field({
   }
 
   if (spec.kind === 'price_sat_per_eh_day') {
-    // Display + edit in sat/PH/day; store as sat/EH/day.
-    const displayValue = (value as number) / EH_PER_PH;
+    // Display + edit in sat/PH/day; store as sat/EH/day. Nullable
+    // fields (e.g. max_overpay_vs_hashprice) surface as 0 in the
+    // input; the daemon coerces 0 back to null on the save round-trip
+    // via the config Zod schema so "0" reads as "disabled".
+    const raw = value as number | null;
+    const displayValue = raw === null ? 0 : raw / EH_PER_PH;
     return (
       <label className="block">
         <span className="block text-sm text-slate-300 mb-1">{spec.label}</span>
         <NumberField
           value={displayValue}
-          onChange={(n) => onChange(spec.key, Math.round(n * EH_PER_PH) as never)}
+          onChange={(n) =>
+            onChange(spec.key, (n > 0 ? Math.round(n * EH_PER_PH) : 0) as never)
+          }
           step="integer"
           locale={locale}
           min={0}

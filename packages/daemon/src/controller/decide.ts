@@ -101,8 +101,24 @@ export function decide(state: State): readonly Proposal[] {
     : baseFillable;
   const effectiveCheapestAvailable = fillable.price_sat ?? cheapestAvailable;
 
-  // 3. Target = min(fillable + overpay, max_bid). Simple and direct.
-  const effectiveCap = config.max_bid_sat_per_eh_day;
+  // 3. Target = min(fillable + overpay, effective cap).
+  //
+  // Effective cap is the tighter of two ceilings (issue #27):
+  //   - Fixed: config.max_bid_sat_per_eh_day (always present)
+  //   - Dynamic: hashprice + config.max_overpay_vs_hashprice (when the
+  //     operator set the second cap AND hashprice is available for this
+  //     tick). Protects against paying far above break-even when
+  //     hashprice drops — a fixed cap alone can still allow that.
+  //
+  // When the dynamic cap is disabled (null) or hashprice is unknown,
+  // fall back to the fixed cap alone.
+  const fixedCap = config.max_bid_sat_per_eh_day;
+  const dynamicCap =
+    config.max_overpay_vs_hashprice_sat_per_eh_day !== null &&
+    hashpriceSatEh !== null
+      ? hashpriceSatEh + config.max_overpay_vs_hashprice_sat_per_eh_day
+      : null;
+  const effectiveCap = dynamicCap !== null ? Math.min(fixedCap, dynamicCap) : fixedCap;
   const overpayAllowance = config.overpay_sat_per_eh_day;
   const desiredPrice = effectiveCheapestAvailable + overpayAllowance;
   const targetPrice = Math.min(desiredPrice, effectiveCap);

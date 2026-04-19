@@ -156,6 +156,67 @@ describe('decide — market too expensive', () => {
   });
 });
 
+describe('decide — max_overpay_vs_hashprice cap (issue #27)', () => {
+  // Ask 45M + overpay 500K = desired 45.5M. Hashprice = 44M (sat/EH/day
+  // → 44K sat/PH/day). Dynamic cap + 1M overpay over hashprice = 45M.
+  // Fixed cap (default 60M) is way looser, so dynamic is binding.
+  const HASHPRICE_PH_DAY = 44_000;
+
+  it('binding fixed cap when dynamic cap is disabled (null)', () => {
+    // Default APP_CONFIG_DEFAULTS.max_overpay_vs_hashprice_sat_per_eh_day
+    // is null → dynamic cap off → effective = fixed. Target should be
+    // fillable + overpay = 45.5M, under the 60M fixed cap → CREATE at
+    // EXPECTED_TARGET, not clamped.
+    const s = state({ hashprice_sat_per_ph_day: HASHPRICE_PH_DAY });
+    const proposals = decide(s);
+    const create = proposals.find((p) => p.kind === 'CREATE_BID') as
+      | { price_sat: number }
+      | undefined;
+    expect(create?.price_sat).toBe(EXPECTED_TARGET);
+  });
+
+  it('binding dynamic cap when it is tighter than fixed', () => {
+    // Dynamic = hashprice (44M) + overpay cap (1M) = 45M.
+    // Desired = 45.5M. 45.5M > 45M → market too expensive → [].
+    const cfg = {
+      ...BASE_CONFIG,
+      max_overpay_vs_hashprice_sat_per_eh_day: 1_000_000,
+    };
+    const s = state({ config: cfg, hashprice_sat_per_ph_day: HASHPRICE_PH_DAY });
+    expect(decide(s)).toEqual([]);
+  });
+
+  it('binding fixed cap when dynamic is looser', () => {
+    // Dynamic = 44M + 10M = 54M. Fixed = 60M (default). Effective = 54M.
+    // Desired = 45.5M, under 54M → CREATE at 45.5M.
+    const cfg = {
+      ...BASE_CONFIG,
+      max_overpay_vs_hashprice_sat_per_eh_day: 10_000_000,
+    };
+    const s = state({ config: cfg, hashprice_sat_per_ph_day: HASHPRICE_PH_DAY });
+    const proposals = decide(s);
+    const create = proposals.find((p) => p.kind === 'CREATE_BID') as
+      | { price_sat: number }
+      | undefined;
+    expect(create?.price_sat).toBe(EXPECTED_TARGET);
+  });
+
+  it('falls back to fixed cap when hashprice is unavailable', () => {
+    // Dynamic cap set, but hashprice=null → can't evaluate dynamic, so
+    // effective = fixed (60M). Desired 45.5M fits → CREATE normally.
+    const cfg = {
+      ...BASE_CONFIG,
+      max_overpay_vs_hashprice_sat_per_eh_day: 1_000_000,
+    };
+    const s = state({ config: cfg, hashprice_sat_per_ph_day: null });
+    const proposals = decide(s);
+    const create = proposals.find((p) => p.kind === 'CREATE_BID') as
+      | { price_sat: number }
+      | undefined;
+    expect(create?.price_sat).toBe(EXPECTED_TARGET);
+  });
+});
+
 describe('decide — EDIT / CANCEL paths', () => {
   it('emits nothing when the single owned bid is already at target_price', () => {
     const s = state({ owned_bids: [owned({ price_sat: EXPECTED_TARGET })] });

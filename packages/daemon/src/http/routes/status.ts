@@ -465,6 +465,7 @@ function summariseConfig(
     target_hashrate_ph: number;
     minimum_floor_hashrate_ph: number;
     max_bid_sat_per_eh_day: number;
+    max_overpay_vs_hashprice_sat_per_eh_day: number | null;
     fill_escalation_step_sat_per_eh_day: number;
     bid_budget_sat: number;
     destination_pool_url: string;
@@ -496,10 +497,29 @@ function summariseConfig(
     }
   }
 
+  // Mirror the effective-cap logic from decide.ts so the dashboard
+  // can show which of the two caps (fixed max_bid vs hashprice +
+  // max_overpay) is binding right now.
+  const fixedCapEh = config.max_bid_sat_per_eh_day;
+  const dynamicCapEh =
+    config.max_overpay_vs_hashprice_sat_per_eh_day !== null && hashpriceSatEh !== null
+      ? hashpriceSatEh + config.max_overpay_vs_hashprice_sat_per_eh_day
+      : null;
+  const effectiveCapEh =
+    dynamicCapEh !== null ? Math.min(fixedCapEh, dynamicCapEh) : fixedCapEh;
+  const bindingCap: 'fixed' | 'dynamic' =
+    dynamicCapEh !== null && dynamicCapEh < fixedCapEh ? 'dynamic' : 'fixed';
+
   return {
     target_hashrate_ph: config.target_hashrate_ph,
     minimum_floor_hashrate_ph: config.minimum_floor_hashrate_ph,
-    max_bid_sat_per_ph_day: config.max_bid_sat_per_eh_day / EH_PER_PH,
+    max_bid_sat_per_ph_day: fixedCapEh / EH_PER_PH,
+    max_overpay_vs_hashprice_sat_per_ph_day:
+      config.max_overpay_vs_hashprice_sat_per_eh_day !== null
+        ? config.max_overpay_vs_hashprice_sat_per_eh_day / EH_PER_PH
+        : null,
+    effective_cap_sat_per_ph_day: effectiveCapEh / EH_PER_PH,
+    binding_cap: bindingCap,
     fill_escalation_step_sat_per_ph_day: config.fill_escalation_step_sat_per_eh_day / EH_PER_PH,
     bid_budget_sat: config.bid_budget_sat,
     pool_url: config.destination_pool_url,
