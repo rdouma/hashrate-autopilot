@@ -394,6 +394,17 @@ export function Status() {
         maxOverpayVsHashpriceSatPerPhDay={
           s.config_summary.max_overpay_vs_hashprice_sat_per_ph_day
         }
+        /*
+         * Overpay allowance surfaced on the pinned event tooltip so the
+         * operator can verify fillable + overpay against the resulting
+         * bid at a glance. Sim mode uses the live sim param; real-time
+         * uses the live config value.
+         */
+        overpaySatPerPhDay={
+          simMode
+            ? (simParamsDebounced?.overpay_sat_per_eh_day ?? 0) / 1000
+            : (configQuery.data?.config.overpay_sat_per_eh_day ?? 0) / 1000
+        }
       />
 
       {/*

@@ -55,6 +55,7 @@ export const PriceChart = memo(function PriceChart({
   showEvents,
   simMode = false,
   maxOverpayVsHashpriceSatPerPhDay = null,
+  overpaySatPerPhDay = null,
 }: {
   points: readonly MetricPoint[];
   events?: readonly BidEventView[];
@@ -70,6 +71,14 @@ export const PriceChart = memo(function PriceChart({
    * value.
    */
   maxOverpayVsHashpriceSatPerPhDay?: number | null;
+  /**
+   * The overpay allowance active when the event ran — live config
+   * value in real-time mode, simulation param in sim mode. Shown on
+   * the pinned-event tooltip so the operator can sanity-check
+   * fillable + overpay against the resulting bid without digging
+   * through raw JSON.
+   */
+  overpaySatPerPhDay?: number | null;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
@@ -509,7 +518,16 @@ export const PriceChart = memo(function PriceChart({
         )}
       </svg>
 
-      {tooltip && <EventTooltip tip={tooltip} onClose={closeTooltip} />}
+      {tooltip && (
+        <EventTooltip
+          tip={tooltip}
+          onClose={closeTooltip}
+          simMode={simMode}
+          points={points}
+          overpaySatPerPhDay={overpaySatPerPhDay}
+          maxOverpayVsHashpriceSatPerPhDay={maxOverpayVsHashpriceSatPerPhDay}
+        />
+      )}
     </div>
   );
 });
@@ -551,18 +569,68 @@ function CheckIcon() {
   );
 }
 
-function EventTooltip({ tip, onClose }: { tip: TooltipState; onClose: () => void }) {
+function EventTooltip({
+  tip,
+  onClose,
+  simMode = false,
+  points = [],
+  overpaySatPerPhDay = null,
+  maxOverpayVsHashpriceSatPerPhDay = null,
+}: {
+  tip: TooltipState;
+  onClose: () => void;
+  simMode?: boolean;
+  points?: readonly MetricPoint[];
+  overpaySatPerPhDay?: number | null;
+  maxOverpayVsHashpriceSatPerPhDay?: number | null;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
+
+  // Find the tick_metrics row for the event's timestamp so the
+  // tooltip can surface fillable / hashprice / max_bid at that
+  // moment in sat/PH/day — the numbers the operator needs to
+  // sanity-check "did the escalation make sense" without digging
+  // into the JSON payload.
+  const marketAtEvent = useMemo(() => {
+    if (!tip.pinned) return null;
+    const target = tip.event.occurred_at;
+    let best: MetricPoint | null = null;
+    let bestDiff = Infinity;
+    for (const p of points) {
+      const diff = Math.abs(p.tick_at - target);
+      // Within ±2 min of the event is close enough — tick_metrics
+      // is stored per tick (60s cadence), so the nearest row is
+      // always the right one.
+      if (diff > 2 * 60_000) continue;
+      if (diff < bestDiff) {
+        best = p;
+        bestDiff = diff;
+      }
+    }
+    return best;
+  }, [tip.pinned, tip.event.occurred_at, points]);
+
+  const effectiveCapAtEvent = useMemo(() => {
+    if (!marketAtEvent || marketAtEvent.max_bid_sat_per_ph_day === null) return null;
+    const fixed = marketAtEvent.max_bid_sat_per_ph_day;
+    const hashprice = marketAtEvent.hashprice_sat_per_ph_day;
+    const dyn =
+      maxOverpayVsHashpriceSatPerPhDay !== null && hashprice !== null
+        ? hashprice + maxOverpayVsHashpriceSatPerPhDay
+        : null;
+    return dyn !== null ? Math.min(fixed, dyn) : fixed;
+  }, [marketAtEvent, maxOverpayVsHashpriceSatPerPhDay]);
 
   // Prefetch recent decisions + the specific matched detail so the copy
   // payload reflects the rich context the operator saw in the old
   // Decisions tab. Only runs once pinned — hover-only tooltips don't
-  // need the extra round-trips.
+  // need the extra round-trips. Skipped in simulation mode where
+  // events are synthesised and have no backing decision record.
   const decisionsList = useQuery({
     queryKey: ['decisions-for-chart'],
     queryFn: () => api.decisions(500),
-    enabled: tip.pinned,
+    enabled: tip.pinned && !simMode,
     staleTime: 60_000,
   });
 
@@ -590,7 +658,7 @@ function EventTooltip({ tip, onClose }: { tip: TooltipState; onClose: () => void
   const decisionDetailQuery = useQuery({
     queryKey: ['decision-detail', matchedDecisionId],
     queryFn: () => api.decision(matchedDecisionId!),
-    enabled: matchedDecisionId !== null,
+    enabled: matchedDecisionId !== null && !simMode,
     staleTime: 5 * 60_000,
   });
   // Initial render at the cursor's natural offset (right + below).
@@ -630,7 +698,11 @@ function EventTooltip({ tip, onClose }: { tip: TooltipState; onClose: () => void
   }, [tip.x, tip.y, tip.event.id]);
 
   const e = tip.event;
-  const sourceLabel = e.source === 'OPERATOR' ? 'manual' : 'automatic';
+  const sourceLabel = simMode
+    ? 'simulated'
+    : e.source === 'OPERATOR'
+      ? 'manual'
+      : 'automatic';
   const kindLabel =
     e.kind === 'CREATE_BID'
       ? 'CREATE'
@@ -651,12 +723,29 @@ function EventTooltip({ tip, onClose }: { tip: TooltipState; onClose: () => void
   const copyJson = async () => {
     const detail: DecisionDetail | null = decisionDetailQuery.data ?? null;
     const payload = {
+      // Top-level flag so the JSON is unambiguously a simulation
+      // artefact vs a real historical decision — the nested
+      // decision.run_mode is an actual historical value and can
+      // legitimately read LIVE even on a synthesised event.
+      simulated: simMode,
       event: withHumanTimestamps(e),
+      market_at_event: marketAtEvent
+        ? {
+            tick_at: marketAtEvent.tick_at,
+            fillable_ask_sat_per_ph_day: marketAtEvent.fillable_ask_sat_per_ph_day,
+            hashprice_sat_per_ph_day: marketAtEvent.hashprice_sat_per_ph_day,
+            max_bid_sat_per_ph_day: marketAtEvent.max_bid_sat_per_ph_day,
+            effective_cap_sat_per_ph_day: effectiveCapAtEvent,
+            overpay_allowance_sat_per_ph_day: overpaySatPerPhDay,
+            max_overpay_vs_hashprice_sat_per_ph_day: maxOverpayVsHashpriceSatPerPhDay,
+            our_primary_price_sat_per_ph_day: marketAtEvent.our_primary_price_sat_per_ph_day,
+          }
+        : null,
       // Decision is null for operator-initiated events (bumps) that
-      // weren't produced by an autopilot tick, or when the match
-      // window missed. Keep the key so downstream consumers can tell
-      // "no decision found" from "decision still loading".
-      decision: detail ? withHumanTimestamps(detail) : null,
+      // weren't produced by an autopilot tick, when the match window
+      // missed, or when we're in simulation mode (events are
+      // synthesised, no backing decision exists).
+      decision: detail && !simMode ? withHumanTimestamps(detail) : null,
     };
     const text = JSON.stringify(payload, null, 2);
     try {
@@ -698,8 +787,15 @@ function EventTooltip({ tip, onClose }: { tip: TooltipState; onClose: () => void
       style={{ left: pos.left, top: pos.top }}
     >
       <div className="flex items-start justify-between gap-3">
-        <div className={`font-semibold uppercase tracking-wider ${headerColor}`}>
-          {kindLabel} · {sourceLabel}
+        <div className="flex items-center gap-2">
+          <span className={`font-semibold uppercase tracking-wider ${headerColor}`}>
+            {kindLabel} · {sourceLabel}
+          </span>
+          {simMode && (
+            <span className="px-1.5 py-0.5 rounded border border-amber-700 bg-amber-900/40 text-amber-300 text-[10px] uppercase tracking-wider">
+              sim
+            </span>
+          )}
         </div>
         {tip.pinned && (
           <button
@@ -743,6 +839,50 @@ function EventTooltip({ tip, onClose }: { tip: TooltipState; onClose: () => void
       {e.kind === 'EDIT_SPEED' && (
         <div className="mt-2 space-y-0.5 text-slate-300">
           <Row label="new speed" value={`${e.speed_limit_ph ?? '—'} PH/s`} />
+        </div>
+      )}
+
+      {tip.pinned && marketAtEvent && (
+        <div className="mt-2 pt-2 border-t border-slate-800 space-y-0.5 text-slate-300">
+          <div className="text-[10px] uppercase tracking-wider text-slate-500 mb-0.5">
+            market at this tick
+          </div>
+          {marketAtEvent.fillable_ask_sat_per_ph_day !== null && (
+            <Row
+              label="fillable"
+              value={`${formatNumber(Math.round(marketAtEvent.fillable_ask_sat_per_ph_day))} sat/PH/day`}
+            />
+          )}
+          {overpaySatPerPhDay !== null && (
+            <Row
+              label="overpay allowance"
+              value={`${formatNumber(Math.round(overpaySatPerPhDay))} sat/PH/day`}
+            />
+          )}
+          {marketAtEvent.fillable_ask_sat_per_ph_day !== null && overpaySatPerPhDay !== null && (
+            <Row
+              label="fillable + overpay"
+              value={`${formatNumber(Math.round(marketAtEvent.fillable_ask_sat_per_ph_day + overpaySatPerPhDay))} sat/PH/day`}
+            />
+          )}
+          {marketAtEvent.hashprice_sat_per_ph_day !== null && (
+            <Row
+              label="hashprice"
+              value={`${formatNumber(Math.round(marketAtEvent.hashprice_sat_per_ph_day))} sat/PH/day`}
+            />
+          )}
+          {marketAtEvent.max_bid_sat_per_ph_day !== null && (
+            <Row
+              label="max bid"
+              value={`${formatNumber(Math.round(marketAtEvent.max_bid_sat_per_ph_day))} sat/PH/day`}
+            />
+          )}
+          {effectiveCapAtEvent !== null && (
+            <Row
+              label="effective cap"
+              value={`${formatNumber(Math.round(effectiveCapAtEvent))} sat/PH/day`}
+            />
+          )}
         </div>
       )}
 
