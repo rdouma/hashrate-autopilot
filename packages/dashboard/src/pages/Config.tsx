@@ -12,6 +12,8 @@ type Section = {
   title: string;
   description?: string;
   fields: FieldSpec[];
+  /** Render this section in a half-width column so an adjacent `sideBySide` section can sit next to it. */
+  sideBySide?: boolean;
 };
 
 type FieldSpec = (
@@ -224,6 +226,7 @@ const SECTIONS: Section[] = [
     title: 'Profit & Loss',
     description:
       'Controls how the P&L panel computes the "spent" figure that feeds the net result.',
+    sideBySide: true,
     fields: [
       {
         key: 'spent_scope',
@@ -241,6 +244,7 @@ const SECTIONS: Section[] = [
     title: 'BTC price oracle',
     description:
       'Fetches the BTC/USD spot price from a public exchange API. Enables a sats/USD denomination toggle in the dashboard header. No API key required — uses unauthenticated public endpoints.',
+    sideBySide: true,
     fields: [
       {
         key: 'btc_price_source',
@@ -334,39 +338,100 @@ export function Config() {
 
       <DisplaySettingsSection />
 
-      {SECTIONS.map((section) => {
-        const el = (
-          <section key={section.title} className="bg-slate-900 border border-slate-800 rounded-lg p-4">
-            <header className="mb-3">
-              <h3 className="text-sm uppercase tracking-wider text-amber-400">{section.title}</h3>
-              {section.description && (
-                <p className="text-xs text-slate-500 mt-1">{section.description}</p>
-              )}
-            </header>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
-              {section.fields.map((f) => (
-                <div
-                  key={f.key as string}
-                  className={f.fullWidth ? 'sm:col-span-2' : ''}
-                >
-                  <Field spec={f} draft={draft} locale={intlLocale} onChange={update} />
-                </div>
-              ))}
-            </div>
-          </section>
-        );
-        // Insert the custom payout-source section right before "Profit & Loss"
-        if (section.title === 'Profit & Loss') {
-          return (
-            <React.Fragment key={`payout-then-${section.title}`}>
-              <PayoutSourceSection draft={draft} locale={intlLocale} onChange={update} />
-              {el}
-            </React.Fragment>
+      {(() => {
+        const nodes: React.ReactNode[] = [];
+        let i = 0;
+        while (i < SECTIONS.length) {
+          const section = SECTIONS[i] as Section;
+          // Insert the custom payout-source section right before "Profit & Loss"
+          if (section.title === 'Profit & Loss') {
+            nodes.push(
+              <PayoutSourceSection
+                key="payout-source"
+                draft={draft}
+                locale={intlLocale}
+                onChange={update}
+              />,
+            );
+          }
+          // Group consecutive sideBySide sections into one row.
+          if (section.sideBySide) {
+            const group: Section[] = [];
+            while (i < SECTIONS.length && (SECTIONS[i] as Section).sideBySide) {
+              group.push(SECTIONS[i] as Section);
+              i += 1;
+            }
+            const firstTitle = (group[0] as Section).title;
+            nodes.push(
+              <div
+                key={`side-by-side-${firstTitle}`}
+                className="grid grid-cols-1 sm:grid-cols-2 gap-6"
+              >
+                {group.map((s) => (
+                  <SectionCard
+                    key={s.title}
+                    section={s}
+                    draft={draft}
+                    locale={intlLocale}
+                    onChange={update}
+                  />
+                ))}
+              </div>,
+            );
+            continue;
+          }
+          nodes.push(
+            <SectionCard
+              key={section.title}
+              section={section}
+              draft={draft}
+              locale={intlLocale}
+              onChange={update}
+            />,
           );
+          i += 1;
         }
-        return el;
-      })}
+        return nodes;
+      })()}
     </div>
+  );
+}
+
+function SectionCard({
+  section,
+  draft,
+  locale,
+  onChange,
+}: {
+  section: Section;
+  draft: AppConfig;
+  locale: string | undefined;
+  onChange: <K extends keyof AppConfig>(k: K, v: AppConfig[K]) => void;
+}) {
+  // In a side-by-side row each card is already half-width; use a single
+  // column inside so the dropdown and its help text span the panel.
+  const gridCls = section.sideBySide
+    ? 'grid grid-cols-1 gap-y-3'
+    : 'grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3';
+  return (
+    <section className="bg-slate-900 border border-slate-800 rounded-lg p-4 h-full">
+      <header className="mb-3">
+        <h3 className="text-sm uppercase tracking-wider text-amber-400">{section.title}</h3>
+        {section.description && (
+          <p className="text-xs text-slate-500 mt-1">{section.description}</p>
+        )}
+      </header>
+      <div className={gridCls}>
+        {section.fields.map((f) => (
+          <div
+            key={f.key as string}
+            className={!section.sideBySide && f.fullWidth ? 'sm:col-span-2' : ''}
+          >
+            <Field spec={f} draft={draft} locale={locale} onChange={onChange} />
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 
