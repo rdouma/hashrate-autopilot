@@ -97,6 +97,20 @@ export interface StatusResponse {
     readonly consecutive_failures: number;
   };
 
+  /**
+   * Datum Gateway stats. `null` means the integration is disabled
+   * (no `datum_api_url` set). When present, the dashboard shows a
+   * Datum panel; `reachable: false` means the API is configured but
+   * the last poll failed.
+   */
+  readonly datum: {
+    readonly reachable: boolean;
+    readonly connections: number | null;
+    readonly hashrate_ph: number | null;
+    readonly last_ok_at: number | null;
+    readonly consecutive_failures: number;
+  } | null;
+
   readonly bids: readonly BidView[];
   readonly actual_hashrate_ph: number;
   readonly below_floor_since: number | null;

@@ -35,6 +35,21 @@ export interface PoolHealth {
 }
 
 /**
+ * Datum Gateway stats (issue #19). Optional — present only when
+ * `datum_api_url` is configured and the last poll succeeded. The
+ * integration is informational-only; the control loop never reads
+ * this. Hashrate comes across as Th/s from Datum and is converted
+ * to PH/s here.
+ */
+export interface DatumSnapshot {
+  readonly reachable: boolean;
+  readonly connections: number | null;
+  readonly hashrate_ph: number | null;
+  readonly last_ok_at: number | null;
+  readonly consecutive_failures: number;
+}
+
+/**
  * A bid we consider our own. Reconciled from the Braiins `/spot/bid/current`
  * response against the `owned_bids` ledger. See SPEC §10.
  */
@@ -107,6 +122,13 @@ export interface State {
   readonly above_floor_ticks: number;
 
   readonly pool: PoolHealth;
+
+  /**
+   * Datum Gateway stats (null when the integration is disabled via
+   * empty `datum_api_url`). Present regardless of reachability when
+   * configured — see `reachable` field to distinguish up from down.
+   */
+  readonly datum: DatumSnapshot | null;
 
   /** Last successful API read timestamp (ms). */
   readonly last_api_ok_at: number | null;

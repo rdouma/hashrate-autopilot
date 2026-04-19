@@ -18,6 +18,7 @@ import { AccountSpendService } from './services/account-spend.js';
 import { RetentionService } from './services/retention.js';
 import { BtcPriceService } from './services/btc-price.js';
 import { BraiinsService } from './services/braiins-service.js';
+import { DatumPoller } from './services/datum.js';
 import { HashpriceCache } from './services/hashprice-cache.js';
 import { createOceanClient } from './services/ocean.js';
 import { PayoutObserver } from './services/payout-observer.js';
@@ -122,6 +123,20 @@ async function main(): Promise<void> {
   const braiins = new BraiinsService({ client: braiinsClient });
   const poolTracker = new PoolHealthTracker();
 
+  // Optional Datum Gateway stats poller (issue #19). Reads datum_api_url
+  // live from config on every poll, so dashboard edits take effect on
+  // the next tick without a restart. Returns null when the URL is empty,
+  // which the dashboard surfaces as a "not configured" empty state.
+  const datumPoller = new DatumPoller(async () => {
+    const c = await configRepo.get();
+    return c?.datum_api_url ?? null;
+  });
+  if (cfg.datum_api_url) {
+    log(`datum:    polling ${cfg.datum_api_url}`);
+  } else {
+    log('datum:    disabled (datum_api_url empty)');
+  }
+
   let payoutObserver: PayoutObserver | null = null;
   if (cfg.payout_source !== 'none' && cfg.btc_payout_address) {
     const rpcUrl = cfg.bitcoind_rpc_url || secrets.bitcoind_rpc_url;
@@ -156,6 +171,7 @@ async function main(): Promise<void> {
     braiins,
     braiinsClient,
     poolTracker,
+    datumPoller,
     configRepo,
     runtimeRepo,
     ownedBidsRepo,

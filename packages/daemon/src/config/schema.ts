@@ -165,6 +165,20 @@ export const AppConfigSchema = z.object({
   tick_metrics_retention_days: nonNegativeInt.default(7),
   decisions_uneventful_retention_days: nonNegativeInt.default(7),
   decisions_eventful_retention_days: nonNegativeInt.default(90),
+
+  // Optional Datum Gateway stats API (issue #19). When set, the daemon
+  // polls {datum_api_url}/umbrel-api each tick to record Datum's view
+  // of connection count and hashrate. Integration is informational
+  // only — the control loop never depends on Datum being reachable.
+  // See docs/setup-datum-api.md for the Umbrel-side port exposure.
+  // Empty string is coerced to null so the dashboard's generic text
+  // input can clear the field without tripping URL validation.
+  datum_api_url: z
+    .preprocess(
+      (v) => (v === '' ? null : v),
+      z.string().url().nullable(),
+    )
+    .default(null),
 });
 
 export type AppConfig = z.infer<typeof AppConfigSchema>;
@@ -243,4 +257,6 @@ export const APP_CONFIG_DEFAULTS: Omit<
   tick_metrics_retention_days: 7,
   decisions_uneventful_retention_days: 7,
   decisions_eventful_retention_days: 90,
+
+  datum_api_url: null,
 };

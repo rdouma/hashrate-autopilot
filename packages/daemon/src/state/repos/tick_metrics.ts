@@ -29,6 +29,7 @@ export interface InsertTickMetricArgs {
   readonly hashprice_sat_per_eh_day: number | null;
   readonly max_bid_sat_per_eh_day: number | null;
   readonly available_balance_sat: number | null;
+  readonly datum_hashrate_ph: number | null;
   readonly run_mode: TickMetricsTable['run_mode'];
   readonly action_mode: TickMetricsTable['action_mode'];
 }

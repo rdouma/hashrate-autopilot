@@ -61,6 +61,7 @@ export interface ConfigTable {
   tick_metrics_retention_days: number;
   decisions_uneventful_retention_days: number;
   decisions_eventful_retention_days: number;
+  datum_api_url: string | null;
   updated_at: number;
 }
 
@@ -239,6 +240,7 @@ export interface TickMetricsTable {
   hashprice_sat_per_eh_day: number | null;
   max_bid_sat_per_eh_day: number | null;
   available_balance_sat: number | null;
+  datum_hashrate_ph: number | null;
   run_mode: RunMode;
   action_mode: ActionMode;
 }

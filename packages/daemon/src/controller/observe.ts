@@ -16,6 +16,7 @@
  */
 
 import type { BraiinsService } from '../services/braiins-service.js';
+import type { DatumPoller } from '../services/datum.js';
 import {
   PoolHealthTracker,
   parsePoolUrl,
@@ -25,6 +26,7 @@ import type { ConfigRepo } from '../state/repos/config.js';
 import type { OwnedBidsRepo, ReconcilableBid } from '../state/repos/owned_bids.js';
 import type { RuntimeStateRepo } from '../state/repos/runtime_state.js';
 import type {
+  DatumSnapshot,
   MarketSnapshot,
   OwnedBidSnapshot,
   PoolHealth,
@@ -38,6 +40,12 @@ export interface ObserveDeps {
   readonly configRepo: ConfigRepo;
   readonly runtimeRepo: RuntimeStateRepo;
   readonly ownedBidsRepo: OwnedBidsRepo;
+  /**
+   * Optional Datum Gateway poller. When present, invoked each tick
+   * and the result goes into `state.datum`. When absent or its
+   * `poll()` returns null, `state.datum` is null ("not configured").
+   */
+  readonly datumPoller?: DatumPoller;
   readonly now: () => number;
 }
 
@@ -89,10 +97,17 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
   );
 
   // Braiins reads in parallel; individual failures downgrade to null.
-  const [marketSnapshot, balance, bidsResponse] = await Promise.all([
+  // Datum poll runs alongside — best-effort, never throws out.
+  const [marketSnapshot, balance, bidsResponse, datum] = await Promise.all([
     collectMarket(deps.braiins).catch((err) => logAndReturnNull('market', err)),
     deps.braiins.getBalance().catch((err) => logAndReturnNull('balance', err)),
     deps.braiins.getCurrentBids().catch((err) => logAndReturnNull('bids', err)),
+    deps.datumPoller
+      ? deps.datumPoller.poll().catch((err): DatumSnapshot | null => {
+          logAndReturnNull('datum', err);
+          return null;
+        })
+      : Promise.resolve<DatumSnapshot | null>(null),
   ]);
 
   const apiBids = extractBids(bidsResponse);
@@ -189,6 +204,7 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
     above_floor_since: null,
     above_floor_ticks: floorCheck.above_floor_ticks,
     pool,
+    datum,
     last_api_ok_at: deps.braiins.getLastApiOkAt(),
     hashprice_sat_per_ph_day: inputs.hashpriceSatPerPhDay,
   };

@@ -56,6 +56,8 @@ describe('openDatabase — migrations', () => {
       '0025_lower_patience.sql',
       '0026_closed_bids_cache.sql',
       '0027_retention_config.sql',
+      '0028_datum_api_url.sql',
+      '0029_tick_metrics_datum_hashrate.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });

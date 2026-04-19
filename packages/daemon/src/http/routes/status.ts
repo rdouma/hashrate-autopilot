@@ -53,6 +53,7 @@ export async function registerStatusRoute(
           last_ok_at: runtime.last_pool_ok_at,
           consecutive_failures: 0,
         },
+        datum: null,
         bids: [],
         actual_hashrate_ph: 0,
         below_floor_since: null,
@@ -158,6 +159,15 @@ export async function registerStatusRoute(
         last_ok_at: state.pool.last_ok_at,
         consecutive_failures: state.pool.consecutive_failures,
       },
+      datum: state.datum
+        ? {
+            reachable: state.datum.reachable,
+            connections: state.datum.connections,
+            hashrate_ph: state.datum.hashrate_ph,
+            last_ok_at: state.datum.last_ok_at,
+            consecutive_failures: state.datum.consecutive_failures,
+          }
+        : null,
       bids,
       actual_hashrate_ph: state.actual_hashrate.total_ph,
       below_floor_since: state.below_floor_since,
