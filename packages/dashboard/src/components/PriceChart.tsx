@@ -16,6 +16,7 @@ import {
 } from '@braiins-hashrate/shared';
 
 import { api, type BidEventView, type DecisionDetail, type DecisionSummary, type MetricPoint } from '../lib/api';
+import { copyToClipboard } from '../lib/clipboard';
 import { useDenomination } from '../lib/denomination';
 import { formatNumber, formatTimestamp, formatTimestampHuman, formatTimestampUtc } from '../lib/format';
 import { useLocale } from '../lib/locale';
@@ -770,22 +771,11 @@ function EventTooltip({
     };
     const text = JSON.stringify(payload, null, 2);
     try {
-      await navigator.clipboard.writeText(text);
+      await copyToClipboard(text);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1500);
     } catch {
-      // Older browsers / insecure contexts — fall back to a selection.
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      document.body.appendChild(ta);
-      ta.select();
-      try {
-        document.execCommand('copy');
-        setCopied(true);
-        window.setTimeout(() => setCopied(false), 1500);
-      } finally {
-        document.body.removeChild(ta);
-      }
+      /* copy fell back to execCommand and still failed; no-op */
     }
   };
 

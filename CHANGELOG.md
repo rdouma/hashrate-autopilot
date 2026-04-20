@@ -2,6 +2,10 @@
 
 ## 2026-04-20
 
+### `[Fix]` Copy buttons work over plain HTTP (LAN hostnames)
+
+The pool-URL and bid-ID copy buttons did nothing when the dashboard was accessed over plain HTTP on a LAN hostname (e.g. `http://clarent:3010`) because `navigator.clipboard` is only defined in secure contexts (HTTPS or localhost). Added `lib/clipboard.ts` with a `copyToClipboard` helper that falls back to an ephemeral `<textarea>` + `document.execCommand('copy')` when the async Clipboard API isn't available, and routed all three existing copy buttons (pool URL, bid ID, price-chart pinned-tooltip JSON) through it. The tooltip JSON copy already had the fallback inline; this consolidates the three into one helper.
+
 ### `[Infra]` Drop bitcoind RPC prompts from `pnpm run setup`
 
 `#14` moved bitcoind RPC credentials to the dashboard Config page, but the setup wizard was still prompting for URL / user / password on every fresh install — dead weight, and worse, `bitcoind_rpc_user` validation rejected empty input even though the credentials are only needed when the operator picks `bitcoind` as the payout source (Electrs is the default). Prompts removed. `SecretsSchema`'s three bitcoind fields are now `.optional()`; main.ts's legacy seed-from-secrets path still works when the fields happen to be present, but fresh installs no longer touch them. Read-only Braiins token prompt stays — it's a legit privilege-separation optimization for `READ_ONLY`-scoped API calls.

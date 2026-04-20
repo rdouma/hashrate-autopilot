@@ -41,6 +41,7 @@ import {
   formatTimestampUtc,
 } from '../lib/format';
 import { useDenomination } from '../lib/denomination';
+import { copyToClipboard } from '../lib/clipboard';
 import { actionModeLabel, bidStatusClass, bidStatusLabel } from '../lib/labels';
 import { useLocale } from '../lib/locale';
 
@@ -1491,11 +1492,11 @@ function BidIdCell({ id }: { id: string }) {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(id);
+      await copyToClipboard(id);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      /* clipboard API may be blocked in non-secure contexts */
+      /* clipboard fell back to execCommand and still failed; no-op */
     }
   };
   const shortId = id.length <= 10 ? id : `${id.slice(0, 5)}…${id.slice(-4)}`;
@@ -2167,11 +2168,11 @@ function DatumPanel({
   const urlParts = splitPoolUrl(url);
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(url);
+      await copyToClipboard(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      /* clipboard API may be blocked in non-secure contexts */
+      /* clipboard fell back to execCommand and still failed; no-op */
     }
   };
 
