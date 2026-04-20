@@ -110,13 +110,22 @@ export function decide(state: State): readonly Proposal[] {
   //     tick). Protects against paying far above break-even when
   //     hashprice drops — a fixed cap alone can still allow that.
   //
-  // When the dynamic cap is disabled (null) or hashprice is unknown,
-  // fall back to the fixed cap alone.
+  // Hashprice-gate (issue #28): when the operator configured the
+  // dynamic cap but hashprice is unknown (boot-time fetch failed or
+  // the cache has gone stale past the freshness window), we refuse
+  // to trade rather than silently falling back to the fixed cap. The
+  // dynamic cap was set precisely to bound overpayment during
+  // hashprice dips — quietly using max_bid alone defeats the purpose.
+  const dynamicCapConfigured =
+    config.max_overpay_vs_hashprice_sat_per_eh_day !== null;
+  if (dynamicCapConfigured && hashpriceSatEh === null) {
+    return [];
+  }
+
   const fixedCap = config.max_bid_sat_per_eh_day;
   const dynamicCap =
-    config.max_overpay_vs_hashprice_sat_per_eh_day !== null &&
-    hashpriceSatEh !== null
-      ? hashpriceSatEh + config.max_overpay_vs_hashprice_sat_per_eh_day
+    dynamicCapConfigured && hashpriceSatEh !== null
+      ? hashpriceSatEh + config.max_overpay_vs_hashprice_sat_per_eh_day!
       : null;
   const effectiveCap = dynamicCap !== null ? Math.min(fixedCap, dynamicCap) : fixedCap;
   const overpayAllowance = config.overpay_sat_per_eh_day;

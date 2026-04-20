@@ -163,9 +163,15 @@ async function main(): Promise<void> {
     log('payout: disabled (payout_source=none)');
   }
 
-  // Hashprice cache — updated by the finance route (Ocean stats),
-  // read by the controller for cheap-hashrate scaling (issue #13).
+  // Hashprice cache — read by the controller for the dynamic cap and
+  // cheap-hashrate scaling. Warm path is the dashboard's finance poll;
+  // a boot-time fetch below guarantees a value on tick 1 so the
+  // dynamic cap doesn't silently collapse if the dashboard isn't open
+  // (issue #28). Stale readings beyond HASHPRICE_STALENESS_MS are
+  // treated as unknown so the cap gate refuses to price without a
+  // current break-even reference.
   const hashpriceCache = new HashpriceCache();
+  const HASHPRICE_STALENESS_MS = 60 * 60 * 1000;
 
   const controller = new Controller({
     braiins,
@@ -179,7 +185,7 @@ async function main(): Promise<void> {
     tickMetricsRepo,
     bidEventsRepo,
     now: () => Date.now(),
-    getHashprice: () => hashpriceCache.get(),
+    getHashprice: () => hashpriceCache.getFresh(HASHPRICE_STALENESS_MS),
   });
   // Restore floor-tracking state so the escalation timer keeps counting
   // across daemon restarts (#11).
@@ -195,6 +201,27 @@ async function main(): Promise<void> {
   // Ocean stats client — null if no payout address configured (the
   // finance panel just won't have an "expected income" figure then).
   const oceanClient = createOceanClient();
+
+  // Boot-time hashprice fetch (issue #28). When the operator has
+  // configured both a payout address and the dynamic cap, seed the
+  // cache from Ocean before the tick loop starts so decide()'s first
+  // tick has a break-even reference available. If Ocean is down at
+  // boot, we log and continue — the cap gate in decide() will block
+  // trading until a later fetch succeeds, matching the operator's
+  // "until hashprice is known, all trades are off" requirement.
+  if (cfg.btc_payout_address && cfg.max_overpay_vs_hashprice_sat_per_eh_day) {
+    try {
+      const stats = await oceanClient.fetchStats(cfg.btc_payout_address);
+      if (stats?.hashprice_sat_per_ph_day != null) {
+        hashpriceCache.set(stats.hashprice_sat_per_ph_day);
+        log(`hashprice: seeded from Ocean at boot (${stats.hashprice_sat_per_ph_day} sat/PH/day)`);
+      } else {
+        log('hashprice: Ocean fetched but returned no hashprice — dynamic cap gate will block trading until next fetch succeeds');
+      }
+    } catch (err) {
+      log(`hashprice: boot fetch failed (${(err as Error)?.message ?? err}) — dynamic cap gate will block trading until next fetch succeeds`);
+    }
+  }
 
   // Account-lifetime spend tracker — sums counters_committed.amount_consumed_sat
   // across every Braiins bid (active + historical). Terminal bids are

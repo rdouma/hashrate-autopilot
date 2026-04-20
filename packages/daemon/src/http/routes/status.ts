@@ -58,7 +58,7 @@ export async function registerStatusRoute(
         actual_hashrate_ph: 0,
         below_floor_since: null,
         last_proposals: [],
-        config_summary: summariseConfig(config, deps.hashpriceCache?.get() ?? null, null),
+        config_summary: summariseConfig(config, deps.hashpriceCache?.getFresh(Infinity) ?? null, null),
       };
     }
 
@@ -124,7 +124,7 @@ export async function registerStatusRoute(
       ? cheapestAskForDepth(state.market.orderbook.asks, config.target_hashrate_ph)
       : null;
 
-    const hashpriceSatPerPhDay = deps.hashpriceCache?.get() ?? null;
+    const hashpriceSatPerPhDay = deps.hashpriceCache?.getFresh(Infinity) ?? null;
 
     return {
       run_mode: liveRunMode,
@@ -286,6 +286,21 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
     return {
       summary: 'Braiins API unreachable — waiting for connectivity.',
       detail: null,
+      ...noEvent,
+    };
+  }
+
+  // Dynamic-cap hashprice gate (issue #28). When the operator
+  // configured max_overpay_vs_hashprice but Ocean hashprice is
+  // unknown/stale, decide() refuses to trade. Surface that up front
+  // so the operator doesn't wonder why nothing is happening.
+  if (
+    state.config.max_overpay_vs_hashprice_sat_per_eh_day !== null &&
+    state.hashprice_sat_per_ph_day === null
+  ) {
+    return {
+      summary: 'Waiting for Ocean hashprice — trading is paused until the break-even reference is available.',
+      detail: "Ocean hashprice is required to evaluate the dynamic cap you configured. If this persists, check Ocean's reachability in the Ocean panel.",
       ...noEvent,
     };
   }

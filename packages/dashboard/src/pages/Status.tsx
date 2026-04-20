@@ -468,22 +468,17 @@ export function Status() {
             </div>
           )}
           {/*
-           * Market + pricing block — ordered by how often the operator
-           * looks at each line. Hashprice (break-even revenue) is the
-           * most-referenced number when reasoning about whether a bid
-           * is even worth placing, so it leads. Fillable-at-target
-           * follows (what we'd actually pay). Then max-bid (+ its
-           * dynamic sibling) because they're the ceiling. Best bid /
-           * best ask are market color at the bottom — peripheral once
-           * the operator has a bid in flight.
+           * Market + pricing block — Braiins-sourced numbers only.
+           * Fillable-at-target leads (what we'd actually pay). Then
+           * max-bid (+ its dynamic sibling) — the ceiling. Best bid /
+           * best ask are market color at the bottom.
+           *
+           * Hashprice (break-even) is shown in the Ocean card — it's
+           * an Ocean-derived figure, not a Braiins one, and mixing
+           * them here misled operators into thinking the controller
+           * was using a Braiins-sourced break-even reference.
            */}
           <div className="border-t border-slate-800 mt-2 pt-2">
-            {financeQuery.data?.ocean?.hashprice_sat_per_ph_day != null && (
-              <Row
-                k="hashprice"
-                v={denomination.formatSatPerPhDay(financeQuery.data.ocean.hashprice_sat_per_ph_day, intlLocale)}
-              />
-            )}
             <Row
               k={`fillable @ ${formatHashratePH(s.config_summary.effective_target_hashrate_ph)}`}
               v={
@@ -1609,6 +1604,14 @@ function OceanPanel() {
       )}
       <Row k="blocks 24h" v={String(o.blocks_24h)} />
       <Row k="blocks 7d" v={String(o.blocks_7d)} />
+      {o.user?.hashprice_sat_per_ph_day != null && (
+        <div className="border-t border-slate-800 mt-2 pt-2">
+          <Row
+            k="hashprice (break-even)"
+            v={denomination.formatSatPerPhDay(o.user.hashprice_sat_per_ph_day, intlLocale)}
+          />
+        </div>
+      )}
       <div className="border-t border-slate-800 mt-2 pt-2">
         {o.user && (
           <>

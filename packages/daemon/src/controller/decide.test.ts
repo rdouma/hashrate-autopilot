@@ -241,19 +241,17 @@ describe('decide — max_overpay_vs_hashprice cap (issue #27)', () => {
     expect(create?.price_sat).toBe(EXPECTED_TARGET);
   });
 
-  it('falls back to fixed cap when hashprice is unavailable', () => {
-    // Dynamic cap set, but hashprice=null → can't evaluate dynamic, so
-    // effective = fixed (60M). Desired 45.5M fits → CREATE normally.
+  it('refuses to trade when dynamic cap is configured but hashprice is unavailable (issue #28)', () => {
+    // Dynamic cap configured but hashprice=null (Ocean unreachable or
+    // cache stale). Silently falling back to the fixed cap alone
+    // would bypass the safety the operator explicitly enabled, so
+    // decide() returns [] until hashprice comes back.
     const cfg = {
       ...BASE_CONFIG,
       max_overpay_vs_hashprice_sat_per_eh_day: 1_000_000,
     };
     const s = state({ config: cfg, hashprice_sat_per_ph_day: null });
-    const proposals = decide(s);
-    const create = proposals.find((p) => p.kind === 'CREATE_BID') as
-      | { price_sat: number }
-      | undefined;
-    expect(create?.price_sat).toBe(EXPECTED_TARGET);
+    expect(decide(s)).toEqual([]);
   });
 });
 
