@@ -123,7 +123,7 @@ packages/
 
 ## Prerequisites
 
-- Node.js 22+ and `pnpm` 10+
+- Node.js 22+ and `pnpm` 10+ (install commands below — neither is in Ubuntu's default apt repos at the right version)
 - A Braiins account with API tokens (one **owner** token, and optionally a read-only token)
 - An Ocean pool account with a Datum Gateway running locally (stratum port 23334), and a BTC payout address
   configured as the worker identity (`<btc-address>.<worker-label>` — Ocean credits shares by address, not by label)
@@ -135,10 +135,53 @@ packages/
 - `sops` + `age` for encrypted secrets (API tokens, optional bitcoind credentials)
 - *(Optional)* A running `bitcoind` or Electrs endpoint for on-chain payout tracking
 
+### Installing Node + pnpm
+
+On **Ubuntu / Debian** (tested on Ubuntu 22.04 and Raspberry Pi OS) the default apt `nodejs` is too old and
+`pnpm` isn't packaged at all. Grab Node 22 from NodeSource, then use `corepack` (bundled with Node) to
+activate `pnpm`:
+
+```bash
+# Node 22 via NodeSource
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+sudo apt install -y nodejs
+
+# pnpm via corepack (no separate install needed)
+sudo corepack enable
+corepack prepare pnpm@latest --activate
+```
+
+Verify with `node -v` (≥ v22) and `pnpm -v` (≥ 10).
+
+On **macOS** (Homebrew):
+
+```bash
+brew install node pnpm
+```
+
+### Installing sops + age
+
+Required before `pnpm setup` — it shells out to both.
+
+On **Ubuntu / Debian**:
+
+```bash
+sudo apt install -y age
+# sops isn't in apt; grab the latest .deb from its releases page
+curl -fsSL https://github.com/getsops/sops/releases/latest/download/sops_amd64.deb -o /tmp/sops.deb
+sudo apt install -y /tmp/sops.deb
+```
+
+On **macOS**:
+
+```bash
+brew install age sops
+```
+
 ## Getting started
 
 ```bash
-git clone <repo-url> && cd hashrate-autopilot
+git clone https://github.com/rdouma/hashrate-autopilot && cd hashrate-autopilot
 pnpm install
 pnpm build
 pnpm setup
@@ -146,10 +189,7 @@ pnpm setup
 
 `pnpm setup` is the interactive first-run wizard — it generates an `age` key, writes the `sops` policy,
 prompts for your Braiins tokens + core config, and initialises the SQLite database. Refuses to overwrite an
-existing setup unless you pass `--force`.
-
-Prerequisites for the setup step: `age` and `sops` CLIs installed (`brew install age sops` on macOS,
-`apt install age` + grab `sops` from its GitHub releases on Debian/Ubuntu).
+existing setup unless you pass `--force`. (Install `age` and `sops` first — see prerequisites above.)
 
 Then start the daemon:
 
