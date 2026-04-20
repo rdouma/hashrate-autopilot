@@ -23,9 +23,12 @@ export const SecretsSchema = z.object({
   braiins_owner_token: nonEmptyString,
   braiins_read_only_token: nonEmptyString.optional(),
 
-  telegram_bot_token: nonEmptyString,
-  // Generated fresh during setup; used to verify inbound webhook calls.
-  telegram_webhook_secret: nonEmptyString,
+  // Telegram fields are legacy — the owner-token API path doesn't need 2FA
+  // (empirical) and notifications are tracked separately in #18. Kept
+  // optional so old .env.sops.yaml files still parse; setup no longer
+  // prompts for them.
+  telegram_bot_token: nonEmptyString.optional(),
+  telegram_webhook_secret: nonEmptyString.optional(),
 
   bitcoind_rpc_url: z.string().url('must be a valid URL (http(s)://host:port)'),
   bitcoind_rpc_user: nonEmptyString,
@@ -102,8 +105,11 @@ export const AppConfigSchema = z.object({
   // Accounting
   btc_payout_address: nonEmptyString,
 
-  // Telegram wiring
-  telegram_chat_id: nonEmptyString,
+  // Legacy (see SecretsSchema comment above). Kept as an allow-empty string
+  // instead of being removed outright because the DB column is NOT NULL
+  // and existing rows carry a value; a migration to drop the column can
+  // come with #18.
+  telegram_chat_id: z.string().default(''),
 
   // Strategy knobs (M4.6)
   fill_escalation_step_sat_per_eh_day: positiveInt,

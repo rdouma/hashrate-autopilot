@@ -12,7 +12,6 @@
  *   pnpm setup -- --print-paths   # print resolved paths and exit
  */
 
-import { randomBytes } from 'node:crypto';
 import { chmod, mkdir, readFile, stat, writeFile, rm } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, resolve } from 'node:path';
@@ -162,12 +161,6 @@ async function promptSecrets(): Promise<Secrets> {
     ? await password({ message: 'Braiins read-only token:', mask: true })
     : undefined;
 
-  const telegramBot = await password({
-    message: 'Telegram bot token (from @BotFather):',
-    mask: true,
-    validate: (v) => (v.includes(':') ? true : 'must look like 123456:ABC-...'),
-  });
-
   const bitcoindUrl = await input({
     message: 'bitcoind RPC URL:',
     default: 'http://127.0.0.1:8332',
@@ -181,13 +174,9 @@ async function promptSecrets(): Promise<Secrets> {
     validate: (v) => (v.length >= 8 ? true : 'at least 8 characters'),
   });
 
-  const telegramWebhookSecret = randomBytes(24).toString('hex');
-
   const parsed = SecretsSchema.parse({
     braiins_owner_token: owner,
     ...(reader ? { braiins_read_only_token: reader } : {}),
-    telegram_bot_token: telegramBot,
-    telegram_webhook_secret: telegramWebhookSecret,
     bitcoind_rpc_url: bitcoindUrl,
     bitcoind_rpc_user: bitcoindUser,
     bitcoind_rpc_password: bitcoindPass,
@@ -238,11 +227,6 @@ async function promptConfig(): Promise<AppConfig> {
       return true;
     },
   });
-  const chatId = await input({
-    message: 'Telegram chat ID for alerts:',
-    validate: (v) => (/^-?\d+$/.test(v) ? true : 'must be a numeric chat ID'),
-  });
-
   return AppConfigInvariantsSchema.parse({
     ...APP_CONFIG_DEFAULTS,
     target_hashrate_ph: target,
@@ -250,7 +234,6 @@ async function promptConfig(): Promise<AppConfig> {
     destination_pool_url: pool,
     destination_pool_worker_name: worker,
     btc_payout_address: payout,
-    telegram_chat_id: chatId,
   });
 }
 

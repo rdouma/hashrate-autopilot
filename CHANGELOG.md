@@ -2,6 +2,10 @@
 
 ## 2026-04-20
 
+### `[Infra]` Drop Telegram prompts from `pnpm run setup`
+
+The setup wizard was still asking for a Telegram bot token and chat ID on every install, even though the owner-token API path doesn't need 2FA and in-app notifications haven't been wired up (that's #18). Prompts removed; the corresponding Zod fields in `SecretsSchema` are now `.optional()` and `telegram_chat_id` in `AppConfigInvariantsSchema` defaults to an empty string so existing DB rows keep parsing. The underlying DB columns stay in place pending a later migration alongside the notifications work.
+
 ### `[Fix]` Dashboard build order: declare the `@braiins-hashrate/shared` workspace dep
 
 Fresh clones of the repo failed at `pnpm build` with `Cannot find module '@braiins-hashrate/shared'` from the dashboard package. Root cause: `packages/dashboard/package.json` imported from `@braiins-hashrate/shared` without declaring it as a workspace dependency, so pnpm's recursive-build topological sort ran dashboard's `tsc --noEmit` in parallel with shared's build, and dashboard typechecked before shared's `dist/` existed. Worked on already-built machines because `dist/` was stale-but-present. Added the `workspace:*` dep so the two build in order.
