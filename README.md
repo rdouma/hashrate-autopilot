@@ -141,23 +141,57 @@ packages/
 git clone <repo-url> && cd hashrate-autopilot
 pnpm install
 pnpm build
+pnpm setup
 ```
 
-Configure secrets (Braiins API tokens) via `sops`. The daemon looks for `.env.sops.yaml`
-in the project root (override with `SECRETS_PATH`):
+`pnpm setup` is the interactive first-run wizard — it generates an `age` key, writes the `sops` policy,
+prompts for your Braiins tokens + core config, and initialises the SQLite database. Refuses to overwrite an
+existing setup unless you pass `--force`.
 
-```bash
-sops .env.sops.yaml   # creates and encrypts with your age key
-```
+Prerequisites for the setup step: `age` and `sops` CLIs installed (`brew install age sops` on macOS,
+`apt install age` + grab `sops` from its GitHub releases on Debian/Ubuntu).
 
-Edit the configuration through the dashboard settings page once the daemon is running, or seed it via the config API.
+Then start the daemon:
 
 ```bash
 pnpm --filter @braiins-hashrate/daemon start
 ```
 
 The dashboard is served at `http://<host>:3010`. On first launch the daemon boots in DRY-RUN mode — promote to LIVE
-from the dashboard when ready.
+from the dashboard when ready. Remaining configuration (target hashrate, caps, payout source, etc.) is editable
+from the dashboard's Config page.
+
+### Manually editing secrets later
+
+`pnpm setup` covers the initial secrets file. If you need to re-edit it (rotate a token, add bitcoind
+credentials, etc.), open it with `sops`:
+
+```bash
+SOPS_AGE_KEY_FILE=~/.config/braiins-hashrate/age.key sops .env.sops.yaml
+```
+
+The explicit `SOPS_AGE_KEY_FILE` is only needed if you don't have the key at the default sops location
+(`~/.config/sops/age/keys.txt`) — `pnpm setup` writes it to `~/.config/braiins-hashrate/age.key` by design, so
+this project's key stays separate from any other sops-encrypted project on the same host.
+
+### Running on a second host (or migrating)
+
+`.env.sops.yaml` is checked into git and safe to clone, but the matching **age private key is not** — that's
+the whole point of sops. If you re-clone on a new host and run `sops .env.sops.yaml` without the key present,
+you'll see:
+
+```
+Failed to get the data key required to decrypt the SOPS file.
+Group 0: FAILED
+  <public-key>: FAILED
+    - failed to load age identities: failed to open file: open
+      /home/<user>/.config/sops/age/keys.txt: no such file or directory
+```
+
+Fix: copy the age private key from the original host to the new one at
+`~/.config/braiins-hashrate/age.key` (or the default `~/.config/sops/age/keys.txt`). `chmod 600` it. If you
+prefer a clean start instead, you can re-run `pnpm setup --force` to generate a fresh key — but you'll need to
+re-encrypt `.env.sops.yaml` against the new key (or let `pnpm setup` rewrite it from your re-entered values).
 
 See [`docs/spec.md`](docs/spec.md) for the full design and [`docs/architecture.md`](docs/architecture.md) for
 deployment details.
