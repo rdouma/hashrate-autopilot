@@ -203,8 +203,12 @@ existing setup unless you pass `--force`. (Install `age` and `sops` first — se
 Then start the daemon:
 
 ```bash
-pnpm --filter @braiins-hashrate/daemon start
+./scripts/start.sh
 ```
+
+`start.sh` backgrounds the process, writes its PID to `data/daemon.pid`, and appends stdout/stderr to
+`data/logs/daemon.log`. Companion scripts: `scripts/stop.sh`, `scripts/restart.sh`, `scripts/status.sh`,
+`scripts/logs.sh`. For a foreground run (e.g. debugging), use `pnpm -w run daemon` from the repo root.
 
 The dashboard is served on **port 3010**, bound to `0.0.0.0` (all interfaces) by default — reachable from any
 machine on the LAN as `http://<this-host>:3010` or `http://<lan-ip>:3010`. On first launch the daemon boots in
