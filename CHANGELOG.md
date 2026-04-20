@@ -1,6 +1,8 @@
 # Changelog
 
-## 2026-04-20
+## v1.0.1 — 2026-04-20
+
+Point release for a significant autopilot-stalling bug (#33): a headless daemon would silently stop producing proposals once the hashprice cache aged past its 60-min freshness window, because only the dashboard refreshed it. Operators running without the dashboard open were losing uptime as bids drifted below fillable. Also includes a mobile-layout fix for the Bids table.
 
 ### `[UI]` Bids table: mobile-friendly bid ID cell (#34)
 
