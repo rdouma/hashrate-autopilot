@@ -350,10 +350,6 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
   const shortfall = ph - primary.avg_speed_ph;
   if (shortfall > 0.1) {
     const windowMs = state.config.fill_escalation_after_minutes * 60_000;
-    const startMs = state.below_floor_since;
-    const elapsedMs = startMs ? state.tick_at - startMs : 0;
-    const remainingMs = windowMs - elapsedMs;
-
     // If the market is too expensive (fillable + overpay > max_bid),
     // decide.ts returns [] — no escalation, no CREATE. The bid sits
     // at its current price and we wait for the market to drop. Don't
@@ -375,6 +371,31 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
         ...noEvent,
       };
     }
+
+    // Escalation only fires when the bid has been continuously BELOW
+    // FLOOR (not merely below target) for `fill_escalation_after_minutes`.
+    // If we're below target but above floor, decide() won't escalate —
+    // no countdown should be shown (issue #29).
+    const floorPh = state.config.minimum_floor_hashrate_ph;
+    if (primary.avg_speed_ph >= floorPh) {
+      return {
+        summary: `Bid filling below target (${primary.avg_speed_ph.toFixed(2)}/${ph} PH/s).`,
+        detail: `Above floor (${floorPh} PH/s) — no escalation scheduled. Escalation only triggers after ${state.config.fill_escalation_after_minutes} min continuously below floor.`,
+        ...noEvent,
+      };
+    }
+
+    // Below floor. The below_floor_since timer may not have been set
+    // yet on the very first tick of this dip (observe() sets it each
+    // tick, but the first observed tick uses `previous ?? now` — so
+    // reading the state immediately after that tick returns a valid
+    // start). Still, if it's somehow null at this point we treat
+    // tick_at as the synthetic start so the progress bar + countdown
+    // text agree; escalation on the next tick will use the real
+    // persisted value.
+    const startMs = state.below_floor_since ?? state.tick_at;
+    const elapsedMs = state.tick_at - startMs;
+    const remainingMs = windowMs - elapsedMs;
 
     const countdownText =
       remainingMs > 0
@@ -400,9 +421,9 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
     return {
       summary: `Bid filling below target (${primary.avg_speed_ph.toFixed(2)}/${ph} PH/s).`,
       detail: `${countdownText} if still under floor. Current ${currentPricePH.toLocaleString('en-US')} sat/PH/day; ${modeWord} mode ${stepDescription}`,
-      eta_ms: startMs !== null ? startMs + windowMs : null,
+      eta_ms: startMs + windowMs,
       event_started_ms: startMs,
-      event_kind: startMs !== null ? 'escalation' : null,
+      event_kind: 'escalation',
     };
   }
 
