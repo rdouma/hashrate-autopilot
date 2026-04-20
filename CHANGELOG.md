@@ -2,9 +2,14 @@
 
 ## 2026-04-20
 
+### `[Fix]` Dashboard build order: declare the `@braiins-hashrate/shared` workspace dep
+
+Fresh clones of the repo failed at `pnpm build` with `Cannot find module '@braiins-hashrate/shared'` from the dashboard package. Root cause: `packages/dashboard/package.json` imported from `@braiins-hashrate/shared` without declaring it as a workspace dependency, so pnpm's recursive-build topological sort ran dashboard's `tsc --noEmit` in parallel with shared's build, and dashboard typechecked before shared's `dist/` existed. Worked on already-built machines because `dist/` was stale-but-present. Added the `workspace:*` dep so the two build in order.
+
 ### `[UI]` Footer links to the CHANGELOG on GitHub
 
-Dashboard footer now carries a `changelog` link next to the build + hash, pointing at `CHANGELOG.md` on `main`. No local render — for the curious, a click away.
+Dashboard footer now carries a `changelog` link next to the build + hash, pointing at `CHANGELOG.md` on `main`. No local
+render — for the curious, a click away.
 
 ### `[UI]` Price-chart legend: max-bid swatch is now solid, matching the chart
 

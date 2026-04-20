@@ -111,6 +111,9 @@ importers:
 
   packages/dashboard:
     dependencies:
+      '@braiins-hashrate/shared':
+        specifier: workspace:*
+        version: link:../shared
       '@tanstack/react-query':
         specifier: ^5.64.1
         version: 5.99.0(react@18.3.1)
