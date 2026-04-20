@@ -2,21 +2,38 @@
 
 ## 2026-04-20
 
+### `[UI]` Footer links to the CHANGELOG on GitHub
+
+Dashboard footer now carries a `changelog` link next to the build + hash, pointing at `CHANGELOG.md` on `main`. No local render — for the curious, a click away.
+
 ### `[UI]` Price-chart legend: max-bid swatch is now solid, matching the chart
 
-The legend swatch for "max bid" was drawn dashed while the actual cap line on the chart is solid — visually inconsistent with no functional reason. Legend now renders solid for that entry.
+The legend swatch for "max bid" was drawn dashed while the actual cap line on the chart is solid — visually inconsistent
+with no functional reason. Legend now renders solid for that entry.
 
 ## v1.0.1 — 2026-04-20
 
-Point release for a significant autopilot-stalling bug (#33): a headless daemon would silently stop producing proposals once the hashprice cache aged past its 60-min freshness window, because only the dashboard refreshed it. Operators running without the dashboard open were losing uptime as bids drifted below fillable. Also includes a mobile-layout fix for the Bids table.
+Point release for a significant autopilot-stalling bug (#33): a headless daemon would silently stop producing proposals
+once the hashprice cache aged past its 60-min freshness window, because only the dashboard refreshed it. Operators
+running without the dashboard open were losing uptime as bids drifted below fillable. Also includes a mobile-layout fix
+for the Bids table.
 
 ### `[UI]` Bids table: mobile-friendly bid ID cell (#34)
 
-The full-width bid ID restored by #26 wrapped one character per line on mobile viewports because of `break-all` on an 18-character monofont string. On narrow viewports the id column now shows a shortened `B86611…5108` alongside a copy-to-clipboard icon; desktop keeps the full ID as before. Same `CopyIcon`/`CheckIcon` feedback pattern used on the Datum pool-URL row.
+The full-width bid ID restored by #26 wrapped one character per line on mobile viewports because of `break-all` on an
+18-character monofont string. On narrow viewports the id column now shows a shortened `B86611…5108` alongside a
+copy-to-clipboard icon; desktop keeps the full ID as before. Same `CopyIcon`/`CheckIcon` feedback pattern used on the
+Datum pool-URL row.
 
 ### `[Fix]` Keep the hashprice cache warm inside the daemon (#33)
 
-The dynamic-cap guard refuses to trade when hashprice is unknown/stale — which was correct, but in steady state the only thing refreshing the cache was the dashboard's finance poll. A headless daemon running longer than the 60-min freshness window would silently stop producing proposals, the bid would drift below fillable, and hashrate uptime would collapse. Added a `HashpriceRefresher` service that polls Ocean every 10 min from the daemon itself, independent of any dashboard client. Also: the tick log now explicitly says `(no proposals — hashprice unknown/stale, dynamic-cap guard is holding trading)` when the guard fires, instead of the bland `(nothing to do)` that hid the problem.
+The dynamic-cap guard refuses to trade when hashprice is unknown/stale — which was correct, but in steady state the only
+thing refreshing the cache was the dashboard's finance poll. A headless daemon running longer than the 60-min freshness
+window would silently stop producing proposals, the bid would drift below fillable, and hashrate uptime would collapse.
+Added a `HashpriceRefresher` service that polls Ocean every 10 min from the daemon itself, independent of any dashboard
+client. Also: the tick log now explicitly says
+`(no proposals — hashprice unknown/stale, dynamic-cap guard is holding trading)` when the guard fires, instead of the
+bland `(nothing to do)` that hid the problem.
 
 ## v1.0.0 — 2026-04-19
 
@@ -24,23 +41,37 @@ First stable release. Tagged so operators who don't want to track `main` daily h
 
 **Highlights of what's in 1.0:**
 
-- 24/7 price-taker autopilot for the Braiins Hashpower marketplace: creates / escalates / lowers bids against a per-tick target (fillable + overpay), capped by the tighter of a fixed maximum and a dynamic `hashprice + max_overpay` ceiling.
-- Server-side-safe: honours Braiins' 10-min price-decrease cooldown and the Telegram-2FA-exempt owner-token path; respects run-mode gates (DRY_RUN / LIVE / PAUSED) and manual-override locks.
-- Independent break-even reference via Ocean: dynamic cap gates on a fresh Ocean hashprice, refuses to trade when that reference is unavailable, and falls back to the fixed cap only when the operator hasn't configured the dynamic one.
-- Full-history simulator that replays `tick_metrics` under candidate parameters and reports uptime / mutations / cost / overpay — now with the Braiins 10-min cooldown and the dynamic cap respected, so simulated stats match what the real controller can actually achieve.
-- Dashboard with Status + Config pages, per-tick Next Action prediction, depth-aware price / hashrate charts, pinned event tooltips with full market context, and P&L per-day + lifetime panels.
+- 24/7 price-taker autopilot for the Braiins Hashpower marketplace: creates / escalates / lowers bids against a per-tick
+  target (fillable + overpay), capped by the tighter of a fixed maximum and a dynamic `hashprice + max_overpay` ceiling.
+- Server-side-safe: honours Braiins' 10-min price-decrease cooldown and the Telegram-2FA-exempt owner-token path;
+  respects run-mode gates (DRY_RUN / LIVE / PAUSED) and manual-override locks.
+- Independent break-even reference via Ocean: dynamic cap gates on a fresh Ocean hashprice, refuses to trade when that
+  reference is unavailable, and falls back to the fixed cap only when the operator hasn't configured the dynamic one.
+- Full-history simulator that replays `tick_metrics` under candidate parameters and reports uptime / mutations / cost /
+  overpay — now with the Braiins 10-min cooldown and the dynamic cap respected, so simulated stats match what the real
+  controller can actually achieve.
+- Dashboard with Status + Config pages, per-tick Next Action prediction, depth-aware price / hashrate charts, pinned
+  event tooltips with full market context, and P&L per-day + lifetime panels.
 - Datum Gateway + Ocean pool integration for end-to-end pipeline observation.
 
 **Bug fixes since CHANGELOG introduction (issues #28–#32):**
 
-- `[Fix]` Dynamic cap no longer silently collapses when the dashboard is closed (#28). Hashprice cache timestamps its writes, seeds from a boot-time Ocean fetch, and decide() refuses to trade when the cap is configured but hashprice is unknown or stale beyond 60 min.
-- `[Fix]` Next Action countdown + progress bar agree from tick 1 and stop promising escalations that can't fire (#29). Above-floor shortfalls get a "no escalation scheduled" detail instead of a phantom 3-min countdown.
-- `[Fix]` Pinned tooltip's overpay allowance reads from `config_summary` instead of a racy `configQuery`, so it's always truthful (#30).
-- `[Fix]` P&L per-day rows stop disappearing on transient 0-spend or missing-income states; show `calculating…` when Ocean income hasn't landed yet (#31).
-- `[Fix]` Simulator enforces the Braiins 10-min price-decrease cooldown; no more simulated lowerings 5–8 minutes apart that the real bot could never execute (#32).
+- `[Fix]` Dynamic cap no longer silently collapses when the dashboard is closed (#28). Hashprice cache timestamps its
+  writes, seeds from a boot-time Ocean fetch, and decide() refuses to trade when the cap is configured but hashprice is
+  unknown or stale beyond 60 min.
+- `[Fix]` Next Action countdown + progress bar agree from tick 1 and stop promising escalations that can't fire (#29).
+  Above-floor shortfalls get a "no escalation scheduled" detail instead of a phantom 3-min countdown.
+- `[Fix]` Pinned tooltip's overpay allowance reads from `config_summary` instead of a racy `configQuery`, so it's always
+  truthful (#30).
+- `[Fix]` P&L per-day rows stop disappearing on transient 0-spend or missing-income states; show `calculating…` when
+  Ocean income hasn't landed yet (#31).
+- `[Fix]` Simulator enforces the Braiins 10-min price-decrease cooldown; no more simulated lowerings 5–8 minutes apart
+  that the real bot could never execute (#32).
 - `[Polish]` Event tooltip units use the ≡ sat glyph and muted styling, matching the rest of the Status page.
-- `[Polish]` Hashprice row moved from the Braiins card to the Ocean card, where it belongs — it's Ocean-derived, not Braiins-reported.
-- `[Feature]` Tooltip now surfaces `max overpay vs hashprice` and `hashprice + max overpay` so operators can see which cap is binding at the event's tick.
+- `[Polish]` Hashprice row moved from the Braiins card to the Ocean card, where it belongs — it's Ocean-derived, not
+  Braiins-reported.
+- `[Feature]` Tooltip now surfaces `max overpay vs hashprice` and `hashprice + max overpay` so operators can see which
+  cap is binding at the event's tick.
 
 ---
 
@@ -48,23 +79,30 @@ First stable release. Tagged so operators who don't want to track `main` daily h
 
 ### `[Feature]` Max-premium-over-hashprice cap (#27)
 
-New dynamic cap alongside the fixed `max_bid_sat_per_eh_day`: operator can set a maximum sat/PH/day premium over break-even hashprice, and the effective cap each tick is `min(max_bid, hashprice + max_overpay_vs_hashprice)`. Honored by the decider, the simulator, and the price chart (solid cap line, shaded excluded zone).
+New dynamic cap alongside the fixed `max_bid_sat_per_eh_day`: operator can set a maximum sat/PH/day premium over
+break-even hashprice, and the effective cap each tick is `min(max_bid, hashprice + max_overpay_vs_hashprice)`. Honored
+by the decider, the simulator, and the price chart (solid cap line, shaded excluded zone).
 
 ### `[Feature]` Run-decision-now bypasses all pacing (#25)
 
-"Run decision now" now drops both the post-edit lock *and* the patience/settle window in one click, so the pending decision actually fires instead of requiring ~13 ticks to outlast the window. Also surfaces the resulting decision in a banner.
+"Run decision now" now drops both the post-edit lock *and* the patience/settle window in one click, so the pending
+decision actually fires instead of requiring ~13 ticks to outlast the window. Also surfaces the resulting decision in a
+banner.
 
 ### `[Feature]` Bids table shows full bid IDs (#26)
 
-Removed the `.slice(0, 10) + "…"` truncation; full Braiins order IDs are now displayed so they can be copied or cross-referenced.
+Removed the `.slice(0, 10) + "…"` truncation; full Braiins order IDs are now displayed so they can be copied or
+cross-referenced.
 
 ### `[Feature]` Ocean-found blocks marked on the hashrate chart (#23)
 
-Blocks credited to our worker are marked on the delivered-hashrate chart so it's obvious when we contributed to a found block.
+Blocks credited to our worker are marked on the delivered-hashrate chart so it's obvious when we contributed to a found
+block.
 
 ### `[Feature]` Datum Gateway panel replaces legacy Pool card
 
-Full Datum panel with stratum/stats reachability tags, pool URL split into protocol/host/port rows, workers connected, and Datum-reported hashrate. Daemon polls Datum stats each tick.
+Full Datum panel with stratum/stats reachability tags, pool URL split into protocol/host/port rows, workers connected,
+and Datum-reported hashrate. Daemon polls Datum stats each tick.
 
 ### `[Feature]` Datum hashrate plotted alongside Braiins
 
@@ -72,15 +110,18 @@ Hashrate chart now overlays Datum's reported hashrate on top of the Braiins deli
 
 ### `[Feature]` Mutations stat card
 
-New stat card counting bid mutations (create / edit price / edit speed / cancel) in the selected range, read from the `bid_events` log.
+New stat card counting bid mutations (create / edit price / edit speed / cancel) in the selected range, read from the
+`bid_events` log.
 
 ### `[Feature]` Lower-patience measures continuous market-cheap time
 
-`lower_patience` window now tracks continuous time the market sat below the current bid price, not continuous time above floor. Better matches operator intent.
+`lower_patience` window now tracks continuous time the market sat below the current bid price, not continuous time above
+floor. Better matches operator intent.
 
 ### `[Feature]` Simulator respects the dynamic cap
 
-Simulator skips ticks where `fillable + overpay` exceeds the effective cap, plots the simulated cap instead of the historical one, and exposes "Max over hashprice" in the parameter bar.
+Simulator skips ticks where `fillable + overpay` exceeds the effective cap, plots the simulated cap instead of the
+historical one, and exposes "Max over hashprice" in the parameter bar.
 
 ### `[Feature]` P&L split into per-day and lifetime-total columns
 
@@ -88,7 +129,8 @@ Split into two panels; also moved next-payout date onto the Ocean panel, and ret
 
 ### `[Feature]` Price tooltip surfaces max-overpay and dynamic cap
 
-Pinned price-chart tooltip now includes market context plus max-overpay and dynamic-cap values, and clearly marks simulation-derived points.
+Pinned price-chart tooltip now includes market context plus max-overpay and dynamic-cap values, and clearly marks
+simulation-derived points.
 
 ### `[Fix]` Terminal bids persisted across refreshes (#24)
 
@@ -116,11 +158,13 @@ Ocean API returns UTC timestamps without the Z; we were parsing them as local ti
 
 ### `[Fix]` Zero whole-account spend / closed-vs-active split / broken tooltips
 
-Restored whole-account spend from `/spot/bid counters_committed.amount_consumed_sat`, split closed vs active bids in P&L, and repaired tooltips that broke in the split.
+Restored whole-account spend from `/spot/bid counters_committed.amount_consumed_sat`, split closed vs active bids in
+P&L, and repaired tooltips that broke in the split.
 
 ### `[Fix]` Auto-refetch status when countdown expires
 
-Status polls kept counting down past zero without refetching when the daemon was mid-tick. Fixed — `RefreshCountdown` now keeps polling and the Datum badge says "API reachable" when live.
+Status polls kept counting down past zero without refetching when the daemon was mid-tick. Fixed — `RefreshCountdown`
+now keeps polling and the Datum badge says "API reachable" when live.
 
 ### `[Fix]` Honor Datum's reported hashrate unit
 
@@ -148,7 +192,8 @@ The avg-hashrate card shows both the Braiins-delivered and Datum-reported hashra
 
 ### `[UI]` Hide Total PH·h; tighten avg-hashrate slash
 
-Removed the Total PH·h card from the default view; cleaned up the "delivered / cap" slash formatting on the Braiins panel.
+Removed the Total PH·h card from the default view; cleaned up the "delivered / cap" slash formatting on the Braiins
+panel.
 
 ### `[UI]` Reorder Braiins pricing rows; drop budget line
 
@@ -184,7 +229,8 @@ CLAUDE.md: `user-request` is reserved for external-user reports; agent never app
 
 ### `[Infra]` Document issue-body, label, and in-progress conventions
 
-CLAUDE.md: prefer `--body-file` for `gh issue create`, pick labels freely from `gh label list`, flip issues to `in-progress` on pickup.
+CLAUDE.md: prefer `--body-file` for `gh issue create`, pick labels freely from `gh label list`, flip issues to
+`in-progress` on pickup.
 
 ### `[Infra]` Log raw `/spot/bid` response on first fetch
 
@@ -194,7 +240,8 @@ Logs the first `/spot/bid` response once per session so shape drift is easy to s
 
 ### `[Feature]` Ocean panel with block data, pool stats, and user earnings
 
-New Ocean panel on Status showing last block, blocks 24h/7d, unpaid earnings, and pool worker count. Merged the standalone "Braiins Balance" card into a single Braiins panel.
+New Ocean panel on Status showing last block, blocks 24h/7d, unpaid earnings, and pool worker count. Merged the
+standalone "Braiins Balance" card into a single Braiins panel.
 
 ### `[Feature]` `deploy.sh` for pull-build-restart on the deployment machine
 
@@ -224,11 +271,14 @@ Tightened vertical space: config sections with only one field now render side by
 
 ### `[Feature]` What-if simulator (fully integrated)
 
-Added a backtesting simulator: runs past market data against edited parameters so the operator can see how changes would have performed. Integrated into the Status page as a real-time/simulation toggle. Polished with filter bar, events, spinners, parameter bar with escalation-mode selector, and visual distinction from live mode.
+Added a backtesting simulator: runs past market data against edited parameters so the operator can see how changes would
+have performed. Integrated into the Status page as a real-time/simulation toggle. Polished with filter bar, events,
+spinners, parameter bar with escalation-mode selector, and visual distinction from live mode.
 
 ### `[Feature]` Opportunistic hashrate scaling (addresses #13)
 
-When the market is cheap vs break-even hashprice, autopilot can scale the target hashrate up to a higher ceiling. Config UI added and polished.
+When the market is cheap vs break-even hashprice, autopilot can scale the target hashrate up to a higher ceiling. Config
+UI added and polished.
 
 ### `[Feature]` Bitcoin node RPC credentials in dashboard config (addresses #14)
 
@@ -236,19 +286,23 @@ Moved Bitcoin node RPC host/user/pass out of env vars into the dashboard Config 
 
 ### `[Feature]` Lower-patience window
 
-Added a lower-patience window to prevent chasing short market dips — the autopilot will only lower the price after the market has sat cheap continuously for N minutes.
+Added a lower-patience window to prevent chasing short market dips — the autopilot will only lower the price after the
+market has sat cheap continuously for N minutes.
 
 ### `[Feature]` Hashprice + overpay-vs-hashprice as time series + stat
 
-Hashprice and current `max_bid` are now logged as time series; an "overpay vs hashprice" stat card summarizes current premium.
+Hashprice and current `max_bid` are now logged as time series; an "overpay vs hashprice" stat card summarizes current
+premium.
 
 ### `[Feature]` Payout config: radio selector + conditional fields
 
-Restructured payout config into a radio selector with conditional fields; auto-detect now runs once in a migration rather than every boot.
+Restructured payout config into a radio selector with conditional fields; auto-detect now runs once in a migration
+rather than every boot.
 
 ### `[Feature]` Total PH·h stat; renamed "expected" → "unpaid earnings"
 
-Total delivered hashrate·hours added as a stat; renamed the "expected" earnings field to "unpaid earnings" to match Ocean's terminology.
+Total delivered hashrate·hours added as a stat; renamed the "expected" earnings field to "unpaid earnings" to match
+Ocean's terminology.
 
 ### `[Feature]` Default HTTP port 3000 → 3010
 
@@ -256,11 +310,13 @@ Daemon's default port changed from 3000 to 3010 to avoid conflicts with common l
 
 ### `[Fix]` Next-action prediction capped at `max_bid` and sensible when above target
 
-Prediction no longer overflows `max_bid`, and no longer shows nonsensical "escalation" text when already above the target price.
+Prediction no longer overflows `max_bid`, and no longer shows nonsensical "escalation" text when already above the
+target price.
 
 ### `[Fix]` Post-CREATE stability + invalidate finance on config save
 
-Fixed a flap where the controller would re-CREATE immediately after a CREATE; Finance panel now invalidates its cache when config saves.
+Fixed a flap where the controller would re-CREATE immediately after a CREATE; Finance panel now invalidates its cache
+when config saves.
 
 ### `[Fix]` Stat card height mismatch caused by tooltip wrapper
 
@@ -298,11 +354,13 @@ Appended a brainstorm section to the Datum API doc covering future panels.
 
 ### `[Feature]` BTC/USD price oracle + global denomination toggle (addresses #12)
 
-Added a BTC/USD oracle and a global sats ↔ USD toggle at the top of every dashboard page. Chart Y-axis, hero delta, and top-bar balance all honor the toggle. Removed the action badge.
+Added a BTC/USD oracle and a global sats ↔ USD toggle at the top of every dashboard page. Chart Y-axis, hero delta, and
+top-bar balance all honor the toggle. Removed the action badge.
 
 ### `[Feature]` Ocean client rewritten from HTML scraping to JSON API
 
-Replaced the fragile HTML-scraping Ocean client with one hitting Ocean's JSON API; also fixed Y-axis overlap on the hashrate chart.
+Replaced the fragile HTML-scraping Ocean client with one hitting Ocean's JSON API; also fixed Y-axis overlap on the
+hashrate chart.
 
 ### `[Feature]` Hashprice (break-even) in P&L and on the price chart
 
@@ -310,11 +368,13 @@ Added break-even hashprice line to the price chart and a row in the P&L panel sh
 
 ### `[Feature]` In-place bid resize via `EDIT_SPEED`
 
-Controller can now resize a bid in place via a new `EDIT_SPEED` proposal (Design A). Marker added to the price chart and to the legend; `bid_events.kind` CHECK constraint extended.
+Controller can now resize a bid in place via a new `EDIT_SPEED` proposal (Design A). Marker added to the price chart and
+to the legend; `bid_events.kind` CHECK constraint extended.
 
 ### `[Feature]` Full Money (P&L) panel replaces Collected-BTC card
 
-Vertical Money panel with spend-scope toggle (autopilot vs whole account), run-rate footnotes for income/spend/net per day, and hourly data freshness.
+Vertical Money panel with spend-scope toggle (autopilot vs whole account), run-rate footnotes for income/spend/net per
+day, and hourly data freshness.
 
 ### `[Feature]` Hourly Money panel; split metadata TTLs
 
@@ -342,11 +402,13 @@ Initial rollout of the live Braiins execution path, the dashboard, and the on-ch
 
 ### `[Feature]` Pricing model overhaul; fillable telemetry; persist floor
 
-Major pricing overhaul introducing a fillable-price telemetry track and a persisted floor. Chart split into separate price/hashrate axes; countdown bar + price delta surfaced.
+Major pricing overhaul introducing a fillable-price telemetry track and a persisted floor. Chart split into separate
+price/hashrate axes; countdown bar + price delta surfaced.
 
 ### `[Feature]` Predictive next-action
 
-Next-action card predicts the actual escalation step; bypasses the override lock on Run-decision-now; poll cadence slowed; breadcrumb "just executed" after a tick.
+Next-action card predicts the actual escalation step; bypasses the override lock on Run-decision-now; poll cadence
+slowed; breadcrumb "just executed" after a tick.
 
 ### `[Feature]` Live EDIT_SPEED test script
 
@@ -386,7 +448,8 @@ Dropped a double-suffix bug where the sat icon rendered alongside the literal "s
 
 ### `[UI]` Sat symbol via Font Awesome kit
 
-Replaced the "sat" text with an inline sat symbol icon; switched to fa-regular weight; used in the hero card; dropped the header `ModeBadge`; used satsymbol.com kit.
+Replaced the "sat" text with an inline sat symbol icon; switched to fa-regular weight; used in the hero card; dropped
+the header `ModeBadge`; used satsymbol.com kit.
 
 ### `[UI]` Top nav + vertical Money panel + format picker in Config
 
@@ -398,7 +461,8 @@ Tooltip stays inside the viewport; X-axis ticks fall on logical intervals.
 
 ### `[UI]` Dashboard cleanups
 
-Decision reasons formatted in sat/PH/day with thousand separators; fillable surfaced on chart; EDIT_SPEED marker anchored to the price line.
+Decision reasons formatted in sat/PH/day with thousand separators; fillable surfaced on chart; EDIT_SPEED marker
+anchored to the price line.
 
 ### `[UI]` Money panel polish
 
@@ -422,7 +486,8 @@ Memoized derived values across dashboard components to avoid recomputation on ea
 
 ### `[Infra]` Remove `emergency_max_bid` and `below_floor_emergency_cap`
 
-Removed the emergency-cap machinery entirely; the fixed cap + new lower-patience window cover the cases it was for. Scrub remaining "max overpay" references from live UI.
+Removed the emergency-cap machinery entirely; the fixed cap + new lower-patience window cover the cases it was for.
+Scrub remaining "max overpay" references from live UI.
 
 ### `[Infra]` `TickingAge` tick cadence 1s (not 10s)
 
