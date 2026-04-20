@@ -162,6 +162,29 @@ from the dashboard when ready.
 See [`docs/spec.md`](docs/spec.md) for the full design and [`docs/architecture.md`](docs/architecture.md) for
 deployment details.
 
+## Updating a running deployment
+
+`scripts/deploy.sh` is the one-shot updater for a machine that already has the repo checked out and the daemon
+running. It pulls `main`, reinstalls pinned deps, builds, runs the tests, and only then restarts the daemon —
+so a broken commit won't take your running autopilot down with it.
+
+```bash
+./scripts/deploy.sh
+```
+
+Safe to run while the daemon is live; the restart happens after the build + tests succeed. No state loss —
+`data/state.db` is untouched and the floor / patience timers are persisted across restarts.
+
+Common patterns:
+
+- **Manual update** after you see a new release or commit you want: just run it.
+- **Nightly cron** (fully hands-off): `0 4 * * * cd /path/to/hashrate-autopilot && ./scripts/deploy.sh >> ~/deploy.log 2>&1`
+
+The script does a `git pull --ff-only` internally, so it only runs on a tracking branch (e.g. `main`). If you'd
+rather pin to a tagged release, manage the checkout manually (`git fetch --tags && git checkout v1.0.1 && pnpm
+install && pnpm build && ./scripts/restart.sh`) — deploy.sh will fail on a detached HEAD, which is safer than
+silently moving you off the pin.
+
 ## Disclaimer
 
 This is an independent, unofficial project. **Not affiliated with, endorsed by, or supported by Braiins Systems s.r.o.**
