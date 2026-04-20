@@ -153,11 +153,18 @@ export const PriceChart = memo(function PriceChart({
     const eventPrices = events
       .flatMap((e) => [e.old_price_sat_per_ph_day, e.new_price_sat_per_ph_day])
       .filter((p): p is number => p !== null && Number.isFinite(p));
+    // Deliberately exclude capPoints from Y-axis auto-scaling. The cap
+    // is usually far above the live data and letting it set the range
+    // squashes the interesting lines (bid, fillable, hashprice) into
+    // a thin strip at the bottom. If the cap happens to fall inside
+    // the auto-ranged window it's drawn; otherwise it sits above the
+    // viewport and the excluded-zone shading clips to the top edge —
+    // which is exactly the intended "the ceiling is up there somewhere"
+    // affordance without hijacking the chart.
     const priceSample = [
       ...pricePoints.map((p) => p.v),
       ...fillablePoints.map((p) => p.v),
       ...hashpricePoints.map((p) => p.v),
-      ...capPoints.map((p) => p.v),
       ...eventPrices,
     ];
     const hasPrice = priceSample.length > 0;

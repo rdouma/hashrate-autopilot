@@ -2,6 +2,14 @@
 
 ## 2026-04-20
 
+### `[UI]` Price chart: cap line no longer hijacks Y-axis scaling
+
+When the effective cap (fixed `max_bid` or the dynamic `hashprice + max_overpay`) sat well above the live data, the cap line forced the Y-axis to stretch up to accommodate it — squashing the bid/fillable/hashprice lines into a thin strip at the bottom and filling the remaining ~70% of the chart with the red "excluded zone" gradient. This regressed the earlier `ddb5a15` work ("Exclude max bid from price chart Y-axis scaling") once the cap line started tracking the *effective* cap (issue #27) instead of plain `max_bid`. Fix: drop `capPoints` from the auto-scale sample. The cap renders if it falls in the auto-scaled range, and the excluded-zone shading clips to the top edge otherwise.
+
+### `[Infra]` Logger: concrete reason when decide() returns no proposals
+
+`(no proposals — nothing to do)` was a catch-all that hid the actual blocker — whether the market was too expensive vs the effective cap, the orderbook was too thin at the target depth, or the dynamic-cap guard was holding trading. Added an `inferNoActionReason` helper in `main.ts` that mirrors decide()'s decision tree and emits a specific diagnostic reason per tick. Complements the work in #33.
+
 ### `[Fix]` `pnpm run setup --force` no longer destroys the history DB
 
 `--force` used to `rm data/state.db` as part of its "overwrite" path, silently wiping every tick_metrics, decisions, bid_events, and owned_bids row on what the operator thought was just a secrets-file refresh. Split into two flags: plain `--force` now only rewrites secrets + age key + sops policy (and the DB-config row is idempotently upserted, preserving all history); explicit `--wipe-db` is required to delete the DB. Retroactive protection for operators coming back from the previous behavior is impossible — but this closes the footgun for anyone re-running setup from here on.

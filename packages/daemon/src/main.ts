@@ -35,6 +35,8 @@ import { TickMetricsRepo } from './state/repos/tick_metrics.js';
 import { Controller } from './controller/tick.js';
 import { TickLoop } from './controller/loop.js';
 import type { TickResult } from './controller/tick.js';
+import { cheapestAskForDepth } from './controller/orderbook.js';
+import type { State } from './controller/types.js';
 
 const DEFAULT_TICK_INTERVAL_MS = Number.parseInt(process.env['TICK_INTERVAL_MS'] ?? '60000', 10);
 const HTTP_PORT = Number.parseInt(process.env['HTTP_PORT'] ?? '3010', 10);
@@ -338,24 +340,66 @@ function logTick(r: TickResult): void {
   );
 
   if (gated.length === 0) {
-    // Distinguish "all quiet, bid in range" from "dynamic-cap guard blocked
-    // everything because hashprice is unknown/stale" (issue #33). The latter
-    // looks identical otherwise but means the bid will drift out of the
-    // market unnoticed.
-    if (
-      state.config.max_overpay_vs_hashprice_sat_per_eh_day !== null &&
-      state.hashprice_sat_per_ph_day === null
-    ) {
-      log(`    (no proposals — hashprice unknown/stale, dynamic-cap guard is holding trading)`);
-    } else {
-      log(`    (no proposals — nothing to do)`);
-    }
+    log(`    (no proposals — ${inferNoActionReason(state)})`);
     return;
   }
   for (const g of gated) {
     const prefix = g.allowed ? '    →' : '    ✗';
     log(`${prefix} ${describeProposal(g.proposal)}${g.allowed ? '' : `  BLOCKED:${'reason' in g ? g.reason : '?'}`}`);
   }
+}
+
+/**
+ * Best-effort explanation of why `decide()` returned an empty proposal
+ * set this tick. Mirrors the decision tree in decide.ts so the reason
+ * shown in logs matches what actually blocked the tick. Purely for
+ * diagnostics — the logic doesn't drive behaviour.
+ */
+function inferNoActionReason(state: State): string {
+  if (!state.market) return 'no market snapshot';
+  if (state.unknown_bids.length > 0) return 'unknown bids force PAUSE';
+  const asks = state.market.orderbook.asks ?? [];
+  if (asks.length === 0) return 'orderbook has no asks';
+
+  const cfg = state.config;
+  const fillable = cheapestAskForDepth(asks, cfg.target_hashrate_ph);
+  if (fillable.price_sat === null) return 'orderbook has no open supply at any level';
+
+  const dynamicCapConfigured = cfg.max_overpay_vs_hashprice_sat_per_eh_day !== null;
+  const hashpriceSatPerEh =
+    state.hashprice_sat_per_ph_day !== null ? state.hashprice_sat_per_ph_day * 1000 : null;
+  if (dynamicCapConfigured && hashpriceSatPerEh === null) {
+    return 'hashprice unknown/stale, dynamic-cap guard is holding trading';
+  }
+
+  const desired = fillable.price_sat + cfg.overpay_sat_per_eh_day;
+  const dynamicCap =
+    dynamicCapConfigured && hashpriceSatPerEh !== null
+      ? hashpriceSatPerEh + (cfg.max_overpay_vs_hashprice_sat_per_eh_day ?? 0)
+      : null;
+  const effectiveCap =
+    dynamicCap !== null ? Math.min(cfg.max_bid_sat_per_eh_day, dynamicCap) : cfg.max_bid_sat_per_eh_day;
+  if (desired > effectiveCap) {
+    const bindingCap = dynamicCap !== null && dynamicCap < cfg.max_bid_sat_per_eh_day ? 'dynamic hashprice+max_overpay' : 'fixed max_bid';
+    const desiredPH = Math.round(desired / 1000);
+    const capPH = Math.round(effectiveCap / 1000);
+    return `market too expensive: fillable+overpay ${desiredPH.toLocaleString('en-US')} > ${capPH.toLocaleString('en-US')} sat/PH/day cap (${bindingCap})`;
+  }
+
+  if (state.owned_bids.length === 0) {
+    // decide() reached the CREATE branch but we still returned [] — this
+    // shouldn't happen given the guards above. Surface it loudly so the
+    // inference stays honest as decide() evolves.
+    return 'decide() returned [] on an empty account — no diagnostic match (bug, please report)';
+  }
+
+  const primary = state.owned_bids[0]!;
+  const currentPrice = primary.price_sat;
+  const tolerance = Math.max(cfg.min_lower_delta_sat_per_eh_day, (cfg.max_bid_sat_per_eh_day / 10000) * 5);
+  if (Math.abs(currentPrice - Math.min(desired, effectiveCap)) < tolerance) {
+    return 'bid already at target — no change needed';
+  }
+  return 'primary bid is within tolerance of target — no change needed';
 }
 
 function describeProposal(p: TickResult['gated'][number]['proposal']): string {
