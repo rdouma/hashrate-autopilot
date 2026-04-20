@@ -17,6 +17,12 @@ export interface OurBlock {
   total_reward_sat: number;
   block_hash: string;
   worker: string;
+  /**
+   * True when the block's finder was literally our payout address
+   * (solo-lottery win, rare). False when we were only credited via
+   * TIDES shares in the reward window (the common case while mining).
+   */
+  found_by_us: boolean;
 }
 
 export interface OceanResponse {
@@ -31,10 +37,18 @@ export interface OceanResponse {
   blocks_7d: number;
   recent_blocks: readonly OceanBlock[];
   /**
-   * Subset of `recent_blocks` where the finder's username is the
-   * operator's `btc_payout_address`. This is the rare celebratory
-   * event ("we won the lottery") — expect 0 in almost every call
-   * and 1+ only on a very lucky day.
+   * Pool blocks to overlay as markers on the Hashrate chart. Under
+   * Ocean TIDES, every pool block credits every participant who had
+   * shares in the reward window, so the MVP surfaces every recent
+   * pool block; the `found_by_us` flag distinguishes the (rare)
+   * solo-finder case so the UI can style it differently.
+   *
+   * Simplification: we do not yet cross-check per-block share-window
+   * presence. If the daemon was offline long enough for our shares
+   * to roll out of the 8-block TIDES window, those blocks would not
+   * have actually credited us — but while mining continuously the
+   * window is always non-empty, which matches the operator's day
+   * to day use.
    */
   our_recent_blocks: readonly OurBlock[];
   pool: OceanPoolInfo | null;
@@ -115,15 +129,14 @@ export async function registerOceanRoute(
     const blocks_7d = stats.recent_blocks.filter(
       (b) => b.timestamp_ms > 0 && now - b.timestamp_ms < 7 * DAY_MS,
     ).length;
-    const our_recent_blocks: OurBlock[] = stats.recent_blocks
-      .filter((b) => b.username === address)
-      .map((b) => ({
-        height: b.height,
-        timestamp_ms: b.timestamp_ms,
-        total_reward_sat: b.total_reward_sat,
-        block_hash: b.block_hash,
-        worker: b.worker,
-      }));
+    const our_recent_blocks: OurBlock[] = stats.recent_blocks.map((b) => ({
+      height: b.height,
+      timestamp_ms: b.timestamp_ms,
+      total_reward_sat: b.total_reward_sat,
+      block_hash: b.block_hash,
+      worker: b.worker,
+      found_by_us: b.username === address,
+    }));
 
     return {
       configured: true,

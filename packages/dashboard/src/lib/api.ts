@@ -387,9 +387,12 @@ export interface OceanBlockView {
 }
 
 /**
- * Block found by a worker belonging to the operator's payout wallet —
- * the "we won the lottery" event surfaced as a marker on the Hashrate
- * chart. Sparse: ~0 in most requests, 1+ on a very lucky day.
+ * Pool block that credited our wallet — surfaced as a cube marker on
+ * the Hashrate chart. Under Ocean TIDES, every pool block credits
+ * everyone with shares in the reward window, so this is populated for
+ * every recent pool block while the daemon is mining. `found_by_us`
+ * flags the rare solo-lottery case where our payout address was the
+ * literal finder.
  */
 export interface OurBlockMarker {
   height: number;
@@ -397,6 +400,7 @@ export interface OurBlockMarker {
   total_reward_sat: number;
   block_hash: string;
   worker: string;
+  found_by_us: boolean;
 }
 
 export interface OceanResponse {

@@ -2,6 +2,12 @@
 
 ## 2026-04-20 (post-v1.0.3)
 
+### `[Fix]` Hashrate chart: cubes for every TIDES-credited pool block (#23)
+
+Original issue #23 implementation filtered pool blocks by `username === our_payout_address`, i.e. only marked blocks our own worker literally found — a solo-lottery event that, at 3 PH/s against the network, effectively never happens. The operator saw Ocean's panel report `last pool block 1h 30m ago` and reasonably expected a cube at 15:30 on the chart; none appeared.
+
+Under Ocean TIDES every pool block credits everyone with shares in the 8-block reward window, so the chart now marks every recent pool block returned by Ocean. The rare "our worker found it" case is still distinguished visually — solid-ish dashed line for found-by-us, faint dotted line for TIDES-credit — and the hover tooltip says `FOUND BY US` vs `credited via TIDES`. Legend label is now "pool block". MVP simplification: we do not yet cross-check whether our shares were actually in the reward window at the time of a given block, so a long daemon outage would display cubes for blocks that did not, in reality, credit us.
+
 ### `[UI]` Ocean panel: "last block" rows relabeled "last pool block"
 
 The Ocean panel's "last block / blocks 24h / blocks 7d" rows are pool-wide figures (Ocean's `recent_blocks` feed), not blocks found by the operator's own payout address — but the unqualified "last block" read as "your last block." Operators who saw `found 22 min ago` next to no marker on the hashrate chart were correctly confused: the chart only marks blocks credited to the configured payout address (that's issue #23's whole point), and the 22-min-ago block wasn't one of them. Renamed the three rows to `last pool block` / `pool blocks 24h` / `pool blocks 7d` so the distinction is visible on-panel.

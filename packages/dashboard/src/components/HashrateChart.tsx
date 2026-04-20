@@ -193,7 +193,7 @@ export const HashrateChart = memo(function HashrateChart({
           <Legend color={COLOR_FLOOR} label="floor" dashed />
           {!simMode &&
             ourBlocks.some((b) => b.timestamp_ms >= chartData.minX && b.timestamp_ms <= chartData.maxX) && (
-              <Legend color={COLOR_OUR_BLOCK} label="block found" dashed />
+              <Legend color={COLOR_OUR_BLOCK} label="pool block" dashed />
             )}
         </div>
       </div>
@@ -253,7 +253,9 @@ export const HashrateChart = memo(function HashrateChart({
               return (
                 <g key={b.block_hash || b.height}>
                   <title>
-                    {`Block #${b.height.toLocaleString()} — found ${new Date(b.timestamp_ms).toLocaleString()}\nreward ${b.total_reward_sat.toLocaleString()} sat\nworker ${b.worker || '—'}\nhash ${b.block_hash.slice(0, 16)}…`}
+                    {b.found_by_us
+                      ? `Block #${b.height.toLocaleString()} — FOUND BY US ${new Date(b.timestamp_ms).toLocaleString()}\nreward ${b.total_reward_sat.toLocaleString()} sat\nworker ${b.worker || '—'}\nhash ${b.block_hash.slice(0, 16)}…`
+                      : `Pool block #${b.height.toLocaleString()} — credited via TIDES ${new Date(b.timestamp_ms).toLocaleString()}\npool reward ${b.total_reward_sat.toLocaleString()} sat\nhash ${b.block_hash.slice(0, 16)}…`}
                   </title>
                   <line
                     x1={x}
@@ -261,9 +263,9 @@ export const HashrateChart = memo(function HashrateChart({
                     y1={PADDING.top + 8}
                     y2={HEIGHT - PADDING.bottom}
                     stroke={COLOR_OUR_BLOCK}
-                    strokeWidth="1.5"
-                    strokeDasharray="4 2"
-                    opacity="0.9"
+                    strokeWidth={b.found_by_us ? '1.8' : '1'}
+                    strokeDasharray={b.found_by_us ? '4 2' : '2 3'}
+                    opacity={b.found_by_us ? '0.95' : '0.45'}
                   />
                   {/* Small isometric cube, matching Ocean's block icon.
                       Three rhombus faces — top, front, right — stroked
