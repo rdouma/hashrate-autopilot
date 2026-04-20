@@ -162,7 +162,7 @@ async function promptSecrets(): Promise<Secrets> {
     : undefined;
 
   const dashPass = await password({
-    message: 'Dashboard password (second-gate behind Tailscale):',
+    message: 'Password for the dashboard (minimum 8 characters):',
     mask: true,
     validate: (v) => (v.length >= 8 ? true : 'at least 8 characters'),
   });
