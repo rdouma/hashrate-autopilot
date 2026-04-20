@@ -2,6 +2,10 @@
 
 ## 2026-04-20
 
+### `[Fix]` `pnpm run setup --force` no longer destroys the history DB
+
+`--force` used to `rm data/state.db` as part of its "overwrite" path, silently wiping every tick_metrics, decisions, bid_events, and owned_bids row on what the operator thought was just a secrets-file refresh. Split into two flags: plain `--force` now only rewrites secrets + age key + sops policy (and the DB-config row is idempotently upserted, preserving all history); explicit `--wipe-db` is required to delete the DB. Retroactive protection for operators coming back from the previous behavior is impossible — but this closes the footgun for anyone re-running setup from here on.
+
 ### `[Fix]` Copy buttons work over plain HTTP (LAN hostnames)
 
 The pool-URL and bid-ID copy buttons did nothing when the dashboard was accessed over plain HTTP on a LAN hostname (e.g. `http://clarent:3010`) because `navigator.clipboard` is only defined in secure contexts (HTTPS or localhost). Added `lib/clipboard.ts` with a `copyToClipboard` helper that falls back to an ephemeral `<textarea>` + `document.execCommand('copy')` when the async Clipboard API isn't available, and routed all three existing copy buttons (pool URL, bid ID, price-chart pinned-tooltip JSON) through it. The tooltip JSON copy already had the fallback inline; this consolidates the three into one helper.

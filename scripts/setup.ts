@@ -57,12 +57,20 @@ function resolvePaths(projectRoot: string): SetupPaths {
 
 interface Args {
   readonly force: boolean;
+  readonly wipeDb: boolean;
   readonly printPaths: boolean;
 }
 
 function parseArgs(argv: string[]): Args {
   return {
+    // Rewrite secrets + age key + sops policy. Never touches the DB —
+    // config.upsert() on an existing DB is idempotent and preserves
+    // tick_metrics / decisions / bid_events / owned_bids (all history).
     force: argv.includes('--force'),
+    // Explicit opt-in for wiping data/state.db. Only use this when the
+    // DB is genuinely corrupt — it deletes ALL history (tick metrics,
+    // decisions, bid events, P&L inputs).
+    wipeDb: argv.includes('--wipe-db'),
     printPaths: argv.includes('--print-paths'),
   };
 }
@@ -263,15 +271,23 @@ async function main() {
 
   const secretsExists = await fileExists(paths.secretsFile);
   const dbExists = await fileExists(paths.dbFile);
-  if ((secretsExists || dbExists) && !args.force) {
+  if (secretsExists && !args.force) {
     console.error(
-      `Existing setup found (secrets=${secretsExists}, db=${dbExists}). Re-run with --force to overwrite.`,
+      `Existing secrets file found at ${paths.secretsFile}. Re-run with --force to overwrite.`,
+    );
+    console.error(
+      `(--force only rewrites secrets + age key. Add --wipe-db to also delete history.)`,
     );
     process.exit(1);
   }
-  if (args.force) {
-    if (secretsExists) await rm(paths.secretsFile);
-    if (dbExists) await rm(paths.dbFile);
+  if (args.force && secretsExists) {
+    await rm(paths.secretsFile);
+  }
+  if (args.wipeDb && dbExists) {
+    console.log(`⚠  --wipe-db: deleting ${paths.dbFile} (ALL history will be lost)`);
+    await rm(paths.dbFile);
+  } else if (dbExists) {
+    console.log(`→ existing database at ${paths.dbFile} — history preserved; config will be updated in place`);
   }
 
   const agePubKey = await ensureAgeKey(paths.ageKey);
