@@ -40,6 +40,7 @@ import {
   formatTimestamp,
   formatTimestampUtc,
 } from '../lib/format';
+import { applyExplorerTemplate } from '../lib/blockExplorer';
 import { useDenomination } from '../lib/denomination';
 import { copyToClipboard } from '../lib/clipboard';
 import { actionModeLabel, bidStatusClass, bidStatusLabel } from '../lib/labels';
@@ -379,6 +380,7 @@ export function Status() {
         onRangeChange={setChartRange}
         simMode={simMode}
         ourBlocks={oceanQuery.data?.our_recent_blocks ?? []}
+        blockExplorerTemplate={configQuery.data?.config?.block_explorer_url_template}
       />
       <PriceChart
         points={(simMode && simMetricPoints ? simMetricPoints : metricsQuery.data?.points) ?? []}
@@ -1601,6 +1603,13 @@ function OceanPanel() {
     queryFn: api.ocean,
     refetchInterval: 5 * 60_000,
   });
+  const configQuery = useQuery({
+    queryKey: ['config'],
+    queryFn: () => api.config(),
+  });
+  const explorerTemplate =
+    configQuery.data?.config?.block_explorer_url_template ??
+    'https://mempool.space/block/{hash}';
 
   const o = oceanQuery.data;
 
@@ -1633,7 +1642,14 @@ function OceanPanel() {
     >
       {o.last_block ? (
         <>
-          <Row k="last pool block" v={`#${o.last_block.height.toLocaleString(intlLocale)}`} />
+          <LinkRow
+            k="last pool block"
+            v={`#${o.last_block.height.toLocaleString(intlLocale)}`}
+            href={applyExplorerTemplate(explorerTemplate, {
+              block_hash: o.last_block.block_hash,
+              height: o.last_block.height,
+            })}
+          />
           <Row k="found" v={o.last_block.ago_text} />
           <Row k="reward" v={denomination.formatSat(o.last_block.total_reward_sat, intlLocale)} />
         </>
@@ -2383,6 +2399,27 @@ function Row({ k, v }: { k: string; v: string }) {
           v
         )}
       </span>
+    </div>
+  );
+}
+
+/**
+ * Variant of {@link Row} whose value is a link opening in a new tab.
+ * Used by the Ocean panel's "last pool block" row to jump into the
+ * configured block explorer (issue #22).
+ */
+function LinkRow({ k, v, href }: { k: string; v: string; href: string }) {
+  return (
+    <div className="flex justify-between text-sm py-0.5">
+      <span className="text-slate-400">{k}</span>
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-sky-400 hover:text-sky-300 underline font-mono"
+      >
+        {v}
+      </a>
     </div>
   );
 }

@@ -237,6 +237,7 @@ export interface AppConfig {
   decisions_uneventful_retention_days: number;
   decisions_eventful_retention_days: number;
   datum_api_url: string | null;
+  block_explorer_url_template: string;
 }
 
 export interface ConfigResponse {
@@ -398,6 +399,8 @@ export interface OurBlockMarker {
   height: number;
   timestamp_ms: number;
   total_reward_sat: number;
+  subsidy_sat: number;
+  fees_sat: number;
   block_hash: string;
   worker: string;
   found_by_us: boolean;
@@ -409,6 +412,7 @@ export interface OceanResponse {
     height: number;
     timestamp_ms: number;
     total_reward_sat: number;
+    block_hash: string;
     ago_text: string;
   } | null;
   blocks_24h: number;

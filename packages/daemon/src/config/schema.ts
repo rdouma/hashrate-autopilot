@@ -203,6 +203,21 @@ export const AppConfigSchema = z.object({
       z.string().url().nullable(),
     )
     .default(null),
+
+  // Block explorer URL template used for click-through from the Ocean
+  // panel's "last pool block" row and the cube tooltips on the Hashrate
+  // chart (issue #22). `{hash}` and `{height}` are substituted; at least
+  // one placeholder is required so the link actually points somewhere.
+  // Default = mempool.space so a fresh install has working links
+  // without a config step.
+  block_explorer_url_template: z
+    .string()
+    .min(1)
+    .refine(
+      (v) => v.includes('{hash}') || v.includes('{height}'),
+      { message: 'must contain {hash} or {height} placeholder' },
+    )
+    .default('https://mempool.space/block/{hash}'),
 });
 
 export type AppConfig = z.infer<typeof AppConfigSchema>;
@@ -287,4 +302,6 @@ export const APP_CONFIG_DEFAULTS: Omit<
   decisions_eventful_retention_days: 90,
 
   datum_api_url: null,
+
+  block_explorer_url_template: 'https://mempool.space/block/{hash}',
 };

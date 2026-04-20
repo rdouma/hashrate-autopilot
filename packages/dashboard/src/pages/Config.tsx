@@ -33,6 +33,13 @@ type FieldSpec = (
       help?: string;
     }
   | { key: keyof AppConfig; label: string; kind: 'text'; help?: string }
+  | {
+      key: keyof AppConfig;
+      label: string;
+      kind: 'text_with_presets';
+      help?: string;
+      presets: ReadonlyArray<{ label: string; template: string }>;
+    }
   | { key: keyof AppConfig; label: string; kind: 'boolean'; help?: string }
   | {
       key: keyof AppConfig;
@@ -250,6 +257,27 @@ const SECTIONS: Section[] = [
           { value: 'account', label: 'Whole account (all settled bids ever)' },
         ],
         help: '"Autopilot only" sums consumed across bids the daemon has tagged in its ledger — accurate for what *this* autopilot has cost. "Whole account" sums counters_committed.amount_consumed_sat across every bid on /v1/spot/bid — covers active + historical bids (including any placed before the autopilot was switched on). May lag the latest hour of active-bid consumption.',
+      },
+    ],
+  },
+  {
+    title: 'Block explorer',
+    description:
+      'Used for click-through from the Ocean panel\'s "last pool block" row and the block-marker tooltips on the Hashrate chart. `{hash}` and `{height}` placeholders are substituted.',
+    fields: [
+      {
+        key: 'block_explorer_url_template',
+        label: 'URL template',
+        kind: 'text_with_presets',
+        fullWidth: true,
+        help: 'Pick a preset or paste your own template — at least one placeholder ({hash} or {height}) is required. Example custom: http://umbrel.local:3006/block/{hash}.',
+        presets: [
+          { label: 'mempool.space', template: 'https://mempool.space/block/{hash}' },
+          { label: 'blockstream.info', template: 'https://blockstream.info/block/{hash}' },
+          { label: 'blockchair.com', template: 'https://blockchair.com/bitcoin/block/{hash}' },
+          { label: 'btcscan.org', template: 'https://btcscan.org/block/{hash}' },
+          { label: 'btc.com', template: 'https://btc.com/btc/block/{hash}' },
+        ],
       },
     ],
   },
@@ -817,6 +845,48 @@ function Field({
             Without the address prefix, shares go uncredited.
           </span>
         )}
+        {spec.help && <span className="block text-xs text-slate-500 mt-1">{spec.help}</span>}
+      </label>
+    );
+  }
+
+  if (spec.kind === 'text_with_presets') {
+    const v = (value as string | null) ?? '';
+    const activePreset = spec.presets.find((p) => p.template === v);
+    return (
+      <label className="block">
+        <span className="block text-sm text-slate-300 mb-1">{spec.label}</span>
+        <input
+          type="text"
+          value={v}
+          onChange={(e) => onChange(spec.key, e.target.value as never)}
+          className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm font-mono"
+        />
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          {spec.presets.map((p) => {
+            const active = p.template === v;
+            return (
+              <button
+                key={p.label}
+                type="button"
+                onClick={() => onChange(spec.key, p.template as never)}
+                className={
+                  'px-2 py-0.5 rounded text-[11px] border ' +
+                  (active
+                    ? 'bg-slate-700 border-slate-500 text-slate-100'
+                    : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700 hover:text-slate-200')
+                }
+              >
+                {p.label}
+              </button>
+            );
+          })}
+          {!activePreset && v && (
+            <span className="px-2 py-0.5 rounded text-[11px] border border-slate-700 bg-slate-900 text-slate-500 italic">
+              custom
+            </span>
+          )}
+        </div>
         {spec.help && <span className="block text-xs text-slate-500 mt-1">{spec.help}</span>}
       </label>
     );

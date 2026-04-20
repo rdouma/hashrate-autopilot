@@ -9,7 +9,8 @@
  * time-range filter and X-axis layout.
  */
 
-import { memo, useMemo } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState, useRef, useLayoutEffect } from 'react';
+import type React from 'react';
 
 import {
   CHART_RANGES,
@@ -22,8 +23,9 @@ import {
 } from '@braiins-hashrate/shared';
 
 import type { MetricPoint, OurBlockMarker } from '../lib/api';
-import { formatNumber } from '../lib/format';
+import { formatNumber, formatTimestamp, formatTimestampUtc } from '../lib/format';
 import { useLocale } from '../lib/locale';
+import { applyExplorerTemplate } from '../lib/blockExplorer';
 
 const WIDTH = 880;
 const HEIGHT = 200;
@@ -37,10 +39,14 @@ const COLOR_DELIVERED = '#34d399';
 const COLOR_DATUM = '#38bdf8';
 const COLOR_TARGET = '#94a3b8';
 const COLOR_FLOOR = '#64748b';
-// Gold — distinct from every other chart colour, reads as "jackpot"
-// against the dark background. Used for the rare "we found a block"
-// markers Ocean credits to the operator's wallet.
+// Gold — reserved for the rare "we found this block ourselves" case
+// (found_by_us === true), reads as "jackpot" against the dark
+// background.
 const COLOR_OUR_BLOCK = '#fbbf24';
+// Tailwind blue-500 — the generic "pool block credited via TIDES"
+// marker. Saturated enough to read as its own colour against the
+// teal delivered curve and cyan Datum line.
+const COLOR_POOL_BLOCK = '#3b82f6';
 
 function formatDuration(ms: number): string {
   const totalMinutes = Math.max(0, Math.round(ms / 60_000));
@@ -51,23 +57,73 @@ function formatDuration(ms: number): string {
   return `${hours}h ${minutes}m`;
 }
 
+interface BlockTooltipState {
+  block: OurBlockMarker;
+  x: number;
+  y: number;
+  pinned: boolean;
+}
+
 export const HashrateChart = memo(function HashrateChart({
   points,
   range,
   onRangeChange,
   simMode = false,
   ourBlocks = [],
+  blockExplorerTemplate = 'https://mempool.space/block/{hash}',
 }: {
   points: readonly MetricPoint[];
   range: ChartRange;
   onRangeChange: (r: ChartRange) => void;
   simMode?: boolean;
-  /** Blocks Ocean credited to the operator's wallet, rendered as
-   *  vertical gold markers when their timestamps fall inside the
-   *  chart range. Sparse — typically zero; rare celebratory event. */
+  /** Pool blocks credited to our wallet (every recent pool block
+   *  under TIDES while mining, plus a gold-flagged subset for the
+   *  rare solo-finder case). */
   ourBlocks?: readonly OurBlockMarker[];
+  /** Template applied at click time to turn a block hash/height into
+   *  an explorer URL. `{hash}` and `{height}` placeholders are
+   *  substituted; at least one must be present. */
+  blockExplorerTemplate?: string;
 }) {
   const { intlLocale } = useLocale();
+  const [blockTip, setBlockTip] = useState<BlockTooltipState | null>(null);
+
+  const onBlockEnter = useCallback(
+    (block: OurBlockMarker) => (e: React.MouseEvent) => {
+      setBlockTip((prev) => {
+        if (prev?.pinned) return prev;
+        return { block, x: e.clientX, y: e.clientY, pinned: false };
+      });
+    },
+    [],
+  );
+  const onBlockLeave = useCallback(() => {
+    setBlockTip((prev) => (prev?.pinned ? prev : null));
+  }, []);
+  const onBlockClick = useCallback(
+    (block: OurBlockMarker) => (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setBlockTip({ block, x: e.clientX, y: e.clientY, pinned: true });
+    },
+    [],
+  );
+  const closeBlockTip = useCallback(() => setBlockTip(null), []);
+
+  useEffect(() => {
+    if (!blockTip?.pinned) return;
+    const onDocClick = (ev: MouseEvent) => {
+      const target = ev.target as Node | null;
+      if (
+        target &&
+        document.getElementById('hashrate-chart-pinned-tooltip')?.contains(target)
+      ) {
+        return;
+      }
+      setBlockTip(null);
+    };
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [blockTip?.pinned]);
 
   const chartData = useMemo(() => {
     if (points.length < 2) return null;
@@ -192,9 +248,19 @@ export const HashrateChart = memo(function HashrateChart({
           <Legend color={COLOR_TARGET} label="target" dashed />
           <Legend color={COLOR_FLOOR} label="floor" dashed />
           {!simMode &&
-            ourBlocks.some((b) => b.timestamp_ms >= chartData.minX && b.timestamp_ms <= chartData.maxX) && (
-              <Legend color={COLOR_OUR_BLOCK} label="pool block" dashed />
-            )}
+            ourBlocks.some(
+              (b) =>
+                b.timestamp_ms >= chartData.minX &&
+                b.timestamp_ms <= chartData.maxX &&
+                !b.found_by_us,
+            ) && <Legend color={COLOR_POOL_BLOCK} label="pool block" dashed />}
+          {!simMode &&
+            ourBlocks.some(
+              (b) =>
+                b.timestamp_ms >= chartData.minX &&
+                b.timestamp_ms <= chartData.maxX &&
+                b.found_by_us,
+            ) && <Legend color={COLOR_OUR_BLOCK} label="found by us" dashed />}
         </div>
       </div>
       <svg
@@ -250,36 +316,47 @@ export const HashrateChart = memo(function HashrateChart({
             .filter((b) => b.timestamp_ms >= minX && b.timestamp_ms <= maxX)
             .map((b) => {
               const x = xScale(b.timestamp_ms);
+              const color = b.found_by_us ? COLOR_OUR_BLOCK : COLOR_POOL_BLOCK;
               return (
-                <g key={b.block_hash || b.height}>
-                  <title>
-                    {b.found_by_us
-                      ? `Block #${b.height.toLocaleString()} — FOUND BY US ${new Date(b.timestamp_ms).toLocaleString()}\nreward ${b.total_reward_sat.toLocaleString()} sat\nworker ${b.worker || '—'}\nhash ${b.block_hash.slice(0, 16)}…`
-                      : `Pool block #${b.height.toLocaleString()} — credited via TIDES ${new Date(b.timestamp_ms).toLocaleString()}\npool reward ${b.total_reward_sat.toLocaleString()} sat\nhash ${b.block_hash.slice(0, 16)}…`}
-                  </title>
+                <g
+                  key={b.block_hash || b.height}
+                  onMouseEnter={onBlockEnter(b)}
+                  onMouseLeave={onBlockLeave}
+                  onClick={onBlockClick(b)}
+                  style={{ cursor: 'pointer' }}
+                >
                   <line
                     x1={x}
                     x2={x}
                     y1={PADDING.top + 8}
                     y2={HEIGHT - PADDING.bottom}
-                    stroke={COLOR_OUR_BLOCK}
+                    stroke={color}
                     strokeWidth={b.found_by_us ? '1.8' : '1'}
                     strokeDasharray={b.found_by_us ? '4 2' : '2 3'}
-                    opacity={b.found_by_us ? '0.95' : '0.45'}
+                    opacity={b.found_by_us ? '0.95' : '0.55'}
+                  />
+                  {/* Transparent wide hit-target so hover/click on the
+                      thin dashed line is forgiving. */}
+                  <rect
+                    x={x - 6}
+                    y={PADDING.top - 9}
+                    width={12}
+                    height={HEIGHT - PADDING.bottom - PADDING.top + 9}
+                    fill="transparent"
                   />
                   {/* Small isometric cube, matching Ocean's block icon.
                       Three rhombus faces — top, front, right — stroked
-                      in the block-marker colour. Centered on the line. */}
+                      in the marker colour. Centered on the line. */}
                   <g
                     transform={`translate(${x - 5}, ${PADDING.top - 9})`}
                     fill="none"
-                    stroke={COLOR_OUR_BLOCK}
+                    stroke={color}
                     strokeWidth="1.1"
                     strokeLinejoin="round"
                   >
-                    <path d="M5 0 L10 2.5 L5 5 L0 2.5 Z" fill={COLOR_OUR_BLOCK} fillOpacity="0.25" />
-                    <path d="M0 2.5 L0 7.5 L5 10 L5 5 Z" fill={COLOR_OUR_BLOCK} fillOpacity="0.15" />
-                    <path d="M5 5 L5 10 L10 7.5 L10 2.5 Z" fill={COLOR_OUR_BLOCK} fillOpacity="0.35" />
+                    <path d="M5 0 L10 2.5 L5 5 L0 2.5 Z" fill={color} fillOpacity="0.25" />
+                    <path d="M0 2.5 L0 7.5 L5 10 L5 5 Z" fill={color} fillOpacity="0.15" />
+                    <path d="M5 5 L5 10 L10 7.5 L10 2.5 Z" fill={color} fillOpacity="0.35" />
                   </g>
                 </g>
               );
@@ -343,9 +420,153 @@ export const HashrateChart = memo(function HashrateChart({
           PH/s
         </text>
       </svg>
+      {blockTip && (
+        <BlockTooltip
+          tip={blockTip}
+          explorerTemplate={blockExplorerTemplate}
+          locale={intlLocale}
+          onClose={closeBlockTip}
+        />
+      )}
     </div>
   );
 });
+
+function BlockTooltip({
+  tip,
+  explorerTemplate,
+  locale,
+  onClose,
+}: {
+  tip: BlockTooltipState;
+  explorerTemplate: string;
+  locale: string | undefined;
+  onClose: () => void;
+}) {
+  const { block, pinned } = tip;
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [pos, setPos] = useState<{ left: number; top: number; ready: boolean }>({
+    left: tip.x + 12,
+    top: tip.y + 12,
+    ready: false,
+  });
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const margin = 8;
+    let left = tip.x + 12;
+    let top = tip.y + 12;
+    if (left + rect.width > window.innerWidth - margin) left = tip.x - rect.width - 12;
+    if (top + rect.height > window.innerHeight - margin) top = tip.y - rect.height - 12;
+    if (left < margin) left = margin;
+    if (top < margin) top = margin;
+    setPos({ left, top, ready: true });
+  }, [tip.x, tip.y, block.block_hash]);
+
+  const url = applyExplorerTemplate(explorerTemplate, block);
+  const rewardBtc = block.total_reward_sat / 1e8;
+  const subsidyBtc = block.subsidy_sat / 1e8;
+  const feesBtc = block.fees_sat / 1e8;
+  const headerColor = block.found_by_us ? 'text-amber-300' : 'text-sky-300';
+  const kindLabel = block.found_by_us ? 'FOUND BY US' : 'POOL BLOCK';
+
+  return (
+    <div
+      ref={ref}
+      id={pinned ? 'hashrate-chart-pinned-tooltip' : undefined}
+      className={`fixed z-50 bg-slate-950 border rounded-lg shadow-lg p-3 text-xs whitespace-nowrap ${pinned ? 'border-slate-500 pointer-events-auto' : 'border-slate-700 pointer-events-none'} ${pos.ready ? '' : 'invisible'}`}
+      style={{ left: pos.left, top: pos.top }}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <span className={`font-semibold uppercase tracking-wider ${headerColor}`}>
+          {kindLabel} · #{block.height.toLocaleString(locale)}
+        </span>
+        {pinned && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="close"
+            className="text-slate-500 hover:text-slate-200 leading-none text-base -mt-0.5 -mr-0.5"
+          >
+            ×
+          </button>
+        )}
+      </div>
+      <div className="text-slate-300 mt-1">{formatTimestamp(block.timestamp_ms, locale)}</div>
+      <div className="text-slate-500 text-[10px]">{formatTimestampUtc(block.timestamp_ms)}</div>
+
+      <div className="mt-2 space-y-0.5 text-slate-300">
+        <BtcRow label="pool reward" btc={rewardBtc} locale={locale} />
+        <BtcRow label="subsidy" btc={subsidyBtc} locale={locale} muted />
+        <BtcRow label="fees" btc={feesBtc} locale={locale} muted />
+        <Row
+          label="worker"
+          value={block.worker || '—'}
+          mono
+          accent={block.found_by_us ? 'text-amber-300' : undefined}
+        />
+      </div>
+
+      <div className="mt-3 pt-2 border-t border-slate-800">
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sky-400 hover:text-sky-300 underline text-[11px]"
+        >
+          open in block explorer →
+        </a>
+      </div>
+    </div>
+  );
+}
+
+function Row({
+  label,
+  value,
+  mono,
+  accent,
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+  accent?: string;
+}) {
+  return (
+    <div className="flex justify-between gap-3">
+      <span className="text-slate-500">{label}</span>
+      <span className={`${mono ? 'font-mono' : ''} tabular-nums ${accent ?? ''}`}>{value}</span>
+    </div>
+  );
+}
+
+function BtcRow({
+  label,
+  btc,
+  locale,
+  muted = false,
+}: {
+  label: string;
+  btc: number;
+  locale: string | undefined;
+  muted?: boolean;
+}) {
+  const text = new Intl.NumberFormat(locale, {
+    minimumFractionDigits: 8,
+    maximumFractionDigits: 8,
+  }).format(btc);
+  return (
+    <div className="flex justify-between gap-3">
+      <span className="text-slate-500">{label}</span>
+      <span className={`font-mono tabular-nums ${muted ? 'text-slate-400' : ''}`}>
+        <span className="text-slate-500 mr-1">₿</span>
+        {text}
+      </span>
+    </div>
+  );
+}
 
 function Legend({ color, label, dashed }: { color: string; label: string; dashed?: boolean }) {
   return (

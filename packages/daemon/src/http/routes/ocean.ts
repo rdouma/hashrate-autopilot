@@ -15,6 +15,8 @@ export interface OurBlock {
   height: number;
   timestamp_ms: number;
   total_reward_sat: number;
+  subsidy_sat: number;
+  fees_sat: number;
   block_hash: string;
   worker: string;
   /**
@@ -31,6 +33,7 @@ export interface OceanResponse {
     height: number;
     timestamp_ms: number;
     total_reward_sat: number;
+    block_hash: string;
     ago_text: string;
   } | null;
   blocks_24h: number;
@@ -133,6 +136,8 @@ export async function registerOceanRoute(
       height: b.height,
       timestamp_ms: b.timestamp_ms,
       total_reward_sat: b.total_reward_sat,
+      subsidy_sat: b.subsidy_sat,
+      fees_sat: b.fees_sat,
       block_hash: b.block_hash,
       worker: b.worker,
       found_by_us: b.username === address,
@@ -145,6 +150,7 @@ export async function registerOceanRoute(
             height: lastBlock.height,
             timestamp_ms: lastBlock.timestamp_ms,
             total_reward_sat: lastBlock.total_reward_sat,
+            block_hash: lastBlock.block_hash,
             ago_text: formatAgo(now - lastBlock.timestamp_ms),
           }
         : null,

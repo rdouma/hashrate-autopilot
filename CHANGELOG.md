@@ -2,6 +2,16 @@
 
 ## 2026-04-20 (post-v1.0.3)
 
+### `[Feature]` Configurable block explorer; clickable block links (#22)
+
+New config field `block_explorer_url_template` (default `https://mempool.space/block/{hash}`). The Config page exposes it under a new "Block explorer" section with quick-fill preset pills for mempool.space, blockstream.info, blockchair.com, btcscan.org, and btc.com; operators running their own explorer on a local address paste a custom template like `http://umbrel.local:3006/block/{hash}`. Both `{hash}` and `{height}` placeholders are substituted at click time.
+
+Wiring: the Ocean panel's "last pool block" row is now a link to the configured explorer. Block-marker cubes on the Hashrate chart also link out from their tooltips.
+
+### `[UI]` Hashrate chart block tooltips: interactive, richer fields, localised dates
+
+Replaced the SVG `<title>` hover text with an interactive HTML tooltip matching the price-chart edit-event style — dark pill, rounded, pins on click, closes on outside click or the × button. Fields: block height, localised full timestamp (uses the dashboard's configured locale — no more hard-coded American M/D/Y), UTC line, pool reward / subsidy / fees all in BTC with the ₿ symbol (8-decimal mining precision), finder worker, and an "open in block explorer" link. The raw hex block hash, Bitcoin-network difficulty, and transaction count were dropped as non-essential for the operator's day-to-day question of "did we earn anything and where do I dig deeper". The solo-finder ("found by us") case keeps the existing gold colour; TIDES-credited pool blocks (the common case) are now blue (Tailwind blue-500) — distinct from the Datum cyan and the teal delivered curve.
+
 ### `[Fix]` Hashrate chart: cubes for every TIDES-credited pool block (#23)
 
 Original issue #23 implementation filtered pool blocks by `username === our_payout_address`, i.e. only marked blocks our own worker literally found — a solo-lottery event that, at 3 PH/s against the network, effectively never happens. The operator saw Ocean's panel report `last pool block 1h 30m ago` and reasonably expected a cube at 15:30 on the chart; none appeared.

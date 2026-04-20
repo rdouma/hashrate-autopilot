@@ -61,6 +61,7 @@ describe('openDatabase — migrations', () => {
       '0030_max_overpay_vs_hashprice.sql',
       '0031_persist_above_floor_since.sql',
       '0032_rename_above_floor_since_to_lower_ready_since.sql',
+      '0033_block_explorer_url_template.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });
