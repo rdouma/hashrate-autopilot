@@ -1,5 +1,31 @@
 # Changelog
 
+## v1.0.0 — 2026-04-19
+
+First stable release. Tagged so operators who don't want to track `main` daily have a pinned reference to run against.
+
+**Highlights of what's in 1.0:**
+
+- 24/7 price-taker autopilot for the Braiins Hashpower marketplace: creates / escalates / lowers bids against a per-tick target (fillable + overpay), capped by the tighter of a fixed maximum and a dynamic `hashprice + max_overpay` ceiling.
+- Server-side-safe: honours Braiins' 10-min price-decrease cooldown and the Telegram-2FA-exempt owner-token path; respects run-mode gates (DRY_RUN / LIVE / PAUSED) and manual-override locks.
+- Independent break-even reference via Ocean: dynamic cap gates on a fresh Ocean hashprice, refuses to trade when that reference is unavailable, and falls back to the fixed cap only when the operator hasn't configured the dynamic one.
+- Full-history simulator that replays `tick_metrics` under candidate parameters and reports uptime / mutations / cost / overpay — now with the Braiins 10-min cooldown and the dynamic cap respected, so simulated stats match what the real controller can actually achieve.
+- Dashboard with Status + Config pages, per-tick Next Action prediction, depth-aware price / hashrate charts, pinned event tooltips with full market context, and P&L per-day + lifetime panels.
+- Datum Gateway + Ocean pool integration for end-to-end pipeline observation.
+
+**Bug fixes since CHANGELOG introduction (issues #28–#32):**
+
+- `[Fix]` Dynamic cap no longer silently collapses when the dashboard is closed (#28). Hashprice cache timestamps its writes, seeds from a boot-time Ocean fetch, and decide() refuses to trade when the cap is configured but hashprice is unknown or stale beyond 60 min.
+- `[Fix]` Next Action countdown + progress bar agree from tick 1 and stop promising escalations that can't fire (#29). Above-floor shortfalls get a "no escalation scheduled" detail instead of a phantom 3-min countdown.
+- `[Fix]` Pinned tooltip's overpay allowance reads from `config_summary` instead of a racy `configQuery`, so it's always truthful (#30).
+- `[Fix]` P&L per-day rows stop disappearing on transient 0-spend or missing-income states; show `calculating…` when Ocean income hasn't landed yet (#31).
+- `[Fix]` Simulator enforces the Braiins 10-min price-decrease cooldown; no more simulated lowerings 5–8 minutes apart that the real bot could never execute (#32).
+- `[Polish]` Event tooltip units use the ≡ sat glyph and muted styling, matching the rest of the Status page.
+- `[Polish]` Hashprice row moved from the Braiins card to the Ocean card, where it belongs — it's Ocean-derived, not Braiins-reported.
+- `[Feature]` Tooltip now surfaces `max overpay vs hashprice` and `hashprice + max overpay` so operators can see which cap is binding at the event's tick.
+
+---
+
 ## 2026-04-19
 
 ### `[Feature]` Max-premium-over-hashprice cap (#27)
