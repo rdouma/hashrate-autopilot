@@ -2,6 +2,14 @@
 
 ## 2026-04-20 (post-v1.0.3)
 
+### `[Feature]` Block-marker tooltip shows the miner identity ("Simple Mining · OCEAN")
+
+Block explorers display the miner behind a block as e.g. "Simple Mining · OCEAN", distinct from the Stratum worker label (which, for TIDES-credited pool blocks, is some other operator's rig-name like `14283759` and is meaningless to us). Added local, privacy-preserving enrichment: on each Ocean poll, the daemon calls `getblock <hash> 2` on the operator's own bitcoind node, extracts the coinbase scriptSig, and picks the first operator-meaningful ASCII token as the miner tag. The pool is hardcoded to "OCEAN" for every block (since they come from Ocean's API — no pool-tags database needed).
+
+No external HTTP — no third-party block explorer learns about this node. Enrichment is cached forever per block hash in a new `block_metadata` table (blocks are immutable). Falls back to the Stratum workername when bitcoind RPC isn't configured or the coinbase yields nothing.
+
+Surfaced on the Hashrate-chart cube tooltip (replacing the bare "worker" field) and the Ocean panel (new "miner" row between "found" and "reward").
+
 ### `[UI]` Config: Block explorer moved up so P&L and BTC price oracle pair again
 
 Inserting the new "Block explorer" section between the existing "Profit & Loss" and "BTC price oracle" sections broke their side-by-side pairing — both became half-width cards stranded in their own rows. Moved the Block explorer section up one slot (above Profit & Loss) so the P&L + BTC-price-oracle pair reunites on a single row.

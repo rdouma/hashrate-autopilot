@@ -26,6 +26,7 @@ import { PayoutObserver } from './services/payout-observer.js';
 import { PoolHealthTracker } from './services/pool-health.js';
 import { closeDatabase, openDatabase } from './state/db.js';
 import { BidEventsRepo } from './state/repos/bid_events.js';
+import { BlockMetadataRepo } from './state/repos/block_metadata.js';
 import { ClosedBidsCacheRepo } from './state/repos/closed_bids_cache.js';
 import { ConfigRepo } from './state/repos/config.js';
 import { DecisionsRepo } from './state/repos/decisions.js';
@@ -72,6 +73,7 @@ async function main(): Promise<void> {
   const decisionsRepo = new DecisionsRepo(handle.db);
   const tickMetricsRepo = new TickMetricsRepo(handle.db);
   const bidEventsRepo = new BidEventsRepo(handle.db);
+  const blockMetadataRepo = new BlockMetadataRepo(handle.db);
   const closedBidsCacheRepo = new ClosedBidsCacheRepo(handle.db);
 
   let cfg = await configRepo.get();
@@ -278,6 +280,7 @@ async function main(): Promise<void> {
     decisionsRepo,
     tickMetricsRepo,
     bidEventsRepo,
+    blockMetadataRepo,
     payoutObserver,
     oceanClient,
     accountSpend,

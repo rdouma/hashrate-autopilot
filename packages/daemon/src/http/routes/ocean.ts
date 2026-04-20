@@ -8,8 +8,12 @@
 
 import type { FastifyInstance } from 'fastify';
 
+import { createBitcoindClient } from '@braiins-hashrate/bitcoind-client';
+
 import type { ConfigRepo } from '../../state/repos/config.js';
+import type { BlockMetadataRepo } from '../../state/repos/block_metadata.js';
 import type { OceanClient, OceanBlock, OceanPoolInfo } from '../../services/ocean.js';
+import { enrichFromBitcoind } from '../../services/coinbase.js';
 
 export interface OurBlock {
   height: number;
@@ -25,6 +29,13 @@ export interface OurBlock {
    * TIDES shares in the reward window (the common case while mining).
    */
   found_by_us: boolean;
+  /** Pool name from mempool.space enrichment (e.g. "OCEAN"). Null
+   *  when mempool hasn't indexed the block yet or the call failed. */
+  pool_name: string | null;
+  /** Miner / operator tag extracted from the coinbase ASCII
+   *  (e.g. "Simple Mining"). Distinct from `pool_name`. Null when
+   *  not derivable. */
+  miner_tag: string | null;
 }
 
 export interface OceanResponse {
@@ -35,6 +46,8 @@ export interface OceanResponse {
     total_reward_sat: number;
     block_hash: string;
     ago_text: string;
+    pool_name: string | null;
+    miner_tag: string | null;
   } | null;
   blocks_24h: number;
   blocks_7d: number;
@@ -74,6 +87,7 @@ export async function registerOceanRoute(
   deps: {
     oceanClient: OceanClient | null;
     configRepo: ConfigRepo;
+    blockMetadataRepo: BlockMetadataRepo;
   },
 ): Promise<void> {
   app.get('/api/ocean', async (): Promise<OceanResponse> => {
@@ -132,16 +146,70 @@ export async function registerOceanRoute(
     const blocks_7d = stats.recent_blocks.filter(
       (b) => b.timestamp_ms > 0 && now - b.timestamp_ms < 7 * DAY_MS,
     ).length;
-    const our_recent_blocks: OurBlock[] = stats.recent_blocks.map((b) => ({
-      height: b.height,
-      timestamp_ms: b.timestamp_ms,
-      total_reward_sat: b.total_reward_sat,
-      subsidy_sat: b.subsidy_sat,
-      fees_sat: b.fees_sat,
-      block_hash: b.block_hash,
-      worker: b.worker,
-      found_by_us: b.username === address,
-    }));
+    // Enrich each recent block with a pool_name + miner_tag label
+    // derived locally from the operator's own bitcoind node — no
+    // external HTTP, no disclosure of this node to a third-party
+    // explorer. Missing-from-cache blocks are fetched in parallel;
+    // bitcoind RPC is fast (<100ms per getblock on an Umbrel box)
+    // and Ocean's response caches for 5 min so we enrich a handful
+    // of new blocks per-day at most. When bitcoind RPC is not
+    // configured (or the call fails), the blocks surface with
+    // nulls and we retry on the next poll.
+    const hashes = stats.recent_blocks.map((b) => b.block_hash).filter(Boolean);
+    const cached = await deps.blockMetadataRepo.getMany(hashes);
+    const toFetch = hashes.filter((h) => !cached.has(h));
+    const bitcoindClient =
+      toFetch.length > 0 &&
+      config.bitcoind_rpc_url &&
+      config.bitcoind_rpc_user &&
+      config.bitcoind_rpc_password
+        ? createBitcoindClient({
+            url: config.bitcoind_rpc_url,
+            username: config.bitcoind_rpc_user,
+            password: config.bitcoind_rpc_password,
+            timeoutMs: 5_000,
+          })
+        : null;
+    if (bitcoindClient) {
+      await Promise.all(
+        toFetch.map(async (hash) => {
+          const enrichment = await enrichFromBitcoind(bitcoindClient, hash);
+          // Only persist when we actually got something — a
+          // transient RPC failure would otherwise poison the cache
+          // and keep a block labelled "unknown" forever.
+          if (enrichment.pool_name !== null || enrichment.miner_tag !== null) {
+            await deps.blockMetadataRepo.upsert({
+              block_hash: hash,
+              pool_name: enrichment.pool_name,
+              miner_tag: enrichment.miner_tag,
+              fetched_at: now,
+            });
+            cached.set(hash, {
+              block_hash: hash,
+              pool_name: enrichment.pool_name,
+              miner_tag: enrichment.miner_tag,
+              fetched_at: now,
+            });
+          }
+        }),
+      );
+    }
+
+    const our_recent_blocks: OurBlock[] = stats.recent_blocks.map((b) => {
+      const meta = cached.get(b.block_hash);
+      return {
+        height: b.height,
+        timestamp_ms: b.timestamp_ms,
+        total_reward_sat: b.total_reward_sat,
+        subsidy_sat: b.subsidy_sat,
+        fees_sat: b.fees_sat,
+        block_hash: b.block_hash,
+        worker: b.worker,
+        found_by_us: b.username === address,
+        pool_name: meta?.pool_name ?? null,
+        miner_tag: meta?.miner_tag ?? null,
+      };
+    });
 
     return {
       configured: true,
@@ -152,6 +220,8 @@ export async function registerOceanRoute(
             total_reward_sat: lastBlock.total_reward_sat,
             block_hash: lastBlock.block_hash,
             ago_text: formatAgo(now - lastBlock.timestamp_ms),
+            pool_name: cached.get(lastBlock.block_hash)?.pool_name ?? null,
+            miner_tag: cached.get(lastBlock.block_hash)?.miner_tag ?? null,
           }
         : null,
       blocks_24h,

@@ -503,10 +503,12 @@ function BlockTooltip({
         <BtcRow label="fees" btc={feesBtc} locale={locale} muted />
         <Row
           label="miner"
-          value={block.worker || '—'}
-          mono
+          value={formatMinerLabel(block)}
           accent={block.found_by_us ? 'text-amber-300' : undefined}
         />
+        {(block.miner_tag || block.pool_name) && block.worker && (
+          <Row label="worker" value={block.worker} mono muted />
+        )}
       </div>
 
       <div className="mt-3 pt-2 border-t border-slate-800">
@@ -528,18 +530,39 @@ function Row({
   value,
   mono,
   accent,
+  muted,
 }: {
   label: string;
   value: string;
   mono?: boolean;
   accent?: string;
+  muted?: boolean;
 }) {
   return (
     <div className="flex justify-between gap-3">
       <span className="text-slate-500">{label}</span>
-      <span className={`${mono ? 'font-mono' : ''} tabular-nums ${accent ?? ''}`}>{value}</span>
+      <span
+        className={`${mono ? 'font-mono' : ''} tabular-nums ${accent ?? ''} ${muted ? 'text-slate-500' : ''}`}
+      >
+        {value}
+      </span>
     </div>
   );
+}
+
+/**
+ * Combine the enrichment fields into the single "miner" line — the
+ * `{miner_tag} · {pool_name}` pattern block explorers use (e.g.
+ * "Simple Mining · OCEAN"). Falls back to the Stratum workername
+ * when enrichment hasn't landed yet or yielded nothing, and finally
+ * to an em-dash when we truly have no identity for the block.
+ */
+function formatMinerLabel(block: OurBlockMarker): string {
+  const parts: string[] = [];
+  if (block.miner_tag) parts.push(block.miner_tag);
+  if (block.pool_name) parts.push(block.pool_name);
+  if (parts.length > 0) return parts.join(' · ');
+  return block.worker || '—';
 }
 
 function BtcRow({
