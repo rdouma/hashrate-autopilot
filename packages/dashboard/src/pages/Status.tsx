@@ -561,8 +561,8 @@ export function Status() {
               <tbody>
                 {s.bids.map((b) => (
                   <tr key={b.braiins_order_id} className="border-t border-slate-800">
-                    <td className="py-2 px-3 font-mono text-xs break-all">
-                      {b.braiins_order_id}
+                    <td className="py-2 px-3 font-mono text-xs">
+                      <BidIdCell id={b.braiins_order_id} />
                     </td>
                     <td className="py-2 px-3">
                       {b.is_owned ? (
@@ -1481,6 +1481,43 @@ function RefreshCountdown({
   // about what's happening.
   if (msUntil <= 0) return <span>refreshing…</span>;
   return <span>refreshes in {formatCountdownPrecise(msUntil)}</span>;
+}
+
+function BidIdCell({ id }: { id: string }) {
+  // Full ID on sm+ viewports; shortened head…tail with a copy button
+  // on mobile. The raw ID is 18 chars and `break-all` wraps it one
+  // char per line on narrow screens (#34). Keeping the full ID always
+  // visible on desktop preserves the #26 behavior.
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(id);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard API may be blocked in non-secure contexts */
+    }
+  };
+  const shortId = id.length <= 10 ? id : `${id.slice(0, 5)}…${id.slice(-4)}`;
+  return (
+    <>
+      <span className="hidden sm:inline whitespace-nowrap">{id}</span>
+      <span className="sm:hidden flex items-center gap-1.5">
+        <span>{shortId}</span>
+        <button
+          onClick={copy}
+          aria-label={copied ? 'copied bid ID' : 'copy bid ID'}
+          title={copied ? 'copied bid ID' : 'copy bid ID'}
+          className={
+            'shrink-0 p-0.5 rounded border border-slate-700 hover:bg-slate-800 ' +
+            (copied ? 'text-emerald-300' : 'text-slate-400')
+          }
+        >
+          {copied ? <CheckIcon /> : <CopyIcon />}
+        </button>
+      </span>
+    </>
+  );
 }
 
 function CopyIcon() {

@@ -2,6 +2,10 @@
 
 ## 2026-04-20
 
+### `[UI]` Bids table: mobile-friendly bid ID cell (#34)
+
+The full-width bid ID restored by #26 wrapped one character per line on mobile viewports because of `break-all` on an 18-character monofont string. On narrow viewports the id column now shows a shortened `B86611…5108` alongside a copy-to-clipboard icon; desktop keeps the full ID as before. Same `CopyIcon`/`CheckIcon` feedback pattern used on the Datum pool-URL row.
+
 ### `[Fix]` Keep the hashprice cache warm inside the daemon (#33)
 
 The dynamic-cap guard refuses to trade when hashprice is unknown/stale — which was correct, but in steady state the only thing refreshing the cache was the dashboard's finance poll. A headless daemon running longer than the 60-min freshness window would silently stop producing proposals, the bid would drift below fillable, and hashrate uptime would collapse. Added a `HashpriceRefresher` service that polls Ocean every 10 min from the daemon itself, independent of any dashboard client. Also: the tick log now explicitly says `(no proposals — hashprice unknown/stale, dynamic-cap guard is holding trading)` when the guard fires, instead of the bland `(nothing to do)` that hid the problem.
