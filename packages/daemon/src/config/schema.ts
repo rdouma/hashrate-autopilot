@@ -150,7 +150,7 @@ export const AppConfigSchema = z.object({
   //   price)" entry from Braiins's /v1/account/transaction ledger,
   //   covering the full account history. Pairs honestly with Ocean's
   //   lifetime earnings on the income side.
-  spent_scope: z.enum(['autopilot', 'account']).default('autopilot'),
+  spent_scope: z.enum(['autopilot', 'account']).default('account'),
 
   // BTC/USD price oracle. 'none' disables the price fetcher; other
   // values name the exchange API to poll. Feeds the dashboard's
@@ -270,7 +270,7 @@ export const APP_CONFIG_DEFAULTS: Omit<
   electrs_port: null,
 
   boot_mode: 'ALWAYS_DRY_RUN',
-  spent_scope: 'autopilot',
+  spent_scope: 'account',
   btc_price_source: 'none',
 
   cheap_target_hashrate_ph: 0,

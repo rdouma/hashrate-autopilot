@@ -2,6 +2,10 @@
 
 ## 2026-04-20 (post-v1.0.2)
 
+### `[Infra]` P&L spent-scope defaults to whole account
+
+Fresh installs now default `spent_scope` to `account` instead of `autopilot`. The whole-account view totals every bid Braiins has on the account (autopilot-placed plus anything else), which tends to match what operators actually want to reconcile against on-chain. The per-autopilot-only view is still available via the toggle on the P&L panel. Existing installs keep their stored preference.
+
 ### `[Infra]` Updated first-install config defaults
 
 Fresh installs now start with operator-tested values instead of intentionally-conservative placeholders. All the defaults below express sat/PH/day (the dashboard's unit); stored internally in sat/EH/day.
