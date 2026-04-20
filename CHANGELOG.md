@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-04-20
+
+### `[UI]` Price-chart legend: max-bid swatch is now solid, matching the chart
+
+The legend swatch for "max bid" was drawn dashed while the actual cap line on the chart is solid — visually inconsistent with no functional reason. Legend now renders solid for that entry.
+
 ## v1.0.1 — 2026-04-20
 
 Point release for a significant autopilot-stalling bug (#33): a headless daemon would silently stop producing proposals once the hashprice cache aged past its 60-min freshness window, because only the dashboard refreshed it. Operators running without the dashboard open were losing uptime as bids drifted below fillable. Also includes a mobile-layout fix for the Bids table.

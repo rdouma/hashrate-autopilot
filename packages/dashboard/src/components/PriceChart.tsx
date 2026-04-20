@@ -324,7 +324,7 @@ export const PriceChart = memo(function PriceChart({
           <Legend color={simMode ? '#fbbf24' : COLOR_PRICE} label={simMode ? 'simulated bid' : 'our bid'} />
           <Legend color={COLOR_FILLABLE} label="fillable" dashed />
           <Legend color={COLOR_HASHPRICE} label="hashprice" dashed />
-          <Legend color={COLOR_MAXBID} label="max bid" dashed />
+          <Legend color={COLOR_MAXBID} label="max bid" />
           {showEvents && <EventLegend />}
         </div>
       </div>
