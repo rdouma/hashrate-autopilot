@@ -316,13 +316,27 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
       ...noEvent,
     };
   }
-  // Mirror decide.ts: target = min(fillable + overpay, max_bid).
-  // Without the cap, the prediction text can show prices above max_bid
-  // which the autopilot would never actually bid.
+  // Mirror decide.ts: target = min(fillable + overpay, effectiveCap)
+  // where effectiveCap = min(fixed max_bid, hashprice + max_overpay).
+  // Using the fixed cap alone here would hide the case where the
+  // *dynamic* cap is what's blocking the autopilot — the user would
+  // see an escalation countdown that can't fire.
   const desiredPriceEH = cheapestAsk + state.config.overpay_sat_per_eh_day;
-  const targetPriceEH = Math.min(desiredPriceEH, state.config.max_bid_sat_per_eh_day);
+  const fixedCapEH = state.config.max_bid_sat_per_eh_day;
+  const dynamicCapEH =
+    state.config.max_overpay_vs_hashprice_sat_per_eh_day !== null &&
+    state.hashprice_sat_per_ph_day !== null
+      ? state.hashprice_sat_per_ph_day * EH_PER_PH +
+        state.config.max_overpay_vs_hashprice_sat_per_eh_day
+      : null;
+  const effectiveCapEH = dynamicCapEH !== null ? Math.min(fixedCapEH, dynamicCapEH) : fixedCapEH;
+  const targetPriceEH = Math.min(desiredPriceEH, effectiveCapEH);
   const targetPricePH = Math.round(targetPriceEH / EH_PER_PH);
-  const cappedByMax = desiredPriceEH > state.config.max_bid_sat_per_eh_day;
+  const cappedByMax = desiredPriceEH > effectiveCapEH;
+  const bindingCapLabel =
+    dynamicCapEH !== null && dynamicCapEH < fixedCapEH
+      ? 'dynamic hashprice+max_overpay'
+      : 'fixed max_bid';
 
   if (state.owned_bids.length === 0) {
     const verb = runMode === 'LIVE' ? 'place' : 'log (dry-run)';
@@ -356,8 +370,8 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
     // predict "will jump to max_bid" — that move would never fire.
     if (cappedByMax) {
       return {
-        summary: `Bid filling below target (${primary.avg_speed_ph.toFixed(2)}/${ph} PH/s).`,
-        detail: `Market above your maximum (${Math.round(desiredPriceEH / EH_PER_PH).toLocaleString('en-US')} vs cap ${Math.round(state.config.max_bid_sat_per_eh_day / EH_PER_PH).toLocaleString('en-US')} sat/PH/day). Waiting for prices to drop.`,
+        summary: `Bid filling below target (${primary.avg_speed_ph.toFixed(2)}/${ph} PH/s) — no escalation will fire.`,
+        detail: `Fillable + overpay (${Math.round(desiredPriceEH / EH_PER_PH).toLocaleString('en-US')} sat/PH/day) exceeds your ${bindingCapLabel} cap (${Math.round(effectiveCapEH / EH_PER_PH).toLocaleString('en-US')} sat/PH/day). Waiting for the market to drop or for the cap to relax — raise max_overpay_vs_hashprice in Config to unblock.`,
         ...noEvent,
       };
     }

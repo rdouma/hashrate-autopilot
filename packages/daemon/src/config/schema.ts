@@ -122,7 +122,7 @@ export const AppConfigSchema = z.object({
   // Escalation mode for upward price adjustments:
   // - 'market': jump directly to fillable + overpay (tracks market)
   // - 'dampened': step from current_bid + escalation_step (avoids chasing spikes)
-  escalation_mode: z.enum(['market', 'dampened']).default('dampened'),
+  escalation_mode: z.enum(['market', 'dampened']).default('market'),
   // Minimum overpay (vs fillable + overpay target) before lowering.
   // Avoids micro-edits that burn the Braiins 10-min decrease cooldown for
   // a few sat of savings.
@@ -261,7 +261,7 @@ export const APP_CONFIG_DEFAULTS: Omit<
   fill_escalation_step_sat_per_eh_day: 300_000,
   fill_escalation_after_minutes: 30,
   overpay_sat_per_eh_day: 500_000,
-  escalation_mode: 'dampened',
+  escalation_mode: 'market',
   min_lower_delta_sat_per_eh_day: 200_000,
   lower_patience_minutes: 15,
 

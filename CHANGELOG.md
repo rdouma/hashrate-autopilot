@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-04-20 (post-v1.0.2)
+
+### `[Fix]` Next Action card respects the dynamic cap, not just `max_bid`
+
+When the effective cap was `hashprice + max_overpay` (tighter than the fixed `max_bid`) and `fillable + overpay` exceeded it, the card showed a phantom "Escalation in X min … market mode will jump to Y" countdown that could never fire — decide() was correctly refusing because `desiredPrice > effectiveCap`, but the predictor only compared against the fixed cap. Now the predictor computes the effective cap the same way decide() does and, when blocked, shows the specific detail: "Fillable + overpay 47,671 sat/PH/day exceeds your dynamic hashprice+max_overpay cap (47,075 sat/PH/day). Raise max_overpay_vs_hashprice in Config to unblock."
+
+### `[Infra]` Default escalation mode is now `market`
+
+Fresh installs and unconfigured rows default to market-mode escalation (jump straight to `fillable + overpay` when below floor) instead of dampened stepping. The dampened ladder is still available from the Config page; it just isn't the default any more. Existing installs keep their current setting.
+
 ## v1.0.2 — 2026-04-20
 
 The "fresh-install survives first contact with Ubuntu" release. v1.0.1 worked well on a machine that was already set up, but a fresh clone on a fresh host surfaced a long list of small paper cuts — missing prerequisites in the README, a dashboard package that didn't declare its own workspace dep, a setup wizard that prompted for dead fields (Telegram, bitcoind RPC), committed secrets files that confused `pnpm run setup`, a `--force` flag that deleted history as a "side effect", copy buttons that silently failed on LAN HTTP, and a price chart that let a far-above-the-data cap line squash 70% of the plot area. This release rolls all of those up plus a new diagnostic tick-log message that surfaces the actual reason `decide()` returned no proposals.
