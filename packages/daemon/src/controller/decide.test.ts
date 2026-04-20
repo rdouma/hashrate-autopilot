@@ -10,6 +10,12 @@ const BASE_CONFIG = {
   destination_pool_worker_name: 'otto',
   btc_payout_address: 'bc1qexample',
   telegram_chat_id: '1',
+  // Tests default to hashprice_sat_per_ph_day: null, which collides with
+  // the new default dynamic cap that blocks trading when hashprice is
+  // unknown. Disable the dynamic cap here so tests keep exercising the
+  // plain fixed-cap path; dedicated dynamic-cap tests override this
+  // explicitly + supply a hashprice.
+  max_overpay_vs_hashprice_sat_per_eh_day: null,
 };
 
 // With the defaults, overpay allowance = 500,000 sat/EH/day.

@@ -235,14 +235,16 @@ export const APP_CONFIG_DEFAULTS: Omit<
   target_hashrate_ph: 1.0,
   minimum_floor_hashrate_ph: 0.5,
 
-  // Sensible upper bound; operator will tune once live market data is in view.
-  max_bid_sat_per_eh_day: 60_000_000,
-  // Dynamic hashprice-relative cap — disabled by default so existing
-  // installs see no behaviour change. Operator opts in from Config.
-  max_overpay_vs_hashprice_sat_per_eh_day: null,
+  // Pricing caps. sat/EH/day internally; the dashboard displays them
+  // in sat/PH/day (1 sat/PH/day = 1,000 sat/EH/day).
+  max_bid_sat_per_eh_day: 49_000_000, // 49,000 sat/PH/day
+  // Dynamic hashprice-relative cap enabled by default — typical hashprice
+  // today is ~46,000 sat/PH/day, so a 2,000 premium caps at ~48,000 which
+  // is comfortably below the fixed cap without being overly tight.
+  max_overpay_vs_hashprice_sat_per_eh_day: 2_000_000, // 2,000 sat/PH/day
 
-  monthly_budget_ceiling_sat: 500_000,
-  bid_budget_sat: 50_000,
+  monthly_budget_ceiling_sat: 1_000_000,
+  bid_budget_sat: 200_000,
 
   wallet_runway_alert_days: 3,
   below_floor_alert_after_minutes: 10,
@@ -256,14 +258,13 @@ export const APP_CONFIG_DEFAULTS: Omit<
   confirmation_timeout_minutes: 15,
   handover_window_minutes: 30,
 
-  // Strategy knobs defaults derived from the first-run interview.
-  // 300 sat/PH/day = 300_000 sat/EH/day.
-  fill_escalation_step_sat_per_eh_day: 300_000,
-  fill_escalation_after_minutes: 30,
-  overpay_sat_per_eh_day: 500_000,
+  // Strategy knobs. sat/EH/day internally; 100 sat/PH/day = 100,000 sat/EH/day.
+  fill_escalation_step_sat_per_eh_day: 100_000, // 100 sat/PH/day
+  fill_escalation_after_minutes: 3,
+  overpay_sat_per_eh_day: 100_000, // 100 sat/PH/day
   escalation_mode: 'market',
-  min_lower_delta_sat_per_eh_day: 200_000,
-  lower_patience_minutes: 15,
+  min_lower_delta_sat_per_eh_day: 100_000, // 100 sat/PH/day
+  lower_patience_minutes: 3,
 
   electrs_host: null,
   electrs_port: null,

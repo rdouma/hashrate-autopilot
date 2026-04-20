@@ -2,6 +2,22 @@
 
 ## 2026-04-20 (post-v1.0.2)
 
+### `[Infra]` Updated first-install config defaults
+
+Fresh installs now start with operator-tested values instead of intentionally-conservative placeholders. All the defaults below express sat/PH/day (the dashboard's unit); stored internally in sat/EH/day.
+
+- `max_bid_sat_per_eh_day` → **49,000 sat/PH/day** (was 60,000)
+- `max_overpay_vs_hashprice_sat_per_eh_day` → **2,000 sat/PH/day** (was disabled)
+- `overpay_sat_per_eh_day` → **100 sat/PH/day** (was 500)
+- `fill_escalation_step_sat_per_eh_day` → **100 sat/PH/day** (was 300)
+- `fill_escalation_after_minutes` → **3** (was 30)
+- `min_lower_delta_sat_per_eh_day` → **100 sat/PH/day** (was 200)
+- `lower_patience_minutes` → **3** (was 15)
+- `bid_budget_sat` → **200,000 sat** (was 50,000)
+- `monthly_budget_ceiling_sat` → **1,000,000 sat** (was 500,000)
+
+Existing installs keep their stored values — no migration.
+
 ### `[Fix]` Next Action card respects the dynamic cap, not just `max_bid`
 
 When the effective cap was `hashprice + max_overpay` (tighter than the fixed `max_bid`) and `fillable + overpay` exceeded it, the card showed a phantom "Escalation in X min … market mode will jump to Y" countdown that could never fire — decide() was correctly refusing because `desiredPrice > effectiveCap`, but the predictor only compared against the fixed cap. Now the predictor computes the effective cap the same way decide() does and, when blocked, shows the specific detail: "Fillable + overpay 47,671 sat/PH/day exceeds your dynamic hashprice+max_overpay cap (47,075 sat/PH/day). Raise max_overpay_vs_hashprice in Config to unblock."
