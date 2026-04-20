@@ -1,6 +1,10 @@
 # Changelog
 
-## 2026-04-20 (post-v1.0.2)
+## v1.0.3 — 2026-04-20
+
+Defaults polish. The v1.0.2 setup wizard got the installation *process* smooth on a fresh Ubuntu box, but the defaults it wrote in were intentionally-conservative placeholders from the very first prototype — fine to start with, but not what most operators actually want to run. This release retunes them to the values the operator has been running against the live market for weeks, flips escalation mode to `market`, turns the dynamic hashprice cap on by default, and switches P&L to the whole-account scope. Plus a fix for a phantom "Escalation overdue" countdown on the Next Action card when the dynamic cap is what's blocking.
+
+No schema changes, no migration — existing installs keep every stored value; only fresh setups see the new defaults.
 
 ### `[Infra]` P&L spent-scope defaults to whole account
 
