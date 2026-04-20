@@ -426,7 +426,7 @@ export function Status() {
         overpaySatPerPhDay={
           simMode
             ? (simParamsDebounced?.overpay_sat_per_eh_day ?? 0) / 1000
-            : (configQuery.data?.config.overpay_sat_per_eh_day ?? 0) / 1000
+            : s.config_summary.overpay_sat_per_ph_day
         }
       />
 
@@ -1696,10 +1696,17 @@ function FinancePanel({
       },
       0,
     );
-    const _hasDailySpend = ownedActive.length > 0 && _dailySpendSat > 0;
+    // `_dailySpendSat` is always a concrete number — the sum above
+    // defaults to 0 when no active bids exist, and Braiins only
+    // bills for delivered hashrate so a 0 here during a fill gap
+    // is accurate rather than missing. `hasDailySpend` used to gate
+    // rendering on spend > 0, which hid the entire P&L panel every
+    // time the bid stopped filling for a tick. Keep the flag to
+    // drive the "no active bids" empty state in the outer fallback.
+    const _hasDailySpend = ownedActive.length > 0;
     const _dailyIncomeSat = data?.ocean?.daily_estimate_sat ?? null;
     const _dailyNetSat =
-      _hasDailySpend && _dailyIncomeSat !== null
+      _dailyIncomeSat !== null
         ? Math.round(_dailyIncomeSat - _dailySpendSat)
         : null;
     const _dailyNetColor =
@@ -1792,33 +1799,40 @@ function FinancePanel({
           // exceptions — hashprice (current market break-even) and
           // ocean lifetime (actual earnings) — keep their existing
           // plain labels.
+          //
+          // Rows always render once we're past the initial loading
+          // gate — hiding them on transient nulls (Ocean hasn't
+          // reported yet, bid stopped filling this tick, etc.) made
+          // the panel look broken whenever one piece was missing.
+          // "calculating…" makes the loading state explicit instead
+          // of a silent empty panel.
           <div className="space-y-1.5 text-sm font-mono">
-            {dailyIncomeSat !== null && (
-              <FinanceFootnote
-                label="projected income/day"
-                value={denomination.formatSat(dailyIncomeSat, intlLocale)}
-                tooltip="Projection. Ocean's estimated earnings per day at the address's 3-hour hashrate. Slides as that rate moves."
-              />
-            )}
-            {hasDailySpend && (
-              <FinanceFootnote
-                label="projected spend/day"
-                value={denomination.formatSat(Math.round(dailySpendSat), intlLocale)}
-                tooltip="Projection. Cost per day at current bid price × delivered hashrate, summed across active owned bids. Braiins only debits for hashrate actually delivered, so this tracks reality (not the speed-limit cap)."
-              />
-            )}
-            {dailyNetSat !== null && (
-              <FinanceFootnote
-                label="projected net/day"
-                value={
-                  denomination.mode === 'usd' && denomination.btcPrice !== null
+            <FinanceFootnote
+              label="projected income/day"
+              value={
+                dailyIncomeSat !== null
+                  ? denomination.formatSat(dailyIncomeSat, intlLocale)
+                  : 'calculating\u2026'
+              }
+              tooltip="Projection. Ocean's estimated earnings per day at the address's 3-hour hashrate. Slides as that rate moves."
+            />
+            <FinanceFootnote
+              label="projected spend/day"
+              value={denomination.formatSat(Math.round(dailySpendSat), intlLocale)}
+              tooltip="Projection. Cost per day at current bid price × delivered hashrate, summed across active owned bids. Braiins only debits for hashrate actually delivered, so a 0 here during a fill gap is accurate, not missing data."
+            />
+            <FinanceFootnote
+              label="projected net/day"
+              value={
+                dailyNetSat !== null
+                  ? denomination.mode === 'usd' && denomination.btcPrice !== null
                     ? `${dailyNetSat >= 0 ? '+' : ''}${denomination.formatSat(dailyNetSat, intlLocale)}`
                     : `${dailyNetSat >= 0 ? '+' : ''}${formatNumber(dailyNetSat, {}, intlLocale)} sat`
-                }
-                tooltip="Projection. Income/day − spend/day. Positive = the autopilot is profitable at current rates; negative = burning money per day. Don't confuse with the lifetime net on the other panel."
-                valueClass={dailyNetColor}
-              />
-            )}
+                  : 'calculating\u2026'
+              }
+              tooltip="Projection. Income/day − spend/day. Positive = the autopilot is profitable at current rates; negative = burning money per day. Don't confuse with the lifetime net on the other panel."
+              valueClass={dailyNetColor}
+            />
             {data.ocean?.hashprice_sat_per_ph_day != null && (
               <FinanceFootnote
                 label="hashprice (break-even)"

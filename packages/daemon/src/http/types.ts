@@ -119,6 +119,7 @@ export interface StatusResponse {
   readonly config_summary: {
     readonly target_hashrate_ph: number;
     readonly minimum_floor_hashrate_ph: number;
+    readonly overpay_sat_per_ph_day: number;
     readonly max_bid_sat_per_ph_day: number;
     /** Hashprice-relative cap (null when disabled). */
     readonly max_overpay_vs_hashprice_sat_per_ph_day: number | null;

@@ -500,6 +500,7 @@ function summariseConfig(
   config: {
     target_hashrate_ph: number;
     minimum_floor_hashrate_ph: number;
+    overpay_sat_per_eh_day: number;
     max_bid_sat_per_eh_day: number;
     max_overpay_vs_hashprice_sat_per_eh_day: number | null;
     fill_escalation_step_sat_per_eh_day: number;
@@ -549,6 +550,7 @@ function summariseConfig(
   return {
     target_hashrate_ph: config.target_hashrate_ph,
     minimum_floor_hashrate_ph: config.minimum_floor_hashrate_ph,
+    overpay_sat_per_ph_day: config.overpay_sat_per_eh_day / EH_PER_PH,
     max_bid_sat_per_ph_day: fixedCapEh / EH_PER_PH,
     max_overpay_vs_hashprice_sat_per_ph_day:
       config.max_overpay_vs_hashprice_sat_per_eh_day !== null

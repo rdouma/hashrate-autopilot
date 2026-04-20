@@ -161,6 +161,7 @@ export interface StatusResponse {
   config_summary: {
     target_hashrate_ph: number;
     minimum_floor_hashrate_ph: number;
+    overpay_sat_per_ph_day: number;
     max_bid_sat_per_ph_day: number;
     max_overpay_vs_hashprice_sat_per_ph_day: number | null;
     effective_cap_sat_per_ph_day: number;
