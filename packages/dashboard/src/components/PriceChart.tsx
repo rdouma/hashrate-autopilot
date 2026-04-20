@@ -19,6 +19,7 @@ import { api, type BidEventView, type DecisionDetail, type DecisionSummary, type
 import { useDenomination } from '../lib/denomination';
 import { formatNumber, formatTimestamp, formatTimestampHuman, formatTimestampUtc } from '../lib/format';
 import { useLocale } from '../lib/locale';
+import { SatSymbol } from './SatSymbol';
 
 const WIDTH = 880;
 const HEIGHT = 200;
@@ -960,12 +961,51 @@ function EventTooltip({
 }
 
 function Row({ label, value }: { label: string; value: string }) {
+  const split = splitUnit(value);
   return (
     <div className="flex justify-between gap-3">
       <span className="text-slate-500">{label}</span>
-      <span className="font-mono tabular-nums">{value}</span>
+      <span className="font-mono tabular-nums">
+        {split ? (
+          <>
+            {split.num}
+            <span className="text-slate-500 text-[11px] ml-1">
+              <SatUnit unit={split.unit} />
+            </span>
+          </>
+        ) : (
+          value
+        )}
+      </span>
     </div>
   );
+}
+
+/**
+ * Mirror of Status.tsx's helpers — split "46,940 sat/PH/day" into
+ * `{ num, unit }` so the tooltip's Row can mute the unit and swap
+ * "sat" for the ≡ glyph, matching the aesthetic used across the
+ * rest of the dashboard. Duplicated here because PriceChart.tsx
+ * doesn't import from pages/.
+ */
+function splitUnit(v: string): { num: string; unit: string } | null {
+  const m = v.match(/^(.+?)\s+(sat\/PH\/day|PH\/s|PH·h|sat)(\s*(?:\(.*\))?)$/);
+  if (m?.[1] && m[2]) return { num: m[1], unit: m[2] + (m[3] ?? '') };
+  const usdPhDay = v.match(/^(.+?)(\/PH\/day)$/);
+  if (usdPhDay?.[1] && usdPhDay[2]) return { num: usdPhDay[1], unit: usdPhDay[2] };
+  return null;
+}
+
+function SatUnit({ unit }: { unit: string }) {
+  if (unit.startsWith('sat')) {
+    return (
+      <>
+        <SatSymbol className="opacity-70" />
+        {unit.slice(3)}
+      </>
+    );
+  }
+  return <>{unit}</>;
 }
 
 function Legend({ color, label, dashed }: { color: string; label: string; dashed?: boolean }) {
