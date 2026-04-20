@@ -251,6 +251,7 @@ export interface TickMetricsTable {
   max_bid_sat_per_eh_day: number | null;
   available_balance_sat: number | null;
   datum_hashrate_ph: number | null;
+  ocean_hashrate_ph: number | null;
   run_mode: RunMode;
   action_mode: ActionMode;
 }

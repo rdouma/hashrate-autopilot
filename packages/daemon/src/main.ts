@@ -19,6 +19,7 @@ import { RetentionService } from './services/retention.js';
 import { BtcPriceService } from './services/btc-price.js';
 import { BraiinsService } from './services/braiins-service.js';
 import { DatumPoller } from './services/datum.js';
+import { createOceanHashrateService } from './services/ocean_hashrate.js';
 import { HashpriceCache } from './services/hashprice-cache.js';
 import { HashpriceRefresher } from './services/hashprice-refresher.js';
 import { createOceanClient } from './services/ocean.js';
@@ -149,6 +150,12 @@ async function main(): Promise<void> {
     log('datum:    disabled (datum_api_url empty)');
   }
 
+  // Per-tick Ocean user_hashrate poll (issue #36). Independent of the
+  // 5-min-cached OceanClient so the chart's "received (Ocean)" line
+  // stays responsive at a 1-min tick cadence. Stateless — just a
+  // thin fetch wrapper with a 3 s timeout.
+  const oceanHashrate = createOceanHashrateService();
+
   let payoutObserver: PayoutObserver | null = null;
   if (cfg.payout_source !== 'none' && cfg.btc_payout_address) {
     const rpcUrl = cfg.bitcoind_rpc_url || secrets.bitcoind_rpc_url || '';
@@ -190,6 +197,7 @@ async function main(): Promise<void> {
     braiinsClient,
     poolTracker,
     datumPoller,
+    oceanHashrate,
     configRepo,
     runtimeRepo,
     ownedBidsRepo,

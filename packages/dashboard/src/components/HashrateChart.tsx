@@ -37,6 +37,10 @@ const PADDING = { top: 16, right: 16, bottom: 24, left: 80 };
 
 const COLOR_DELIVERED = '#34d399';
 const COLOR_DATUM = '#38bdf8';
+// Tailwind violet-400 — a purple hue distinct from the teal delivered
+// line, the cyan Datum line, and the block-marker blue. Keeps the
+// three hashrate series visually separable even when they overlap.
+const COLOR_OCEAN = '#a78bfa';
 const COLOR_TARGET = '#94a3b8';
 const COLOR_FLOOR = '#64748b';
 // Gold — reserved for the rare "we found this block ourselves" case
@@ -138,11 +142,17 @@ export const HashrateChart = memo(function HashrateChart({
       0,
     );
     const hasDatum = datumYs.some((v) => v !== null);
+    const oceanYs = points.map((p) => p.ocean_hashrate_ph);
+    const oceanMax = oceanYs.reduce<number>(
+      (acc, v) => (v !== null && v > acc ? v : acc),
+      0,
+    );
+    const hasOcean = oceanYs.some((v) => v !== null);
 
     const minX = xs[0]!;
     const maxX = xs[xs.length - 1]!;
 
-    const yMaxData = Math.max(...ys, ...targets, ...floors, datumMax);
+    const yMaxData = Math.max(...ys, ...targets, ...floors, datumMax, oceanMax);
 
     const yTicks = niceYTicks(0, yMaxData > 0 ? yMaxData * 1.1 : 1, 5);
     const yMin = yTicks[0] ?? 0;
@@ -166,14 +176,14 @@ export const HashrateChart = memo(function HashrateChart({
         })
         .join(' ');
 
-    // Datum path: break into segments on null. Without this, SVG would
-    // render a straight line across gaps (pre-migration data, poll
-    // failures) and make those gaps look like real data.
-    const datumPath = (() => {
+    // Datum / Ocean paths: break into segments on null. Without this,
+    // SVG would render a straight line across gaps (pre-migration
+    // data, poll failures) and make those gaps look like real data.
+    const pathWithNullGaps = (values: readonly (number | null | undefined)[]): string => {
       const segments: string[] = [];
       let current = '';
-      for (let i = 0; i < datumYs.length; i += 1) {
-        const v = datumYs[i];
+      for (let i = 0; i < values.length; i += 1) {
+        const v = values[i];
         if (v === null || v === undefined) {
           if (current) {
             segments.push(current);
@@ -187,7 +197,9 @@ export const HashrateChart = memo(function HashrateChart({
       }
       if (current) segments.push(current);
       return segments.join(' ');
-    })();
+    };
+    const datumPath = pathWithNullGaps(datumYs);
+    const oceanPath = pathWithNullGaps(oceanYs);
 
     const deliveredPath = hashratePath(ys);
     const targetPath = hashratePath(targets);
@@ -209,6 +221,8 @@ export const HashrateChart = memo(function HashrateChart({
       deliveredPath,
       datumPath,
       hasDatum,
+      oceanPath,
+      hasOcean,
       targetPath,
       floorPath,
       yTicks,
@@ -232,7 +246,7 @@ export const HashrateChart = memo(function HashrateChart({
     );
   }
 
-  const { minX, maxX, xScale, yScale, deliveredPath, datumPath, hasDatum, targetPath, floorPath, yTicks, xTickInterval, xTicks } = chartData;
+  const { minX, maxX, xScale, yScale, deliveredPath, datumPath, hasDatum, oceanPath, hasOcean, targetPath, floorPath, yTicks, xTickInterval, xTicks } = chartData;
 
   return (
     <div className={`bg-slate-900 border rounded-lg p-4 ${simMode ? 'border-amber-800/40' : 'border-slate-800'}`}>
@@ -244,6 +258,9 @@ export const HashrateChart = memo(function HashrateChart({
           <Legend color={simMode ? '#fbbf24' : COLOR_DELIVERED} label={simMode ? 'simulated' : 'delivered (Braiins)'} />
           {!simMode && hasDatum && (
             <Legend color={COLOR_DATUM} label="received (Datum)" />
+          )}
+          {!simMode && hasOcean && (
+            <Legend color={COLOR_OCEAN} label="received (Ocean)" />
           )}
           <Legend color={COLOR_TARGET} label="target" dashed />
           <Legend color={COLOR_FLOOR} label="floor" dashed />
@@ -304,6 +321,16 @@ export const HashrateChart = memo(function HashrateChart({
           <path
             d={datumPath}
             stroke={COLOR_DATUM}
+            strokeWidth="1.6"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        )}
+        {!simMode && hasOcean && (
+          <path
+            d={oceanPath}
+            stroke={COLOR_OCEAN}
             strokeWidth="1.6"
             fill="none"
             strokeLinecap="round"

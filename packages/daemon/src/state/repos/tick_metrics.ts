@@ -30,6 +30,7 @@ export interface InsertTickMetricArgs {
   readonly max_bid_sat_per_eh_day: number | null;
   readonly available_balance_sat: number | null;
   readonly datum_hashrate_ph: number | null;
+  readonly ocean_hashrate_ph: number | null;
   readonly run_mode: TickMetricsTable['run_mode'];
   readonly action_mode: TickMetricsTable['action_mode'];
 }
@@ -54,6 +55,7 @@ export interface AggregatedTickMetricRow {
   max_bid_sat_per_eh_day: number | null;
   available_balance_sat: number | null;
   datum_hashrate_ph: number | null;
+  ocean_hashrate_ph: number | null;
 }
 
 export class TickMetricsRepo {
@@ -107,6 +109,7 @@ export class TickMetricsRepo {
         max_bid_sat_per_eh_day: r.max_bid_sat_per_eh_day,
         available_balance_sat: r.available_balance_sat,
         datum_hashrate_ph: r.datum_hashrate_ph,
+        ocean_hashrate_ph: r.ocean_hashrate_ph,
       }));
     }
 
@@ -133,6 +136,7 @@ export class TickMetricsRepo {
         ),
         sql<number | null>`AVG(available_balance_sat)`.as('available_balance_sat'),
         sql<number | null>`AVG(datum_hashrate_ph)`.as('datum_hashrate_ph'),
+        sql<number | null>`AVG(ocean_hashrate_ph)`.as('ocean_hashrate_ph'),
       ])
       .where('tick_at', '>=', sinceMs)
       .groupBy(sql`tick_at / ${sql.lit(bucketMs)}`)

@@ -63,6 +63,7 @@ describe('openDatabase — migrations', () => {
       '0032_rename_above_floor_since_to_lower_ready_since.sql',
       '0033_block_explorer_url_template.sql',
       '0034_block_metadata.sql',
+      '0035_tick_metrics_ocean_hashrate.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });

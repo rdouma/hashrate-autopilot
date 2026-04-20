@@ -137,6 +137,16 @@ export interface State {
    */
   readonly datum: DatumSnapshot | null;
 
+  /**
+   * Hashrate (PH/s) Ocean's user_hashrate API credits to the
+   * operator's payout address, from the 5-minute sliding-window
+   * field `hashrate_300s`. Plotted as a third series on the
+   * Hashrate chart alongside Braiins-delivered + Datum-received.
+   * Null when Ocean is not configured or the poll failed — purely
+   * observational, never read by the control loop.
+   */
+  readonly ocean_hashrate_ph: number | null;
+
   /** Last successful API read timestamp (ms). */
   readonly last_api_ok_at: number | null;
 

@@ -247,6 +247,7 @@ export class Controller {
         max_bid_sat_per_eh_day: state.config.max_bid_sat_per_eh_day,
         available_balance_sat: primaryBalance?.available_balance_sat ?? null,
         datum_hashrate_ph: state.datum?.hashrate_ph ?? null,
+        ocean_hashrate_ph: state.ocean_hashrate_ph,
         run_mode: state.run_mode,
         action_mode: state.action_mode,
       });

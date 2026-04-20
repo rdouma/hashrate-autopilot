@@ -17,6 +17,7 @@
 
 import type { BraiinsService } from '../services/braiins-service.js';
 import type { DatumPoller } from '../services/datum.js';
+import type { OceanHashrateService } from '../services/ocean_hashrate.js';
 import {
   PoolHealthTracker,
   parsePoolUrl,
@@ -46,6 +47,12 @@ export interface ObserveDeps {
    * `poll()` returns null, `state.datum` is null ("not configured").
    */
   readonly datumPoller?: DatumPoller;
+  /**
+   * Optional per-tick Ocean `user_hashrate` poll (issue #36). When
+   * present and `btc_payout_address` is configured, invoked each tick
+   * and the 5-min sliding-window PH/s goes into `state.ocean_hashrate_ph`.
+   */
+  readonly oceanHashrate?: OceanHashrateService;
   readonly now: () => number;
 }
 
@@ -102,8 +109,10 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
   );
 
   // Braiins reads in parallel; individual failures downgrade to null.
-  // Datum poll runs alongside — best-effort, never throws out.
-  const [marketSnapshot, balance, bidsResponse, datum] = await Promise.all([
+  // Datum poll runs alongside — best-effort, never throws out. So
+  // does the Ocean user_hashrate poll when configured — chart-only,
+  // never gates a decision.
+  const [marketSnapshot, balance, bidsResponse, datum, ocean_hashrate_ph] = await Promise.all([
     collectMarket(deps.braiins).catch((err) => logAndReturnNull('market', err)),
     deps.braiins.getBalance().catch((err) => logAndReturnNull('balance', err)),
     deps.braiins.getCurrentBids().catch((err) => logAndReturnNull('bids', err)),
@@ -113,6 +122,9 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
           return null;
         })
       : Promise.resolve<DatumSnapshot | null>(null),
+    deps.oceanHashrate && config.btc_payout_address
+      ? deps.oceanHashrate.fetchHashratePh(config.btc_payout_address)
+      : Promise.resolve<number | null>(null),
   ]);
 
   const apiBids = extractBids(bidsResponse);
@@ -210,6 +222,7 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
     above_floor_ticks: floorCheck.above_floor_ticks,
     pool,
     datum,
+    ocean_hashrate_ph,
     last_api_ok_at: deps.braiins.getLastApiOkAt(),
     hashprice_sat_per_ph_day: inputs.hashpriceSatPerPhDay,
     bypass_pacing: inputs.bypassPacing,

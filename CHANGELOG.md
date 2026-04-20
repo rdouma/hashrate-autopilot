@@ -2,6 +2,12 @@
 
 ## 2026-04-20 (post-v1.0.3)
 
+### `[Feature]` Hashrate chart: third series for Ocean-credited hashrate (#36)
+
+The chart previously showed Braiins-delivered and Datum-received, but not what Ocean's own API credits to our payout address — arguably the single most important number ("what hashrate does the pool actually see from us?"). Added a violet `received (Ocean)` line sourced from Ocean's `/v1/user_hashrate` endpoint (the `hashrate_300s` field, a 5-min sliding window — responsive but smooth at a 1-min tick cadence).
+
+Plumbing: new `tick_metrics.ocean_hashrate_ph` column (migration 0035), a small stateless `OceanHashrateService` polled each tick from `observe()` alongside the existing Datum poll, and a `State.ocean_hashrate_ph` field piped through to the metrics API. No control-loop impact — purely observational. The main `OceanClient` keeps its 5-min cache for blocks / pool_stat / statsnap, since none of those need per-tick freshness.
+
 ### `[Feature]` Block-marker tooltip shows the miner identity ("Simple Mining · OCEAN")
 
 Block explorers display the miner behind a block as e.g. "Simple Mining · OCEAN", distinct from the Stratum worker label (which, for TIDES-credited pool blocks, is some other operator's rig-name like `14283759` and is meaningless to us). Added local, privacy-preserving enrichment: on each Ocean poll, the daemon calls `getblock <hash> 2` on the operator's own bitcoind node, extracts the coinbase scriptSig, and picks the first operator-meaningful ASCII token as the miner tag. The pool is hardcoded to "OCEAN" for every block (since they come from Ocean's API — no pool-tags database needed).

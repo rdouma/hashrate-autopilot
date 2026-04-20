@@ -84,6 +84,7 @@ export interface MetricPoint {
   max_bid_sat_per_ph_day: number | null;
   available_balance_sat: number | null;
   datum_hashrate_ph: number | null;
+  ocean_hashrate_ph: number | null;
 }
 
 export interface BidEventView {

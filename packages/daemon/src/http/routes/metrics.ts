@@ -48,6 +48,13 @@ export interface MetricPoint {
    * for that tick, or the tick predates migration 0029.
    */
   readonly datum_hashrate_ph: number | null;
+  /**
+   * Hashrate Ocean credits to the operator's payout address — the
+   * `hashrate_300s` field from `/v1/user_hashrate` (5-min sliding
+   * window), in PH/s. Null when Ocean isn't configured, the poll
+   * failed, or the tick predates migration 0035.
+   */
+  readonly ocean_hashrate_ph: number | null;
 }
 
 export async function registerMetricsRoute(
@@ -107,6 +114,7 @@ function toMetricPoint(r: {
   max_bid_sat_per_eh_day: number | null;
   available_balance_sat: number | null;
   datum_hashrate_ph: number | null;
+  ocean_hashrate_ph: number | null;
 }): MetricPoint {
   return {
     tick_at: r.tick_at,
@@ -135,6 +143,7 @@ function toMetricPoint(r: {
         : null,
     available_balance_sat: r.available_balance_sat,
     datum_hashrate_ph: r.datum_hashrate_ph,
+    ocean_hashrate_ph: r.ocean_hashrate_ph,
   };
 }
 
