@@ -76,8 +76,15 @@ async function main(): Promise<void> {
   if (!cfg) throw new Error('config row missing — run `pnpm -w run setup` first');
 
   // Seed bitcoind credentials from secrets into config on first boot
-  // so they become dashboard-editable (issue #14).
-  if (!cfg.bitcoind_rpc_url && secrets.bitcoind_rpc_url) {
+  // so they become dashboard-editable (issue #14). Only runs when secrets
+  // carries all three fields — setup no longer prompts for them, so fresh
+  // installs typically skip this path entirely.
+  if (
+    !cfg.bitcoind_rpc_url &&
+    secrets.bitcoind_rpc_url &&
+    secrets.bitcoind_rpc_user &&
+    secrets.bitcoind_rpc_password
+  ) {
     await configRepo.upsert({
       ...cfg,
       bitcoind_rpc_url: secrets.bitcoind_rpc_url,
@@ -140,9 +147,9 @@ async function main(): Promise<void> {
 
   let payoutObserver: PayoutObserver | null = null;
   if (cfg.payout_source !== 'none' && cfg.btc_payout_address) {
-    const rpcUrl = cfg.bitcoind_rpc_url || secrets.bitcoind_rpc_url;
-    const rpcUser = cfg.bitcoind_rpc_user || secrets.bitcoind_rpc_user;
-    const rpcPass = cfg.bitcoind_rpc_password || secrets.bitcoind_rpc_password;
+    const rpcUrl = cfg.bitcoind_rpc_url || secrets.bitcoind_rpc_url || '';
+    const rpcUser = cfg.bitcoind_rpc_user || secrets.bitcoind_rpc_user || '';
+    const rpcPass = cfg.bitcoind_rpc_password || secrets.bitcoind_rpc_password || '';
     const bitcoindClient = createBitcoindClient({
       url: rpcUrl,
       username: rpcUser,

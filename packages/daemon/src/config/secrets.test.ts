@@ -80,7 +80,6 @@ describe('loadSecrets — plaintext path', () => {
       await loadSecrets(path);
     } catch (err) {
       const e = err as ConfigError;
-      expect(e.details).toMatch(/bitcoind_rpc_url/);
       expect(e.details).toMatch(/dashboard_password/);
     }
   });

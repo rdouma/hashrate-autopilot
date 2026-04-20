@@ -2,6 +2,10 @@
 
 ## 2026-04-20
 
+### `[Infra]` Drop bitcoind RPC prompts from `pnpm run setup`
+
+`#14` moved bitcoind RPC credentials to the dashboard Config page, but the setup wizard was still prompting for URL / user / password on every fresh install — dead weight, and worse, `bitcoind_rpc_user` validation rejected empty input even though the credentials are only needed when the operator picks `bitcoind` as the payout source (Electrs is the default). Prompts removed. `SecretsSchema`'s three bitcoind fields are now `.optional()`; main.ts's legacy seed-from-secrets path still works when the fields happen to be present, but fresh installs no longer touch them. Read-only Braiins token prompt stays — it's a legit privilege-separation optimization for `READ_ONLY`-scoped API calls.
+
 ### `[Infra]` Drop Telegram prompts from `pnpm run setup`
 
 The setup wizard was still asking for a Telegram bot token and chat ID on every install, even though the owner-token API path doesn't need 2FA and in-app notifications haven't been wired up (that's #18). Prompts removed; the corresponding Zod fields in `SecretsSchema` are now `.optional()` and `telegram_chat_id` in `AppConfigInvariantsSchema` defaults to an empty string so existing DB rows keep parsing. The underlying DB columns stay in place pending a later migration alongside the notifications work.

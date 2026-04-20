@@ -30,9 +30,13 @@ export const SecretsSchema = z.object({
   telegram_bot_token: nonEmptyString.optional(),
   telegram_webhook_secret: nonEmptyString.optional(),
 
-  bitcoind_rpc_url: z.string().url('must be a valid URL (http(s)://host:port)'),
-  bitcoind_rpc_user: nonEmptyString,
-  bitcoind_rpc_password: nonEmptyString,
+  // bitcoind RPC is edited from the dashboard Config page (#14 moved these
+  // out of the secrets file). Kept as optional so existing .env.sops.yaml
+  // files still parse; the daemon prefers `config.bitcoind_rpc_*` and only
+  // falls back to these if they're ever set.
+  bitcoind_rpc_url: z.string().url('must be a valid URL (http(s)://host:port)').optional(),
+  bitcoind_rpc_user: nonEmptyString.optional(),
+  bitcoind_rpc_password: nonEmptyString.optional(),
 
   // Shared password for the dashboard (second-gate; Tailscale is the real
   // perimeter per architecture §12 risk register).

@@ -161,25 +161,19 @@ async function promptSecrets(): Promise<Secrets> {
     ? await password({ message: 'Braiins read-only token:', mask: true })
     : undefined;
 
-  const bitcoindUrl = await input({
-    message: 'bitcoind RPC URL:',
-    default: 'http://127.0.0.1:8332',
-    validate: validUrl,
-  });
-  const bitcoindUser = await input({ message: 'bitcoind RPC user:', validate: nonEmpty });
-  const bitcoindPass = await password({ message: 'bitcoind RPC password:', mask: true });
   const dashPass = await password({
     message: 'Dashboard password (second-gate behind Tailscale):',
     mask: true,
     validate: (v) => (v.length >= 8 ? true : 'at least 8 characters'),
   });
 
+  // bitcoind RPC credentials are edited from the dashboard Config page and
+  // only matter when the operator picks `bitcoind` as the payout source —
+  // Electrs is the default and has its own host/port fields. Not prompted
+  // here to keep the first-run wizard short.
   const parsed = SecretsSchema.parse({
     braiins_owner_token: owner,
     ...(reader ? { braiins_read_only_token: reader } : {}),
-    bitcoind_rpc_url: bitcoindUrl,
-    bitcoind_rpc_user: bitcoindUser,
-    bitcoind_rpc_password: bitcoindPass,
     dashboard_password: dashPass,
   });
   return parsed;
