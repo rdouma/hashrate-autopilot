@@ -206,9 +206,37 @@ Then start the daemon:
 pnpm --filter @braiins-hashrate/daemon start
 ```
 
-The dashboard is served at `http://<host>:3010`. On first launch the daemon boots in DRY-RUN mode — promote to LIVE
-from the dashboard when ready. Remaining configuration (target hashrate, caps, payout source, etc.) is editable
-from the dashboard's Config page.
+The dashboard is served on **port 3010**, bound to `0.0.0.0` (all interfaces) by default — reachable from any
+machine on the LAN as `http://<this-host>:3010` or `http://<lan-ip>:3010`. On first launch the daemon boots in
+DRY-RUN mode — promote to LIVE from the dashboard when ready. Remaining configuration (target hashrate, caps,
+payout source, etc.) is editable from the dashboard's Config page.
+
+### Opening the port on the host firewall
+
+Accessing the dashboard from another machine on the LAN requires the host firewall to allow inbound
+connections on port 3010. Ubuntu ships with `ufw` present but inactive — check before assuming either way:
+
+```bash
+sudo ufw status verbose
+```
+
+If the output is `Status: inactive`, nothing is blocking you and no change is needed. If it's `Status: active`
+and `3010/tcp` isn't in the ALLOW list:
+
+```bash
+sudo ufw allow 3010/tcp
+sudo ufw reload
+```
+
+To verify from another box on the LAN:
+
+```bash
+nc -zv <host>.local 3010    # or the host's LAN IP
+# → "succeeded" = port reachable; "timed out" / "refused" = firewall (or daemon not listening)
+```
+
+To change the port, set `HTTP_PORT=nnnn` in the daemon's environment; to bind only to loopback, set
+`HTTP_HOST=127.0.0.1`.
 
 ### Manually editing secrets later
 

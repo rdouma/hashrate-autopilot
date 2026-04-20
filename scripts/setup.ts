@@ -300,7 +300,13 @@ async function main() {
   console.log(`  sops policy: ${paths.sopsPolicy}`);
   console.log(`  secrets:     ${paths.secretsFile}`);
   console.log(`  database:    ${paths.dbFile}`);
-  console.log('\nNext: edit secrets later with   sops .env.sops.yaml');
+
+  console.log('\nNext steps:');
+  console.log('  • Start the daemon:   pnpm --filter @braiins-hashrate/daemon start');
+  console.log('  • Dashboard URL:      http://<this-host>:3010 (binds to 0.0.0.0 by default)');
+  console.log('  • If accessing from another machine on the LAN, allow port 3010 on the');
+  console.log('    host firewall. On Ubuntu with ufw active:  sudo ufw allow 3010/tcp');
+  console.log('  • Edit secrets later with:  sops .env.sops.yaml');
 }
 
 async function fileExists(path: string): Promise<boolean> {
