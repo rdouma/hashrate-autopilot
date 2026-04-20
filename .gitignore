@@ -10,12 +10,14 @@ data/
 *.db-wal
 *.db-shm
 
-# secrets (only the sops-encrypted file is committed)
+# secrets — nothing is committed, including the sops-encrypted envelope.
+# Each operator generates their own age key and .env.sops.yaml on first
+# install via `pnpm run setup`; the repo carries no per-operator state.
 .env
 .env.local
 .env.*.local
+.env.sops.yaml
 !.env.example
-!.env.sops.yaml
 
 # editor / tool caches
 .vite/

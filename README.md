@@ -225,22 +225,16 @@ this project's key stays separate from any other sops-encrypted project on the s
 
 ### Running on a second host (or migrating)
 
-`.env.sops.yaml` is checked into git and safe to clone, but the matching **age private key is not** — that's
-the whole point of sops. If you re-clone on a new host and run `sops .env.sops.yaml` without the key present,
-you'll see:
+`.env.sops.yaml` is **not** in the repo — it's generated locally by `pnpm run setup` and gitignored. Each host
+the operator stands up gets its own. Two ways to bring up a second host:
 
-```
-Failed to get the data key required to decrypt the SOPS file.
-Group 0: FAILED
-  <public-key>: FAILED
-    - failed to load age identities: failed to open file: open
-      /home/<user>/.config/sops/age/keys.txt: no such file or directory
-```
-
-Fix: copy the age private key from the original host to the new one at
-`~/.config/braiins-hashrate/age.key` (or the default `~/.config/sops/age/keys.txt`). `chmod 600` it. If you
-prefer a clean start instead, you can re-run `pnpm run setup --force` to generate a fresh key — but you'll need to
-re-encrypt `.env.sops.yaml` against the new key (or let `pnpm run setup` rewrite it from your re-entered values).
+1. **Fresh setup on the new host** (simplest — recommended): clone the repo, `pnpm install && pnpm build &&
+   pnpm run setup`, re-enter your tokens. Produces a brand-new age key and a fresh `.env.sops.yaml`. The two
+   hosts now have independent encrypted envelopes against independent keys.
+2. **Copy the whole secret bundle over** (one key, shared state): scp both
+   `~/.config/braiins-hashrate/age.key` *and* `.env.sops.yaml` from the origin host onto the target. Then the
+   daemon on the new host will decrypt the same secrets without needing to re-run setup. `chmod 600` the age
+   key after the copy.
 
 See [`docs/spec.md`](docs/spec.md) for the full design and [`docs/architecture.md`](docs/architecture.md) for
 deployment details.
