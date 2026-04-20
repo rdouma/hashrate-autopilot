@@ -20,6 +20,7 @@ import { BtcPriceService } from './services/btc-price.js';
 import { BraiinsService } from './services/braiins-service.js';
 import { DatumPoller } from './services/datum.js';
 import { HashpriceCache } from './services/hashprice-cache.js';
+import { HashpriceRefresher } from './services/hashprice-refresher.js';
 import { createOceanClient } from './services/ocean.js';
 import { PayoutObserver } from './services/payout-observer.js';
 import { PoolHealthTracker } from './services/pool-health.js';
@@ -223,6 +224,22 @@ async function main(): Promise<void> {
     }
   }
 
+  // Keep the hashprice cache warm independently of the dashboard (issue #33).
+  // The dashboard's finance poll also writes the cache, but without an
+  // in-daemon refresher a headless run eventually starves it: the cache
+  // goes stale past the 60-min freshness window and decide()'s dynamic-cap
+  // guard silently refuses all proposals. 10-min cadence is well below
+  // the freshness gate so one or two transient Ocean failures can't starve
+  // the cache. Service is a no-op until the operator configures both a
+  // payout address and the dynamic cap (matching the boot-time fetch).
+  const hashpriceRefresher = new HashpriceRefresher(
+    configRepo,
+    oceanClient,
+    hashpriceCache,
+    { log: (m) => log(m) },
+  );
+  hashpriceRefresher.start();
+
   // Account-lifetime spend tracker — sums counters_committed.amount_consumed_sat
   // across every Braiins bid (active + historical). Terminal bids are
   // persisted in closed_bids_cache so steady-state refreshes only
@@ -276,6 +293,7 @@ async function main(): Promise<void> {
     log(`received ${signal}; draining loop`);
     payoutObserver?.stop();
     retentionService.stop();
+    hashpriceRefresher.stop();
     await loop.stop();
     try {
       await httpServer.stop();
@@ -313,7 +331,18 @@ function logTick(r: TickResult): void {
   );
 
   if (gated.length === 0) {
-    log(`    (no proposals — nothing to do)`);
+    // Distinguish "all quiet, bid in range" from "dynamic-cap guard blocked
+    // everything because hashprice is unknown/stale" (issue #33). The latter
+    // looks identical otherwise but means the bid will drift out of the
+    // market unnoticed.
+    if (
+      state.config.max_overpay_vs_hashprice_sat_per_eh_day !== null &&
+      state.hashprice_sat_per_ph_day === null
+    ) {
+      log(`    (no proposals — hashprice unknown/stale, dynamic-cap guard is holding trading)`);
+    } else {
+      log(`    (no proposals — nothing to do)`);
+    }
     return;
   }
   for (const g of gated) {
