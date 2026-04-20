@@ -885,12 +885,31 @@ function EventTooltip({
               value={`${formatNumber(Math.round(marketAtEvent.fillable_ask_sat_per_ph_day + overpaySatPerPhDay))} sat/PH/day`}
             />
           )}
-          {marketAtEvent.hashprice_sat_per_ph_day !== null && (
+          {marketAtEvent.hashprice_sat_per_ph_day !== null ? (
             <Row
               label="hashprice"
               value={`${formatNumber(Math.round(marketAtEvent.hashprice_sat_per_ph_day))} sat/PH/day`}
             />
+          ) : (
+            <Row label="hashprice" value="— (not recorded this tick)" />
           )}
+          {maxOverpayVsHashpriceSatPerPhDay !== null && (
+            <Row
+              label="max overpay vs hashprice"
+              value={`${formatNumber(Math.round(maxOverpayVsHashpriceSatPerPhDay))} sat/PH/day`}
+            />
+          )}
+          {maxOverpayVsHashpriceSatPerPhDay !== null &&
+            marketAtEvent.hashprice_sat_per_ph_day !== null && (
+              <Row
+                label="hashprice + max overpay"
+                value={`${formatNumber(
+                  Math.round(
+                    marketAtEvent.hashprice_sat_per_ph_day + maxOverpayVsHashpriceSatPerPhDay,
+                  ),
+                )} sat/PH/day`}
+              />
+            )}
           {marketAtEvent.max_bid_sat_per_ph_day !== null && (
             <Row
               label="max bid"
