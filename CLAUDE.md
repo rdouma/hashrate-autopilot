@@ -57,6 +57,19 @@ Match existing style — subject line in the imperative, short summary,
 body explains the "why" not just the "what," Co-Authored-By trailer on
 Claude-assisted commits.
 
+## Changelog
+
+`CHANGELOG.md` at repo root. Format: `## YYYY-MM-DD` headers (newest
+first), entries as `### \`[Tag]\` Brief title (#issue)` + a 1–3
+sentence body explaining user-visible impact. Tags in use: `[Feature]`,
+`[Fix]`, `[UI]`, `[Perf]`, `[Infra]`, `[Docs]`. Date is the
+implementation date (`date +%Y-%m-%d`), not the issue-open date.
+
+Every behavior-change commit gets an entry in the same commit that
+changes the behavior — not a later catch-up sweep. Skip pure
+refactors with no user-visible effect and pure doc-only commits
+(those are already visible in git log).
+
 ## Build number
 
 `BUILD_NUMBER` in the repo root is an integer shown in the dashboard
