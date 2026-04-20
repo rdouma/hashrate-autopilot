@@ -192,6 +192,12 @@ interface SimResult {
   mutationCount: number;
 }
 
+// Braiins server-side floor on consecutive price decreases (issue #32).
+// Real controller reads this from `market.settings.min_bid_price_decrease_period_s`
+// with a 600s fallback (gate.ts); the simulator uses the fallback directly
+// since historical tick rows don't carry the market settings blob.
+const BRAIINS_PRICE_DECREASE_COOLDOWN_MS = 10 * 60_000;
+
 function simulate(rows: TickRow[], params: SimParams): SimResult {
   const prices: number[] = [];
   const filled: boolean[] = [];
@@ -204,6 +210,10 @@ function simulate(rows: TickRow[], params: SimParams): SimResult {
   // window can't trigger a lower.
   let lowerReadySince: number | null = null;
   let overrideUntil: number | null = null;
+  // Tracks when the simulator last fired a price decrease, so we
+  // can refuse the next one until Braiins' 10-min cooldown has
+  // elapsed. Mirrors gate.ts's `isInsidePriceDecreaseCooldown`.
+  let lastPriceDecreaseAt: number | null = null;
   let gapCount = 0;
   let gapMs = 0;
   let inGap = false;
@@ -270,8 +280,23 @@ function simulate(rows: TickRow[], params: SimParams): SimResult {
         const lowerReadyLongEnough =
           lowerReadySince !== null &&
           (r.tick_at - lowerReadySince) >= params.lowerPatienceMs;
-        if (lowerReadyLongEnough && bidPrice !== null && bidPrice > targetPrice + params.minLowerDelta) {
-          if (targetPrice !== bidPrice) mutationCount++;
+        // Braiins refuses consecutive lowerings within the cooldown
+        // window (gate.ts:58). Without this gate the simulator would
+        // happily fire lowers every `lower_patience_minutes` ticks,
+        // overstating how nimble the autopilot is on downward moves.
+        const decreaseCooldownActive =
+          lastPriceDecreaseAt !== null &&
+          r.tick_at - lastPriceDecreaseAt < BRAIINS_PRICE_DECREASE_COOLDOWN_MS;
+        if (
+          lowerReadyLongEnough &&
+          !decreaseCooldownActive &&
+          bidPrice !== null &&
+          bidPrice > targetPrice + params.minLowerDelta
+        ) {
+          if (targetPrice !== bidPrice) {
+            mutationCount++;
+            lastPriceDecreaseAt = r.tick_at;
+          }
           bidPrice = targetPrice;
           overrideUntil = r.tick_at + params.escalationWindowMs;
         }
