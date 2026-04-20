@@ -167,9 +167,14 @@ On **Ubuntu / Debian**:
 
 ```bash
 sudo apt install -y age
-# sops isn't in apt; grab the latest .deb from its releases page
-curl -fsSL https://github.com/getsops/sops/releases/latest/download/sops_amd64.deb -o /tmp/sops.deb
+
+# sops isn't in apt. Releases are version-named, so resolve the latest tag
+# from GitHub's /latest redirect, then download the matching .deb. On arm64
+# (Raspberry Pi) replace `amd64` with `arm64`.
+SOPS_VER=$(curl -fsSL -o /dev/null -w '%{url_effective}' https://github.com/getsops/sops/releases/latest | sed 's|.*/||')
+curl -fsSL "https://github.com/getsops/sops/releases/download/${SOPS_VER}/sops_${SOPS_VER#v}_amd64.deb" -o /tmp/sops.deb
 sudo apt install -y /tmp/sops.deb
+sops --version
 ```
 
 On **macOS**:
