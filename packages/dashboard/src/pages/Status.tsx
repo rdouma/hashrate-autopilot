@@ -1633,15 +1633,15 @@ function OceanPanel() {
     >
       {o.last_block ? (
         <>
-          <Row k="last block" v={`#${o.last_block.height.toLocaleString(intlLocale)}`} />
+          <Row k="last pool block" v={`#${o.last_block.height.toLocaleString(intlLocale)}`} />
           <Row k="found" v={o.last_block.ago_text} />
           <Row k="reward" v={denomination.formatSat(o.last_block.total_reward_sat, intlLocale)} />
         </>
       ) : (
-        <Row k="last block" v={'\u2014'} />
+        <Row k="last pool block" v={'\u2014'} />
       )}
-      <Row k="blocks 24h" v={String(o.blocks_24h)} />
-      <Row k="blocks 7d" v={String(o.blocks_7d)} />
+      <Row k="pool blocks 24h" v={String(o.blocks_24h)} />
+      <Row k="pool blocks 7d" v={String(o.blocks_7d)} />
       {o.user?.hashprice_sat_per_ph_day != null && (
         <div className="border-t border-slate-800 mt-2 pt-2">
           <Row

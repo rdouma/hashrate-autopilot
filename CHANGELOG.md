@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-04-20 (post-v1.0.3)
+
+### `[UI]` Ocean panel: "last block" rows relabeled "last pool block"
+
+The Ocean panel's "last block / blocks 24h / blocks 7d" rows are pool-wide figures (Ocean's `recent_blocks` feed), not blocks found by the operator's own payout address — but the unqualified "last block" read as "your last block." Operators who saw `found 22 min ago` next to no marker on the hashrate chart were correctly confused: the chart only marks blocks credited to the configured payout address (that's issue #23's whole point), and the 22-min-ago block wasn't one of them. Renamed the three rows to `last pool block` / `pool blocks 24h` / `pool blocks 7d` so the distinction is visible on-panel.
+
+### `[UI]` Hashrate chart block markers: isometric cube, matching Ocean's icon
+
+Replaced the `₿` glyph that sat above the block-marker line with a small isometric cube SVG — three rhombus faces (top, front, right) in the gold block-marker colour — so the marker style matches the cube icons Ocean uses on its own block viewer.
+
 ## v1.0.3 — 2026-04-20
 
 Defaults polish. The v1.0.2 setup wizard got the installation *process* smooth on a fresh Ubuntu box, but the defaults it wrote in were intentionally-conservative placeholders from the very first prototype — fine to start with, but not what most operators actually want to run. This release retunes them to the values the operator has been running against the live market for weeks, flips escalation mode to `market`, turns the dynamic hashprice cap on by default, and switches P&L to the whole-account scope. Plus a fix for a phantom "Escalation overdue" countdown on the Next Action card when the dynamic cap is what's blocking.

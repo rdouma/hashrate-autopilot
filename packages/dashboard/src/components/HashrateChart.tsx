@@ -258,22 +258,27 @@ export const HashrateChart = memo(function HashrateChart({
                   <line
                     x1={x}
                     x2={x}
-                    y1={PADDING.top}
+                    y1={PADDING.top + 8}
                     y2={HEIGHT - PADDING.bottom}
                     stroke={COLOR_OUR_BLOCK}
                     strokeWidth="1.5"
                     strokeDasharray="4 2"
                     opacity="0.9"
                   />
-                  <text
-                    x={x}
-                    y={PADDING.top - 2}
-                    textAnchor="middle"
-                    fontSize="11"
-                    fill={COLOR_OUR_BLOCK}
+                  {/* Small isometric cube, matching Ocean's block icon.
+                      Three rhombus faces — top, front, right — stroked
+                      in the block-marker colour. Centered on the line. */}
+                  <g
+                    transform={`translate(${x - 5}, ${PADDING.top - 9})`}
+                    fill="none"
+                    stroke={COLOR_OUR_BLOCK}
+                    strokeWidth="1.1"
+                    strokeLinejoin="round"
                   >
-                    ₿
-                  </text>
+                    <path d="M5 0 L10 2.5 L5 5 L0 2.5 Z" fill={COLOR_OUR_BLOCK} fillOpacity="0.25" />
+                    <path d="M0 2.5 L0 7.5 L5 10 L5 5 Z" fill={COLOR_OUR_BLOCK} fillOpacity="0.15" />
+                    <path d="M5 5 L5 10 L10 7.5 L10 2.5 Z" fill={COLOR_OUR_BLOCK} fillOpacity="0.35" />
+                  </g>
                 </g>
               );
             })}
