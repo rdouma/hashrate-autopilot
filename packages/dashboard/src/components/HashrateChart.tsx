@@ -502,7 +502,7 @@ function BlockTooltip({
         <BtcRow label="subsidy" btc={subsidyBtc} locale={locale} muted />
         <BtcRow label="fees" btc={feesBtc} locale={locale} muted />
         <Row
-          label="worker"
+          label="miner"
           value={block.worker || '—'}
           mono
           accent={block.found_by_us ? 'text-amber-300' : undefined}

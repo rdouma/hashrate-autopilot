@@ -243,24 +243,6 @@ const SECTIONS: Section[] = [
     ],
   },
   {
-    title: 'Profit & Loss',
-    description:
-      'Controls how the P&L panel computes the "spent" figure that feeds the net result.',
-    sideBySide: true,
-    fields: [
-      {
-        key: 'spent_scope',
-        label: 'Spend scope',
-        kind: 'select',
-        options: [
-          { value: 'autopilot', label: 'Autopilot only (autopilot-tagged bids)' },
-          { value: 'account', label: 'Whole account (all settled bids ever)' },
-        ],
-        help: '"Autopilot only" sums consumed across bids the daemon has tagged in its ledger — accurate for what *this* autopilot has cost. "Whole account" sums counters_committed.amount_consumed_sat across every bid on /v1/spot/bid — covers active + historical bids (including any placed before the autopilot was switched on). May lag the latest hour of active-bid consumption.',
-      },
-    ],
-  },
-  {
     title: 'Block explorer',
     description:
       'Used for click-through from the Ocean panel\'s "last pool block" row and the block-marker tooltips on the Hashrate chart. `{hash}` and `{height}` placeholders are substituted.',
@@ -278,6 +260,24 @@ const SECTIONS: Section[] = [
           { label: 'btcscan.org', template: 'https://btcscan.org/block/{hash}' },
           { label: 'btc.com', template: 'https://btc.com/btc/block/{hash}' },
         ],
+      },
+    ],
+  },
+  {
+    title: 'Profit & Loss',
+    description:
+      'Controls how the P&L panel computes the "spent" figure that feeds the net result.',
+    sideBySide: true,
+    fields: [
+      {
+        key: 'spent_scope',
+        label: 'Spend scope',
+        kind: 'select',
+        options: [
+          { value: 'autopilot', label: 'Autopilot only (autopilot-tagged bids)' },
+          { value: 'account', label: 'Whole account (all settled bids ever)' },
+        ],
+        help: '"Autopilot only" sums consumed across bids the daemon has tagged in its ledger — accurate for what *this* autopilot has cost. "Whole account" sums counters_committed.amount_consumed_sat across every bid on /v1/spot/bid — covers active + historical bids (including any placed before the autopilot was switched on). May lag the latest hour of active-bid consumption.',
       },
     ],
   },

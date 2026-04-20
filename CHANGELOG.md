@@ -2,6 +2,14 @@
 
 ## 2026-04-20 (post-v1.0.3)
 
+### `[UI]` Config: Block explorer moved up so P&L and BTC price oracle pair again
+
+Inserting the new "Block explorer" section between the existing "Profit & Loss" and "BTC price oracle" sections broke their side-by-side pairing — both became half-width cards stranded in their own rows. Moved the Block explorer section up one slot (above Profit & Loss) so the P&L + BTC-price-oracle pair reunites on a single row.
+
+### `[UI]` Hashrate chart block tooltip: "worker" → "miner"
+
+Block-marker tooltips labelled the Stratum worker name as "worker", which doesn't read naturally next to the block-explorer vocabulary most operators are used to (where the row is usually called the miner / coinbase tag — e.g. "Foundry USA"). Relabelled to "miner" to match that convention, even though the value still comes from Ocean's `workername` field (the Stratum side, not the coinbase tag).
+
 ### `[Feature]` Configurable block explorer; clickable block links (#22)
 
 New config field `block_explorer_url_template` (default `https://mempool.space/block/{hash}`). The Config page exposes it under a new "Block explorer" section with quick-fill preset pills for mempool.space, blockstream.info, blockchair.com, btcscan.org, and btc.com; operators running their own explorer on a local address paste a custom template like `http://umbrel.local:3006/block/{hash}`. Both `{hash}` and `{height}` placeholders are substituted at click time.
