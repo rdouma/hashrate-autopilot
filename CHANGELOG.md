@@ -1,6 +1,10 @@
 # Changelog
 
-## 2026-04-20 (post-v1.0.3)
+## v1.1.0 — 2026-04-20
+
+Observability release. The dashboard's Hashrate chart grows from two series (Braiins delivered + Datum received) to three — Ocean-credited hashrate is now a first-class line, polled every tick. Every Ocean pool block credited to the operator's wallet is marked on the chart with a clickable cube that opens the configured block explorer. The Ocean panel's "last pool block" is clickable too. A new runway-forecast row on the Braiins panel projects when the account will run dry at the current spend rate. Plenty of UI polish — stat cards split by source, chart palette reassigned for accessibility, Ocean panel re-ordered so the operator's own stats sit at the top. Under the hood: symmetric `min_delta` gate (no more +2/+7 sat price flutter), Ocean refresh dropped 5 min → 60 s, and `monthly_budget_ceiling_sat` removed as a bookkeeping concept that never had enforcement behind it. Migrations 0033-0037 apply on startup.
+
+No controller behaviour changes beyond the `min_delta` tightening; the observability work is purely additive.
 
 ### `[Perf]` Dedupe Ocean user_hashrate HTTP call; extract shared spend-per-day helper
 
