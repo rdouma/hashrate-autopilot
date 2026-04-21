@@ -685,11 +685,28 @@ function PayoutSourceSection({
           </div>
         )}
 
-        {/* Bitcoin Core RPC fields */}
-        {source === 'bitcoind' && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 pt-1">
+        {/* Bitcoin Core RPC fields — always visible because they
+            drive multiple features, not just the bitcoind payout
+            scan. Today: (a) payout scanning when selected above,
+            (b) block-marker miner-identity enrichment on the
+            Hashrate chart tooltips (Ocean feed only tells us the
+            Stratum worker label; the operator-readable "Simple
+            Mining" style name has to come from the coinbase, which
+            we read via `getblock`). Leave empty to disable both. */}
+        <div className="pt-1 border-t border-slate-800">
+          <div className="mb-2">
+            <h4 className="text-xs uppercase tracking-wider text-slate-300">
+              Bitcoin Core RPC
+            </h4>
+            <p className="text-xs text-slate-500 mt-1">
+              {source === 'bitcoind'
+                ? 'Used for on-chain balance scanning (selected above) AND block-marker miner-identity enrichment on the Hashrate chart.'
+                : 'Not used for on-chain balance scanning (Electrs handles that above), but still needed for block-marker miner-identity enrichment on the Hashrate chart tooltips. Leave empty to disable enrichment.'}
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
             <label className="block sm:col-span-2">
-              <span className="block text-sm text-slate-300 mb-1">Bitcoin Core RPC URL</span>
+              <span className="block text-sm text-slate-300 mb-1">RPC URL</span>
               <input
                 type="text"
                 value={draft.bitcoind_rpc_url ?? ''}
@@ -725,7 +742,7 @@ function PayoutSourceSection({
               </span>
             </label>
           </div>
-        )}
+        </div>
       </div>
     </section>
   );

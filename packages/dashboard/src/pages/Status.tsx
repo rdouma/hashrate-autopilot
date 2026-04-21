@@ -125,7 +125,7 @@ export function Status() {
   const oceanQuery = useQuery({
     queryKey: ['ocean'],
     queryFn: api.ocean,
-    refetchInterval: 5 * 60_000,
+    refetchInterval: 60_000,
   });
 
   const financeQuery = useQuery({
@@ -1601,7 +1601,7 @@ function OceanPanel() {
   const oceanQuery = useQuery({
     queryKey: ['ocean'],
     queryFn: api.ocean,
-    refetchInterval: 5 * 60_000,
+    refetchInterval: 60_000,
   });
   const configQuery = useQuery({
     queryKey: ['config'],
@@ -1621,11 +1621,11 @@ function OceanPanel() {
     );
   }
 
-  // Ocean refreshes every 5 minutes client-side (and server caches for
-  // the same). Countdown = last fetch + 5 min; reachable whenever the
-  // last response carried data.
+  // Ocean refreshes every minute client-side (and server caches for
+  // the same). Countdown = last fetch + 1 min; reachable whenever
+  // the last response carried data.
   const nextOceanRefreshMs =
-    o.fetched_at_ms !== null ? o.fetched_at_ms + 5 * 60_000 : null;
+    o.fetched_at_ms !== null ? o.fetched_at_ms + 60_000 : null;
 
   return (
     <Card

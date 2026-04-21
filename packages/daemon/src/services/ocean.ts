@@ -21,7 +21,14 @@
 
 const OCEAN_API_BASE = 'https://api.ocean.xyz/v1';
 const PAYOUT_THRESHOLD_SAT = 1_048_576;
-const DEFAULT_CACHE_TTL_MS = 5 * 60 * 1000;
+// 60 s matches the dashboard tick / Ocean-panel refetch cadence.
+// Originally 5 min to "be polite" to Ocean's public API, but the
+// panel felt sluggish and the four endpoints we hit (statsnap,
+// user_hashrate, pool_stat, blocks) total ~4 req/min per wallet —
+// well below any sane rate limit. Keeping this aligned with the
+// panel refetchInterval also makes block-metadata enrichment pick
+// up new blocks within a minute instead of up to five.
+const DEFAULT_CACHE_TTL_MS = 60 * 1000;
 const SAT_PER_BTC = 100_000_000;
 const BLOCKS_PER_DAY = 144;
 
