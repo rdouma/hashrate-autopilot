@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-04-21
+
+### `[Fix]` Denomination toggle reacts to config save; USD label drops the "US" prefix (#37)
+
+Two small fixes in one pass:
+
+- Enabling the BTC price oracle in Config (`btc_price_source: none` → `coingecko`/etc.) now makes the sats/USD toggle in the header appear immediately after Save. Previously the operator had to reload the page — the config-save `onSuccess` invalidated the status / finance / stats / metrics queries but forgot `['btc-price']`, so the DenominationToggle kept seeing `btcPrice === null` until the next 5-min poll. Added the invalidation.
+- On non-`en-US` locales, USD values rendered as "US$ 36,48" because `Intl.NumberFormat` disambiguates the currency symbol by default. That "US" prefix ate horizontal space on the narrow PRICE card and every stat-card value without adding information — inside a Bitcoin dashboard "dollars = USD" is already unambiguous. Replaced the four `style: 'currency', currency: 'USD'` sites (Status PRICE card, Status unit label, PriceChart Y-axis, the shared `formatUsd` helper) with a plain `$` prefix plus locale-aware number formatting. Grouping + decimals still honour the operator's locale; only the symbol changed.
+
 ## v1.1.0 — 2026-04-20
 
 Observability release. The dashboard's Hashrate chart grows from two series (Braiins delivered + Datum received) to three — Ocean-credited hashrate is now a first-class line, polled every tick. Every Ocean pool block credited to the operator's wallet is marked on the chart with a clickable cube that opens the configured block explorer. The Ocean panel's "last pool block" is clickable too. A new runway-forecast row on the Braiins panel projects when the account will run dry at the current spend rate. Plenty of UI polish — stat cards split by source, chart palette reassigned for accessibility, Ocean panel re-ordered so the operator's own stats sit at the top. Under the hood: symmetric `min_delta` gate (no more +2/+7 sat price flutter), Ocean refresh dropped 5 min → 60 s, and `monthly_budget_ceiling_sat` removed as a bookkeeping concept that never had enforcement behind it. Migrations 0033-0037 apply on startup.

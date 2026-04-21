@@ -703,12 +703,10 @@ function OperationsCard({
             <div className="relative leading-none">
               <span className="text-4xl font-mono font-semibold text-slate-100 tabular-nums">
                 {denomination.mode === 'usd' && denomination.btcPrice !== null
-                  ? new Intl.NumberFormat(intlLocale, {
-                      style: 'currency',
-                      currency: 'USD',
+                  ? `$${new Intl.NumberFormat(intlLocale, {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
-                    }).format((Math.round(currentPricePH) / 100_000_000) * denomination.btcPrice)
+                    }).format((Math.round(currentPricePH) / 100_000_000) * denomination.btcPrice)}`
                   : formatNumber(Math.round(currentPricePH), {}, intlLocale)}
               </span>
               <span className="absolute left-full top-1/2 -translate-y-1/2 ml-1.5 whitespace-nowrap">
@@ -720,7 +718,7 @@ function OperationsCard({
               </span>
             </div>
             <div className="text-xs text-slate-400 mt-1">
-              {denomination.mode === 'usd' ? 'USD' : <><SatSymbol /></>}/PH/day
+              {denomination.mode === 'usd' ? '$' : <><SatSymbol /></>}/PH/day
               {activeOwned.length > 1 ? ` · avg/${activeOwned.length}` : ''}
             </div>
           </div>

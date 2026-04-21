@@ -314,12 +314,11 @@ export const PriceChart = memo(function PriceChart({
   const priceFmt = (v: number): string => {
     if (denomination.mode === 'usd' && denomination.btcPrice !== null) {
       const usd = (v / 100_000_000) * denomination.btcPrice;
-      return new Intl.NumberFormat(intlLocale, {
-        style: 'currency',
-        currency: 'USD',
+      const n = new Intl.NumberFormat(intlLocale, {
         minimumFractionDigits: usd >= 1 ? 2 : 4,
         maximumFractionDigits: usd >= 1 ? 2 : 4,
       }).format(usd);
+      return `$${n}`;
     }
     return formatNumber(Math.round(v), {}, intlLocale);
   };

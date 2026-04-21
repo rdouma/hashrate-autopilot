@@ -365,6 +365,12 @@ export function Config() {
       qc.invalidateQueries({ queryKey: ['finance'] });
       qc.invalidateQueries({ queryKey: ['stats'] });
       qc.invalidateQueries({ queryKey: ['metrics'] });
+      // btc_price_source lives on the config but the header's
+      // DenominationToggle reads `btcPrice` off the `['btc-price']`
+      // query — without this invalidation, enabling the oracle
+      // wouldn't surface the sats/USD toggle until the next 5-min
+      // poll or a page reload.
+      qc.invalidateQueries({ queryKey: ['btc-price'] });
     },
     onError: (err: Error) => setError(err.message),
   });

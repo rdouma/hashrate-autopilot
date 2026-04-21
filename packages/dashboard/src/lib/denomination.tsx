@@ -61,12 +61,17 @@ function satToUsd(sat: number, usdPerBtc: number): number {
 }
 
 function formatUsd(usd: number, locale?: string): string {
-  return new Intl.NumberFormat(locale, {
-    style: 'currency',
-    currency: 'USD',
+  // Plain "$" prefix instead of Intl currency formatting — in
+  // non-en-US locales (e.g. nl-NL) the `style: 'currency'` path
+  // disambiguates to "US$36.48", which eats horizontal space on
+  // a panel and reads wrong when the whole app already makes
+  // the denomination clear from context. Keep locale-aware
+  // number grouping and decimal separator, just drop the symbol.
+  const n = new Intl.NumberFormat(locale, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(usd);
+  return `$${n}`;
 }
 
 function formatSatNumber(sat: number, locale?: string): string {
