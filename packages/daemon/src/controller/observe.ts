@@ -17,7 +17,7 @@
 
 import type { BraiinsService } from '../services/braiins-service.js';
 import type { DatumPoller } from '../services/datum.js';
-import type { OceanHashrateService } from '../services/ocean_hashrate.js';
+import type { OceanClient } from '../services/ocean.js';
 import {
   PoolHealthTracker,
   parsePoolUrl,
@@ -48,11 +48,14 @@ export interface ObserveDeps {
    */
   readonly datumPoller?: DatumPoller;
   /**
-   * Optional per-tick Ocean `user_hashrate` poll (issue #36). When
-   * present and `btc_payout_address` is configured, invoked each tick
-   * and the 5-min sliding-window PH/s goes into `state.ocean_hashrate_ph`.
+   * Optional Ocean client. When present and `btc_payout_address` is
+   * configured, each tick reads the operator's 5-min sliding-window
+   * hashrate from Ocean's stats response (issue #36) — sourced from
+   * the same cached `fetchStats` call the `/api/ocean` route uses,
+   * so we don't fire two HTTP calls per tick against the same
+   * endpoint.
    */
-  readonly oceanHashrate?: OceanHashrateService;
+  readonly oceanClient?: OceanClient;
   readonly now: () => number;
 }
 
@@ -109,10 +112,12 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
   );
 
   // Braiins reads in parallel; individual failures downgrade to null.
-  // Datum poll runs alongside — best-effort, never throws out. So
-  // does the Ocean user_hashrate poll when configured — chart-only,
-  // never gates a decision.
-  const [marketSnapshot, balance, bidsResponse, datum, ocean_hashrate_ph] = await Promise.all([
+  // Datum + Ocean polls run alongside — best-effort, never throw
+  // out. Ocean is chart-only (never gates a decision); we read it
+  // from the shared cached client so the `/api/ocean` HTTP handler
+  // and this observe call share one underlying HTTP request per
+  // cache TTL.
+  const [marketSnapshot, balance, bidsResponse, datum, oceanStats] = await Promise.all([
     collectMarket(deps.braiins).catch((err) => logAndReturnNull('market', err)),
     deps.braiins.getBalance().catch((err) => logAndReturnNull('balance', err)),
     deps.braiins.getCurrentBids().catch((err) => logAndReturnNull('bids', err)),
@@ -122,10 +127,14 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
           return null;
         })
       : Promise.resolve<DatumSnapshot | null>(null),
-    deps.oceanHashrate && config.btc_payout_address
-      ? deps.oceanHashrate.fetchHashratePh(config.btc_payout_address)
-      : Promise.resolve<number | null>(null),
+    deps.oceanClient && config.btc_payout_address
+      ? deps.oceanClient.fetchStats(config.btc_payout_address).catch((err) => {
+          logAndReturnNull('ocean', err);
+          return null;
+        })
+      : Promise.resolve(null),
   ]);
+  const ocean_hashrate_ph = oceanStats?.user_hashrate_5m_ph ?? null;
 
   const apiBids = extractBids(bidsResponse);
   const owned_bids: OwnedBidSnapshot[] = [];

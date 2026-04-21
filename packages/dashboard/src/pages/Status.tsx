@@ -17,7 +17,9 @@ import { Tooltip } from '../components/Tooltip';
 import {
   api,
   UnauthorizedError,
+  type BalanceView,
   type BidEventView,
+  type BidView,
   type FinanceResponse,
   type MetricPoint,
   type NextActionView,
@@ -41,6 +43,7 @@ import {
   formatTimestampUtc,
 } from '../lib/format';
 import { applyExplorerTemplate } from '../lib/blockExplorer';
+import { projectedDailySpendSat } from '../lib/finance';
 import { useDenomination } from '../lib/denomination';
 import { copyToClipboard } from '../lib/clipboard';
 import { actionModeLabel, bidStatusClass, bidStatusLabel } from '../lib/labels';
@@ -519,53 +522,12 @@ export function Status() {
             <Row k="best ask" v={denomination.formatSatPerPhDay(s.market?.best_ask_sat_per_ph_day ?? null, intlLocale)} />
           </div>
           <div className="border-t border-slate-800 mt-2 pt-2">
-            {s.balances.length === 0 ? (
-              <div className="text-slate-500 text-sm">{'\u2014'}</div>
-            ) : (
-              s.balances.map((b) => {
-                // Runway = total balance / projected daily spend
-                // (sum of price × effective_speed across active
-                // owned bids). Since the Braiins account doesn't
-                // auto-replenish, this is the "when does the tank
-                // run dry" forecast based on the current spend
-                // rate. Same math as the P&L panel's
-                // `projected spend/day`.
-                const dailySpendSat = s.bids
-                  .filter((bid) => bid.is_owned && bid.status === 'BID_STATUS_ACTIVE')
-                  .reduce((sum, bid) => {
-                    const effSpeed =
-                      bid.speed_limit_ph !== null
-                        ? Math.min(bid.avg_speed_ph, bid.speed_limit_ph)
-                        : bid.avg_speed_ph;
-                    return sum + bid.price_sat_per_ph_day * effSpeed;
-                  }, 0);
-                const runwayDays =
-                  dailySpendSat > 0 && b.total_balance_sat > 0
-                    ? b.total_balance_sat / dailySpendSat
-                    : null;
-                const runwayText = (() => {
-                  if (runwayDays === null) return '\u2014';
-                  const exhaustAt = new Date(Date.now() + runwayDays * 86_400_000);
-                  const dateLabel = exhaustAt.toLocaleDateString(intlLocale, {
-                    month: 'short',
-                    day: 'numeric',
-                  });
-                  const daysLabel =
-                    runwayDays >= 10
-                      ? `${Math.round(runwayDays)} days`
-                      : `${runwayDays.toFixed(1)} days`;
-                  return `${daysLabel} \u00b7 ~${dateLabel}`;
-                })();
-                return (
-                  <div key={b.subaccount}>
-                    <Row k="available" v={denomination.formatSat(b.available_balance_sat, intlLocale)} />
-                    <Row k="blocked" v={denomination.formatSat(b.blocked_balance_sat, intlLocale)} />
-                    <Row k="total" v={denomination.formatSat(b.total_balance_sat, intlLocale)} />
-                    <Row k="runway" v={runwayText} />
-                  </div>
-                );
-              })
-            )}
+            <BraiinsBalances
+              balances={s.balances}
+              bids={s.bids}
+              locale={intlLocale}
+              denomination={denomination}
+            />
           </div>
         </Card>
         <DatumPanel
@@ -1327,9 +1289,6 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
   void statsData.total_ph_hours;
   void statsData.mutation_count;
 
-  const fmtHashrate = (n: number | null): string =>
-    n === null ? '\u2014' : `${n.toFixed(2)} PH/s`;
-
   return (
     <section className="grid grid-cols-2 lg:grid-cols-7 gap-3">
       <StatCard
@@ -1348,17 +1307,17 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
       />
       <StatCard
         label="avg braiins"
-        value={fmtHashrate(avg_hashrate_ph)}
+        value={formatHashratePH(avg_hashrate_ph, intlLocale)}
         tooltip="Duration-weighted average of the hashrate Braiins reports delivering. Includes downtime (where delivered = 0) so a bad stretch shows up in the average, not just the live card."
       />
       <StatCard
         label="avg datum"
-        value={fmtHashrate(avg_datum_hashrate_ph)}
+        value={formatHashratePH(avg_datum_hashrate_ph, intlLocale)}
         tooltip="Duration-weighted average of the hashrate Datum measures at the gateway. A sustained gap below Avg Braiins means Braiins is billing for hashrate Datum never saw arrive."
       />
       <StatCard
         label="avg ocean"
-        value={fmtHashrate(avg_ocean_hashrate_ph)}
+        value={formatHashratePH(avg_ocean_hashrate_ph, intlLocale)}
         tooltip="Duration-weighted average of the hashrate Ocean credits to our payout address. Each tick (every 60 s) the daemon calls Ocean's /v1/user_hashrate endpoint and reads the `hashrate_300s` field — Ocean's own 5-minute sliding-window estimate for this wallet. So: sampled every minute, each sample is a 5-minute smoothed value. A sustained gap below Avg Braiins / Avg Datum means the pool isn't crediting work we think we delivered."
       />
       <StatCard
@@ -1622,6 +1581,59 @@ function ReachabilityBadge({
  * Each input renders "—" when its source isn't reporting yet; net
  * stays "—" until both income halves have at least one observation.
  */
+function BraiinsBalances({
+  balances,
+  bids,
+  locale,
+  denomination,
+}: {
+  balances: readonly BalanceView[];
+  bids: readonly BidView[];
+  locale: string | undefined;
+  denomination: ReturnType<typeof useDenomination>;
+}) {
+  // Spend rate is account-wide, not per-balance — hoist the reduce
+  // out of the map so N balances don't each re-walk the bid list.
+  // Stable across renders in the common case (bid list doesn't
+  // change tick-to-tick).
+  const dailySpendSat = useMemo(() => projectedDailySpendSat(bids), [bids]);
+  const nowMs = Date.now();
+  if (balances.length === 0) {
+    return <div className="text-slate-500 text-sm">{'\u2014'}</div>;
+  }
+  return (
+    <>
+      {balances.map((b) => {
+        const runwayDays =
+          dailySpendSat > 0 && b.total_balance_sat > 0
+            ? b.total_balance_sat / dailySpendSat
+            : null;
+        const runwayText = (() => {
+          if (runwayDays === null) return '\u2014';
+          const exhaustAt = new Date(nowMs + runwayDays * 86_400_000);
+          const dateLabel = exhaustAt.toLocaleDateString(locale, {
+            month: 'short',
+            day: 'numeric',
+          });
+          const daysLabel =
+            runwayDays >= 10
+              ? `${Math.round(runwayDays)} days`
+              : `${runwayDays.toFixed(1)} days`;
+          return `${daysLabel} \u00b7 ~${dateLabel}`;
+        })();
+        return (
+          <div key={b.subaccount}>
+            <Row k="available" v={denomination.formatSat(b.available_balance_sat, locale)} />
+            <Row k="blocked" v={denomination.formatSat(b.blocked_balance_sat, locale)} />
+            <Row k="total" v={denomination.formatSat(b.total_balance_sat, locale)} />
+            <Row k="runway" v={runwayText} />
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
 function OceanPanel() {
   const { intlLocale } = useLocale();
   const denomination = useDenomination();
@@ -1676,14 +1688,7 @@ function OceanPanel() {
           the top row. */}
       {o.user && (
         <>
-          <Row
-            k="ocean hashrate"
-            v={
-              o.user.hashrate_5m_ph !== null
-                ? `${o.user.hashrate_5m_ph.toFixed(2)} PH/s`
-                : '\u2014'
-            }
-          />
+          <Row k="ocean hashrate" v={formatHashratePH(o.user.hashrate_5m_ph, intlLocale)} />
           <Row
             k="share log"
             v={
@@ -1794,18 +1799,7 @@ function FinancePanel({
   // stable across the null → defined transition of `data` (React error
   // #310). The callback tolerates `data` being undefined.
   const { dailySpendSat, hasDailySpend, dailyIncomeSat, dailyNetSat, dailyNetColor } = useMemo(() => {
-    const ownedActive = status.bids.filter(
-      (b) => b.is_owned && b.status === 'BID_STATUS_ACTIVE',
-    );
-    const _dailySpendSat = ownedActive.reduce(
-      (sum, b) => {
-        const effectiveSpeed = b.speed_limit_ph !== null
-          ? Math.min(b.avg_speed_ph, b.speed_limit_ph)
-          : b.avg_speed_ph;
-        return sum + b.price_sat_per_ph_day * effectiveSpeed;
-      },
-      0,
-    );
+    const _dailySpendSat = projectedDailySpendSat(status.bids);
     // `_dailySpendSat` is always a concrete number — the sum above
     // defaults to 0 when no active bids exist, and Braiins only
     // bills for delivered hashrate so a 0 here during a fill gap
@@ -1813,7 +1807,9 @@ function FinancePanel({
     // rendering on spend > 0, which hid the entire P&L panel every
     // time the bid stopped filling for a tick. Keep the flag to
     // drive the "no active bids" empty state in the outer fallback.
-    const _hasDailySpend = ownedActive.length > 0;
+    const _hasDailySpend = status.bids.some(
+      (b) => b.is_owned && b.status === 'BID_STATUS_ACTIVE',
+    );
     const _dailyIncomeSat = data?.ocean?.daily_estimate_sat ?? null;
     const _dailyNetSat =
       _dailyIncomeSat !== null

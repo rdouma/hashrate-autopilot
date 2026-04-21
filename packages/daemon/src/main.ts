@@ -19,7 +19,6 @@ import { RetentionService } from './services/retention.js';
 import { BtcPriceService } from './services/btc-price.js';
 import { BraiinsService } from './services/braiins-service.js';
 import { DatumPoller } from './services/datum.js';
-import { createOceanHashrateService } from './services/ocean_hashrate.js';
 import { HashpriceCache } from './services/hashprice-cache.js';
 import { HashpriceRefresher } from './services/hashprice-refresher.js';
 import { createOceanClient } from './services/ocean.js';
@@ -148,12 +147,6 @@ async function main(): Promise<void> {
     log('datum:    disabled (datum_api_url empty)');
   }
 
-  // Per-tick Ocean user_hashrate poll (issue #36). Independent of the
-  // 5-min-cached OceanClient so the chart's "received (Ocean)" line
-  // stays responsive at a 1-min tick cadence. Stateless — just a
-  // thin fetch wrapper with a 3 s timeout.
-  const oceanHashrate = createOceanHashrateService();
-
   let payoutObserver: PayoutObserver | null = null;
   if (cfg.payout_source !== 'none' && cfg.btc_payout_address) {
     const rpcUrl = cfg.bitcoind_rpc_url || secrets.bitcoind_rpc_url || '';
@@ -190,12 +183,18 @@ async function main(): Promise<void> {
   const hashpriceCache = new HashpriceCache();
   const HASHPRICE_STALENESS_MS = 60 * 60 * 1000;
 
+  // Ocean stats client — shared between the tick observe path (for
+  // `state.ocean_hashrate_ph`, issue #36) and the /api/ocean HTTP
+  // route. The internal 60 s cache means both callers share one
+  // underlying HTTP round-trip per tick instead of firing two.
+  const oceanClient = createOceanClient();
+
   const controller = new Controller({
     braiins,
     braiinsClient,
     poolTracker,
     datumPoller,
-    oceanHashrate,
+    oceanClient,
     configRepo,
     runtimeRepo,
     ownedBidsRepo,
@@ -215,10 +214,6 @@ async function main(): Promise<void> {
     onTick: (r: TickResult) => logTick(r),
     onError: (err) => log(`[tick] error: ${(err as Error)?.message ?? err}`),
   });
-
-  // Ocean stats client — null if no payout address configured (the
-  // finance panel just won't have an "expected income" figure then).
-  const oceanClient = createOceanClient();
 
   // Boot-time hashprice fetch (issue #28). When the operator has
   // configured both a payout address and the dynamic cap, seed the

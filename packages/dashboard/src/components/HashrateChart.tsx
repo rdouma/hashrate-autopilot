@@ -35,28 +35,25 @@ const HEIGHT = 200;
 // rightmost timestamp from clipping the edge.
 const PADDING = { top: 16, right: 16, bottom: 24, left: 80 };
 
-// Yellow — same hue as "our bid" on the price chart, semantically
-// matches "what we pay Braiins for". Sim-mode overlay uses a distinct
-// orange tint so a toggled-on simulation still visually separates
-// from the live delivered line.
+// Yellow matches "our bid" on the PriceChart — semantically
+// "what we pay Braiins for". Sim mode uses orange so a live sim
+// still reads distinct from the real delivered line.
 const COLOR_DELIVERED = '#fbbf24';
 const COLOR_SIM = '#f97316';
-// Green — measured-locally-by-us at the DATUM Gateway. Was the
-// delivered colour; reassigned to Datum at the operator's request.
+// Green — measured locally at the DATUM gateway.
 const COLOR_DATUM = '#34d399';
-// Saturated blue — same hue as the TIDES-credited block cubes on
-// this same chart, reinforces the "Ocean → blue" association and
-// contrasts harder against the green Datum line than cyan did.
+// Same saturated blue as the TIDES-credited block cubes on this
+// chart — reinforces the "Ocean → blue" association and contrasts
+// harder against the green Datum line than cyan did.
 const COLOR_OCEAN = '#3b82f6';
 const COLOR_TARGET = '#94a3b8';
 const COLOR_FLOOR = '#64748b';
-// Gold — reserved for the rare "we found this block ourselves" case
-// (found_by_us === true), reads as "jackpot" against the dark
+// Gold for the rare "we found this block ourselves" case
+// (found_by_us === true). Reads as "jackpot" against the dark
 // background.
 const COLOR_OUR_BLOCK = '#fbbf24';
-// Tailwind blue-500 — the generic "pool block credited via TIDES"
-// marker. Saturated enough to read as its own colour against the
-// teal delivered curve and cyan Datum line.
+// Same hue as COLOR_OCEAN by design — TIDES-credited block cubes
+// and the Ocean hashrate line share the Ocean-is-blue association.
 const COLOR_POOL_BLOCK = '#3b82f6';
 
 function formatDuration(ms: number): string {
@@ -581,7 +578,6 @@ function BlockTooltip({
     </div>
   );
 }
-
 
 function BtcRow({
   label,
