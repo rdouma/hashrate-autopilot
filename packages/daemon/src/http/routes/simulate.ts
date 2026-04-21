@@ -268,14 +268,20 @@ function simulate(rows: TickRow[], params: SimParams): SimResult {
         if (belowFloorSince !== null) {
           const elapsed = r.tick_at - belowFloorSince;
           if (elapsed >= params.escalationWindowMs && current < targetPrice) {
-            const nextPrice: number = params.escalationMode === 'market'
+            const naiveEscalation: number = params.escalationMode === 'market'
               ? targetPrice
               : Math.min(current + params.escalationStep, targetPrice);
-            // Apply the same symmetric min-delta gate the real
-            // controller uses so the simulator doesn't paint +2 / +7
-            // sat escalations that decide.ts would have skipped.
-            if (nextPrice - current >= params.minLowerDelta) {
-              if (nextPrice !== current) mutationCount++;
+            // Min-delta as a floor on the step (not a veto) — same
+            // semantic as decide.ts: when the natural raise is below
+            // min_delta we still move, just by min_delta instead of a
+            // pixel. Clamped to effectiveCap so the floor doesn't
+            // push us above the ceiling.
+            const nextPrice = Math.min(
+              Math.max(naiveEscalation, current + params.minLowerDelta),
+              effectiveCap,
+            );
+            if (nextPrice > current) {
+              mutationCount++;
               bidPrice = nextPrice;
               overrideUntil = r.tick_at + params.escalationWindowMs;
             }

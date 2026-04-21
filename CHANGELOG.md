@@ -2,6 +2,16 @@
 
 ## 2026-04-21
 
+### `[Fix]` Escalation min-delta is a floor, not a veto
+
+Operator clarified the intent of the symmetric min-delta work: when the natural next price sits less than `min_delta` above the current bid, the autopilot should still raise — it just rounds **up** to `current + min_delta` so we never sit one sat above the previous step. The previous behaviour (build 78/79) skipped the escalation entirely, which stalled fills when the market was moving in tiny increments. Raising is now: `min(max(naive_step, current + min_delta), effective_cap)`. Lowering keeps its deadband semantics (`min_delta` remains a veto there — lowering burns the Braiins 10-min cooldown and isn't worth a small saving).
+
+Applied to both `decide.ts` (real controller) and `routes/simulate.ts` (replay engine) so sim and live behave identically.
+
+### `[Fix]` 3 h range selector now visible in the chart picker
+
+Status-page picker was hardcoded to `['6h', '12h', '24h', '1w', '1m', '1y', 'all']` — the shared `CHART_RANGES` array added `3h` but the picker wasn't iterating over it. Swapped the literal for `CHART_RANGES.map(...)` so future ranges are picked up without touching the render site.
+
 ### `[Feature]` Chart range picker: added 3 h preset
 
 New `3h` option at the left end of the range picker, sitting before `6h`. Same raw-rows (no-aggregation) treatment as the other short presets, events overlay on. Added to the shared `CHART_RANGES` array + `CHART_RANGE_SPECS` map so the server-side aggregation logic and the dashboard picker stay in lockstep.

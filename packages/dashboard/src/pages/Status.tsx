@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import {
+  CHART_RANGES,
   CHART_RANGE_SPECS,
   DEFAULT_CHART_RANGE,
   parseChartRange,
@@ -1142,7 +1143,7 @@ function FilterBar({
         </button>
       </div>
       <div className="flex gap-1">
-        {(['6h', '12h', '24h', '1w', '1m', '1y', 'all'] as ChartRange[]).map((r) => (
+        {CHART_RANGES.map((r) => (
           <button
             key={r}
             onClick={() => onRangeChange(r)}

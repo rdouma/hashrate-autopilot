@@ -179,21 +179,33 @@ export function decide(state: State): readonly Proposal[] {
   // Mode determines escalation behavior:
   // - 'market': jump directly to targetPrice (track market)
   // - 'dampened': step from current_bid + escalation_step (avoid chasing)
-  // Apply the same min-delta gate as the lowering path so we don't
-  // burn the Braiins cooldown chasing a +2 / +7 sat market tick — if
-  // the jump isn't worth at least `min_lower_delta_sat_per_eh_day`
-  // (re-purposed as a symmetric "min delta" threshold), skip it.
+  // Min-delta semantics (asymmetric vs. the lowering path):
+  //   - Raising: when the natural next price would be less than
+  //     `min_delta` above current, round UP to current + min_delta
+  //     instead of skipping. The operator still wants hashrate; they
+  //     just don't want to sit one sat above the previous bid every
+  //     tick. `min_delta` is the minimum step, not a veto.
+  //   - Lowering (block b below): deadband semantics — skip entirely
+  //     unless the saving exceeds `min_delta`. Lowering burns the
+  //     10-min Braiins cooldown, so a tiny move isn't worth it.
+  // The raise is still clamped at effectiveCap so the floor doesn't
+  // push us above the configured ceiling.
   const shouldEscalate = shouldTriggerEscalation(state) || state.bypass_pacing;
   const minDeltaThreshold = Math.max(tickSize, config.min_lower_delta_sat_per_eh_day);
   if (!overrideActive && shouldEscalate && primary.price_sat < targetPrice) {
-    const escalatedPrice =
+    const naiveEscalation =
       config.escalation_mode === 'market'
         ? targetPrice
         : Math.min(
             primary.price_sat + config.fill_escalation_step_sat_per_eh_day,
             targetPrice,
           );
-    if (escalatedPrice >= primary.price_sat + minDeltaThreshold) {
+    const minDeltaFloor = primary.price_sat + minDeltaThreshold;
+    const escalatedPrice = Math.min(
+      Math.max(naiveEscalation, minDeltaFloor),
+      effectiveCap,
+    );
+    if (escalatedPrice > primary.price_sat + tickSize) {
       proposals.push({
         kind: 'EDIT_PRICE',
         braiins_order_id: primary.braiins_order_id,
