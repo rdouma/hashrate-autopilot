@@ -1651,16 +1651,6 @@ function OceanPanel() {
             })}
           />
           <Row k="found" v={o.last_block.ago_text} />
-          {(o.last_block.miner_tag || o.last_block.pool_name) && (
-            <Row
-              k="miner"
-              v={
-                [o.last_block.miner_tag, o.last_block.pool_name]
-                  .filter(Boolean)
-                  .join(' \u00b7 ') || '\u2014'
-              }
-            />
-          )}
           <Row k="reward" v={denomination.formatSat(o.last_block.total_reward_sat, intlLocale)} />
         </>
       ) : (

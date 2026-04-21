@@ -67,36 +67,9 @@ export interface ScanTxoutSetResult {
   }>;
 }
 
-/**
- * Shape of `getblock <hash> 2` — verbosity 2 embeds full TX data so
- * we can read the coinbase scriptSig without a second RPC hop. Only
- * the fields the autopilot actually consumes are typed; bitcoind
- * returns more (`weight`, `difficulty`, merkle proofs, etc.) which
- * we leave as unknown-ish until we need them.
- */
-export interface BlockVerbose2 {
-  readonly hash: string;
-  readonly height: number;
-  readonly time: number;
-  readonly tx: ReadonlyArray<{
-    readonly txid: string;
-    readonly vin: ReadonlyArray<{
-      readonly coinbase?: string;
-      readonly txid?: string;
-    }>;
-  }>;
-}
-
 export interface BitcoindClient {
   getBlockchainInfo(): Promise<BlockchainInfo>;
   scanTxoutSet(descriptors: readonly string[]): Promise<ScanTxoutSetResult>;
-  /**
-   * `getblock <hash> 2` — full block with embedded TX data. Used to
-   * read the coinbase scriptSig for miner-tag extraction. May throw
-   * `BitcoindError` with code -5 if the hash is unknown to the local
-   * node (not yet relayed / pruned).
-   */
-  getBlock(hash: string): Promise<BlockVerbose2>;
 }
 
 export function createBitcoindClient(config: BitcoindClientConfig): BitcoindClient {
@@ -151,7 +124,6 @@ export function createBitcoindClient(config: BitcoindClientConfig): BitcoindClie
 
   return {
     getBlockchainInfo: () => call<BlockchainInfo>('getblockchaininfo'),
-    getBlock: (hash) => call<BlockVerbose2>('getblock', [hash, 2]),
     scanTxoutSet: async (descriptors) => {
       // bitcoind only allows ONE concurrent scantxoutset. If a prior
       // scan orphaned (our HTTP timeout killed the fetch but the node

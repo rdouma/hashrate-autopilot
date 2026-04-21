@@ -21,7 +21,6 @@ import type { Kysely } from 'kysely';
 
 import type { Controller } from '../controller/tick.js';
 import type { BidEventsRepo } from '../state/repos/bid_events.js';
-import type { BlockMetadataRepo } from '../state/repos/block_metadata.js';
 import type { ConfigRepo } from '../state/repos/config.js';
 import type { DecisionsRepo } from '../state/repos/decisions.js';
 import type { OwnedBidsRepo } from '../state/repos/owned_bids.js';
@@ -56,7 +55,6 @@ export interface HttpServerDeps {
   readonly decisionsRepo: DecisionsRepo;
   readonly tickMetricsRepo: TickMetricsRepo;
   readonly bidEventsRepo: BidEventsRepo;
-  readonly blockMetadataRepo: BlockMetadataRepo;
   readonly payoutObserver: PayoutObserver | null;
   readonly oceanClient: OceanClient | null;
   readonly accountSpend: AccountSpendService | null;
@@ -119,7 +117,6 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<HttpServer
   await registerOceanRoute(app, {
     oceanClient: deps.oceanClient,
     configRepo: deps.configRepo,
-    blockMetadataRepo: deps.blockMetadataRepo,
   });
   await registerFinanceRoute(app, {
     ownedBidsRepo: deps.ownedBidsRepo,

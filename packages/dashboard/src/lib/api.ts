@@ -405,8 +405,6 @@ export interface OurBlockMarker {
   block_hash: string;
   worker: string;
   found_by_us: boolean;
-  pool_name: string | null;
-  miner_tag: string | null;
 }
 
 export interface OceanResponse {
@@ -417,8 +415,6 @@ export interface OceanResponse {
     total_reward_sat: number;
     block_hash: string;
     ago_text: string;
-    pool_name: string | null;
-    miner_tag: string | null;
   } | null;
   blocks_24h: number;
   blocks_7d: number;

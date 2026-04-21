@@ -2,6 +2,12 @@
 
 ## 2026-04-20 (post-v1.0.3)
 
+### `[Infra]` Remove block-marker miner-identity enrichment
+
+Pulled the whole enrichment feature landed in builds 73 / 75 / 76. It required bitcoind RPC regardless of the operator's payout-source choice, which muddied the Config panel; the `getblock` coinbase parse rarely yielded a useful operator tag anyway; and the Ocean feed already tells us these are all Ocean blocks by construction, so "pool_name = OCEAN" wasn't buying much on its own. Tooltip is back to reward / subsidy / fees only — cleaner and doesn't rely on a local bitcoind being reachable.
+
+Reverts: `services/coinbase.ts`, `state/repos/block_metadata.ts`, the bitcoind-client `getBlock` helper, the `OurBlock.pool_name` / `miner_tag` fields, the Ocean-panel "miner" row, and the always-visible bitcoind RPC fields in the Config panel (they're gated behind `payout_source === 'bitcoind'` again, which is how it was before). Adds migration 0036 to drop the unused `block_metadata` table on deployed DBs.
+
 ### `[Perf]` Ocean panel refreshes every 60 s (was 5 min); enrichment picks up new blocks within a minute
 
 The Ocean panel was on a 5-min refresh (both client-side refetch and server-side cache) which felt sluggish — and because block-marker enrichment only runs on a cache-miss of `/api/ocean`, new blocks took up to 5 minutes to get their `Simple Mining · OCEAN` style label. Dropped both to 60 s, aligned with the chart / tick cadence. Net cost is ~4 req/min to Ocean's public API per wallet — well below any sane rate limit and on par with what Ocean's own dashboard does.

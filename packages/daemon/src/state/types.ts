@@ -298,17 +298,5 @@ export interface Database {
   tick_metrics: TickMetricsTable;
   bid_events: BidEventsTable;
   closed_bids_cache: ClosedBidsCacheTable;
-  block_metadata: BlockMetadataTable;
   _migrations: MigrationsTable;
-}
-
-// ---------------------------------------------------------------------------
-// block_metadata (mempool.space enrichment cache, per block hash)
-// ---------------------------------------------------------------------------
-
-export interface BlockMetadataTable {
-  block_hash: string;
-  pool_name: string | null;
-  miner_tag: string | null;
-  fetched_at: number;
 }
