@@ -8,9 +8,10 @@ hashrate keeps landing at your own Datum-connected pool without manual babysitti
 
 The Status page is a single scroll: a hero card with the live bid price, delivered hashrate, and the DRY-RUN /
 LIVE / PAUSED switch on the left; the Next Action panel on the right explaining what the autopilot is about to do
-and when. Below that sit range-selectable hashrate and price charts overlayed with bid events, a stats strip
-(uptime, avg hashrate Braiins-vs-Datum, mutation count, cost per PH delivered, overpay vs fillable and vs hashprice),
-service panels for Braiins / Datum Gateway / Ocean, the active bids table, and per-day and lifetime P&L.
+and when. Below that sit range-selectable hashrate and price charts overlayed with bid events and block markers, a
+stats strip (uptime, avg hashrate per source — Braiins / Datum / Ocean side-by-side, cost per PH delivered, overpay
+vs fillable and vs hashprice), service panels for Braiins / Datum Gateway / Ocean, the active bids table, and
+per-day and lifetime P&L.
 
 ## Why this exists
 
@@ -63,9 +64,14 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
   stops the autopilot overpaying when hashprice crashes but the fixed max still allows it.
 - **Cheap-mode scaling** — when the market price drops below a threshold relative to hashprice (break-even), the
   autopilot can automatically scale up to a higher target to capture cheap capacity.
-- **Ocean pool integration** — reads hashprice, pool earnings, time-to-payout, and recent blocks (including ones found
-  by your own share stream) from the Ocean API. Hashprice is plotted historically on the price chart; blocks that
-  Ocean flags as found by this payout address appear as gold markers on the hashrate chart.
+- **Ocean pool integration** — reads hashprice, pool earnings, time-to-payout, Ocean-credited hashrate, and recent
+  pool blocks from the Ocean API. Hashprice is plotted historically on the price chart. Ocean-credited hashrate is
+  a first-class line on the Hashrate chart alongside Braiins-delivered and Datum-received. Every TIDES-credited pool
+  block appears on the hashrate chart as an isometric cube marker — **blue** for the common case (pool block credited
+  via TIDES) and **gold** for the rare solo-lottery case where our own worker found the block. Clicking a cube opens
+  it in your configured block explorer (mempool.space by default; blockstream / blockchair / your own local explorer
+  are preset pills on the Config page). Tooltips show block height, reward / subsidy / fees, and an estimated
+  our-share for the block based on the current share_log.
 - **Datum Gateway integration (optional)** — when `datum_api_url` is configured, the daemon polls Datum's
   `/umbrel-api` each tick and records the gateway-measured hashrate alongside the Braiins-reported number. A
   sustained gap means Braiins is billing for hashrate the gateway never saw. See
@@ -79,13 +85,15 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
 
   Flip the Real-time / Simulation toggle at the top of the Status page and the charts redraw against a synthetic
   bid trace computed from the current parameter bar — Overpay, Max bid, Max over hashprice, Esc. step, Esc. window,
-  Wait to lower, Min lower delta, and dampened-vs-market escalation mode. Stats recalculate in place (uptime,
-  mutation count, avg cost, avg overpay), the simulated cap line and excluded zone follow the sim `Max bid` so you
-  can see whether your ceiling would have clipped real escalations, and the "Apply to config" button writes the
-  validated set back to the live daemon once you're happy.
-- **Dashboard** — hashrate and price charts with time-range picker, bid event markers, pinned-tooltip JSON export,
-  stats bar (uptime, avg hashrate — Braiins and Datum side-by-side when Datum is on, cost metrics, mutation count),
-  split P&L panels (period and lifetime), live bid table with full IDs, and a full config editor with live reload.
+  Wait to lower, Min delta, and dampened-vs-market escalation mode. Stats recalculate in place (uptime, avg cost,
+  avg overpay), the simulated cap line and excluded zone follow the sim `Max bid` so you can see whether your
+  ceiling would have clipped real escalations, and the "Apply to config" button writes the validated set back to
+  the live daemon once you're happy.
+- **Dashboard** — hashrate and price charts with time-range picker (3h / 6h / 12h / 24h / 1w / 1m / 1y / all), bid
+  event markers, block markers, pinned-tooltip JSON export, stats bar (uptime, three side-by-side avg-hashrate cards
+  for Braiins / Datum / Ocean, and cost metrics), service panels that include a runway forecast on the Braiins card
+  (days of balance left at the current spend rate), split P&L panels (period and lifetime), live bid table with full
+  IDs, and a full config editor with live reload.
 - **BTC/USD denomination toggle** — all prices and balances can be viewed in sats or USD using a live BTC price oracle
   (CoinGecko, Coinbase, Bitstamp, or Kraken).
 - **Operator overrides** — bump price, trigger an immediate decision tick (bypasses the patience window for one
@@ -102,11 +110,12 @@ Save writes the new row and the next tick picks it up. No daemon restart needed 
 
 Sections map directly to the spec: **Hashrate targets** (including the cheap-mode scale-up), **Pool destination**
 (pool URL, worker identity, Datum stats API URL), **Pricing caps** (fixed `max_bid` plus the optional dynamic
-`max_overpay_vs_hashprice`), **Fill strategy** (overpay, min lower delta, escalation mode + step + window, wait
-before lowering), **Budget**, **Alerts & timers**, **Daemon startup** (boot mode — always dry-run / resume last /
-always live), **On-chain payouts** (payout address + Electrs-or-bitcoind backend), **Profit & Loss** spend scope,
-**BTC price oracle** (feeds the sat↔USD toggle), and **Log retention** for the append-only `tick_metrics` and
-`decisions` tables.
+`max_overpay_vs_hashprice`), **Fill strategy** (overpay, min delta, escalation mode + step + window, wait before
+lowering), **Budget** (per-bid budget), **Alerts & timers**, **Daemon startup** (boot mode — always dry-run / resume
+last / always live), **Block explorer** (template used by the block-marker cubes and the Ocean panel's last-pool-block
+link), **On-chain payouts** (payout address + Electrs-or-bitcoind backend), **Profit & Loss** spend scope, **BTC
+price oracle** (feeds the sat↔USD toggle), and **Log retention** for the append-only `tick_metrics` and `decisions`
+tables.
 
 ## Tech stack
 
