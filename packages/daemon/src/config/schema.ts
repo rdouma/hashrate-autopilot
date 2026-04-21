@@ -89,7 +89,6 @@ export const AppConfigSchema = z.object({
     .default(null),
 
   // Budgeting
-  monthly_budget_ceiling_sat: positiveInt,
   bid_budget_sat: positiveInt,
 
   // Alerting thresholds (SPEC §9)
@@ -258,7 +257,6 @@ export const APP_CONFIG_DEFAULTS: Omit<
   // is comfortably below the fixed cap without being overly tight.
   max_overpay_vs_hashprice_sat_per_eh_day: 2_000_000, // 2,000 sat/PH/day
 
-  monthly_budget_ceiling_sat: 1_000_000,
   bid_budget_sat: 200_000,
 
   wallet_runway_alert_days: 3,

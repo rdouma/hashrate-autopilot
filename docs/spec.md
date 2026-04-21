@@ -147,7 +147,6 @@ All values change on the next control-loop tick without restart.
 
 **Budget:**
 
-- `monthly_budget_ceiling_sat` — absolute cap per calendar month
 - `bid_budget_sat` — size of the `amount_sat` on each created bid (governs bid lifetime)
 - `wallet_runway_alert_days`
 

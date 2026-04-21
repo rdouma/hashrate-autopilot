@@ -23,7 +23,6 @@ export interface ConfigTable {
   max_bid_sat_per_eh_day: number;
   /** @deprecated Legacy column — kept for NOT NULL; ignored by the app. */
   emergency_max_bid_sat_per_eh_day: number;
-  monthly_budget_ceiling_sat: number;
   bid_budget_sat: number;
   wallet_runway_alert_days: number;
   below_floor_alert_after_minutes: number;

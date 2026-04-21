@@ -2,6 +2,10 @@
 
 ## 2026-04-20 (post-v1.0.3)
 
+### `[Infra]` Remove monthly_budget_ceiling_sat (#35)
+
+Scope-changed #35 — instead of wiring up enforcement (new decide gate, Next-Action hint, alert dedupe, P&L progress indicator) for a knob the operator doesn't want, pulled the field out entirely. Per-bid budget + Braiins account balance already bound outflow; a monthly ceiling on top was cognitive overhead without a real constraint behind it. Migration 0037 drops the column from deployed DBs, the Zod schema / state type / dashboard Config page lose the field, and the Budget section on the Config page now has a single row ("Per-bid budget") instead of two.
+
 ### `[Feature]` Block tooltip shows estimated our-share + our-earnings
 
 The block-marker tooltip now renders an "our share (est.)" sub-block when an Ocean share_log value is available: share log % + estimated sat earnings for that block (`reward × share_log / 100`). The estimate uses the *current* share_log, which is approximate for older blocks since share_log drifts as pool hashrate changes — annotated in the tooltip so it's not read as precise history.

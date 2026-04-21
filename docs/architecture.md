@@ -191,7 +191,6 @@ CREATE TABLE config (
   destination_pool_url TEXT NOT NULL,
   destination_pool_worker_name TEXT NOT NULL,  -- must be <btc-addr>.<label>
   max_bid_sat_per_eh_day INTEGER NOT NULL,
-  monthly_budget_ceiling_sat INTEGER NOT NULL,
   bid_budget_sat INTEGER NOT NULL,
   wallet_runway_alert_days INTEGER NOT NULL,
   below_floor_alert_after_minutes INTEGER NOT NULL,

@@ -203,7 +203,6 @@ export interface AppConfig {
   // preprocess; keep the wider type here so existing callers don't
   // need to special-case the UI's "disabled" representation.
   max_overpay_vs_hashprice_sat_per_eh_day: number | null;
-  monthly_budget_ceiling_sat: number;
   bid_budget_sat: number;
   wallet_runway_alert_days: number;
   below_floor_alert_after_minutes: number;

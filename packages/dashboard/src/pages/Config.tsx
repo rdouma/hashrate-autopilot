@@ -180,12 +180,6 @@ const SECTIONS: Section[] = [
     description: 'How big a single bid is. Use the "days of runway" helper above to size this relative to market price.',
     fields: [
       { key: 'bid_budget_sat', label: 'Per-bid budget', kind: 'integer', unit: 'sat' },
-      {
-        key: 'monthly_budget_ceiling_sat',
-        label: 'Monthly budget ceiling',
-        kind: 'integer',
-        unit: 'sat',
-      },
     ],
   },
   {
