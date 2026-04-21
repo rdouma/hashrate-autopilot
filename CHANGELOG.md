@@ -2,6 +2,18 @@
 
 ## 2026-04-21
 
+### `[UI]` Ocean panel: grouped by meaning; last-block "reward" → "our earnings (est.)"
+
+Three tweaks:
+
+- `hashprice (break-even)` moved up under `ocean hashrate`. Both are current observations (same flavour as Datum's `datum hashrate` or Braiins' `delivered`) — nothing to do with our accrued earnings. Grouping them at the top and adding a divider below makes the panel read top→bottom as "what's happening now" → "what we've earned / will earn" → "pool-wide context".
+- The last-pool-block section's `reward` row (the full block reward, irrelevant to us) is now `our earnings (est.)` — `total_reward × current share_log`, same math the chart tooltip uses. Approximation for older blocks since share_log drifts, but operator-relevant: it answers "how much did that block put in my unpaid bucket" instead of "what did the pool collectively win".
+- Divider inserted between the current-observations group and the earnings group.
+
+### `[UI]` Sim "Apply to config" now has visual feedback
+
+The button swallowed clicks silently — the only "feedback" was that it eventually disappeared when `dirty` went false after the config round-trip, with nothing in between. Added a local `applyState` machine: `Applying…` during the save (button disabled), `Applied ✓` in emerald for 1.5 s on success, `Failed — retry` in red on error (persists until next click). Reset button disables while applying too.
+
 ### `[Fix]` Escalation min-delta is a floor, not a veto
 
 Operator clarified the intent of the symmetric min-delta work: when the natural next price sits less than `min_delta` above the current bid, the autopilot should still raise — it just rounds **up** to `current + min_delta` so we never sit one sat above the previous step. The previous behaviour (build 78/79) skipped the escalation entirely, which stalled fills when the market was moving in tiny increments. Raising is now: `min(max(naive_step, current + min_delta), effective_cap)`. Lowering keeps its deadband semantics (`min_delta` remains a veto there — lowering burns the Braiins 10-min cooldown and isn't worth a small saving).

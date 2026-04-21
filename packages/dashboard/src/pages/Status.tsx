@@ -1174,10 +1174,34 @@ function SimParamBar({
   config: object;
   onChange: (key: string, value: number) => void;
   onReset: () => void;
-  onApply: () => void;
+  onApply: () => Promise<void> | void;
   loading: boolean;
   dirty: boolean;
 }) {
+  const [applyState, setApplyState] = useState<'idle' | 'applying' | 'applied' | 'error'>('idle');
+  // The "Applied ✓" flash sticks around for 1.5 s after the save,
+  // then the Apply button disappears anyway because `dirty` goes
+  // false once config === simParams. Without the flash, the button
+  // just vanishes on click with no confirmation — an operator
+  // hitting it on a laggy network had nothing to tell them it
+  // registered.
+  useEffect(() => {
+    if (applyState !== 'applied') return;
+    const id = setTimeout(() => setApplyState('idle'), 1500);
+    return () => clearTimeout(id);
+  }, [applyState]);
+
+  const handleApply = async () => {
+    if (applyState === 'applying') return;
+    setApplyState('applying');
+    try {
+      await onApply();
+      setApplyState('applied');
+    } catch {
+      setApplyState('error');
+    }
+  };
+
   return (
     <section className="bg-slate-900/50 border border-amber-800/30 rounded-lg p-3">
       <div className="flex items-center justify-between mb-2">
@@ -1186,19 +1210,34 @@ function SimParamBar({
           {loading && <span className="text-xs text-amber-400 animate-pulse">simulating...</span>}
         </div>
         <div className="flex items-center gap-2">
-          {dirty && (
+          {(dirty || applyState !== 'idle') && (
             <>
               <button
                 onClick={onReset}
-                className="text-[10px] px-2 py-1 rounded bg-slate-800 border border-slate-700 text-slate-400 hover:bg-slate-700"
+                disabled={applyState === 'applying'}
+                className="text-[10px] px-2 py-1 rounded bg-slate-800 border border-slate-700 text-slate-400 hover:bg-slate-700 disabled:opacity-40"
               >
                 Reset
               </button>
               <button
-                onClick={onApply}
-                className="text-[10px] px-2 py-1 rounded bg-amber-800/60 border border-amber-700/50 text-amber-200 hover:bg-amber-700/60"
+                onClick={handleApply}
+                disabled={applyState === 'applying' || applyState === 'applied'}
+                className={
+                  'text-[10px] px-2 py-1 rounded border transition ' +
+                  (applyState === 'applied'
+                    ? 'bg-emerald-800/60 border-emerald-700/50 text-emerald-200'
+                    : applyState === 'error'
+                      ? 'bg-red-800/60 border-red-700/50 text-red-200'
+                      : 'bg-amber-800/60 border-amber-700/50 text-amber-200 hover:bg-amber-700/60 disabled:opacity-60')
+                }
               >
-                Apply to config
+                {applyState === 'applying'
+                  ? 'Applying…'
+                  : applyState === 'applied'
+                    ? 'Applied ✓'
+                    : applyState === 'error'
+                      ? 'Failed — retry'
+                      : 'Apply to config'}
               </button>
             </>
           )}
@@ -1682,12 +1721,24 @@ function OceanPanel() {
         />
       }
     >
-      {/* Our stuff — hashrate, share log, earnings. Matches the
-          Braiins/Datum convention: the panel's own hashrate line is
-          the top row. */}
+      {/* Current observations — same genre as Datum's "datum hashrate"
+          or Braiins' "delivered": what the pool reports about our
+          wallet right now. */}
       {o.user && (
         <>
           <Row k="ocean hashrate" v={formatHashratePH(o.user.hashrate_5m_ph, intlLocale)} />
+          {o.user.hashprice_sat_per_ph_day != null && (
+            <Row
+              k="hashprice (break-even)"
+              v={denomination.formatSatPerPhDay(o.user.hashprice_sat_per_ph_day, intlLocale)}
+            />
+          )}
+        </>
+      )}
+
+      {/* Our accrued / projected earnings. */}
+      {o.user && (
+        <div className="border-t border-slate-800 mt-2 pt-2">
           <Row
             k="share log"
             v={
@@ -1708,13 +1759,7 @@ function OceanPanel() {
           {o.user.time_to_payout_text && (
             <Row k="next payout" v={formatNextPayout(o.user.time_to_payout_text)} />
           )}
-          {o.user.hashprice_sat_per_ph_day != null && (
-            <Row
-              k="hashprice (break-even)"
-              v={denomination.formatSatPerPhDay(o.user.hashprice_sat_per_ph_day, intlLocale)}
-            />
-          )}
-        </>
+        </div>
       )}
 
       {/* Pool-wide context — less important day-to-day, so it lives
@@ -1731,9 +1776,23 @@ function OceanPanel() {
               })}
             />
             <Row k="found" v={o.last_block.ago_text} />
+            {/* Our estimated share of this block — same math as the
+                chart tooltip: total_reward × current share_log. An
+                approximation for older blocks since share_log drifts,
+                but operator-relevant rather than the total block
+                reward (which tells you nothing about our cut). */}
             <Row
-              k="reward"
-              v={denomination.formatSat(o.last_block.total_reward_sat, intlLocale)}
+              k="our earnings (est.)"
+              v={
+                o.user?.share_log_pct != null
+                  ? denomination.formatSat(
+                      Math.round(
+                        (o.last_block.total_reward_sat * o.user.share_log_pct) / 100,
+                      ),
+                      intlLocale,
+                    )
+                  : '\u2014'
+              }
             />
           </>
         ) : (
