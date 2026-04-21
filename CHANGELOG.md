@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-04-21
+
+### `[Feature]` Dashboard login: "Remember me on this device" checkbox (#39)
+
+Basic-Auth password was stored in `sessionStorage`, which tab-scoped closes/backgrounds drop on mobile — operators were re-entering the password on every visit from their phone. Added a **Remember me on this device** checkbox to the login form (default: checked). When ticked, the password writes to `localStorage` so it survives tab closes and device reboots; unticked keeps the old per-tab behaviour. `getPassword()` reads localStorage first, then sessionStorage, so the rest of the app is oblivious to which backend is in use. `clearPassword()` clears both (for the sign-out path, belt-and-braces).
+
+Security note: LAN-only dashboard behind a password — the realistic threat is physical device access, which `localStorage` persistence doesn't meaningfully worsen.
+
 ## v1.1.1 — 2026-04-21
 
 Polish release on top of v1.1.0. No schema changes, no migrations — safe to upgrade in place with `./scripts/deploy.sh`.

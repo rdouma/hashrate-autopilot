@@ -7,6 +7,7 @@ import { setPassword } from '../lib/auth';
 export function Login() {
   const navigate = useNavigate();
   const [password, setLocal] = useState('');
+  const [remember, setRemember] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -14,7 +15,7 @@ export function Login() {
     e.preventDefault();
     setErr(null);
     setSubmitting(true);
-    setPassword(password);
+    setPassword(password, remember);
     try {
       await api.checkAuth();
       navigate('/');
@@ -48,6 +49,15 @@ export function Login() {
             autoFocus
             className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-slate-100 focus:border-amber-400 focus:outline-none"
           />
+        </label>
+        <label className="flex items-center gap-2 text-sm text-slate-300 select-none cursor-pointer">
+          <input
+            type="checkbox"
+            checked={remember}
+            onChange={(e) => setRemember(e.target.checked)}
+            className="accent-amber-400"
+          />
+          <span>Remember me on this device</span>
         </label>
         {err && <div className="text-sm text-red-400">{err}</div>}
         <button
