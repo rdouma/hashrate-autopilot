@@ -35,10 +35,12 @@ const HEIGHT = 200;
 // rightmost timestamp from clipping the edge.
 const PADDING = { top: 16, right: 16, bottom: 24, left: 80 };
 
-// Yellow matches "our bid" on the PriceChart — semantically
-// "what we pay Braiins for". Sim mode uses orange so a live sim
-// still reads distinct from the real delivered line.
-const COLOR_DELIVERED = '#fbbf24';
+// Tailwind amber-500 — the deeper "our bid" amber on the PriceChart.
+// Previously #fbbf24 (amber-400); nudged a shade darker at the
+// operator's eyecheck so the Braiins-delivered line reads as a
+// saturated amber/orange rather than pale yellow. The PriceChart
+// "our bid" line shares this constant.
+const COLOR_DELIVERED = '#f59e0b';
 const COLOR_SIM = '#f97316';
 // Green — measured locally at the DATUM gateway.
 const COLOR_DATUM = '#34d399';

@@ -29,7 +29,10 @@ const HEIGHT = 200;
 // padding only needs to keep the last X-axis timestamp from clipping.
 const PADDING = { top: 16, right: 16, bottom: 24, left: 80 };
 
-const COLOR_PRICE = '#fbbf24';
+// Tailwind amber-500 — shared with the Hashrate chart's delivered
+// (Braiins) line so the two charts speak the same visual language
+// for "our bid / what we pay Braiins for".
+const COLOR_PRICE = '#f59e0b';
 const COLOR_FILLABLE = '#f97316';
 const COLOR_CREATE = '#34d399';
 const COLOR_EDIT = '#fbbf24';
@@ -328,7 +331,7 @@ export const PriceChart = memo(function PriceChart({
       <div className="flex items-center justify-between mb-2 gap-3 flex-wrap">
         <h3 className="text-xs uppercase tracking-wider text-slate-100">{simMode ? 'Simulated price' : 'Price'}</h3>
         <div className="flex items-center gap-3 text-xs flex-wrap">
-          <Legend color={simMode ? '#fbbf24' : COLOR_PRICE} label={simMode ? 'simulated bid' : 'our bid'} />
+          <Legend color={simMode ? '#f97316' : COLOR_PRICE} label={simMode ? 'simulated bid' : 'our bid'} />
           <Legend color={COLOR_FILLABLE} label="fillable" dashed />
           <Legend color={COLOR_HASHPRICE} label="hashprice" dashed />
           <Legend color={COLOR_MAXBID} label="max bid" />
@@ -426,7 +429,7 @@ export const PriceChart = memo(function PriceChart({
           </>
         )}
         {pricePath && (
-          <path d={pricePath} stroke={simMode ? '#fbbf24' : COLOR_PRICE} strokeWidth="1.8" fill="none" opacity="0.95" />
+          <path d={pricePath} stroke={simMode ? '#f97316' : COLOR_PRICE} strokeWidth="1.8" fill="none" opacity="0.95" />
         )}
 
         <defs>
