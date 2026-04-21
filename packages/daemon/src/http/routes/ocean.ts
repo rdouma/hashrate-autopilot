@@ -76,6 +76,7 @@ export interface OceanResponse {
     time_to_payout_text: string | null;
     share_log_pct: number | null;
     hashrate_th: number | null;
+    hashrate_5m_ph: number | null;
     payout_threshold_sat: number;
     rewards_in_window_sat: number | null;
   } | null;
@@ -237,6 +238,7 @@ export async function registerOceanRoute(
         time_to_payout_text: stats.time_to_payout_text,
         share_log_pct: stats.share_log_pct,
         hashrate_th: stats.user_hashrate_th,
+        hashrate_5m_ph: stats.user_hashrate_5m_ph,
         payout_threshold_sat: stats.payout_threshold_sat,
         rewards_in_window_sat: stats.rewards_in_window_sat,
       },

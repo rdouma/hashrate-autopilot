@@ -37,10 +37,12 @@ const PADDING = { top: 16, right: 16, bottom: 24, left: 80 };
 
 const COLOR_DELIVERED = '#34d399';
 const COLOR_DATUM = '#38bdf8';
-// Tailwind violet-400 — a purple hue distinct from the teal delivered
-// line, the cyan Datum line, and the block-marker blue. Keeps the
-// three hashrate series visually separable even when they overlap.
-const COLOR_OCEAN = '#a78bfa';
+// Same blue as the TIDES-credited block cubes — reinforces the
+// branding association ("Ocean → blue cube") and reads more clearly
+// than the earlier purple on operator displays / with colour-blind
+// viewers. Distinct enough from the cyan Datum line that the three
+// hashrate series stay separable.
+const COLOR_OCEAN = '#3b82f6';
 const COLOR_TARGET = '#94a3b8';
 const COLOR_FLOOR = '#64748b';
 // Gold — reserved for the rare "we found this block ourselves" case

@@ -1679,6 +1679,14 @@ function OceanPanel() {
       <div className="border-t border-slate-800 mt-2 pt-2">
         {o.user && (
           <>
+            <Row
+              k="ocean hashrate"
+              v={
+                o.user.hashrate_5m_ph !== null
+                  ? `${o.user.hashrate_5m_ph.toFixed(2)} PH/s`
+                  : '\u2014'
+              }
+            />
             <Row k="share log" v={o.user.share_log_pct !== null ? `${o.user.share_log_pct.toFixed(4)}%` : '\u2014'} />
             <Row k="unpaid" v={denomination.formatSat(o.user.unpaid_sat, intlLocale)} />
             <Row k="next block est." v={denomination.formatSat(o.user.next_block_sat, intlLocale)} />

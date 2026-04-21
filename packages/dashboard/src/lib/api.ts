@@ -439,6 +439,7 @@ export interface OceanResponse {
     time_to_payout_text: string | null;
     share_log_pct: number | null;
     hashrate_th: number | null;
+    hashrate_5m_ph: number | null;
     payout_threshold_sat: number;
     rewards_in_window_sat: number | null;
   } | null;

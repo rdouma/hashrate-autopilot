@@ -68,6 +68,14 @@ export interface OceanStats {
   readonly recent_blocks: readonly OceanBlock[];
   readonly pool: OceanPoolInfo;
   readonly user_hashrate_th: number | null;
+  /**
+   * 5-minute sliding-window hashrate (PH/s) from the same
+   * `/v1/user_hashrate` response's `hashrate_300s` field — what the
+   * Hashrate chart plots as `received (Ocean)`. Exposed on the Ocean
+   * panel so the at-a-glance row matches the chart series. Null when
+   * unavailable.
+   */
+  readonly user_hashrate_5m_ph: number | null;
   readonly fetched_at_ms: number;
 }
 
@@ -204,6 +212,9 @@ export function createOceanClient(opts: OceanClientOptions = {}): OceanClient {
         // User hashrate (3h window, in H/s from the API)
         const userHash3hRaw = Number(hr.hashrate_10800s ?? 0);
         const user_hashrate_th = userHash3hRaw > 0 ? userHash3hRaw / 1e12 : null;
+        // 5-min window — matches what the chart plots.
+        const userHash5mRaw = Number(hr.hashrate_300s ?? 0);
+        const user_hashrate_5m_ph = userHash5mRaw > 0 ? userHash5mRaw / 1e15 : null;
 
         // Pool hashrate estimate: difficulty × 2^32 / 600 gives
         // network H/s. Pool hashrate isn't directly exposed; we'd
@@ -231,6 +242,7 @@ export function createOceanClient(opts: OceanClientOptions = {}): OceanClient {
           recent_blocks,
           pool: poolInfo,
           user_hashrate_th,
+          user_hashrate_5m_ph,
           fetched_at_ms: now(),
         };
         cache.set(address, stats);

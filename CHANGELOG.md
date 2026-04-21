@@ -2,6 +2,13 @@
 
 ## 2026-04-20 (post-v1.0.3)
 
+### `[UI]` Ocean panel shows Ocean-credited hashrate; chart line recoloured to match the block cubes
+
+Follow-up polish on #36 after operator testing. Two tweaks:
+
+- The Ocean panel now has an "ocean hashrate" row alongside the other user-stats rows, sourced from the same 5-min `hashrate_300s` sliding-window the chart plots. Parity with the Braiins / Datum panels which already surface their respective hashrate readings.
+- The chart's `received (Ocean)` line was recoloured from violet to the same blue as the TIDES-credited block cubes (#3b82f6). Reinforces the branding association (Ocean → blue), reads more clearly on colour-blind-adjacent displays, and plays nicely with the rest of the palette. Still distinct from the cyan Datum line.
+
 ### `[Feature]` Hashrate chart: third series for Ocean-credited hashrate (#36)
 
 The chart previously showed Braiins-delivered and Datum-received, but not what Ocean's own API credits to our payout address — arguably the single most important number ("what hashrate does the pool actually see from us?"). Added a violet `received (Ocean)` line sourced from Ocean's `/v1/user_hashrate` endpoint (the `hashrate_300s` field, a 5-min sliding window — responsive but smooth at a 1-min tick cadence).
