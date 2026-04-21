@@ -440,3 +440,78 @@ describe('decide — escalation when stuck below floor', () => {
     expect(edits).toHaveLength(0);
   });
 });
+
+describe('decide — above_market mode (preemptive raise)', () => {
+  it('raises to target when below_target_since has elapsed past the window', () => {
+    const tick = 1_700_000_000_000;
+    const stuckMinutes = BASE_CONFIG.fill_escalation_after_minutes + 5;
+    const longAgo = tick - stuckMinutes * 60_000;
+    const belowTarget = EXPECTED_TARGET - 1_000_000;
+    // Still filling fine — the whole point of the mode: we're NOT below
+    // floor, but the market has closed the overpay gap for long enough
+    // that the preemptive timer fires.
+    const primary = owned({
+      price_sat: belowTarget,
+      avg_speed_ph: BASE_CONFIG.target_hashrate_ph,
+      speed_limit_ph: 2,
+    });
+    const s = state({
+      tick_at: tick,
+      below_floor_since: null,
+      below_target_since: longAgo,
+      owned_bids: [primary],
+      config: { ...BASE_CONFIG, escalation_mode: 'above_market' as const },
+    });
+    const proposals = decide(s);
+    const edit = proposals.find((p) => p.kind === 'EDIT_PRICE') as
+      | { new_price_sat: number; reason: string }
+      | undefined;
+    expect(edit).toBeDefined();
+    expect(edit?.new_price_sat).toBe(EXPECTED_TARGET);
+    expect(edit?.reason).toContain('above_market');
+  });
+
+  it('does NOT raise when below_target_since is shorter than the escalation window', () => {
+    const tick = 1_700_000_000_000;
+    const recent = tick - 30_000; // 30 seconds ago — way under the window
+    const belowTarget = EXPECTED_TARGET - 1_000_000;
+    const primary = owned({
+      price_sat: belowTarget,
+      avg_speed_ph: BASE_CONFIG.target_hashrate_ph,
+      speed_limit_ph: 2,
+    });
+    const s = state({
+      tick_at: tick,
+      below_floor_since: null,
+      below_target_since: recent,
+      owned_bids: [primary],
+      config: { ...BASE_CONFIG, escalation_mode: 'above_market' as const },
+    });
+    const proposals = decide(s);
+    expect(proposals.filter((p) => p.kind === 'EDIT_PRICE')).toHaveLength(0);
+  });
+
+  it('does NOT fire the reactive below-floor trigger under above_market mode', () => {
+    // Operator is below floor and has been for ages. Under market/dampened
+    // this would escalate. Under above_market, below_floor_since is not
+    // consulted — only below_target_since is. Since below_target_since is
+    // null here (bid is above target), nothing should fire.
+    const tick = 1_700_000_000_000;
+    const longAgo = tick - 60 * 60_000;
+    const primary = owned({
+      price_sat: EXPECTED_TARGET + 2_000_000, // above target
+      avg_speed_ph: 0,
+      speed_limit_ph: 2,
+    });
+    const s = state({
+      tick_at: tick,
+      below_floor_since: longAgo,
+      below_target_since: null,
+      owned_bids: [primary],
+      lower_ready_since: null, // don't trip the lower path
+      config: { ...BASE_CONFIG, escalation_mode: 'above_market' as const },
+    });
+    const proposals = decide(s);
+    expect(proposals.filter((p) => p.kind === 'EDIT_PRICE')).toHaveLength(0);
+  });
+});

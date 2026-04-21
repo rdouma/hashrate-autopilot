@@ -1,0 +1,11 @@
+-- Persist the "below-target since" timestamp so the new `above_market`
+-- escalation mode's preemptive-raise timer survives daemon restarts
+-- (issue #38). Same pattern as `below_floor_since_ms` (migration 0014)
+-- and `lower_ready_since_ms` (migrations 0031 / 0032).
+--
+-- Meaning: the wall-clock time at which `primary.price_sat < fillable + overpay`
+-- first became true and has been continuously true since. Null means the
+-- condition is currently false (we're ahead of the market by at least
+-- the overpay gap). Used only when escalation_mode = 'above_market'; the
+-- two existing modes ignore it.
+ALTER TABLE runtime_state ADD COLUMN below_target_since_ms INTEGER;

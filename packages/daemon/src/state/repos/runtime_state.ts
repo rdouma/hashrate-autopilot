@@ -21,6 +21,7 @@ export interface RuntimeStateRow {
   last_pool_ok_at: number | null;
   below_floor_since_ms: number | null;
   lower_ready_since_ms: number | null;
+  below_target_since_ms: number | null;
   above_floor_ticks: number;
 }
 
@@ -54,6 +55,7 @@ export class RuntimeStateRepo {
         last_pool_ok_at: null,
         below_floor_since_ms: null,
         lower_ready_since_ms: null,
+        below_target_since_ms: null,
         above_floor_ticks: 0,
       })
       .onConflict((oc) => oc.doNothing())
@@ -81,6 +83,7 @@ function toDomain(row: RuntimeStateTable): RuntimeStateRow {
     last_pool_ok_at: row.last_pool_ok_at,
     below_floor_since_ms: row.below_floor_since_ms,
     lower_ready_since_ms: row.lower_ready_since_ms,
+    below_target_since_ms: row.below_target_since_ms,
     above_floor_ticks: row.above_floor_ticks,
   };
 }

@@ -175,10 +175,14 @@ export function decide(state: State): readonly Proposal[] {
   const overrideUntil = state.manual_override_until_ms;
   const overrideActive = overrideUntil !== null && overrideUntil > state.tick_at;
 
-  // (a) Escalate UP when we've been stuck below floor.
-  // Mode determines escalation behavior:
-  // - 'market': jump directly to targetPrice (track market)
-  // - 'dampened': step from current_bid + escalation_step (avoid chasing)
+  // (a) Escalate UP when the mode's trigger condition has held long enough.
+  // Mode determines both the trigger and the target price:
+  // - 'market':       trigger = below floor for N min; jump to targetPrice.
+  // - 'dampened':     trigger = below floor for N min; step from
+  //                   current_bid + escalation_step (avoid chasing).
+  // - 'above_market': trigger = below (fillable + overpay) for N min —
+  //                   preemptive, fires before delivery drops. Jump to
+  //                   targetPrice like 'market'.
   // Min-delta semantics (asymmetric vs. the lowering path):
   //   - Raising: when the natural next price would be less than
   //     `min_delta` above current, round UP to current + min_delta
@@ -194,27 +198,29 @@ export function decide(state: State): readonly Proposal[] {
   const minDeltaThreshold = Math.max(tickSize, config.min_lower_delta_sat_per_eh_day);
   if (!overrideActive && shouldEscalate && primary.price_sat < targetPrice) {
     const naiveEscalation =
-      config.escalation_mode === 'market'
-        ? targetPrice
-        : Math.min(
+      config.escalation_mode === 'dampened'
+        ? Math.min(
             primary.price_sat + config.fill_escalation_step_sat_per_eh_day,
             targetPrice,
-          );
+          )
+        : targetPrice; // 'market' and 'above_market' both jump to target
     const minDeltaFloor = primary.price_sat + minDeltaThreshold;
     const escalatedPrice = Math.min(
       Math.max(naiveEscalation, minDeltaFloor),
       effectiveCap,
     );
     if (escalatedPrice > primary.price_sat + tickSize) {
+      const reasonByMode: Record<typeof config.escalation_mode, string> = {
+        market: `escalation[market]: stuck below floor — jumping to target ${fmtPricePH(escalatedPrice)}`,
+        dampened: `escalation[dampened]: stuck below floor — stepping up to ${fmtPricePH(escalatedPrice)}`,
+        above_market: `escalation[above_market]: market closed the overpay gap — preemptively raising to ${fmtPricePH(escalatedPrice)}`,
+      };
       proposals.push({
         kind: 'EDIT_PRICE',
         braiins_order_id: primary.braiins_order_id,
         new_price_sat: escalatedPrice,
         old_price_sat: primary.price_sat,
-        reason:
-          config.escalation_mode === 'market'
-            ? `escalation[market]: stuck below floor — jumping to target ${fmtPricePH(escalatedPrice)}`
-            : `escalation[dampened]: stuck below floor — stepping up to ${fmtPricePH(escalatedPrice)}`,
+        reason: reasonByMode[config.escalation_mode],
       });
     }
   }
@@ -275,14 +281,27 @@ export function decide(state: State): readonly Proposal[] {
 }
 
 /**
- * Returns true when escalation should trigger: we've been stuck below
- * floor for longer than `fill_escalation_after_minutes`. The actual
- * escalation price is computed in the caller based on `escalation_mode`.
+ * Returns true when escalation should trigger, based on the configured
+ * `escalation_mode`:
+ *
+ * - `market` / `dampened` (reactive): key off `below_floor_since` — we've
+ *   been delivering under the floor for `fill_escalation_after_minutes`
+ *   already, so the fill has genuinely collapsed.
+ * - `above_market` (preemptive): key off `below_target_since` — the
+ *   market has closed the overpay gap (`current_bid < fillable + overpay`)
+ *   for `fill_escalation_after_minutes`, so raise before delivery drops.
+ *
+ * The actual escalation price is computed in the caller.
  */
 function shouldTriggerEscalation(state: State): boolean {
-  if (state.below_floor_since === null) return false;
-  const elapsedMinutes = (state.tick_at - state.below_floor_since) / 60_000;
-  return elapsedMinutes >= state.config.fill_escalation_after_minutes;
+  const windowMinutes = state.config.fill_escalation_after_minutes;
+  const since =
+    state.config.escalation_mode === 'above_market'
+      ? state.below_target_since
+      : state.below_floor_since;
+  if (since === null) return false;
+  const elapsedMinutes = (state.tick_at - since) / 60_000;
+  return elapsedMinutes >= windowMinutes;
 }
 
 // Re-export a type the tick driver consumes alongside decide():

@@ -372,8 +372,44 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
     };
   }
 
+  // Preemptive-raise predictor for `escalation_mode = 'above_market'`.
+  // Fires off the below-target timer (not below-floor), so the raise
+  // can be scheduled while we're still filling fine — the whole point
+  // of the mode. Short-circuits the reactive shortfall path below,
+  // which in `above_market` mode is dead code (shouldTriggerEscalation
+  // keys off `below_target_since` in that mode).
+  if (state.config.escalation_mode === 'above_market') {
+    if (primary.price_sat < targetPriceEH) {
+      const windowMs = state.config.fill_escalation_after_minutes * 60_000;
+      if (cappedByMax) {
+        return {
+          summary: `Market caught up to bid — no preemptive raise will fire.`,
+          detail: `Fillable + overpay (${Math.round(desiredPriceEH / EH_PER_PH).toLocaleString('en-US')} sat/PH/day) exceeds your ${bindingCapLabel} cap (${Math.round(effectiveCapEH / EH_PER_PH).toLocaleString('en-US')} sat/PH/day). Waiting for the market to drop or the cap to relax.`,
+          ...noEvent,
+        };
+      }
+      const startMs = state.below_target_since ?? state.tick_at;
+      const elapsedMs = state.tick_at - startMs;
+      const remainingMs = windowMs - elapsedMs;
+      const countdownText =
+        remainingMs > 0
+          ? `Preemptive raise in ${Math.max(1, Math.ceil(remainingMs / 60_000))} min`
+          : `Preemptive raise overdue by ${Math.max(1, Math.ceil(-remainingMs / 60_000))} min`;
+      const nextEditPH = Math.round(targetPriceEH / EH_PER_PH);
+      return {
+        summary: `Market caught up to bid (${currentPricePH.toLocaleString('en-US')} < target ${nextEditPH.toLocaleString('en-US')} sat/PH/day).`,
+        detail: `${countdownText} if still below target. above_market mode will jump to ${nextEditPH.toLocaleString('en-US')} sat/PH/day.`,
+        eta_ms: startMs + windowMs,
+        event_started_ms: startMs,
+        event_kind: 'escalation',
+      };
+    }
+    // Bid at-or-above target under above_market: fall through to the
+    // overpay/lower branch below; if not overpaying, "on target".
+  }
+
   const shortfall = ph - primary.avg_speed_ph;
-  if (shortfall > 0.1) {
+  if (shortfall > 0.1 && state.config.escalation_mode !== 'above_market') {
     const windowMs = state.config.fill_escalation_after_minutes * 60_000;
     // If the market is too expensive (fillable + overpay > max_bid),
     // decide.ts returns [] — no escalation, no CREATE. The bid sits

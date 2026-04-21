@@ -41,7 +41,7 @@ export interface ConfigTable {
   fill_escalation_step_sat_per_eh_day: number;
   fill_escalation_after_minutes: number;
   overpay_sat_per_eh_day: number;
-  escalation_mode: 'market' | 'dampened';
+  escalation_mode: 'market' | 'dampened' | 'above_market';
   min_lower_delta_sat_per_eh_day: number;
   lower_patience_minutes: number;
   /** @deprecated Legacy column — kept for NOT NULL; ignored by the app. */
@@ -88,6 +88,16 @@ export interface RuntimeStateTable {
    * primary bid to lower.
    */
   lower_ready_since_ms: number | null;
+  /**
+   * Timestamp when `primary.price_sat < fillable + overpay` first
+   * became true and has been continuously true since. Drives the
+   * preemptive-raise trigger under `escalation_mode = 'above_market'`.
+   * Unused under `market` / `dampened` modes, which key off
+   * `below_floor_since_ms` instead. Null when the condition is
+   * currently false (we're ahead of the market by at least the
+   * overpay gap).
+   */
+  below_target_since_ms: number | null;
   above_floor_ticks: number;
 }
 

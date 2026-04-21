@@ -220,7 +220,7 @@ export interface AppConfig {
   fill_escalation_step_sat_per_eh_day: number;
   fill_escalation_after_minutes: number;
   overpay_sat_per_eh_day: number;
-  escalation_mode: 'market' | 'dampened';
+  escalation_mode: 'market' | 'dampened' | 'above_market';
   min_lower_delta_sat_per_eh_day: number;
   lower_patience_minutes: number;
   electrs_host: string | null;
@@ -350,7 +350,7 @@ export interface SimulateRequest {
   fill_escalation_after_minutes: number;
   lower_patience_minutes: number;
   min_lower_delta_sat_per_eh_day: number;
-  escalation_mode: 'market' | 'dampened';
+  escalation_mode: 'market' | 'dampened' | 'above_market';
 }
 
 export interface SimStatsSummary {

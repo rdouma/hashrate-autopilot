@@ -172,9 +172,11 @@ full `target_hashrate_ph` is available (walks asks cumulatively by unmatched sup
 
 - `overpay_sat_per_eh_day` — how much above the fillable ask we bid (always — every tick aims for exactly this overpay; not a "max", the cap is `max_bid`).
 - `max_bid_sat_per_eh_day` — absolute cap (renamed from max_price for clarity).
-- `escalation_mode` — `market` (jump to target) or `dampened` (step from current bid). Controls upward adjustments.
+- `escalation_mode` — one of `market`, `dampened`, `above_market`. Controls upward adjustments:
+  - `market` / `dampened` are **reactive**: they gate on the below-floor timer (`below_floor_since`). `market` jumps directly to `fillable + overpay`; `dampened` steps from `current_bid + escalation_step`.
+  - `above_market` is **preemptive**: it gates on the below-target timer (`below_target_since`). The instant the market catches up enough that `current_bid < fillable + overpay`, it starts a `fill_escalation_after_minutes` timer; on timeout, the autopilot jumps to target (same as `market`) even while delivery is still above floor. Defends the fill instead of recovering it. The `below_target_since_ms` timer is persisted to `runtime_state` so a daemon restart doesn't silently reset the window. All three modes respect the same effective cap (`min(max_bid, hashprice + max_overpay)`).
 - `fill_escalation_step_sat_per_eh_day` — step size for dampened mode.
-- `fill_escalation_after_minutes` — window before escalation kicks in.
+- `fill_escalation_after_minutes` — window before escalation kicks in. Applies to all three modes; the trigger condition differs per mode.
 - `min_lower_delta_sat_per_eh_day` — deadband: only auto-lower when overpay vs target exceeds this. Default 200 sat/PH/day. Avoids burning the Braiins 10-min decrease cooldown for a few-sat saving.
 - `lower_patience_minutes` — how long the **lowering-ready** condition must have been continuously true before the
   autopilot will actually lower the bid price. Lowering-ready means the current bid sits more than

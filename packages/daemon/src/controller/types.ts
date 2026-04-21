@@ -120,6 +120,16 @@ export interface State {
    */
   readonly lower_ready_since: number | null;
   /**
+   * Timestamp (ms) when `primary.price_sat < fillable + overpay` became
+   * continuously true — i.e., the market has closed the overpay gap.
+   * Drives the preemptive-raise trigger under `escalation_mode =
+   * 'above_market'`; ignored by the other two modes, which gate on
+   * `below_floor_since` instead. Null when the condition is currently
+   * false. Persisted in `runtime_state.below_target_since_ms` so the
+   * timer survives daemon restarts.
+   */
+  readonly below_target_since: number | null;
+  /**
    * Consecutive ticks observed at-or-above floor. Required for debouncing
    * the below_floor_since timer against transient `avg_speed_ph` spikes
    * from Braiins' lagged rolling average on bid-state flickers. Capped at

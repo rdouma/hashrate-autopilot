@@ -148,10 +148,11 @@ const SECTIONS: Section[] = [
         label: 'Escalation mode',
         kind: 'select',
         options: [
-          { value: 'dampened', label: 'Dampened (step up slowly)' },
-          { value: 'market', label: 'Market (jump to target)' },
+          { value: 'dampened', label: 'Dampened (step up slowly after below floor)' },
+          { value: 'market', label: 'Market (jump to target after below floor)' },
+          { value: 'above_market', label: 'Above market (preemptive — raise before cut-off)' },
         ],
-        help: 'How to adjust upward when below floor. "Dampened" steps up by escalation step; "Market" jumps directly to target.',
+        help: '"Dampened" and "Market" are reactive: they wait for hashrate to drop under the floor for the escalation window, then either step up or jump to fillable + overpay. "Above market" is preemptive: the instant the market catches up and our bid drops below (fillable + overpay), it starts the same escalation window timer — when it fires, we jump to target. Fills fine, no cut-off needed. Same cap applies to all three modes.',
       },
       {
         key: 'fill_escalation_step_sat_per_eh_day',
@@ -164,7 +165,7 @@ const SECTIONS: Section[] = [
         label: 'Escalation window',
         kind: 'integer',
         unit: 'min',
-        help: 'How long below floor before escalating the bid price. Only applies when hashrate is below the configured floor.',
+        help: 'How long the trigger condition must hold before escalating. Dampened/Market modes: continuously below floor. Above-market mode: continuously below (fillable + overpay).',
       },
       {
         key: 'lower_patience_minutes',

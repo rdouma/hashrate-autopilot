@@ -46,6 +46,7 @@ export interface TickResult {
 export class Controller {
   private belowFloorSince: number | null = null;
   private lowerReadySince: number | null = null;
+  private belowTargetSince: number | null = null;
   private aboveFloorTicks: number = 0;
   private manualOverrideUntilMs: number | null = null;
   /**
@@ -80,6 +81,7 @@ export class Controller {
     if (!row) return;
     this.belowFloorSince = row.below_floor_since_ms;
     this.lowerReadySince = row.lower_ready_since_ms;
+    this.belowTargetSince = row.below_target_since_ms;
     this.aboveFloorTicks = row.above_floor_ticks;
   }
 
@@ -141,7 +143,27 @@ export class Controller {
     } else {
       this.lowerReadySince = null;
     }
-    state = { ...state, lower_ready_since: this.lowerReadySince };
+
+    // Below-target timer for `escalation_mode = 'above_market'`.
+    // Condition: we have a primary bid, the market has a fillable ask,
+    // and our bid sits strictly under `fillable + overpay` (i.e., the
+    // market has closed the overpay gap we paid for). Same continuous-
+    // truth semantics as `lower_ready_since`: any tick where the
+    // condition flips false resets the timer, so a one-tick market
+    // spike that retreats within a minute can't fire the preemptive
+    // raise.
+    const belowTargetNow = computeBelowTarget(state);
+    if (belowTargetNow) {
+      if (this.belowTargetSince === null) this.belowTargetSince = state.tick_at;
+    } else {
+      this.belowTargetSince = null;
+    }
+
+    state = {
+      ...state,
+      lower_ready_since: this.lowerReadySince,
+      below_target_since: this.belowTargetSince,
+    };
 
     const proposals = decide(state);
     const gated = gate(proposals, state);
@@ -215,6 +237,7 @@ export class Controller {
       last_pool_ok_at: state.pool.last_ok_at,
       below_floor_since_ms: this.belowFloorSince,
       lower_ready_since_ms: this.lowerReadySince,
+      below_target_since_ms: this.belowTargetSince,
       above_floor_ticks: this.aboveFloorTicks,
     });
 
@@ -299,4 +322,31 @@ function computeLowerReady(state: State): boolean {
   const tickSize = state.market.settings.tick_size_sat ?? 1000;
   const lowerThreshold = Math.max(tickSize, state.config.min_lower_delta_sat_per_eh_day);
   return primary.price_sat > desiredPrice + lowerThreshold;
+}
+
+/**
+ * Mirror of `computeLowerReady` for the upward direction — drives the
+ * `below_target_since` timer used under `escalation_mode =
+ * 'above_market'`. Returns true when our primary bid sits strictly
+ * below the `fillable + overpay` target, i.e., the market has closed
+ * the overpay gap. Does NOT consult the effective cap, matching the
+ * `computeLowerReady` simplification: on ticks where decide() can't
+ * escalate (market too expensive vs. cap) the timer's value is
+ * harmlessly unused because decide() returns [] up-front. Keeping
+ * this predicate simple means the timer has a straightforward "market
+ * has caught up to my bid" meaning.
+ */
+function computeBelowTarget(state: State): boolean {
+  if (!state.market) return false;
+  const asks = state.market.orderbook.asks ?? [];
+  if (asks.length === 0) return false;
+  if (state.owned_bids.length === 0) return false;
+  const fillable = cheapestAskForDepth(asks, state.config.target_hashrate_ph);
+  if (fillable.price_sat === null) return false;
+  const desiredPrice = fillable.price_sat + state.config.overpay_sat_per_eh_day;
+  const primary = [...state.owned_bids].sort((a, b) =>
+    a.braiins_order_id.localeCompare(b.braiins_order_id),
+  )[0];
+  if (!primary || primary.price_sat === null) return false;
+  return primary.price_sat < desiredPrice;
 }

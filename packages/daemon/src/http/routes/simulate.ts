@@ -42,7 +42,7 @@ interface SimulateRequest {
   fill_escalation_after_minutes: number;
   lower_patience_minutes: number;
   min_lower_delta_sat_per_eh_day: number;
-  escalation_mode: 'market' | 'dampened';
+  escalation_mode: 'market' | 'dampened' | 'above_market';
 }
 
 interface SimulatedTick {
@@ -180,7 +180,7 @@ interface SimParams {
   escalationWindowMs: number;
   lowerPatienceMs: number;
   minLowerDelta: number;
-  escalationMode: 'market' | 'dampened';
+  escalationMode: 'market' | 'dampened' | 'above_market';
 }
 
 interface SimResult {
@@ -203,6 +203,10 @@ function simulate(rows: TickRow[], params: SimParams): SimResult {
   const filled: boolean[] = [];
   let bidPrice: number | null = null;
   let belowFloorSince: number | null = null;
+  // Mirror of the real controller's `below_target_since` timer — used
+  // only when `escalationMode === 'above_market'`. Tracks the time the
+  // simulated bid has been continuously below (fillable + overpay).
+  let belowTargetSince: number | null = null;
   // Lower-ready timer: set when the current simulated bid is priced
   // above (fillable + overpay) by more than `minLowerDelta` — mirrors
   // the real controller's `lowerReadySince`. Reset when the condition
@@ -265,12 +269,19 @@ function simulate(rows: TickRow[], params: SimParams): SimResult {
         mutationCount++;
       } else if (!overrideActive) {
         const current: number = bidPrice;
-        if (belowFloorSince !== null) {
-          const elapsed = r.tick_at - belowFloorSince;
+        // Escalation trigger depends on mode — `above_market` keys off the
+        // below-target timer (preemptive), the other two off below-floor.
+        const escalationSince =
+          params.escalationMode === 'above_market'
+            ? belowTargetSince
+            : belowFloorSince;
+        if (escalationSince !== null) {
+          const elapsed = r.tick_at - escalationSince;
           if (elapsed >= params.escalationWindowMs && current < targetPrice) {
-            const naiveEscalation: number = params.escalationMode === 'market'
-              ? targetPrice
-              : Math.min(current + params.escalationStep, targetPrice);
+            const naiveEscalation: number =
+              params.escalationMode === 'dampened'
+                ? Math.min(current + params.escalationStep, targetPrice)
+                : targetPrice;
             // Min-delta as a floor on the step (not a veto) — same
             // semantic as decide.ts: when the natural raise is below
             // min_delta we still move, just by min_delta instead of a
@@ -338,6 +349,16 @@ function simulate(rows: TickRow[], params: SimParams): SimResult {
       gapMs += dur;
       if (!inGap) { gapCount++; inGap = true; }
       if (belowFloorSince === null) belowFloorSince = r.tick_at;
+    }
+
+    // Below-target timer — mirrors tick.ts's computeBelowTarget. Runs
+    // every tick regardless of mode so a switch to `above_market` mid-
+    // simulation would Just Work; the escalation branch above only
+    // reads it when the mode selects it.
+    if (bidPrice !== null && bidPrice < targetPrice) {
+      if (belowTargetSince === null) belowTargetSince = r.tick_at;
+    } else {
+      belowTargetSince = null;
     }
   }
 

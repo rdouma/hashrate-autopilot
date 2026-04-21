@@ -2,6 +2,20 @@
 
 ## 2026-04-21
 
+### `[Feature]` escalation_mode: add `above_market` (preemptive raise) (#38)
+
+New third value for `escalation_mode` alongside `market` and `dampened`. Where the existing two modes are **reactive** (they wait for delivery to drop under the floor for `fill_escalation_after_minutes`, then either step up or jump to target), `above_market` is **preemptive** — the instant the market catches up enough that `current_bid < fillable + overpay`, a new `below_target_since` timer starts. When it clears `fill_escalation_after_minutes`, the autopilot jumps to target (same as `market`), even while delivery is still fine. Defends the fill instead of recovering from a cut-off.
+
+No new numeric parameters. Reuses `overpay_sat_per_eh_day` (defines the target gap), `fill_escalation_after_minutes` (how long the trigger condition must hold), and `lower_patience_minutes` (unchanged — the lowering path is identical across all three modes). Same effective cap (`min(max_bid, hashprice + max_overpay)`) — preemptive mode cannot push past the ceiling any more than reactive escalation can.
+
+Wired end-to-end:
+- **Daemon**: new persisted `below_target_since_ms` on `runtime_state` (migration 0038), mirroring the existing floor/lower timers so a restart doesn't reset the window. `tick.ts` populates it each tick via a new `computeBelowTarget()` predicate. `decide.ts`'s `shouldTriggerEscalation` branches on `escalation_mode` — reads `below_target_since` under `above_market`, `below_floor_since` under the others. The `above_market` raise path shares the `market`-mode price calc (jump to target, not stepped).
+- **Simulator** (`routes/simulate.ts`): mirrored — new `belowTargetSince` tracker, same branching on mode so sim replay matches live decisions.
+- **Next Action predictor** (`routes/status.ts`): new preemptive-raise countdown surfaces `Market caught up to bid (X < target Y sat/PH/day). Preemptive raise in N min.` when `above_market` mode is selected and the bid is below target. Honours the dynamic/fixed cap the same way the reactive predictor does.
+- **Dashboard Config page**: third option on the escalation-mode selector (`Above market (preemptive — raise before cut-off)`) with a help note explaining the reactive-vs-preemptive distinction.
+
+Sim panel's two-way escalation toggle still flips between `market` and `dampened` only — a three-way picker on the sim bar is a follow-up. Operators testing `above_market` flip it on the Config page and observe the live autopilot.
+
 ### `[Feature]` Dashboard login: "Remember me on this device" checkbox (#39)
 
 Basic-Auth password was stored in `sessionStorage`, which tab-scoped closes/backgrounds drop on mobile — operators were re-entering the password on every visit from their phone. Added a **Remember me on this device** checkbox to the login form (default: checked). When ticked, the password writes to `localStorage` so it survives tab closes and device reboots; unticked keeps the old per-tab behaviour. `getPassword()` reads localStorage first, then sessionStorage, so the rest of the app is oblivious to which backend is in use. `clearPassword()` clears both (for the sign-out path, belt-and-braces).

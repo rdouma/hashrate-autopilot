@@ -66,6 +66,7 @@ describe('openDatabase — migrations', () => {
       '0035_tick_metrics_ocean_hashrate.sql',
       '0036_drop_block_metadata.sql',
       '0037_drop_monthly_budget_ceiling.sql',
+      '0038_persist_below_target_since.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });

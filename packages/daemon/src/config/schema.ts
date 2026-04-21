@@ -119,9 +119,17 @@ export const AppConfigSchema = z.object({
   fill_escalation_after_minutes: positiveInt,
   overpay_sat_per_eh_day: nonNegativeInt,
   // Escalation mode for upward price adjustments:
-  // - 'market': jump directly to fillable + overpay (tracks market)
-  // - 'dampened': step from current_bid + escalation_step (avoids chasing spikes)
-  escalation_mode: z.enum(['market', 'dampened']).default('market'),
+  // - 'market':       jump directly to fillable + overpay, but ONLY after
+  //                   we've been below the floor for
+  //                   `fill_escalation_after_minutes` — reactive.
+  // - 'dampened':     step from current_bid + escalation_step (avoids
+  //                   chasing spikes); same below-floor trigger as 'market'.
+  // - 'above_market': preemptive — the instant the market catches up enough
+  //                   that `current_bid < fillable + overpay`, start a
+  //                   `fill_escalation_after_minutes` timer; on timeout,
+  //                   jump to fillable + overpay. Fires without waiting
+  //                   for delivery to drop below floor. Same cap.
+  escalation_mode: z.enum(['market', 'dampened', 'above_market']).default('market'),
   // Minimum overpay (vs fillable + overpay target) before lowering.
   // Avoids micro-edits that burn the Braiins 10-min decrease cooldown for
   // a few sat of savings.

@@ -228,6 +228,11 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
     actual_hashrate,
     below_floor_since: floorCheck.below_floor_since,
     lower_ready_since: null,
+    // Populated by the controller after observe() returns — observe()
+    // doesn't know the primary bid's price relative to targetPrice
+    // until reconciliation has already happened, and the timer lives on
+    // the Controller instance the same way `lower_ready_since` does.
+    below_target_since: null,
     above_floor_ticks: floorCheck.above_floor_ticks,
     pool,
     datum,
