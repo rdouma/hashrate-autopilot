@@ -1,6 +1,10 @@
 # Changelog
 
-## 2026-04-21
+## v1.1.1 — 2026-04-21
+
+Polish release on top of v1.1.0. No schema changes, no migrations — safe to upgrade in place with `./scripts/deploy.sh`.
+
+The headline fix: projected spend/day and the Braiins runway date no longer jitter tick-to-tick. Both figures now ride the same 3-hour rolling average of delivered hashrate that Ocean uses for its income estimate, so the two sides of the P&L panel are finally on the same cadence. Under that: a `min_delta`-as-floor correction for escalation (builds 78/79 treated it as a veto, which stalled fills when the market moved in tiny increments — now it rounds the next step up to `current + min_delta` instead of skipping entirely), a 3 h range preset on the chart (and a bug fix so the picker actually renders it), and a batch of UI polish — Ocean panel regrouped by meaning, last-pool-block reward relabeled to "our earnings (est.)", Sim **Apply to config** now has visual feedback, amber-500 for the yellow delivered/our-bid lines, and the "US$" label drops the "US" prefix for non-en-US locales. Denomination toggle now appears immediately after enabling the BTC price oracle (no page reload needed).
 
 ### `[Fix]` P&L "projected spend/day" and Braiins runway: smooth over 3 h of delivered hashrate
 
