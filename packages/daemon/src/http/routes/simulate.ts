@@ -271,9 +271,14 @@ function simulate(rows: TickRow[], params: SimParams): SimResult {
             const nextPrice: number = params.escalationMode === 'market'
               ? targetPrice
               : Math.min(current + params.escalationStep, targetPrice);
-            if (nextPrice !== current) mutationCount++;
-            bidPrice = nextPrice;
-            overrideUntil = r.tick_at + params.escalationWindowMs;
+            // Apply the same symmetric min-delta gate the real
+            // controller uses so the simulator doesn't paint +2 / +7
+            // sat escalations that decide.ts would have skipped.
+            if (nextPrice - current >= params.minLowerDelta) {
+              if (nextPrice !== current) mutationCount++;
+              bidPrice = nextPrice;
+              overrideUntil = r.tick_at + params.escalationWindowMs;
+            }
           }
         }
 
@@ -291,7 +296,7 @@ function simulate(rows: TickRow[], params: SimParams): SimResult {
           lowerReadyLongEnough &&
           !decreaseCooldownActive &&
           bidPrice !== null &&
-          bidPrice > targetPrice + params.minLowerDelta
+          bidPrice >= targetPrice + params.minLowerDelta
         ) {
           if (targetPrice !== bidPrice) {
             mutationCount++;

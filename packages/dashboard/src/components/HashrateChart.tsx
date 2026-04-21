@@ -44,10 +44,10 @@ const COLOR_SIM = '#f97316';
 // Green — measured-locally-by-us at the DATUM Gateway. Was the
 // delivered colour; reassigned to Datum at the operator's request.
 const COLOR_DATUM = '#34d399';
-// Cyan — credited-to-us by the Ocean pool. Was the Datum colour;
-// reassigned to Ocean to keep the three series visually separable
-// after the palette shuffle.
-const COLOR_OCEAN = '#38bdf8';
+// Saturated blue — same hue as the TIDES-credited block cubes on
+// this same chart, reinforces the "Ocean → blue" association and
+// contrasts harder against the green Datum line than cyan did.
+const COLOR_OCEAN = '#3b82f6';
 const COLOR_TARGET = '#94a3b8';
 const COLOR_FLOOR = '#64748b';
 // Gold — reserved for the rare "we found this block ourselves" case

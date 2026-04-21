@@ -2,6 +2,17 @@
 
 ## 2026-04-20 (post-v1.0.3)
 
+### `[Fix]` Simulator honours symmetric min-delta gate; sim panel label matches
+
+The symmetric `min_delta` gate landed in build 78 updated the real controller (`decide.ts`) but not the simulator's inline replay (`routes/simulate.ts`). Result: the simulated price chart kept painting +87 style escalation edits in market-mode stretches where the live autopilot correctly refused to move. Extended the simulator's escalation path with the same `nextPrice - current >= minLowerDelta` check. Also flipped the lower-path comparison from `>` to `>=` so both gates are consistent. Sim panel field label re-tagged "Min lower delta" → "Min delta" to match the Config page.
+
+### `[UI]` Ocean chart line recoloured to block-cube blue; avg-ocean tooltip spells out the poll/window split
+
+Two operator asks layered on top of build 78:
+
+- The cyan Ocean line in build 78 still disappeared into the green Datum line at the operator's eye-check. Swapped to saturated blue (`#3b82f6`), matching the colour of the TIDES-credited block cubes elsewhere on the chart — reinforces the "Ocean → blue" association and gives a hard contrast against green.
+- The Avg Ocean stat tooltip referenced `/v1/user_hashrate` and "5-minute sliding window" without explaining the relationship between our **poll cadence** (every 60 s) and the **window size** of the value we read (`hashrate_300s`, 5 min). Rewritten: "sampled every minute, each sample is a 5-minute smoothed value."
+
 ### `[Feature]` Status-page polish pass (operator backlog)
 
 A batch of follow-up tweaks that piled up while other work was in flight:

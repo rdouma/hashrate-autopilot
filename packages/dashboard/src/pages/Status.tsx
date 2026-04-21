@@ -1114,7 +1114,7 @@ const SIM_NUMBER_FIELDS = [
   { key: 'fill_escalation_step_sat_per_eh_day', label: 'Esc. step', step: 50_000, ehToPh: true, unit: 'sat/PH/day' },
   { key: 'fill_escalation_after_minutes', label: 'Esc. window', step: 5, ehToPh: false, unit: 'min' },
   { key: 'lower_patience_minutes', label: 'Wait to lower', step: 5, ehToPh: false, unit: 'min' },
-  { key: 'min_lower_delta_sat_per_eh_day', label: 'Min lower delta', step: 50_000, ehToPh: true, unit: 'sat/PH/day' },
+  { key: 'min_lower_delta_sat_per_eh_day', label: 'Min delta', step: 50_000, ehToPh: true, unit: 'sat/PH/day' },
 ] as const;
 
 function FilterBar({
@@ -1322,7 +1322,7 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
       <StatCard
         label="avg ocean"
         value={fmtHashrate(avg_ocean_hashrate_ph)}
-        tooltip="Duration-weighted average of the hashrate Ocean credits to the operator's payout address (5-minute sliding window from /v1/user_hashrate). A sustained gap below Avg Braiins / Avg Datum means the pool isn't crediting work we think we delivered."
+        tooltip="Duration-weighted average of the hashrate Ocean credits to our payout address. Each tick (every 60 s) the daemon calls Ocean's /v1/user_hashrate endpoint and reads the `hashrate_300s` field — Ocean's own 5-minute sliding-window estimate for this wallet. So: sampled every minute, each sample is a 5-minute smoothed value. A sustained gap below Avg Braiins / Avg Datum means the pool isn't crediting work we think we delivered."
       />
       <StatCard
         label="avg cost / PH delivered"
