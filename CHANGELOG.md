@@ -2,6 +2,16 @@
 
 ## 2026-04-21
 
+### `[UI]` Sim panel: three-way Esc. mode picker, relocated to header row
+
+Follow-up on the `above_market` landing earlier today (#38). The Sim Parameters bar only exposed a two-way Dampened/Market toggle, which meant the operator couldn't actually backtest `above_market` behaviour against historical ticks — they'd have had to flip the live autopilot to evaluate it, which defeats the whole point of having a simulator.
+
+Two changes:
+- **Three-way picker** — Dampened / Market / Above mkt. Re-uses the same amber pill styling as before; above-market uses the short label to keep the pill compact.
+- **Moved to the header row** — the Esc. mode control sits alongside the Reset / Apply to config buttons instead of inside the numeric-inputs grid. Rationale: the numeric grid dropped from `lg:grid-cols-8` back to `lg:grid-cols-7`, giving the remaining seven inputs (Overpay, Max bid, Max over hashprice, Esc. step, Esc. window, Wait to lower, Min delta) a noticeable bit of extra horizontal breathing room on wider viewports. The mode selector is a tool-level control (like Reset / Apply), not a field-level input, so its new location is semantically cleaner too.
+
+Under the hood: `simParams` stays a `Record<string, number>` for the numeric-field loop; `escalation_mode` is now a separate typed state slot (`'dampened' | 'market' | 'above_market'`) on `StatusPage`, threaded into `SimParamBar`. The sim query key includes both, so changing the mode re-runs the replay engine. The Apply-to-config flow writes the string straight through — no more 0/1 boolean indirection.
+
 ### `[Feature]` escalation_mode: add `above_market` (preemptive raise) (#38)
 
 New third value for `escalation_mode` alongside `market` and `dampened`. Where the existing two modes are **reactive** (they wait for delivery to drop under the floor for `fill_escalation_after_minutes`, then either step up or jump to target), `above_market` is **preemptive** — the instant the market catches up enough that `current_bid < fillable + overpay`, a new `below_target_since` timer starts. When it clears `fill_escalation_after_minutes`, the autopilot jumps to target (same as `market`), even while delivery is still fine. Defends the fill instead of recovering from a cut-off.

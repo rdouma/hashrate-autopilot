@@ -145,6 +145,11 @@ export function Status() {
   const [simMode, setSimMode] = useState(false);
   const [simParams, setSimParams] = useState<Record<string, number> | null>(null);
   const [simParamsDebounced, setSimParamsDebounced] = useState<Record<string, number> | null>(null);
+  // Escalation mode is a three-way enum, not a numeric field — kept in
+  // its own state slot so `simParams` can stay a plain
+  // Record<string, number> for the sim-number inputs and debounce loop.
+  const [simEscalationMode, setSimEscalationMode] = useState<'dampened' | 'market' | 'above_market'>('dampened');
+  const [simEscalationModeDebounced, setSimEscalationModeDebounced] = useState<'dampened' | 'market' | 'above_market'>('dampened');
 
   const configQuery = useQuery({
     queryKey: ['config'],
@@ -171,19 +176,22 @@ export function Status() {
         fill_escalation_after_minutes: c.fill_escalation_after_minutes,
         lower_patience_minutes: c.lower_patience_minutes,
         min_lower_delta_sat_per_eh_day: c.min_lower_delta_sat_per_eh_day,
-        escalation_mode: c.escalation_mode === 'market' ? 1 : 0,
       });
+      setSimEscalationMode(c.escalation_mode);
     }
   }, [simMode, configQuery.data, simParams]);
 
   useEffect(() => {
     if (!simParams) return;
-    const t = setTimeout(() => setSimParamsDebounced(simParams), 400);
+    const t = setTimeout(() => {
+      setSimParamsDebounced(simParams);
+      setSimEscalationModeDebounced(simEscalationMode);
+    }, 400);
     return () => clearTimeout(t);
-  }, [simParams]);
+  }, [simParams, simEscalationMode]);
 
   const simQuery = useQuery({
-    queryKey: ['simulate', chartRange, simParamsDebounced],
+    queryKey: ['simulate', chartRange, simParamsDebounced, simEscalationModeDebounced],
     queryFn: () => api.simulate({
       range: chartRange,
       overpay_sat_per_eh_day: simParamsDebounced!.overpay_sat_per_eh_day!,
@@ -200,7 +208,7 @@ export function Status() {
       fill_escalation_after_minutes: simParamsDebounced!.fill_escalation_after_minutes!,
       lower_patience_minutes: simParamsDebounced!.lower_patience_minutes!,
       min_lower_delta_sat_per_eh_day: simParamsDebounced!.min_lower_delta_sat_per_eh_day!,
-      escalation_mode: simParamsDebounced!.escalation_mode ? 'market' : 'dampened',
+      escalation_mode: simEscalationModeDebounced,
     }),
     enabled: simMode && !!simParamsDebounced,
     staleTime: 30_000,
@@ -342,8 +350,10 @@ export function Status() {
       {simMode && simParams && configQuery.data && (
         <SimParamBar
           params={simParams}
+          escalationMode={simEscalationMode}
           config={configQuery.data.config}
           onChange={setSimParam}
+          onEscalationModeChange={setSimEscalationMode}
           onReset={() => {
             const c = configQuery.data!.config;
             setSimParams({
@@ -355,25 +365,28 @@ export function Status() {
               fill_escalation_after_minutes: c.fill_escalation_after_minutes,
               lower_patience_minutes: c.lower_patience_minutes,
               min_lower_delta_sat_per_eh_day: c.min_lower_delta_sat_per_eh_day,
-              escalation_mode: c.escalation_mode === 'market' ? 1 : 0,
             });
+            setSimEscalationMode(c.escalation_mode);
           }}
           onApply={async () => {
             if (!simParams || !configQuery.data) return;
-            const { escalation_mode: escNum, ...numericParams } = simParams;
             const updated = {
               ...configQuery.data.config,
-              ...numericParams,
-              escalation_mode: escNum ? 'market' as const : 'dampened' as const,
+              ...simParams,
+              escalation_mode: simEscalationMode,
             };
             await api.updateConfig(updated);
             qc.invalidateQueries({ queryKey: ['config'] });
             qc.invalidateQueries({ queryKey: ['status'] });
           }}
           loading={simQuery.isFetching}
-          dirty={simParams !== null && configQuery.data !== undefined && Object.keys(simParams).some(
-            (k) => simParams[k] !== (configQuery.data!.config as unknown as Record<string, number>)[k],
-          )}
+          dirty={
+            simParams !== null &&
+            configQuery.data !== undefined &&
+            (Object.keys(simParams).some(
+              (k) => simParams[k] !== (configQuery.data!.config as unknown as Record<string, number>)[k],
+            ) || simEscalationMode !== configQuery.data.config.escalation_mode)
+          }
         />
       )}
 
@@ -1162,18 +1175,30 @@ function FilterBar({
   );
 }
 
+type EscalationMode = 'dampened' | 'market' | 'above_market';
+
+const ESC_MODE_OPTIONS: ReadonlyArray<{ value: EscalationMode; label: string }> = [
+  { value: 'dampened', label: 'Dampened' },
+  { value: 'market', label: 'Market' },
+  { value: 'above_market', label: 'Above mkt' },
+];
+
 function SimParamBar({
   params,
+  escalationMode,
   config,
   onChange,
+  onEscalationModeChange,
   onReset,
   onApply,
   loading,
   dirty,
 }: {
   params: Record<string, number>;
-  config: object;
+  escalationMode: EscalationMode;
+  config: { escalation_mode: EscalationMode };
   onChange: (key: string, value: number) => void;
+  onEscalationModeChange: (mode: EscalationMode) => void;
   onReset: () => void;
   onApply: () => Promise<void> | void;
   loading: boolean;
@@ -1203,12 +1228,43 @@ function SimParamBar({
     }
   };
 
+  const escModeChanged = escalationMode !== config.escalation_mode;
+
   return (
     <section className="bg-slate-900/50 border border-amber-800/30 rounded-lg p-3">
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
         <div className="flex items-center gap-3">
           <span className="text-xs uppercase tracking-wider text-amber-300">Simulation parameters</span>
           {loading && <span className="text-xs text-amber-400 animate-pulse">simulating...</span>}
+        </div>
+        {/* Esc. mode pill lives in the header row so it has a full three-
+            way control without eating grid width from the numeric inputs,
+            and visually groups with the Reset/Apply actions that also
+            represent tool-level (not field-level) state. */}
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] uppercase tracking-wider text-slate-500">Esc. mode</span>
+          <div
+            className={`flex rounded overflow-hidden border text-[10px] h-[26px] ${
+              escModeChanged ? 'border-amber-600' : 'border-slate-700'
+            }`}
+          >
+            {ESC_MODE_OPTIONS.map((opt) => {
+              const selected = escalationMode === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  onClick={() => onEscalationModeChange(opt.value)}
+                  className={`px-2 ${
+                    selected
+                      ? 'bg-amber-800/60 text-amber-200'
+                      : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           {(dirty || applyState !== 'idle') && (
@@ -1244,7 +1300,7 @@ function SimParamBar({
           )}
         </div>
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
         {SIM_NUMBER_FIELDS.map((f) => {
           const rawValue = params[f.key] ?? 0;
           const configVal = (config as unknown as Record<string, number>)[f.key] ?? 0;
@@ -1272,23 +1328,6 @@ function SimParamBar({
             </div>
           );
         })}
-        <div>
-          <label className="text-[10px] text-slate-500 block mb-0.5">Esc. mode</label>
-          <div className="flex rounded overflow-hidden border border-slate-700 text-[10px] h-[26px]">
-            <button
-              onClick={() => onChange('escalation_mode', 0)}
-              className={`flex-1 px-1.5 ${!params.escalation_mode ? 'bg-amber-800/60 text-amber-200' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
-            >
-              Dampened
-            </button>
-            <button
-              onClick={() => onChange('escalation_mode', 1)}
-              className={`flex-1 px-1.5 ${params.escalation_mode ? 'bg-amber-800/60 text-amber-200' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
-            >
-              Market
-            </button>
-          </div>
-        </div>
       </div>
     </section>
   );
