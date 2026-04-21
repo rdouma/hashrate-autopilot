@@ -2,6 +2,10 @@
 
 ## 2026-04-21
 
+### `[Feature]` Chart range picker: added 3 h preset
+
+New `3h` option at the left end of the range picker, sitting before `6h`. Same raw-rows (no-aggregation) treatment as the other short presets, events overlay on. Added to the shared `CHART_RANGES` array + `CHART_RANGE_SPECS` map so the server-side aggregation logic and the dashboard picker stay in lockstep.
+
 ### `[UI]` Delivered (Braiins) / our-bid: amber-400 → amber-500
 
 Operator eyecheck: on the live dashboard the Hashrate chart's yellow `delivered (Braiins)` line read pale next to the PriceChart's "our bid" line, even though both were the same `#fbbf24`. Bumped both shared constants to Tailwind amber-500 (`#f59e0b`) — a deeper, more orange amber — so the Braiins-side colour reads saturated across both charts. Sim mode moves to `#f97316` (orange-500) on both charts for a consistent toggled-on overlay. The gold found-by-us block cube keeps `#fbbf24`, now the unique "jackpot" accent.

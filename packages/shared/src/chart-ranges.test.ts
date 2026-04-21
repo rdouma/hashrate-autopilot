@@ -25,6 +25,7 @@ describe('CHART_RANGE_SPECS', () => {
   });
 
   it('events are visible for short ranges and hidden for ≥ 1 month', () => {
+    expect(CHART_RANGE_SPECS['3h'].showEvents).toBe(true);
     expect(CHART_RANGE_SPECS['6h'].showEvents).toBe(true);
     expect(CHART_RANGE_SPECS['12h'].showEvents).toBe(true);
     expect(CHART_RANGE_SPECS['24h'].showEvents).toBe(true);

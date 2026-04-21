@@ -8,9 +8,10 @@
  * `bucketMs === 0` is the "no aggregation, raw rows" case.
  */
 
-export type ChartRange = '6h' | '12h' | '24h' | '1w' | '1m' | '1y' | 'all';
+export type ChartRange = '3h' | '6h' | '12h' | '24h' | '1w' | '1m' | '1y' | 'all';
 
 export const CHART_RANGES: readonly ChartRange[] = [
+  '3h',
   '6h',
   '12h',
   '24h',
@@ -46,6 +47,13 @@ const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 
 export const CHART_RANGE_SPECS: Record<ChartRange, ChartRangeSpec> = {
+  '3h': {
+    range: '3h',
+    label: '3 h',
+    windowMs: 3 * HOUR,
+    bucketMs: 0,
+    showEvents: true,
+  },
   '6h': {
     range: '6h',
     label: '6 h',
