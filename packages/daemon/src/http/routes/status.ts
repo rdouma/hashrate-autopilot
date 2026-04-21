@@ -13,6 +13,12 @@ import type {
 
 const EH_PER_PH = 1000;
 
+// 3-hour window for the rolling delivered-hashrate average exposed as
+// `avg_delivered_ph_3h`. Matches Ocean's own 3-hour hashrate window
+// (which backs their "estimated earnings/day" figure) so the income
+// and spend sides of the dashboard P&L panel are on the same cadence.
+const AVG_DELIVERED_WINDOW_MS = 3 * 60 * 60 * 1000;
+
 export async function registerStatusRoute(
   app: FastifyInstance,
   deps: HttpServerDeps,
@@ -28,6 +34,9 @@ export async function registerStatusRoute(
     const tickIntervalMs = deps.tickIntervalMs;
     const nextTickAt =
       runtime.last_tick_at !== null ? runtime.last_tick_at + tickIntervalMs : null;
+    const avgDeliveredPh3h = await deps.tickMetricsRepo.avgDeliveredPhSince(
+      Date.now() - AVG_DELIVERED_WINDOW_MS,
+    );
 
     if (!last) {
       return {
@@ -56,6 +65,7 @@ export async function registerStatusRoute(
         datum: null,
         bids: [],
         actual_hashrate_ph: 0,
+        avg_delivered_ph_3h: avgDeliveredPh3h,
         below_floor_since: null,
         last_proposals: [],
         config_summary: summariseConfig(config, deps.hashpriceCache?.getFresh(Infinity) ?? null, null),
@@ -170,6 +180,7 @@ export async function registerStatusRoute(
         : null,
       bids,
       actual_hashrate_ph: state.actual_hashrate.total_ph,
+      avg_delivered_ph_3h: avgDeliveredPh3h,
       below_floor_since: state.below_floor_since,
       last_proposals,
       config_summary: summariseConfig(

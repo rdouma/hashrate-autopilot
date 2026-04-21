@@ -2,6 +2,27 @@
 
 ## 2026-04-21
 
+### `[Fix]` P&L "projected spend/day" and Braiins runway: smooth over 3 h of delivered hashrate
+
+Both figures were computed from the current tick's per-bid `avg_speed_ph`, which
+wobbles noticeably minute-to-minute — the headline "projected spend/day" number
+on the P&L panel jumped around tick-to-tick even when the autopilot hadn't
+changed anything, and the Braiins-card runway date slid back and forth with it.
+The income side of the same panel already reads Ocean's "earnings at the
+3-hour hashrate" estimate, so operators were comparing a smoothed income
+projection against a jittery spend projection.
+
+Fixed by exposing a rolling 3 h average of `delivered_ph` on `/api/status`
+(`avg_delivered_ph_3h`, sourced from `tick_metrics` with `AVG(delivered_ph)
+WHERE tick_at >= now − 3h`) and switching both callsites to a new
+`projectedDailySpendSat3h(bids, avgDeliveredPh3h)` helper that multiplies a
+capacity-weighted average of active-bid prices by the 3 h average delivered
+hashrate. Single-active-bid case (the common one) collapses to the intuitive
+`price × 3h_avg_ph`. Falls back to the instantaneous figure when there's less
+than 3 h of history (fresh install / pruned retention). Matches Ocean's own 3 h
+window so the income and spend sides of the P&L panel are now on the same
+cadence. Tooltip on "projected spend/day" updated to say so.
+
 ### `[UI]` Ocean panel: grouped by meaning; last-block "reward" → "our earnings (est.)"
 
 Three tweaks:

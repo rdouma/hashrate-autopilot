@@ -44,7 +44,7 @@ import {
   formatTimestampUtc,
 } from '../lib/format';
 import { applyExplorerTemplate } from '../lib/blockExplorer';
-import { projectedDailySpendSat } from '../lib/finance';
+import { projectedDailySpendSat3h } from '../lib/finance';
 import { useDenomination } from '../lib/denomination';
 import { copyToClipboard } from '../lib/clipboard';
 import { actionModeLabel, bidStatusClass, bidStatusLabel } from '../lib/labels';
@@ -526,6 +526,7 @@ export function Status() {
             <BraiinsBalances
               balances={s.balances}
               bids={s.bids}
+              avgDeliveredPh3h={s.avg_delivered_ph_3h}
               locale={intlLocale}
               denomination={denomination}
             />
@@ -1622,19 +1623,24 @@ function ReachabilityBadge({
 function BraiinsBalances({
   balances,
   bids,
+  avgDeliveredPh3h,
   locale,
   denomination,
 }: {
   balances: readonly BalanceView[];
   bids: readonly BidView[];
+  avgDeliveredPh3h: number | null;
   locale: string | undefined;
   denomination: ReturnType<typeof useDenomination>;
 }) {
   // Spend rate is account-wide, not per-balance — hoist the reduce
   // out of the map so N balances don't each re-walk the bid list.
-  // Stable across renders in the common case (bid list doesn't
-  // change tick-to-tick).
-  const dailySpendSat = useMemo(() => projectedDailySpendSat(bids), [bids]);
+  // Smoothed over the last 3 h of delivered hashrate so the runway
+  // date doesn't slide back and forth on per-tick delivery jitter.
+  const dailySpendSat = useMemo(
+    () => projectedDailySpendSat3h(bids, avgDeliveredPh3h),
+    [bids, avgDeliveredPh3h],
+  );
   const nowMs = Date.now();
   if (balances.length === 0) {
     return <div className="text-slate-500 text-sm">{'\u2014'}</div>;
@@ -1846,25 +1852,30 @@ function FinancePanel({
   };
 
   // Run-rate view: what's this autopilot costing/earning *right now*,
-  // per day? Distinct from the lifetime P&L above. Sum across active
-  // owned bids of (price × delivered_hashrate) — Braiins only debits
-  // Billing is capped at speed_limit_ph — Braiins won't charge for
-  // more than the limit even if the rolling avg_speed_ph temporarily
-  // overshoots (measurement artifact from burst-then-gap delivery).
-  // Use min(avg_speed, speed_limit) for the spend estimate.
+  // per day? Distinct from the lifetime P&L above. Spend = weighted
+  // bid price × rolling 3 h average of delivered hashrate (from our
+  // own tick_metrics series). Using a 3 h window instead of the
+  // current tick's avg_speed_ph keeps the figure from oscillating on
+  // every little delivery dip, and matches the window Ocean uses on
+  // its own "estimated earnings/day at the 3-hour hashrate" line so
+  // income and spend are on the same cadence.
   //
   // Must be computed BEFORE the `!data` early return so hook count is
   // stable across the null → defined transition of `data` (React error
   // #310). The callback tolerates `data` being undefined.
   const { dailySpendSat, hasDailySpend, dailyIncomeSat, dailyNetSat, dailyNetColor } = useMemo(() => {
-    const _dailySpendSat = projectedDailySpendSat(status.bids);
-    // `_dailySpendSat` is always a concrete number — the sum above
-    // defaults to 0 when no active bids exist, and Braiins only
-    // bills for delivered hashrate so a 0 here during a fill gap
-    // is accurate rather than missing. `hasDailySpend` used to gate
-    // rendering on spend > 0, which hid the entire P&L panel every
-    // time the bid stopped filling for a tick. Keep the flag to
-    // drive the "no active bids" empty state in the outer fallback.
+    const _dailySpendSat = projectedDailySpendSat3h(
+      status.bids,
+      status.avg_delivered_ph_3h,
+    );
+    // `_dailySpendSat` is always a concrete number — the helper
+    // returns 0 when no active bids exist, otherwise current bid
+    // price × 3-hour-smoothed delivered hashrate (see finance.ts
+    // for the single-vs-multi-bid handling). `hasDailySpend` used
+    // to gate rendering on spend > 0, which hid the entire P&L
+    // panel every time the bid stopped filling for a tick. Keep
+    // the flag to drive the "no active bids" empty state in the
+    // outer fallback.
     const _hasDailySpend = status.bids.some(
       (b) => b.is_owned && b.status === 'BID_STATUS_ACTIVE',
     );
@@ -1886,7 +1897,7 @@ function FinancePanel({
       dailyNetSat: _dailyNetSat,
       dailyNetColor: _dailyNetColor,
     };
-  }, [status.bids, data?.ocean?.daily_estimate_sat]);
+  }, [status.bids, status.avg_delivered_ph_3h, data?.ocean?.daily_estimate_sat]);
 
   if (!data) {
     return (
@@ -1983,7 +1994,7 @@ function FinancePanel({
             <FinanceFootnote
               label="projected spend/day"
               value={denomination.formatSat(Math.round(dailySpendSat), intlLocale)}
-              tooltip="Projection. Cost per day at current bid price × delivered hashrate, summed across active owned bids. Braiins only debits for hashrate actually delivered, so a 0 here during a fill gap is accurate, not missing data."
+              tooltip="Projection. Current bid price × the last 3 hours' average delivered hashrate (from our own tick_metrics — same 3 h window Ocean uses for its income estimate, so the two sides are comparable). Smoothed on purpose: the raw per-tick delivery bounces around a lot and used to make this number jitter tick-to-tick. Falls back to the instantaneous figure when there's less than 3 h of history."
             />
             <FinanceFootnote
               label="projected net/day"

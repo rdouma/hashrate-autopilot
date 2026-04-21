@@ -113,6 +113,14 @@ export interface StatusResponse {
 
   readonly bids: readonly BidView[];
   readonly actual_hashrate_ph: number;
+  /**
+   * Rolling 3-hour average of `delivered_ph` from `tick_metrics`.
+   * Used by the dashboard to stabilise the projected-spend-per-day and
+   * runway forecasts (matches Ocean's 3-hour-hashrate window, so the
+   * income and spend sides of the P&L panel are on the same cadence).
+   * `null` until at least one tick exists inside the window.
+   */
+  readonly avg_delivered_ph_3h: number | null;
   readonly below_floor_since: number | null;
 
   readonly last_proposals: readonly ProposalView[];

@@ -148,6 +148,27 @@ export class TickMetricsRepo {
   }
 
   /**
+   * Rolling-window average of `delivered_ph` across all ticks with
+   * `tick_at >= sinceMs`. Returns `null` when there are no rows in the
+   * window (fresh install, pruned history, daemon just started).
+   *
+   * Used by the P&L panel's "projected spend/day" and the Braiins panel's
+   * runway forecast to smooth over the per-tick delivery jitter that
+   * was making both numbers fluctuate wildly. Matches the window Ocean
+   * uses for its own "estimated earnings/day at the address's 3-hour
+   * hashrate" reading, so the income and spend sides of the P&L panel
+   * are on the same cadence.
+   */
+  async avgDeliveredPhSince(sinceMs: number): Promise<number | null> {
+    const row = await this.db
+      .selectFrom('tick_metrics')
+      .select(sql<number | null>`AVG(delivered_ph)`.as('avg_ph'))
+      .where('tick_at', '>=', sinceMs)
+      .executeTakeFirst();
+    return row?.avg_ph ?? null;
+  }
+
+  /**
    * Timestamp of the earliest recorded tick, or `null` if the table is
    * empty. Used by the `all` preset to size its aggregation bucket to
    * whatever history actually exists.

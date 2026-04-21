@@ -157,6 +157,7 @@ export interface StatusResponse {
   } | null;
   bids: BidView[];
   actual_hashrate_ph: number;
+  avg_delivered_ph_3h: number | null;
   below_floor_since: number | null;
   last_proposals: ProposalView[];
   config_summary: {
