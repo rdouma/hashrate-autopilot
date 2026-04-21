@@ -382,6 +382,7 @@ export function Status() {
         simMode={simMode}
         ourBlocks={oceanQuery.data?.our_recent_blocks ?? []}
         blockExplorerTemplate={configQuery.data?.config?.block_explorer_url_template}
+        shareLogPct={oceanQuery.data?.user?.share_log_pct ?? null}
       />
       <PriceChart
         points={(simMode && simMetricPoints ? simMetricPoints : metricsQuery.data?.points) ?? []}
@@ -521,13 +522,49 @@ export function Status() {
             {s.balances.length === 0 ? (
               <div className="text-slate-500 text-sm">{'\u2014'}</div>
             ) : (
-              s.balances.map((b) => (
-                <div key={b.subaccount}>
-                  <Row k="available" v={denomination.formatSat(b.available_balance_sat, intlLocale)} />
-                  <Row k="blocked" v={denomination.formatSat(b.blocked_balance_sat, intlLocale)} />
-                  <Row k="total" v={denomination.formatSat(b.total_balance_sat, intlLocale)} />
-                </div>
-              ))
+              s.balances.map((b) => {
+                // Runway = total balance / projected daily spend
+                // (sum of price × effective_speed across active
+                // owned bids). Since the Braiins account doesn't
+                // auto-replenish, this is the "when does the tank
+                // run dry" forecast based on the current spend
+                // rate. Same math as the P&L panel's
+                // `projected spend/day`.
+                const dailySpendSat = s.bids
+                  .filter((bid) => bid.is_owned && bid.status === 'BID_STATUS_ACTIVE')
+                  .reduce((sum, bid) => {
+                    const effSpeed =
+                      bid.speed_limit_ph !== null
+                        ? Math.min(bid.avg_speed_ph, bid.speed_limit_ph)
+                        : bid.avg_speed_ph;
+                    return sum + bid.price_sat_per_ph_day * effSpeed;
+                  }, 0);
+                const runwayDays =
+                  dailySpendSat > 0 && b.total_balance_sat > 0
+                    ? b.total_balance_sat / dailySpendSat
+                    : null;
+                const runwayText = (() => {
+                  if (runwayDays === null) return '\u2014';
+                  const exhaustAt = new Date(Date.now() + runwayDays * 86_400_000);
+                  const dateLabel = exhaustAt.toLocaleDateString(intlLocale, {
+                    month: 'short',
+                    day: 'numeric',
+                  });
+                  const daysLabel =
+                    runwayDays >= 10
+                      ? `${Math.round(runwayDays)} days`
+                      : `${runwayDays.toFixed(1)} days`;
+                  return `${daysLabel} \u00b7 ~${dateLabel}`;
+                })();
+                return (
+                  <div key={b.subaccount}>
+                    <Row k="available" v={denomination.formatSat(b.available_balance_sat, intlLocale)} />
+                    <Row k="blocked" v={denomination.formatSat(b.blocked_balance_sat, intlLocale)} />
+                    <Row k="total" v={denomination.formatSat(b.total_balance_sat, intlLocale)} />
+                    <Row k="runway" v={runwayText} />
+                  </div>
+                );
+              })
             )}
           </div>
         </Card>

@@ -2,6 +2,14 @@
 
 ## 2026-04-20 (post-v1.0.3)
 
+### `[Feature]` Block tooltip shows estimated our-share + our-earnings
+
+The block-marker tooltip now renders an "our share (est.)" sub-block when an Ocean share_log value is available: share log % + estimated sat earnings for that block (`reward × share_log / 100`). The estimate uses the *current* share_log, which is approximate for older blocks since share_log drifts as pool hashrate changes — annotated in the tooltip so it's not read as precise history.
+
+### `[Feature]` Braiins panel: runway forecast row
+
+New "runway" row on the Braiins card, under total. Calculated as `total_balance / projected_spend_per_day` (same projected-spend math the P&L panel already uses — sum of `price × effective_speed` across active owned bids), rendered as `X.Y days · ~Apr 25`. Since the Braiins account doesn't auto-replenish, this is the "when does the tank run dry" forecast at the current spend rate. Deliberately not a moving-average — too much overkill for now; a flat snapshot is good enough for pre-deposit planning.
+
 ### `[Fix]` Simulator honours symmetric min-delta gate; sim panel label matches
 
 The symmetric `min_delta` gate landed in build 78 updated the real controller (`decide.ts`) but not the simulator's inline replay (`routes/simulate.ts`). Result: the simulated price chart kept painting +87 style escalation edits in market-mode stretches where the live autopilot correctly refused to move. Extended the simulator's escalation path with the same `nextPrice - current >= minLowerDelta` check. Also flipped the lower-path comparison from `>` to `>=` so both gates are consistent. Sim panel field label re-tagged "Min lower delta" → "Min delta" to match the Config page.

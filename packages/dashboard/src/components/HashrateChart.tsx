@@ -82,6 +82,7 @@ export const HashrateChart = memo(function HashrateChart({
   simMode = false,
   ourBlocks = [],
   blockExplorerTemplate = 'https://mempool.space/block/{hash}',
+  shareLogPct = null,
 }: {
   points: readonly MetricPoint[];
   range: ChartRange;
@@ -95,6 +96,12 @@ export const HashrateChart = memo(function HashrateChart({
    *  an explorer URL. `{hash}` and `{height}` placeholders are
    *  substituted; at least one must be present. */
   blockExplorerTemplate?: string;
+  /** Current Ocean share-log percentage (e.g. 0.0182). Used in the
+   *  block-marker tooltip to estimate our share of each block's
+   *  reward. Approximation: share_log shifts as pool/user hashrate
+   *  changes, so applying current share_log to older blocks is an
+   *  estimate of what Ocean would have credited at the time. */
+  shareLogPct?: number | null;
 }) {
   const { intlLocale } = useLocale();
   const [blockTip, setBlockTip] = useState<BlockTooltipState | null>(null);
@@ -459,6 +466,7 @@ export const HashrateChart = memo(function HashrateChart({
           tip={blockTip}
           explorerTemplate={blockExplorerTemplate}
           locale={intlLocale}
+          shareLogPct={shareLogPct}
           onClose={closeBlockTip}
         />
       )}
@@ -470,11 +478,13 @@ function BlockTooltip({
   tip,
   explorerTemplate,
   locale,
+  shareLogPct,
   onClose,
 }: {
   tip: BlockTooltipState;
   explorerTemplate: string;
   locale: string | undefined;
+  shareLogPct: number | null;
   onClose: () => void;
 }) {
   const { block, pinned } = tip;
@@ -536,6 +546,27 @@ function BlockTooltip({
         <BtcRow label="subsidy" btc={subsidyBtc} locale={locale} muted />
         <BtcRow label="fees" btc={feesBtc} locale={locale} muted />
       </div>
+
+      {shareLogPct !== null && shareLogPct > 0 && (
+        <div className="mt-2 pt-2 border-t border-slate-800 space-y-0.5 text-slate-300">
+          <div className="text-[10px] uppercase tracking-wider text-slate-500 mb-0.5">
+            our share (est.)
+          </div>
+          <div className="flex justify-between gap-3">
+            <span className="text-slate-500">share log</span>
+            <span className="font-mono tabular-nums">{shareLogPct.toFixed(4)}%</span>
+          </div>
+          <BtcRow
+            label="our earnings"
+            btc={(rewardBtc * shareLogPct) / 100}
+            locale={locale}
+          />
+          <div className="text-[10px] text-slate-500 italic mt-0.5 whitespace-normal max-w-[18rem]">
+            uses current share_log — an approximation for older blocks,
+            since share_log drifts as pool hashrate moves.
+          </div>
+        </div>
+      )}
 
       <div className="mt-3 pt-2 border-t border-slate-800">
         <a
