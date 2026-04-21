@@ -371,7 +371,7 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
     if (cappedByMax) {
       return {
         summary: `Bid filling below target (${primary.avg_speed_ph.toFixed(2)}/${ph} PH/s) — no escalation will fire.`,
-        detail: `Fillable + overpay (${Math.round(desiredPriceEH / EH_PER_PH).toLocaleString('en-US')} sat/PH/day) exceeds your ${bindingCapLabel} cap (${Math.round(effectiveCapEH / EH_PER_PH).toLocaleString('en-US')} sat/PH/day). Waiting for the market to drop or for the cap to relax — raise max_overpay_vs_hashprice in Config to unblock.`,
+        detail: `Fillable + overpay (${Math.round(desiredPriceEH / EH_PER_PH).toLocaleString('en-US')} sat/PH/day) exceeds your ${bindingCapLabel} cap (${Math.round(effectiveCapEH / EH_PER_PH).toLocaleString('en-US')} sat/PH/day). Waiting for the market to drop or for the cap to relax — raise "Max premium over hashprice" in Config to unblock.`,
         ...noEvent,
       };
     }

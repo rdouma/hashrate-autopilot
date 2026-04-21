@@ -139,9 +139,9 @@ const SECTIONS: Section[] = [
       },
       {
         key: 'min_lower_delta_sat_per_eh_day',
-        label: 'Min lower delta',
+        label: 'Min delta',
         kind: 'price_sat_per_eh_day',
-        help: 'Deadband: only auto-lower when overpay vs target exceeds this. Avoids burning the Braiins 10-min cooldown for a few-sat saving.',
+        help: 'Deadband applied in BOTH directions: only auto-edit (raise or lower) when the move vs target exceeds this. Avoids burning the Braiins 10-min price-decrease cooldown chasing a few-sat market tick.',
       },
       {
         key: 'escalation_mode',

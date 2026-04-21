@@ -2,6 +2,17 @@
 
 ## 2026-04-20 (post-v1.0.3)
 
+### `[Feature]` Status-page polish pass (operator backlog)
+
+A batch of follow-up tweaks that piled up while other work was in flight:
+
+- **Stat bar redesign.** Dropped the "mutations" card; split the combined "avg hashrate" into three dedicated cards — "avg braiins", "avg datum", "avg ocean" — so the three sources sit side-by-side instead of being packed into one slash-separated cell. Still seven cards total, now a hair narrower to fit.
+- **Hashrate chart palette.** `delivered (Braiins)` is now **yellow** (matches the "our bid" yellow on the price chart — semantic "what we pay"), `received (Datum)` is **green** (was the delivered colour), `received (Ocean)` is **cyan** (was the Datum colour). Simulation mode moves to **orange** so the toggled-on sim still reads distinct from delivered. The purple / blue Ocean line was near-invisible for colour-blind operators.
+- **Ocean panel reorder.** Operator-centric rows (ocean hashrate, share log, unpaid, next block est., income/day est., next payout, break-even hashprice) are now at the top of the panel — parity with the Braiins / Datum panels, where the panel's own hashrate is always the first row. Pool-wide context (last pool block, pool blocks 24h / 7d, pool users, pool workers) moved to the bottom under a divider.
+- **Explorer link style.** The "last pool block" value is still sky-blue and hover-brightens, but the underline is gone — colour alone communicates "click me" without the visual noise.
+- **"Min lower delta" → "Min delta".** The deadband now applies in **both directions**: the autopilot no longer fires EDIT_PRICE on a +2 / +7 sat market tick either. Storage key (`min_lower_delta_sat_per_eh_day`) unchanged so existing configs keep their value; label + description rewritten to reflect the symmetric gate.
+- **Next Action copy fix.** The "too expensive to fill" message referenced the config *variable* name `max_overpay_vs_hashprice` — operators see the human label "Max premium over hashprice" on the Config page, which is what the hint now links them to.
+
 ### `[Infra]` Remove block-marker miner-identity enrichment
 
 Pulled the whole enrichment feature landed in builds 73 / 75 / 76. It required bitcoind RPC regardless of the operator's payout-source choice, which muddied the Config panel; the `getblock` coinbase parse rarely yielded a useful operator tag anyway; and the Ocean feed already tells us these are all Ocean blocks by construction, so "pool_name = OCEAN" wasn't buying much on its own. Tooltip is back to reward / subsidy / fees only — cleaner and doesn't rely on a local bitcoind being reachable.

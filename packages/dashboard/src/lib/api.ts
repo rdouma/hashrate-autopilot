@@ -299,6 +299,7 @@ export interface StatsResponse {
   uptime_pct: number | null;
   avg_hashrate_ph: number | null;
   avg_datum_hashrate_ph: number | null;
+  avg_ocean_hashrate_ph: number | null;
   total_ph_hours: number | null;
   avg_overpay_sat_per_ph_day: number | null;
   avg_overpay_vs_hashprice_sat_per_ph_day: number | null;

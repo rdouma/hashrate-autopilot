@@ -273,9 +273,10 @@ export function Status() {
     return {
       uptime_pct: sim.uptime_pct,
       avg_hashrate_ph: sim.avg_hashrate_ph,
-      // Simulation doesn't model Datum — the replay has no way to
-      // synthesize what Datum would have reported.
+      // Simulation doesn't model Datum or Ocean — the replay has no
+      // way to synthesize what either of those would have reported.
       avg_datum_hashrate_ph: null,
+      avg_ocean_hashrate_ph: null,
       total_ph_hours: sim.total_ph_hours,
       avg_cost_per_ph_sat_per_ph_day: sim.avg_cost_per_ph_sat_per_ph_day,
       avg_overpay_sat_per_ph_day: sim.avg_overpay_sat_per_ph_day,
@@ -1272,7 +1273,7 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
   if (!statsData) {
     return (
       <section className="grid grid-cols-2 lg:grid-cols-7 gap-3">
-        {['uptime', 'avg hashrate', 'total PH·h', 'mutations', 'avg cost / PH delivered', 'avg overpay vs fillable', 'avg overpay vs hashprice'].map((label) => (
+        {['uptime', 'avg braiins', 'avg datum', 'avg ocean', 'avg cost / PH delivered', 'avg overpay vs fillable', 'avg overpay vs hashprice'].map((label) => (
           <StatCard key={label} label={label} value="—" tooltip="Loading or daemon restart required." />
         ))}
       </section>
@@ -1281,31 +1282,19 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
 
   if (statsData.tick_count < 2) return null;
 
-  const { uptime_pct, avg_hashrate_ph, avg_datum_hashrate_ph, avg_overpay_sat_per_ph_day, avg_cost_per_ph_sat_per_ph_day, avg_overpay_vs_hashprice_sat_per_ph_day, mutation_count } = statsData;
-  // total_ph_hours is intentionally unread — the Total PH·h card was
-  // hidden to make the stat bar fit on one row. Server still emits it
-  // so the metric is available if we bring the card back.
+  const { uptime_pct, avg_hashrate_ph, avg_datum_hashrate_ph, avg_ocean_hashrate_ph, avg_overpay_sat_per_ph_day, avg_cost_per_ph_sat_per_ph_day, avg_overpay_vs_hashprice_sat_per_ph_day } = statsData;
+  // total_ph_hours + mutation_count remain on the server-side
+  // StatsResponse even though no card consumes them — keeping the
+  // shape stable so we can re-surface either later without a backend
+  // round-trip.
   void statsData.total_ph_hours;
+  void statsData.mutation_count;
 
-  // Show "2.56/2.12" when Datum is reporting, plain "2.56" otherwise.
-  // A sustained gap between the two is the operator's "am I getting
-  // what Braiins is billing me for" signal. Unit stays attached to the
-  // right-hand number so it reads as "Braiins/Datum PH/s" as a pair.
-  // Slash has no surrounding spaces — the card is already narrow and
-  // the pair belongs tight together visually.
-  const avgHashrateText =
-    avg_hashrate_ph === null
-      ? '\u2014'
-      : avg_datum_hashrate_ph !== null
-        ? `${avg_hashrate_ph.toFixed(2)}/${avg_datum_hashrate_ph.toFixed(2)} PH/s`
-        : `${avg_hashrate_ph.toFixed(2)} PH/s`;
-  const avgHashrateTooltip =
-    avg_datum_hashrate_ph !== null
-      ? 'Left: duration-weighted average hashrate Braiins reports delivering (delivered_ph). Right: average hashrate Datum measures at the gateway (datum_hashrate_ph). A sustained gap means Braiins is billing for hashrate the gateway never saw.'
-      : 'Duration-weighted average hashrate across the selected range, including downtime (where delivered = 0). Reflects real throughput — not just the moments you were hashing.';
+  const fmtHashrate = (n: number | null): string =>
+    n === null ? '\u2014' : `${n.toFixed(2)} PH/s`;
 
   return (
-    <section className="grid grid-cols-2 lg:grid-cols-6 gap-3">
+    <section className="grid grid-cols-2 lg:grid-cols-7 gap-3">
       <StatCard
         label="uptime"
         value={uptime_pct !== null ? `${uptime_pct.toFixed(1)}%` : '\u2014'}
@@ -1321,14 +1310,19 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
         }
       />
       <StatCard
-        label="avg hashrate"
-        value={avgHashrateText}
-        tooltip={avgHashrateTooltip}
+        label="avg braiins"
+        value={fmtHashrate(avg_hashrate_ph)}
+        tooltip="Duration-weighted average of the hashrate Braiins reports delivering. Includes downtime (where delivered = 0) so a bad stretch shows up in the average, not just the live card."
       />
       <StatCard
-        label="mutations"
-        value={mutation_count.toString()}
-        tooltip="Number of successful bid mutations (create / edit price / edit speed / cancel) executed in this range. Read from the bid_events log — DRY_RUN and blocked proposals are excluded. High = autopilot is churning; low = market is quiet or it's stuck."
+        label="avg datum"
+        value={fmtHashrate(avg_datum_hashrate_ph)}
+        tooltip="Duration-weighted average of the hashrate Datum measures at the gateway. A sustained gap below Avg Braiins means Braiins is billing for hashrate Datum never saw arrive."
+      />
+      <StatCard
+        label="avg ocean"
+        value={fmtHashrate(avg_ocean_hashrate_ph)}
+        tooltip="Duration-weighted average of the hashrate Ocean credits to the operator's payout address (5-minute sliding window from /v1/user_hashrate). A sustained gap below Avg Braiins / Avg Datum means the pool isn't crediting work we think we delivered."
       />
       <StatCard
         label="avg cost / PH delivered"
@@ -1640,55 +1634,72 @@ function OceanPanel() {
         />
       }
     >
-      {o.last_block ? (
+      {/* Our stuff — hashrate, share log, earnings. Matches the
+          Braiins/Datum convention: the panel's own hashrate line is
+          the top row. */}
+      {o.user && (
         <>
-          <LinkRow
-            k="last pool block"
-            v={`#${o.last_block.height.toLocaleString(intlLocale)}`}
-            href={applyExplorerTemplate(explorerTemplate, {
-              block_hash: o.last_block.block_hash,
-              height: o.last_block.height,
-            })}
-          />
-          <Row k="found" v={o.last_block.ago_text} />
-          <Row k="reward" v={denomination.formatSat(o.last_block.total_reward_sat, intlLocale)} />
-        </>
-      ) : (
-        <Row k="last pool block" v={'\u2014'} />
-      )}
-      <Row k="pool blocks 24h" v={String(o.blocks_24h)} />
-      <Row k="pool blocks 7d" v={String(o.blocks_7d)} />
-      {o.user?.hashprice_sat_per_ph_day != null && (
-        <div className="border-t border-slate-800 mt-2 pt-2">
           <Row
-            k="hashprice (break-even)"
-            v={denomination.formatSatPerPhDay(o.user.hashprice_sat_per_ph_day, intlLocale)}
+            k="ocean hashrate"
+            v={
+              o.user.hashrate_5m_ph !== null
+                ? `${o.user.hashrate_5m_ph.toFixed(2)} PH/s`
+                : '\u2014'
+            }
           />
-        </div>
-      )}
-      <div className="border-t border-slate-800 mt-2 pt-2">
-        {o.user && (
-          <>
+          <Row
+            k="share log"
+            v={
+              o.user.share_log_pct !== null
+                ? `${o.user.share_log_pct.toFixed(4)}%`
+                : '\u2014'
+            }
+          />
+          <Row k="unpaid" v={denomination.formatSat(o.user.unpaid_sat, intlLocale)} />
+          <Row
+            k="next block est."
+            v={denomination.formatSat(o.user.next_block_sat, intlLocale)}
+          />
+          <Row
+            k="income/day est."
+            v={denomination.formatSat(o.user.daily_estimate_sat, intlLocale)}
+          />
+          {o.user.time_to_payout_text && (
+            <Row k="next payout" v={formatNextPayout(o.user.time_to_payout_text)} />
+          )}
+          {o.user.hashprice_sat_per_ph_day != null && (
             <Row
-              k="ocean hashrate"
-              v={
-                o.user.hashrate_5m_ph !== null
-                  ? `${o.user.hashrate_5m_ph.toFixed(2)} PH/s`
-                  : '\u2014'
-              }
+              k="hashprice (break-even)"
+              v={denomination.formatSatPerPhDay(o.user.hashprice_sat_per_ph_day, intlLocale)}
             />
-            <Row k="share log" v={o.user.share_log_pct !== null ? `${o.user.share_log_pct.toFixed(4)}%` : '\u2014'} />
-            <Row k="unpaid" v={denomination.formatSat(o.user.unpaid_sat, intlLocale)} />
-            <Row k="next block est." v={denomination.formatSat(o.user.next_block_sat, intlLocale)} />
-            <Row k="income/day est." v={denomination.formatSat(o.user.daily_estimate_sat, intlLocale)} />
-            {o.user.time_to_payout_text && (
-              <Row
-                k="next payout"
-                v={formatNextPayout(o.user.time_to_payout_text)}
-              />
-            )}
+          )}
+        </>
+      )}
+
+      {/* Pool-wide context — less important day-to-day, so it lives
+          at the bottom of the panel. */}
+      <div className="border-t border-slate-800 mt-2 pt-2">
+        {o.last_block ? (
+          <>
+            <LinkRow
+              k="last pool block"
+              v={`#${o.last_block.height.toLocaleString(intlLocale)}`}
+              href={applyExplorerTemplate(explorerTemplate, {
+                block_hash: o.last_block.block_hash,
+                height: o.last_block.height,
+              })}
+            />
+            <Row k="found" v={o.last_block.ago_text} />
+            <Row
+              k="reward"
+              v={denomination.formatSat(o.last_block.total_reward_sat, intlLocale)}
+            />
           </>
+        ) : (
+          <Row k="last pool block" v={'\u2014'} />
         )}
+        <Row k="pool blocks 24h" v={String(o.blocks_24h)} />
+        <Row k="pool blocks 7d" v={String(o.blocks_7d)} />
       </div>
       {o.pool && (
         <div className="border-t border-slate-800 mt-2 pt-2">
@@ -2424,7 +2435,7 @@ function LinkRow({ k, v, href }: { k: string; v: string; href: string }) {
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-sky-400 hover:text-sky-300 underline font-mono"
+        className="text-sky-400 hover:text-sky-300 font-mono"
       >
         {v}
       </a>

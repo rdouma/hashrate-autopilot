@@ -35,14 +35,19 @@ const HEIGHT = 200;
 // rightmost timestamp from clipping the edge.
 const PADDING = { top: 16, right: 16, bottom: 24, left: 80 };
 
-const COLOR_DELIVERED = '#34d399';
-const COLOR_DATUM = '#38bdf8';
-// Same blue as the TIDES-credited block cubes — reinforces the
-// branding association ("Ocean → blue cube") and reads more clearly
-// than the earlier purple on operator displays / with colour-blind
-// viewers. Distinct enough from the cyan Datum line that the three
-// hashrate series stay separable.
-const COLOR_OCEAN = '#3b82f6';
+// Yellow — same hue as "our bid" on the price chart, semantically
+// matches "what we pay Braiins for". Sim-mode overlay uses a distinct
+// orange tint so a toggled-on simulation still visually separates
+// from the live delivered line.
+const COLOR_DELIVERED = '#fbbf24';
+const COLOR_SIM = '#f97316';
+// Green — measured-locally-by-us at the DATUM Gateway. Was the
+// delivered colour; reassigned to Datum at the operator's request.
+const COLOR_DATUM = '#34d399';
+// Cyan — credited-to-us by the Ocean pool. Was the Datum colour;
+// reassigned to Ocean to keep the three series visually separable
+// after the palette shuffle.
+const COLOR_OCEAN = '#38bdf8';
 const COLOR_TARGET = '#94a3b8';
 const COLOR_FLOOR = '#64748b';
 // Gold — reserved for the rare "we found this block ourselves" case
@@ -257,7 +262,7 @@ export const HashrateChart = memo(function HashrateChart({
           {simMode ? 'Simulated hashrate' : 'Hashrate'}
         </h3>
         <div className="flex items-center gap-3 text-xs flex-wrap">
-          <Legend color={simMode ? '#fbbf24' : COLOR_DELIVERED} label={simMode ? 'simulated' : 'delivered (Braiins)'} />
+          <Legend color={simMode ? COLOR_SIM : COLOR_DELIVERED} label={simMode ? 'simulated' : 'delivered (Braiins)'} />
           {!simMode && hasDatum && (
             <Legend color={COLOR_DATUM} label="received (Datum)" />
           )}
@@ -318,7 +323,7 @@ export const HashrateChart = memo(function HashrateChart({
           fill={simMode ? 'url(#simFill)' : 'url(#deliveredFill)'}
           opacity="0.5"
         />
-        <path d={deliveredPath} stroke={simMode ? '#fbbf24' : COLOR_DELIVERED} strokeWidth="1.8" fill="none" />
+        <path d={deliveredPath} stroke={simMode ? COLOR_SIM : COLOR_DELIVERED} strokeWidth="1.8" fill="none" />
         {!simMode && hasDatum && (
           <path
             d={datumPath}
@@ -397,8 +402,8 @@ export const HashrateChart = memo(function HashrateChart({
             <stop offset="100%" stopColor={COLOR_DELIVERED} stopOpacity="0" />
           </linearGradient>
           <linearGradient id="simFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#fbbf24" stopOpacity="0.35" />
-            <stop offset="100%" stopColor="#fbbf24" stopOpacity="0" />
+            <stop offset="0%" stopColor={COLOR_SIM} stopOpacity="0.35" />
+            <stop offset="100%" stopColor={COLOR_SIM} stopOpacity="0" />
           </linearGradient>
         </defs>
 

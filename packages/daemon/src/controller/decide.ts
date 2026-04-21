@@ -179,7 +179,12 @@ export function decide(state: State): readonly Proposal[] {
   // Mode determines escalation behavior:
   // - 'market': jump directly to targetPrice (track market)
   // - 'dampened': step from current_bid + escalation_step (avoid chasing)
+  // Apply the same min-delta gate as the lowering path so we don't
+  // burn the Braiins cooldown chasing a +2 / +7 sat market tick — if
+  // the jump isn't worth at least `min_lower_delta_sat_per_eh_day`
+  // (re-purposed as a symmetric "min delta" threshold), skip it.
   const shouldEscalate = shouldTriggerEscalation(state) || state.bypass_pacing;
+  const minDeltaThreshold = Math.max(tickSize, config.min_lower_delta_sat_per_eh_day);
   if (!overrideActive && shouldEscalate && primary.price_sat < targetPrice) {
     const escalatedPrice =
       config.escalation_mode === 'market'
@@ -188,7 +193,7 @@ export function decide(state: State): readonly Proposal[] {
             primary.price_sat + config.fill_escalation_step_sat_per_eh_day,
             targetPrice,
           );
-    if (escalatedPrice > primary.price_sat + tickSize) {
+    if (escalatedPrice >= primary.price_sat + minDeltaThreshold) {
       proposals.push({
         kind: 'EDIT_PRICE',
         braiins_order_id: primary.braiins_order_id,
@@ -203,10 +208,10 @@ export function decide(state: State): readonly Proposal[] {
   }
 
   // (b) Lower when we're paying more than target (fillable + overpay).
-  // Threshold gate: only bother if the saving exceeds
-  // `min_lower_delta_sat_per_eh_day` — avoids burning the 10-min Braiins
-  // price-decrease cooldown for a few sat. tickSize is the absolute floor
-  // (Braiins rejects sub-tick prices anyway).
+  // Threshold gate: only bother if the saving exceeds the symmetric
+  // `min_lower_delta_sat_per_eh_day` — avoids burning the 10-min
+  // Braiins price-decrease cooldown for a few sat. Same `minDeltaThreshold`
+  // as the escalation path above so both directions share one deadband.
   // Patience gate: don't lower until the lowering-ready condition
   // (same overpay-vs-target check) has been continuously true for
   // `lower_patience_minutes`. Prevents chasing short market dips that
@@ -214,13 +219,12 @@ export function decide(state: State): readonly Proposal[] {
   // `state.lower_ready_since` each tick based on exactly this condition,
   // so the gate just reads the elapsed time.
   const alreadyProposingEdit = proposals.some((p) => p.kind === 'EDIT_PRICE');
-  const lowerThreshold = Math.max(tickSize, config.min_lower_delta_sat_per_eh_day);
   const lowerReadyLongEnough =
     state.lower_ready_since !== null &&
     (state.tick_at - state.lower_ready_since) >= config.lower_patience_minutes * 60_000;
   if (
     !overrideActive &&
-    primary.price_sat > targetPrice + lowerThreshold &&
+    primary.price_sat >= targetPrice + minDeltaThreshold &&
     !alreadyProposingEdit &&
     (lowerReadyLongEnough || state.bypass_pacing)
   ) {
@@ -229,7 +233,7 @@ export function decide(state: State): readonly Proposal[] {
       braiins_order_id: primary.braiins_order_id,
       new_price_sat: targetPrice,
       old_price_sat: primary.price_sat,
-      reason: `market_drop: paying ${fmtPricePH(primary.price_sat)} > target ${fmtPricePH(targetPrice)} (delta > ${fmtPricePH(lowerThreshold)}) — lowering to target`,
+      reason: `market_drop: paying ${fmtPricePH(primary.price_sat)} > target ${fmtPricePH(targetPrice)} (delta >= ${fmtPricePH(minDeltaThreshold)}) — lowering to target`,
     });
   }
   void EDIT_PRICE_TOLERANCE_PCT;
