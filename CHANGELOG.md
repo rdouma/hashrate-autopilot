@@ -2,6 +2,12 @@
 
 ## 2026-04-22
 
+### `[UI]` NEXT ACTION: surface the *binding* lower-gate (cooldown vs patience vs override)
+
+The panel would announce "Will lower in ~2 min" whenever the market-settle patience window was the first pending gate, even if the Braiins 10-min price-decrease cooldown was in fact longer and would hold the edit for another 6 minutes. Operator saw an ETA that couldn't be met.
+
+Now all three lower-gates — override lock, market-settle patience, and the Braiins price-decrease cooldown — are evaluated, and whichever one ends *latest* is surfaced as the reason + ETA. Side effect: the progress bar label on the patience path used to read "Override lock clears in" because the event_kind was mislabeled; there is now a distinct `lower_after_patience` event_kind and the label reads "Patience clears in".
+
 ### `[Fix]` Price chart: bridge single-tick blips instead of rendering a visible gap (#47)
 
 A single null tick (daemon restart boot, transient `/spot/bid` API hiccup) made the price line + fill drop out for ~60 seconds on the chart — reading as a mini-outage when the operator actually just saw a blink. Root cause: `pathWithNullGaps` (#44) closed the subpath on any null, which is correct for multi-minute market outages but too aggressive for one-tick observe noise.

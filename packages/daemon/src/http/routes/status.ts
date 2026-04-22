@@ -518,43 +518,78 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
     const cooldownRemainsMs =
       cooldownEndsMs !== null ? Math.max(0, cooldownEndsMs - state.tick_at) : 0;
 
+    // Three independent gates can delay a lower: override lock, market-
+    // settle patience, and the Braiins price-decrease cooldown. Any one
+    // of them pending is enough to hold the edit — so the operator-
+    // visible ETA must be the *latest* of the ones that are active.
+    // Previously we early-returned on the first pending gate, which
+    // produced "will lower in ~2 min" when a longer cooldown was in
+    // fact binding.
+    type LowerGate = {
+      readonly kind: 'override' | 'patience' | 'cooldown';
+      readonly endsMs: number;
+      readonly startedMs: number;
+    };
+    const gates: LowerGate[] = [];
     if (overrideActive) {
-      const minsLeft = Math.max(1, Math.ceil((overrideUntil! - state.tick_at) / 60_000));
       const windowMs = state.config.fill_escalation_after_minutes * 60_000;
-      return {
-        summary: `Overpaying by ${overpayPH.toLocaleString('en-US')} sat/PH/day vs target — held by override lock.`,
-        detail: `Will lower to ${targetPricePH.toLocaleString('en-US')} sat/PH/day after lock expires (~${minsLeft} min).`,
-        eta_ms: overrideUntil,
-        event_started_ms: overrideUntil! - windowMs,
-        event_kind: 'lower_after_override',
-      };
+      gates.push({
+        kind: 'override',
+        endsMs: overrideUntil!,
+        startedMs: overrideUntil! - windowMs,
+      });
     }
-
     const patienceMs = state.config.lower_patience_minutes * 60_000;
     const lowerReadySince = state.lower_ready_since;
     const patienceRemaining = lowerReadySince !== null
       ? Math.max(0, patienceMs - (state.tick_at - lowerReadySince))
       : patienceMs;
     if (patienceRemaining > 0) {
-      const patienceEtaMs = state.tick_at + patienceRemaining;
-      const minsLeft = Math.max(1, Math.ceil(patienceRemaining / 60_000));
-      return {
-        summary: `Overpaying by ${overpayPH.toLocaleString('en-US')} sat/PH/day vs target — waiting for the market to settle before lowering.`,
-        detail: `Will lower to ${targetPricePH.toLocaleString('en-US')} sat/PH/day after ~${minsLeft} more min of the market staying this cheap.`,
-        eta_ms: patienceEtaMs,
-        event_started_ms: lowerReadySince,
-        event_kind: 'lower_after_override',
-      };
+      gates.push({
+        kind: 'patience',
+        endsMs: state.tick_at + patienceRemaining,
+        startedMs: lowerReadySince ?? state.tick_at,
+      });
     }
-
     if (cooldownRemainsMs > 0 && cooldownEndsMs !== null && lastDecrease !== null) {
-      const minsLeft = Math.max(1, Math.ceil(cooldownRemainsMs / 60_000));
+      gates.push({
+        kind: 'cooldown',
+        endsMs: cooldownEndsMs,
+        startedMs: lastDecrease,
+      });
+    }
+    const binding = gates.reduce<LowerGate | null>(
+      (best, g) => (best === null || g.endsMs > best.endsMs ? g : best),
+      null,
+    );
+    if (binding !== null) {
+      const minsLeft = Math.max(1, Math.ceil((binding.endsMs - state.tick_at) / 60_000));
+      const overpayLabel = `Overpaying by ${overpayPH.toLocaleString('en-US')} sat/PH/day vs target`;
+      const targetLabel = `${targetPricePH.toLocaleString('en-US')} sat/PH/day`;
+      if (binding.kind === 'override') {
+        return {
+          summary: `${overpayLabel} — held by override lock.`,
+          detail: `Will lower to ${targetLabel} after lock expires (~${minsLeft} min).`,
+          eta_ms: binding.endsMs,
+          event_started_ms: binding.startedMs,
+          event_kind: 'lower_after_override',
+        };
+      }
+      if (binding.kind === 'cooldown') {
+        return {
+          summary: `${overpayLabel} — Braiins price-decrease cooldown.`,
+          detail: `Will lower to ${targetLabel} in ~${minsLeft} min.`,
+          eta_ms: binding.endsMs,
+          event_started_ms: binding.startedMs,
+          event_kind: 'lower_after_cooldown',
+        };
+      }
       return {
-        summary: `Overpaying by ${overpayPH.toLocaleString('en-US')} sat/PH/day vs target — Braiins price-decrease cooldown.`,
-        detail: `Will lower to ${targetPricePH.toLocaleString('en-US')} sat/PH/day in ~${minsLeft} min.`,
-        eta_ms: cooldownEndsMs,
-        event_started_ms: lastDecrease,
-        event_kind: 'lower_after_cooldown',
+        summary: `${overpayLabel} — waiting for the market to settle before lowering.`,
+        detail: `Will lower to ${targetLabel} after ~${minsLeft} more min of the market staying this cheap.`,
+        eta_ms: binding.endsMs,
+        event_started_ms: binding.startedMs,
+        event_kind: 'lower_after_patience',
       };
     }
     const verb = runMode === 'LIVE' ? 'lower' : 'log lower (dry-run)';

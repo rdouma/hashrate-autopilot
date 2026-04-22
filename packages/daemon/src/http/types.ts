@@ -49,6 +49,7 @@ export interface NextActionView {
   readonly event_kind:
     | 'escalation'
     | 'lower_after_override'
+    | 'lower_after_patience'
     | 'lower_after_cooldown'
     | null;
   /**

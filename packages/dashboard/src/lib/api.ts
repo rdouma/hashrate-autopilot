@@ -35,7 +35,12 @@ export interface NextActionView {
   detail: string | null;
   eta_ms: number | null;
   event_started_ms: number | null;
-  event_kind: 'escalation' | 'lower_after_override' | 'lower_after_cooldown' | null;
+  event_kind:
+    | 'escalation'
+    | 'lower_after_override'
+    | 'lower_after_patience'
+    | 'lower_after_cooldown'
+    | null;
   last_executed: {
     summary: string;
     executed_at_ms: number;

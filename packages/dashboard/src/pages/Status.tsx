@@ -1064,12 +1064,14 @@ function JustExecutedBanner({ last }: { last: NextActionView['last_executed'] })
 const EVENT_LABELS: Record<NonNullable<NextActionView['event_kind']>, string> = {
   escalation: 'Escalation in',
   lower_after_override: 'Override lock clears in',
+  lower_after_patience: 'Patience clears in',
   lower_after_cooldown: 'Cooldown clears in',
 };
 
 const EVENT_COLORS: Record<NonNullable<NextActionView['event_kind']>, string> = {
   escalation: 'bg-amber-400',
   lower_after_override: 'bg-sky-400',
+  lower_after_patience: 'bg-sky-400',
   lower_after_cooldown: 'bg-sky-400',
 };
 
