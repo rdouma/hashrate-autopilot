@@ -263,6 +263,7 @@ export interface TickMetricsTable {
   available_balance_sat: number | null;
   datum_hashrate_ph: number | null;
   ocean_hashrate_ph: number | null;
+  spend_sat: number | null;
   run_mode: RunMode;
   action_mode: ActionMode;
 }

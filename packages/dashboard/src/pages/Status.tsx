@@ -22,6 +22,7 @@ import {
   type BidEventView,
   type BidView,
   type FinanceResponse,
+  type FinanceRangeResponse,
   type MetricPoint,
   type NextActionView,
   type OceanResponse,
@@ -52,11 +53,17 @@ import { useLocale } from '../lib/locale';
 
 const RUN_MODES = ['DRY_RUN', 'LIVE', 'PAUSED'] as const;
 const CHART_RANGE_STORAGE_KEY = 'hashrate-chart-range';
+const PNL_PER_DAY_COLLAPSED_KEY = 'pnl-per-day-collapsed';
 const STATUS_QUERY_KEY = ['status'] as const;
 
 function readStoredChartRange(): ChartRange {
   if (typeof window === 'undefined') return DEFAULT_CHART_RANGE;
   return parseChartRange(window.localStorage.getItem(CHART_RANGE_STORAGE_KEY)) ?? DEFAULT_CHART_RANGE;
+}
+
+function readStoredPnlCollapsed(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.localStorage.getItem(PNL_PER_DAY_COLLAPSED_KEY) === '1';
 }
 
 export function Status() {
@@ -139,6 +146,17 @@ export function Status() {
     // figures, ocean stats. Hourly refresh is plenty; the operator can
     // hit the refresh button on the panel for an immediate pull.
     refetchInterval: 3_600_000,
+  });
+
+  // Range-aware aggregates for the P&L per-day card (issue #43).
+  // Separate query from /api/finance because the two have different
+  // cadences — lifetime/Ocean data is hourly; range aggregates track
+  // the ~1-min tick cadence. Keyed on `chartRange` so switching the
+  // chart range picker above refetches with the new window.
+  const financeRangeQuery = useQuery({
+    queryKey: ['finance-range', chartRange],
+    queryFn: () => api.financeRange(chartRange),
+    refetchInterval: 60_000,
   });
 
   // ---- Simulation mode ----
@@ -633,9 +651,14 @@ export function Status() {
       <section>
         <FinancePanel
           data={financeQuery.data}
+          rangeData={financeRangeQuery.data}
           status={s}
-          onRefresh={() => qc.invalidateQueries({ queryKey: ['finance'] })}
-          refreshing={financeQuery.isFetching}
+          chartRange={chartRange}
+          onRefresh={() => {
+            qc.invalidateQueries({ queryKey: ['finance'] });
+            qc.invalidateQueries({ queryKey: ['finance-range'] });
+          }}
+          refreshing={financeQuery.isFetching || financeRangeQuery.isFetching}
         />
       </section>
 
@@ -1864,12 +1887,16 @@ function OceanPanel() {
 
 function FinancePanel({
   data,
+  rangeData,
   status,
+  chartRange,
   onRefresh,
   refreshing,
 }: {
   data: FinanceResponse | undefined;
+  rangeData: FinanceRangeResponse | undefined;
   status: StatusResponse;
+  chartRange: ChartRange;
   onRefresh: () => void;
   refreshing: boolean;
 }) {
@@ -1877,6 +1904,13 @@ function FinancePanel({
   const denomination = useDenomination();
   const qc = useQueryClient();
   const [rebuilding, setRebuilding] = useState(false);
+  const [perDayCollapsed, setPerDayCollapsedState] = useState<boolean>(() =>
+    readStoredPnlCollapsed(),
+  );
+  const setPerDayCollapsed = (v: boolean) => {
+    setPerDayCollapsedState(v);
+    window.localStorage.setItem(PNL_PER_DAY_COLLAPSED_KEY, v ? '1' : '0');
+  };
 
   const handleRebuild = async () => {
     if (rebuilding) return;
@@ -1892,53 +1926,68 @@ function FinancePanel({
     }
   };
 
-  // Run-rate view: what's this autopilot costing/earning *right now*,
-  // per day? Distinct from the lifetime P&L above. Spend = weighted
-  // bid price × rolling 3 h average of delivered hashrate (from our
-  // own tick_metrics series). Using a 3 h window instead of the
-  // current tick's avg_speed_ph keeps the figure from oscillating on
-  // every little delivery dip, and matches the window Ocean uses on
-  // its own "estimated earnings/day at the 3-hour hashrate" line so
-  // income and spend are on the same cadence.
+  // Per-day run-rate view (issue #43). Prefers the range-aware
+  // aggregates from /api/finance/range (avg_price × avg_delivered and
+  // avg_hashprice × avg_delivered over the selected chart range);
+  // falls back to the instantaneous formula when the server doesn't
+  // have enough ticks yet (fresh install, post-prune, daemon just
+  // started). The "Ocean est." row is always the 3h snapshot from
+  // Ocean's `daily_estimate_sat` regardless of range — it's
+  // authoritative for the pool-view estimate.
   //
-  // Must be computed BEFORE the `!data` early return so hook count is
-  // stable across the null → defined transition of `data` (React error
-  // #310). The callback tolerates `data` being undefined.
-  const { dailySpendSat, hasDailySpend, dailyIncomeSat, dailyNetSat, dailyNetColor } = useMemo(() => {
-    const _dailySpendSat = projectedDailySpendSat3h(
-      status.bids,
-      status.avg_delivered_ph_3h,
-    );
-    // `_dailySpendSat` is always a concrete number — the helper
-    // returns 0 when no active bids exist, otherwise current bid
-    // price × 3-hour-smoothed delivered hashrate (see finance.ts
-    // for the single-vs-multi-bid handling). `hasDailySpend` used
-    // to gate rendering on spend > 0, which hid the entire P&L
-    // panel every time the bid stopped filling for a tick. Keep
-    // the flag to drive the "no active bids" empty state in the
-    // outer fallback.
-    const _hasDailySpend = status.bids.some(
+  // Computed BEFORE the `!data` early return so hook count is stable
+  // across the null → defined transition of `data` (React error #310).
+  const {
+    dailySpendSat,
+    hasDailySpend,
+    oceanDailyIncomeSat,
+    projectedDailyIncomeSat,
+    dailyNetSat,
+    dailyNetColor,
+    rangeFallback,
+  } = useMemo(() => {
+    const hasActive = status.bids.some(
       (b) => b.is_owned && b.status === 'BID_STATUS_ACTIVE',
     );
-    const _dailyIncomeSat = data?.ocean?.daily_estimate_sat ?? null;
-    const _dailyNetSat =
-      _dailyIncomeSat !== null
-        ? Math.round(_dailyIncomeSat - _dailySpendSat)
-        : null;
-    const _dailyNetColor =
-      _dailyNetSat === null
-        ? ''
-        : _dailyNetSat >= 0
-          ? 'text-emerald-300'
-          : 'text-red-300';
+
+    // Range-aware path: all three derived fields are null when the
+    // server returns `insufficient_history`. Treat that as a signal
+    // to fall back to the legacy instantaneous spend.
+    const haveRange =
+      rangeData !== undefined &&
+      !rangeData.insufficient_history &&
+      rangeData.spend_per_day_sat !== null;
+
+    const spend = haveRange
+      ? rangeData!.spend_per_day_sat!
+      : projectedDailySpendSat3h(status.bids, status.avg_delivered_ph_3h);
+    const projectedIncome = haveRange
+      ? rangeData!.projected_income_per_day_sat
+      : null;
+    const oceanIncome = data?.ocean?.daily_estimate_sat ?? null;
+    // Net keyed off projected income (range-symmetric with spend)
+    // when available; otherwise Ocean income to keep the old
+    // behaviour on fresh installs where range can't be computed.
+    const referenceIncome = projectedIncome ?? oceanIncome;
+    const net =
+      referenceIncome !== null ? Math.round(referenceIncome - spend) : null;
+
     return {
-      dailySpendSat: _dailySpendSat,
-      hasDailySpend: _hasDailySpend,
-      dailyIncomeSat: _dailyIncomeSat,
-      dailyNetSat: _dailyNetSat,
-      dailyNetColor: _dailyNetColor,
+      dailySpendSat: spend,
+      hasDailySpend: hasActive,
+      oceanDailyIncomeSat: oceanIncome,
+      projectedDailyIncomeSat: projectedIncome,
+      dailyNetSat: net,
+      dailyNetColor:
+        net === null ? '' : net >= 0 ? 'text-emerald-300' : 'text-red-300',
+      rangeFallback: !haveRange,
     };
-  }, [status.bids, status.avg_delivered_ph_3h, data?.ocean?.daily_estimate_sat]);
+  }, [
+    status.bids,
+    status.avg_delivered_ph_3h,
+    data?.ocean?.daily_estimate_sat,
+    rangeData,
+  ]);
 
   if (!data) {
     return (
@@ -1957,12 +2006,18 @@ function FinancePanel({
         : 'text-red-300';
 
   const hasPerDay =
-    dailyIncomeSat !== null ||
+    oceanDailyIncomeSat !== null ||
+    projectedDailyIncomeSat !== null ||
     hasDailySpend ||
     dailyNetSat !== null ||
     data.ocean?.hashprice_sat_per_ph_day != null ||
     data.ocean?.lifetime_sat != null ||
     !!data.ocean?.time_to_payout_text;
+
+  // Range label shown next to the headline numbers so the operator
+  // can glance-check what window the avg is over. Matches the chart
+  // range dropdown labels from CHART_RANGE_SPECS.
+  const rangeLabel = CHART_RANGE_SPECS[chartRange].label;
 
   // P&L refreshes hourly server-side. Dashboard countdown is derived
   // from checked_at_ms + 1h so the operator sees how long until fresh
@@ -1999,15 +2054,28 @@ function FinancePanel({
   // vs "did I end up ahead over the whole run?".
   return (
     <section className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-      {/* Left card — per-day run-rate */}
+      {/* Left card — per-day run-rate. Collapsible: operators who
+          want a chart-focused view can fold the finance projections
+          away; preference persisted per-browser. */}
       <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 flex flex-col">
-        <div className="flex items-baseline justify-between mb-3">
-          <div className="text-xs uppercase tracking-wider text-slate-100">
-            Profit &amp; Loss · per day
-          </div>
-          {headerControls}
+        <div className="flex items-baseline justify-between mb-3 gap-3">
+          <button
+            type="button"
+            onClick={() => setPerDayCollapsed(!perDayCollapsed)}
+            className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-slate-100 hover:text-amber-300 transition"
+            title={perDayCollapsed ? 'Expand' : 'Collapse'}
+          >
+            <span
+              className="text-slate-500 text-[10px] inline-block w-3"
+              aria-hidden="true"
+            >
+              {perDayCollapsed ? '▸' : '▾'}
+            </span>
+            <span>Profit &amp; Loss · per day</span>
+          </button>
+          {!perDayCollapsed && headerControls}
         </div>
-        {hasPerDay ? (
+        {perDayCollapsed ? null : hasPerDay ? (
           // Per-day values are all projections / estimates (Ocean's
           // 3h-hashrate extrapolation for income, live bid price ×
           // delivered for spend). Label them "projected" so the
@@ -2024,21 +2092,36 @@ function FinancePanel({
           // of a silent empty panel.
           <div className="space-y-1.5 text-sm font-mono">
             <FinanceFootnote
-              label="projected income/day"
+              label="ocean est. income/day (3h)"
               value={
-                dailyIncomeSat !== null
-                  ? denomination.formatSat(dailyIncomeSat, intlLocale)
+                oceanDailyIncomeSat !== null
+                  ? denomination.formatSat(oceanDailyIncomeSat, intlLocale)
                   : 'calculating\u2026'
               }
-              tooltip="Projection. Ocean's estimated earnings per day at the address's 3-hour hashrate. Slides as that rate moves."
+              tooltip="Ocean's own estimate — the pool extrapolates from the address's last 3-hour hashrate and its share of pool output. Always 3h-based regardless of the chart range you've picked."
             />
             <FinanceFootnote
-              label="projected spend/day"
+              label={`projected income/day (${rangeLabel})`}
+              value={
+                projectedDailyIncomeSat !== null
+                  ? denomination.formatSat(Math.round(projectedDailyIncomeSat), intlLocale)
+                  : rangeFallback
+                    ? 'insufficient history'
+                    : 'calculating…'
+              }
+              tooltip="Projection. Average hashprice over the selected chart range × average delivered hashrate over the same range. Range-aware counterpart to Ocean's 3h estimate — useful when comparing 24h or 1w windows where Ocean's 3h snapshot is too narrow."
+            />
+            <FinanceFootnote
+              label={`projected spend/day${rangeFallback ? '' : ' (' + rangeLabel + ')'}`}
               value={denomination.formatSat(Math.round(dailySpendSat), intlLocale)}
-              tooltip="Projection. Current bid price × the last 3 hours' average delivered hashrate (from our own tick_metrics — same 3 h window Ocean uses for its income estimate, so the two sides are comparable). Smoothed on purpose: the raw per-tick delivery bounces around a lot and used to make this number jitter tick-to-tick. Falls back to the instantaneous figure when there's less than 3 h of history."
+              tooltip={
+                rangeFallback
+                  ? "Projection. Current bid price × rolling 3h average of delivered hashrate — the legacy fallback used when the server has fewer than ~5 ticks in the selected window (fresh install, heavily-pruned history, daemon just started)."
+                  : "Projection. Average bid price over the selected chart range × average delivered hashrate over the same range. A mid-range price change does NOT retroactively reprice earlier hours."
+              }
             />
             <FinanceFootnote
-              label="projected net/day"
+              label={`projected net/day${rangeFallback ? '' : ' (' + rangeLabel + ')'}`}
               value={
                 dailyNetSat !== null
                   ? denomination.mode === 'usd' && denomination.btcPrice !== null

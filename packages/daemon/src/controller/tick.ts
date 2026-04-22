@@ -253,6 +253,14 @@ export class Controller {
             state.config.target_hashrate_ph,
           )
         : null;
+      // Per-tick spend sat (issue #43): price (sat/EH/day) ÷ 1000 →
+      // sat/PH/day; × delivered PH → sat/day; ÷ 1440 → sat/min-chunk.
+      // Combined divisor is 1_440_000. Null when we have no primary
+      // bid for this tick (shows up as "no active bids" in the panel).
+      const spendSat =
+        primary && state.actual_hashrate.total_ph > 0
+          ? (primary.price_sat * state.actual_hashrate.total_ph) / 1_440_000
+          : null;
       await this.deps.tickMetricsRepo.insert({
         tick_at: state.tick_at,
         delivered_ph: state.actual_hashrate.total_ph,
@@ -271,6 +279,7 @@ export class Controller {
         available_balance_sat: primaryBalance?.available_balance_sat ?? null,
         datum_hashrate_ph: state.datum?.hashrate_ph ?? null,
         ocean_hashrate_ph: state.ocean_hashrate_ph,
+        spend_sat: spendSat,
         run_mode: state.run_mode,
         action_mode: state.action_mode,
       });

@@ -2,6 +2,20 @@
 
 ## 2026-04-21
 
+### `[Feature]` P&L per-day: range-aware, averaged spend & income, collapsible card (#43)
+
+The **Profit & Loss · per day** card used to mix a 3h-averaged spend with Ocean's 3h income estimate, and repriced the *entire* 3h window the instant the autopilot raised a bid — a 5% price bump made the projected spend number jump 5% for hours that had already happened at the old price. Two problems operators kept hitting: the numbers weren't keyed to the chart range dropdown above them, and mid-window price moves retroactively rewrote history.
+
+Rewritten so both sides share the chart's selected range:
+- **ocean est. income/day (3h)** — Ocean's own `daily_estimate_sat`, kept as-is for the authoritative pool-view estimate (always 3h per Ocean; tooltip notes this).
+- **projected income/day (3h/6h/24h/…)** — new: `avg(hashprice) × avg(delivered_ph)` across whichever range the chart picker is on. Range-aware counterpart to Ocean's 3h value.
+- **projected spend/day (3h/6h/24h/…)** — `avg(bid_price) × avg(delivered_ph)` over the same window. A mid-window price change no longer retroactively reprices earlier hours.
+- **projected net/day (…)** = (projected income) − (spend), keyed off the range-aware income so both sides are symmetric.
+
+Under the hood: new `spend_sat` column on `tick_metrics` (migration 0040; backfilled from the existing price + delivery columns) records per-tick sat-spend at insert time, and a new `/api/finance/range?range=<ChartRange>` endpoint returns the aggregates + derived `spend_per_day_sat` / `projected_income_per_day_sat` / `projected_net_per_day_sat` in one call. Dashboard queries the endpoint keyed on `chartRange` (60s refetch) and falls back to the legacy `projectedDailySpendSat3h` path when the server returns `insufficient_history` (< 5 ticks in the window — fresh installs, post-prune, daemon just started).
+
+The card is now **collapsible** — chevron in the header, state persisted per-browser under `pnl-per-day-collapsed`. Operators who want the hashrate chart uncluttered by finance projections can fold it away.
+
 ### `[Feature]` Hashrate chart: per-series smoothing windows for Braiins and Datum (#42)
 
 Ocean's hashrate line is an inherently 5-min server-side rolling average (`/user_hashrate` returns it that way), while Braiins-delivered and Datum-received are raw per-tick samples. On the 3h view the raw series jitter wildly around the smooth Ocean line and it's hard to eyeball whether all three sources actually agree on what's being delivered.

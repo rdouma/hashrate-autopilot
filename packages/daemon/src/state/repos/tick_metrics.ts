@@ -31,6 +31,7 @@ export interface InsertTickMetricArgs {
   readonly available_balance_sat: number | null;
   readonly datum_hashrate_ph: number | null;
   readonly ocean_hashrate_ph: number | null;
+  readonly spend_sat: number | null;
   readonly run_mode: TickMetricsTable['run_mode'];
   readonly action_mode: TickMetricsTable['action_mode'];
 }
@@ -166,6 +167,55 @@ export class TickMetricsRepo {
       .where('tick_at', '>=', sinceMs)
       .executeTakeFirst();
     return row?.avg_ph ?? null;
+  }
+
+  /**
+   * Range aggregates for the P&L per-day panel (issue #43). Returns the
+   * averages + tick-level spend sum needed to compute `spend/day` and
+   * `projected income/day` symmetrically over the same window as the
+   * hashrate chart's selected range.
+   *
+   * `tick_count` is included so the dashboard can decide whether the
+   * window has enough coverage to trust the averages (fresh install,
+   * post-prune, etc.) and badge an `insufficient history` fallback
+   * when it doesn't. Unbounded (null `sinceMs`) is supported for the
+   * `all` chart range.
+   */
+  async rangeFinanceAggregates(sinceMs: number | null): Promise<{
+    tick_count: number;
+    first_tick_at: number | null;
+    last_tick_at: number | null;
+    avg_price_sat_per_eh_day: number | null;
+    avg_hashprice_sat_per_eh_day: number | null;
+    avg_delivered_ph: number | null;
+    sum_spend_sat: number | null;
+  }> {
+    let q = this.db.selectFrom('tick_metrics');
+    if (sinceMs !== null) q = q.where('tick_at', '>=', sinceMs);
+    const row = await q
+      .select([
+        sql<number>`COUNT(*)`.as('tick_count'),
+        sql<number | null>`MIN(tick_at)`.as('first_tick_at'),
+        sql<number | null>`MAX(tick_at)`.as('last_tick_at'),
+        sql<number | null>`AVG(our_primary_price_sat_per_eh_day)`.as(
+          'avg_price_sat_per_eh_day',
+        ),
+        sql<number | null>`AVG(hashprice_sat_per_eh_day)`.as(
+          'avg_hashprice_sat_per_eh_day',
+        ),
+        sql<number | null>`AVG(delivered_ph)`.as('avg_delivered_ph'),
+        sql<number | null>`SUM(spend_sat)`.as('sum_spend_sat'),
+      ])
+      .executeTakeFirstOrThrow();
+    return {
+      tick_count: row.tick_count,
+      first_tick_at: row.first_tick_at ?? null,
+      last_tick_at: row.last_tick_at ?? null,
+      avg_price_sat_per_eh_day: row.avg_price_sat_per_eh_day ?? null,
+      avg_hashprice_sat_per_eh_day: row.avg_hashprice_sat_per_eh_day ?? null,
+      avg_delivered_ph: row.avg_delivered_ph ?? null,
+      sum_spend_sat: row.sum_spend_sat ?? null,
+    };
   }
 
   /**

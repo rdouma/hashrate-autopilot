@@ -125,6 +125,7 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<HttpServer
     oceanClient: deps.oceanClient,
     accountSpend: deps.accountSpend,
     hashpriceCache: deps.hashpriceCache,
+    tickMetricsRepo: deps.tickMetricsRepo,
   });
   await registerBtcPriceRoute(app, {
     btcPriceService: deps.btcPriceService,

@@ -24,12 +24,32 @@
 
 import type { FastifyInstance } from 'fastify';
 
+import {
+  CHART_RANGE_SPECS,
+  DEFAULT_CHART_RANGE,
+  parseChartRange,
+  type ChartRange,
+} from '@braiins-hashrate/shared';
+
 import type { AccountSpendService } from '../../services/account-spend.js';
 import type { HashpriceCache } from '../../services/hashprice-cache.js';
 import type { OceanClient } from '../../services/ocean.js';
 import type { PayoutObserver } from '../../services/payout-observer.js';
 import type { OwnedBidsRepo } from '../../state/repos/owned_bids.js';
 import type { ConfigRepo } from '../../state/repos/config.js';
+import type { TickMetricsRepo } from '../../state/repos/tick_metrics.js';
+
+const EH_PER_PH = 1000;
+
+/**
+ * Minimum tick count within the selected window before the
+ * dashboard trusts the avg-based P&L values. Below this, the UI
+ * badges the card `insufficient history` and surfaces the
+ * instantaneous fallback. Five ticks ≈ 5 minutes of real-time
+ * data; fresh installs, heavily-pruned DBs, and post-restart
+ * states all hit this.
+ */
+const MIN_TICKS_FOR_AVG = 5;
 
 export interface FinanceResponse {
   readonly spent_sat: number;
@@ -66,12 +86,106 @@ export interface FinanceDeps {
   readonly oceanClient: OceanClient | null;
   readonly accountSpend: AccountSpendService | null;
   readonly hashpriceCache: HashpriceCache | null;
+  readonly tickMetricsRepo: TickMetricsRepo;
+}
+
+/**
+ * Response from `/api/finance/range?range=<ChartRange>`. Feeds the
+ * range-aware P&L per-day card (issue #43). Separate from `/api/finance`
+ * because the two have different update cadences: lifetime values
+ * come from Ocean + on-chain (hourly refresh); range values come from
+ * tick_metrics (every tick). Also, this endpoint is parameterised on
+ * the chart-range dropdown, which `/api/finance` is not.
+ */
+export interface FinanceRangeResponse {
+  readonly range: ChartRange;
+  readonly window_ms: number | null;
+  readonly tick_count: number;
+  readonly first_tick_at: number | null;
+  readonly last_tick_at: number | null;
+  readonly avg_price_sat_per_ph_day: number | null;
+  readonly avg_hashprice_sat_per_ph_day: number | null;
+  readonly avg_delivered_ph: number | null;
+  readonly sum_spend_sat: number | null;
+  /**
+   * Derived: `avg_price × avg_delivered`, in sat/day. Matches the
+   * operator's mental model from issue #43 — "my typical daily rate
+   * across the window," not retroactively repriced by the latest
+   * bid. Null when either input is missing or tick_count is below
+   * the fallback threshold.
+   */
+  readonly spend_per_day_sat: number | null;
+  /**
+   * Derived: `avg_hashprice × avg_delivered`, in sat/day. Symmetric
+   * with `spend_per_day_sat` — the income side computed from
+   * tick-level samples rather than Ocean's 3h snapshot. Null
+   * equivalently.
+   */
+  readonly projected_income_per_day_sat: number | null;
+  readonly projected_net_per_day_sat: number | null;
+  /**
+   * True when tick_count < MIN_TICKS_FOR_AVG. Dashboard badges the
+   * card so the operator knows to discount these numbers; both
+   * derived fields above are null in that case.
+   */
+  readonly insufficient_history: boolean;
 }
 
 export async function registerFinanceRoute(
   app: FastifyInstance,
   deps: FinanceDeps,
 ): Promise<void> {
+  app.get<{ Querystring: { range?: string } }>(
+    '/api/finance/range',
+    async (req): Promise<FinanceRangeResponse> => {
+      const range = parseChartRange(req.query.range) ?? DEFAULT_CHART_RANGE;
+      const spec = CHART_RANGE_SPECS[range];
+      const nowMs = Date.now();
+      const sinceMs = spec.windowMs === null ? null : nowMs - spec.windowMs;
+
+      const agg = await deps.tickMetricsRepo.rangeFinanceAggregates(sinceMs);
+      const insufficient = agg.tick_count < MIN_TICKS_FOR_AVG;
+
+      const avgPricePh =
+        agg.avg_price_sat_per_eh_day !== null
+          ? agg.avg_price_sat_per_eh_day / EH_PER_PH
+          : null;
+      const avgHashpricePh =
+        agg.avg_hashprice_sat_per_eh_day !== null
+          ? agg.avg_hashprice_sat_per_eh_day / EH_PER_PH
+          : null;
+
+      const spendPerDay =
+        !insufficient && avgPricePh !== null && agg.avg_delivered_ph !== null
+          ? avgPricePh * agg.avg_delivered_ph
+          : null;
+      const incomePerDay =
+        !insufficient && avgHashpricePh !== null && agg.avg_delivered_ph !== null
+          ? avgHashpricePh * agg.avg_delivered_ph
+          : null;
+      const netPerDay =
+        spendPerDay !== null && incomePerDay !== null
+          ? incomePerDay - spendPerDay
+          : null;
+
+      return {
+        range,
+        window_ms: spec.windowMs,
+        tick_count: agg.tick_count,
+        first_tick_at: agg.first_tick_at,
+        last_tick_at: agg.last_tick_at,
+        avg_price_sat_per_ph_day: avgPricePh,
+        avg_hashprice_sat_per_ph_day: avgHashpricePh,
+        avg_delivered_ph: agg.avg_delivered_ph,
+        sum_spend_sat: agg.sum_spend_sat,
+        spend_per_day_sat: spendPerDay,
+        projected_income_per_day_sat: incomePerDay,
+        projected_net_per_day_sat: netPerDay,
+        insufficient_history: insufficient,
+      };
+    },
+  );
+
   app.post('/api/finance/spend/rebuild', async () => {
     // Force the closed-bids cache to repaginate from scratch on the
     // next /api/finance hit. Operator-triggered safety net when the

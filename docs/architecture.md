@@ -332,6 +332,9 @@ startup. See `packages/daemon/src/state/db.test.ts` for the authoritative expect
 - **Chart smoothing (0039):** `braiins_hashrate_smoothing_minutes` and `datum_hashrate_smoothing_minutes`
   store operator-picked rolling-mean minute windows the dashboard applies client-side; daemon stores but
   never reads.
+- **P&L per-day spend (0040):** `tick_metrics.spend_sat` precomputed per tick as
+  `price_sat_per_eh_day × delivered_ph / 1_440_000`. Feeds the range-aware `/api/finance/range` aggregates
+  that drive the collapsible per-day panel.
 
 ## 6. External integrations
 

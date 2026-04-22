@@ -281,6 +281,10 @@ export const api = {
   scanPayouts: () => request<{ ok: boolean; error?: string }>('/api/payouts/scan', { method: 'POST' }),
   btcPrice: () => request<BtcPriceResponse>('/api/btc-price'),
   finance: () => request<FinanceResponse>('/api/finance'),
+  financeRange: (range: ChartRange) =>
+    request<FinanceRangeResponse>(
+      `/api/finance/range?range=${encodeURIComponent(range)}`,
+    ),
   rebuildSpendCache: () =>
     request<{ ok: boolean; error?: string }>('/api/finance/spend/rebuild', {
       method: 'POST',
@@ -316,6 +320,22 @@ export interface BtcPriceResponse {
   usd_per_btc: number | null;
   source: string;
   fetched_at_ms: number | null;
+}
+
+export interface FinanceRangeResponse {
+  range: ChartRange;
+  window_ms: number | null;
+  tick_count: number;
+  first_tick_at: number | null;
+  last_tick_at: number | null;
+  avg_price_sat_per_ph_day: number | null;
+  avg_hashprice_sat_per_ph_day: number | null;
+  avg_delivered_ph: number | null;
+  sum_spend_sat: number | null;
+  spend_per_day_sat: number | null;
+  projected_income_per_day_sat: number | null;
+  projected_net_per_day_sat: number | null;
+  insufficient_history: boolean;
 }
 
 export interface FinanceResponse {

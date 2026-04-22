@@ -302,6 +302,45 @@ Persistent ledger (SQLite) of:
 
 Ledger is the source of truth for runway forecasting.
 
+### 11.1 Per-day run-rate panel (issue #43)
+
+The dashboard's **Profit & Loss · per day** card answers a different question than the lifetime ledger above:
+*at the rate things are going right now, how much am I spending and earning per day?* Two key differences from
+the lifetime ledger:
+
+- **Range-aware.** Both spend/day and income/day are computed over the currently-selected chart range (3h, 6h,
+  12h, 24h, 1w, 1m, 1y, All) — not a hardcoded window. The operator's intent when picking "24h" on the charts
+  is "tell me what's happening over 24h"; the finance numbers below the charts must share that cadence.
+- **Averaged inputs, not instantaneous.** A mid-day price change must not retroactively shift the entire day's
+  projection; likewise a single-tick delivery dip must not move the number. Both sides use averages over the
+  selected window.
+
+**Spend/day:**
+`avg(bid_price_sat_per_ph_day over range) × avg(delivered_ph over range)`. Implemented via a precomputed
+`spend_sat` column on `tick_metrics` (stored each tick as `price_sat_per_ph_day × delivered_ph / 1440`), so a
+range query is one `SUM()` divided by tick count and scaled to a daily rate.
+
+**Income/day — two figures side by side:**
+
+- **Ocean est. income/day (3h).** Ocean's `daily_estimate_sat` — the pool's own "what this address would earn
+  per day at its 3h hashrate" estimate. Authoritative but always 3h-based; tooltip notes this.
+- **Projected income/day (range).** `avg(hashprice_sat_per_ph_day over range) × avg(delivered_ph over range)`,
+  scaled to a daily rate. Symmetric with spend/day; uses tick-level hashprice samples already stored in
+  `tick_metrics`.
+
+**Net/day** = (projected income/day) − (spend/day). Uses the range-aware income, not Ocean's, so both sides
+are on the same cadence.
+
+**UI placement.** The P&L per-day card is collapsible (localStorage-persisted preference, default expanded).
+Operators who want the chart view uncluttered by finance projections can collapse it; state survives reloads
+per-browser.
+
+**Fallbacks.**
+
+- When the selected range has fewer than ~5 ticks of data (fresh install, pruned history): fall back to the
+  instantaneous figure (current price × current hashrate) and badge the card `insufficient history`.
+- When no active owned bids exist: show the existing `no active bids` empty state.
+
 ## 12. Dashboard
 
 - **Status bar:**

@@ -68,6 +68,7 @@ describe('openDatabase — migrations', () => {
       '0037_drop_monthly_budget_ceiling.sql',
       '0038_persist_below_target_since.sql',
       '0039_hashrate_smoothing.sql',
+      '0040_tick_metrics_spend_sat.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });
