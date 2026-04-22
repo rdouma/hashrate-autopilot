@@ -29,6 +29,15 @@ type FieldSpec = (
   | {
       key: keyof AppConfig;
       label: string;
+      kind: 'integer_spinner';
+      unit: string;
+      help?: string;
+      min: number;
+      step: number;
+    }
+  | {
+      key: keyof AppConfig;
+      label: string;
       kind: 'price_sat_per_eh_day';
       help?: string;
     }
@@ -269,6 +278,29 @@ const SECTIONS: Section[] = [
           { value: 'kraken', label: 'Kraken' },
         ],
         help: 'Polled every 5 minutes. The daemon never makes decisions based on fiat price — this is purely a display convenience. Set to "Disabled" if you want a sats-only dashboard.',
+      },
+    ],
+  },
+  {
+    title: 'Chart smoothing',
+    description:
+      'Rolling-mean window applied to the hashrate chart. 1 = raw (no smoothing). Ocean is excluded — its /user_hashrate endpoint already returns a server-side 5-min average, so set these to 5 to line all three series up on the same cadence.',
+    fields: [
+      {
+        key: 'braiins_hashrate_smoothing_minutes',
+        label: 'Braiins (delivered)',
+        kind: 'integer_spinner',
+        unit: 'min',
+        min: 1,
+        step: 5,
+      },
+      {
+        key: 'datum_hashrate_smoothing_minutes',
+        label: 'Datum (received)',
+        kind: 'integer_spinner',
+        unit: 'min',
+        min: 1,
+        step: 5,
       },
     ],
   },
@@ -862,6 +894,30 @@ function Field({
               custom
             </span>
           )}
+        </div>
+        {spec.help && <span className="block text-xs text-slate-500 mt-1">{spec.help}</span>}
+      </label>
+    );
+  }
+
+  if (spec.kind === 'integer_spinner') {
+    const current = ((value as number | null) ?? spec.min) as number;
+    return (
+      <label className="block">
+        <span className="block text-sm text-slate-300 mb-1">{spec.label}</span>
+        <div className="flex items-center gap-2">
+          <input
+            type="number"
+            min={spec.min}
+            step={spec.step}
+            value={current}
+            onChange={(e) => {
+              const n = Number(e.target.value);
+              if (Number.isFinite(n)) onChange(spec.key, Math.max(spec.min, Math.round(n)) as never);
+            }}
+            className="bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm font-mono w-24"
+          />
+          <span className="text-xs text-slate-500">{spec.unit}</span>
         </div>
         {spec.help && <span className="block text-xs text-slate-500 mt-1">{spec.help}</span>}
       </label>

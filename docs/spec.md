@@ -215,6 +215,15 @@ Lowering: when overpay vs target exceeds `min_lower_delta`, jump directly to tar
 
 The daemon runs a pruning pass once per hour; the controller is untouched by retention.
 
+**Chart smoothing (display-only, not read by the control loop):**
+
+- `braiins_hashrate_smoothing_minutes` — default 1. Rolling-mean minute window the dashboard applies to the
+  `delivered (Braiins)` series on the Hashrate chart. 1 = raw.
+- `datum_hashrate_smoothing_minutes` — default 1. Same, for `received (Datum)`.
+
+Ocean is not smoothed client-side because `/user_hashrate` already returns a server-side 5-min average; setting
+the two knobs above to 5 visually aligns all three series on the same cadence.
+
 **Integrations:**
 
 - `btc_payout_address`

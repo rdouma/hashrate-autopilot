@@ -58,6 +58,47 @@ const COLOR_OUR_BLOCK = '#fbbf24';
 // and the Ocean hashrate line share the Ocean-is-blue association.
 const COLOR_POOL_BLOCK = '#3b82f6';
 
+/**
+ * Rolling-mean smoother over a time window. For each point at time
+ * `xs[i]`, computes the mean of all non-null values whose timestamp
+ * falls in `[xs[i] - windowMs, xs[i]]`. Null input values are
+ * skipped; a window with no non-null samples yields null (keeps
+ * null-gap rendering intact). Window ≤ 0 or 1 minute returns the
+ * input unchanged — 1 is the "off" sentinel from the config.
+ */
+function rollingMean(
+  xs: readonly number[],
+  values: readonly (number | null | undefined)[],
+  windowMinutes: number,
+): (number | null)[] {
+  if (windowMinutes <= 1 || xs.length === 0) {
+    return values.map((v) => (v === undefined ? null : v));
+  }
+  const windowMs = windowMinutes * 60_000;
+  const out: (number | null)[] = new Array(values.length);
+  let start = 0;
+  let sum = 0;
+  let count = 0;
+  for (let i = 0; i < values.length; i += 1) {
+    const v = values[i];
+    if (v !== null && v !== undefined) {
+      sum += v;
+      count += 1;
+    }
+    const cutoff = (xs[i] ?? 0) - windowMs;
+    while (start <= i && (xs[start] ?? 0) < cutoff) {
+      const dropped = values[start];
+      if (dropped !== null && dropped !== undefined) {
+        sum -= dropped;
+        count -= 1;
+      }
+      start += 1;
+    }
+    out[i] = count > 0 ? sum / count : null;
+  }
+  return out;
+}
+
 function formatDuration(ms: number): string {
   const totalMinutes = Math.max(0, Math.round(ms / 60_000));
   const hours = Math.floor(totalMinutes / 60);
@@ -82,6 +123,8 @@ export const HashrateChart = memo(function HashrateChart({
   ourBlocks = [],
   blockExplorerTemplate = 'https://mempool.space/block/{hash}',
   shareLogPct = null,
+  braiinsSmoothingMinutes = 1,
+  datumSmoothingMinutes = 1,
 }: {
   points: readonly MetricPoint[];
   range: ChartRange;
@@ -101,6 +144,11 @@ export const HashrateChart = memo(function HashrateChart({
    *  changes, so applying current share_log to older blocks is an
    *  estimate of what Ocean would have credited at the time. */
   shareLogPct?: number | null;
+  /** Rolling-mean window (minutes) applied to the Braiins-delivered
+   *  series; 1 = raw. Ocean is not smoothed here — /user_hashrate
+   *  already returns a server-side 5-min average. */
+  braiinsSmoothingMinutes?: number;
+  datumSmoothingMinutes?: number;
 }) {
   const { intlLocale } = useLocale();
   const [blockTip, setBlockTip] = useState<BlockTooltipState | null>(null);
@@ -146,16 +194,26 @@ export const HashrateChart = memo(function HashrateChart({
     if (points.length < 2) return null;
 
     const xs = points.map((p) => p.tick_at);
-    const ys = points.map((p) => p.delivered_ph);
+    const rawYs = points.map((p) => p.delivered_ph);
     const targets = points.map((p) => p.target_ph);
     const floors = points.map((p) => p.floor_ph);
-    const datumYs = points.map((p) => p.datum_hashrate_ph);
+    const rawDatumYs = points.map((p) => p.datum_hashrate_ph);
+    const hasDatum = rawDatumYs.some((v) => v !== null);
+    const oceanYs = points.map((p) => p.ocean_hashrate_ph);
+    // Apply operator-configured rolling-mean smoothing to the raw
+    // per-tick signals. Ocean is left alone — /user_hashrate is
+    // already a 5-min server-side average. `delivered_ph` is never
+    // null in practice so the `?? 0` coercion below is defensive
+    // only; `datum_hashrate_ph` legitimately carries nulls (gateway
+    // not configured / poll failed), which `pathWithNullGaps`
+    // renders as segment breaks.
+    const smoothedYs = rollingMean(xs, rawYs, braiinsSmoothingMinutes).map((v) => v ?? 0);
+    const ys: readonly number[] = smoothedYs;
+    const datumYs = rollingMean(xs, rawDatumYs, datumSmoothingMinutes);
     const datumMax = datumYs.reduce<number>(
       (acc, v) => (v !== null && v > acc ? v : acc),
       0,
     );
-    const hasDatum = datumYs.some((v) => v !== null);
-    const oceanYs = points.map((p) => p.ocean_hashrate_ph);
     const oceanMax = oceanYs.reduce<number>(
       (acc, v) => (v !== null && v > acc ? v : acc),
       0,
@@ -242,7 +300,7 @@ export const HashrateChart = memo(function HashrateChart({
       xTickInterval,
       xTicks,
     };
-  }, [points]);
+  }, [points, braiinsSmoothingMinutes, datumSmoothingMinutes]);
 
   if (!chartData) {
     return (

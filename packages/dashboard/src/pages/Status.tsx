@@ -400,6 +400,8 @@ export function Status() {
         ourBlocks={oceanQuery.data?.our_recent_blocks ?? []}
         blockExplorerTemplate={configQuery.data?.config?.block_explorer_url_template}
         shareLogPct={oceanQuery.data?.user?.share_log_pct ?? null}
+        braiinsSmoothingMinutes={configQuery.data?.config?.braiins_hashrate_smoothing_minutes ?? 1}
+        datumSmoothingMinutes={configQuery.data?.config?.datum_hashrate_smoothing_minutes ?? 1}
       />
       <PriceChart
         points={(simMode && simMetricPoints ? simMetricPoints : metricsQuery.data?.points) ?? []}

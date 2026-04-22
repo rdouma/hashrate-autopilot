@@ -63,6 +63,8 @@ export interface ConfigTable {
   datum_api_url: string | null;
   max_overpay_vs_hashprice_sat_per_eh_day: number | null;
   block_explorer_url_template: string;
+  braiins_hashrate_smoothing_minutes: number;
+  datum_hashrate_smoothing_minutes: number;
   updated_at: number;
 }
 

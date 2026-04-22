@@ -225,6 +225,14 @@ export const AppConfigSchema = z.object({
       { message: 'must contain {hash} or {height} placeholder' },
     )
     .default('https://mempool.space/block/{hash}'),
+
+  // Chart smoothing — rolling-mean minute window applied client-side
+  // to the hashrate chart's Braiins-delivered and Datum-received
+  // series (issue #42). 1 = no smoothing. Ocean is excluded because
+  // its /user_hashrate endpoint already returns a 5-min average.
+  // Display-only; not read by the control loop.
+  braiins_hashrate_smoothing_minutes: positiveInt.default(1),
+  datum_hashrate_smoothing_minutes: positiveInt.default(1),
 });
 
 export type AppConfig = z.infer<typeof AppConfigSchema>;
@@ -310,4 +318,7 @@ export const APP_CONFIG_DEFAULTS: Omit<
   datum_api_url: null,
 
   block_explorer_url_template: 'https://mempool.space/block/{hash}',
+
+  braiins_hashrate_smoothing_minutes: 1,
+  datum_hashrate_smoothing_minutes: 1,
 };

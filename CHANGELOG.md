@@ -2,6 +2,14 @@
 
 ## 2026-04-21
 
+### `[Feature]` Hashrate chart: per-series smoothing windows for Braiins and Datum (#42)
+
+Ocean's hashrate line is an inherently 5-min server-side rolling average (`/user_hashrate` returns it that way), while Braiins-delivered and Datum-received are raw per-tick samples. On the 3h view the raw series jitter wildly around the smooth Ocean line and it's hard to eyeball whether all three sources actually agree on what's being delivered.
+
+Two new Config-page spinners — **Braiins (delivered)** and **Datum (received)** — control independent rolling-mean minute windows applied client-side in `HashrateChart`. Integer, step 5, min 1; `1 = raw (no smoothing)`. Setting both to 5 lines the three lines up on the same cadence and makes disagreements between Braiins, Datum, and Ocean pop out visually.
+
+Implementation: `rollingMean()` in `HashrateChart.tsx` is a time-window (not sample-count) smoother so uneven tick spacing doesn't skew the mean. Ocean is not touched. Null inputs are skipped in the mean; an all-null window yields null so `pathWithNullGaps` still breaks the line on Datum outages. The daemon stores the two settings in `config` (migration 0039) but never reads them — pure display.
+
 ### `[UI]` Config page: hide the unwired "Alerts & timers" section (#41)
 
 The five fields in that panel (`below_floor_alert_after_minutes`, `zero_hashrate_loud_alert_after_minutes`, `pool_outage_blip_tolerance_seconds`, `api_outage_alert_after_minutes`, `wallet_runway_alert_days`) were exposed on the Config page but never read by any runtime code — they were scaffolding for a dashboard-alerting layer that was never built, and the closely-related Telegram notifier path (#18) is still unshipped. Surfacing them as editable inputs was actively misleading.

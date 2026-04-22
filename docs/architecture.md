@@ -329,6 +329,9 @@ startup. See `packages/daemon/src/state/db.test.ts` for the authoritative expect
 - **Retention (0027):** `tick_metrics_retention_days`, `decisions_{uneventful,eventful}_retention_days`.
 - **Datum integration (0028–0029):** `datum_api_url` in config, `datum_hashrate_ph` on `tick_metrics`.
 - **Dynamic cap (0030):** `max_overpay_vs_hashprice_sat_per_eh_day` hashprice-relative ceiling.
+- **Chart smoothing (0039):** `braiins_hashrate_smoothing_minutes` and `datum_hashrate_smoothing_minutes`
+  store operator-picked rolling-mean minute windows the dashboard applies client-side; daemon stores but
+  never reads.
 
 ## 6. External integrations
 
