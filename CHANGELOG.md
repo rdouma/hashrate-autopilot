@@ -8,6 +8,12 @@ Regression introduced by the #44 fix. That change made the price line break into
 
 Now a dedicated `areaPathWithNullGaps` helper emits one closed polygon per non-null sub-run, each anchored to the baseline at its own segment endpoints. The fill tracks right under the price line again, and genuine gaps render as gaps in both line and fill.
 
+### `[UI]` Config: bid_budget=0 hint acknowledges the active bid (#40 follow-up)
+
+The sentinel hint ("Full wallet balance per bid. Currently ≈ 83,704 sat") read as if the autopilot was about to spend that amount right now — but if an owned bid is already running, the next CREATE doesn't fire until it finishes. The figure was correct, the framing wasn't.
+
+Now when an active owned bid is present, the hint surfaces it explicitly: "A bid is currently running (≈ 157,860 sat left). The next CREATE fires when it finishes — at that point the full available wallet balance (currently ≈ 83,704 sat) will be used." Same field, same amounts; just the order of operations the operator actually experiences.
+
 ### `[Feature]` bid_budget_sat: 0 = "use full wallet balance" sentinel (#40)
 
 `bid_budget_sat` is how much wallet gets slotted into `amount_sat` on each `CREATE_BID`. Because Braiins bids have no duration field and run until `amount_sat` is consumed, the value effectively decided how often the autopilot cycles through cancel/recreate — a second decision the operator was forced to make that doesn't really track how people think about their wallet ("I funded X sat, spend X sat").

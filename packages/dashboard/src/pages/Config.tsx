@@ -523,6 +523,15 @@ function BidBudgetField({
   const resolvedSat =
     availableSat !== null ? Math.min(availableSat, BRAIINS_MAX_AMOUNT_SAT) : null;
 
+  // Active owned bid defers the next CREATE until it drains. Surface
+  // that — without it, the "Currently ≈ X sat" figure reads as "what
+  // the autopilot will spend this tick" when actually no create will
+  // fire until the running bid finishes.
+  const activeOwnedBid = statusQuery.data?.bids?.find(
+    (b) => b.is_owned && b.status === 'BID_STATUS_ACTIVE',
+  );
+  const activeRemainingSat = activeOwnedBid?.amount_remaining_sat ?? null;
+
   return (
     <label className="block">
       <span className="block text-sm text-slate-300 mb-1">{spec.label}</span>
@@ -535,17 +544,42 @@ function BidBudgetField({
       />
       {isFullWallet && (
         <span className="block text-xs text-amber-300 mt-1">
-          Full wallet balance per bid.
-          {resolvedSat !== null ? (
+          {activeOwnedBid ? (
             <>
-              {' '}Currently ≈ {resolvedSat.toLocaleString(locale)} sat
-              {availableSat !== null && availableSat > BRAIINS_MAX_AMOUNT_SAT
-                ? ' (capped at 1 BTC)'
-                : ''}
-              .
+              A bid is currently running
+              {activeRemainingSat !== null && activeRemainingSat > 0 && (
+                <> (≈ {activeRemainingSat.toLocaleString(locale)} sat left)</>
+              )}
+              . The next CREATE fires when it finishes — at that point the full
+              available wallet balance
+              {resolvedSat !== null ? (
+                <>
+                  {' '}(currently ≈ {resolvedSat.toLocaleString(locale)} sat
+                  {availableSat !== null && availableSat > BRAIINS_MAX_AMOUNT_SAT
+                    ? ', capped at 1 BTC'
+                    : ''}
+                  ){' '}
+                </>
+              ) : (
+                ' '
+              )}
+              will be used.
             </>
           ) : (
-            <> Awaiting wallet balance from the daemon.</>
+            <>
+              Full wallet balance per bid.
+              {resolvedSat !== null ? (
+                <>
+                  {' '}Currently ≈ {resolvedSat.toLocaleString(locale)} sat
+                  {availableSat !== null && availableSat > BRAIINS_MAX_AMOUNT_SAT
+                    ? ' (capped at 1 BTC)'
+                    : ''}
+                  .
+                </>
+              ) : (
+                <> Awaiting wallet balance from the daemon.</>
+              )}
+            </>
           )}
         </span>
       )}
