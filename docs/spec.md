@@ -331,9 +331,9 @@ range query is one `SUM()` divided by tick count and scaled to a daily rate.
 **Net/day** = (projected income/day) − (spend/day). Uses the range-aware income, not Ocean's, so both sides
 are on the same cadence.
 
-**UI placement.** The P&L per-day card is collapsible (localStorage-persisted preference, default expanded).
-Operators who want the chart view uncluttered by finance projections can collapse it; state survives reloads
-per-browser.
+**UI placement.** Sits directly under the charts, always expanded. (A collapsible-card variant was tried
+briefly and removed — if the lifetime P&L card isn't collapsible, making the per-day card collapsible
+created false asymmetry rather than useful decluttering.)
 
 **Fallbacks.**
 

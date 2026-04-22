@@ -902,11 +902,20 @@ function Field({
 
   if (spec.kind === 'integer_spinner') {
     const current = ((value as number | null) ?? spec.min) as number;
-    // Snap to the ladder {min, step, 2*step, 3*step, ...}. The first
-    // rung from `min` is a partial step (e.g. min=1, step=5 goes
-    // 1 → 5 → 10 → 15) because a native `<input step=5 min=1>` would
-    // otherwise click through 1 → 6 → 11 — offset by min, which
-    // operators find surprising.
+    // Ladder {min, step, 2·step, 3·step, …} — e.g. min=1, step=5 →
+    // 1, 5, 10, 15, 20… Native <input step=5 min=1> can't express
+    // this because its step rule only yields min + n·step (→ 1, 6,
+    // 11), so we drive the up/down with explicit buttons that call
+    // the ladder helpers below. Typed values snap to the nearest
+    // rung on blur.
+    const stepUp = (n: number): number => {
+      if (n < spec.step) return spec.step;
+      return Math.floor(n / spec.step) * spec.step + spec.step;
+    };
+    const stepDown = (n: number): number => {
+      if (n <= spec.step) return spec.min;
+      return Math.ceil(n / spec.step) * spec.step - spec.step;
+    };
     const snapToLadder = (n: number): number => {
       if (n <= spec.min) return spec.min;
       const multipleRung = Math.max(spec.step, Math.round(n / spec.step) * spec.step);
@@ -916,17 +925,35 @@ function Field({
       <label className="block">
         <span className="block text-sm text-slate-300 mb-1">{spec.label}</span>
         <div className="flex items-center gap-2">
-          <input
-            type="number"
-            min={spec.min}
-            step={spec.step}
-            value={current}
-            onChange={(e) => {
-              const n = Number(e.target.value);
-              if (Number.isFinite(n)) onChange(spec.key, snapToLadder(Math.round(n)) as never);
-            }}
-            className="bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm font-mono w-24"
-          />
+          <div className="flex items-stretch">
+            <button
+              type="button"
+              onClick={() => onChange(spec.key, stepDown(current) as never)}
+              disabled={current <= spec.min}
+              className="px-2 bg-slate-800 border border-slate-700 rounded-l text-slate-300 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-sm"
+              aria-label="decrease"
+            >
+              −
+            </button>
+            <input
+              type="number"
+              min={spec.min}
+              value={current}
+              onChange={(e) => {
+                const n = Number(e.target.value);
+                if (Number.isFinite(n)) onChange(spec.key, snapToLadder(Math.round(n)) as never);
+              }}
+              className="bg-slate-800 border-t border-b border-slate-700 px-3 py-1.5 text-sm font-mono w-16 text-center"
+            />
+            <button
+              type="button"
+              onClick={() => onChange(spec.key, stepUp(current) as never)}
+              className="px-2 bg-slate-800 border border-slate-700 rounded-r text-slate-300 hover:bg-slate-700 text-sm"
+              aria-label="increase"
+            >
+              +
+            </button>
+          </div>
           <span className="text-xs text-slate-500">{spec.unit}</span>
         </div>
         {spec.help && <span className="block text-xs text-slate-500 mt-1">{spec.help}</span>}

@@ -53,17 +53,11 @@ import { useLocale } from '../lib/locale';
 
 const RUN_MODES = ['DRY_RUN', 'LIVE', 'PAUSED'] as const;
 const CHART_RANGE_STORAGE_KEY = 'hashrate-chart-range';
-const PNL_PER_DAY_COLLAPSED_KEY = 'pnl-per-day-collapsed';
 const STATUS_QUERY_KEY = ['status'] as const;
 
 function readStoredChartRange(): ChartRange {
   if (typeof window === 'undefined') return DEFAULT_CHART_RANGE;
   return parseChartRange(window.localStorage.getItem(CHART_RANGE_STORAGE_KEY)) ?? DEFAULT_CHART_RANGE;
-}
-
-function readStoredPnlCollapsed(): boolean {
-  if (typeof window === 'undefined') return false;
-  return window.localStorage.getItem(PNL_PER_DAY_COLLAPSED_KEY) === '1';
 }
 
 export function Status() {
@@ -1904,13 +1898,6 @@ function FinancePanel({
   const denomination = useDenomination();
   const qc = useQueryClient();
   const [rebuilding, setRebuilding] = useState(false);
-  const [perDayCollapsed, setPerDayCollapsedState] = useState<boolean>(() =>
-    readStoredPnlCollapsed(),
-  );
-  const setPerDayCollapsed = (v: boolean) => {
-    setPerDayCollapsedState(v);
-    window.localStorage.setItem(PNL_PER_DAY_COLLAPSED_KEY, v ? '1' : '0');
-  };
 
   const handleRebuild = async () => {
     if (rebuilding) return;
@@ -2054,28 +2041,15 @@ function FinancePanel({
   // vs "did I end up ahead over the whole run?".
   return (
     <section className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-      {/* Left card — per-day run-rate. Collapsible: operators who
-          want a chart-focused view can fold the finance projections
-          away; preference persisted per-browser. */}
+      {/* Left card — per-day run-rate */}
       <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 flex flex-col">
-        <div className="flex items-baseline justify-between mb-3 gap-3">
-          <button
-            type="button"
-            onClick={() => setPerDayCollapsed(!perDayCollapsed)}
-            className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-slate-100 hover:text-amber-300 transition"
-            title={perDayCollapsed ? 'Expand' : 'Collapse'}
-          >
-            <span
-              className="text-slate-500 text-[10px] inline-block w-3"
-              aria-hidden="true"
-            >
-              {perDayCollapsed ? '▸' : '▾'}
-            </span>
-            <span>Profit &amp; Loss · per day</span>
-          </button>
-          {!perDayCollapsed && headerControls}
+        <div className="flex items-baseline justify-between mb-3">
+          <div className="text-xs uppercase tracking-wider text-slate-100">
+            Profit &amp; Loss · per day
+          </div>
+          {headerControls}
         </div>
-        {perDayCollapsed ? null : hasPerDay ? (
+        {hasPerDay ? (
           // Per-day values are all projections / estimates (Ocean's
           // 3h-hashrate extrapolation for income, live bid price ×
           // delivered for spend). Label them "projected" so the
