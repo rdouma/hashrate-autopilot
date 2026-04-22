@@ -2,6 +2,10 @@
 
 ## 2026-04-22
 
+### `[UI]` Chart popovers: show relative age next to absolute timestamp (#45)
+
+The EDIT PRICE popover (yellow dot on price chart) and POOL BLOCK popover (block icon on hashrate chart) used to show only absolute timestamps — readers had to mentally subtract from "now" to answer "how long ago was this?" Now a muted `· 12m ago` / `· 3h ago` / `· 1d ago` suffix sits next to the human-readable line, using the existing single-unit `formatAge` helper (rounds to the coarsest unit; seconds only below 60s).
+
 ### `[Fix]` Price chart: break fillable/hashprice/our-bid lines across null gaps (#44)
 
 Market-outage periods (empty orderbook, no fillable, no hashprice) used to render as straight bridges on the Price chart — the fillable dashed orange line walked directly from the last valid sample to the first sample on the far side of the gap, visually implying the market had a continuous level it didn't. Confusing because the adjacent stats cards (AVG OVERPAY VS FILLABLE etc.) already correctly exclude null ticks from their range-weighted averages, so the eye was reading a visual that the math was explicitly ignoring.
