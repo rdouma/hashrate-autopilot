@@ -194,6 +194,7 @@ const SECTIONS: Section[] = [
         label: 'Per-bid budget',
         kind: 'integer',
         unit: 'sat',
+        fullWidth: true,
         help: '0 = use the full available wallet balance each CREATE (clamped to 1 BTC — the Braiins per-bid hard cap). Any positive value pins every new bid to that exact amount regardless of balance.',
       },
     ],
@@ -535,13 +536,17 @@ function BidBudgetField({
   return (
     <label className="block">
       <span className="block text-sm text-slate-300 mb-1">{spec.label}</span>
-      <NumberField
-        value={value ?? 0}
-        onChange={(n) => onChange(spec.key, n as never)}
-        step="integer"
-        locale={locale}
-        suffix={spec.unit}
-      />
+      {/* Narrow input; hint below spans full panel width (fullWidth=true on
+          the field spec makes the <label> a col-span-2 grid cell). */}
+      <div className="max-w-[200px]">
+        <NumberField
+          value={value ?? 0}
+          onChange={(n) => onChange(spec.key, n as never)}
+          step="integer"
+          locale={locale}
+          suffix={spec.unit}
+        />
+      </div>
       {isFullWallet && (
         <span className="block text-xs text-amber-300 mt-1">
           {activeOwnedBid ? (

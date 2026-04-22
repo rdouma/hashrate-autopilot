@@ -202,10 +202,11 @@ export const PriceChart = memo(function PriceChart({
     // one-tick restart blip or a transient /spot/bid hiccup just
     // bridges the valid samples on either side instead of painting
     // a visible gap for a 60-second noise event (#47). Threshold is
-    // 3 × tick interval by default (ticks are ~60 s), covering a
-    // daemon restart + one follow-up observe-fail without widening
-    // the real-outage signal noticeably.
-    const MAX_BRIDGE_MS = 3 * 60 * 1000;
+    // 5 minutes — covers a full deploy/restart cycle (pnpm install +
+    // build + restart can run 2–3 min cold) plus a follow-up observe
+    // miss. Real market outages run many minutes to hours, so a 5-min
+    // bridge doesn't meaningfully blur that signal.
+    const MAX_BRIDGE_MS = 5 * 60 * 1000;
     const pathWithNullGaps = (
       getValue: (p: MetricPoint) => number | null | undefined,
     ): string => {

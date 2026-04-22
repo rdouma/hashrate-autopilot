@@ -14,6 +14,14 @@ Regression introduced by the #44 fix. That change made the price line break into
 
 Now a dedicated `areaPathWithNullGaps` helper emits one closed polygon per non-null sub-run, each anchored to the baseline at its own segment endpoints. The fill tracks right under the price line again, and genuine gaps render as gaps in both line and fill.
 
+### `[UI]` Config: Budget section hint spans full panel width (#40 follow-up)
+
+The sentinel hint wrapped narrowly in one grid column, stacking into 3–4 short lines next to a huge empty right column. Set `fullWidth: true` on the `bid_budget_sat` field so the label cell spans both columns; the `<NumberField>` itself is capped at 200 px so the input stays its normal size. Hint now renders as a single wide line.
+
+### `[Fix]` Price chart: raise short-gap bridge threshold to 5 min (#47 follow-up)
+
+The 3-minute bridge turned out to be too tight for a full deploy cycle on the operator box — pnpm install + rebuild + restart routinely takes 2–3 min cold, so a single deploy left a visible hole right at the restart boundary. Bumped to 5 minutes. Covers a full deploy window plus one follow-up observe-miss; real market outages run many minutes to hours so the 2-minute widening doesn't blur the #44 signal.
+
 ### `[UI]` Config: bid_budget=0 hint acknowledges the active bid (#40 follow-up)
 
 The sentinel hint ("Full wallet balance per bid. Currently ≈ 83,704 sat") read as if the autopilot was about to spend that amount right now — but if an owned bid is already running, the next CREATE doesn't fire until it finishes. The figure was correct, the framing wasn't.
