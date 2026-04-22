@@ -194,20 +194,50 @@ export const PriceChart = memo(function PriceChart({
       return HEIGHT - PADDING.bottom - ((v - priceMin) / (priceMax - priceMin)) * usable;
     };
 
-    const pricePath = pricePoints
-      .map((p, i) => `${i === 0 ? 'M' : 'L'}${xScale(p.t).toFixed(1)},${yScale(p.v).toFixed(1)}`)
-      .join(' ');
-    const fillablePath = fillablePoints
-      .map((p, i) => `${i === 0 ? 'M' : 'L'}${xScale(p.t).toFixed(1)},${yScale(p.v).toFixed(1)}`)
-      .join(' ');
+    // Null-gap path builder. Iterates the full `points` series and
+    // emits a separate SVG subpath each time it hits a null — so a
+    // market outage (fillable IS NULL, hashprice IS NULL) renders
+    // as a visible break in the line instead of a straight bridge
+    // between the valid samples on either side (#44). Matches the
+    // `pathWithNullGaps` helper used on HashrateChart for Datum/Ocean.
+    const pathWithNullGaps = (
+      getValue: (p: MetricPoint) => number | null | undefined,
+    ): string => {
+      const segments: string[] = [];
+      let current = '';
+      for (const p of points) {
+        const v = getValue(p);
+        if (v === null || v === undefined || !Number.isFinite(v)) {
+          if (current) {
+            segments.push(current);
+            current = '';
+          }
+          continue;
+        }
+        const x = xScale(p.tick_at).toFixed(1);
+        const y = yScale(v).toFixed(1);
+        current += `${current ? 'L' : 'M'}${x},${y} `;
+      }
+      if (current) segments.push(current);
+      return segments.join(' ');
+    };
 
-    const hashpricePath = hashpricePoints
-      .map((p, i) => `${i === 0 ? 'M' : 'L'}${xScale(p.t).toFixed(1)},${yScale(p.v).toFixed(1)}`)
-      .join(' ');
+    const pricePath = pathWithNullGaps((p) => p.our_primary_price_sat_per_ph_day);
+    const fillablePath = pathWithNullGaps((p) => p.fillable_ask_sat_per_ph_day);
+    const hashpricePath = pathWithNullGaps((p) => p.hashprice_sat_per_ph_day);
 
-    const capPath = capPoints
-      .map((p, i) => `${i === 0 ? 'M' : 'L'}${xScale(p.t).toFixed(1)},${yScale(p.v).toFixed(1)}`)
-      .join(' ');
+    // Cap is config-derived — `max_bid_sat_per_ph_day` is always
+    // present when the daemon is running. The only way it goes
+    // "missing" is when the dynamic branch kicks in and hashprice
+    // happens to be null for that tick; in that case the fallback
+    // is the fixed cap, so cap has a value regardless. Still use
+    // the null-gap builder for uniformity — pre-migration rows
+    // (max_bid column null) will now break cleanly instead of
+    // drawing a long bridge from the first post-migration sample.
+    const capByTick = new Map<number, number>(
+      capPoints.map((p) => [p.t, p.v]),
+    );
+    const capPath = pathWithNullGaps((p) => capByTick.get(p.tick_at) ?? null);
 
     // Polygon tracing the "excluded" region above the cap — the chart
     // top edge along the top, then the cap curve in reverse along the

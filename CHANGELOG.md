@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-04-22
+
+### `[Fix]` Price chart: break fillable/hashprice/our-bid lines across null gaps (#44)
+
+Market-outage periods (empty orderbook, no fillable, no hashprice) used to render as straight bridges on the Price chart — the fillable dashed orange line walked directly from the last valid sample to the first sample on the far side of the gap, visually implying the market had a continuous level it didn't. Confusing because the adjacent stats cards (AVG OVERPAY VS FILLABLE etc.) already correctly exclude null ticks from their range-weighted averages, so the eye was reading a visual that the math was explicitly ignoring.
+
+`pathWithNullGaps` — the same helper `HashrateChart` uses for the sparse Datum/Ocean series — now drives the `our bid`, `fillable`, `hashprice`, and effective-cap paths. Null inputs break the line into discrete segments so a real data gap looks like one.
+
+Does not touch the stats math (already correct per the #44 investigation — all three range averages `WHERE price IS NOT NULL AND {fillable,hashprice} IS NOT NULL` or `WHERE delivered_ph > 0`).
+
 ## 2026-04-21
 
 ### `[Feature]` P&L per-day: range-aware, averaged spend & income, collapsible card (#43)
