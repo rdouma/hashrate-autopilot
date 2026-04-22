@@ -902,6 +902,16 @@ function Field({
 
   if (spec.kind === 'integer_spinner') {
     const current = ((value as number | null) ?? spec.min) as number;
+    // Snap to the ladder {min, step, 2*step, 3*step, ...}. The first
+    // rung from `min` is a partial step (e.g. min=1, step=5 goes
+    // 1 → 5 → 10 → 15) because a native `<input step=5 min=1>` would
+    // otherwise click through 1 → 6 → 11 — offset by min, which
+    // operators find surprising.
+    const snapToLadder = (n: number): number => {
+      if (n <= spec.min) return spec.min;
+      const multipleRung = Math.max(spec.step, Math.round(n / spec.step) * spec.step);
+      return Math.abs(n - spec.min) < Math.abs(n - multipleRung) ? spec.min : multipleRung;
+    };
     return (
       <label className="block">
         <span className="block text-sm text-slate-300 mb-1">{spec.label}</span>
@@ -913,7 +923,7 @@ function Field({
             value={current}
             onChange={(e) => {
               const n = Number(e.target.value);
-              if (Number.isFinite(n)) onChange(spec.key, Math.max(spec.min, Math.round(n)) as never);
+              if (Number.isFinite(n)) onChange(spec.key, snapToLadder(Math.round(n)) as never);
             }}
             className="bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm font-mono w-24"
           />
