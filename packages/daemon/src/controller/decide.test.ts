@@ -16,6 +16,11 @@ const BASE_CONFIG = {
   // plain fixed-cap path; dedicated dynamic-cap tests override this
   // explicitly + supply a hashprice.
   max_overpay_vs_hashprice_sat_per_eh_day: null,
+  // Explicit budget so existing tests exercise the historical
+  // fixed-budget path. The sentinel (0 = "use full wallet balance")
+  // is the new default in APP_CONFIG_DEFAULTS; dedicated tests for
+  // it live in the "bid_budget_sat sentinel" describe block.
+  bid_budget_sat: 200_000,
 };
 
 // With the defaults, overpay allowance = 500,000 sat/EH/day.
@@ -151,6 +156,85 @@ describe('decide — CREATE path', () => {
     expect(proposals[0]).toMatchObject({
       kind: 'CREATE_BID',
       price_sat: 46_000_000 + APP_CONFIG_DEFAULTS.overpay_sat_per_eh_day,
+    });
+  });
+});
+
+describe('decide — bid_budget_sat sentinel (0 = use full wallet balance)', () => {
+  const balance = (availableSat: number | null) =>
+    availableSat === null
+      ? null
+      : ({
+          accounts: [
+            {
+              subaccount: 'main',
+              currency: 'BTC',
+              total_balance_sat: availableSat,
+              available_balance_sat: availableSat,
+              blocked_balance_sat: 0,
+              total_deposited_sat: 0,
+              total_withdrawn_sat: 0,
+              total_spot_spent_sat: 0,
+              total_spot_revenue_gross_sat: 0,
+              total_spot_revenue_net_sat: 0,
+              total_spent_spot_buy_fees_sat: 0,
+              total_spent_spot_sell_fees_sat: 0,
+              total_spent_fees_sat: 0,
+              has_pending_withdrawal: false,
+            },
+          ],
+        } as unknown as NonNullable<State['balance']>);
+
+  it('resolves amount_sat from available wallet balance when bid_budget_sat=0', () => {
+    const s = state({
+      config: { ...BASE_CONFIG, bid_budget_sat: 0 },
+      balance: balance(850_000),
+    });
+    const proposals = decide(s);
+    expect(proposals).toHaveLength(1);
+    expect(proposals[0]).toMatchObject({
+      kind: 'CREATE_BID',
+      amount_sat: 850_000,
+    });
+  });
+
+  it('clamps amount_sat to the Braiins 1-BTC-per-bid hard cap', () => {
+    const s = state({
+      config: { ...BASE_CONFIG, bid_budget_sat: 0 },
+      balance: balance(250_000_000), // 2.5 BTC in the wallet
+    });
+    const proposals = decide(s);
+    expect(proposals[0]).toMatchObject({
+      kind: 'CREATE_BID',
+      amount_sat: 100_000_000, // 1 BTC
+    });
+  });
+
+  it('skips the CREATE when balance is null (API down) and budget is the sentinel', () => {
+    const s = state({
+      config: { ...BASE_CONFIG, bid_budget_sat: 0 },
+      balance: null,
+    });
+    expect(decide(s)).toEqual([]);
+  });
+
+  it('skips the CREATE when the wallet is empty and budget is the sentinel', () => {
+    const s = state({
+      config: { ...BASE_CONFIG, bid_budget_sat: 0 },
+      balance: balance(0),
+    });
+    expect(decide(s)).toEqual([]);
+  });
+
+  it('ignores balance and passes through the explicit amount when bid_budget_sat > 0', () => {
+    const s = state({
+      config: { ...BASE_CONFIG, bid_budget_sat: 50_000 },
+      balance: balance(10_000_000), // plenty of wallet; should not override
+    });
+    const proposals = decide(s);
+    expect(proposals[0]).toMatchObject({
+      kind: 'CREATE_BID',
+      amount_sat: 50_000,
     });
   });
 });

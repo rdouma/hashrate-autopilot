@@ -351,9 +351,24 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
 
   if (state.owned_bids.length === 0) {
     const verb = runMode === 'LIVE' ? 'place' : 'log (dry-run)';
+    // Mirror the sentinel resolution in decide.ts so the "detail" text
+    // reflects what amount_sat will actually be proposed, not the raw
+    // config value. 0 means "use full wallet balance" (#40); surface
+    // the resolved figure (or "full wallet" when no balance yet).
+    let budgetText: string;
+    if (state.config.bid_budget_sat === 0) {
+      const availableSat =
+        state.balance?.accounts?.[0]?.available_balance_sat ?? null;
+      budgetText =
+        availableSat !== null && availableSat > 0
+          ? `${Math.min(availableSat, 100_000_000).toLocaleString('en-US')} sat budget (full wallet)`
+          : 'full wallet balance (awaiting balance)';
+    } else {
+      budgetText = `${state.config.bid_budget_sat.toLocaleString('en-US')} sat budget`;
+    }
     return {
       summary: `Will ${verb} a CREATE_BID on the next tick.`,
-      detail: `~${targetPricePH.toLocaleString('en-US')} sat/PH/day, ${ph} PH/s target, ${state.config.bid_budget_sat.toLocaleString('en-US')} sat budget.`,
+      detail: `~${targetPricePH.toLocaleString('en-US')} sat/PH/day, ${ph} PH/s target, ${budgetText}.`,
       ...noEvent,
     };
   }

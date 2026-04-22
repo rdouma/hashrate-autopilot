@@ -88,8 +88,12 @@ export const AppConfigSchema = z.object({
     )
     .default(null),
 
-  // Budgeting
-  bid_budget_sat: positiveInt,
+  // Budgeting — size of the `amount_sat` on each CREATE_BID. 0 is a
+  // sentinel meaning "use the full available wallet balance on each
+  // create" (resolved at decision time, clamped to Braiins' 1 BTC
+  // per-bid hard cap). Positive integers set an explicit budget.
+  // See issue #40.
+  bid_budget_sat: nonNegativeInt,
 
   // Alerting thresholds (SPEC §9)
   wallet_runway_alert_days: positiveInt,
@@ -273,7 +277,7 @@ export const APP_CONFIG_DEFAULTS: Omit<
   // is comfortably below the fixed cap without being overly tight.
   max_overpay_vs_hashprice_sat_per_eh_day: 2_000_000, // 2,000 sat/PH/day
 
-  bid_budget_sat: 200_000,
+  bid_budget_sat: 0, // 0 = use full wallet balance per CREATE (#40)
 
   wallet_runway_alert_days: 3,
   below_floor_alert_after_minutes: 10,

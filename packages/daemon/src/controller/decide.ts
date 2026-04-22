@@ -33,6 +33,13 @@ import type { Proposal, State } from './types.js';
 const EDIT_PRICE_TOLERANCE_PCT = 0.005;
 
 /**
+ * Braiins hard cap on `amount_sat` per bid (SPEC §13: 1 BTC per bid).
+ * Used to clamp the resolved budget when `bid_budget_sat = 0`
+ * (sentinel for "use full wallet balance"). See issue #40.
+ */
+const BRAIINS_MAX_AMOUNT_SAT = 100_000_000;
+
+/**
  * Format a sat/EH/day value as `12,345 sat/PH/day` for human-readable
  * `reason` strings. The dashboard surfaces these verbatim — keeping the
  * unit consistent with the rest of the UI (which is sat/PH/day) avoids
@@ -142,11 +149,25 @@ export function decide(state: State): readonly Proposal[] {
 
   // Case: no owned bids → CREATE.
   if (owned_bids.length === 0) {
+    // Resolve effective budget. bid_budget_sat = 0 is a sentinel
+    // meaning "use the full available wallet balance" (#40). Clamp to
+    // Braiins' 1-BTC-per-bid hard cap; skip the tick silently when the
+    // wallet signal is missing or empty — same behaviour as today when
+    // a create would fail, without burning a failing API call.
+    let effectiveBudgetSat: number;
+    if (config.bid_budget_sat === 0) {
+      const availableSat = state.balance?.accounts?.[0]?.available_balance_sat ?? null;
+      if (availableSat === null || availableSat <= 0) return [];
+      effectiveBudgetSat = Math.min(availableSat, BRAIINS_MAX_AMOUNT_SAT);
+    } else {
+      effectiveBudgetSat = config.bid_budget_sat;
+    }
+
     return [
       {
         kind: 'CREATE_BID',
         price_sat: targetPrice,
-        amount_sat: config.bid_budget_sat,
+        amount_sat: effectiveBudgetSat,
         speed_limit_ph: speedLimitPh,
         dest_pool_url: config.destination_pool_url,
         dest_worker_name: config.destination_pool_worker_name,

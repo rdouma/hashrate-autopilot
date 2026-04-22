@@ -187,9 +187,15 @@ const SECTIONS: Section[] = [
   },
   {
     title: 'Budget',
-    description: 'How big a single bid is. Use the "days of runway" helper above to size this relative to market price.',
+    description: 'How big a single bid is. Set to 0 to use the full available wallet balance on each create — simpler mental model, no manual slicing.',
     fields: [
-      { key: 'bid_budget_sat', label: 'Per-bid budget', kind: 'integer', unit: 'sat' },
+      {
+        key: 'bid_budget_sat',
+        label: 'Per-bid budget',
+        kind: 'integer',
+        unit: 'sat',
+        help: '0 = use the full available wallet balance each CREATE (clamped to 1 BTC — the Braiins per-bid hard cap). Any positive value pins every new bid to that exact amount regardless of balance.',
+      },
     ],
   },
   {
@@ -491,6 +497,63 @@ export function Config() {
   );
 }
 
+/**
+ * Specialised renderer for `bid_budget_sat`. 0 is a sentinel meaning
+ * "use the full available wallet balance per CREATE_BID" (#40); when
+ * the user has that set, we surface the currently-resolved figure
+ * live from the status query so the field isn't opaque.
+ */
+function BidBudgetField({
+  spec,
+  value,
+  locale,
+  onChange,
+}: {
+  spec: Extract<FieldSpec, { kind: 'integer' }>;
+  value: number;
+  locale: string | undefined;
+  onChange: <K extends keyof AppConfig>(k: K, v: AppConfig[K]) => void;
+}) {
+  // Shares the cache key with Layout's 30s-interval status query, so
+  // this is a dedupe, not an extra network call.
+  const statusQuery = useQuery({ queryKey: ['status'], queryFn: api.status });
+  const availableSat = statusQuery.data?.balances?.[0]?.available_balance_sat ?? null;
+  const BRAIINS_MAX_AMOUNT_SAT = 100_000_000; // 1 BTC per-bid cap
+  const isFullWallet = value === 0;
+  const resolvedSat =
+    availableSat !== null ? Math.min(availableSat, BRAIINS_MAX_AMOUNT_SAT) : null;
+
+  return (
+    <label className="block">
+      <span className="block text-sm text-slate-300 mb-1">{spec.label}</span>
+      <NumberField
+        value={value ?? 0}
+        onChange={(n) => onChange(spec.key, n as never)}
+        step="integer"
+        locale={locale}
+        suffix={spec.unit}
+      />
+      {isFullWallet && (
+        <span className="block text-xs text-amber-300 mt-1">
+          Full wallet balance per bid.
+          {resolvedSat !== null ? (
+            <>
+              {' '}Currently ≈ {resolvedSat.toLocaleString(locale)} sat
+              {availableSat !== null && availableSat > BRAIINS_MAX_AMOUNT_SAT
+                ? ' (capped at 1 BTC)'
+                : ''}
+              .
+            </>
+          ) : (
+            <> Awaiting wallet balance from the daemon.</>
+          )}
+        </span>
+      )}
+      {spec.help && <span className="block text-xs text-slate-500 mt-1">{spec.help}</span>}
+    </label>
+  );
+}
+
 function SectionCard({
   section,
   draft,
@@ -751,6 +814,10 @@ function Field({
   onChange: <K extends keyof AppConfig>(k: K, v: AppConfig[K]) => void;
 }) {
   const value = draft[spec.key];
+
+  if (spec.key === 'bid_budget_sat' && spec.kind === 'integer') {
+    return <BidBudgetField spec={spec} value={value as number} locale={locale} onChange={onChange} />;
+  }
 
   if (spec.kind === 'radio') {
     const current = value as string;

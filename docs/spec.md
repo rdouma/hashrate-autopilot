@@ -147,7 +147,7 @@ All values change on the next control-loop tick without restart.
 
 **Budget:**
 
-- `bid_budget_sat` — size of the `amount_sat` on each created bid (governs bid lifetime)
+- `bid_budget_sat` — size of the `amount_sat` on each created bid (governs bid lifetime). **0 is a sentinel** meaning "use the full available wallet balance on each CREATE" — resolved at decision time and clamped to Braiins' 1 BTC per-bid hard cap. New installs default to 0; existing installs keep whatever explicit value is in their config. When the sentinel is active but the wallet is empty (or the balance API has failed), the CREATE is skipped silently until a balance is observed.
 - `wallet_runway_alert_days`
 
 **Outage tolerance — profile selector + individual overrides:**
@@ -245,7 +245,7 @@ the two knobs above to 5 visually aligns all three series on the same cadence.
 
 **Order strategy (single-bid + optional handover):**
 
-- Normal steady state: one autopilot-tagged bid sized to `target_hashrate_ph`, with `amount_sat = bid_budget_sat`.
+- Normal steady state: one autopilot-tagged bid sized to `target_hashrate_ph`, with `amount_sat` resolved from `bid_budget_sat` (positive value = literal; 0 = available wallet balance clamped to 1 BTC).
 - When estimated remaining runtime drops below `handover_window_minutes`, optionally pre-place an overlapping
   successor bid. Fully autonomous — no operator tap needed.
 - Outside the handover window, do not run multiple concurrent autopilot bids for the same target.

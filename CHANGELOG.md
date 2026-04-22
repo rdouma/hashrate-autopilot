@@ -2,6 +2,14 @@
 
 ## 2026-04-22
 
+### `[Feature]` bid_budget_sat: 0 = "use full wallet balance" sentinel (#40)
+
+`bid_budget_sat` is how much wallet gets slotted into `amount_sat` on each `CREATE_BID`. Because Braiins bids have no duration field and run until `amount_sat` is consumed, the value effectively decided how often the autopilot cycles through cancel/recreate — a second decision the operator was forced to make that doesn't really track how people think about their wallet ("I funded X sat, spend X sat").
+
+Now `0` is a sentinel meaning **"use the full available wallet balance on each CREATE"**, resolved at decision time and clamped to Braiins' 1 BTC per-bid hard cap (spec §13). When the wallet is empty or the balance API is down, the CREATE is skipped silently that tick instead of proposing a doomed bid. Any positive value still pins every new bid to that exact amount like before, so existing operators keep their current behavior end-to-end.
+
+New installs default to `0`. Existing installs are unaffected — their explicit value stays in `config.toml` unchanged. The Config page surfaces the live-resolved figure next to the field when it's set to `0` (e.g. "Currently ≈ 850,000 sat"), and the Status page's CREATE_BID "next action" detail reflects the resolved budget rather than the raw sentinel.
+
 ### `[UI]` Chart popovers: show relative age next to absolute timestamp (#45)
 
 The EDIT PRICE popover (yellow dot on price chart) and POOL BLOCK popover (block icon on hashrate chart) used to show only absolute timestamps — readers had to mentally subtract from "now" to answer "how long ago was this?" Now a muted `· 5m ago` / `· 18h 22m ago` / `· 2d 5h ago` suffix sits next to the human-readable line. Uses a new minute-resolution `formatAgeMinutes` helper — single-unit below an hour, two-unit (`Xh Ym` / `Xd Yh`) past that, and a quiet `just now` under a minute. No seconds (popovers don't tick).
