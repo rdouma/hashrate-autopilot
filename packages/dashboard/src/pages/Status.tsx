@@ -2065,15 +2065,57 @@ function FinancePanel({
           // "calculating…" makes the loading state explicit instead
           // of a silent empty panel.
           <div className="space-y-1.5 text-sm font-mono">
-            <FinanceFootnote
-              label="ocean est. income/day (3h)"
-              value={
-                oceanDailyIncomeSat !== null
-                  ? denomination.formatSat(oceanDailyIncomeSat, intlLocale)
-                  : 'calculating\u2026'
+            {/* Inputs — the averages that the projections below
+                multiply. Surfaced explicitly so projected income /
+                spend / net read as derivations, not magic numbers.
+                Hidden when rangeFallback is active because the
+                fallback path uses current bid × 3h hashrate instead,
+                not the range averages. */}
+            {!rangeFallback && rangeData && (
+              <>
+                <FinanceFootnote
+                  label={`avg delivered (${rangeLabel})`}
+                  value={
+                    rangeData.avg_delivered_ph !== null
+                      ? formatHashratePH(rangeData.avg_delivered_ph, intlLocale)
+                      : 'calculating…'
+                  }
+                  tooltip="Average delivered hashrate over the selected chart range. This is the multiplicand for BOTH projected income (× avg hashprice) and projected spend (× avg bid price) below."
+                />
+                <FinanceFootnote
+                  label={`avg hashprice (${rangeLabel})`}
+                  value={
+                    rangeData.avg_hashprice_sat_per_ph_day !== null
+                      ? denomination.formatSatPerPhDay(
+                          rangeData.avg_hashprice_sat_per_ph_day,
+                          intlLocale,
+                        )
+                      : 'calculating…'
+                  }
+                  tooltip="Average break-even unit price over the selected range. Multiplied by avg delivered to get projected income. Different from the spot hashprice row below — this is what the projection actually uses."
+                />
+                <FinanceFootnote
+                  label={`avg bid price (${rangeLabel})`}
+                  value={
+                    rangeData.avg_price_sat_per_ph_day !== null
+                      ? denomination.formatSatPerPhDay(
+                          rangeData.avg_price_sat_per_ph_day,
+                          intlLocale,
+                        )
+                      : 'calculating…'
+                  }
+                  tooltip="Average bid price the autopilot paid over the selected range. Multiplied by avg delivered to get projected spend. A mid-range price change does NOT retroactively reprice earlier hours."
+                />
+              </>
+            )}
+            {/* Derivations — built from the three averages above. */}
+            <div
+              className={
+                !rangeFallback && rangeData
+                  ? 'pt-2 mt-2 border-t border-slate-800 space-y-1.5'
+                  : 'space-y-1.5'
               }
-              tooltip="Ocean's own estimate — the pool extrapolates from the address's last 3-hour hashrate and its share of pool output. Always 3h-based regardless of the chart range you've picked."
-            />
+            >
             <FinanceFootnote
               label={`projected income/day (${rangeLabel})`}
               value={
@@ -2083,7 +2125,7 @@ function FinancePanel({
                     ? 'insufficient history'
                     : 'calculating…'
               }
-              tooltip="Projection. Average hashprice over the selected chart range × average delivered hashrate over the same range. Range-aware counterpart to Ocean's 3h estimate — useful when comparing 24h or 1w windows where Ocean's 3h snapshot is too narrow."
+              tooltip="Projection: avg hashprice × avg delivered (rows above), both averaged over the selected chart range. Range-aware counterpart to Ocean's own 3h estimate."
             />
             <FinanceFootnote
               label={`projected spend/day${rangeFallback ? '' : ' (' + rangeLabel + ')'}`}
@@ -2091,7 +2133,7 @@ function FinancePanel({
               tooltip={
                 rangeFallback
                   ? "Projection. Current bid price × rolling 3h average of delivered hashrate — the legacy fallback used when the server has fewer than ~5 ticks in the selected window (fresh install, heavily-pruned history, daemon just started)."
-                  : "Projection. Average bid price over the selected chart range × average delivered hashrate over the same range. A mid-range price change does NOT retroactively reprice earlier hours."
+                  : 'Projection: avg bid price × avg delivered (rows above), both averaged over the selected chart range.'
               }
             />
             <FinanceFootnote
@@ -2103,23 +2145,38 @@ function FinancePanel({
                     : `${dailyNetSat >= 0 ? '+' : ''}${formatNumber(dailyNetSat, {}, intlLocale)} sat`
                   : 'calculating\u2026'
               }
-              tooltip="Projection. Income/day − spend/day. Positive = the autopilot is profitable at current rates; negative = burning money per day. Don't confuse with the lifetime net on the other panel."
+              tooltip="Projection: projected income − projected spend (rows above). Positive = the autopilot is profitable at current rates; negative = burning money per day. Don't confuse with the lifetime net on the other panel."
               valueClass={dailyNetColor}
             />
-            {data.ocean?.hashprice_sat_per_ph_day != null && (
+            </div>
+            {/* Reference rows — alternate views (pool-side estimate,
+                spot hashprice, lifetime) that the projection doesn't
+                derive from. */}
+            <div className="pt-2 mt-2 border-t border-slate-800 space-y-1.5">
               <FinanceFootnote
-                label="hashprice (break-even)"
-                value={denomination.formatSatPerPhDay(data.ocean.hashprice_sat_per_ph_day, intlLocale)}
-                tooltip="Current market break-even. Revenue per PH/s per day from mining at the current network difficulty + block reward. If you're paying ABOVE this for hashrate, you're spending more than mining earns. Below = profitable."
+                label="ocean est. income/day (3h)"
+                value={
+                  oceanDailyIncomeSat !== null
+                    ? denomination.formatSat(oceanDailyIncomeSat, intlLocale)
+                    : 'calculating…'
+                }
+                tooltip="Ocean's own estimate — the pool extrapolates from the address's last 3-hour hashrate and its share of pool output. Always 3h-based regardless of the chart range you've picked, so it may differ from projected income at other ranges."
               />
-            )}
-            {data.ocean?.lifetime_sat != null && (
-              <FinanceFootnote
-                label="ocean lifetime"
-                value={denomination.formatSat(data.ocean.lifetime_sat, intlLocale)}
-                tooltip="Total earned at this address since first share, per Ocean."
-              />
-            )}
+              {data.ocean?.hashprice_sat_per_ph_day != null && (
+                <FinanceFootnote
+                  label="hashprice (now)"
+                  value={denomination.formatSatPerPhDay(data.ocean.hashprice_sat_per_ph_day, intlLocale)}
+                  tooltip="Current (spot) market break-even. Revenue per PH/s per day from mining at the current network difficulty + block reward. The avg-hashprice row above is what the projection uses; this one is the spot value right now for quick market-drift comparison."
+                />
+              )}
+              {data.ocean?.lifetime_sat != null && (
+                <FinanceFootnote
+                  label="ocean lifetime"
+                  value={denomination.formatSat(data.ocean.lifetime_sat, intlLocale)}
+                  tooltip="Total earned at this address since first share, per Ocean."
+                />
+              )}
+            </div>
           </div>
         ) : (
           <div className="text-sm text-slate-600">no active bids</div>

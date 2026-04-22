@@ -14,6 +14,28 @@ Regression introduced by the #44 fix. That change made the price line break into
 
 Now a dedicated `areaPathWithNullGaps` helper emits one closed polygon per non-null sub-run, each anchored to the baseline at its own segment endpoints. The fill tracks right under the price line again, and genuine gaps render as gaps in both line and fill.
 
+### `[UI]` P&L per-day: surface the avg inputs so the projection math is readable
+
+The panel showed `projected income/day`, `projected spend/day`, `projected net/day` and `hashprice (break-even)` — four numbers with no visible shared multiplicand. Operators had to reverse-engineer `avg delivered` by dividing income by hashprice to see why the net wasn't just "target × hashprice". Worse: the hashprice row was the CURRENT spot rate, but the projection actually used the range-averaged hashprice — close but subtly different.
+
+Now the card is laid out as inputs → derivations → reference, visually separated by thin dividers:
+
+```
+avg delivered (3h)      2.65 PH/s      ← inputs
+avg hashprice (3h)    46,718 sat/PH/day
+avg bid price (3h)    47,530 sat/PH/day
+─────────────────────────────────────
+projected income/day   124,071 sat    ← = avg hashprice × avg delivered
+projected spend/day    125,953 sat    ← = avg bid × avg delivered
+projected net/day       −1,882 sat    ← = income − spend
+─────────────────────────────────────
+ocean est. income/day  130,087 sat    ← alternate pool-side estimate
+hashprice (now)        46,809 sat/PH/day  (was "hashprice (break-even)")
+ocean lifetime        866,860 sat
+```
+
+Every derived number is now traceable to the rows directly above it. The spot hashprice sits in the reference group (renamed "hashprice (now)") so it isn't confused with the range-averaged figure the projection actually uses.
+
 ### `[UI]` Config: Budget section hint spans full panel width (#40 follow-up)
 
 The sentinel hint wrapped narrowly in one grid column, stacking into 3–4 short lines next to a huge empty right column. Set `fullWidth: true` on the `bid_budget_sat` field so the label cell spans both columns; the `<NumberField>` itself is capped at 200 px so the input stays its normal size. Hint now renders as a single wide line.
