@@ -3,30 +3,43 @@
  * matched hashrate: pay-your-bid (actual spend = bid price × delivered)
  * or pay-at-ask / classic CLOB (actual spend ≤ bid price × delivered).
  *
- * The docs don't say. This script reads our own `data/state.db`, walks
- * every closed bid, reconstructs its bid-price timeline from
- * `bid_events`, sums the theoretical pay-your-bid spend across ticks,
- * and compares against Braiins's authoritative `amount_consumed_sat`
- * from `closed_bids_cache`.
+ * The docs do not say. This script reads our own `data/state.db`,
+ * walks autopilot-owned bids, reconstructs each bid's price timeline
+ * from `bid_events`, sums the theoretical pay-your-bid spend across
+ * `tick_metrics` delivery samples during the bid's active window, and
+ * compares that against Braiins' authoritative `amount_consumed_sat`
+ * from our `owned_bids` snapshot (updated on every observe).
  *
  * Ratio = actual_consumed / expected_at_bid_price
  *   ≈ 1.00            → pay-your-bid (our daemon model is correct).
  *   < 1.00 by some %  → pay-at-ask / CLOB. The discount tells you how
  *                       much our dashboard spend/net figures are
- *                       over-stated.
- *   ≫ 1.00            → unexpected (fees, stale bid_events, model error).
+ *                       over-stated relative to reality.
+ *   ≫ 1.00            → unexpected (fees, stale events, or a matching
+ *                       model we have not characterised).
+ *
+ * Data source note: we query `owned_bids` (autopilot's local ledger)
+ * rather than `closed_bids_cache` (Braiins-side terminal-bid cache for
+ * AccountSpendService). Those two tables track different things; bids
+ * that appear in the cache but never in owned_bids are for bids the
+ * autopilot did not create (or whose local events were wiped by the
+ * 2026-04-20 setup-force regression). Going through owned_bids is the
+ * path that actually has bid_events + tick_metrics alignment.
  *
  * Caveats:
- * - `amount_consumed_sat` on Braiins excludes exchange fees (`fee_paid_sat`
- *   is a separate counter we do not cache). A small positive bias in
- *   actual/expected is probably fees, not the matching model.
- * - Bids with short lifetimes or trivial delivery get filtered to keep
- *   noise from dominating the ratio.
+ * - `amount_consumed_sat` excludes exchange fees (`fee_paid_sat` is a
+ *   separate Braiins counter). Small positive ratio bias = probably
+ *   fees, not model.
+ * - For still-active bids the consumed counter is growing; we still
+ *   score them (truncating expected-spend at their most recent tick),
+ *   which gives a mid-flight ratio that's usually informative.
+ * - Very short bids or bids with trivial delivery get filtered out.
  *
  * Usage:
  *   pnpm tsx scripts/verify-pricing-model.ts
- *   pnpm tsx scripts/verify-pricing-model.ts --db /custom/path/state.db
  *   pnpm tsx scripts/verify-pricing-model.ts --min-hours 2
+ *   pnpm tsx scripts/verify-pricing-model.ts --db /custom/state.db
+ *   pnpm tsx scripts/verify-pricing-model.ts --include-active=false
  */
 
 import { resolve } from 'node:path';
@@ -39,12 +52,14 @@ const MS_PER_MIN = 60_000;
 interface Args {
   dbPath: string;
   minHours: number;
+  includeActive: boolean;
 }
 
 function parseArgs(argv: string[]): Args {
   const projectRoot = process.cwd();
   let dbPath = resolve(projectRoot, 'data/state.db');
   let minHours = 1;
+  let includeActive = true;
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i]!;
     if (a === '--db' && argv[i + 1]) {
@@ -53,21 +68,25 @@ function parseArgs(argv: string[]): Args {
     } else if (a === '--min-hours' && argv[i + 1]) {
       minHours = Number(argv[i + 1]);
       i += 1;
+    } else if (a === '--include-active=false' || a === '--terminal-only') {
+      includeActive = false;
     } else if (a === '--help' || a === '-h') {
       console.log(
-        'Usage: pnpm tsx scripts/verify-pricing-model.ts [--db <path>] [--min-hours <n>]',
+        'Usage: pnpm tsx scripts/verify-pricing-model.ts [--db <path>] [--min-hours <n>] [--terminal-only]',
       );
       process.exit(0);
     }
   }
-  return { dbPath, minHours };
+  return { dbPath, minHours, includeActive };
 }
 
-interface ClosedBid {
+interface OwnedBidRow {
   braiins_order_id: string;
+  created_at: number;
+  price_sat: number | null;
   amount_consumed_sat: number;
-  first_seen_at: number;
-  last_seen_at: number;
+  last_known_status: string | null;
+  abandoned: number;
 }
 
 interface BidEvent {
@@ -90,6 +109,7 @@ interface TickRow {
 
 interface BidReport {
   id: string;
+  terminal: boolean;
   lifetime_h: number;
   avg_delivered_ph: number;
   total_ph_days: number;
@@ -97,24 +117,28 @@ interface BidReport {
   avg_bid_price_sat_ph_day: number;
   expected_at_bid_sat: number;
   actual_over_expected_ratio: number;
-  skipped_reason?: string;
+  note?: string;
 }
 
-// Minimal better-sqlite3 surface we rely on; avoids needing the package
-// as a direct dep of the scripts folder since it's already installed via
-// the daemon workspace.
 interface RawSqliteDb {
-  prepare(sql: string): {
-    all(...params: unknown[]): unknown[];
-  };
+  prepare(sql: string): { all(...params: unknown[]): unknown[] };
 }
 
-function loadClosedBids(raw: RawSqliteDb): ClosedBid[] {
+function countRows(raw: RawSqliteDb, sql: string, ...params: unknown[]): number {
+  const row = raw.prepare(sql).all(...params)[0] as { n: number } | undefined;
+  return row?.n ?? 0;
+}
+
+function loadOwnedBids(raw: RawSqliteDb): OwnedBidRow[] {
   return raw
     .prepare(
-      'SELECT braiins_order_id, amount_consumed_sat, first_seen_at, last_seen_at FROM closed_bids_cache ORDER BY first_seen_at ASC',
+      `SELECT braiins_order_id, created_at, price_sat, amount_consumed_sat,
+              last_known_status, abandoned
+       FROM owned_bids
+       WHERE amount_consumed_sat > 0
+       ORDER BY created_at ASC`,
     )
-    .all() as ClosedBid[];
+    .all() as OwnedBidRow[];
 }
 
 function loadBidEvents(raw: RawSqliteDb, orderId: string): BidEvent[] {
@@ -128,35 +152,76 @@ function loadBidEvents(raw: RawSqliteDb, orderId: string): BidEvent[] {
     .all(orderId) as BidEvent[];
 }
 
-/**
- * Reconstruct the piecewise-constant bid-price timeline from the event
- * log. Returns [] when the log is missing a CREATE for this bid — typical
- * for bids that predate migration 0009, or for bids that weren't
- * autopilot-owned. Those get reported as "skipped" in the output.
- */
-function buildPriceSegments(events: BidEvent[], lifetimeEndAt: number): PriceSegment[] {
+function buildPriceSegments(
+  events: BidEvent[],
+  bid: OwnedBidRow,
+  bidEndAt: number,
+): PriceSegment[] {
+  // Fast path: no events at all — fall back to flat `owned_bids.price_sat`
+  // for the full [created_at, bidEndAt] range. Less accurate (misses edits
+  // that happened without a bid_events row being inserted, which should be
+  // vanishingly rare) but means we still score the bid.
+  if (events.length === 0) {
+    if (bid.price_sat == null) return [];
+    return [
+      {
+        t_start: bid.created_at,
+        t_end: bidEndAt,
+        price_sat_eh_day: bid.price_sat,
+      },
+    ];
+  }
+
   const createIdx = events.findIndex((e) => e.kind === 'CREATE_BID');
-  if (createIdx === -1) return [];
-  const create = events[createIdx]!;
-  if (create.new_price_sat == null) return [];
-
+  // Some bids may have EDIT_PRICE events but no CREATE captured (schema
+  // history, early rows). In that case anchor the timeline at created_at
+  // and use the first EDIT's old_price_sat if present, else the bid's
+  // current price_sat as the initial price.
   const segments: PriceSegment[] = [];
-  let currentPrice = create.new_price_sat;
-  let segStart = create.occurred_at;
+  let currentPrice: number;
+  let segStart: number;
+  if (createIdx !== -1 && events[createIdx]!.new_price_sat != null) {
+    currentPrice = events[createIdx]!.new_price_sat!;
+    segStart = events[createIdx]!.occurred_at;
+  } else {
+    const firstEdit = events.find(
+      (e) => e.kind === 'EDIT_PRICE' && e.old_price_sat != null,
+    );
+    if (firstEdit && firstEdit.old_price_sat != null) {
+      currentPrice = firstEdit.old_price_sat;
+    } else if (bid.price_sat != null) {
+      currentPrice = bid.price_sat;
+    } else {
+      return [];
+    }
+    segStart = bid.created_at;
+  }
 
-  for (let i = createIdx + 1; i < events.length; i += 1) {
+  for (let i = createIdx === -1 ? 0 : createIdx + 1; i < events.length; i += 1) {
     const e = events[i]!;
     if (e.kind === 'EDIT_PRICE' && e.new_price_sat != null) {
-      segments.push({ t_start: segStart, t_end: e.occurred_at, price_sat_eh_day: currentPrice });
+      segments.push({
+        t_start: segStart,
+        t_end: e.occurred_at,
+        price_sat_eh_day: currentPrice,
+      });
       currentPrice = e.new_price_sat;
       segStart = e.occurred_at;
     } else if (e.kind === 'CANCEL_BID') {
-      segments.push({ t_start: segStart, t_end: e.occurred_at, price_sat_eh_day: currentPrice });
+      segments.push({
+        t_start: segStart,
+        t_end: e.occurred_at,
+        price_sat_eh_day: currentPrice,
+      });
       return segments;
     }
   }
-  if (lifetimeEndAt > segStart) {
-    segments.push({ t_start: segStart, t_end: lifetimeEndAt, price_sat_eh_day: currentPrice });
+  if (bidEndAt > segStart) {
+    segments.push({
+      t_start: segStart,
+      t_end: bidEndAt,
+      price_sat_eh_day: currentPrice,
+    });
   }
   return segments;
 }
@@ -164,26 +229,60 @@ function buildPriceSegments(events: BidEvent[], lifetimeEndAt: number): PriceSeg
 function loadTicksInRange(raw: RawSqliteDb, startMs: number, endMs: number): TickRow[] {
   return raw
     .prepare(
-      'SELECT tick_at, delivered_ph FROM tick_metrics WHERE tick_at >= ? AND tick_at <= ? ORDER BY tick_at ASC',
+      `SELECT tick_at, delivered_ph
+       FROM tick_metrics
+       WHERE tick_at >= ? AND tick_at <= ?
+       ORDER BY tick_at ASC`,
     )
     .all(startMs, endMs) as TickRow[];
 }
 
-/**
- * Sum PH-days delivered and the pay-your-bid expected spend across the
- * bid's price segments. Per-tick:
- *   ph_days       = delivered_ph × (dur_min / 1440)
- *   expected_sat  = price_sat_eh_day × delivered_ph × dur_min / 1_440_000
- *                   (divide by 1000 for EH→PH, by 1440 for min→day)
- */
-function analyzeBid(raw: RawSqliteDb, bid: ClosedBid): BidReport {
+function latestTickAt(raw: RawSqliteDb): number | null {
+  const row = raw
+    .prepare('SELECT MAX(tick_at) AS t FROM tick_metrics')
+    .all()[0] as { t: number | null } | undefined;
+  return row?.t ?? null;
+}
+
+function analyzeBid(
+  raw: RawSqliteDb,
+  bid: OwnedBidRow,
+  latestTickAtMs: number,
+): BidReport {
+  // Determine if the bid is terminal:
+  //   - `abandoned = 1`               → controller marked it terminal.
+  //   - `last_known_status` contains  → CANCELLED / FULFILLED / etc.
+  //   Otherwise treat as "still active" and cap the scoring window at
+  //   the most recent tick (so the consumed counter lines up with the
+  //   delivered samples we've observed).
+  const terminalStatuses = new Set([
+    'BID_STATUS_CANCELED',
+    'BID_STATUS_CANCELLED',
+    'BID_STATUS_FULFILLED',
+    'BID_STATUS_EXPIRED',
+    'BID_STATUS_FROZEN',
+  ]);
+  const terminal =
+    bid.abandoned === 1 ||
+    (bid.last_known_status !== null && terminalStatuses.has(bid.last_known_status));
+
+  // For terminal bids, lifetime ends at the last CANCEL event if any,
+  // else the latest tick we have. For still-active bids, we cap at
+  // the latest tick — consumed counter tracks up to (approximately) the
+  // last observe cycle.
   const events = loadBidEvents(raw, bid.braiins_order_id);
-  const segments = buildPriceSegments(events, bid.last_seen_at);
-  const lifetimeH = (bid.last_seen_at - bid.first_seen_at) / 3_600_000;
+  const cancelEvent = [...events].reverse().find((e) => e.kind === 'CANCEL_BID');
+  const bidEndAt = terminal
+    ? cancelEvent?.occurred_at ?? latestTickAtMs
+    : latestTickAtMs;
+
+  const segments = buildPriceSegments(events, bid, bidEndAt);
+  const lifetimeH = (bidEndAt - bid.created_at) / 3_600_000;
 
   if (segments.length === 0) {
     return {
       id: bid.braiins_order_id,
+      terminal,
       lifetime_h: lifetimeH,
       avg_delivered_ph: 0,
       total_ph_days: 0,
@@ -191,7 +290,7 @@ function analyzeBid(raw: RawSqliteDb, bid: ClosedBid): BidReport {
       avg_bid_price_sat_ph_day: 0,
       expected_at_bid_sat: 0,
       actual_over_expected_ratio: NaN,
-      skipped_reason: 'no bid_events (pre-migration bid or not autopilot-owned)',
+      note: 'no usable price timeline',
     };
   }
 
@@ -218,10 +317,12 @@ function analyzeBid(raw: RawSqliteDb, bid: ClosedBid): BidReport {
   }
 
   const avgDeliveredPh = lifetimeH > 0 ? (totalPhDays * 24) / lifetimeH : 0;
-  const avgBidPricePhDay = totalPhDays > 0 ? priceWeightedByPhDays / totalPhDays : 0;
+  const avgBidPricePhDay =
+    totalPhDays > 0 ? priceWeightedByPhDays / totalPhDays : 0;
 
   return {
     id: bid.braiins_order_id,
+    terminal,
     lifetime_h: lifetimeH,
     avg_delivered_ph: avgDeliveredPh,
     total_ph_days: totalPhDays,
@@ -237,7 +338,9 @@ function median(xs: readonly number[]): number {
   if (xs.length === 0) return NaN;
   const sorted = [...xs].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 0 ? (sorted[mid - 1]! + sorted[mid]!) / 2 : sorted[mid]!;
+  return sorted.length % 2 === 0
+    ? (sorted[mid - 1]! + sorted[mid]!) / 2
+    : sorted[mid]!;
 }
 
 function fmtInt(n: number): string {
@@ -250,66 +353,123 @@ function fmtNum(n: number, d = 2): string {
   return n.toFixed(d);
 }
 
+function printDiagnostics(raw: RawSqliteDb): void {
+  const ownedTotal = countRows(raw, 'SELECT COUNT(*) AS n FROM owned_bids');
+  const ownedWithConsumed = countRows(
+    raw,
+    'SELECT COUNT(*) AS n FROM owned_bids WHERE amount_consumed_sat > 0',
+  );
+  const closedTotal = countRows(raw, 'SELECT COUNT(*) AS n FROM closed_bids_cache');
+  const eventsCreate = countRows(
+    raw,
+    "SELECT COUNT(*) AS n FROM bid_events WHERE kind = 'CREATE_BID'",
+  );
+  const eventsEdit = countRows(
+    raw,
+    "SELECT COUNT(*) AS n FROM bid_events WHERE kind = 'EDIT_PRICE'",
+  );
+  const eventsCancel = countRows(
+    raw,
+    "SELECT COUNT(*) AS n FROM bid_events WHERE kind = 'CANCEL_BID'",
+  );
+  const ticksTotal = countRows(raw, 'SELECT COUNT(*) AS n FROM tick_metrics');
+  const firstTick = (
+    raw.prepare('SELECT MIN(tick_at) AS t FROM tick_metrics').all()[0] as {
+      t: number | null;
+    }
+  )?.t;
+  const lastTick = (
+    raw.prepare('SELECT MAX(tick_at) AS t FROM tick_metrics').all()[0] as {
+      t: number | null;
+    }
+  )?.t;
+
+  console.log('→ table sizes:');
+  console.log(`    owned_bids:       ${ownedTotal} total, ${ownedWithConsumed} with consumed > 0`);
+  console.log(`    closed_bids_cache:${closedTotal}`);
+  console.log(
+    `    bid_events:       CREATE ${eventsCreate} · EDIT ${eventsEdit} · CANCEL ${eventsCancel}`,
+  );
+  console.log(
+    `    tick_metrics:     ${ticksTotal} rows${
+      firstTick && lastTick
+        ? ` (${new Date(firstTick).toISOString()} → ${new Date(lastTick).toISOString()})`
+        : ''
+    }`,
+  );
+}
+
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
   console.log(`→ opening ${args.dbPath}`);
   const handle = await openDatabase({ path: args.dbPath });
   try {
     const raw = handle.raw as unknown as RawSqliteDb;
-    const bids = loadClosedBids(raw);
-    console.log(`→ ${bids.length} closed bids in cache`);
+    printDiagnostics(raw);
 
-    const reports: BidReport[] = bids.map((b) => analyzeBid(raw, b));
+    const bids = loadOwnedBids(raw);
+    const latestTick = latestTickAt(raw);
+    if (latestTick === null) {
+      console.log('\nNo tick_metrics rows at all — daemon never ran. Nothing to score.');
+      return;
+    }
 
-    const usable = reports.filter(
-      (r) =>
-        r.skipped_reason === undefined &&
+    const reports: BidReport[] = bids.map((b) => analyzeBid(raw, b, latestTick));
+
+    const filtered = reports.filter((r) => {
+      if (!args.includeActive && !r.terminal) return false;
+      return (
         r.lifetime_h >= args.minHours &&
         r.total_ph_days > 0 &&
         r.expected_at_bid_sat > 0 &&
-        Number.isFinite(r.actual_over_expected_ratio),
-    );
+        Number.isFinite(r.actual_over_expected_ratio)
+      );
+    });
 
     console.log('');
     console.log(
-      'ID               | life(h) | avg PH | PH-days  | consumed sat | avg bid sat/PH/day | expected@bid    | actual/expected',
+      'ID               | state    | life(h) | avg PH | PH-days | consumed sat | avg bid/PH/day | expected@bid | actual/expected',
     );
     console.log(
-      '-----------------+---------+--------+----------+--------------+--------------------+-----------------+---------------',
+      '-----------------+----------+---------+--------+---------+--------------+----------------+--------------+---------------',
     );
     for (const r of reports) {
-      if (r.skipped_reason) {
+      const state = r.terminal ? 'terminal' : 'active  ';
+      if (r.note || !Number.isFinite(r.actual_over_expected_ratio)) {
         console.log(
-          `${r.id.slice(0, 16).padEnd(16)} | ${fmtNum(r.lifetime_h, 1).padStart(7)} |      — |        — |  ${fmtInt(r.consumed_sat).padStart(11)} |                  — |               — |   (skip: ${r.skipped_reason})`,
+          `${r.id.slice(0, 16).padEnd(16)} | ${state} | ${fmtNum(r.lifetime_h, 1).padStart(7)} |      — |       — | ${fmtInt(r.consumed_sat).padStart(12)} |              — |            — | (${r.note ?? 'no expected spend'})`,
         );
         continue;
       }
       console.log(
         [
           r.id.slice(0, 16).padEnd(16),
+          state,
           fmtNum(r.lifetime_h, 1).padStart(7),
           fmtNum(r.avg_delivered_ph, 2).padStart(6),
-          fmtNum(r.total_ph_days, 3).padStart(8),
+          fmtNum(r.total_ph_days, 3).padStart(7),
           fmtInt(r.consumed_sat).padStart(12),
-          fmtInt(r.avg_bid_price_sat_ph_day).padStart(18),
-          fmtInt(r.expected_at_bid_sat).padStart(15),
+          fmtInt(r.avg_bid_price_sat_ph_day).padStart(14),
+          fmtInt(r.expected_at_bid_sat).padStart(12),
           fmtNum(r.actual_over_expected_ratio, 4).padStart(13),
         ].join(' | '),
       );
     }
 
     console.log('');
-    console.log(`→ usable bids (≥${args.minHours}h, non-trivial delivery): ${usable.length}`);
+    console.log(
+      `→ scored bids (≥${args.minHours}h, non-trivial delivery${args.includeActive ? ', including active' : ', terminal only'}): ${filtered.length}`,
+    );
 
-    if (usable.length === 0) {
+    if (filtered.length === 0) {
       console.log('');
-      console.log(
-        'Not enough usable data. Need at least one closed bid with bid_events history and actual delivery.',
-      );
+      console.log('Not enough usable data to determine the pricing model yet.');
+      console.log('Try again after the autopilot has been running for a few hours,');
+      console.log('or lower the threshold with --min-hours 0.5.');
       return;
     }
 
-    const ratios = usable.map((r) => r.actual_over_expected_ratio);
+    const ratios = filtered.map((r) => r.actual_over_expected_ratio);
     const med = median(ratios);
     const mean = ratios.reduce((a, b) => a + b, 0) / ratios.length;
     const min = Math.min(...ratios);
@@ -329,7 +489,9 @@ async function main(): Promise<void> {
     } else if (med < 0.98) {
       const discountPct = (1 - med) * 100;
       console.log('=====================================================================');
-      console.log(` VERDICT: pay-at-ask / classic CLOB. Median discount vs bid: ${fmtNum(discountPct, 1)}%`);
+      console.log(
+        ` VERDICT: pay-at-ask / classic CLOB. Median discount vs bid: ${fmtNum(discountPct, 1)}%`,
+      );
       console.log(' Our daemon OVER-states spend. Lowering bids has little cost impact —');
       console.log(' they mainly act as a ceiling on acceptable ask prices.');
       console.log('=====================================================================');
