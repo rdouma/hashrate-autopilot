@@ -936,8 +936,9 @@ function Field({
               −
             </button>
             <input
-              type="number"
-              min={spec.min}
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
               value={current}
               onChange={(e) => {
                 const n = Number(e.target.value);
