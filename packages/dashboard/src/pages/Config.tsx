@@ -184,31 +184,6 @@ const SECTIONS: Section[] = [
     ],
   },
   {
-    title: 'Alerts & timers',
-    fields: [
-      { key: 'below_floor_alert_after_minutes', label: 'Below-floor alert', kind: 'integer', unit: 'min' },
-      {
-        key: 'zero_hashrate_loud_alert_after_minutes',
-        label: 'Zero-hashrate loud alert',
-        kind: 'integer',
-        unit: 'min',
-      },
-      {
-        key: 'pool_outage_blip_tolerance_seconds',
-        label: 'Pool outage blip tolerance',
-        kind: 'integer',
-        unit: 's',
-      },
-      {
-        key: 'api_outage_alert_after_minutes',
-        label: 'API outage alert',
-        kind: 'integer',
-        unit: 'min',
-      },
-      { key: 'wallet_runway_alert_days', label: 'Wallet runway alert', kind: 'integer', unit: 'days' },
-    ],
-  },
-  {
     title: 'Daemon startup',
     description: 'How the daemon chooses its run mode when it boots.',
     fields: [

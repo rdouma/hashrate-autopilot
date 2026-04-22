@@ -2,6 +2,12 @@
 
 ## 2026-04-21
 
+### `[UI]` Config page: hide the unwired "Alerts & timers" section (#41)
+
+The five fields in that panel (`below_floor_alert_after_minutes`, `zero_hashrate_loud_alert_after_minutes`, `pool_outage_blip_tolerance_seconds`, `api_outage_alert_after_minutes`, `wallet_runway_alert_days`) were exposed on the Config page but never read by any runtime code — they were scaffolding for a dashboard-alerting layer that was never built, and the closely-related Telegram notifier path (#18) is still unshipped. Surfacing them as editable inputs was actively misleading.
+
+Section removed from `SECTIONS` in `Config.tsx`. The schema fields, DB columns, and API types are left intact so reintroduction (whichever path wins in #41 — wire dashboard alerts, ship Telegram, or delete) is cheap and doesn't need a new migration.
+
 ### `[UI]` Sim panel: three-way Esc. mode picker, relocated to header row
 
 Follow-up on the `above_market` landing earlier today (#38). The Sim Parameters bar only exposed a two-way Dampened/Market toggle, which meant the operator couldn't actually backtest `above_market` behaviour against historical ticks — they'd have had to flip the live autopilot to evaluate it, which defeats the whole point of having a simulator.
