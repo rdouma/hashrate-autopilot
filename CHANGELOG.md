@@ -2,6 +2,12 @@
 
 ## 2026-04-22
 
+### `[Fix]` Price chart: bridge single-tick blips instead of rendering a visible gap (#47)
+
+A single null tick (daemon restart boot, transient `/spot/bid` API hiccup) made the price line + fill drop out for ~60 seconds on the chart — reading as a mini-outage when the operator actually just saw a blink. Root cause: `pathWithNullGaps` (#44) closed the subpath on any null, which is correct for multi-minute market outages but too aggressive for one-tick observe noise.
+
+Now the null-gap helpers bridge based on wall-clock duration instead of null-count. If the next valid sample arrives within ~3 tick intervals (180 s), draw a line across any intervening nulls; otherwise break as before. Applied symmetrically to the fill polygon so line and fill stay in sync. Long outages still surface loudly; the single-tick noise absorbs invisibly.
+
 ### `[Fix]` Price chart: fill no longer paints diagonal wedges across null gaps (#46)
 
 Regression introduced by the #44 fix. That change made the price line break into multiple SVG subpaths on null (market-outage) ticks — correct for the line, but the fill wrapper still appended a single baseline closure at the very end (`${pricePath} L<lastX>,<bot> L<firstX>,<bot> Z`). SVG only closed the *last* subpath to the baseline; every interior subpath closed back to its own starting `M`, painting diagonal "sun ray" wedges across the gap.

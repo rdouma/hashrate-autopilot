@@ -195,28 +195,39 @@ export const PriceChart = memo(function PriceChart({
     };
 
     // Null-gap path builder. Iterates the full `points` series and
-    // emits a separate SVG subpath each time it hits a null — so a
-    // market outage (fillable IS NULL, hashprice IS NULL) renders
-    // as a visible break in the line instead of a straight bridge
-    // between the valid samples on either side (#44). Matches the
-    // `pathWithNullGaps` helper used on HashrateChart for Datum/Ocean.
+    // emits a separate SVG subpath when the wall-clock distance
+    // between two adjacent *valid* samples exceeds MAX_BRIDGE_MS —
+    // so a real market outage (fillable IS NULL, hashprice IS NULL
+    // for many minutes) renders as a visible break (#44), while a
+    // one-tick restart blip or a transient /spot/bid hiccup just
+    // bridges the valid samples on either side instead of painting
+    // a visible gap for a 60-second noise event (#47). Threshold is
+    // 3 × tick interval by default (ticks are ~60 s), covering a
+    // daemon restart + one follow-up observe-fail without widening
+    // the real-outage signal noticeably.
+    const MAX_BRIDGE_MS = 3 * 60 * 1000;
     const pathWithNullGaps = (
       getValue: (p: MetricPoint) => number | null | undefined,
     ): string => {
       const segments: string[] = [];
       let current = '';
+      let lastValidT: number | null = null;
       for (const p of points) {
         const v = getValue(p);
-        if (v === null || v === undefined || !Number.isFinite(v)) {
-          if (current) {
-            segments.push(current);
-            current = '';
-          }
-          continue;
-        }
+        if (v === null || v === undefined || !Number.isFinite(v)) continue;
         const x = xScale(p.tick_at).toFixed(1);
         const y = yScale(v).toFixed(1);
-        current += `${current ? 'L' : 'M'}${x},${y} `;
+        if (
+          current &&
+          lastValidT !== null &&
+          p.tick_at - lastValidT > MAX_BRIDGE_MS
+        ) {
+          segments.push(current);
+          current = `M${x},${y} `;
+        } else {
+          current += `${current ? 'L' : 'M'}${x},${y} `;
+        }
+        lastValidT = p.tick_at;
       }
       if (current) segments.push(current);
       return segments.join(' ');
@@ -231,7 +242,8 @@ export const PriceChart = memo(function PriceChart({
     // L xN,base L x0,base Z`. A single bulk closure at the end of the
     // stroke path only closes the last subpath; the interior subpaths
     // would close back to their own starting M, painting diagonal
-    // wedges across the gap (bug #46, regression from #44).
+    // wedges across the gap (bug #46, regression from #44). Short-gap
+    // bridging mirrors the stroke helper (#47).
     const baselineY = HEIGHT - PADDING.bottom;
     const areaPathWithNullGaps = (
       getValue: (p: MetricPoint) => number | null | undefined,
@@ -240,6 +252,7 @@ export const PriceChart = memo(function PriceChart({
       let current = '';
       let segStartX: number | null = null;
       let segLastX: number | null = null;
+      let lastValidT: number | null = null;
       const closeSegment = () => {
         if (current && segStartX !== null && segLastX !== null) {
           polys.push(
@@ -253,13 +266,17 @@ export const PriceChart = memo(function PriceChart({
       };
       for (const p of points) {
         const v = getValue(p);
-        if (v === null || v === undefined || !Number.isFinite(v)) {
-          closeSegment();
-          continue;
-        }
+        if (v === null || v === undefined || !Number.isFinite(v)) continue;
         const xNum = xScale(p.tick_at);
         const x = xNum.toFixed(1);
         const y = yScale(v).toFixed(1);
+        if (
+          current &&
+          lastValidT !== null &&
+          p.tick_at - lastValidT > MAX_BRIDGE_MS
+        ) {
+          closeSegment();
+        }
         if (!current) {
           current = `M${x},${y}`;
           segStartX = xNum;
@@ -267,6 +284,7 @@ export const PriceChart = memo(function PriceChart({
           current += ` L${x},${y}`;
         }
         segLastX = xNum;
+        lastValidT = p.tick_at;
       }
       closeSegment();
       return polys.join(' ');
