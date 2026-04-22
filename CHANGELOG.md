@@ -2,6 +2,15 @@
 
 ## 2026-04-22
 
+### `[Docs]` README: preemptive escalation mode, per-bid budget = 0, updated Config screenshot
+
+README was stale on three fronts: (1) the `above_market` (preemptive) escalation mode added in #38 was not
+mentioned — the escalation-ladder bullet only described "raises in steps (or jumps)"; (2) the per-bid budget now
+treats 0 as "use the full available wallet balance" (#40) and that sentinel wasn't called out; (3) the Configuration
+section listed an "Alerts & timers" subsection that has been hidden from the UI. Refreshed the escalation bullet to
+cover all three modes, added the budget=0 semantics, dropped the stale subsection reference, and replaced the Config
+screenshot with a current one.
+
 ### `[UI]` NEXT ACTION: surface the *binding* lower-gate (cooldown vs patience vs override)
 
 The panel would announce "Will lower in ~2 min" whenever the market-settle patience window was the first pending gate, even if the Braiins 10-min price-decrease cooldown was in fact longer and would hold the edit for another 6 minutes. Operator saw an ETA that couldn't be met.

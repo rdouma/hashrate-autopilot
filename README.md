@@ -55,10 +55,19 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
 
 - **Depth-aware pricing** — walks the order book to find the cheapest ask that can actually fill your target capacity,
   not just the top-of-book price.
-- **Escalation ladder** — when hashrate drops below your configured floor, the autopilot raises the bid in steps (or
-  jumps, selectable) up to your max, then holds. Lowers again when the market softens, with a configurable
-  patience window (`lower_patience_minutes`) to avoid chasing transient dips that reverse before the Braiins 10-min
-  price-decrease cooldown expires.
+- **Escalation ladder — three modes** — when the bid is about to stop filling, the autopilot raises price. Three
+  shapes selectable from the Config page:
+  - **Market (reactive jump)** — wait until delivery drops below the floor for the configured window, then jump
+    directly to `fillable + overpay`.
+  - **Dampened (reactive step)** — same below-floor trigger, but step up by `escalation_step_sat_per_eh_day` rather
+    than jumping, to avoid chasing spikes.
+  - **Above market (preemptive)** — fire *before* delivery drops. The instant the market catches up enough that
+    `current_bid < fillable + overpay`, start the escalation timer; on timeout, jump to `fillable + overpay`. No
+    cut-off event needed, so there's no zero-hashrate gap while the timer runs.
+
+  Lowers again when the market softens, with a configurable patience window (`lower_patience_minutes`) to avoid
+  chasing transient dips that reverse before the Braiins 10-min price-decrease cooldown expires. When patience and
+  cooldown both apply, the Next Action panel shows whichever ends later as the binding ETA.
 - **Two-layer price ceiling** — a fixed `max_bid_sat_per_eh_day` plus an optional dynamic cap
   `max_overpay_vs_hashprice_sat_per_eh_day`. When both are set the effective cap per tick is the lower of the two —
   stops the autopilot overpaying when hashprice crashes but the fixed max still allows it.
@@ -101,21 +110,22 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
 
 ## Configuration
 
-Everything that influences the controller — hashrate targets, pricing caps, escalation strategy, budget and alert
-timers, boot mode, payout-source backend, retention windows, the optional Datum and Ocean endpoints — is
-live-editable from the Config page. Values are validated against the same Zod schema the daemon uses at startup;
-Save writes the new row and the next tick picks it up. No daemon restart needed for any value on this page.
+Everything that influences the controller — hashrate targets, pricing caps, escalation strategy, per-bid budget,
+boot mode, payout-source backend, retention windows, the optional Datum and Ocean endpoints — is live-editable
+from the Config page. Values are validated against the same Zod schema the daemon uses at startup; Save writes the
+new row and the next tick picks it up. No daemon restart needed for any value on this page.
 
 ![Configuration page — all tunables in one place](docs/images/config.jpg)
 
-Sections map directly to the spec: **Hashrate targets** (including the cheap-mode scale-up), **Pool destination**
-(pool URL, worker identity, Datum stats API URL), **Pricing caps** (fixed `max_bid` plus the optional dynamic
-`max_overpay_vs_hashprice`), **Fill strategy** (overpay, min delta, escalation mode + step + window, wait before
-lowering), **Budget** (per-bid budget), **Alerts & timers**, **Daemon startup** (boot mode — always dry-run / resume
-last / always live), **Block explorer** (template used by the block-marker cubes and the Ocean panel's last-pool-block
+Sections map directly to the spec: **Hashrate targets** (target, floor, and the cheap-mode scale-up), **Pool
+destination** (pool URL, worker identity, Datum stats API URL), **Pricing caps** (fixed `max_bid` plus the optional
+dynamic `max_overpay_vs_hashprice`), **Fill strategy** (overpay, min delta, escalation mode + step + window, wait
+before lowering), **Budget** (per-bid `amount_sat`; set to 0 to use the full available wallet balance on each
+`CREATE_BID`, clamped to Braiins' 1 BTC per-bid cap), **Daemon startup** (boot mode — always dry-run / resume last
+/ always live), **Block explorer** (template used by the block-marker cubes and the Ocean panel's last-pool-block
 link), **On-chain payouts** (payout address + Electrs-or-bitcoind backend), **Profit & Loss** spend scope, **BTC
-price oracle** (feeds the sat↔USD toggle), and **Log retention** for the append-only `tick_metrics` and `decisions`
-tables.
+price oracle** (feeds the sat↔USD toggle), **Chart smoothing** (rolling-mean window applied to each hashrate
+series), and **Log retention** for the append-only `tick_metrics` and `decisions` tables.
 
 ## Tech stack
 
