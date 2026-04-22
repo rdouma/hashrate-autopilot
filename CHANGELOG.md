@@ -2,6 +2,12 @@
 
 ## 2026-04-22
 
+### `[Fix]` Price chart: fill no longer paints diagonal wedges across null gaps (#46)
+
+Regression introduced by the #44 fix. That change made the price line break into multiple SVG subpaths on null (market-outage) ticks — correct for the line, but the fill wrapper still appended a single baseline closure at the very end (`${pricePath} L<lastX>,<bot> L<firstX>,<bot> Z`). SVG only closed the *last* subpath to the baseline; every interior subpath closed back to its own starting `M`, painting diagonal "sun ray" wedges across the gap.
+
+Now a dedicated `areaPathWithNullGaps` helper emits one closed polygon per non-null sub-run, each anchored to the baseline at its own segment endpoints. The fill tracks right under the price line again, and genuine gaps render as gaps in both line and fill.
+
 ### `[Feature]` bid_budget_sat: 0 = "use full wallet balance" sentinel (#40)
 
 `bid_budget_sat` is how much wallet gets slotted into `amount_sat` on each `CREATE_BID`. Because Braiins bids have no duration field and run until `amount_sat` is consumed, the value effectively decided how often the autopilot cycles through cancel/recreate — a second decision the operator was forced to make that doesn't really track how people think about their wallet ("I funded X sat, spend X sat").

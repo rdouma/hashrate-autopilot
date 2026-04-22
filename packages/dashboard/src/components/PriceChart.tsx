@@ -226,6 +226,56 @@ export const PriceChart = memo(function PriceChart({
     const fillablePath = pathWithNullGaps((p) => p.fillable_ask_sat_per_ph_day);
     const hashpricePath = pathWithNullGaps((p) => p.hashprice_sat_per_ph_day);
 
+    // Area-fill variant of the null-gap path. Each non-null run becomes
+    // its own closed polygon down to the baseline — `M x0,y0 L…L xN,yN
+    // L xN,base L x0,base Z`. A single bulk closure at the end of the
+    // stroke path only closes the last subpath; the interior subpaths
+    // would close back to their own starting M, painting diagonal
+    // wedges across the gap (bug #46, regression from #44).
+    const baselineY = HEIGHT - PADDING.bottom;
+    const areaPathWithNullGaps = (
+      getValue: (p: MetricPoint) => number | null | undefined,
+    ): string => {
+      const polys: string[] = [];
+      let current = '';
+      let segStartX: number | null = null;
+      let segLastX: number | null = null;
+      const closeSegment = () => {
+        if (current && segStartX !== null && segLastX !== null) {
+          polys.push(
+            `${current} L${segLastX.toFixed(1)},${baselineY.toFixed(1)} ` +
+              `L${segStartX.toFixed(1)},${baselineY.toFixed(1)} Z`,
+          );
+        }
+        current = '';
+        segStartX = null;
+        segLastX = null;
+      };
+      for (const p of points) {
+        const v = getValue(p);
+        if (v === null || v === undefined || !Number.isFinite(v)) {
+          closeSegment();
+          continue;
+        }
+        const xNum = xScale(p.tick_at);
+        const x = xNum.toFixed(1);
+        const y = yScale(v).toFixed(1);
+        if (!current) {
+          current = `M${x},${y}`;
+          segStartX = xNum;
+        } else {
+          current += ` L${x},${y}`;
+        }
+        segLastX = xNum;
+      }
+      closeSegment();
+      return polys.join(' ');
+    };
+
+    const priceAreaPath = areaPathWithNullGaps(
+      (p) => p.our_primary_price_sat_per_ph_day,
+    );
+
     // Cap is config-derived — `max_bid_sat_per_ph_day` is always
     // present when the daemon is running. The only way it goes
     // "missing" is when the dynamic branch kicks in and hashprice
@@ -270,7 +320,7 @@ export const PriceChart = memo(function PriceChart({
       ? events.filter((e) => e.occurred_at >= minX && e.occurred_at <= maxX)
       : [];
 
-    return { pricePoints, fillablePoints, minX, maxX, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, fillablePath, hashpricePath, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents };
+    return { pricePoints, fillablePoints, minX, maxX, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, fillablePath, hashpricePath, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents };
   }, [points, events, showEvents]);
 
   const eventPriceAt = useCallback((e: BidEventView): number | null => {
@@ -341,7 +391,7 @@ export const PriceChart = memo(function PriceChart({
     );
   }
 
-  const { pricePoints, fillablePoints, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, fillablePath, hashpricePath, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents } = chartData;
+  const { pricePoints, fillablePoints, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, fillablePath, hashpricePath, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents } = chartData;
 
   // Format Y-axis tick values: in USD mode convert sat/PH/day to $/PH/day
   const priceFmt = (v: number): string => {
@@ -445,18 +495,13 @@ export const PriceChart = memo(function PriceChart({
             opacity="0.85"
           />
         )}
-        {pricePath && pricePoints.length >= 2 && (
-          <>
-            {/* Soft gradient fill below the price line — mirrors the
-                delivered-hashrate fill on the chart above. Anchors at the
-                first/last actual price points (not chart edges) so gaps
-                where the bid was inactive don't get a fake fill. */}
-            <path
-              d={`${pricePath} L${xScale(pricePoints[pricePoints.length - 1]!.t).toFixed(1)},${(HEIGHT - PADDING.bottom).toFixed(1)} L${xScale(pricePoints[0]!.t).toFixed(1)},${(HEIGHT - PADDING.bottom).toFixed(1)} Z`}
-              fill="url(#priceFill)"
-              opacity="0.5"
-            />
-          </>
+        {priceAreaPath && (
+          /* Soft gradient fill below the price line — mirrors the
+             delivered-hashrate fill on the chart above. Each null-gap
+             sub-run is its own closed polygon down to the baseline
+             (#46 — the earlier single-closure variant painted diagonal
+             wedges across gaps after #44 split the line into subpaths). */
+          <path d={priceAreaPath} fill="url(#priceFill)" opacity="0.5" />
         )}
         {pricePath && (
           <path d={pricePath} stroke={simMode ? '#f97316' : COLOR_PRICE} strokeWidth="1.8" fill="none" opacity="0.95" />
