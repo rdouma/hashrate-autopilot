@@ -23,7 +23,7 @@ import {
 } from '@braiins-hashrate/shared';
 
 import type { MetricPoint, OurBlockMarker } from '../lib/api';
-import { formatAge, formatNumber, formatTimestamp, formatTimestampUtc } from '../lib/format';
+import { formatAgeMinutes, formatNumber, formatTimestamp, formatTimestampUtc } from '../lib/format';
 import { useLocale } from '../lib/locale';
 import { applyExplorerTemplate } from '../lib/blockExplorer';
 
@@ -597,7 +597,7 @@ function BlockTooltip({
       </div>
       <div className="text-slate-300 mt-1">
         {formatTimestamp(block.timestamp_ms, locale)}
-        <span className="text-slate-500 ml-2">· {formatAge(block.timestamp_ms)}</span>
+        <span className="text-slate-500 ml-2">· {formatAgeMinutes(block.timestamp_ms)}</span>
       </div>
       <div className="text-slate-500 text-[10px]">{formatTimestampUtc(block.timestamp_ms)}</div>
 

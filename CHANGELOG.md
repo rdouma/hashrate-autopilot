@@ -4,7 +4,7 @@
 
 ### `[UI]` Chart popovers: show relative age next to absolute timestamp (#45)
 
-The EDIT PRICE popover (yellow dot on price chart) and POOL BLOCK popover (block icon on hashrate chart) used to show only absolute timestamps — readers had to mentally subtract from "now" to answer "how long ago was this?" Now a muted `· 12m ago` / `· 3h ago` / `· 1d ago` suffix sits next to the human-readable line, using the existing single-unit `formatAge` helper (rounds to the coarsest unit; seconds only below 60s).
+The EDIT PRICE popover (yellow dot on price chart) and POOL BLOCK popover (block icon on hashrate chart) used to show only absolute timestamps — readers had to mentally subtract from "now" to answer "how long ago was this?" Now a muted `· 5m ago` / `· 18h 22m ago` / `· 2d 5h ago` suffix sits next to the human-readable line. Uses a new minute-resolution `formatAgeMinutes` helper — single-unit below an hour, two-unit (`Xh Ym` / `Xd Yh`) past that, and a quiet `just now` under a minute. No seconds (popovers don't tick).
 
 ### `[Fix]` Price chart: break fillable/hashprice/our-bid lines across null gaps (#44)
 

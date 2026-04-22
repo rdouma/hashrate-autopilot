@@ -18,7 +18,7 @@ import {
 import { api, type BidEventView, type DecisionDetail, type DecisionSummary, type MetricPoint } from '../lib/api';
 import { copyToClipboard } from '../lib/clipboard';
 import { useDenomination } from '../lib/denomination';
-import { formatAge, formatNumber, formatTimestamp, formatTimestampHuman, formatTimestampUtc } from '../lib/format';
+import { formatAgeMinutes, formatNumber, formatTimestamp, formatTimestampHuman, formatTimestampUtc } from '../lib/format';
 import { useLocale } from '../lib/locale';
 import { SatSymbol } from './SatSymbol';
 
@@ -860,7 +860,7 @@ function EventTooltip({
       </div>
       <div className="text-slate-300 mt-1">
         {formatTimestamp(e.occurred_at)}
-        <span className="text-slate-500 ml-2">· {formatAge(e.occurred_at)}</span>
+        <span className="text-slate-500 ml-2">· {formatAgeMinutes(e.occurred_at)}</span>
       </div>
       <div className="text-slate-500 text-[10px]">{formatTimestampUtc(e.occurred_at)}</div>
 
