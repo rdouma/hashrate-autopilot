@@ -90,6 +90,13 @@ export interface MetricPoint {
   available_balance_sat: number | null;
   datum_hashrate_ph: number | null;
   ocean_hashrate_ph: number | null;
+  /**
+   * Primary owned bid's cumulative `amount_consumed_sat` at this tick
+   * (sat). Per-tick deltas against this give the authoritative actual
+   * effective rate — drives the chart's "effective" line. Null for
+   * pre-migration ticks and ticks with no primary owned bid.
+   */
+  primary_bid_consumed_sat: number | null;
 }
 
 export interface BidEventView {

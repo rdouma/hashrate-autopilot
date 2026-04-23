@@ -53,6 +53,11 @@ interface PricePoint {
 
 const COLOR_HASHPRICE = '#a78bfa'; // violet-400
 const COLOR_MAXBID = '#f87171'; // red-400
+// Effective rate — what Braiins actually charged, per-tick from
+// primary_bid_consumed_sat deltas. Emerald so it's clearly a
+// "realised" number distinct from the bid (amber) and the market
+// (orange/violet).
+const COLOR_EFFECTIVE = '#34d399';
 
 export const PriceChart = memo(function PriceChart({
   points,
@@ -120,6 +125,35 @@ export const PriceChart = memo(function PriceChart({
       .filter((p) => Number.isFinite(p.hashprice_sat_per_ph_day))
       .map((p) => ({ t: p.tick_at, v: p.hashprice_sat_per_ph_day as number }));
 
+    // Effective rate — what Braiins actually charged us this tick, in
+    // sat/PH/day. Derived from the delta of `primary_bid_consumed_sat`
+    // between consecutive ticks (#49):
+    //   rate = Δconsumed × 86_400_000 / (delivered_ph × Δt_ms)
+    // (86.4M ms/day; the units cancel to sat/PH/day.)
+    // We skip intervals that aren't interpretable: either end missing
+    // the counter (pre-migration, or no primary bid), counter reset
+    // (new bid → delta goes negative), zero/near-zero delivery, or a
+    // gap longer than MAX_EFFECTIVE_DT_MS (spans daemon restarts etc).
+    // The rate is anchored at the endpoint timestamp to match how every
+    // other per-tick value on the chart is positioned.
+    const MAX_EFFECTIVE_DT_MS = 5 * 60_000;
+    const effectivePoints: PricePoint[] = [];
+    for (let i = 1; i < points.length; i += 1) {
+      const prev = points[i - 1]!;
+      const cur = points[i]!;
+      const c0 = prev.primary_bid_consumed_sat;
+      const c1 = cur.primary_bid_consumed_sat;
+      if (c0 == null || c1 == null) continue;
+      const delta = c1 - c0;
+      if (!Number.isFinite(delta) || delta < 0) continue;
+      const dt = cur.tick_at - prev.tick_at;
+      if (dt <= 0 || dt > MAX_EFFECTIVE_DT_MS) continue;
+      if (!Number.isFinite(cur.delivered_ph) || cur.delivered_ph < 0.01) continue;
+      const rate = (delta * 86_400_000) / (cur.delivered_ph * dt);
+      if (!Number.isFinite(rate) || rate <= 0) continue;
+      effectivePoints.push({ t: cur.tick_at, v: rate });
+    }
+
     // The line the operator actually cares about: the effective cap
     // that decide() uses each tick, which is the tighter of the fixed
     // max_bid and the dynamic hashprice+max_overpay. When the dynamic
@@ -168,6 +202,7 @@ export const PriceChart = memo(function PriceChart({
       ...pricePoints.map((p) => p.v),
       ...fillablePoints.map((p) => p.v),
       ...hashpricePoints.map((p) => p.v),
+      ...effectivePoints.map((p) => p.v),
       ...eventPrices,
     ];
     const hasPrice = priceSample.length > 0;
@@ -295,6 +330,30 @@ export const PriceChart = memo(function PriceChart({
       (p) => p.our_primary_price_sat_per_ph_day,
     );
 
+    // Effective-rate path — pre-computed as its own {t,v} series, not
+    // per-MetricPoint, so we can't reuse pathWithNullGaps. Inline a
+    // similar wall-clock-gated subpath builder: break across gaps >
+    // MAX_BRIDGE_MS for symmetry with the other lines.
+    const effectivePathBuilder = (pts: readonly PricePoint[]): string => {
+      const segments: string[] = [];
+      let current = '';
+      let lastT: number | null = null;
+      for (const p of pts) {
+        const x = xScale(p.t).toFixed(1);
+        const y = yScale(p.v).toFixed(1);
+        if (current && lastT !== null && p.t - lastT > MAX_BRIDGE_MS) {
+          segments.push(current);
+          current = `M${x},${y} `;
+        } else {
+          current += `${current ? 'L' : 'M'}${x},${y} `;
+        }
+        lastT = p.t;
+      }
+      if (current) segments.push(current);
+      return segments.join(' ');
+    };
+    const effectivePath = effectivePathBuilder(effectivePoints);
+
     // Cap is config-derived — `max_bid_sat_per_ph_day` is always
     // present when the daemon is running. The only way it goes
     // "missing" is when the dynamic branch kicks in and hashprice
@@ -339,7 +398,7 @@ export const PriceChart = memo(function PriceChart({
       ? events.filter((e) => e.occurred_at >= minX && e.occurred_at <= maxX)
       : [];
 
-    return { pricePoints, fillablePoints, minX, maxX, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, fillablePath, hashpricePath, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents };
+    return { pricePoints, fillablePoints, minX, maxX, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, fillablePath, hashpricePath, effectivePath, effectiveHasData: effectivePoints.length > 0, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents };
   }, [points, events, showEvents]);
 
   const eventPriceAt = useCallback((e: BidEventView): number | null => {
@@ -410,7 +469,7 @@ export const PriceChart = memo(function PriceChart({
     );
   }
 
-  const { pricePoints, fillablePoints, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, fillablePath, hashpricePath, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents } = chartData;
+  const { pricePoints, fillablePoints, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, fillablePath, hashpricePath, effectivePath, effectiveHasData, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents } = chartData;
 
   // Format Y-axis tick values: in USD mode convert sat/PH/day to $/PH/day
   const priceFmt = (v: number): string => {
@@ -431,6 +490,7 @@ export const PriceChart = memo(function PriceChart({
         <h3 className="text-xs uppercase tracking-wider text-slate-100">{simMode ? 'Simulated price' : 'Price'}</h3>
         <div className="flex items-center gap-3 text-xs flex-wrap">
           <Legend color={simMode ? '#f97316' : COLOR_PRICE} label={simMode ? 'simulated bid' : 'our bid'} />
+          {effectiveHasData && !simMode && <Legend color={COLOR_EFFECTIVE} label="effective" />}
           <Legend color={COLOR_FILLABLE} label="fillable" dashed />
           <Legend color={COLOR_HASHPRICE} label="hashprice" dashed />
           <Legend color={COLOR_MAXBID} label="max bid" />
@@ -524,6 +584,20 @@ export const PriceChart = memo(function PriceChart({
         )}
         {pricePath && (
           <path d={pricePath} stroke={simMode ? '#f97316' : COLOR_PRICE} strokeWidth="1.8" fill="none" opacity="0.95" />
+        )}
+        {/* Effective rate — what Braiins actually charged us, from
+            the per-tick primary_bid_consumed_sat delta. Drawn on top
+            of the bid (amber) line so the operator sees at a glance
+            whether the two line up (pay-your-bid) or the effective
+            sits systematically below (CLOB / pay-at-ask). #49. */}
+        {!simMode && effectivePath && (
+          <path
+            d={effectivePath}
+            stroke={COLOR_EFFECTIVE}
+            strokeWidth="1.4"
+            fill="none"
+            opacity="0.9"
+          />
         )}
 
         <defs>

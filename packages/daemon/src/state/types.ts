@@ -264,6 +264,14 @@ export interface TickMetricsTable {
   datum_hashrate_ph: number | null;
   ocean_hashrate_ph: number | null;
   spend_sat: number | null;
+  /**
+   * Primary owned bid's cumulative `amount_consumed_sat` at this tick,
+   * in sat. Per-tick deltas give the authoritative actual spend from
+   * Braiins (independent of our pay-your-bid `spend_sat` model) — see
+   * migration 0041. Null when there was no primary owned bid at this
+   * tick, or for pre-0041 rows.
+   */
+  primary_bid_consumed_sat: number | null;
   run_mode: RunMode;
   action_mode: ActionMode;
 }

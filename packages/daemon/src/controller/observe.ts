@@ -152,6 +152,7 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
         avg_speed_ph: b.avg_speed_ph,
         progress_pct: b.progress_pct,
         amount_remaining_sat: b.amount_remaining_sat,
+        amount_consumed_sat: Math.max(0, b.amount_sat - b.amount_remaining_sat),
         status: b.status,
         last_price_decrease_at: lastPriceDecreaseByOrder.get(b.braiins_order_id) ?? null,
       });

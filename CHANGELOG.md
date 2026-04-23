@@ -2,6 +2,16 @@
 
 ## 2026-04-22
 
+### `[Feature]` Per-tick actual-spend snapshot + "effective rate" chart line (#49)
+
+Empirical analysis of `owned_bids.amount_consumed_sat` vs `tick_metrics.spend_sat` (modeled at pay-your-bid) across the operator's active bid showed actual consumed sitting ~7.7% below modeled — suggestive but not conclusive of CLOB/pay-at-ask. Contributing noise on either side (Braiins' rolling `avg_speed_ph` lag per `observe.ts:283`, our 1-min-per-tick `spend_sat` approximation, and a tiny possible CLOB effect) all mix into a single bid-aggregate number we can't cleanly decompose.
+
+Fix: migration 0041 adds `primary_bid_consumed_sat` to `tick_metrics` — a per-tick snapshot of the primary owned bid's cumulative `amount_consumed_sat` straight from Braiins' `/spot/bid`. Per-tick deltas give the authoritative actual spend at the same sampling rate as the rest of the chart data, no aggregation noise.
+
+On the Price chart, a new emerald "effective" line shows the per-tick actual rate, computed client-side as `Δconsumed × 86_400_000 / (delivered_ph × Δt_ms)` in sat/PH/day. Drawn on top of the amber "our bid" line so any systematic gap between "what we bid" and "what Braiins actually charged" reads at a glance. Gap-safe (same 5-min bridge threshold as the other null-gap helpers), filtered against counter resets and near-zero delivery. Populated going forward — existing historical ticks show nothing (null column).
+
+Pull + restart the daemon to enable the snapshot; a few hours of data and a noticeable overpay make the two lines' relationship unambiguous — pay-your-bid has effective tracking the bid, CLOB has it tracking fillable, anything else gets characterised empirically from the new data.
+
 ### `[Docs]` README: preemptive escalation mode, per-bid budget = 0, updated Config screenshot
 
 README was stale on three fronts: (1) the `above_market` (preemptive) escalation mode added in #38 was not

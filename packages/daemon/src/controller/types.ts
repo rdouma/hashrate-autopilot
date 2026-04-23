@@ -62,6 +62,12 @@ export interface OwnedBidSnapshot {
   readonly avg_speed_ph: number;
   readonly progress_pct: number;
   readonly amount_remaining_sat: number;
+  /**
+   * `amount_sat − amount_remaining_sat` — authoritative cumulative
+   * spend on this bid, straight from Braiins' `/spot/bid`. Surfaced
+   * here so the tick-metrics writer can snapshot it per tick (#49).
+   */
+  readonly amount_consumed_sat: number;
   readonly status: string;
   readonly last_price_decrease_at: number | null;
 }

@@ -416,15 +416,44 @@ async function main(): Promise<void> {
 
     const reports: BidReport[] = bids.map((b) => analyzeBid(raw, b, latestTick));
 
+    // Anomalously low ratios (< 0.1) almost always mean the bid wasn't
+    // actually the autopilot's primary for most of [created_at, end] —
+    // tick_metrics delivery rows were shared with another overlapping
+    // owned bid that actually did the work. Flagging these out of the
+    // aggregate summary; they're shown in the table with a note.
+    const ANOMALY_FLOOR = 0.1;
     const filtered = reports.filter((r) => {
       if (!args.includeActive && !r.terminal) return false;
-      return (
-        r.lifetime_h >= args.minHours &&
-        r.total_ph_days > 0 &&
-        r.expected_at_bid_sat > 0 &&
-        Number.isFinite(r.actual_over_expected_ratio)
-      );
+      if (
+        !(
+          r.lifetime_h >= args.minHours &&
+          r.total_ph_days > 0 &&
+          r.expected_at_bid_sat > 0 &&
+          Number.isFinite(r.actual_over_expected_ratio)
+        )
+      ) {
+        return false;
+      }
+      if (r.actual_over_expected_ratio < ANOMALY_FLOOR) {
+        r.note = `ratio < ${ANOMALY_FLOOR} — likely not primary during claimed lifetime (overlapping owned bid)`;
+        return false;
+      }
+      return true;
     });
+
+    // Global ratio — immune to per-bid overlap artifacts. Sum of all
+    // autopilot-observed actual consumption vs sum of tick_metrics'
+    // modeled spend (already computed at pay-your-bid in the daemon).
+    const globalActual = countRows(
+      raw,
+      'SELECT COALESCE(SUM(amount_consumed_sat), 0) AS n FROM owned_bids',
+    );
+    const globalExpected = countRows(
+      raw,
+      'SELECT COALESCE(SUM(spend_sat), 0) AS n FROM tick_metrics WHERE spend_sat IS NOT NULL',
+    );
+    const globalRatio =
+      globalExpected > 0 ? globalActual / globalExpected : NaN;
 
     console.log('');
     console.log(

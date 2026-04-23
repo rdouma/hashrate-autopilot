@@ -280,6 +280,12 @@ export class Controller {
         datum_hashrate_ph: state.datum?.hashrate_ph ?? null,
         ocean_hashrate_ph: state.ocean_hashrate_ph,
         spend_sat: spendSat,
+        // Authoritative per-tick cumulative spend from Braiins — the
+        // primary bid's amount_consumed_sat snapshotted each observe
+        // (#49). Client-side deltas of this column give the actual
+        // effective rate, independent of our pay-your-bid `spend_sat`
+        // model. Null when no primary owned bid exists this tick.
+        primary_bid_consumed_sat: primary ? primary.amount_consumed_sat : null,
         run_mode: state.run_mode,
         action_mode: state.action_mode,
       });

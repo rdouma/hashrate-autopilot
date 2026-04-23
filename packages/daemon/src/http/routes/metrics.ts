@@ -55,6 +55,14 @@ export interface MetricPoint {
    * failed, or the tick predates migration 0035.
    */
   readonly ocean_hashrate_ph: number | null;
+  /**
+   * Primary owned bid's cumulative `amount_consumed_sat` at this tick
+   * (sat). Per-tick deltas give the authoritative actual-spend rate
+   * (independent of our pay-your-bid `spend_sat` model). Null on pre-
+   * migration rows and on ticks without a primary owned bid. See
+   * migration 0041.
+   */
+  readonly primary_bid_consumed_sat: number | null;
 }
 
 export async function registerMetricsRoute(
@@ -115,6 +123,7 @@ function toMetricPoint(r: {
   available_balance_sat: number | null;
   datum_hashrate_ph: number | null;
   ocean_hashrate_ph: number | null;
+  primary_bid_consumed_sat: number | null;
 }): MetricPoint {
   return {
     tick_at: r.tick_at,
@@ -144,6 +153,7 @@ function toMetricPoint(r: {
     available_balance_sat: r.available_balance_sat,
     datum_hashrate_ph: r.datum_hashrate_ph,
     ocean_hashrate_ph: r.ocean_hashrate_ph,
+    primary_bid_consumed_sat: r.primary_bid_consumed_sat,
   };
 }
 
