@@ -164,48 +164,72 @@ export const PriceChart = memo(function PriceChart({
       .filter((p) => Number.isFinite(p.hashprice_sat_per_ph_day))
       .map((p) => ({ t: p.tick_at, v: p.hashprice_sat_per_ph_day as number }));
 
-    // Effective rate — what Braiins actually charged us this tick, in
-    // sat/PH/day. Derived from the delta of `primary_bid_consumed_sat`
-    // between consecutive ticks (#49):
-    //   rate = Δconsumed × 86_400_000 / (delivered_ph × Δt_ms)
-    // (86.4M ms/day; the units cancel to sat/PH/day.)
-    // Intervals are skipped when not interpretable:
-    //   - either end missing the counter (pre-migration, or no primary
-    //     bid that tick);
-    //   - counter reset (new bid → delta < 0);
-    //   - gap > MAX_EFFECTIVE_DT_MS (daemon restart, etc);
-    //   - near-zero delivered_ph (rate blows up as a divide-by-small).
-    // Extra outlier rejection: the real rate can never exceed the bid's
-    // price by any meaningful amount (that's the whole point of a bid
-    // being an upper bound). When `amount_consumed_sat` snapshots
-    // update asynchronously vs `avg_speed_ph` at tick boundaries, a
-    // delta can line up against a momentary delivery dip and produce a
-    // transient rate several multiples above the bid — visible as a
-    // single spike that would pull the Y-axis off by an order of
-    // magnitude. Reject anything > OUTLIER_MULTIPLE × bid at that tick.
-    // The rate is anchored at the endpoint timestamp to match how every
-    // other per-tick value on the chart is positioned.
+    // Effective rate — what Braiins actually charged per PH per day —
+    // computed as a WINDOW-AGGREGATED ratio of total consumed vs total
+    // PH-days delivered over the last N minutes, anchored at each tick:
+    //
+    //   rate[i] = Σ Δconsumed_j / Σ (delivered_ph_j × Δt_j / 86_400_000)
+    //
+    // (Second term = PH-days. sat ÷ PH-days = sat/PH/day.)
+    //
+    // Why aggregate the numerator and denominator separately rather
+    // than averaging per-tick rates: Braiins' `amount_consumed_sat`
+    // updates asynchronously from our tick loop. Some ticks report
+    // Δconsumed = 0 (Braiins hasn't settled the window yet); the next
+    // tick absorbs the catch-up and reports a big delta. Per-tick
+    // rates swing between "0" and "multiples of the real rate". Naive
+    // rolling-mean of ratios amplifies that swing because the zeros
+    // drag the mean down and the spikes, even after outlier rejection,
+    // leave a sparse jagged survivor set. Summing-then-dividing is the
+    // correct time-weighted average and naturally absorbs the update
+    // lag (#49 follow-up).
+    //
+    // Window = max(3, priceSmoothingMinutes) — 1-minute resolution is
+    // smaller than Braiins' own settlement cadence, so a minimum of 3
+    // minutes keeps the line legible even with smoothing "off".
+    //
+    // Per-interval validity filters: skip when either consumed endpoint
+    // is null (pre-migration or no primary bid), counter reset
+    // (Δ < 0), tick gap > MAX_EFFECTIVE_DT_MS (daemon restart),
+    // near-zero delivery. Final outlier rejection: if aggregated rate
+    // exceeds 1.5× bid at the anchor tick, drop — the bid is a hard
+    // upper bound by definition, anything above is a computation
+    // artifact.
     const MAX_EFFECTIVE_DT_MS = 5 * 60_000;
     const OUTLIER_MULTIPLE = 1.5;
+    const effectiveWindowMs =
+      Math.max(3, priceSmoothingMinutes) * 60_000;
     const effectivePoints: PricePoint[] = [];
     for (let i = 1; i < points.length; i += 1) {
-      const prev = points[i - 1]!;
-      const cur = points[i]!;
-      const c0 = prev.primary_bid_consumed_sat;
-      const c1 = cur.primary_bid_consumed_sat;
-      if (c0 == null || c1 == null) continue;
-      const delta = c1 - c0;
-      if (!Number.isFinite(delta) || delta < 0) continue;
-      const dt = cur.tick_at - prev.tick_at;
-      if (dt <= 0 || dt > MAX_EFFECTIVE_DT_MS) continue;
-      if (!Number.isFinite(cur.delivered_ph) || cur.delivered_ph < 0.1) continue;
-      const rate = (delta * 86_400_000) / (cur.delivered_ph * dt);
+      let deltaSum = 0;
+      let phDaySum = 0;
+      let haveAny = false;
+      for (let j = i; j >= 1; j -= 1) {
+        const anchorT = points[i]!.tick_at;
+        const curT = points[j]!.tick_at;
+        if (anchorT - curT > effectiveWindowMs) break;
+        const cur = points[j]!;
+        const prev = points[j - 1]!;
+        const c0 = prev.primary_bid_consumed_sat;
+        const c1 = cur.primary_bid_consumed_sat;
+        if (c0 == null || c1 == null) break;
+        const delta = c1 - c0;
+        if (!Number.isFinite(delta) || delta < 0) break;
+        const dt = curT - prev.tick_at;
+        if (dt <= 0 || dt > MAX_EFFECTIVE_DT_MS) break;
+        if (!Number.isFinite(cur.delivered_ph) || cur.delivered_ph < 0.05) continue;
+        deltaSum += delta;
+        phDaySum += (cur.delivered_ph * dt) / 86_400_000;
+        haveAny = true;
+      }
+      if (!haveAny || phDaySum <= 0) continue;
+      const rate = deltaSum / phDaySum;
       if (!Number.isFinite(rate) || rate <= 0) continue;
-      const bid = cur.our_primary_price_sat_per_ph_day;
+      const bid = points[i]!.our_primary_price_sat_per_ph_day;
       if (bid !== null && Number.isFinite(bid) && rate > bid * OUTLIER_MULTIPLE) {
         continue;
       }
-      effectivePoints.push({ t: cur.tick_at, v: rate });
+      effectivePoints.push({ t: points[i]!.tick_at, v: rate });
     }
 
     // The line the operator actually cares about: the effective cap
@@ -330,16 +354,12 @@ export const PriceChart = memo(function PriceChart({
       return segments.join(' ');
     };
 
-    // Smoothed versions of the "our side" series (our bid + effective).
-    // Fillable / hashprice / max_bid are market-wide and not smoothed.
-    // When priceSmoothingMinutes <= 1 these are identity-passes.
+    // Smoothed "our bid" series via rolling-mean. Fillable / hashprice /
+    // max_bid are market-wide and stay raw. effectivePoints is already
+    // window-aggregated above — no post-hoc smoothing needed.
     const smoothedPricePoints = rollingMeanPoints(pricePoints, priceSmoothingMinutes);
     const smoothedPriceByTick = new Map<number, number>(
       smoothedPricePoints.map((p) => [p.t, p.v]),
-    );
-    const smoothedEffectivePoints = rollingMeanPoints(
-      effectivePoints,
-      priceSmoothingMinutes,
     );
 
     const pricePath = pathWithNullGaps(
@@ -427,7 +447,7 @@ export const PriceChart = memo(function PriceChart({
       if (current) segments.push(current);
       return segments.join(' ');
     };
-    const effectivePath = effectivePathBuilder(smoothedEffectivePoints);
+    const effectivePath = effectivePathBuilder(effectivePoints);
 
     // Cap is config-derived — `max_bid_sat_per_ph_day` is always
     // present when the daemon is running. The only way it goes

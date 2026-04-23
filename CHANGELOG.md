@@ -2,6 +2,12 @@
 
 ## 2026-04-22
 
+### `[Fix]` Effective rate: window-aggregate Σconsumed / Σ(delivered × dt) instead of averaging ratios (#49 follow-up)
+
+Per-tick rates were meaningless: Braiins' `amount_consumed_sat` counter updates asynchronously from our tick loop, so some ticks report Δ=0 and the next absorbs a catch-up Δ that spans multiple ticks. Per-tick rates swung wildly between zero and multiples of the real rate; naive rolling-mean of those ratios amplified the problem, and the outlier filter thinned the survivor set into sparse disconnected points rendered as vertical spikes or missing lines entirely (depending on the smoothing window).
+
+Correct approach ships now: aggregate the numerator (Σ Δconsumed) and denominator (Σ delivered_ph × Δt_ms / 86,400,000 = PH-days) separately over the last N minutes, then divide. That's the true time-weighted average rate — summing-before-dividing absorbs Braiins' update cadence naturally. Window = max(3, priceSmoothingMinutes) so the line is legible even with smoothing set to 1; bumping it to 5 or 10 smooths over longer trends. Outlier rejection against 1.5× current bid preserved as a last-chance guard.
+
 ### `[Feature]` Price chart: rolling-mean smoothing for our-bid and effective lines (#49 follow-up)
 
 Operator requested a smoothing knob for the Price chart analogous to the one the Hashrate chart has had since #42. New `braiins_price_smoothing_minutes` config (migration 0042, default 1 = off) applies a rolling-mean window to both `our bid` and `effective`. Fillable / hashprice / max bid stay untouched — they're market-wide signals, not ours. Lives in the Config → Chart smoothing section next to the existing Braiins/Datum knobs. Same `integer_spinner` presentation (step 5, min 1).
