@@ -131,14 +131,12 @@ export class Controller {
           )
         : null;
       void fillable;
-      // Legacy pay-your-bid model — kept for backwards compat with the
-      // existing `spend_sat` column. The dashboard now reads
-      // `primary_bid_consumed_sat` deltas for authoritative actual
-      // spend (#49) and the modelled figure is unused there.
-      const spendSat =
-        primary && state.actual_hashrate.total_ph > 0
-          ? (primary.price_sat * state.actual_hashrate.total_ph) / 1_440_000
-          : null;
+      // Legacy bid-based spend model (`bid × delivered / 1_440_000`)
+      // used to populate `spend_sat`. Under CLOB the bid is a ceiling
+      // and the real spend is `primary_bid_consumed_sat` deltas, so
+      // nothing reads `spend_sat` any more; keep the column for schema
+      // continuity but stop writing fake values.
+      const spendSat: number | null = null;
       await this.deps.tickMetricsRepo.insert({
         tick_at: state.tick_at,
         delivered_ph: state.actual_hashrate.total_ph,

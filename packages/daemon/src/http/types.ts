@@ -122,6 +122,13 @@ export interface StatusResponse {
    * `null` until at least one tick exists inside the window.
    */
   readonly avg_delivered_ph_3h: number | null;
+  /**
+   * Actual sat spent per day over the last 3 h, derived from
+   * `primary_bid_consumed_sat` deltas (what Braiins charged, not a
+   * model of `bid × delivered`). Drives the runway forecast. Null
+   * until at least ~5 min of matched data exists in the window.
+   */
+  readonly actual_spend_per_day_sat_3h: number | null;
   readonly below_floor_since: number | null;
 
   readonly last_proposals: readonly ProposalView[];

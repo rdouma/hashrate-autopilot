@@ -192,10 +192,16 @@ export class TickMetricsRepo {
     tick_count: number;
     first_tick_at: number | null;
     last_tick_at: number | null;
-    avg_price_sat_per_eh_day: number | null;
     avg_hashprice_sat_per_eh_day: number | null;
     avg_delivered_ph: number | null;
-    sum_spend_sat: number | null;
+    /**
+     * Actual sat consumed across the range, summed from per-tick
+     * `primary_bid_consumed_sat` deltas. Applies the same zero-dip
+     * filter as the stats endpoint — any delta where either endpoint
+     * is 0 or the tick gap is out of bounds is skipped. This is what
+     * Braiins actually charged us; no bid-price modelling.
+     */
+    actual_spend_sat: number | null;
   }> {
     let q = this.db.selectFrom('tick_metrics');
     if (sinceMs !== null) q = q.where('tick_at', '>=', sinceMs);
@@ -204,25 +210,64 @@ export class TickMetricsRepo {
         sql<number>`COUNT(*)`.as('tick_count'),
         sql<number | null>`MIN(tick_at)`.as('first_tick_at'),
         sql<number | null>`MAX(tick_at)`.as('last_tick_at'),
-        sql<number | null>`AVG(our_primary_price_sat_per_eh_day)`.as(
-          'avg_price_sat_per_eh_day',
-        ),
         sql<number | null>`AVG(hashprice_sat_per_eh_day)`.as(
           'avg_hashprice_sat_per_eh_day',
         ),
         sql<number | null>`AVG(delivered_ph)`.as('avg_delivered_ph'),
-        sql<number | null>`SUM(spend_sat)`.as('sum_spend_sat'),
       ])
       .executeTakeFirstOrThrow();
+    const actualSpendSat = await this.actualSpendSatSince(sinceMs);
     return {
       tick_count: row.tick_count,
       first_tick_at: row.first_tick_at ?? null,
       last_tick_at: row.last_tick_at ?? null,
-      avg_price_sat_per_eh_day: row.avg_price_sat_per_eh_day ?? null,
       avg_hashprice_sat_per_eh_day: row.avg_hashprice_sat_per_eh_day ?? null,
       avg_delivered_ph: row.avg_delivered_ph ?? null,
-      sum_spend_sat: row.sum_spend_sat ?? null,
+      actual_spend_sat: actualSpendSat,
     };
+  }
+
+  /**
+   * Total sat actually consumed across ticks at or after `sinceMs`,
+   * summed from valid inter-tick deltas of `primary_bid_consumed_sat`.
+   *
+   * Filter (matches stats.ts):
+   *   - both endpoints of each delta must be > 0 (zero mid-sequence is
+   *     a transient "no primary bid" snapshot and LAG across it would
+   *     report the recovery counter as fresh spend, inflating the sum
+   *     by orders of magnitude — see the April 23 incident)
+   *   - delta must be non-negative (primary-bid ID swap produces
+   *     a negative; already caught by the > 0 guard but kept
+   *     explicit)
+   *   - tick gap between 1 ms and 5 min — longer gaps are restarts
+   *
+   * Unbounded when `sinceMs` is null (used by the P&L `all` range).
+   */
+  async actualSpendSatSince(sinceMs: number | null): Promise<number | null> {
+    const where = sinceMs !== null ? `WHERE tick_at >= ${sinceMs}` : '';
+    const queryText = `
+      SELECT SUM(delta) AS total_sat
+      FROM (
+        SELECT
+          CASE
+            WHEN c1 > 0 AND c0 > 0 AND c1 >= c0 AND dur BETWEEN 1 AND 300000
+            THEN c1 - c0
+            ELSE 0
+          END AS delta
+        FROM (
+          SELECT
+            primary_bid_consumed_sat AS c1,
+            LAG(primary_bid_consumed_sat) OVER (ORDER BY tick_at) AS c0,
+            tick_at - LAG(tick_at) OVER (ORDER BY tick_at) AS dur
+          FROM tick_metrics
+          ${where}
+        )
+      )
+    `;
+    const res = await sql.raw(queryText).execute(this.db);
+    const row = (res as unknown as { rows: Array<{ total_sat: number | null }> }).rows?.[0];
+    const v = row?.total_sat ?? null;
+    return v === null ? null : Number(v);
   }
 
   /**

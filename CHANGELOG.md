@@ -2,6 +2,16 @@
 
 ## 2026-04-23
 
+### `[Fix]` P&L + runway: measured spend, not modelled bid × delivered
+
+Under CLOB the bid is a ceiling and the *actual* price we pay comes from matched asks. The dashboard had been computing "projected spend/day" and runway from `bid × delivered × time / 1_440_000` — the pay-your-bid formula. With a 48k bid, 3 PH/s delivery, and real spend matching asks around 41k, this consistently **overstated daily spend by 15-20%** and understated runway by the same amount. Wherever we used `bid`-based modelling, we now use `primary_bid_consumed_sat` deltas (the authoritative Braiins counter).
+
+- **P&L per-day card**: "spend/day" and "net/day" are measured, not projected. Tooltips updated. "Avg bid price" input row deleted — it was the multiplier for the dropped model. Income/day stays as a projection (`avg hashprice × avg delivered`).
+- **Braiins panel runway** ("3.9 days · ~26 apr") now divides available balance by `actual_spend_per_day_sat_3h` — the last 3 h of real consumed sat, scaled to 24 h. Same zero-dip filter as the stats SQL so a transient bid-swap blink can't swing the forecast.
+- **Server**: `/api/finance/range` gains `actual_spend_sat` + `actual_spend_per_day_sat`, drops `avg_price_sat_per_ph_day` and `sum_spend_sat`. `/api/status` gains `actual_spend_per_day_sat_3h`. Backend: new `TickMetricsRepo.actualSpendSatSince()` with the zero-dip filter.
+- **`tick_metrics.spend_sat` column**: stopped being populated (writes always null) — the modelled value had no remaining readers. Column kept for schema continuity.
+- `packages/dashboard/src/lib/finance.ts` deleted. All 212 tests pass.
+
 ### `[Fix]` Effective-rate zero-dip inflation; retire fillable UI; expandable price chart; cheap-mode to best-ask
 
 **Root cause nailed for the "800k sat/PH/day" hero display**: when Braiins snapshots the primary bid during a CREATE/EDIT cycle, `amount_sat` and `amount_remaining_sat` can both read zero for one tick — so our `amount_consumed_sat = amount_sat - amount_remaining_sat` dips to 0 and back up to the real counter on the next tick. `LAG()` across that dip turns the entire recovery value (hundreds of thousands of sat) into a bogus delta that then dominates every window-aggregate it lands in. On the operator's DB a single 311,495-sat spurious delta turned a real 41k sat/PH/day rate into a reported 800k+. Fix: require **both** endpoints of every delta to be > 0 in the stats SQL and the chart's effective-rate computation. Belt-and-suspenders: clamp the displayed effective rate to our own bid (physical CLOB ceiling).

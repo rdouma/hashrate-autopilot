@@ -103,30 +103,36 @@ export interface FinanceRangeResponse {
   readonly tick_count: number;
   readonly first_tick_at: number | null;
   readonly last_tick_at: number | null;
-  readonly avg_price_sat_per_ph_day: number | null;
   readonly avg_hashprice_sat_per_ph_day: number | null;
   readonly avg_delivered_ph: number | null;
-  readonly sum_spend_sat: number | null;
   /**
-   * Derived: `avg_price × avg_delivered`, in sat/day. Matches the
-   * operator's mental model from issue #43 — "my typical daily rate
-   * across the window," not retroactively repriced by the latest
-   * bid. Null when either input is missing or tick_count is below
-   * the fallback threshold.
+   * Actual sat consumed across the range, summed from per-tick
+   * `primary_bid_consumed_sat` deltas. Authoritative spend — what
+   * Braiins actually charged. Null when no usable deltas in range.
    */
-  readonly spend_per_day_sat: number | null;
+  readonly actual_spend_sat: number | null;
   /**
-   * Derived: `avg_hashprice × avg_delivered`, in sat/day. Symmetric
-   * with `spend_per_day_sat` — the income side computed from
-   * tick-level samples rather than Ocean's 3h snapshot. Null
-   * equivalently.
+   * `actual_spend_sat` scaled to a 24h rate using the covered span
+   * (last_tick_at − first_tick_at). Null when span is too short to
+   * trust (< MIN_TICKS_FOR_AVG ticks) or no usable spend.
+   */
+  readonly actual_spend_per_day_sat: number | null;
+  /**
+   * Derived: `avg_hashprice × avg_delivered`, in sat/day. The income
+   * side is still a projection (Ocean's 3h hashrate × market
+   * break-even), not a measurement — kept symmetric with the
+   * previous version. Null equivalently.
    */
   readonly projected_income_per_day_sat: number | null;
-  readonly projected_net_per_day_sat: number | null;
+  /**
+   * `projected_income_per_day_sat − actual_spend_per_day_sat`. The
+   * "net" the operator actually sees; positive = profitable.
+   */
+  readonly net_per_day_sat: number | null;
   /**
    * True when tick_count < MIN_TICKS_FOR_AVG. Dashboard badges the
-   * card so the operator knows to discount these numbers; both
-   * derived fields above are null in that case.
+   * card so the operator knows to discount these numbers; derived
+   * fields above are null in that case.
    */
   readonly insufficient_history: boolean;
 }
@@ -146,26 +152,30 @@ export async function registerFinanceRoute(
       const agg = await deps.tickMetricsRepo.rangeFinanceAggregates(sinceMs);
       const insufficient = agg.tick_count < MIN_TICKS_FOR_AVG;
 
-      const avgPricePh =
-        agg.avg_price_sat_per_eh_day !== null
-          ? agg.avg_price_sat_per_eh_day / EH_PER_PH
-          : null;
       const avgHashpricePh =
         agg.avg_hashprice_sat_per_eh_day !== null
           ? agg.avg_hashprice_sat_per_eh_day / EH_PER_PH
           : null;
 
-      const spendPerDay =
-        !insufficient && avgPricePh !== null && agg.avg_delivered_ph !== null
-          ? avgPricePh * agg.avg_delivered_ph
+      // Actual spend/day = (sat spent in covered window) × 86.4M / (span ms).
+      // Span comes from the actual first/last tick in range, not the
+      // requested window, so a partially-populated range still reads
+      // a correct daily rate.
+      const spanMs =
+        agg.first_tick_at !== null && agg.last_tick_at !== null
+          ? agg.last_tick_at - agg.first_tick_at
+          : 0;
+      const actualSpendPerDay =
+        !insufficient && agg.actual_spend_sat !== null && spanMs > 0
+          ? (agg.actual_spend_sat * 86_400_000) / spanMs
           : null;
       const incomePerDay =
         !insufficient && avgHashpricePh !== null && agg.avg_delivered_ph !== null
           ? avgHashpricePh * agg.avg_delivered_ph
           : null;
       const netPerDay =
-        spendPerDay !== null && incomePerDay !== null
-          ? incomePerDay - spendPerDay
+        actualSpendPerDay !== null && incomePerDay !== null
+          ? incomePerDay - actualSpendPerDay
           : null;
 
       return {
@@ -174,13 +184,12 @@ export async function registerFinanceRoute(
         tick_count: agg.tick_count,
         first_tick_at: agg.first_tick_at,
         last_tick_at: agg.last_tick_at,
-        avg_price_sat_per_ph_day: avgPricePh,
         avg_hashprice_sat_per_ph_day: avgHashpricePh,
         avg_delivered_ph: agg.avg_delivered_ph,
-        sum_spend_sat: agg.sum_spend_sat,
-        spend_per_day_sat: spendPerDay,
+        actual_spend_sat: agg.actual_spend_sat,
+        actual_spend_per_day_sat: actualSpendPerDay,
         projected_income_per_day_sat: incomePerDay,
-        projected_net_per_day_sat: netPerDay,
+        net_per_day_sat: netPerDay,
         insufficient_history: insufficient,
       };
     },

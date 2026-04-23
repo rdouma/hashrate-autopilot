@@ -34,9 +34,17 @@ export async function registerStatusRoute(
     const tickIntervalMs = deps.tickIntervalMs;
     const nextTickAt =
       runtime.last_tick_at !== null ? runtime.last_tick_at + tickIntervalMs : null;
-    const avgDeliveredPh3h = await deps.tickMetricsRepo.avgDeliveredPhSince(
-      Date.now() - AVG_DELIVERED_WINDOW_MS,
-    );
+    const sinceMs3h = Date.now() - AVG_DELIVERED_WINDOW_MS;
+    const avgDeliveredPh3h = await deps.tickMetricsRepo.avgDeliveredPhSince(sinceMs3h);
+    // Actual spend/day, derived from the last 3h of primary_bid_consumed_sat
+    // deltas (same zero-dip filter as /api/stats and /api/finance/range).
+    // Runway uses this; the legacy bid × delivered model was lying under
+    // CLOB where the bid is a ceiling, not what we pay.
+    const spend3hSat = await deps.tickMetricsRepo.actualSpendSatSince(sinceMs3h);
+    const actualSpendPerDay3h =
+      spend3hSat !== null && spend3hSat > 0
+        ? spend3hSat * 8 // 3h → 24h
+        : null;
 
     if (!last) {
       return {
@@ -66,6 +74,7 @@ export async function registerStatusRoute(
         bids: [],
         actual_hashrate_ph: 0,
         avg_delivered_ph_3h: avgDeliveredPh3h,
+        actual_spend_per_day_sat_3h: actualSpendPerDay3h,
         below_floor_since: null,
         last_proposals: [],
         config_summary: summariseConfig(config, deps.hashpriceCache?.getFresh(Infinity) ?? null, null),
@@ -181,6 +190,7 @@ export async function registerStatusRoute(
       bids,
       actual_hashrate_ph: state.actual_hashrate.total_ph,
       avg_delivered_ph_3h: avgDeliveredPh3h,
+      actual_spend_per_day_sat_3h: actualSpendPerDay3h,
       below_floor_since: state.below_floor_since,
       last_proposals,
       config_summary: summariseConfig(

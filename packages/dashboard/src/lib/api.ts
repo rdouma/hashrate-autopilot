@@ -170,6 +170,7 @@ export interface StatusResponse {
   bids: BidView[];
   actual_hashrate_ph: number;
   avg_delivered_ph_3h: number | null;
+  actual_spend_per_day_sat_3h: number | null;
   below_floor_since: number | null;
   last_proposals: ProposalView[];
   config_summary: {
@@ -327,13 +328,12 @@ export interface FinanceRangeResponse {
   tick_count: number;
   first_tick_at: number | null;
   last_tick_at: number | null;
-  avg_price_sat_per_ph_day: number | null;
   avg_hashprice_sat_per_ph_day: number | null;
   avg_delivered_ph: number | null;
-  sum_spend_sat: number | null;
-  spend_per_day_sat: number | null;
+  actual_spend_sat: number | null;
+  actual_spend_per_day_sat: number | null;
   projected_income_per_day_sat: number | null;
-  projected_net_per_day_sat: number | null;
+  net_per_day_sat: number | null;
   insufficient_history: boolean;
 }
 

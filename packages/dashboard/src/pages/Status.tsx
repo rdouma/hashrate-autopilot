@@ -43,7 +43,6 @@ import {
   formatTimestampUtc,
 } from '../lib/format';
 import { applyExplorerTemplate } from '../lib/blockExplorer';
-import { projectedDailySpendSat3h } from '../lib/finance';
 import { useDenomination } from '../lib/denomination';
 import { copyToClipboard } from '../lib/clipboard';
 import { actionModeLabel, bidStatusClass, bidStatusLabel } from '../lib/labels';
@@ -329,8 +328,7 @@ export function Status() {
           <div className="border-t border-slate-800 mt-2 pt-2">
             <BraiinsBalances
               balances={s.balances}
-              bids={s.bids}
-              avgDeliveredPh3h={s.avg_delivered_ph_3h}
+              actualSpendPerDaySat3h={s.actual_spend_per_day_sat_3h}
               locale={intlLocale}
               denomination={denomination}
             />
@@ -1267,25 +1265,23 @@ function ReachabilityBadge({
  */
 function BraiinsBalances({
   balances,
-  bids,
-  avgDeliveredPh3h,
+  actualSpendPerDaySat3h,
   locale,
   denomination,
 }: {
   balances: readonly BalanceView[];
-  bids: readonly BidView[];
-  avgDeliveredPh3h: number | null;
+  /**
+   * Actual sat/day spend over the last 3 h, from
+   * `/api/status.actual_spend_per_day_sat_3h` (primary_bid_consumed_sat
+   * deltas scaled to 24h). Null until the daemon has enough matched
+   * data in the window. Drives the runway forecast; the old
+   * bid × delivered model was lying under CLOB.
+   */
+  actualSpendPerDaySat3h: number | null;
   locale: string | undefined;
   denomination: ReturnType<typeof useDenomination>;
 }) {
-  // Spend rate is account-wide, not per-balance — hoist the reduce
-  // out of the map so N balances don't each re-walk the bid list.
-  // Smoothed over the last 3 h of delivered hashrate so the runway
-  // date doesn't slide back and forth on per-tick delivery jitter.
-  const dailySpendSat = useMemo(
-    () => projectedDailySpendSat3h(bids, avgDeliveredPh3h),
-    [bids, avgDeliveredPh3h],
-  );
+  const dailySpendSat = actualSpendPerDaySat3h ?? 0;
   const nowMs = Date.now();
   if (balances.length === 0) {
     return <div className="text-slate-500 text-sm">{'\u2014'}</div>;
@@ -1524,17 +1520,19 @@ function FinancePanel({
       (b) => b.is_owned && b.status === 'BID_STATUS_ACTIVE',
     );
 
-    // Range-aware path: all three derived fields are null when the
-    // server returns `insufficient_history`. Treat that as a signal
-    // to fall back to the legacy instantaneous spend.
+    // Range-aware path: derived fields are null when the server
+    // returns `insufficient_history`. Fall back to the 3h actual
+    // spend rate carried on /api/status — which also derives from
+    // primary_bid_consumed_sat deltas, just over a fixed 3h window
+    // instead of the selected range.
     const haveRange =
       rangeData !== undefined &&
       !rangeData.insufficient_history &&
-      rangeData.spend_per_day_sat !== null;
+      rangeData.actual_spend_per_day_sat !== null;
 
     const spend = haveRange
-      ? rangeData!.spend_per_day_sat!
-      : projectedDailySpendSat3h(status.bids, status.avg_delivered_ph_3h);
+      ? rangeData!.actual_spend_per_day_sat!
+      : status.actual_spend_per_day_sat_3h ?? 0;
     const projectedIncome = haveRange
       ? rangeData!.projected_income_per_day_sat
       : null;
@@ -1667,7 +1665,7 @@ function FinancePanel({
                       ? formatHashratePH(rangeData.avg_delivered_ph, intlLocale)
                       : 'calculating…'
                   }
-                  tooltip="Average delivered hashrate over the selected chart range. This is the multiplicand for BOTH projected income (× avg hashprice) and projected spend (× avg bid price) below."
+                  tooltip="Average delivered hashrate over the selected chart range. Multiplied by avg hashprice to get projected income. Spend is measured directly (primary_bid_consumed_sat deltas), so this is not a factor on the spend side."
                 />
                 <FinanceFootnote
                   label={`avg hashprice (${rangeLabel})`}
@@ -1680,18 +1678,6 @@ function FinancePanel({
                       : 'calculating…'
                   }
                   tooltip="Average break-even unit price over the selected range. Multiplied by avg delivered to get projected income. Different from the spot hashprice row below — this is what the projection actually uses."
-                />
-                <FinanceFootnote
-                  label={`avg bid price (${rangeLabel})`}
-                  value={
-                    rangeData.avg_price_sat_per_ph_day !== null
-                      ? denomination.formatSatPerPhDay(
-                          rangeData.avg_price_sat_per_ph_day,
-                          intlLocale,
-                        )
-                      : 'calculating…'
-                  }
-                  tooltip="Average bid price the autopilot paid over the selected range. Multiplied by avg delivered to get projected spend. A mid-range price change does NOT retroactively reprice earlier hours."
                 />
               </>
             )}
@@ -1715,16 +1701,16 @@ function FinancePanel({
               tooltip="Projection: avg hashprice × avg delivered (rows above), both averaged over the selected chart range. Range-aware counterpart to Ocean's own 3h estimate."
             />
             <FinanceFootnote
-              label={`projected spend/day${rangeFallback ? '' : ' (' + rangeLabel + ')'}`}
+              label={`spend/day${rangeFallback ? ' (3h)' : ' (' + rangeLabel + ')'}`}
               value={denomination.formatSat(Math.round(dailySpendSat), intlLocale)}
               tooltip={
                 rangeFallback
-                  ? "Projection. Current bid price × rolling 3h average of delivered hashrate — the legacy fallback used when the server has fewer than ~5 ticks in the selected window (fresh install, heavily-pruned history, daemon just started)."
-                  : 'Projection: avg bid price × avg delivered (rows above), both averaged over the selected chart range.'
+                  ? 'Actual sat consumed over the last 3 h, scaled to a 24h rate. Uses Braiins\u2019s authoritative primary_bid_consumed_sat counter, not a bid \u00d7 delivered model. Fallback used when the selected range has fewer than ~5 ticks.'
+                  : 'Actual sat consumed across the selected range, scaled to a 24h rate. Derived from primary_bid_consumed_sat deltas (what Braiins charged us), not a modelled bid \u00d7 delivered.'
               }
             />
             <FinanceFootnote
-              label={`projected net/day${rangeFallback ? '' : ' (' + rangeLabel + ')'}`}
+              label={`net/day${rangeFallback ? ' (3h)' : ' (' + rangeLabel + ')'}`}
               value={
                 dailyNetSat !== null
                   ? denomination.mode === 'usd' && denomination.btcPrice !== null
@@ -1732,7 +1718,7 @@ function FinancePanel({
                     : `${dailyNetSat >= 0 ? '+' : ''}${formatNumber(dailyNetSat, {}, intlLocale)} sat`
                   : 'calculating\u2026'
               }
-              tooltip="Projection: projected income − projected spend (rows above). Positive = the autopilot is profitable at current rates; negative = burning money per day. Don't confuse with the lifetime net on the other panel."
+              tooltip={'Projected income \u2212 actual spend (rows above). Positive = the autopilot is profitable at current rates; negative = burning money per day. Income is a projection (avg hashprice \u00d7 avg delivered); spend is measured. Don\u2019t confuse with the lifetime net on the other panel.'}
               valueClass={dailyNetColor}
             />
             </div>
