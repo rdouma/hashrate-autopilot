@@ -1,4 +1,4 @@
-# Hashrate Autopilot — Architecture (v1.2)
+# Hashrate Autopilot — Architecture (v1.3)
 
 > Concretion of `docs/spec.md` into module boundaries, data flow, deployment shape, and a milestone-ordered build plan.
 > v1.0 was built around a 2FA gate on mutations that, on empirical verification, turns out not to apply to the
@@ -12,7 +12,7 @@ Two long-running processes on the always-on box, composed in a single Node daemo
 
 ```
 ┌────────────────────────────────────────────────────────────┐
-│                  Docker host (LAN box)                     │
+│                  Always-on LAN box                          │
 │                                                            │
 │          ┌─────────────┐    ┌──────────────┐               │
 │          │   daemon    │◄───┤  dashboard   │               │
@@ -184,29 +184,62 @@ Core tables, WAL-mode, single file at `data/state.db`. Migration scripts live in
 
 ```sql
 -- Live-editable configuration (single-row pattern)
+-- Reflects the current schema after all migrations through 0040+.
 CREATE TABLE config (
   id INTEGER PRIMARY KEY CHECK (id = 1),
+  -- Hashrate targets
   target_hashrate_ph REAL NOT NULL,
   minimum_floor_hashrate_ph REAL NOT NULL,
   destination_pool_url TEXT NOT NULL,
   destination_pool_worker_name TEXT NOT NULL,  -- must be <btc-addr>.<label>
+  -- Pricing (pay-your-bid fillable-tracking — bid = min(fillable_ask + overpay, effective_cap))
   max_bid_sat_per_eh_day INTEGER NOT NULL,
-  bid_budget_sat INTEGER NOT NULL,
+  max_overpay_vs_hashprice_sat_per_eh_day INTEGER,  -- dynamic cap; null = disabled
+  overpay_sat_per_eh_day INTEGER NOT NULL,          -- premium above fillable_ask (#53)
+  -- Budget
+  bid_budget_sat INTEGER NOT NULL,                   -- 0 = use full wallet balance
   wallet_runway_alert_days INTEGER NOT NULL,
+  -- Outage tolerance
   below_floor_alert_after_minutes INTEGER NOT NULL,
   zero_hashrate_loud_alert_after_minutes INTEGER NOT NULL,
   pool_outage_blip_tolerance_seconds INTEGER NOT NULL,
   api_outage_alert_after_minutes INTEGER NOT NULL,
+  -- Manual override
   handover_window_minutes INTEGER NOT NULL,
-  -- strategy knobs (v1.2 simplified)
-  fill_escalation_step_sat_per_eh_day INTEGER NOT NULL,
-  fill_escalation_after_minutes INTEGER NOT NULL,
-  overpay_sat_per_eh_day INTEGER NOT NULL,
-  escalation_mode TEXT NOT NULL DEFAULT 'dampened',  -- 'market' | 'dampened'
-  hibernate_on_expensive_market INTEGER NOT NULL,  -- DEPRECATED: kept for NOT NULL; ignored by the app
+  -- Cheap-mode opportunistic scaling
+  cheap_target_hashrate_ph REAL NOT NULL DEFAULT 0,
+  cheap_threshold_pct INTEGER NOT NULL DEFAULT 0,
+  cheap_sustained_window_minutes INTEGER NOT NULL DEFAULT 0,
+  -- Daemon startup
+  boot_mode TEXT NOT NULL DEFAULT 'ALWAYS_DRY_RUN',
+  -- Integrations
   btc_payout_address TEXT NOT NULL,
-  electrs_host TEXT,       -- optional, for fast balance lookups
+  electrs_host TEXT,
   electrs_port INTEGER,
+  bitcoind_rpc_url TEXT,
+  bitcoind_rpc_user TEXT,
+  bitcoind_rpc_password TEXT,
+  payout_source TEXT NOT NULL DEFAULT 'none',       -- 'none' | 'electrs' | 'bitcoind'
+  btc_price_source TEXT NOT NULL DEFAULT 'none',    -- 'none' | 'coingecko' | 'coinbase' | 'bitstamp' | 'kraken'
+  datum_api_url TEXT,                               -- optional Datum Gateway /umbrel-api URL
+  -- Chart smoothing (display-only, not read by control loop)
+  braiins_hashrate_smoothing_minutes INTEGER NOT NULL DEFAULT 1,
+  datum_hashrate_smoothing_minutes INTEGER NOT NULL DEFAULT 1,
+  -- Retention
+  tick_metrics_retention_days INTEGER NOT NULL DEFAULT 7,
+  decisions_uneventful_retention_days INTEGER NOT NULL DEFAULT 7,
+  decisions_eventful_retention_days INTEGER NOT NULL DEFAULT 90,
+  -- Accounting
+  spent_scope TEXT NOT NULL DEFAULT 'account',      -- 'autopilot' | 'account'
+  -- DEPRECATED columns (kept for NOT NULL; ignored by the app)
+  fill_escalation_step_sat_per_eh_day INTEGER NOT NULL DEFAULT 0,
+  fill_escalation_after_minutes INTEGER NOT NULL DEFAULT 0,
+  overpay_sat_per_eh_day INTEGER NOT NULL DEFAULT 0,
+  escalation_mode TEXT NOT NULL DEFAULT 'market',
+  min_lower_delta_sat_per_eh_day INTEGER NOT NULL DEFAULT 0,
+  lower_patience_minutes INTEGER NOT NULL DEFAULT 0,
+  hibernate_on_expensive_market INTEGER NOT NULL DEFAULT 0,
+  --
   updated_at INTEGER NOT NULL
 );
 
@@ -218,7 +251,10 @@ CREATE TABLE runtime_state (
   last_tick_at INTEGER,
   last_api_ok_at INTEGER,
   last_rpc_ok_at INTEGER,
-  last_pool_ok_at INTEGER
+  last_pool_ok_at INTEGER,
+  below_floor_since_ms INTEGER,           -- alert escalation timer
+  lower_ready_since_ms INTEGER,           -- DEPRECATED (CLOB redesign retired lowering logic)
+  below_target_since_ms INTEGER           -- DEPRECATED (above_market mode retired)
 );
 -- Note: run_mode is set on startup from config.boot_mode:
 --   ALWAYS_DRY_RUN (default) → always boots in DRY_RUN (safest)
@@ -250,14 +286,19 @@ CREATE TABLE decisions (
   run_mode TEXT NOT NULL
 );
 
--- Tick metrics (time-series for the hashrate chart)
+-- Tick metrics (time-series for the hashrate + price charts)
 CREATE TABLE tick_metrics (
   tick_at INTEGER PRIMARY KEY,
   actual_hashrate_ph REAL,
   target_hashrate_ph REAL,
   floor_hashrate_ph REAL,
   best_ask_sat INTEGER,
-  wallet_balance_sat INTEGER
+  wallet_balance_sat INTEGER,
+  fillable_ask_sat_per_eh_day INTEGER,    -- depth-aware ask at target capacity
+  hashprice_sat_per_ph_day REAL,          -- Ocean hashprice, recorded each tick
+  max_bid_sat_per_eh_day INTEGER,         -- effective ceiling used this tick
+  datum_hashrate_ph REAL,                 -- gateway-measured hashrate (null if not configured)
+  spend_sat REAL                          -- precomputed per-tick spend for range queries
 );
 
 -- Accounting — spend (sourced from Braiins)
@@ -334,7 +375,7 @@ startup. See `packages/daemon/src/state/db.test.ts` for the authoritative expect
   never reads.
 - **P&L per-day spend (0040):** `tick_metrics.spend_sat` precomputed per tick as
   `price_sat_per_eh_day × delivered_ph / 1_440_000`. Feeds the range-aware `/api/finance/range` aggregates
-  that drive the collapsible per-day panel.
+  that drive the per-day P&L panel.
 
 ## 6. External integrations
 
@@ -372,26 +413,16 @@ Reconciliation pass: periodic full scan to catch anything real-time detection mi
 
 ## 8. Deployment
 
-**Docker Compose** as primary; systemd-native as documented fallback.
+Bare-process deployment via operator scripts in `scripts/`:
 
-```yaml
-# docker-compose.yml
-services:
-  daemon:
-    build: .
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:3000:3000"   # LAN only via reverse-bind
-    volumes:
-      - ./data:/app/data        # state.db + logs
-      - ./secrets:/app/secrets  # .env.sops.yaml + age key (read-only mount)
-    environment:
-      - NODE_ENV=production
-      - SOPS_AGE_KEY_FILE=/app/secrets/age.key
-```
+- `scripts/start.sh` — backgrounds the daemon, writes PID to `data/daemon.pid`, appends stdout/stderr to
+  `data/logs/daemon.log`.
+- `scripts/stop.sh` / `scripts/restart.sh` / `scripts/status.sh` / `scripts/logs.sh` — companions.
+- `scripts/deploy.sh` — one-shot updater: pulls `main`, installs deps, builds, tests, then restarts the daemon.
 
-Port 3000 binds to `127.0.0.1` — the operator reaches it over Tailscale MagicDNS or a LAN hostname, not the wider
-network.
+Port 3010 binds to `0.0.0.0` (all interfaces) by default — reachable from any machine on the LAN. The operator's
+VPN or Tailscale is the real perimeter; the shared dashboard password is a second factor. To restrict to loopback,
+set `HTTP_HOST=127.0.0.1`. To change the port, set `HTTP_PORT=nnnn`.
 
 ## 9. Observability
 
@@ -415,11 +446,9 @@ network.
   (`<btc-address>.<label>`); set initial config; keep DRY-RUN for the first 24h; observe that autopilot decisions
   match operator intuition; only then engage LIVE.
 
-## 11. Milestone-ordered build plan
+## 11. Build milestones (shipped)
 
-All milestones M1–M6 are shipped as of v1.1 (commit `4cc8ad5`). Remaining work:
-
-**Done:**
+All milestones M1–M6 shipped as of v1.1 (commit `4cc8ad5`):
 
 - M1 — Repo scaffold + Braiins read path.
 - M2 — SQLite, config loader, sops-encrypted secrets.
@@ -428,15 +457,7 @@ All milestones M1–M6 are shipped as of v1.1 (commit `4cc8ad5`). Remaining work
 - M5 — Dashboard shell: Status, Decisions, Config, Login pages; shared-password auth.
 - M6 — Payout observation via Electrs (preferred) or `bitcoind` RPC; accounting data path.
 
-**In flight / next:**
-
-- Operator-initiated cancel and recreate from the dashboard (GitHub #2).
-- i18n for the dashboard (GitHub #1).
-- Stale-work / low-acceptance delivery-ratio alerting.
-- Dynamic-IP detection + alert.
-- Fee-schedule change detection + alert.
-- First-run checklist (`docs/first-run.md`).
-- Docker multi-stage build + `docker-compose.yml` + 5-minute setup walkthrough in README.
+Remaining work is tracked in GitHub issues.
 
 ## 12. Risk register
 
@@ -452,8 +473,6 @@ All milestones M1–M6 are shipped as of v1.1 (commit `4cc8ad5`). Remaining work
 
 ## 13. Open implementation questions
 
-- **Docker vs bare systemd as the "default" deploy path.** Current lean: Docker-first, systemd documented as
-  alternative.
 - **Whether to expose `/metrics`** day one or defer. Current lean: defer until a scraper exists to consume it.
 - **Whether the control loop tick should self-adjust cadence** or stay at a fixed 60s. Current lean: fixed 60s;
   tune once we have live data on API rate limits.
@@ -467,3 +486,4 @@ All milestones M1–M6 are shipped as of v1.1 (commit `4cc8ad5`). Remaining work
 | 1.0     | 2026-04-14 | Initial version.                                                                                                                                                                           |
 | 1.1     | 2026-04-16 | Post-empirical rewrite: removed the confirmation bot, quiet-hours buffering, `PENDING_CONFIRMATION` / `CONFIRMATION_TIMEOUT` action modes, operator-availability flag. Updated milestones, schema, diagrams, and risk register to reflect the fully-autonomous gate now in the code. |
 | 1.2     | 2026-04-19 | Refreshed the service inventory and HTTP-route listing in §2 to reflect everything shipped through mid-April: `ocean` + `datum` + `hashprice-cache` + `btc-price` + `account-spend` + `retention` services, and the `finance` / `stats` / `bid-events` / `ocean` / `payouts` / `btc-price` / `simulate` HTTP routes. Rewrote the migration summary in §5 with concern-grouped coverage of 0001–0031 instead of the stale "see git" placeholder. No schema or control-loop shape changes — this is a documentation catch-up, not a design revision. |
+| 1.3     | 2026-04-23 | Spec consistency sweep: updated §5 config/runtime_state/tick_metrics schemas to current state (all migrations through 0040+), marked CLOB-retired pricing columns as DEPRECATED, fixed port/bind to 3010/0.0.0.0, replaced Docker Compose deployment with bare-process scripts, removed stale "In flight" milestone tracker, fixed "collapsible" panel reference. |

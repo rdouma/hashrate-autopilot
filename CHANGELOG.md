@@ -2,6 +2,24 @@
 
 ## 2026-04-23
 
+### `[Feature]` Pay-your-bid controller: track `fillable_ask + overpay` (#53)
+
+Direct A/B on live data this afternoon falsified the CLOB assumption behind the #49 redesign: lowering
+`max_bid_sat_per_eh_day` from 50,000 → 49,000 dropped effective cost from ~50,300 → ~49,899 sat/PH/day while the
+fillable ask sat unchanged at ~47,158 the whole time. Braiins matches pay-your-bid — the gap between bid and
+fillable was money left on the table, every tick, for weeks.
+
+New controller: each tick the bid is set to `min(fillable_ask + overpay_sat_per_eh_day, effective_cap)` where
+`effective_cap = min(max_bid, hashprice + max_overpay_vs_hashprice)`. The new `overpay_sat_per_eh_day` config
+knob (default 1,000 sat/PH/day) is the one pricing dial: higher = more headroom against short upward market
+moves and bigger premium; lower = closer to the cheapest fillable price and more sensitive to noise.
+
+The retired fill-strategy machinery from v1.x (`escalation_mode`, `fill_escalation_*`, `lower_patience_minutes`,
+`min_lower_delta_sat_per_eh_day`) stays retired — under direct fillable tracking the optimal price is already
+proposed every tick, and Braiins' 10-min price-decrease cooldown in `gate.ts` is the only pacing rule needed.
+Reopened #15, #16, #38, #48, #51 for operator triage against the new design; each now has a comment referencing
+#53 and the empirical data.
+
 ### `[UI]` Stats card: rename "avg overpay vs hashprice" → "avg cost vs hashprice"
 
 The label said *overpay* but the value is routinely negative (paying below break-even hashprice is the normal, desirable case under CLOB). "Overpay" implied we were always paying above — contradicted by a `−1,097` reading. Renamed to "avg cost vs hashprice" and rewrote the tooltip so the sign convention reads correctly: negative means we matched asks below break-even (good), positive means above.

@@ -49,10 +49,11 @@ Non-goals (v1): SaaS / multi-user, cloud deployment, hands-free wallet funding, 
 
 - A Node daemon runs a periodic control loop (default 60 s): reads Braiins marketplace state, compares it against
   the operator's configured target and ceiling, and decides whether to create, edit, or cancel a single bid.
-- Steady state is **one bid held at the effective ceiling** — `min(max_bid, hashprice + max_overpay_vs_hashprice)`.
-  Because matching is cheapest-first, the bid clears at whatever ask is on top and delivery flows onto the next
-  level automatically when the cheap one drains. No escalation ladder, no overpay knob, no patience timers — those
-  were retired in the CLOB redesign.
+- Steady state is **one bid tracked at `fillable_ask + overpay_sat_per_eh_day`**, clamped to the safety ceiling
+  `min(max_bid, hashprice + max_overpay_vs_hashprice)`. Braiins matches pay-your-bid (empirically verified
+  2026-04-23 — lowering the bid directly lowered effective cost), so the bid price *is* the price paid: it pays
+  to sit just above the cheapest fillable ask rather than at the ceiling. Braiins' own 10-minute price-decrease
+  cooldown is the only pacing rule — no escalation ladder, no patience timers.
 - **All three mutations (create / edit / cancel) are fully autonomous.** An owner-scope API token authorises
   `POST /spot/bid` and `PUT /spot/bid` directly — the 2FA prompt that appears in Braiins' web UI does *not* gate
   the API path. The autopilot therefore has a single mutation gate (DRY-RUN vs LIVE vs PAUSED) rather than a
@@ -71,10 +72,14 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
 
 ## Key features
 
-- **Two-layer price ceiling** — a fixed `max_bid_sat_per_eh_day` plus an optional dynamic cap
-  `max_overpay_vs_hashprice_sat_per_eh_day`. The effective ceiling per tick is the lower of the two — stops the
-  autopilot matching when hashprice crashes but the fixed max still allows it. Under CLOB this is the only
-  pricing knob that matters: it's the threshold at which the bid opts out of the market entirely.
+- **Fillable-tracking bid** — each tick the bid is set to `fillable_ask + overpay_sat_per_eh_day`, where
+  `fillable_ask` is the cheapest price at which the orderbook has enough unmatched supply to cover the target.
+  `overpay_sat_per_eh_day` is the one knob that trades "stability against short upward market moves" for
+  "closer to the cheapest fillable price".
+- **Two-layer safety ceiling** — a fixed `max_bid_sat_per_eh_day` plus an optional dynamic cap
+  `max_overpay_vs_hashprice_sat_per_eh_day`. The effective ceiling is the lower of the two. If
+  fillable + overpay would exceed the ceiling, the bid clamps down to it (and may not fill) — the ceiling is
+  the opt-out price, not the normal bid.
 - **Effective rate as a first-class metric** — the price actually paid is measured from per-tick spend (Braiins
   account ledger deltas) divided by delivered hashrate × elapsed time, and plotted on the price chart next to
   the bid line and hashprice. Gives the operator a direct read on the clearing price rather than a model of it.

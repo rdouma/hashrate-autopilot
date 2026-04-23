@@ -335,7 +335,7 @@ function logTick(r: TickResult): void {
   const poolOk = state.pool.reachable ? 'ok' : 'DOWN';
 
   log(
-    `tick ── ${state.run_mode}/${state.action_mode}  ` +
+    `tick ── ${state.run_mode}  ` +
       `mkt best_bid=${bestBid} best_ask=${bestAsk}  ` +
       `pool=${poolOk}  own=${state.owned_bids.length}  ` +
       `unknown=${state.unknown_bids.length}  ` +

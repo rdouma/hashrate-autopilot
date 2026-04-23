@@ -13,7 +13,6 @@ const SAMPLE_CONFIG: AppConfig = {
   destination_pool_url: 'stratum+tcp://datum.local:23334',
   destination_pool_worker_name: 'remco.rig1',
   btc_payout_address: 'bc1qexampleaddressxxxxxxxxxxxxxxxxxxxxxxxxx',
-  telegram_chat_id: '123456789',
 };
 
 describe('openDatabase — migrations', () => {
@@ -73,6 +72,7 @@ describe('openDatabase — migrations', () => {
       '0042_price_smoothing.sql',
       '0043_drop_fill_strategy_knobs.sql',
       '0044_cheap_sustained_window.sql',
+      '0045_add_overpay_sat_per_eh_day.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });

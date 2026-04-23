@@ -91,16 +91,12 @@ export const PriceChart = memo(function PriceChart({
   points,
   events = [],
   showEvents,
-  simMode = false,
   maxOverpayVsHashpriceSatPerPhDay = null,
-  maxBidSatPerPhDay = null,
-  overpaySatPerPhDay = null,
   priceSmoothingMinutes = 1,
 }: {
   points: readonly MetricPoint[];
   events?: readonly BidEventView[];
   showEvents: boolean;
-  simMode?: boolean;
   /**
    * Current config's dynamic-cap allowance. When set, the cap line is
    * computed per-tick as `min(max_bid, hashprice + this)` rather than
@@ -111,26 +107,6 @@ export const PriceChart = memo(function PriceChart({
    * value.
    */
   maxOverpayVsHashpriceSatPerPhDay?: number | null;
-  /**
-   * Override for the fixed `max_bid` component of the effective-cap
-   * line. In real-time mode (null) the chart uses the historical
-   * `max_bid_sat_per_ph_day` column from `tick_metrics` — what the
-   * autopilot was actually configured to use at each tick. In
-   * simulation mode, pass the simulated `max_bid` so the cap line
-   * (and the shaded "excluded zone" above it) reflects the parameter
-   * under test, not the historical config. The effective cap is
-   * still `min(this, hashprice + maxOverpayVsHashprice)` when the
-   * dynamic cap is set; this just replaces the fixed-cap input.
-   */
-  maxBidSatPerPhDay?: number | null;
-  /**
-   * The overpay allowance active when the event ran — live config
-   * value in real-time mode, simulation param in sim mode. Shown on
-   * the pinned-event tooltip so the operator can sanity-check
-   * fillable + overpay against the resulting bid without digging
-   * through raw JSON.
-   */
-  overpaySatPerPhDay?: number | null;
   /**
    * Rolling-mean window (minutes) applied to `our bid` and `effective`
    * only. 1 = raw (no smoothing). Mirrors the smoothing knobs the
@@ -297,16 +273,9 @@ export const PriceChart = memo(function PriceChart({
     // cap isn't configured, this collapses to max_bid and the line
     // looks exactly like the previous "max bid" line.
     const capPoints: PricePoint[] = points
-      .filter((p) =>
-        maxBidSatPerPhDay !== null
-          ? true
-          : Number.isFinite(p.max_bid_sat_per_ph_day),
-      )
+      .filter((p) => Number.isFinite(p.max_bid_sat_per_ph_day))
       .map((p) => {
-        const fixed =
-          maxBidSatPerPhDay !== null
-            ? maxBidSatPerPhDay
-            : (p.max_bid_sat_per_ph_day as number);
+        const fixed = p.max_bid_sat_per_ph_day as number;
         const hashprice = Number.isFinite(p.hashprice_sat_per_ph_day)
           ? (p.hashprice_sat_per_ph_day as number)
           : null;
@@ -552,7 +521,7 @@ export const PriceChart = memo(function PriceChart({
       : [];
 
     return { pricePoints, minX, maxX, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, hashpricePath, effectivePath, effectiveHasData: effectivePoints.length > 0, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents };
-  }, [points, events, showEvents, priceSmoothingMinutes, maxBidSatPerPhDay, maxOverpayVsHashpriceSatPerPhDay, simMode, chartHeight]);
+  }, [points, events, showEvents, priceSmoothingMinutes, maxOverpayVsHashpriceSatPerPhDay, chartHeight]);
 
   const eventPriceAt = useCallback((e: BidEventView): number | null => {
     const pricePoints = chartData?.pricePoints ?? [];
@@ -638,10 +607,10 @@ export const PriceChart = memo(function PriceChart({
   };
 
   return (
-    <div ref={containerRef} className={`bg-slate-900 border rounded-lg p-4 relative ${simMode ? 'border-amber-800/40' : 'border-slate-800'}`}>
+    <div ref={containerRef} className="bg-slate-900 border rounded-lg p-4 relative border-slate-800">
       <div className="flex items-center justify-between mb-2 gap-3 flex-wrap">
         <div className="flex items-center gap-2">
-          <h3 className="text-xs uppercase tracking-wider text-slate-100">{simMode ? 'Simulated price' : 'Price'}</h3>
+          <h3 className="text-xs uppercase tracking-wider text-slate-100">Price</h3>
           <button
             type="button"
             onClick={() => setExpanded((e) => !e)}
@@ -652,8 +621,8 @@ export const PriceChart = memo(function PriceChart({
           </button>
         </div>
         <div className="flex items-center gap-3 text-xs flex-wrap">
-          <Legend color={simMode ? '#f97316' : COLOR_PRICE} label={simMode ? 'simulated bid' : 'our bid'} />
-          {effectiveHasData && !simMode && <Legend color={COLOR_EFFECTIVE} label="effective" />}
+          <Legend color={COLOR_PRICE} label="our bid" />
+          {effectiveHasData && <Legend color={COLOR_EFFECTIVE} label="effective" />}
           <Legend color={COLOR_HASHPRICE} label="hashprice" dashed />
           <Legend color={COLOR_MAXBID} label="max bid" />
           {showEvents && <EventLegend />}
@@ -735,14 +704,14 @@ export const PriceChart = memo(function PriceChart({
           <path d={priceAreaPath} fill="url(#priceFill)" opacity="0.5" />
         )}
         {pricePath && (
-          <path d={pricePath} stroke={simMode ? '#f97316' : COLOR_PRICE} strokeWidth="1.8" fill="none" opacity="0.95" />
+          <path d={pricePath} stroke={COLOR_PRICE} strokeWidth="1.8" fill="none" opacity="0.95" />
         )}
         {/* Effective rate — what Braiins actually charged us, from
             the per-tick primary_bid_consumed_sat delta. Drawn on top
             of the bid (amber) line so the operator sees at a glance
             whether the two line up (pay-your-bid) or the effective
             sits systematically below (CLOB / pay-at-ask). #49. */}
-        {!simMode && effectivePath && (
+        {effectivePath && (
           <path
             d={effectivePath}
             stroke={COLOR_EFFECTIVE}
@@ -873,9 +842,7 @@ export const PriceChart = memo(function PriceChart({
         <EventTooltip
           tip={tooltip}
           onClose={closeTooltip}
-          simMode={simMode}
           points={points}
-          overpaySatPerPhDay={overpaySatPerPhDay}
           maxOverpayVsHashpriceSatPerPhDay={maxOverpayVsHashpriceSatPerPhDay}
         />
       )}
@@ -923,16 +890,12 @@ function CheckIcon() {
 function EventTooltip({
   tip,
   onClose,
-  simMode = false,
   points = [],
-  overpaySatPerPhDay = null,
   maxOverpayVsHashpriceSatPerPhDay = null,
 }: {
   tip: TooltipState;
   onClose: () => void;
-  simMode?: boolean;
   points?: readonly MetricPoint[];
-  overpaySatPerPhDay?: number | null;
   maxOverpayVsHashpriceSatPerPhDay?: number | null;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -976,12 +939,11 @@ function EventTooltip({
   // Prefetch recent decisions + the specific matched detail so the copy
   // payload reflects the rich context the operator saw in the old
   // Decisions tab. Only runs once pinned — hover-only tooltips don't
-  // need the extra round-trips. Skipped in simulation mode where
-  // events are synthesised and have no backing decision record.
+  // need the extra round-trips.
   const decisionsList = useQuery({
     queryKey: ['decisions-for-chart'],
     queryFn: () => api.decisions(500),
-    enabled: tip.pinned && !simMode,
+    enabled: tip.pinned,
     staleTime: 60_000,
   });
 
@@ -1009,7 +971,7 @@ function EventTooltip({
   const decisionDetailQuery = useQuery({
     queryKey: ['decision-detail', matchedDecisionId],
     queryFn: () => api.decision(matchedDecisionId!),
-    enabled: matchedDecisionId !== null && !simMode,
+    enabled: matchedDecisionId !== null,
     staleTime: 5 * 60_000,
   });
   // Initial render at the cursor's natural offset (right + below).
@@ -1049,11 +1011,7 @@ function EventTooltip({
   }, [tip.x, tip.y, tip.event.id]);
 
   const e = tip.event;
-  const sourceLabel = simMode
-    ? 'simulated'
-    : e.source === 'OPERATOR'
-      ? 'manual'
-      : 'automatic';
+  const sourceLabel = e.source === 'OPERATOR' ? 'manual' : 'automatic';
   const kindLabel =
     e.kind === 'CREATE_BID'
       ? 'CREATE'
@@ -1074,11 +1032,6 @@ function EventTooltip({
   const copyJson = async () => {
     const detail: DecisionDetail | null = decisionDetailQuery.data ?? null;
     const payload = {
-      // Top-level flag so the JSON is unambiguously a simulation
-      // artefact vs a real historical decision — the nested
-      // decision.run_mode is an actual historical value and can
-      // legitimately read LIVE even on a synthesised event.
-      simulated: simMode,
       event: withHumanTimestamps(e),
       market_at_event: marketAtEvent
         ? {
@@ -1087,16 +1040,14 @@ function EventTooltip({
             hashprice_sat_per_ph_day: marketAtEvent.hashprice_sat_per_ph_day,
             max_bid_sat_per_ph_day: marketAtEvent.max_bid_sat_per_ph_day,
             effective_cap_sat_per_ph_day: effectiveCapAtEvent,
-            overpay_allowance_sat_per_ph_day: overpaySatPerPhDay,
             max_overpay_vs_hashprice_sat_per_ph_day: maxOverpayVsHashpriceSatPerPhDay,
             our_primary_price_sat_per_ph_day: marketAtEvent.our_primary_price_sat_per_ph_day,
           }
         : null,
       // Decision is null for operator-initiated events (bumps) that
-      // weren't produced by an autopilot tick, when the match window
-      // missed, or when we're in simulation mode (events are
-      // synthesised, no backing decision exists).
-      decision: detail && !simMode ? withHumanTimestamps(detail) : null,
+      // weren't produced by an autopilot tick, or when the match
+      // window missed.
+      decision: detail ? withHumanTimestamps(detail) : null,
     };
     const text = JSON.stringify(payload, null, 2);
     try {
@@ -1127,16 +1078,9 @@ function EventTooltip({
       style={{ left: pos.left, top: pos.top }}
     >
       <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <span className={`font-semibold uppercase tracking-wider ${headerColor}`}>
-            {kindLabel} · {sourceLabel}
-          </span>
-          {simMode && (
-            <span className="px-1.5 py-0.5 rounded border border-amber-700 bg-amber-900/40 text-amber-300 text-[10px] uppercase tracking-wider">
-              sim
-            </span>
-          )}
-        </div>
+        <span className={`font-semibold uppercase tracking-wider ${headerColor}`}>
+          {kindLabel} · {sourceLabel}
+        </span>
         {tip.pinned && (
           <button
             type="button"

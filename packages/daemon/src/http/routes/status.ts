@@ -49,8 +49,8 @@ export async function registerStatusRoute(
     if (!last) {
       return {
         run_mode: runtime.run_mode,
-        action_mode: runtime.action_mode,
-        operator_available: runtime.operator_available,
+        action_mode: 'NORMAL' as const,
+        operator_available: true,
         tick_at: runtime.last_tick_at,
         last_api_ok_at: runtime.last_api_ok_at,
         next_tick_at: nextTickAt,
@@ -86,8 +86,6 @@ export async function registerStatusRoute(
     // the snapshot captured at observe() time. Otherwise toggling LIVE via
     // the dashboard keeps showing DRY_RUN until the next tick observes.
     const liveRunMode = runtime.run_mode;
-    const liveActionMode = runtime.action_mode;
-    const liveOperatorAvailable = runtime.operator_available;
 
     // Ledger carries our own creation timestamps (insert time on POST).
     const ledger = await deps.ownedBidsRepo.list();
@@ -147,8 +145,8 @@ export async function registerStatusRoute(
 
     return {
       run_mode: liveRunMode,
-      action_mode: liveActionMode,
-      operator_available: liveOperatorAvailable,
+      action_mode: 'NORMAL' as const,
+      operator_available: true,
       tick_at: state.tick_at,
       last_api_ok_at: state.last_api_ok_at,
       next_tick_at: nextTickAt,
@@ -338,10 +336,9 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
     };
   }
 
-  // Effective cap — what our bid will sit at under the #49 redesign.
-  // Under CLOB matching, the bid is a ceiling only; actual payments
-  // come from matched asks, so there's no "fillable + overpay" target
-  // to chase anymore.
+  // Target price under the #53 pay-your-bid controller:
+  //   target = min(fillable_ask + overpay, effective_cap)
+  // where effective_cap = min(max_bid, hashprice + max_overpay_vs_hashprice).
   const fixedCapEH = state.config.max_bid_sat_per_eh_day;
   const dynamicCapEH =
     state.config.max_overpay_vs_hashprice_sat_per_eh_day !== null &&
@@ -350,7 +347,13 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
         state.config.max_overpay_vs_hashprice_sat_per_eh_day
       : null;
   const effectiveCapEH = dynamicCapEH !== null ? Math.min(fixedCapEH, dynamicCapEH) : fixedCapEH;
-  const effectiveCapPH = Math.round(effectiveCapEH / EH_PER_PH);
+  const desiredEH = cheapestAsk + state.config.overpay_sat_per_eh_day;
+  const targetEH = Math.min(desiredEH, effectiveCapEH);
+  const targetPH = Math.round(targetEH / EH_PER_PH);
+  const cappedByCeiling = desiredEH > effectiveCapEH;
+  const targetLabel = cappedByCeiling
+    ? `effective cap ${targetPH.toLocaleString('en-US')} sat/PH/day (desired fillable + overpay exceeds cap)`
+    : `${targetPH.toLocaleString('en-US')} sat/PH/day (fillable + overpay)`;
 
   if (state.owned_bids.length === 0) {
     const verb = runMode === 'LIVE' ? 'place' : 'log (dry-run)';
@@ -366,8 +369,8 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
       budgetText = `${state.config.bid_budget_sat.toLocaleString('en-US')} sat budget`;
     }
     return {
-      summary: `Will ${verb} a CREATE_BID at the effective cap on the next tick.`,
-      detail: `~${effectiveCapPH.toLocaleString('en-US')} sat/PH/day, ${ph} PH/s target, ${budgetText}.`,
+      summary: `Will ${verb} a CREATE_BID at ${targetLabel} on the next tick.`,
+      detail: `${ph} PH/s target, ${budgetText}.`,
       ...noEvent,
     };
   }
@@ -386,12 +389,12 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
     };
   }
 
-  // Bid diverges from effective cap: decide() will EDIT_PRICE next
-  // tick (subject to Braiins' 10-min decrease cooldown, if applicable).
-  const priceDelta = Math.abs(primary.price_sat - effectiveCapEH);
+  // Bid diverges from target: decide() will EDIT_PRICE next tick
+  // (subject to Braiins' 10-min decrease cooldown on lowers).
+  const priceDelta = Math.abs(primary.price_sat - targetEH);
   if (priceDelta >= tickSize) {
     const verb = runMode === 'LIVE' ? 'edit' : 'log edit (dry-run)';
-    const direction = primary.price_sat > effectiveCapEH ? 'lower' : 'raise';
+    const direction = primary.price_sat > targetEH ? 'lower' : 'raise';
     const cooldownMs =
       (state.market.settings.min_bid_price_decrease_period_s ?? 600) * 1000;
     const lastDecrease = primary.last_price_decrease_at;
@@ -403,22 +406,24 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
     if (cooldownRemainsMs > 0 && cooldownEndsMs !== null && lastDecrease !== null) {
       const minsLeft = Math.max(1, Math.ceil(cooldownRemainsMs / 60_000));
       return {
-        summary: `Bid above effective cap — Braiins price-decrease cooldown active.`,
-        detail: `Will ${direction} to ${effectiveCapPH.toLocaleString('en-US')} sat/PH/day in ~${minsLeft} min (current ${currentPricePH.toLocaleString('en-US')}).`,
+        summary: `Bid above target — Braiins price-decrease cooldown active.`,
+        detail: `Will ${direction} to ${targetPH.toLocaleString('en-US')} sat/PH/day in ~${minsLeft} min (current ${currentPricePH.toLocaleString('en-US')}).`,
         eta_ms: cooldownEndsMs,
         event_started_ms: lastDecrease,
         event_kind: 'lower_after_cooldown',
       };
     }
     return {
-      summary: `Will ${verb} bid to ${effectiveCapPH.toLocaleString('en-US')} sat/PH/day on the next tick.`,
-      detail: `Current ${currentPricePH.toLocaleString('en-US')} sat/PH/day — converging to the effective cap.`,
+      summary: `Will ${verb} bid to ${targetPH.toLocaleString('en-US')} sat/PH/day on the next tick.`,
+      detail: `Current ${currentPricePH.toLocaleString('en-US')} sat/PH/day — tracking fillable + overpay${cappedByCeiling ? ' (clamped)' : ''}.`,
       ...noEvent,
     };
   }
 
   return {
-    summary: 'On target — bid at effective cap.',
+    summary: cappedByCeiling
+      ? 'At effective cap — desired fillable + overpay exceeds the ceiling.'
+      : 'On target — bid at fillable + overpay.',
     detail: `Bid filling at ${primary.avg_speed_ph.toFixed(2)} PH/s.`,
     ...noEvent,
   };
@@ -432,9 +437,6 @@ function summariseConfig(
     max_overpay_vs_hashprice_sat_per_eh_day: number | null;
     bid_budget_sat: number;
     destination_pool_url: string;
-    quiet_hours_start: string;
-    quiet_hours_end: string;
-    quiet_hours_timezone: string;
     cheap_target_hashrate_ph: number;
     cheap_threshold_pct: number;
   },
@@ -485,9 +487,6 @@ function summariseConfig(
     binding_cap: bindingCap,
     bid_budget_sat: config.bid_budget_sat,
     pool_url: config.destination_pool_url,
-    quiet_hours_start: config.quiet_hours_start,
-    quiet_hours_end: config.quiet_hours_end,
-    quiet_hours_timezone: config.quiet_hours_timezone,
     effective_target_hashrate_ph: effectiveTargetPh,
     cheap_mode_active: cheapModeActive,
   };

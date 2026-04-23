@@ -31,12 +31,17 @@ export interface ConfigTable {
   zero_hashrate_loud_alert_after_minutes: number;
   pool_outage_blip_tolerance_seconds: number;
   api_outage_alert_after_minutes: number;
+  /** @deprecated Legacy column — kept for NOT NULL; ignored by the app. */
   quiet_hours_start: string;
+  /** @deprecated Legacy column — kept for NOT NULL; ignored by the app. */
   quiet_hours_end: string;
+  /** @deprecated Legacy column — kept for NOT NULL; ignored by the app. */
   quiet_hours_timezone: string;
+  /** @deprecated Legacy column — kept for NOT NULL; ignored by the app. */
   confirmation_timeout_minutes: number;
   handover_window_minutes: number;
   btc_payout_address: string;
+  /** @deprecated Legacy column — kept for NOT NULL; ignored by the app. */
   telegram_chat_id: string;
   /** @deprecated Legacy column — kept for NOT NULL; ignored by the app. */
   hibernate_on_expensive_market: 0 | 1;
@@ -57,6 +62,7 @@ export interface ConfigTable {
   decisions_eventful_retention_days: number;
   datum_api_url: string | null;
   max_overpay_vs_hashprice_sat_per_eh_day: number | null;
+  overpay_sat_per_eh_day: number;
   block_explorer_url_template: string;
   braiins_hashrate_smoothing_minutes: number;
   datum_hashrate_smoothing_minutes: number;

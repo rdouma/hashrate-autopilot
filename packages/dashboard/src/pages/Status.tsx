@@ -19,11 +19,9 @@ import {
   api,
   UnauthorizedError,
   type BalanceView,
-  type BidEventView,
   type BidView,
   type FinanceResponse,
   type FinanceRangeResponse,
-  type MetricPoint,
   type NextActionView,
   type OceanResponse,
   type ProposalView,
@@ -150,19 +148,6 @@ export function Status() {
     refetchInterval: 60_000,
   });
 
-  // Simulation mode has been retired in the #49 redesign — under CLOB
-  // matching the bid is a ceiling and cost comes from matched asks,
-  // so replaying "what if I'd set overpay=X" against historical ticks
-  // no longer has decision value. The sim state/queries are gone; the
-  // component keeps `simMode`/`simParamsDebounced` as literal `false`
-  // / `null` so the downstream chart wiring (which still reads them
-  // for sim-only behaviour like the overlay price series) stays valid
-  // without conditionally stripping code paths.
-  const simMode = false;
-  const simParamsDebounced: null = null;
-  const simMetricPoints: MetricPoint[] | null = null;
-  const simEvents: BidEventView[] = [];
-
   const configQuery = useQuery({
     queryKey: ['config'],
     queryFn: () => api.config(),
@@ -219,10 +204,9 @@ export function Status() {
       <StatsBar statsData={statsQuery.data} />
 
       <HashrateChart
-        points={(simMode && simMetricPoints ? simMetricPoints : metricsQuery.data?.points) ?? []}
+        points={metricsQuery.data?.points ?? []}
         range={chartRange}
         onRangeChange={setChartRange}
-        simMode={simMode}
         ourBlocks={oceanQuery.data?.our_recent_blocks ?? []}
         blockExplorerTemplate={configQuery.data?.config?.block_explorer_url_template}
         shareLogPct={oceanQuery.data?.user?.share_log_pct ?? null}
@@ -230,24 +214,10 @@ export function Status() {
         datumSmoothingMinutes={configQuery.data?.config?.datum_hashrate_smoothing_minutes ?? 1}
       />
       <PriceChart
-        points={(simMode && simMetricPoints ? simMetricPoints : metricsQuery.data?.points) ?? []}
-        events={simMode ? simEvents : (bidEventsQuery.data?.events ?? [])}
-        showEvents={simMode || CHART_RANGE_SPECS[chartRange].showEvents}
-        simMode={simMode}
-        /*
-         * The simulator now respects the dynamic hashprice+max_overpay
-         * cap (matching decide()), so the chart can use the same
-         * effective-cap line in both real-time and simulation modes.
-         * In real-time mode it reads from the live config_summary; in
-         * simulation mode from the current sim param (0 means
-         * disabled, matching how the daemon coerces the field). The
-         * line then honours whatever parameter is under test so the
-         * operator can see whether their tweak pushes the cap up or
-         * down in the relevant market context.
-         */
+        points={metricsQuery.data?.points ?? []}
+        events={bidEventsQuery.data?.events ?? []}
+        showEvents={CHART_RANGE_SPECS[chartRange].showEvents}
         maxOverpayVsHashpriceSatPerPhDay={s.config_summary.max_overpay_vs_hashprice_sat_per_ph_day}
-        maxBidSatPerPhDay={null}
-        overpaySatPerPhDay={null}
         priceSmoothingMinutes={configQuery.data?.config?.braiins_price_smoothing_minutes ?? 1}
       />
 

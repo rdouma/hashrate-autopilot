@@ -27,7 +27,7 @@ Solid (implementable today, backed by the live OpenAPI and official docs):
 5. Hard numeric limits: min 1 PH/s when speed-limited; min budget 10 000 sats (with limit) / 100 000 sats (unlimited); max budget 1 BTC; max 10 open bids per subaccount. ([about page](https://academy.braiins.com/en/braiins-hashpower/about/), [basics FAQ](https://academy.braiins.com/en/braiins-hashpower/faqs/basics/))
 6. Anti-abuse pacing rules: price can be **decreased at most once per `min_bid_price_decrease_period_s`** (UI doc says 1 change per 10 min), speed-limit decrease has its own min period, bid has a grace period before cancel is allowed, and bids have `max_bid_idle_time_s` before being auto-dealt-with. All exposed via `/spot/settings`. ([openapi MarketSettings](https://hashpower.braiins.com/api/openapi.yml), [trading UI doc](https://academy.braiins.com/en/braiins-hashpower/trading/))
 7. Destination is any Stratum V1 pool with `extranonce2_size >= 7`. Ocean/Datum Gateway listens on port 23334 using Stratum V1 with version rolling. So Braiins speaks V1 to Datum. No V2 involvement on the buyer-to-pool path. ([datum_gateway README](https://raw.githubusercontent.com/OCEAN-xyz/datum_gateway/master/README.md), [basics FAQ pool-compatibility](https://academy.braiins.com/en/braiins-hashpower/faqs/basics/))
-8. Telegram 2FA is required for *create* and *edit* actions; cancel and read are not 2FA-gated. Implication: API-only autopilots cannot place or edit bids without Telegram confirmation tied to the account. ([account FAQ](https://academy.braiins.com/en/braiins-hashpower/faqs/account/), [trading FAQ](https://academy.braiins.com/en/braiins-hashpower/faqs/trading/))
+8. **Owner-token API bypasses Telegram 2FA.** Empirically verified 2026-04-15: `POST /spot/bid` with an owner token returns the created bid directly — no Telegram confirmation required. The 2FA gate documented in Braiins' web UI does not apply to the REST path. ([empirical, see v1.1 below])
 9. No withdrawals: Braiins Hashpower is non-custodial-style funds but one-way — deposits can only be spent on hashrate. Operator must size the monthly wallet top-up against the monthly budget ceiling and treat any unused balance as "parked" rather than withdrawable. ([about page](https://academy.braiins.com/en/braiins-hashpower/about/), [account FAQ](https://academy.braiins.com/en/braiins-hashpower/faqs/account/))
 10. Payout observation is fully decoupled from Braiins: block rewards come from Ocean (via TIDES), sent to the BTC payout address that Datum encoded in coinbase. Observable via standard `bitcoind` RPC (`listreceivedbyaddress`, `listunspent`, or ZMQ + descriptor wallet) on the Umbrel node. Nothing Braiins-side is involved. ([datum_gateway README](https://raw.githubusercontent.com/OCEAN-xyz/datum_gateway/master/README.md), [Ocean DATUM origins](https://ocean.xyz/docs/datum))
 
@@ -36,7 +36,7 @@ Gaps (need live confirmation with a real owner token, or missing entirely):
 - Documented rate limits per endpoint. The API doc says HTTP 429 is returned when exceeded but does not enumerate thresholds. ([API doc](https://academy.braiins.com/en/braiins-hashpower/api/))
 - No WebSocket / streaming endpoint appears in the OpenAPI spec — polling is the only documented model.
 - Ramp-up and ramp-down latency values ("delivery momentum" language) are qualitative, not quantified. The API doc says cancel takes "a minute or two" to end delivery and settle. ([about page](https://academy.braiins.com/en/braiins-hashpower/about/))
-- ⚠ **2026-04-15 empirical finding (contradicts §1 item 8 above):** `POST /spot/bid` with an owner API token returns the new bid ID immediately in `BID_STATUS_CREATED` and **does not require any Telegram confirmation**. The bid transitions to `BID_STATUS_ACTIVE` on its own (observed after ~60s). Multiple autopilot-placed bids confirmed this: the operator received zero messages from `@BraiinsBotOfficial` and never tapped Confirm, yet the bids activated. The documented "Telegram 2FA required for create/edit" appears to apply to the **web UI only**, not to API calls made with an owner token. This substantially simplifies the autopilot's action-mode state machine (SPEC §7.2): PENDING_CONFIRMATION and CONFIRMATION_TIMEOUT may be unneeded for API-placed bids. Worth re-verifying on a fresh account, but holds as of this date.
+- ~~Telegram 2FA on API mutations.~~ Disproven — owner-token API bypasses 2FA entirely (see §1 item 8 above).
 - Bitcointalk and Reddit discussions were blocked at fetch level; no forum-sourced reliability anecdotes collected.
 
 ---
@@ -60,7 +60,7 @@ Note: a separate Braiins product, **Braiins OS Public API** on mining hardware (
 - There is also a special literal `demo` token that unlocks the UI with simulated data; it does **not** work against the REST API (verified: returns 401 on `/v1/spot/settings` with `apikey: demo`). ([basics FAQ](https://academy.braiins.com/en/braiins-hashpower/faqs/basics/))
 - Docs explicitly warn: "Never expose your API tokens in client-side code, public repositories, or logs. Use environment variables or secure secret management." ([API doc](https://academy.braiins.com/en/braiins-hashpower/api/))
 - Signup requires Telegram verification against `@BraiinsBotOfficial` and email verification before tokens are issued. ([account page](https://academy.braiins.com/en/braiins-hashpower/account/))
-- **Telegram 2FA is a second factor on top of the API token** for bid create/edit. An attacker holding only the token cannot place or edit a bid — they can only cancel existing bids and create Quick Solo bids. ([account FAQ — token-compromised entry](https://academy.braiins.com/en/braiins-hashpower/faqs/account/))
+- **Owner-token API bypasses the web-UI 2FA gate** — empirically confirmed (see executive summary item 8). An attacker with only the token can place, edit, and cancel bids via REST. ([account FAQ — token-compromised entry](https://academy.braiins.com/en/braiins-hashpower/faqs/account/))
 
 ### 1.3 Endpoint inventory
 
@@ -88,7 +88,7 @@ Authenticated (`apikey:` header required):
 | GET | `/spot/bid` | All bids (history + active), with query filters: `limit`, `offset`, `reverse`, `created_after`, `created_before`, `order_id`, `bid_status`, `exclude_active`, `upstream_url`, `upstream_identity`. |
 | POST | `/spot/bid` | Place new bid. Body: `{cl_order_id?, dest_upstream{url,identity}, speed_limit_ph?, amount_sat, price_sat, memo?}`. Returns `{id, cl_order_id}`. |
 | PUT | `/spot/bid` | Edit a bid. Body: `{bid_id XOR cl_order_id, new_amount_sat?, new_price_sat?, new_speed_limit_ph?, memo?}`. Note: `new_amount_sat` must be **greater than** current amount (only budget top-ups, no clawbacks). |
-| DELETE | `/spot/bid?order_id=...` **or** `?cl_order_id=...` | Cancel bid. Returns `{affected_ids:{id:[]}}`. |
+| DELETE | `/spot/bid` | Cancel bid. **Order ID goes in the JSON body** (`{order_id}` or `{cl_order_id}`), not the query string (empirical — query-string form returns 400). Returns `{affected_ids:{id:[]}}`. |
 | GET | `/spot/bid/detail/{order_id}` | Full bid state: `bid`, `counters_estimate`, `counters_committed`, `state_estimate`, `last_network_failure`, `history[]`. |
 | GET | `/spot/bid/speed/{order_id}` | Time series of delivered speed in PH/s, with `aggregation_period`, `sliding_window_size` (10/20/30 min), `datetime_from`, `limit`. |
 | GET | `/spot/bid/delivery/{order_id}` | Time series of `shares_purchased_m`, `shares_accepted_m`, `shares_rejected_m`. |
@@ -273,7 +273,7 @@ Bottom line on rate rules: the user's mental model of "10 edits per hour" is clo
 
 ### 3.5 Anti-abuse policy mentions
 
-- Token compromise scenario: attacker without Telegram 2FA can only cancel bids or place Quick Solo bids. No withdrawals possible ever. ([account FAQ](https://academy.braiins.com/en/braiins-hashpower/faqs/account/))
+- Token compromise scenario: an attacker with the owner token has full API access (create, edit, cancel). No withdrawals possible — funds can only be spent on hashrate. ([account FAQ](https://academy.braiins.com/en/braiins-hashpower/faqs/account/))
 - Deposit screening: "deposits flagged as suspicious may be withheld for manual review... In rare cases, funds may be returned to the sender address." ([quick-start](https://academy.braiins.com/en/braiins-hashpower/quick-start/))
 - "Always deposit from your own wallet, not from an exchange or other custodial service." ([quick-start](https://academy.braiins.com/en/braiins-hashpower/quick-start/))
 - Pool validation at bid-create time: extranonce2_size check + `mining.authorize` check. Invalid worker names are rejected for pools that correctly authorise; others silently consume hashrate. ([trading FAQ — pool URL rejected](https://academy.braiins.com/en/braiins-hashpower/faqs/trading/); [basics FAQ — pool compatibility](https://academy.braiins.com/en/braiins-hashpower/faqs/basics/))
@@ -553,16 +553,6 @@ Per-day work:
 - `GET /v1/spot/bars?aggregation_period=PERIOD_1_DAY&limit=30` → 30-day VWAP, used in UI for budget forecasting. ([openapi.yml — spotGetMarketBars](https://hashpower.braiins.com/api/openapi.yml))
 - `bitcoind listreceivedbyaddress` (or ZMQ `rawblock` subscriber) on the Umbrel node → detect block reward income since last check. (Standard Bitcoin Core RPC, [bitcoincore.org](https://bitcoincore.org/en/doc/).)
 
-Telegram 2FA friction: steps 4 and 6 above (every place and every edit) will
-prompt a Telegram confirmation. The autopilot therefore cannot be fully
-headless as-designed — it is best modelled as "proposes action, waits for
-Remco's Telegram tap, applies on confirm". If this friction is
-unacceptable, options are: (a) run with fewer, larger bids and live with
-slower reaction time; (b) contact Braiins support about API-only flows
-(gap — not currently documented as an option); (c) use a Telegram
-userbot/relay on Remco's account (out of scope and brittle). ([trading FAQ
-— Can I modify an existing bid](https://academy.braiins.com/en/braiins-hashpower/faqs/trading/); [account FAQ — Telegram 2FA](https://academy.braiins.com/en/braiins-hashpower/faqs/account/))
-
 ### 7.9 Secrets management
 
 - The owner token is the crown jewel. Braiins docs say "Never expose your API tokens in client-side code, public repositories, or logs." ([API doc — Authentication](https://academy.braiins.com/en/braiins-hashpower/api/))
@@ -577,7 +567,7 @@ Grouped from the T&S/docs/FAQ as operational landmines:
 - **Datum endpoint unreachable.** Gateway will disconnect stratum clients by default, Braiins will pause the bid. Extended outage → bid stays paused. Auto-cancel after N minutes of continuous pause is a reasonable SPEC §9 rule. ([datum_gateway README](https://raw.githubusercontent.com/OCEAN-xyz/datum_gateway/master/README.md))
 - **Deposit flagged for manual review.** Up to 48 working-hours lag. Alert operator; do not run with no runway assumption. ([quick-start](https://academy.braiins.com/en/braiins-hashpower/quick-start/))
 - **Beta exit → non-zero fees.** Fees are hot-swappable from the platform's side; SpotMarketFeeType already models placement/edit/cancel fees. Autopilot must recompute per-action economics from live `/spot/fee` each tick. ([fees page](https://academy.braiins.com/en/braiins-hashpower/fees/); [openapi.yml — SpotMarketFeeType](https://hashpower.braiins.com/api/openapi.yml))
-- **Telegram account lost.** "Existing bids will continue running and can be cancelled without 2FA" but no new bids possible until support intervenes. ([account FAQ](https://academy.braiins.com/en/braiins-hashpower/faqs/account/))
+- **Telegram account lost.** Braiins account management requires the linked Telegram; if lost, contact support. API-based bid operations are unaffected. ([account FAQ](https://academy.braiins.com/en/braiins-hashpower/faqs/account/))
 - **Pool's difficulty too low.** Oscillating Paused/Active without meaningful delivery, still paying through the nose for share time (see §7.4/§7.5).
 - **Datum Gateway stale work.** Miner-side shares accepted, pool-side rejected due to latency; pay per share but land nothing in a block. Minimise Knots→Datum→Ocean round-trip. ([datum_gateway README — Notes/Known Issues](https://raw.githubusercontent.com/OCEAN-xyz/datum_gateway/master/README.md))
 

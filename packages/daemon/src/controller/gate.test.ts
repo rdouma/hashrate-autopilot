@@ -9,15 +9,12 @@ const BASE_CONFIG = {
   destination_pool_url: 'stratum+tcp://d:23334',
   destination_pool_worker_name: 'otto',
   btc_payout_address: 'bc1qexample',
-  telegram_chat_id: '1',
 };
 
 function state(overrides: Partial<State> = {}): State {
   return {
     tick_at: 10_000_000,
     run_mode: 'LIVE',
-    action_mode: 'NORMAL',
-    operator_available: true,
     config: BASE_CONFIG,
     market: {
       stats: {} as never,
@@ -32,7 +29,6 @@ function state(overrides: Partial<State> = {}): State {
     unknown_bids: [],
     actual_hashrate: { owned_ph: 0, unknown_ph: 0, total_ph: 0 },
     below_floor_since: null,
-    lower_ready_since: null,
     above_floor_ticks: 0,
     manual_override_until_ms: null,
     pool: { reachable: true, last_ok_at: null, consecutive_failures: 0 },
@@ -73,7 +69,7 @@ describe('gate — run-mode gating', () => {
     expect(outcome).toMatchObject({ allowed: false, reason: 'RUN_MODE_NOT_LIVE' });
   });
 
-  it('allows CREATE in LIVE + NORMAL', () => {
+  it('allows CREATE in LIVE', () => {
     const [outcome] = gate([CREATE], state());
     expect(outcome).toMatchObject({ allowed: true });
   });
@@ -84,18 +80,9 @@ describe('gate — run-mode gating', () => {
       expect(r).toMatchObject({ allowed: false, reason: 'RUN_MODE_PAUSED' });
     }
   });
-});
 
-describe('gate — action-mode gating', () => {
-  it('blocks CREATE/EDIT during QUIET_HOURS but allows CANCEL', () => {
-    const [c, e, x] = gate([CREATE, EDIT_DOWN, CANCEL], state({ action_mode: 'QUIET_HOURS' }));
-    expect(c).toMatchObject({ allowed: false, reason: 'ACTION_MODE_BLOCKS_CREATE_OR_EDIT' });
-    expect(e).toMatchObject({ allowed: false, reason: 'ACTION_MODE_BLOCKS_CREATE_OR_EDIT' });
-    expect(x).toMatchObject({ allowed: true });
-  });
-
-  it('always allows PAUSE regardless of mode', () => {
-    const [p] = gate([PAUSE], state({ run_mode: 'DRY_RUN', action_mode: 'QUIET_HOURS' }));
+  it('always allows PAUSE regardless of run mode', () => {
+    const [p] = gate([PAUSE], state({ run_mode: 'DRY_RUN' }));
     expect(p).toMatchObject({ allowed: true });
   });
 });

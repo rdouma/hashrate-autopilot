@@ -10,7 +10,7 @@
 
 import { canMutate, type MutationAction } from '@braiins-hashrate/shared';
 
-import type { GateDenialReason, GateOutcome, Proposal, State } from './types.js';
+import type { GateOutcome, Proposal, State } from './types.js';
 
 export function gate(proposals: readonly Proposal[], state: State): GateOutcome[] {
   return proposals.map((p) => gateOne(p, state));
@@ -24,13 +24,9 @@ function gateOne(proposal: Proposal, state: State): GateOutcome {
   }
 
   const action: MutationAction = mapToGateAction(proposal);
-  const base = canMutate({
-    runMode: state.run_mode,
-    actionMode: state.action_mode,
-    action,
-  });
+  const base = canMutate({ runMode: state.run_mode, action });
   if (!base.allowed) {
-    return { proposal, allowed: false, reason: base.reason satisfies GateDenialReason };
+    return { proposal, allowed: false, reason: base.reason };
   }
 
   // Layer: price-decrease cooldown applies to EDIT_PRICE only, when going down.

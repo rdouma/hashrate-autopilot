@@ -1,0 +1,22 @@
+-- Pay-your-bid controller (#53).
+--
+-- The CLOB redesign (#49, commit edf0156) retired the fill-strategy
+-- subsystem under the assumption that Braiins matched CLOB-style and
+-- actual spend was materially below bid. Empirical A/B on 2026-04-23
+-- falsified that: effective cost tracks the bid, not the fillable ask.
+-- Lowering the bid directly lowers the spend.
+--
+-- The new controller targets `fillable_ask + overpay_sat_per_eh_day`
+-- every tick, clamped to the same `effective_cap =
+-- min(max_bid, hashprice + max_overpay_vs_hashprice)` as before.
+-- `overpay_sat_per_eh_day` is the one knob that tunes "how far above
+-- the fillable mark to sit" — higher = more resilient to short
+-- upward market moves at the cost of a bigger pay-your-bid premium;
+-- lower = pays closer to the market but risks losing fill on noise.
+--
+-- Default 1_000_000 sat/EH/day = 1,000 sat/PH/day. Conservative vs
+-- the observed ~3,000 sat/PH/day gap between fillable and the old
+-- fixed-cap bid, while comfortably absorbing typical tick-to-tick
+-- fillable movement.
+
+ALTER TABLE config ADD COLUMN overpay_sat_per_eh_day INTEGER NOT NULL DEFAULT 1000000;

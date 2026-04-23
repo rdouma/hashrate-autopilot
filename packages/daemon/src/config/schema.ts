@@ -23,10 +23,7 @@ export const SecretsSchema = z.object({
   braiins_owner_token: nonEmptyString,
   braiins_read_only_token: nonEmptyString.optional(),
 
-  // Telegram fields are legacy — the owner-token API path doesn't need 2FA
-  // (empirical) and notifications are tracked separately in #18. Kept
-  // optional so old .env.sops.yaml files still parse; setup no longer
-  // prompts for them.
+  // Legacy — kept optional so old .env.sops.yaml files still parse.
   telegram_bot_token: nonEmptyString.optional(),
   telegram_webhook_secret: nonEmptyString.optional(),
 
@@ -52,15 +49,6 @@ export type Secrets = z.infer<typeof SecretsSchema>;
 const positiveNumber = z.number().positive();
 const nonNegativeInt = z.number().int().nonnegative();
 const positiveInt = z.number().int().positive();
-
-// ISO "HH:MM" 24-hour. Regex is cheap and clear; full ISO time would be overkill.
-const hhmmString = z
-  .string()
-  .regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'must be HH:MM (24-hour)');
-
-// IANA timezone string. We don't validate against a registry here — the DateTime
-// library (Intl.DateTimeFormat) surfaces an error at runtime if invalid.
-const timezoneString = nonEmptyString;
 
 export const AppConfigSchema = z.object({
   // Hashrate targets (SPEC §8)
@@ -88,6 +76,15 @@ export const AppConfigSchema = z.object({
     )
     .default(null),
 
+  // Overpay above fillable_ask (#53 pay-your-bid redesign).
+  // Each tick the controller targets `fillable_ask + overpay_sat_per_eh_day`,
+  // clamped to the effective cap. The one knob that tunes how hard we
+  // chase the market: higher = more headroom against tick-to-tick
+  // upward moves (safer fills, bigger premium); lower = closer to the
+  // cheapest fillable price (lower cost, more sensitive to noise).
+  // Default 1_000_000 sat/EH/day = 1,000 sat/PH/day.
+  overpay_sat_per_eh_day: positiveInt.default(1_000_000),
+
   // Budgeting — size of the `amount_sat` on each CREATE_BID. 0 is a
   // sentinel meaning "use the full available wallet balance on each
   // create" (resolved at decision time, clamped to Braiins' 1 BTC
@@ -102,29 +99,19 @@ export const AppConfigSchema = z.object({
   pool_outage_blip_tolerance_seconds: nonNegativeInt,
   api_outage_alert_after_minutes: positiveInt,
 
-  // 2FA / operator availability (SPEC §7)
-  quiet_hours_start: hhmmString,
-  quiet_hours_end: hhmmString,
-  quiet_hours_timezone: timezoneString,
-  confirmation_timeout_minutes: positiveInt,
   handover_window_minutes: positiveInt,
 
   // Accounting
   btc_payout_address: nonEmptyString,
 
-  // Legacy (see SecretsSchema comment above). Kept as an allow-empty string
-  // instead of being removed outright because the DB column is NOT NULL
-  // and existing rows carry a value; a migration to drop the column can
-  // come with #18.
-  telegram_chat_id: z.string().default(''),
-
-  // Fill-strategy knobs have been retired (#49 redesign). Under CLOB
-  // matching (verified empirically), the bid is only a matching-access
-  // ceiling — the actual price paid is the matched ask. The whole
-  // machinery of overpay / escalation / lowering dampening became
-  // pointless complexity. decide() now keeps one bid at the effective
-  // cap (min(max_bid, hashprice + max_overpay_vs_hashprice)) and
-  // adjusts speed on cheap-mode transitions, nothing more.
+  // The elaborate fill-strategy machinery (escalation modes, lowering
+  // patience, min-lower-delta, fill-escalation-step/after) was retired
+  // in #49 under a CLOB assumption and NOT brought back under the
+  // pay-your-bid correction (#53). The new controller targets
+  // `fillable_ask + overpay_sat_per_eh_day` directly every tick; the
+  // old timers were a way to simulate that target under a mistaken
+  // mental model. Braiins' own 10-min price-decrease cooldown is
+  // enforced by gate.ts — no additional patience timer is needed.
 
   // Electrs (optional, for fast balance lookups)
   electrs_host: z.string().nullable().default(null),
@@ -263,7 +250,6 @@ export const APP_CONFIG_DEFAULTS: Omit<
   | 'destination_pool_url'
   | 'destination_pool_worker_name'
   | 'btc_payout_address'
-  | 'telegram_chat_id'
 > = {
   target_hashrate_ph: 1.0,
   minimum_floor_hashrate_ph: 0.5,
@@ -275,6 +261,8 @@ export const APP_CONFIG_DEFAULTS: Omit<
   // today is ~46,000 sat/PH/day, so a 2,000 premium caps at ~48,000 which
   // is comfortably below the fixed cap without being overly tight.
   max_overpay_vs_hashprice_sat_per_eh_day: 2_000_000, // 2,000 sat/PH/day
+  // Pay-your-bid overpay above fillable_ask (#53). 1,000 sat/PH/day.
+  overpay_sat_per_eh_day: 1_000_000,
 
   bid_budget_sat: 0, // 0 = use full wallet balance per CREATE (#40)
 
@@ -284,10 +272,6 @@ export const APP_CONFIG_DEFAULTS: Omit<
   pool_outage_blip_tolerance_seconds: 120,
   api_outage_alert_after_minutes: 10,
 
-  quiet_hours_start: '22:00',
-  quiet_hours_end: '08:00',
-  quiet_hours_timezone: 'Europe/Amsterdam',
-  confirmation_timeout_minutes: 15,
   handover_window_minutes: 30,
 
   // Strategy knobs. sat/EH/day internally; 100 sat/PH/day = 100,000 sat/EH/day.

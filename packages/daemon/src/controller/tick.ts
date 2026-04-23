@@ -17,7 +17,6 @@ import { decide } from './decide.js';
 import { execute, type ExecuteDeps } from './execute.js';
 import { gate } from './gate.js';
 import { observe, type ObserveDeps } from './observe.js';
-import { cheapestAskForDepth } from './orderbook.js';
 import type { ExecutionResult, GateOutcome, Proposal, State } from './types.js';
 
 export interface TickDeps extends ObserveDeps, ExecuteDeps {
@@ -123,18 +122,10 @@ export class Controller {
         a.braiins_order_id.localeCompare(b.braiins_order_id),
       )[0];
       const primaryBalance = state.balance?.accounts?.[0];
-      const fillable = state.market
-        ? cheapestAskForDepth(
-            state.market.orderbook.asks ?? [],
-            state.config.target_hashrate_ph,
-          )
-        : null;
-      void fillable;
-      // Legacy bid-based spend model (`bid × delivered / 1_440_000`)
-      // used to populate `spend_sat`. Under CLOB the bid is a ceiling
-      // and the real spend is `primary_bid_consumed_sat` deltas, so
-      // nothing reads `spend_sat` any more; keep the column for schema
-      // continuity but stop writing fake values.
+      // Under pay-your-bid (#53) the authoritative actual spend comes
+      // from `primary_bid_consumed_sat` deltas — keep the legacy
+      // `spend_sat` column null so downstream readers don't confuse it
+      // with the real figure.
       const spendSat: number | null = null;
       await this.deps.tickMetricsRepo.insert({
         tick_at: state.tick_at,
@@ -146,13 +137,7 @@ export class Controller {
         our_primary_price_sat_per_eh_day: primary?.price_sat ?? null,
         best_bid_sat_per_eh_day: state.market?.best_bid_sat ?? null,
         best_ask_sat_per_eh_day: state.market?.best_ask_sat ?? null,
-        fillable_ask_sat_per_eh_day:
-          state.market
-            ? cheapestAskForDepth(
-                state.market.orderbook.asks ?? [],
-                state.config.target_hashrate_ph,
-              ).price_sat
-            : null,
+        fillable_ask_sat_per_eh_day: state.fillable_ask_sat_per_eh_day,
         hashprice_sat_per_eh_day: state.hashprice_sat_per_ph_day !== null
           ? state.hashprice_sat_per_ph_day * 1000
           : null,
@@ -163,7 +148,7 @@ export class Controller {
         spend_sat: spendSat,
         primary_bid_consumed_sat: primary ? primary.amount_consumed_sat : null,
         run_mode: state.run_mode,
-        action_mode: state.action_mode,
+        action_mode: 'NORMAL' as const,
       });
     } catch (err) {
       console.warn(`[tick] metrics insert failed: ${(err as Error).message}`);

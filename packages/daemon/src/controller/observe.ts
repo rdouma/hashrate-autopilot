@@ -15,6 +15,7 @@
  * previous tick; the controller passes them in via `previousBelowFloorSince`.
  */
 
+import { cheapestAskForDepth } from './orderbook.js';
 import type { BraiinsService } from '../services/braiins-service.js';
 import type { DatumPoller } from '../services/datum.js';
 import type { OceanClient } from '../services/ocean.js';
@@ -252,6 +253,18 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
     }
   }
 
+  // Depth-aware fillable anchor for decide() (#53). Cheapest price at
+  // which the orderbook's unmatched supply covers target_hashrate_ph.
+  // null propagates when the orderbook is missing/empty, and decide()
+  // skips the tick rather than guessing.
+  const fillable_ask_sat_per_eh_day =
+    marketSnapshot !== null
+      ? cheapestAskForDepth(
+          marketSnapshot.orderbook.asks ?? [],
+          config.target_hashrate_ph,
+        ).price_sat
+      : null;
+
   const floorCheck = computeBelowFloorSince(
     actual_hashrate.total_ph,
     config.minimum_floor_hashrate_ph,
@@ -265,8 +278,6 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
   return {
     tick_at: tickAt,
     run_mode: runtime.run_mode,
-    action_mode: runtime.action_mode,
-    operator_available: runtime.operator_available,
     manual_override_until_ms: inputs.manualOverrideUntilMs,
     config,
     market: marketSnapshot,
@@ -275,18 +286,13 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
     unknown_bids,
     actual_hashrate,
     below_floor_since: floorCheck.below_floor_since,
-    lower_ready_since: null,
-    // Populated by the controller after observe() returns — observe()
-    // doesn't know the primary bid's price relative to targetPrice
-    // until reconciliation has already happened, and the timer lives on
-    // the Controller instance the same way `lower_ready_since` does.
-    below_target_since: null,
     above_floor_ticks: floorCheck.above_floor_ticks,
     pool,
     datum,
     ocean_hashrate_ph,
     last_api_ok_at: deps.braiins.getLastApiOkAt(),
     hashprice_sat_per_ph_day: inputs.hashpriceSatPerPhDay,
+    fillable_ask_sat_per_eh_day,
     cheap_mode_window,
     bypass_pacing: inputs.bypassPacing,
   };

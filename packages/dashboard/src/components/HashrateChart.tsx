@@ -41,7 +41,6 @@ const PADDING = { top: 16, right: 16, bottom: 24, left: 80 };
 // saturated amber/orange rather than pale yellow. The PriceChart
 // "our bid" line shares this constant.
 const COLOR_DELIVERED = '#f59e0b';
-const COLOR_SIM = '#f97316';
 // Green — measured locally at the DATUM gateway.
 const COLOR_DATUM = '#34d399';
 // Same saturated blue as the TIDES-credited block cubes on this
@@ -119,7 +118,6 @@ export const HashrateChart = memo(function HashrateChart({
   points,
   range,
   onRangeChange,
-  simMode = false,
   ourBlocks = [],
   blockExplorerTemplate = 'https://mempool.space/block/{hash}',
   shareLogPct = null,
@@ -129,7 +127,6 @@ export const HashrateChart = memo(function HashrateChart({
   points: readonly MetricPoint[];
   range: ChartRange;
   onRangeChange: (r: ChartRange) => void;
-  simMode?: boolean;
   /** Pool blocks credited to our wallet (every recent pool block
    *  under TIDES while mining, plus a gold-flagged subset for the
    *  rare solo-finder case). */
@@ -347,30 +344,28 @@ export const HashrateChart = memo(function HashrateChart({
   const { minX, maxX, xScale, yScale, deliveredPath, datumPath, hasDatum, oceanPath, hasOcean, targetPath, floorPath, yTicks, xTickInterval, xTicks } = chartData;
 
   return (
-    <div className={`bg-slate-900 border rounded-lg p-4 ${simMode ? 'border-amber-800/40' : 'border-slate-800'}`}>
+    <div className="bg-slate-900 border rounded-lg p-4 border-slate-800">
       <div className="flex items-center justify-between mb-2 gap-3 flex-wrap">
         <h3 className="text-xs uppercase tracking-wider text-slate-100">
-          {simMode ? 'Simulated hashrate' : 'Hashrate'}
+          Hashrate
         </h3>
         <div className="flex items-center gap-3 text-xs flex-wrap">
-          <Legend color={simMode ? COLOR_SIM : COLOR_DELIVERED} label={simMode ? 'simulated' : 'delivered (Braiins)'} />
-          {!simMode && hasDatum && (
+          <Legend color={COLOR_DELIVERED} label="delivered (Braiins)" />
+          {hasDatum && (
             <Legend color={COLOR_DATUM} label="received (Datum)" />
           )}
-          {!simMode && hasOcean && (
+          {hasOcean && (
             <Legend color={COLOR_OCEAN} label="received (Ocean)" />
           )}
           <Legend color={COLOR_TARGET} label="target" dashed />
           <Legend color={COLOR_FLOOR} label="floor" dashed />
-          {!simMode &&
-            ourBlocks.some(
+          {ourBlocks.some(
               (b) =>
                 b.timestamp_ms >= chartData.minX &&
                 b.timestamp_ms <= chartData.maxX &&
                 !b.found_by_us,
             ) && <Legend color={COLOR_POOL_BLOCK} label="pool block" dashed />}
-          {!simMode &&
-            ourBlocks.some(
+          {ourBlocks.some(
               (b) =>
                 b.timestamp_ms >= chartData.minX &&
                 b.timestamp_ms <= chartData.maxX &&
@@ -411,11 +406,11 @@ export const HashrateChart = memo(function HashrateChart({
 
         <path
           d={`${deliveredPath} L${xScale(maxX).toFixed(1)},${yScale(0)} L${xScale(minX).toFixed(1)},${yScale(0)} Z`}
-          fill={simMode ? 'url(#simFill)' : 'url(#deliveredFill)'}
+          fill="url(#deliveredFill)"
           opacity="0.5"
         />
-        <path d={deliveredPath} stroke={simMode ? COLOR_SIM : COLOR_DELIVERED} strokeWidth="1.8" fill="none" />
-        {!simMode && hasDatum && (
+        <path d={deliveredPath} stroke={COLOR_DELIVERED} strokeWidth="1.8" fill="none" />
+        {hasDatum && (
           <path
             d={datumPath}
             stroke={COLOR_DATUM}
@@ -425,7 +420,7 @@ export const HashrateChart = memo(function HashrateChart({
             strokeLinejoin="round"
           />
         )}
-        {!simMode && hasOcean && (
+        {hasOcean && (
           <path
             d={oceanPath}
             stroke={COLOR_OCEAN}
@@ -436,8 +431,7 @@ export const HashrateChart = memo(function HashrateChart({
           />
         )}
 
-        {!simMode &&
-          ourBlocks
+        {ourBlocks
             .filter((b) => b.timestamp_ms >= minX && b.timestamp_ms <= maxX)
             .map((b) => {
               const x = xScale(b.timestamp_ms);
@@ -491,10 +485,6 @@ export const HashrateChart = memo(function HashrateChart({
           <linearGradient id="deliveredFill" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={COLOR_DELIVERED} stopOpacity="0.45" />
             <stop offset="100%" stopColor={COLOR_DELIVERED} stopOpacity="0" />
-          </linearGradient>
-          <linearGradient id="simFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={COLOR_SIM} stopOpacity="0.35" />
-            <stop offset="100%" stopColor={COLOR_SIM} stopOpacity="0" />
           </linearGradient>
         </defs>
 

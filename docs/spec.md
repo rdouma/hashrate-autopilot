@@ -1,4 +1,4 @@
-# Hashrate Autopilot — Specification (v1.9)
+# Hashrate Autopilot — Specification (v2.0)
 
 > Status: post-empirical rewrite, extended with features shipped through mid-April 2026. v1.0 (2026-04-14) was built
 > around a constraint — that Braiins requires 2FA on every `POST`/`PUT` on the Hashpower API — which empirical
@@ -165,30 +165,27 @@ Plus (not profile-driven; set once, rarely tuned):
 - `pool_outage_blip_tolerance_seconds` (default 120)
 - `api_outage_alert_after_minutes` (default 15)
 
-**Pricing strategy (v1.2 — simplified model):**
+**Pricing strategy (v2.1 — pay-your-bid fillable-tracking):**
 
-Target price formula: `min(fillable + overpay, max_bid)`, where "fillable" is the depth-aware price at which the
-full `target_hashrate_ph` is available (walks asks cumulatively by unmatched supply).
+Empirical A/B on 2026-04-23 falsified the v2.0 CLOB assumption: Braiins matches **pay-your-bid**, not pay-at-ask
+(lowering the bid by ~100 sat/PH/day directly lowered effective cost by a comparable amount, with the orderbook's
+fillable ask well below both bids). The bid price is the price paid.
 
-- `overpay_sat_per_eh_day` — how much above the fillable ask we bid (always — every tick aims for exactly this overpay; not a "max", the cap is `max_bid`).
-- `max_bid_sat_per_eh_day` — absolute cap (renamed from max_price for clarity).
-- `escalation_mode` — one of `market`, `dampened`, `above_market`. Controls upward adjustments:
-  - `market` / `dampened` are **reactive**: they gate on the below-floor timer (`below_floor_since`). `market` jumps directly to `fillable + overpay`; `dampened` steps from `current_bid + escalation_step`.
-  - `above_market` is **preemptive**: it gates on the below-target timer (`below_target_since`). The instant the market catches up enough that `current_bid < fillable + overpay`, it starts a `fill_escalation_after_minutes` timer; on timeout, the autopilot jumps to target (same as `market`) even while delivery is still above floor. Defends the fill instead of recovering it. The `below_target_since_ms` timer is persisted to `runtime_state` so a daemon restart doesn't silently reset the window. All three modes respect the same effective cap (`min(max_bid, hashprice + max_overpay)`).
-- `fill_escalation_step_sat_per_eh_day` — step size for dampened mode.
-- `fill_escalation_after_minutes` — window before escalation kicks in. Applies to all three modes; the trigger condition differs per mode.
-- `min_lower_delta_sat_per_eh_day` — deadband: only auto-lower when overpay vs target exceeds this. Default 200 sat/PH/day. Avoids burning the Braiins 10-min decrease cooldown for a few-sat saving.
-- `lower_patience_minutes` — how long the **lowering-ready** condition must have been continuously true before the
-  autopilot will actually lower the bid price. Lowering-ready means the current bid sits more than
-  `min_lower_delta_sat_per_eh_day` above `fillable + overpay` — i.e. the market is genuinely cheaper than what we're
-  paying by a meaningful margin. The instant the market catches up (fillable rises, or hashprice crashes pulling the
-  dynamic cap inward), the timer resets, so a short dip that reverses inside the patience window can never trigger a
-  lower. The `lower_ready_since_ms` timer is persisted to `runtime_state` so a daemon restart does not silently reset
-  the window. (Prior versions used an "above-floor" proxy, which fired too readily on bids that were barely
-  overpaying but happened to be filling.)
+Per-tick target: **`min(fillable_ask + overpay_sat_per_eh_day, effective_cap)`** where
+`effective_cap = min(max_bid, hashprice + max_overpay_vs_hashprice)` and `fillable_ask` is the cheapest price at
+which the orderbook's cumulative unmatched ask supply covers `target_hashrate_ph`
+(`cheapestAskForDepth(asks, target)`).
+
+`overpay_sat_per_eh_day` is the one pricing knob that tunes the controller: higher = more headroom against
+short upward market moves (stabler fills, bigger premium above the cheapest fillable price); lower = closer to
+the market (lower cost, more sensitive to noise). Default 1,000 sat/PH/day.
+
+When `fillable_ask` is null (orderbook empty / API down) the tick is skipped — defaulting to the cap is exactly
+the money-burn this controller unwinds. Braiins' 10-min price-decrease cooldown is the only pacing rule below
+the decide layer; no escalation ladder, no patience timers (retired in v2.0, not brought back). The caps exist
+for (a) wallet runway, (b) opting out of pathologically expensive market conditions — they are not the normal bid.
+
 - `handover_window_minutes` — manual-override suppression window.
-
-Lowering: when overpay vs target exceeds `min_lower_delta`, jump directly to target (no dampening downward — trust the `overpay` setting).
 
 **Daemon startup:**
 
@@ -445,3 +442,5 @@ Still open:
 | 1.7     | 2026-04-16 | Renamed `max_overpay_sat_per_eh_day` → `overpay_sat_per_eh_day`. The "max_" prefix was misleading — the field is the (fixed) overpay we always aim for, not the upper bound of a varying amount. The only "max" semantic is the absolute `max_bid` cap that clips overheated markets. |
 | 1.9     | 2026-04-19 | Repurposed `lower_patience_minutes`: the patience window now measures continuous lowering-readiness (primary > fillable + overpay + min_lower_delta), not continuous above-floor time. The old semantics fired lowering after a few minutes of a bid filling at marginal overpay; the new semantics require the market to be *meaningfully* cheaper than the current bid for the full window before lowering. Column `runtime_state.above_floor_since_ms` renamed to `lower_ready_since_ms` (migration 0032). Behaviour change, not a config-shape change — existing `lower_patience_minutes` values keep their meaning in wall-clock minutes. |
 | 1.8     | 2026-04-19 | Composite roll-up of features shipped 2026-04-16 to 2026-04-19: (a) `lower_patience_minutes` — required above-floor duration before lowering, persisted across restarts in `runtime_state.above_floor_since_ms`; (b) Ocean integration — `/api/ocean` surfaces hashprice, pool stats, recent blocks (including own-found markers on the hashrate chart), and time-to-payout; hashprice is recorded on every `tick_metrics` row and plotted historically; (c) `max_overpay_vs_hashprice_sat_per_eh_day` — optional dynamic cap, effective cap becomes `min(max_bid, hashprice + this)`; simulator mirrors the same skip-tick guard; (d) opportunistic cheap-mode scaling (`cheap_target_hashrate_ph`, `cheap_threshold_pct`) — scales above the normal target when the market is cheap vs hashprice; (e) what-if simulator (`POST /api/simulate`) — stateless backtest over historical `tick_metrics` with candidate strategy parameters, surfaced on the Status page as a toggleable overlay on the live charts; (f) retention pruning (`tick_metrics_retention_days`, `decisions_uneventful_retention_days`, `decisions_eventful_retention_days`) — hourly pruner service; (g) Datum Gateway integration (optional) — `datum_api_url` enables polling `/umbrel-api` each tick, records `tick_metrics.datum_hashrate_ph` alongside Braiins's reading, surfaces connected workers + gateway-measured hashrate on a dedicated Datum panel. Integration is informational-only; control loop never depends on Datum being reachable. See `docs/setup-datum-api.md` for the Umbrel port-exposure recipe (tested and running stable since 2026-04-19). |
+| 2.0     | 2026-04-23 | CLOB pricing rewrite: retired the depth-aware `fillable + overpay` formula and all associated knobs (`overpay_sat_per_eh_day`, `escalation_mode`, `fill_escalation_step_sat_per_eh_day`, `fill_escalation_after_minutes`, `min_lower_delta_sat_per_eh_day`, `lower_patience_minutes`). The bid now sits at the effective ceiling `min(max_bid, hashprice + max_overpay_vs_hashprice)` every tick — matching is cheapest-ask-first so the ceiling is a matching-access threshold, not the price paid. Also retired the what-if simulator (v1.8e). |
+| 2.1     | 2026-04-23 | Pay-your-bid correction (#53). Direct A/B verification on live data (50k→49k bid drop → 50,300→49,899 sat/PH/day effective cost drop, with fillable ask unchanged) falsified v2.0's CLOB assumption. Restored depth-aware fillable tracking: bid = `min(fillable_ask + overpay_sat_per_eh_day, effective_cap)`. Reintroduced `overpay_sat_per_eh_day` (default 1,000 sat/PH/day) as the one pricing knob; the escalation/patience/min-lower-delta subsystem from v1.x stayed retired — under direct fillable tracking the optimal price is proposed every tick and Braiins' own 10-min cooldown is the only pacing rule needed. |

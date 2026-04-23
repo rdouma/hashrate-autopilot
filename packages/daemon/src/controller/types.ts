@@ -11,7 +11,7 @@ import type {
   MarketStats,
   OrderbookSnapshot,
 } from '@braiins-hashrate/braiins-client';
-import type { ActionMode, RunMode } from '@braiins-hashrate/shared';
+import type { RunMode } from '@braiins-hashrate/shared';
 
 import type { AppConfig } from '../config/schema.js';
 
@@ -94,8 +94,6 @@ export interface ActualHashrate {
 export interface State {
   readonly tick_at: number;
   readonly run_mode: RunMode;
-  readonly action_mode: ActionMode;
-  readonly operator_available: boolean;
   /**
    * If set, EDIT_PRICE is suppressed until this wall-clock time. Set by
    * manual operator actions (bump-price) so the autopilot doesn't revert
@@ -117,30 +115,9 @@ export interface State {
   /** When we first observed hashrate below floor, or null if currently OK. */
   readonly below_floor_since: number | null;
   /**
-   * Timestamp when the lowering-ready condition (primary bid priced
-   * high enough above fillable + overpay that lowering would save at
-   * least `min_lower_delta_sat_per_eh_day`) became continuously true.
-   * Null when the condition is false — either the market caught up to
-   * our bid, we're already priced at target, or there's no primary
-   * bid yet. Drives the `lower_patience_minutes` gate in decide().
-   */
-  readonly lower_ready_since: number | null;
-  /**
-   * Timestamp (ms) when `primary.price_sat < fillable + overpay` became
-   * continuously true — i.e., the market has closed the overpay gap.
-   * Drives the preemptive-raise trigger under `escalation_mode =
-   * 'above_market'`; ignored by the other two modes, which gate on
-   * `below_floor_since` instead. Null when the condition is currently
-   * false. Persisted in `runtime_state.below_target_since_ms` so the
-   * timer survives daemon restarts.
-   */
-  readonly below_target_since: number | null;
-  /**
    * Consecutive ticks observed at-or-above floor. Required for debouncing
    * the below_floor_since timer against transient `avg_speed_ph` spikes
-   * from Braiins' lagged rolling average on bid-state flickers. Capped at
-   * `FLOOR_DEBOUNCE_TICKS` — once we've cleared the hysteresis threshold
-   * it doesn't matter how much higher the counter goes.
+   * from Braiins' lagged rolling average on bid-state flickers.
    */
   readonly above_floor_ticks: number;
 
@@ -172,6 +149,16 @@ export interface State {
    * the market is cheap enough to scale up. null when unavailable.
    */
   readonly hashprice_sat_per_ph_day: number | null;
+
+  /**
+   * Cheapest price (sat/EH/day) at which the orderbook's cumulative
+   * unmatched ask supply covers `target_hashrate_ph` — the depth-aware
+   * equivalent of "best_ask" for our own target size. Computed in
+   * observe() via `cheapestAskForDepth`. null when the orderbook is
+   * unavailable or has zero unmatched supply. decide() uses this as
+   * the tracking anchor under the #53 pay-your-bid controller.
+   */
+  readonly fillable_ask_sat_per_eh_day: number | null;
 
   /**
    * Rolling-average inputs to the cheap-mode engagement check (#50).
@@ -270,7 +257,6 @@ export type Proposal =
 export type GateDenialReason =
   | 'RUN_MODE_NOT_LIVE'
   | 'RUN_MODE_PAUSED'
-  | 'ACTION_MODE_BLOCKS_CREATE_OR_EDIT'
   | 'PRICE_DECREASE_COOLDOWN';
 
 export type GateOutcome =

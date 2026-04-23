@@ -146,9 +146,6 @@ export interface StatusResponse {
     readonly binding_cap: 'fixed' | 'dynamic';
     readonly bid_budget_sat: number;
     readonly pool_url: string;
-    readonly quiet_hours_start: string;
-    readonly quiet_hours_end: string;
-    readonly quiet_hours_timezone: string;
     readonly effective_target_hashrate_ph: number;
     readonly cheap_mode_active: boolean;
   };

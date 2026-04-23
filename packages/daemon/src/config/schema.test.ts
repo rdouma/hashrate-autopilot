@@ -22,7 +22,6 @@ const VALID_CONFIG = {
   destination_pool_url: 'stratum+tcp://datum.local:23334',
   destination_pool_worker_name: 'remco.rig1',
   btc_payout_address: 'bc1qexampleaddressxxxxxxxxxxxxxxxxxxxxxxxxx',
-  telegram_chat_id: '123456789',
 };
 
 describe('SecretsSchema', () => {
@@ -56,15 +55,6 @@ describe('AppConfigSchema', () => {
   it('rejects non-positive hashrate targets', () => {
     expect(() => AppConfigSchema.parse({ ...VALID_CONFIG, target_hashrate_ph: 0 })).toThrow();
     expect(() => AppConfigSchema.parse({ ...VALID_CONFIG, target_hashrate_ph: -1 })).toThrow();
-  });
-
-  it('rejects malformed quiet hours', () => {
-    expect(() =>
-      AppConfigSchema.parse({ ...VALID_CONFIG, quiet_hours_start: '24:00' }),
-    ).toThrow();
-    expect(() =>
-      AppConfigSchema.parse({ ...VALID_CONFIG, quiet_hours_end: '7:30' }),
-    ).toThrow();
   });
 
   it('rejects non-integer budgets', () => {

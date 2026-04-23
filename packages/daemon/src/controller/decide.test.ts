@@ -4,32 +4,33 @@ import { APP_CONFIG_DEFAULTS } from '../config/schema.js';
 import { decide } from './decide.js';
 import type { MarketSnapshot, OwnedBidSnapshot, State, UnknownBidSnapshot } from './types.js';
 
-// Post-#49 redesign: decide() is stateless on escalation / lowering /
-// overpay — the entire fill-strategy machinery was retired after
-// empirical verification that Braiins matches CLOB-style (bid is a
-// ceiling, actual price = matched ask). These tests cover the
-// remaining minimal contract:
+// Pay-your-bid controller (#53). decide() targets
+// `fillable_ask + overpay_sat_per_eh_day`, clamped to
+// `effective_cap = min(max_bid, hashprice + max_overpay_vs_hashprice)`.
+// Tests cover:
 //
 //   - PAUSE on unknown bids
-//   - skip on missing market / missing hashprice (when dynamic cap
-//     is configured)
-//   - CREATE at effective cap when no owned bid
-//   - EDIT_PRICE to effective cap when bid diverges
+//   - skip on missing market / missing fillable / missing hashprice
+//     (when dynamic cap is configured)
+//   - CREATE at target_price when no owned bid
+//   - EDIT_PRICE to target_price when bid diverges (with tick_size tolerance)
+//   - target_price clamped to effective_cap when fillable + overpay exceeds
 //   - EDIT_SPEED on cheap-mode transitions
 //   - CANCEL extras when multiple owned bids exist
-//   - bid_budget_sat=0 sentinel → uses wallet balance, clamped to 1 BTC
+//   - bid_budget_sat=0 sentinel → wallet balance, 1 BTC clamp
 
 const BASE_CONFIG = {
   ...APP_CONFIG_DEFAULTS,
   destination_pool_url: 'stratum+tcp://datum.local:23334',
   destination_pool_worker_name: 'otto',
   btc_payout_address: 'bc1qexample',
-  telegram_chat_id: '1',
   max_overpay_vs_hashprice_sat_per_eh_day: null,
   bid_budget_sat: 200_000,
+  overpay_sat_per_eh_day: 1_000_000, // 1,000 sat/PH/day
 };
 
 const FIXED_CAP = BASE_CONFIG.max_bid_sat_per_eh_day;
+const OVERPAY = BASE_CONFIG.overpay_sat_per_eh_day;
 
 function market(cheapestAskSat: number = 45_000_000, tickSize = 1000): MarketSnapshot {
   return {
@@ -49,11 +50,13 @@ function market(cheapestAskSat: number = 45_000_000, tickSize = 1000): MarketSna
 }
 
 function state(overrides: Partial<State> = {}): State {
+  const fillable =
+    overrides.fillable_ask_sat_per_eh_day !== undefined
+      ? overrides.fillable_ask_sat_per_eh_day
+      : 45_000_000;
   return {
     tick_at: 1_700_000_000_000,
     run_mode: 'DRY_RUN',
-    action_mode: 'NORMAL',
-    operator_available: true,
     config: BASE_CONFIG,
     market: market(),
     balance: null,
@@ -61,13 +64,14 @@ function state(overrides: Partial<State> = {}): State {
     unknown_bids: [],
     actual_hashrate: { owned_ph: 0, unknown_ph: 0, total_ph: 0 },
     below_floor_since: null,
-    lower_ready_since: null,
-    below_target_since: null,
     above_floor_ticks: 0,
     manual_override_until_ms: null,
     pool: { reachable: true, last_ok_at: 1_700_000_000_000, consecutive_failures: 0 },
+    datum: null,
+    ocean_hashrate_ph: null,
     last_api_ok_at: 1_700_000_000_000,
     hashprice_sat_per_ph_day: null,
+    fillable_ask_sat_per_eh_day: fillable,
     cheap_mode_window: null,
     bypass_pacing: false,
     ...overrides,
@@ -78,7 +82,7 @@ function owned(overrides: Partial<OwnedBidSnapshot> = {}): OwnedBidSnapshot {
   return {
     braiins_order_id: 'order-a',
     cl_order_id: null,
-    price_sat: FIXED_CAP,
+    price_sat: 46_000_000, // fillable 45M + overpay 1M
     amount_sat: 50_000,
     speed_limit_ph: BASE_CONFIG.target_hashrate_ph,
     avg_speed_ph: BASE_CONFIG.target_hashrate_ph,
@@ -114,6 +118,10 @@ describe('decide — case selection', () => {
     expect(decide(state({ market: null }))).toEqual([]);
   });
 
+  it('emits nothing when fillable_ask is null (empty orderbook)', () => {
+    expect(decide(state({ fillable_ask_sat_per_eh_day: null }))).toEqual([]);
+  });
+
   it('refuses to trade when dynamic cap is configured but hashprice is unavailable (#28)', () => {
     const s = state({
       config: { ...BASE_CONFIG, max_overpay_vs_hashprice_sat_per_eh_day: 2_000_000 },
@@ -124,57 +132,95 @@ describe('decide — case selection', () => {
 });
 
 describe('decide — CREATE path', () => {
-  it('creates at the fixed effective cap when no dynamic cap is configured', () => {
+  it('creates at fillable + overpay when below the fixed cap', () => {
     const proposals = decide(state());
     expect(proposals).toHaveLength(1);
     expect(proposals[0]).toMatchObject({
       kind: 'CREATE_BID',
-      price_sat: FIXED_CAP,
+      price_sat: 45_000_000 + OVERPAY,
       amount_sat: 200_000,
     });
   });
 
-  it('creates at the dynamic cap when it is tighter than fixed', () => {
-    // hashprice 46,000 sat/PH/day × 1000 = 46_000_000 sat/EH/day;
-    // dynamic cap allowance 1_500_000 → 47_500_000, below fixed (49M default).
-    const s = state({
+  it('clamps target to the fixed cap when fillable + overpay would exceed it', () => {
+    // fillable 49,500,000 + overpay 1,000,000 = 50,500,000 > fixed 49,000,000
+    const proposals = decide(state({ fillable_ask_sat_per_eh_day: 49_500_000 }));
+    expect(proposals[0]).toMatchObject({
+      kind: 'CREATE_BID',
+      price_sat: FIXED_CAP,
+    });
+  });
+
+  it('clamps target to the dynamic cap when tighter than fixed', () => {
+    // hashprice 46,000 sat/PH/day × 1000 = 46M sat/EH/day; allowance
+    // 500,000 → dynamic cap 46,500,000. fillable 45M + overpay 1M =
+    // 46M, below dynamic cap — no clamp.
+    const s1 = state({
       config: {
         ...BASE_CONFIG,
-        max_overpay_vs_hashprice_sat_per_eh_day: 1_500_000,
+        max_overpay_vs_hashprice_sat_per_eh_day: 500_000,
       },
       hashprice_sat_per_ph_day: 46_000,
     });
-    const proposals = decide(s);
-    expect(proposals[0]).toMatchObject({
+    expect(decide(s1)[0]).toMatchObject({
       kind: 'CREATE_BID',
-      price_sat: 47_500_000,
+      price_sat: 46_000_000,
+    });
+
+    // Now shrink the allowance so fillable + overpay hits the dynamic cap.
+    // hashprice 46M + allowance 300,000 = dyn cap 46,300,000. Make
+    // fillable 45.5M so desired = 46.5M > dyn cap → clamped to 46.3M.
+    const s2 = state({
+      config: {
+        ...BASE_CONFIG,
+        max_overpay_vs_hashprice_sat_per_eh_day: 300_000,
+      },
+      hashprice_sat_per_ph_day: 46_000,
+      fillable_ask_sat_per_eh_day: 45_500_000,
+    });
+    expect(decide(s2)[0]).toMatchObject({
+      kind: 'CREATE_BID',
+      price_sat: 46_300_000,
     });
   });
 });
 
-describe('decide — EDIT_PRICE to effective cap', () => {
-  it('does nothing when the bid is already at the effective cap', () => {
+describe('decide — EDIT_PRICE to target', () => {
+  it('does nothing when the bid is already at fillable + overpay', () => {
     expect(decide(state({ owned_bids: [owned()] }))).toEqual([]);
   });
 
-  it('proposes EDIT_PRICE when the bid is below the effective cap', () => {
-    const belowCap = FIXED_CAP - 500_000;
-    const proposals = decide(state({ owned_bids: [owned({ price_sat: belowCap })] }));
+  it('proposes EDIT_PRICE upward when fillable rises above the current bid', () => {
+    const s = state({
+      fillable_ask_sat_per_eh_day: 46_000_000,
+      owned_bids: [owned({ price_sat: 46_000_000 })], // bid at old fillable, overpay gap now closed
+    });
+    const proposals = decide(s);
     expect(proposals.find((p) => p.kind === 'EDIT_PRICE')).toMatchObject({
       kind: 'EDIT_PRICE',
-      new_price_sat: FIXED_CAP,
-      old_price_sat: belowCap,
+      new_price_sat: 47_000_000,
     });
   });
 
-  it('proposes EDIT_PRICE downward when the bid is above the effective cap', () => {
-    const aboveCap = FIXED_CAP + 200_000;
-    const proposals = decide(state({ owned_bids: [owned({ price_sat: aboveCap })] }));
-    expect(proposals.find((p) => p.kind === 'EDIT_PRICE')).toMatchObject({
-      kind: 'EDIT_PRICE',
-      new_price_sat: FIXED_CAP,
-      old_price_sat: aboveCap,
+  it('proposes EDIT_PRICE downward when fillable falls below the current bid', () => {
+    const s = state({
+      fillable_ask_sat_per_eh_day: 43_000_000,
+      owned_bids: [owned({ price_sat: 46_000_000 })],
     });
+    expect(decide(s).find((p) => p.kind === 'EDIT_PRICE')).toMatchObject({
+      kind: 'EDIT_PRICE',
+      new_price_sat: 44_000_000,
+    });
+  });
+
+  it('tolerates sub-tick_size drift (no no-op EDIT_PRICE storm)', () => {
+    // default tick_size 1,000. fillable 45,000,500 + overpay 1M = 46,000,500.
+    // current bid at 46,000,000 — delta 500 < tick_size, no edit.
+    const s = state({
+      fillable_ask_sat_per_eh_day: 45_000_500,
+      owned_bids: [owned({ price_sat: 46_000_000 })],
+    });
+    expect(decide(s).find((p) => p.kind === 'EDIT_PRICE')).toBeUndefined();
   });
 });
 
@@ -199,20 +245,18 @@ describe('decide — EDIT_SPEED', () => {
 });
 
 describe('decide — cheap-mode engagement (#50 sustained window)', () => {
-  // hashprice 50_000_000 sat/EH/day, threshold 90 → cheap when best_ask
-  // (or rolling avg) < 45_000_000.
   const CHEAP_CONFIG = {
     ...BASE_CONFIG,
     target_hashrate_ph: 1,
     cheap_target_hashrate_ph: 3,
     cheap_threshold_pct: 90,
   };
-  const HASHPRICE_PH = 50_000; // sat/PH/day
+  const HASHPRICE_PH = 50_000; // sat/PH/day → 50M sat/EH/day; threshold 45M
 
   it('window null, spot best_ask below threshold → cheap-mode on (legacy spot path)', () => {
     const s = state({
       config: CHEAP_CONFIG,
-      market: market(44_000_000), // < 45M threshold
+      market: market(44_000_000),
       hashprice_sat_per_ph_day: HASHPRICE_PH,
       cheap_mode_window: null,
       owned_bids: [owned({ speed_limit_ph: 1 })],
@@ -227,9 +271,6 @@ describe('decide — cheap-mode engagement (#50 sustained window)', () => {
   it('window rolling-avg below threshold → cheap-mode on regardless of spot', () => {
     const s = state({
       config: CHEAP_CONFIG,
-      // Spot best_ask is ABOVE threshold (would keep cheap-mode off
-      // under legacy spot check) but the rolling window is below —
-      // should still engage cheap-mode from the window.
       market: market(46_000_000),
       hashprice_sat_per_ph_day: HASHPRICE_PH,
       cheap_mode_window: {
@@ -249,8 +290,6 @@ describe('decide — cheap-mode engagement (#50 sustained window)', () => {
   it('window rolling-avg above threshold → cheap-mode off despite spot dip', () => {
     const s = state({
       config: CHEAP_CONFIG,
-      // Spot below threshold (flash dip) — legacy spot path would
-      // turn cheap-mode on; the window averages above, so it stays off.
       market: market(44_000_000),
       hashprice_sat_per_ph_day: HASHPRICE_PH,
       cheap_mode_window: {

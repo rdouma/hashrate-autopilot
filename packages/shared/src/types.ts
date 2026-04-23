@@ -17,18 +17,18 @@ export const asHashrateHs = (n: number): HashrateHs => n as HashrateHs;
 // Run mode — operator-controlled; SPEC §7.1.
 export type RunMode = 'DRY_RUN' | 'LIVE' | 'PAUSED';
 
-// Action mode — autopilot-controlled; SPEC §7.2.
-export type ActionMode =
-  | 'NORMAL'
-  | 'QUIET_HOURS'
-  | 'PENDING_CONFIRMATION'
-  | 'CONFIRMATION_TIMEOUT';
+/**
+ * @deprecated Retained for backward compatibility with existing DB rows
+ * and the decisions log. Always 'NORMAL' at runtime — the action-mode
+ * state machine (QUIET_HOURS, PENDING_CONFIRMATION, CONFIRMATION_TIMEOUT)
+ * was removed in v1.1 when the owner-token API was found to bypass 2FA.
+ */
+export type ActionMode = 'NORMAL';
 
-// Mutating actions against the marketplace; SPEC §7.3 gates these.
+// Mutating actions against the marketplace; SPEC §7.2 gates these.
 export type MutationAction = 'create' | 'edit' | 'cancel';
 
 export interface GateInputs {
   readonly runMode: RunMode;
-  readonly actionMode: ActionMode;
   readonly action: MutationAction;
 }

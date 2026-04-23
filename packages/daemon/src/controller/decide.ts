@@ -1,26 +1,32 @@
 /**
- * Pure decision function (post-CLOB redesign, #49).
+ * Pure decision function (pay-your-bid controller, #53).
  *
- * Under Braiins' CLOB matching (empirically verified — actual spend ≈
- * 15-20% below bid while bidding at fillable), the bid price is just
- * a matching-access ceiling. The actual price paid comes from the
- * matched asks. The elaborate fill-strategy machinery that used to
- * live here (overpay-above-fillable, escalation modes, lowering
- * patience, min-delta gates) has been retired: lowering the bid only
- * gates *which sellers we can reach*, it doesn't save money, and
- * raising is near-free.
+ * Empirical A/B on 2026-04-23 falsified the CLOB assumption behind
+ * #49: effective cost tracks the bid, not the fillable ask. Braiins
+ * matches pay-your-bid. Lowering the bid directly lowers spend.
  *
- * What this function does now:
- *   1. Compute effective_cap = min(max_bid, hashprice + max_overpay_vs_hashprice).
- *   2. If no owned bids → CREATE_BID at effective_cap, target speed, wallet budget.
- *   3. If our bid's price ≠ effective_cap → EDIT_PRICE to effective_cap.
+ * The controller now targets `fillable_ask + overpay_sat_per_eh_day`
+ * every tick, clamped to the usual safety cap
+ * `effective_cap = min(max_bid, hashprice + max_overpay_vs_hashprice)`.
+ *
+ * What this function does:
+ *   1. Compute target_price = min(fillable_ask + overpay, effective_cap).
+ *      If fillable_ask is null (orderbook down/empty), skip — we have
+ *      no reference to track and pinning to max_bid would burn money.
+ *   2. If no owned bids → CREATE_BID at target_price, target speed,
+ *      wallet budget.
+ *   3. If our bid's price ≠ target_price (to tick_size tolerance) →
+ *      EDIT_PRICE to target_price. gate.ts enforces Braiins' 10-min
+ *      price-decrease cooldown below this layer.
  *   4. If cheap-mode is active, target PH/s becomes cheap_target_hashrate_ph
  *      → EDIT_SPEED if the active bid doesn't reflect that.
  *   5. If multiple owned bids exist → cancel the extras.
- *   6. Unknown bids → PAUSE (same as before; unambiguity requirement).
+ *   6. Unknown bids → PAUSE (SPEC §9 unambiguity requirement).
  *
- * Everything else (below-floor timers, lower-ready patience, escalation
- * modes) has been removed.
+ * No escalation timers, no lowering-patience window, no min-lower-delta
+ * gate — under direct fillable-tracking each tick already proposes the
+ * optimal price, and Braiins' own cooldown is the only pacing rule we
+ * care about.
  */
 
 import type { Proposal, State } from './types.js';
@@ -48,7 +54,7 @@ export function decide(state: State): readonly Proposal[] {
     ];
   }
 
-  // Without a market snapshot we can't compute the effective cap.
+  // Without a market snapshot we can't price anything.
   if (!state.market) return [];
 
   const { market, config, owned_bids } = state;
@@ -73,20 +79,22 @@ export function decide(state: State): readonly Proposal[] {
   const effectiveCap =
     dynamicCap !== null ? Math.min(fixedCap, dynamicCap) : fixedCap;
 
-  // Cheap-mode check (#13): opportunistic scale-up when the market is
-  // cheap relative to hashprice. Under CLOB the bid is a ceiling and
-  // we pay matched ask prices, so "cheap" = the best ask is below a
-  // threshold of hashprice. best_ask is the cheapest price at which
-  // any supply exists — exactly the CLOB-native analogue of fillable.
-  //
-  // #50 extends this: when `cheap_sustained_window_minutes > 0`, use the
-  // rolling-average best_ask vs rolling-average hashprice over that
-  // window instead of the current-tick spot values. The rolling window
-  // is precomputed in observe() and exposed as `state.cheap_mode_window`;
-  // when null we fall back to spot (window disabled or insufficient
-  // samples). The window pattern gives implicit hysteresis — cheap-mode
-  // only flips when the whole window crosses the threshold, avoiding
-  // flap on single-tick spikes.
+  // Pay-your-bid tracking anchor (#53). cheapestAskForDepth is
+  // precomputed in observe(). Null = orderbook unavailable; skip
+  // rather than default to the cap (that's the exact money-burn this
+  // redesign is unwinding).
+  const fillable = state.fillable_ask_sat_per_eh_day;
+  if (fillable === null) return [];
+
+  const desiredBid = fillable + config.overpay_sat_per_eh_day;
+  const targetPrice = Math.min(desiredBid, effectiveCap);
+  const cappedByCeiling = desiredBid > effectiveCap;
+
+  // Cheap-mode check (#13 / #50): opportunistic scale-up when the
+  // market is cheap relative to hashprice. Rolling-average window when
+  // configured (`cheap_sustained_window_minutes > 0`), spot fallback
+  // otherwise. Controls target_hashrate_ph only — pricing stays on
+  // the fillable-tracking path.
   const cheapEnabled =
     config.cheap_threshold_pct > 0 &&
     config.cheap_target_hashrate_ph > config.target_hashrate_ph;
@@ -102,9 +110,6 @@ export function decide(state: State): readonly Proposal[] {
         cheapModeActive = true;
       }
     } else if (hashpriceSatEh !== null && hashpriceSatEh > 0) {
-      // Spot fallback — either the operator has the window disabled
-      // (cheap_sustained_window_minutes = 0, legacy behaviour) or the
-      // window is enabled but hasn't accumulated enough samples yet.
       const bestAskSatEh = market.best_ask_sat;
       if (bestAskSatEh !== null) {
         const threshold = hashpriceSatEh * (config.cheap_threshold_pct / 100);
@@ -120,7 +125,11 @@ export function decide(state: State): readonly Proposal[] {
   const speedLimitPh = Math.max(minBidSpeed, effectiveTargetPh);
   const tickSize = market.settings.tick_size_sat ?? 1000;
 
-  // Case: no owned bids → CREATE at the effective cap.
+  const priceSuffix = cappedByCeiling
+    ? ` (clamped to effective cap ${fmtPricePH(effectiveCap)})`
+    : ` (fillable ${fmtPricePH(fillable)} + overpay ${fmtPricePH(config.overpay_sat_per_eh_day)})`;
+
+  // Case: no owned bids → CREATE at the target price.
   if (owned_bids.length === 0) {
     // Budget resolution (#40). 0 = use full wallet balance, clamped to
     // 1 BTC. Skip the tick silently when balance is missing or empty.
@@ -137,12 +146,12 @@ export function decide(state: State): readonly Proposal[] {
     return [
       {
         kind: 'CREATE_BID',
-        price_sat: effectiveCap,
+        price_sat: targetPrice,
         amount_sat: effectiveBudgetSat,
         speed_limit_ph: speedLimitPh,
         dest_pool_url: config.destination_pool_url,
         dest_worker_name: config.destination_pool_worker_name,
-        reason: `create at effective cap ${fmtPricePH(effectiveCap)}${cheapModeActive ? ` (cheap mode: ${effectiveTargetPh} PH/s)` : ''}`,
+        reason: `create at ${fmtPricePH(targetPrice)}${priceSuffix}${cheapModeActive ? ` · cheap mode ${effectiveTargetPh} PH/s` : ''}`,
       },
     ];
   }
@@ -162,20 +171,17 @@ export function decide(state: State): readonly Proposal[] {
     });
   }
 
-  // Price edit: move the live bid to the effective cap. Braiins' 10-min
-  // price-decrease cooldown is enforced by gate.ts (below the decide
-  // boundary), so we don't need to care here — if a decrease is
-  // refused, the next tick proposes it again and eventually succeeds.
-  // Tolerance: tick_size to avoid emitting EDIT_PRICE proposals that
-  // round-trip to the same on-wire value.
-  const priceDelta = Math.abs(primary.price_sat - effectiveCap);
+  // Price edit: move the live bid to target_price. Tolerance: tick_size
+  // to avoid round-tripping to the same on-wire value. gate.ts
+  // enforces Braiins' 10-min price-decrease cooldown below this layer.
+  const priceDelta = Math.abs(primary.price_sat - targetPrice);
   if (priceDelta >= tickSize) {
     proposals.push({
       kind: 'EDIT_PRICE',
       braiins_order_id: primary.braiins_order_id,
-      new_price_sat: effectiveCap,
+      new_price_sat: targetPrice,
       old_price_sat: primary.price_sat,
-      reason: `converge to effective cap: ${fmtPricePH(primary.price_sat)} → ${fmtPricePH(effectiveCap)}`,
+      reason: `track fillable: ${fmtPricePH(primary.price_sat)} → ${fmtPricePH(targetPrice)}${priceSuffix}`,
     });
   }
 

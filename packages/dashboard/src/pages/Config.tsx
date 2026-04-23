@@ -125,14 +125,20 @@ const SECTIONS: Section[] = [
     ],
   },
   {
-    title: 'Pricing caps',
-    description: 'Hard ceilings on how much you are willing to pay. Entered in sat/PH/day (displayed natively).',
+    title: 'Pricing',
+    description: 'The bid tracks the cheapest ask with enough depth for your target, plus a small premium. Two hard ceilings sit above that so the premium can never run away. Entered in sat/PH/day.',
     fields: [
+      {
+        key: 'overpay_sat_per_eh_day',
+        label: 'Overpay above fillable',
+        kind: 'price_sat_per_eh_day',
+        help: 'Per-tick bid = fillable_ask + this. Braiins matches pay-your-bid, so this is the real premium you pay over the cheapest available price. Higher = more resilient to short upward market moves, bigger premium; lower = closer to the cheapest fillable price, more sensitive to noise. 1,000 sat/PH/day is a reasonable starting point.',
+      },
       {
         key: 'max_bid_sat_per_eh_day',
         label: 'Maximum',
         kind: 'price_sat_per_eh_day',
-        help: 'Hard ceiling. Above this the autopilot silently skips the tick.',
+        help: 'Hard ceiling. If fillable + overpay would exceed this, the bid is clamped down to this value (and may not fill).',
       },
       {
         key: 'max_overpay_vs_hashprice_sat_per_eh_day',

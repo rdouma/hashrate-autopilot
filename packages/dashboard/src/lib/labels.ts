@@ -36,15 +36,9 @@ export function bidStatusClass(raw: string): string {
   }
 }
 
-const ACTION_MODE: Record<string, string> = {
-  NORMAL: 'Normal',
-  QUIET_HOURS: 'Quiet hours — creates/edits deferred',
-  PENDING_CONFIRMATION: 'Waiting for your Telegram 2FA tap',
-  CONFIRMATION_TIMEOUT: '2FA timeout — mark yourself available to retry',
-};
-
+/** @deprecated ActionMode is always 'NORMAL' since v1.1. */
 export function actionModeLabel(raw: string): string {
-  return ACTION_MODE[raw] ?? prettyFallback(raw);
+  return raw === 'NORMAL' ? 'Normal' : raw;
 }
 
 /**

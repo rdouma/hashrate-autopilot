@@ -33,7 +33,7 @@ export class DecisionsRepo {
         gated_json: JSON.stringify(args.gated),
         executed_json: JSON.stringify(args.executed),
         run_mode: args.state.run_mode,
-        action_mode: args.state.action_mode,
+        action_mode: 'NORMAL' as const,
       })
       .execute();
   }
