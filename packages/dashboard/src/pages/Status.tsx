@@ -464,6 +464,7 @@ export function Status() {
             ? (simParamsDebounced?.overpay_sat_per_eh_day ?? 0) / 1000
             : s.config_summary.overpay_sat_per_ph_day
         }
+        priceSmoothingMinutes={configQuery.data?.config?.braiins_price_smoothing_minutes ?? 1}
       />
 
       {/*

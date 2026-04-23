@@ -309,6 +309,15 @@ const SECTIONS: Section[] = [
         min: 1,
         step: 5,
       },
+      {
+        key: 'braiins_price_smoothing_minutes',
+        label: 'Braiins (price, effective)',
+        kind: 'integer_spinner',
+        unit: 'min',
+        min: 1,
+        step: 5,
+        help: 'Rolling-mean window for the Price chart\'s `our bid` and `effective` lines. Useful when the effective line is noisy at tick resolution. Fillable / hashprice / max bid are not smoothed — they\'re market-wide signals.',
+      },
     ],
   },
   {

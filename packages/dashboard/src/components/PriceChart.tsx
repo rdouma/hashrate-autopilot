@@ -51,6 +51,34 @@ interface PricePoint {
   v: number;
 }
 
+/**
+ * Rolling mean over a `{t,v}[]` series with a wall-clock window in
+ * minutes. Window ≤ 1 returns the input unchanged (our "off" sentinel,
+ * matching the Hashrate-chart helper). Anchors the smoothed value at
+ * each original timestamp so the output index-aligns with the input.
+ */
+function rollingMeanPoints(
+  pts: readonly PricePoint[],
+  windowMinutes: number,
+): PricePoint[] {
+  if (windowMinutes <= 1 || pts.length === 0) return [...pts];
+  const windowMs = windowMinutes * 60_000;
+  const out: PricePoint[] = new Array(pts.length);
+  let start = 0;
+  let sum = 0;
+  for (let i = 0; i < pts.length; i += 1) {
+    sum += pts[i]!.v;
+    const cutoff = pts[i]!.t - windowMs;
+    while (start <= i && pts[start]!.t < cutoff) {
+      sum -= pts[start]!.v;
+      start += 1;
+    }
+    const count = i - start + 1;
+    out[i] = { t: pts[i]!.t, v: count > 0 ? sum / count : pts[i]!.v };
+  }
+  return out;
+}
+
 const COLOR_HASHPRICE = '#a78bfa'; // violet-400
 const COLOR_MAXBID = '#f87171'; // red-400
 // Effective rate — what Braiins actually charged, per-tick from
@@ -67,6 +95,7 @@ export const PriceChart = memo(function PriceChart({
   maxOverpayVsHashpriceSatPerPhDay = null,
   maxBidSatPerPhDay = null,
   overpaySatPerPhDay = null,
+  priceSmoothingMinutes = 1,
 }: {
   points: readonly MetricPoint[];
   events?: readonly BidEventView[];
@@ -102,6 +131,16 @@ export const PriceChart = memo(function PriceChart({
    * through raw JSON.
    */
   overpaySatPerPhDay?: number | null;
+  /**
+   * Rolling-mean window (minutes) applied to `our bid` and `effective`
+   * only. 1 = raw (no smoothing). Mirrors the smoothing knobs the
+   * Hashrate chart already has for the Braiins and Datum series
+   * (issue #42). The noisy-per-tick `effective` line in particular
+   * benefits — `amount_consumed_sat` updates asynchronously from
+   * `avg_speed_ph` at Braiins, so a tick-resolution rate can wiggle
+   * around the real trend by ±a few percent.
+   */
+  priceSmoothingMinutes?: number;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
@@ -291,7 +330,21 @@ export const PriceChart = memo(function PriceChart({
       return segments.join(' ');
     };
 
-    const pricePath = pathWithNullGaps((p) => p.our_primary_price_sat_per_ph_day);
+    // Smoothed versions of the "our side" series (our bid + effective).
+    // Fillable / hashprice / max_bid are market-wide and not smoothed.
+    // When priceSmoothingMinutes <= 1 these are identity-passes.
+    const smoothedPricePoints = rollingMeanPoints(pricePoints, priceSmoothingMinutes);
+    const smoothedPriceByTick = new Map<number, number>(
+      smoothedPricePoints.map((p) => [p.t, p.v]),
+    );
+    const smoothedEffectivePoints = rollingMeanPoints(
+      effectivePoints,
+      priceSmoothingMinutes,
+    );
+
+    const pricePath = pathWithNullGaps(
+      (p) => smoothedPriceByTick.get(p.tick_at) ?? null,
+    );
     const fillablePath = pathWithNullGaps((p) => p.fillable_ask_sat_per_ph_day);
     const hashpricePath = pathWithNullGaps((p) => p.hashprice_sat_per_ph_day);
 
@@ -349,7 +402,7 @@ export const PriceChart = memo(function PriceChart({
     };
 
     const priceAreaPath = areaPathWithNullGaps(
-      (p) => p.our_primary_price_sat_per_ph_day,
+      (p) => smoothedPriceByTick.get(p.tick_at) ?? null,
     );
 
     // Effective-rate path — pre-computed as its own {t,v} series, not
@@ -374,7 +427,7 @@ export const PriceChart = memo(function PriceChart({
       if (current) segments.push(current);
       return segments.join(' ');
     };
-    const effectivePath = effectivePathBuilder(effectivePoints);
+    const effectivePath = effectivePathBuilder(smoothedEffectivePoints);
 
     // Cap is config-derived — `max_bid_sat_per_ph_day` is always
     // present when the daemon is running. The only way it goes
@@ -421,7 +474,7 @@ export const PriceChart = memo(function PriceChart({
       : [];
 
     return { pricePoints, fillablePoints, minX, maxX, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, fillablePath, hashpricePath, effectivePath, effectiveHasData: effectivePoints.length > 0, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents };
-  }, [points, events, showEvents]);
+  }, [points, events, showEvents, priceSmoothingMinutes, maxBidSatPerPhDay, maxOverpayVsHashpriceSatPerPhDay, simMode]);
 
   const eventPriceAt = useCallback((e: BidEventView): number | null => {
     const pricePoints = chartData?.pricePoints ?? [];

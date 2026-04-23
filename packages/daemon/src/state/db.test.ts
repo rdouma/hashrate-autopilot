@@ -70,6 +70,7 @@ describe('openDatabase — migrations', () => {
       '0039_hashrate_smoothing.sql',
       '0040_tick_metrics_spend_sat.sql',
       '0041_tick_metrics_primary_bid_consumed.sql',
+      '0042_price_smoothing.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });

@@ -2,6 +2,10 @@
 
 ## 2026-04-22
 
+### `[Feature]` Price chart: rolling-mean smoothing for our-bid and effective lines (#49 follow-up)
+
+Operator requested a smoothing knob for the Price chart analogous to the one the Hashrate chart has had since #42. New `braiins_price_smoothing_minutes` config (migration 0042, default 1 = off) applies a rolling-mean window to both `our bid` and `effective`. Fillable / hashprice / max bid stay untouched — they're market-wide signals, not ours. Lives in the Config → Chart smoothing section next to the existing Braiins/Datum knobs. Same `integer_spinner` presentation (step 5, min 1).
+
 ### `[Fix]` Effective-rate chart line: outlier rejection + exclude from Y-scaling (#49 follow-up)
 
 First live look at the effective-rate line had one bad sample pull the Y-axis up to 100k sat/PH/day, squashing the real 45-50k data into a thin band. Root cause: `amount_consumed_sat` snapshots update asynchronously from Braiins while our tick's `delivered_ph` is an instantaneous reading — at a boundary where delivered briefly dips but consumed has already accumulated a chunk, the per-tick rate divides by a small denominator and reports multiples above reality for one tick.

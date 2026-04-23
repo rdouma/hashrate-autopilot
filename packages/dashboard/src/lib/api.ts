@@ -253,6 +253,7 @@ export interface AppConfig {
   block_explorer_url_template: string;
   braiins_hashrate_smoothing_minutes: number;
   datum_hashrate_smoothing_minutes: number;
+  braiins_price_smoothing_minutes: number;
 }
 
 export interface ConfigResponse {

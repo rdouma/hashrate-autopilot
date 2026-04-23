@@ -237,6 +237,15 @@ export const AppConfigSchema = z.object({
   // Display-only; not read by the control loop.
   braiins_hashrate_smoothing_minutes: positiveInt.default(1),
   datum_hashrate_smoothing_minutes: positiveInt.default(1),
+  // Rolling-mean minute window applied client-side to the price
+  // chart's `our bid` (amber) and `effective` (emerald) series (#49
+  // follow-up). 1 = no smoothing. The effective line in particular
+  // is noisy at tick resolution because Braiins' amount_consumed_sat
+  // snapshots update asynchronously from avg_speed_ph — a rolling
+  // mean lets the operator see the trend rather than per-tick
+  // quantisation. Fillable / hashprice / max_bid are unaffected
+  // (they're market-wide signals, not ours).
+  braiins_price_smoothing_minutes: positiveInt.default(1),
 });
 
 export type AppConfig = z.infer<typeof AppConfigSchema>;
@@ -325,4 +334,5 @@ export const APP_CONFIG_DEFAULTS: Omit<
 
   braiins_hashrate_smoothing_minutes: 1,
   datum_hashrate_smoothing_minutes: 1,
+  braiins_price_smoothing_minutes: 1,
 };
