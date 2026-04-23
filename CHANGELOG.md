@@ -2,6 +2,21 @@
 
 ## 2026-04-23
 
+### `[Fix]` Hashrate chart + UPTIME: use counter-derived delivered instead of Braiins' lagged avg (#52)
+
+The dashboard trusted `tick_metrics.delivered_ph` — Braiins' own `avg_speed_ph` rolling-average — as the truth about "how much hashrate are we actually getting right now". That field lags reality by minutes: during the 2026-04-23 12:55-12:59 outage the counter delta dropped to ~4 sat/min (95% cut) and Datum/Ocean both fell below 0.2 PH/s, but `delivered_ph` still read 3.67 PH/s. Visible consequences: the hashrate chart's orange Braiins line sat flat through the outage (contradicting the other two series), and the UPTIME card advertised 100% through a multi-minute no-matching event.
+
+Now the Braiins-side delivered is computed from counter deltas: `Δprimary_bid_consumed_sat × 86.4e9 / (our_bid × Δt)`. Same signal the PRICE chart's effective-rate line already uses, just rearranged to solve for hashrate. Applied to:
+
+- Hashrate chart's "delivered (Braiins)" series (client-side; falls back to `delivered_ph` for pre-migration rows or null-counter ticks).
+- `/api/stats` `uptime_pct`: now "time with Δ > dur/1000" (i.e. more than 1 sat per second of span — catches the 4-sat/tick incident; normal 90+ sat/tick passes).
+- `/api/stats` `avg_hashrate_ph` and `total_ph_hours`: counter-derived, time-weighted.
+- `TickMetricsRepo.avgDeliveredPhSince` (used by `/api/status` for the 3h hashrate readout).
+
+Sanity-checked on the real 3h window: old uptime 100% → new uptime 94%; old avg hashrate 3.43 PH → new 2.85 PH. The 6% gap and ~0.58 PH discrepancy are exactly the Braiins-lag leakage the operator was seeing.
+
+The BRAIINS service panel's "delivered" row still reads the raw Braiins API value — keep the cross-check visible.
+
 ### `[Fix]` Effective-rate line: no more misleading dips across Braiins settlement lulls
 
 The Price chart's `effective` line computed `Σdelta / Σ(delivered×dt)` over a rolling window. When Braiins' `primary_bid_consumed_sat` counter went flat for several minutes (a normal settlement-batching artifact — the counter doesn't tick every minute even though `delivered_ph` keeps reporting ~full delivery via its own lagged rolling average), the numerator stalled but the denominator kept accumulating. Result: effective rate read ~2,000 sat/PH/day through stretches where we were actually paying our normal ~45,000 — visually implying we got hashrate almost for free during settlement lulls.

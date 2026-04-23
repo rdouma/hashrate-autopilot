@@ -168,12 +168,51 @@ export class TickMetricsRepo {
    * are on the same cadence.
    */
   async avgDeliveredPhSince(sinceMs: number): Promise<number | null> {
-    const row = await this.db
-      .selectFrom('tick_metrics')
-      .select(sql<number | null>`AVG(delivered_ph)`.as('avg_ph'))
-      .where('tick_at', '>=', sinceMs)
-      .executeTakeFirst();
-    return row?.avg_ph ?? null;
+    // Counter-derived: per-tick PH = delta × 86.4e9 / (our_bid × dur).
+    // Time-weighted average over the window simplifies to
+    // SUM(delta × 86.4e9 / our_bid) / SUM(dur). Uses the same zero-dip
+    // filter pattern as actualSpendSatSince — see #52 and the stats.ts
+    // rationale. Falls back to null (not AVG(delivered_ph)) when the
+    // window has no valid counter-deltas; callers already handle null
+    // as "insufficient history".
+    const queryText = `
+      SELECT
+        CASE WHEN SUM(valid_dur) > 0 THEN
+          CAST(SUM(delta_over_bid) AS REAL) * 86400000000.0 / SUM(valid_dur)
+        ELSE NULL END AS avg_ph
+      FROM (
+        SELECT
+          CASE
+            WHEN c1 > 0 AND c0 > 0 AND c1 >= c0
+              AND dur BETWEEN 1 AND 300000
+              AND our_bid > 0
+            THEN (c1 - c0) * 1.0 / our_bid
+            ELSE 0
+          END AS delta_over_bid,
+          CASE
+            WHEN c1 > 0 AND c0 > 0 AND c1 >= c0
+              AND dur BETWEEN 1 AND 300000
+              AND our_bid > 0
+            THEN dur
+            ELSE 0
+          END AS valid_dur
+        FROM (
+          SELECT
+            primary_bid_consumed_sat AS c1,
+            LAG(primary_bid_consumed_sat) OVER (ORDER BY tick_at) AS c0,
+            COALESCE(
+              LEAD(tick_at) OVER (ORDER BY tick_at) - tick_at,
+              60000
+            ) AS dur,
+            our_primary_price_sat_per_eh_day AS our_bid
+          FROM tick_metrics
+          WHERE tick_at >= ${sinceMs}
+        )
+      )
+    `;
+    const row = await sql.raw(queryText).execute(this.db);
+    const r = (row as unknown as { rows: Array<{ avg_ph: number | null }> }).rows?.[0];
+    return r?.avg_ph ?? null;
   }
 
   /**

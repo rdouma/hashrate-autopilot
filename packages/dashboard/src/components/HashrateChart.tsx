@@ -194,7 +194,33 @@ export const HashrateChart = memo(function HashrateChart({
     if (points.length < 2) return null;
 
     const xs = points.map((p) => p.tick_at);
-    const rawYs = points.map((p) => p.delivered_ph);
+    // Counter-derived Braiins delivered (#52). Braiins' own
+    // `delivered_ph` is a lagged rolling average that holds elevated
+    // for minutes after shares actually stop flowing — during
+    // outages the orange line sat at 3.67 PH/s while Datum/Ocean
+    // correctly dipped to near-zero and the counter stopped ticking.
+    // Deriving PH from `Δprimary_bid_consumed_sat / (our_bid × Δt)`
+    // tracks real matching activity; the same signal already drives
+    // the PRICE chart's effective-rate line, so both charts agree
+    // about when we're actually getting hashrate vs when we aren't.
+    // Fallback to raw `delivered_ph` when we don't have a clean
+    // counter delta (pre-migration rows, counter reset, null bid).
+    const rawYs: (number | null)[] = points.map((p, i) => {
+      if (i === 0) return p.delivered_ph;
+      const prev = points[i - 1]!;
+      const c0 = prev.primary_bid_consumed_sat;
+      const c1 = p.primary_bid_consumed_sat;
+      const bid = p.our_primary_price_sat_per_ph_day;
+      const dt = p.tick_at - prev.tick_at;
+      if (
+        c0 !== null && c1 !== null && c0 > 0 && c1 >= c0 &&
+        bid !== null && Number.isFinite(bid) && bid > 0 &&
+        dt > 0 && dt <= 5 * 60_000
+      ) {
+        return ((c1 - c0) * 86_400_000) / (bid * dt);
+      }
+      return p.delivered_ph;
+    });
     const targets = points.map((p) => p.target_ph);
     const floors = points.map((p) => p.floor_ph);
     const rawDatumYs = points.map((p) => p.datum_hashrate_ph);
@@ -202,9 +228,10 @@ export const HashrateChart = memo(function HashrateChart({
     const oceanYs = points.map((p) => p.ocean_hashrate_ph);
     // Apply operator-configured rolling-mean smoothing to the raw
     // per-tick signals. Ocean is left alone — /user_hashrate is
-    // already a 5-min server-side average. `delivered_ph` is never
-    // null in practice so the `?? 0` coercion below is defensive
-    // only; `datum_hashrate_ph` legitimately carries nulls (gateway
+    // already a 5-min server-side average. The counter-derived
+    // Braiins series can be null for pre-migration rows (falls back
+    // to delivered_ph in the map above), so `?? 0` is only defensive.
+    // `datum_hashrate_ph` legitimately carries nulls (gateway
     // not configured / poll failed), which `pathWithNullGaps`
     // renders as segment breaks.
     const smoothedYs = rollingMean(xs, rawYs, braiinsSmoothingMinutes).map((v) => v ?? 0);

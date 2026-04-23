@@ -150,12 +150,33 @@ async function computeMetrics(
     SELECT
       COUNT(*) AS tick_count,
 
-      CASE WHEN SUM(dur) > 0 THEN
-        SUM(CASE WHEN delivered_ph > 0 THEN dur ELSE 0 END) * 100.0 / SUM(dur)
+      -- Uptime: fraction of time when the Braiins counter was actually
+      -- incrementing at a non-trivial rate, NOT when the Braiins-side
+      -- lagged \`delivered_ph\` reported > 0. The lagged avg stays
+      -- elevated for minutes after shares stop flowing; only the
+      -- counter tells the truth about real matching. Threshold: Δ >
+      -- dur_ms / 1000, i.e. more than 1 sat per second of span. During
+      -- the 2026-04-23 12:56-12:59 incident the counter dropped to
+      -- ~4 sat/min while delivered_ph held at 3.67 PH/s — that now
+      -- correctly registers as downtime. See #52.
+      CASE WHEN SUM(CASE WHEN valid THEN dur ELSE 0 END) > 0 THEN
+        SUM(CASE WHEN valid AND delta * 1000.0 > dur THEN dur ELSE 0 END) * 100.0
+          / SUM(CASE WHEN valid THEN dur ELSE 0 END)
       ELSE NULL END AS uptime_pct,
 
-      CASE WHEN SUM(dur) > 0 THEN
-        CAST(SUM(delivered_ph * dur) AS REAL) / SUM(dur)
+      -- Avg Braiins delivered: computed from counter deltas, not the
+      -- lagged avg_speed_ph field. Per-tick delivered_PH =
+      -- delta × 86_400_000_000 / (our_bid × dur_ms). our_bid is in
+      -- sat/EH/day, so the ×1000 (EH→PH) is folded into the constant:
+      -- 86_400_000 × 1000 = 86_400_000_000. Time-weighted average
+      -- simplifies to SUM(delta × 86.4e9 / our_bid) / SUM(dur). Same
+      -- \`valid\` mask as the cost calculation below to keep numerator
+      -- and denominator consistent. #52.
+      CASE WHEN SUM(CASE WHEN valid AND our_bid > 0 THEN dur ELSE 0 END) > 0 THEN
+        CAST(SUM(CASE WHEN valid AND our_bid > 0
+            THEN delta * 86400000000.0 / our_bid
+            ELSE 0 END) AS REAL)
+          / SUM(CASE WHEN valid AND our_bid > 0 THEN dur ELSE 0 END)
       ELSE NULL END AS avg_hashrate,
 
       CASE WHEN SUM(CASE WHEN datum_hashrate_ph IS NOT NULL THEN dur ELSE 0 END) > 0 THEN
@@ -170,7 +191,15 @@ async function computeMetrics(
         / SUM(CASE WHEN ocean_hashrate_ph IS NOT NULL THEN dur ELSE 0 END)
       ELSE NULL END AS avg_ocean_hashrate,
 
-      CAST(SUM(delivered_ph * dur) AS REAL) / 3600000.0 AS total_ph_hours,
+      -- Total PH-hours delivered: counter-derived, same rationale as
+      -- avg_hashrate above. delta / our_bid gives PH-days per tick
+      -- when multiplied by 86_400_000/dur; scaling to PH-hours =
+      -- delta × 24000 / our_bid across the window.
+      CASE WHEN SUM(CASE WHEN valid AND our_bid > 0 THEN 1 ELSE 0 END) > 0 THEN
+        CAST(SUM(CASE WHEN valid AND our_bid > 0
+            THEN delta * 24000.0 / our_bid
+            ELSE 0 END) AS REAL)
+      ELSE NULL END AS total_ph_hours,
 
       -- Average effective cost per PH/day, from per-tick
       -- primary_bid_consumed_sat deltas (what Braiins actually
