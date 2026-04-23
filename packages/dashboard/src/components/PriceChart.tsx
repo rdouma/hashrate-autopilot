@@ -1,5 +1,6 @@
 /**
- * Price chart: our primary bid (amber solid) vs the depth-aware fillable
+ * Price chart: our primary bid (amber solid) vs the market-wide hashprice (dashed purple)
+ * and the effective paid rate (emerald) under CLOB matching.
  * ask (orange dashed). Bid events are rendered as markers anchored to the
  * primary-price line. Sized and padded to match `HashrateChart` so the
  * X-axis aligns visually when stacked.
@@ -33,7 +34,6 @@ const PADDING = { top: 16, right: 16, bottom: 24, left: 80 };
 // (Braiins) line so the two charts speak the same visual language
 // for "our bid / what we pay Braiins for".
 const COLOR_PRICE = '#f59e0b';
-const COLOR_FILLABLE = '#f97316';
 const COLOR_CREATE = '#34d399';
 const COLOR_EDIT = '#fbbf24';
 const COLOR_EDIT_SPEED = '#60a5fa';
@@ -144,21 +144,15 @@ export const PriceChart = memo(function PriceChart({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
+  const [expanded, setExpanded] = useState(false);
+  const chartHeight = expanded ? HEIGHT * 2 : HEIGHT;
   const { intlLocale } = useLocale();
   const denomination = useDenomination();
 
   const chartData = useMemo(() => {
-    // Older daemon builds may omit `fillable_ask_sat_per_ph_day` entirely
-    // (i.e. the field is `undefined`, not `null`). Use Number.isFinite so we
-    // don't generate bogus path coords when the column hasn't been
-    // backfilled yet.
     const pricePoints: PricePoint[] = points
       .filter((p) => Number.isFinite(p.our_primary_price_sat_per_ph_day))
       .map((p) => ({ t: p.tick_at, v: p.our_primary_price_sat_per_ph_day as number }));
-
-    const fillablePoints: PricePoint[] = points
-      .filter((p) => Number.isFinite(p.fillable_ask_sat_per_ph_day))
-      .map((p) => ({ t: p.tick_at, v: p.fillable_ask_sat_per_ph_day as number }));
 
     const hashpricePoints: PricePoint[] = points
       .filter((p) => Number.isFinite(p.hashprice_sat_per_ph_day))
@@ -228,6 +222,13 @@ export const PriceChart = memo(function PriceChart({
         const c0 = prev.primary_bid_consumed_sat;
         const c1 = cur.primary_bid_consumed_sat;
         if (c0 == null || c1 == null) break;
+        // Both endpoints must be > 0. A mid-sequence zero is a
+        // transient "no primary bid" snapshot (a blink during a
+        // CREATE/EDIT where Braiins reports amount_sat=0). LAG across
+        // a zero-dip turns the full counter on the recovery side into
+        // a bogus delta worth hundreds of thousands of sat, which
+        // then dominates any window it lands in.
+        if (c0 <= 0 || c1 <= 0) continue;
         const delta = c1 - c0;
         if (!Number.isFinite(delta) || delta < 0) break;
         const dt = curT - prev.tick_at;
@@ -242,11 +243,21 @@ export const PriceChart = memo(function PriceChart({
       if (span < MIN_SPAN_MS) continue;
       const rate = deltaSum / phDaySum;
       if (!Number.isFinite(rate) || rate <= 0) continue;
+      // Hard ceiling: CLOB physics says effective ≤ our bid. Clamp
+      // rather than filter so the series stays continuous; anything
+      // still above that after the zero-dip filter is a residual
+      // numerical artifact.
       const bid = points[i]!.our_primary_price_sat_per_ph_day;
-      if (bid !== null && Number.isFinite(bid) && rate > bid * OUTLIER_MULTIPLE) {
+      const clamped =
+        bid !== null && Number.isFinite(bid) && rate > bid ? bid : rate;
+      if (
+        bid !== null &&
+        Number.isFinite(bid) &&
+        rate > bid * OUTLIER_MULTIPLE
+      ) {
         continue;
       }
-      effectivePoints.push({ t: points[i]!.tick_at, v: rate });
+      effectivePoints.push({ t: points[i]!.tick_at, v: clamped });
     }
 
     // The line the operator actually cares about: the effective cap
@@ -303,7 +314,6 @@ export const PriceChart = memo(function PriceChart({
     // now that aggregation is numerator-and-denominator-summed.
     const priceSample = [
       ...pricePoints.map((p) => p.v),
-      ...fillablePoints.map((p) => p.v),
       ...hashpricePoints.map((p) => p.v),
       ...effectivePoints.map((p) => p.v),
       ...eventPrices,
@@ -314,8 +324,8 @@ export const PriceChart = memo(function PriceChart({
     const priceSpan = Math.max(1, priceMaxRaw - priceMinRaw);
 
     const yTicks = niceYTicks(
-      Math.max(0, priceMinRaw - priceSpan * 0.1),
-      priceMaxRaw + priceSpan * 0.15,
+      Math.max(0, priceMinRaw - priceSpan * 0.05),
+      priceMaxRaw + priceSpan * 0.05,
       5,
     );
     const priceMin = yTicks[0] ?? 0;
@@ -327,9 +337,9 @@ export const PriceChart = memo(function PriceChart({
       return PADDING.left + ((x - minX) / (maxX - minX)) * usable;
     };
     const yScale = (v: number): number => {
-      const usable = HEIGHT - PADDING.top - PADDING.bottom;
-      if (priceMax === priceMin) return HEIGHT - PADDING.bottom - usable / 2;
-      return HEIGHT - PADDING.bottom - ((v - priceMin) / (priceMax - priceMin)) * usable;
+      const usable = chartHeight - PADDING.top - PADDING.bottom;
+      if (priceMax === priceMin) return chartHeight - PADDING.bottom - usable / 2;
+      return chartHeight - PADDING.bottom - ((v - priceMin) / (priceMax - priceMin)) * usable;
     };
 
     // Null-gap path builder. Iterates the full `points` series and
@@ -383,7 +393,6 @@ export const PriceChart = memo(function PriceChart({
     const pricePath = pathWithNullGaps(
       (p) => smoothedPriceByTick.get(p.tick_at) ?? null,
     );
-    const fillablePath = pathWithNullGaps((p) => p.fillable_ask_sat_per_ph_day);
     const hashpricePath = pathWithNullGaps((p) => p.hashprice_sat_per_ph_day);
 
     // Area-fill variant of the null-gap path. Each non-null run becomes
@@ -393,7 +402,7 @@ export const PriceChart = memo(function PriceChart({
     // would close back to their own starting M, painting diagonal
     // wedges across the gap (bug #46, regression from #44). Short-gap
     // bridging mirrors the stroke helper (#47).
-    const baselineY = HEIGHT - PADDING.bottom;
+    const baselineY = chartHeight - PADDING.bottom;
     const areaPathWithNullGaps = (
       getValue: (p: MetricPoint) => number | null | undefined,
     ): string => {
@@ -511,8 +520,8 @@ export const PriceChart = memo(function PriceChart({
       ? events.filter((e) => e.occurred_at >= minX && e.occurred_at <= maxX)
       : [];
 
-    return { pricePoints, fillablePoints, minX, maxX, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, fillablePath, hashpricePath, effectivePath, effectiveHasData: effectivePoints.length > 0, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents };
-  }, [points, events, showEvents, priceSmoothingMinutes, maxBidSatPerPhDay, maxOverpayVsHashpriceSatPerPhDay, simMode]);
+    return { pricePoints, minX, maxX, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, hashpricePath, effectivePath, effectiveHasData: effectivePoints.length > 0, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents };
+  }, [points, events, showEvents, priceSmoothingMinutes, maxBidSatPerPhDay, maxOverpayVsHashpriceSatPerPhDay, simMode, chartHeight]);
 
   const eventPriceAt = useCallback((e: BidEventView): number | null => {
     const pricePoints = chartData?.pricePoints ?? [];
@@ -582,7 +591,7 @@ export const PriceChart = memo(function PriceChart({
     );
   }
 
-  const { pricePoints, fillablePoints, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, fillablePath, hashpricePath, effectivePath, effectiveHasData, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents } = chartData;
+  const { pricePoints, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, hashpricePath, effectivePath, effectiveHasData, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents } = chartData;
 
   // Format Y-axis tick values: in USD mode convert sat/PH/day to $/PH/day
   const priceFmt = (v: number): string => {
@@ -600,18 +609,27 @@ export const PriceChart = memo(function PriceChart({
   return (
     <div ref={containerRef} className={`bg-slate-900 border rounded-lg p-4 relative ${simMode ? 'border-amber-800/40' : 'border-slate-800'}`}>
       <div className="flex items-center justify-between mb-2 gap-3 flex-wrap">
-        <h3 className="text-xs uppercase tracking-wider text-slate-100">{simMode ? 'Simulated price' : 'Price'}</h3>
+        <div className="flex items-center gap-2">
+          <h3 className="text-xs uppercase tracking-wider text-slate-100">{simMode ? 'Simulated price' : 'Price'}</h3>
+          <button
+            type="button"
+            onClick={() => setExpanded((e) => !e)}
+            className="text-[10px] uppercase tracking-wider text-slate-400 hover:text-slate-200 border border-slate-700 rounded px-1.5 py-0.5"
+            title={expanded ? 'Collapse to default height' : 'Expand to double height'}
+          >
+            {expanded ? 'collapse' : 'expand'}
+          </button>
+        </div>
         <div className="flex items-center gap-3 text-xs flex-wrap">
           <Legend color={simMode ? '#f97316' : COLOR_PRICE} label={simMode ? 'simulated bid' : 'our bid'} />
           {effectiveHasData && !simMode && <Legend color={COLOR_EFFECTIVE} label="effective" />}
-          <Legend color={COLOR_FILLABLE} label="fillable" dashed />
           <Legend color={COLOR_HASHPRICE} label="hashprice" dashed />
           <Legend color={COLOR_MAXBID} label="max bid" />
           {showEvents && <EventLegend />}
         </div>
       </div>
       <svg
-        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+        viewBox={`0 0 ${WIDTH} ${chartHeight}`}
         preserveAspectRatio="xMidYMid meet"
         className="w-full h-auto"
       >
@@ -673,16 +691,6 @@ export const PriceChart = memo(function PriceChart({
             d={capPath}
             stroke={COLOR_MAXBID}
             strokeWidth="1.4"
-            fill="none"
-            opacity="0.85"
-          />
-        )}
-        {fillablePath && (
-          <path
-            d={fillablePath}
-            stroke={COLOR_FILLABLE}
-            strokeWidth="1.4"
-            strokeDasharray="4 3"
             fill="none"
             opacity="0.85"
           />
@@ -783,8 +791,8 @@ export const PriceChart = memo(function PriceChart({
         <line
           x1={PADDING.left}
           x2={WIDTH - PADDING.right}
-          y1={HEIGHT - PADDING.bottom}
-          y2={HEIGHT - PADDING.bottom}
+          y1={chartHeight - PADDING.bottom}
+          y2={chartHeight - PADDING.bottom}
           stroke="#334155"
           strokeWidth="1"
         />
@@ -796,14 +804,14 @@ export const PriceChart = memo(function PriceChart({
               <line
                 x1={x}
                 x2={x}
-                y1={HEIGHT - PADDING.bottom}
-                y2={HEIGHT - PADDING.bottom + 3}
+                y1={chartHeight - PADDING.bottom}
+                y2={chartHeight - PADDING.bottom + 3}
                 stroke="#475569"
                 strokeWidth="1"
               />
               <text
                 x={x}
-                y={HEIGHT - 8}
+                y={chartHeight - 8}
                 textAnchor="middle"
                 fontSize="10"
                 fill="#64748b"
@@ -818,12 +826,12 @@ export const PriceChart = memo(function PriceChart({
         {hasPrice && (
           <text
             x={14}
-            y={PADDING.top + (HEIGHT - PADDING.top - PADDING.bottom) / 2}
+            y={PADDING.top + (chartHeight - PADDING.top - PADDING.bottom) / 2}
             textAnchor="middle"
             fontSize="10"
             fill="#64748b"
             fontFamily="monospace"
-            transform={`rotate(-90 14 ${PADDING.top + (HEIGHT - PADDING.top - PADDING.bottom) / 2})`}
+            transform={`rotate(-90 14 ${PADDING.top + (chartHeight - PADDING.top - PADDING.bottom) / 2})`}
           >
             {denomination.mode === 'usd' ? '$/PH/day' : 'sat/PH/day'}
           </text>
@@ -1151,24 +1159,6 @@ function EventTooltip({
           <div className="text-[10px] uppercase tracking-wider text-slate-500 mb-0.5">
             market at this tick
           </div>
-          {marketAtEvent.fillable_ask_sat_per_ph_day !== null && (
-            <Row
-              label="fillable"
-              value={`${formatNumber(Math.round(marketAtEvent.fillable_ask_sat_per_ph_day))} sat/PH/day`}
-            />
-          )}
-          {overpaySatPerPhDay !== null && (
-            <Row
-              label="overpay allowance"
-              value={`${formatNumber(Math.round(overpaySatPerPhDay))} sat/PH/day`}
-            />
-          )}
-          {marketAtEvent.fillable_ask_sat_per_ph_day !== null && overpaySatPerPhDay !== null && (
-            <Row
-              label="fillable + overpay"
-              value={`${formatNumber(Math.round(marketAtEvent.fillable_ask_sat_per_ph_day + overpaySatPerPhDay))} sat/PH/day`}
-            />
-          )}
           {marketAtEvent.hashprice_sat_per_ph_day !== null ? (
             <Row
               label="hashprice"

@@ -2,6 +2,16 @@
 
 ## 2026-04-23
 
+### `[Fix]` Effective-rate zero-dip inflation; retire fillable UI; expandable price chart; cheap-mode to best-ask
+
+**Root cause nailed for the "800k sat/PH/day" hero display**: when Braiins snapshots the primary bid during a CREATE/EDIT cycle, `amount_sat` and `amount_remaining_sat` can both read zero for one tick — so our `amount_consumed_sat = amount_sat - amount_remaining_sat` dips to 0 and back up to the real counter on the next tick. `LAG()` across that dip turns the entire recovery value (hundreds of thousands of sat) into a bogus delta that then dominates every window-aggregate it lands in. On the operator's DB a single 311,495-sat spurious delta turned a real 41k sat/PH/day rate into a reported 800k+. Fix: require **both** endpoints of every delta to be > 0 in the stats SQL and the chart's effective-rate computation. Belt-and-suspenders: clamp the displayed effective rate to our own bid (physical CLOB ceiling).
+
+**Fillable removed from the dashboard.** Under CLOB the bid is a ceiling and we pay the matched ask — "fillable" (the depth-aware price at which our whole target would fit) became a meaningless abstraction in October but was still plastered across the UI. Gone: the Braiins panel row, the orange dashed line + legend entry on the Price chart, the fillable / fillable+overpay rows in the pinned-event tooltip, and the fillable references in Config help text. The underlying `tick_metrics.fillable_ask_sat_per_eh_day` column is still populated and still surfaces on the Next-Action predictor for now — pure UI cleanup.
+
+**Cheap-mode now activates on `best_ask` instead of `fillable`.** Under CLOB the cheapest reachable price is whatever sits at the top of the ask ladder — exactly what cheap-mode semantics ("opportunistic scale-up when the market is cheap") want. Config help text reworded accordingly.
+
+**Price chart expand/collapse.** New "expand" button next to the Price chart title doubles the chart height so closely-stacked lines (bid, hashprice, max bid, effective) can be read independently. Tightened the Y-axis headroom from ±10%/±15% to ±5% so the chart doesn't waste half its space on empty range above the top data point.
+
 ### `[UI/Fix]` Hero PRICE: effective rate + delta vs hashprice; stats SQL filter consistency
 
 Two fixes on the CLOB redesign:

@@ -23,7 +23,6 @@
  * modes) has been removed.
  */
 
-import { cheapestAskForDepth } from './orderbook.js';
 import type { Proposal, State } from './types.js';
 
 /**
@@ -53,7 +52,6 @@ export function decide(state: State): readonly Proposal[] {
   if (!state.market) return [];
 
   const { market, config, owned_bids } = state;
-  const asks = market.orderbook.asks ?? [];
 
   // Hashprice is needed for the dynamic cap. When the dynamic cap is
   // configured but hashprice is unknown (boot fetch failed, stale
@@ -76,12 +74,11 @@ export function decide(state: State): readonly Proposal[] {
     dynamicCap !== null ? Math.min(fixedCap, dynamicCap) : fixedCap;
 
   // Cheap-mode check (#13): opportunistic scale-up when the market is
-  // cheap relative to hashprice. Unlike the retired fill-strategy,
-  // cheap-mode still reads fillable — it decides *how much hashrate we
-  // want*, not what we pay.
-  const baseFillable = asks.length > 0
-    ? cheapestAskForDepth(asks, config.target_hashrate_ph)
-    : { price_sat: null as number | null, thin: true, cumulative_ph: 0 };
+  // cheap relative to hashprice. Under CLOB the bid is a ceiling and
+  // we pay matched ask prices, so "cheap" = the best ask is below a
+  // threshold of hashprice. best_ask is the cheapest price at which
+  // any supply exists — exactly the CLOB-native analogue of fillable.
+  const bestAskSatEh = market.best_ask_sat;
   const cheapEnabled =
     config.cheap_threshold_pct > 0 &&
     config.cheap_target_hashrate_ph > config.target_hashrate_ph &&
@@ -89,9 +86,9 @@ export function decide(state: State): readonly Proposal[] {
     hashpriceSatEh > 0;
   let effectiveTargetPh = config.target_hashrate_ph;
   let cheapModeActive = false;
-  if (cheapEnabled && baseFillable.price_sat !== null) {
+  if (cheapEnabled && bestAskSatEh !== null) {
     const threshold = hashpriceSatEh! * (config.cheap_threshold_pct / 100);
-    if (baseFillable.price_sat < threshold) {
+    if (bestAskSatEh < threshold) {
       effectiveTargetPh = config.cheap_target_hashrate_ph;
       cheapModeActive = true;
     }

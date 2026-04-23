@@ -175,25 +175,48 @@ async function computeMetrics(
       -- Average effective cost per PH/day, from per-tick
       -- primary_bid_consumed_sat deltas (what Braiins actually
       -- charged us). The "valid" condition below is shared by
-      -- numerator and denominator to avoid the inflation bug where
-      -- a tick with non-null delta but zero delivery (Braiins updated
-      -- the counter for a matching that happened earlier, but our
-      -- snapshot caught delivery=0 at this instant) contributes to
-      -- the numerator without a denominator share. Also caps dur at
-      -- 5 min to ignore restart gaps.
+      -- numerator and denominator to avoid filter-mismatch inflation.
+      --
+      -- Both endpoints of each delta must be > 0 — a zero mid-sequence
+      -- is a transient "no primary bid" snapshot (brief window during
+      -- a CREATE/EDIT where Braiins reports amount_sat=0), not a real
+      -- counter. If we didn't filter these out, LAG across a zero-dip
+      -- treats the full counter value on the recovery side as "new
+      -- spend", inflating the aggregate by orders of magnitude
+      -- (empirically: one such tick at 01:17 turned a 41k rate into
+      -- 800k). Also caps dur at 5 min to ignore restart gaps and
+      -- requires positive delivery (0.05 PH/s floor).
+      --
+      -- Rate returned clamped to our own bid — under CLOB the bid is
+      -- a hard ceiling, so any delta/phDays ratio above that is a
+      -- computation artifact.
       --
       -- result unit: sat/EH/day (sat × 1000 / PH / day). Caller
       -- divides by EH_PER_PH = 1000 → sat/PH/day.
       CASE WHEN SUM(CASE WHEN valid THEN delivered_ph * dur ELSE 0 END) > 0 THEN
-        CAST(SUM(CASE WHEN valid THEN delta ELSE 0 END) AS REAL)
-        * 86400000000.0
-        / SUM(CASE WHEN valid THEN delivered_ph * dur ELSE 0 END)
+        MIN(
+          CAST(SUM(CASE WHEN valid THEN delta ELSE 0 END) AS REAL)
+            * 86400000000.0
+            / SUM(CASE WHEN valid THEN delivered_ph * dur ELSE 0 END),
+          COALESCE(
+            CAST(SUM(CASE WHEN valid THEN our_bid * delivered_ph * dur ELSE 0 END) AS REAL)
+              / SUM(CASE WHEN valid THEN delivered_ph * dur ELSE 0 END),
+            1e18
+          )
+        )
       ELSE NULL END AS avg_cost,
 
       CASE WHEN SUM(CASE WHEN valid AND hashprice IS NOT NULL THEN delivered_ph * dur ELSE 0 END) > 0 THEN
-        (CAST(SUM(CASE WHEN valid AND hashprice IS NOT NULL THEN delta ELSE 0 END) AS REAL)
-          * 86400000000.0
-          / SUM(CASE WHEN valid AND hashprice IS NOT NULL THEN delivered_ph * dur ELSE 0 END))
+        MIN(
+          CAST(SUM(CASE WHEN valid AND hashprice IS NOT NULL THEN delta ELSE 0 END) AS REAL)
+            * 86400000000.0
+            / SUM(CASE WHEN valid AND hashprice IS NOT NULL THEN delivered_ph * dur ELSE 0 END),
+          COALESCE(
+            CAST(SUM(CASE WHEN valid AND hashprice IS NOT NULL THEN our_bid * delivered_ph * dur ELSE 0 END) AS REAL)
+              / SUM(CASE WHEN valid AND hashprice IS NOT NULL THEN delivered_ph * dur ELSE 0 END),
+            1e18
+          )
+        )
         - (CAST(SUM(CASE WHEN valid AND hashprice IS NOT NULL THEN hashprice * delivered_ph * dur ELSE 0 END) AS REAL)
           / SUM(CASE WHEN valid AND hashprice IS NOT NULL THEN delivered_ph * dur ELSE 0 END))
       ELSE NULL END AS avg_overpay_vs_hashprice
@@ -204,6 +227,7 @@ async function computeMetrics(
         datum_hashrate_ph,
         ocean_hashrate_ph,
         hashprice,
+        our_bid,
         delta,
         dur,
         (delta IS NOT NULL
@@ -217,9 +241,12 @@ async function computeMetrics(
           datum_hashrate_ph,
           ocean_hashrate_ph,
           hashprice_sat_per_eh_day AS hashprice,
+          our_primary_price_sat_per_eh_day AS our_bid,
           CASE
             WHEN primary_bid_consumed_sat IS NOT NULL
+              AND primary_bid_consumed_sat > 0
               AND LAG(primary_bid_consumed_sat) OVER (ORDER BY tick_at) IS NOT NULL
+              AND LAG(primary_bid_consumed_sat) OVER (ORDER BY tick_at) > 0
               AND primary_bid_consumed_sat >= LAG(primary_bid_consumed_sat) OVER (ORDER BY tick_at)
             THEN primary_bid_consumed_sat - LAG(primary_bid_consumed_sat) OVER (ORDER BY tick_at)
             ELSE NULL

@@ -302,15 +302,6 @@ export function Status() {
            */}
           <div className="border-t border-slate-800 mt-2 pt-2">
             <Row
-              k={`fillable @ ${formatHashratePH(s.config_summary.effective_target_hashrate_ph)}`}
-              v={
-                s.market?.fillable_ask_sat_per_ph_day != null
-                  ? denomination.formatSatPerPhDay(s.market.fillable_ask_sat_per_ph_day, intlLocale) +
-                    (s.market.fillable_thin ? ' (thin)' : '')
-                  : '\u2014'
-              }
-            />
-            <Row
               k={`max bid${s.config_summary.binding_cap === 'fixed' ? ' (binding)' : ''}`}
               v={denomination.formatSatPerPhDay(s.config_summary.max_bid_sat_per_ph_day, intlLocale)}
             />
@@ -759,12 +750,13 @@ function NextActionFooter({
 }
 
 // ---------------------------------------------------------------------------
-// Price-vs-fillable delta indicator (hero card)
+// Effective-rate delta vs hashprice (hero card)
 // ---------------------------------------------------------------------------
 
 /**
- * Stock-ticker style ±delta vs the depth-aware fillable ask, rendered
- * inline next to the big price number. Hover for the full explanation.
+ * Stock-ticker style ±delta of our effective-paid rate vs the spot
+ * hashprice, rendered inline next to the big price number. Negative
+ * (emerald) = paying below break-even.
  */
 function PriceDeltaVsHashprice({
   currentPH,
@@ -968,8 +960,8 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
 
   if (!statsData) {
     return (
-      <section className="grid grid-cols-2 lg:grid-cols-7 gap-3">
-        {['uptime', 'avg braiins', 'avg datum', 'avg ocean', 'avg cost / PH delivered', 'avg overpay vs fillable', 'avg overpay vs hashprice'].map((label) => (
+      <section className="grid grid-cols-2 lg:grid-cols-6 gap-3">
+        {['uptime', 'avg braiins', 'avg datum', 'avg ocean', 'avg cost / PH delivered', 'avg overpay vs hashprice'].map((label) => (
           <StatCard key={label} label={label} value="—" tooltip="Loading or daemon restart required." />
         ))}
       </section>
