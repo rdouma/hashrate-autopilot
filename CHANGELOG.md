@@ -2,6 +2,10 @@
 
 ## 2026-04-23
 
+### `[UI]` Stats card: rename "avg overpay vs hashprice" → "avg cost vs hashprice"
+
+The label said *overpay* but the value is routinely negative (paying below break-even hashprice is the normal, desirable case under CLOB). "Overpay" implied we were always paying above — contradicted by a `−1,097` reading. Renamed to "avg cost vs hashprice" and rewrote the tooltip so the sign convention reads correctly: negative means we matched asks below break-even (good), positive means above.
+
 ### `[Fix]` Effective-rate line: per-pair lag filter catches outage-dominated deep dips
 
 Earlier fix skipped zero-delta pairs and required ≥3 non-zero pairs in the window. Worked for "counter flat through settlement lulls", but missed the other failure mode: outage ticks where the counter barely ticks (delta 4–6 sat/min) while `delivered_ph` carries its stale 3.67 PH/s reading. Those pairs have non-zero deltas so they passed the earlier filter, but their implied rate is near zero (2,000 sat/PH/day where we actually pay 45,000). The effective-rate line still dipped to the floor during today's 10:00 outage.
