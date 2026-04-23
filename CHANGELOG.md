@@ -2,6 +2,14 @@
 
 ## 2026-04-23
 
+### `[UI/Fix]` Hero PRICE: effective rate + delta vs hashprice; stats SQL filter consistency
+
+Two fixes on the CLOB redesign:
+
+**Hero PRICE widget** — the big number at the top of the Status page was showing our bid price with a "+N" delta vs fillable. Under CLOB the bid is a ceiling, not what we pay. Replaced with the window-aggregated **effective rate** (from `/api/stats.avg_cost_per_ph_sat_per_ph_day`), and the ±N delta is now against the **spot hashprice** (negative = paying below break-even, profitable; positive = above). New tooltip re-explains.
+
+**Stats SQL filter mismatch** — operator reported AVG COST / PH DELIVERED showing ~1M sat/PH/day (should be ~46k). Root cause: the numerator filter (`delta IS NOT NULL`) was looser than the denominator filter (`delta IS NOT NULL AND delivered_ph > 0 AND dur > 0`). A tick with a non-null consumed delta but zero delivery at that instant (Braiins' counter caught a match from earlier while our snapshot saw delivery=0) counted in the numerator without a corresponding denominator share, inflating the rate. Also added a 5-min cap on `dur` to discard restart-gap intervals. Numerator and denominator now share a single `valid` condition. Same fix applied to `avg_overpay_vs_hashprice`.
+
 ### `[Feature]` Retire the fill-strategy machinery — CLOB redesign (#49 master)
 
 Empirical verification confirmed Braiins matches CLOB-style: the bid is a ceiling, the actual price paid is the matched ask. Our entire fill-strategy subsystem (overpay-above-fillable, three-way escalation mode, lowering patience, min-lower-delta) was authored under a pay-your-bid assumption and turned out to be pointless complexity. This release removes it.

@@ -196,6 +196,8 @@ export function Status() {
         <div className="lg:col-span-2 h-full">
           <OperationsCard
             s={s}
+            effectivePricePH={statsQuery.data?.avg_cost_per_ph_sat_per_ph_day ?? null}
+            hashpricePH={financeQuery.data?.ocean?.hashprice_sat_per_ph_day ?? null}
             onRunMode={(m) => runModeMutation.mutate(m)}
             runModePending={runModeMutation.isPending}
           />
@@ -468,10 +470,26 @@ const heroColors: Record<StatusResponse['run_mode'], string> = {
 
 function OperationsCard({
   s,
+  effectivePricePH,
+  hashpricePH,
   onRunMode,
   runModePending,
 }: {
   s: StatusResponse;
+  /**
+   * Window-aggregated effective rate (sat/PH/day) — what Braiins
+   * actually charged us over the current chart range, derived from
+   * `primary_bid_consumed_sat` deltas. Replaces the bid price as the
+   * "what am I paying" figure here; under CLOB the bid is a ceiling
+   * and the matched-ask rate is the truth.
+   */
+  effectivePricePH: number | null;
+  /**
+   * Current spot hashprice from Ocean, sat/PH/day. The delta next to
+   * the price value is computed against this — positive = paying
+   * above break-even, negative = paying below.
+   */
+  hashpricePH: number | null;
   onRunMode: (m: (typeof RUN_MODES)[number]) => void;
   runModePending: boolean;
 }) {
@@ -480,25 +498,10 @@ function OperationsCard({
 
   const actionVisible = s.action_mode !== 'NORMAL';
 
-  // Effective rate across all owned active bids, weighted by delivered
-  // hashrate (avg_speed_ph). That's the true "what am I paying right now"
-  // number when more than one bid is open. Falls back to a simple price
-  // average if nothing is being delivered yet (all bids freshly created).
   const activeOwned = s.bids.filter(
     (b) => b.is_owned && b.status === 'BID_STATUS_ACTIVE',
   );
-  const totalDelivered = activeOwned.reduce((sum, b) => sum + b.avg_speed_ph, 0);
-  let currentPricePH: number | null = null;
-  if (activeOwned.length > 0) {
-    if (totalDelivered > 0) {
-      currentPricePH =
-        activeOwned.reduce((sum, b) => sum + b.price_sat_per_ph_day * b.avg_speed_ph, 0) /
-        totalDelivered;
-    } else {
-      currentPricePH =
-        activeOwned.reduce((sum, b) => sum + b.price_sat_per_ph_day, 0) / activeOwned.length;
-    }
-  }
+  const currentPricePH = effectivePricePH;
 
   const deliveredColor =
     s.actual_hashrate_ph < s.config_summary.minimum_floor_hashrate_ph
@@ -528,16 +531,16 @@ function OperationsCard({
                   : formatNumber(Math.round(currentPricePH), {}, intlLocale)}
               </span>
               <span className="absolute left-full top-1/2 -translate-y-1/2 ml-1.5 whitespace-nowrap">
-                <PriceDeltaVsFillable
+                <PriceDeltaVsHashprice
                   currentPH={currentPricePH}
-                  fillablePH={s.market?.fillable_ask_sat_per_ph_day ?? null}
+                  hashpricePH={hashpricePH}
                   intlLocale={intlLocale}
                 />
               </span>
             </div>
             <div className="text-xs text-slate-400 mt-1">
-              {denomination.mode === 'usd' ? '$' : <><SatSymbol /></>}/PH/day
-              {activeOwned.length > 1 ? ` · avg/${activeOwned.length}` : ''}
+              {denomination.mode === 'usd' ? '$' : <><SatSymbol /></>}/PH/day effective
+              {activeOwned.length > 1 ? ` · across ${activeOwned.length} bids` : ''}
             </div>
           </div>
           <div className="flex flex-col items-center">
@@ -763,25 +766,25 @@ function NextActionFooter({
  * Stock-ticker style ±delta vs the depth-aware fillable ask, rendered
  * inline next to the big price number. Hover for the full explanation.
  */
-function PriceDeltaVsFillable({
+function PriceDeltaVsHashprice({
   currentPH,
-  fillablePH,
+  hashpricePH,
   intlLocale,
 }: {
   currentPH: number;
-  fillablePH: number | null;
+  hashpricePH: number | null;
   intlLocale: string | undefined;
 }) {
   const denomination = useDenomination();
-  if (fillablePH === null) return null;
-  const delta = Math.round(currentPH - fillablePH);
-  const fillablePretty = denomination.formatSatPerPhDay(Math.round(fillablePH));
+  if (hashpricePH === null) return null;
+  const delta = Math.round(currentPH - hashpricePH);
+  const hashpricePretty = denomination.formatSatPerPhDay(Math.round(hashpricePH));
 
   if (delta === 0) {
     return (
       <span
         className="text-xs font-mono text-slate-400 cursor-help"
-        title={`Paying exactly the fillable ask (${fillablePretty}) — the cheapest price at which the full target hashrate is available.`}
+        title={`Effective rate equals hashprice (${hashpricePretty}) — breaking even.`}
       >
         ±0
       </span>
@@ -790,12 +793,11 @@ function PriceDeltaVsFillable({
 
   const sign = delta > 0 ? '+' : '−';
   const color = delta > 0 ? 'text-red-300' : 'text-emerald-300';
-  const verb = delta > 0 ? 'over' : 'under';
+  const verb = delta > 0 ? 'above' : 'below';
   const deltaFormatted = denomination.formatSatPerPhDay(Math.abs(delta));
   const tooltip =
-    `Currently paying ${sign}${deltaFormatted} ` +
-    `${verb} the fillable ask (${fillablePretty}) — the cheapest price at which ` +
-    `your full target hashrate is available in the orderbook.`;
+    `Effective rate ${sign}${deltaFormatted} ${verb} hashprice (${hashpricePretty}) — ` +
+    `positive means paying above break-even, negative means paying below (profitable).`;
 
   return (
     <Tooltip text={tooltip}>

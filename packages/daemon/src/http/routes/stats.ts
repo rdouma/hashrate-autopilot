@@ -172,26 +172,30 @@ async function computeMetrics(
 
       CAST(SUM(delivered_ph * dur) AS REAL) / 3600000.0 AS total_ph_hours,
 
-      -- Average effective cost per PH/day, derived from the actual
-      -- primary_bid_consumed_sat deltas rather than our bid price.
-      -- Sum of deltas over the range, divided by sum of PH-days
-      -- delivered, x 1000 to return sat/EH/day (the existing scale
-      -- the caller divides by EH_PER_PH = 1000).
-      CASE WHEN SUM(CASE WHEN delta IS NOT NULL AND delivered_ph > 0 AND dur > 0 THEN delivered_ph * dur ELSE 0 END) > 0 THEN
-        CAST(SUM(CASE WHEN delta IS NOT NULL THEN delta ELSE 0 END) AS REAL)
+      -- Average effective cost per PH/day, from per-tick
+      -- primary_bid_consumed_sat deltas (what Braiins actually
+      -- charged us). The "valid" condition below is shared by
+      -- numerator and denominator to avoid the inflation bug where
+      -- a tick with non-null delta but zero delivery (Braiins updated
+      -- the counter for a matching that happened earlier, but our
+      -- snapshot caught delivery=0 at this instant) contributes to
+      -- the numerator without a denominator share. Also caps dur at
+      -- 5 min to ignore restart gaps.
+      --
+      -- result unit: sat/EH/day (sat × 1000 / PH / day). Caller
+      -- divides by EH_PER_PH = 1000 → sat/PH/day.
+      CASE WHEN SUM(CASE WHEN valid THEN delivered_ph * dur ELSE 0 END) > 0 THEN
+        CAST(SUM(CASE WHEN valid THEN delta ELSE 0 END) AS REAL)
         * 86400000000.0
-        / SUM(CASE WHEN delta IS NOT NULL AND delivered_ph > 0 AND dur > 0 THEN delivered_ph * dur ELSE 0 END)
+        / SUM(CASE WHEN valid THEN delivered_ph * dur ELSE 0 END)
       ELSE NULL END AS avg_cost,
 
-      -- Overpay vs hashprice using effective, not bid. Same numerator
-      -- weighting shape as avg_cost above, minus the average hashprice
-      -- over the same covered subset.
-      CASE WHEN SUM(CASE WHEN delta IS NOT NULL AND delivered_ph > 0 AND dur > 0 AND hashprice IS NOT NULL THEN delivered_ph * dur ELSE 0 END) > 0 THEN
-        (CAST(SUM(CASE WHEN delta IS NOT NULL AND hashprice IS NOT NULL THEN delta ELSE 0 END) AS REAL)
+      CASE WHEN SUM(CASE WHEN valid AND hashprice IS NOT NULL THEN delivered_ph * dur ELSE 0 END) > 0 THEN
+        (CAST(SUM(CASE WHEN valid AND hashprice IS NOT NULL THEN delta ELSE 0 END) AS REAL)
           * 86400000000.0
-          / SUM(CASE WHEN delta IS NOT NULL AND delivered_ph > 0 AND dur > 0 AND hashprice IS NOT NULL THEN delivered_ph * dur ELSE 0 END))
-        - (CAST(SUM(CASE WHEN delta IS NOT NULL AND hashprice IS NOT NULL THEN hashprice * delivered_ph * dur ELSE 0 END) AS REAL)
-          / SUM(CASE WHEN delta IS NOT NULL AND delivered_ph > 0 AND dur > 0 AND hashprice IS NOT NULL THEN delivered_ph * dur ELSE 0 END))
+          / SUM(CASE WHEN valid AND hashprice IS NOT NULL THEN delivered_ph * dur ELSE 0 END))
+        - (CAST(SUM(CASE WHEN valid AND hashprice IS NOT NULL THEN hashprice * delivered_ph * dur ELSE 0 END) AS REAL)
+          / SUM(CASE WHEN valid AND hashprice IS NOT NULL THEN delivered_ph * dur ELSE 0 END))
       ELSE NULL END AS avg_overpay_vs_hashprice
     FROM (
       SELECT
@@ -199,20 +203,34 @@ async function computeMetrics(
         delivered_ph,
         datum_hashrate_ph,
         ocean_hashrate_ph,
-        hashprice_sat_per_eh_day AS hashprice,
-        CASE
-          WHEN primary_bid_consumed_sat IS NOT NULL
-            AND LAG(primary_bid_consumed_sat) OVER (ORDER BY tick_at) IS NOT NULL
-            AND primary_bid_consumed_sat >= LAG(primary_bid_consumed_sat) OVER (ORDER BY tick_at)
-          THEN primary_bid_consumed_sat - LAG(primary_bid_consumed_sat) OVER (ORDER BY tick_at)
-          ELSE NULL
-        END AS delta,
-        COALESCE(
-          LEAD(tick_at) OVER (ORDER BY tick_at) - tick_at,
-          60000
-        ) AS dur
-      FROM tick_metrics
-      WHERE tick_at >= ${sinceMs}
+        hashprice,
+        delta,
+        dur,
+        (delta IS NOT NULL
+          AND delta >= 0
+          AND delivered_ph > 0.05
+          AND dur BETWEEN 1 AND 300000) AS valid
+      FROM (
+        SELECT
+          tick_at,
+          delivered_ph,
+          datum_hashrate_ph,
+          ocean_hashrate_ph,
+          hashprice_sat_per_eh_day AS hashprice,
+          CASE
+            WHEN primary_bid_consumed_sat IS NOT NULL
+              AND LAG(primary_bid_consumed_sat) OVER (ORDER BY tick_at) IS NOT NULL
+              AND primary_bid_consumed_sat >= LAG(primary_bid_consumed_sat) OVER (ORDER BY tick_at)
+            THEN primary_bid_consumed_sat - LAG(primary_bid_consumed_sat) OVER (ORDER BY tick_at)
+            ELSE NULL
+          END AS delta,
+          COALESCE(
+            LEAD(tick_at) OVER (ORDER BY tick_at) - tick_at,
+            60000
+          ) AS dur
+        FROM tick_metrics
+        WHERE tick_at >= ${sinceMs}
+      )
     )
   `;
   const row = await sql.raw(queryText).execute(db);
