@@ -276,18 +276,19 @@ export const PriceChart = memo(function PriceChart({
     // viewport and the excluded-zone shading clips to the top edge —
     // which is exactly the intended "the ceiling is up there somewhere"
     // affordance without hijacking the chart.
-    // Deliberately exclude effectivePoints from Y-axis scaling. Like
-    // the cap (comment below), a single anomalous tick — where the
-    // delta of amount_consumed_sat is out of phase with delivered_ph
-    // at that instant — can produce a brief spike multiples above the
-    // real rate, which would squash every other series into a thin
-    // band. Outlier rejection in the point-construction above drops
-    // the obviously-broken samples; this keeps residual noise from
-    // distorting the viewport.
+    // Include effectivePoints in Y-axis scaling. With window-aggregated
+    // rates (not per-tick ratios) the values are well-bounded — the
+    // 1.5×-bid last-chance outlier filter prevents any spike from
+    // pulling the scale, and legitimate effective values routinely
+    // sit below the bid/fillable band (the whole point of charting
+    // this line is to see that gap). Earlier we excluded effective
+    // to protect against per-tick rate spikes; that threat is gone
+    // now that aggregation is numerator-and-denominator-summed.
     const priceSample = [
       ...pricePoints.map((p) => p.v),
       ...fillablePoints.map((p) => p.v),
       ...hashpricePoints.map((p) => p.v),
+      ...effectivePoints.map((p) => p.v),
       ...eventPrices,
     ];
     const hasPrice = priceSample.length > 0;

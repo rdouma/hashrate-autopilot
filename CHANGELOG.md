@@ -2,6 +2,12 @@
 
 ## 2026-04-22
 
+### `[Fix]` Effective rate: include in Y-axis scaling so the line is visible (#49 follow-up)
+
+Empirically the window-aggregated effective rate sits 2-20% below bid (~38k-46k sat/PH/day in fresh observation vs a ~47k bid), but the chart's Y-axis was auto-scaling off bid/fillable/hashprice only — so the effective line was rendering BELOW the visible viewport. Only the handful of points that happened to brush the 46k lower edge poked into the chart, drawing as near-vertical strokes from off-chart-bottom up to the 46k floor. The rest of the line was invisible.
+
+Effective is back in the Y-axis sample now. The previous reason for excluding it — rogue per-tick rate spikes — no longer applies now that computation is window-aggregated (Σ numerator / Σ denominator), plus the 1.5×-bid last-chance outlier filter keeps the scale safe. Legitimate effective-below-bid is exactly what the chart needs to show.
+
 ### `[Fix]` Effective rate: window-aggregate Σconsumed / Σ(delivered × dt) instead of averaging ratios (#49 follow-up)
 
 Per-tick rates were meaningless: Braiins' `amount_consumed_sat` counter updates asynchronously from our tick loop, so some ticks report Δ=0 and the next absorbs a catch-up Δ that spans multiple ticks. Per-tick rates swung wildly between zero and multiples of the real rate; naive rolling-mean of those ratios amplified the problem, and the outlier filter thinned the survivor set into sparse disconnected points rendered as vertical spikes or missing lines entirely (depending on the smoothing window).
