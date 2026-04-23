@@ -199,11 +199,26 @@ export const PriceChart = memo(function PriceChart({
     const OUTLIER_MULTIPLE = 1.5;
     const effectiveWindowMs =
       Math.max(3, priceSmoothingMinutes) * 60_000;
+    // Minimum wall-clock span the aggregation must cover before we
+    // emit a point. Without this, the first 1-2 ticks after a
+    // migration backfill or daemon restart produce legitimate-but-
+    // wildly-off rates: Braiins' amount_consumed_sat counter only
+    // updates every ~minute on its side, so the first delta we see
+    // in a fresh observation window spans more *actual* matching
+    // activity than its wall-clock interval suggests — inflating
+    // the computed rate transiently. Requiring ≥ half the window
+    // means the series doesn't draw until the aggregation has
+    // enough history to be meaningful (~1.5 min for "off", 5 min
+    // for a 10-min smoothing setting).
+    const MIN_SPAN_MS = Math.max(
+      90_000,
+      Math.floor(effectiveWindowMs / 2),
+    );
     const effectivePoints: PricePoint[] = [];
     for (let i = 1; i < points.length; i += 1) {
       let deltaSum = 0;
       let phDaySum = 0;
-      let haveAny = false;
+      let earliestCoveredT: number | null = null;
       for (let j = i; j >= 1; j -= 1) {
         const anchorT = points[i]!.tick_at;
         const curT = points[j]!.tick_at;
@@ -220,9 +235,11 @@ export const PriceChart = memo(function PriceChart({
         if (!Number.isFinite(cur.delivered_ph) || cur.delivered_ph < 0.05) continue;
         deltaSum += delta;
         phDaySum += (cur.delivered_ph * dt) / 86_400_000;
-        haveAny = true;
+        earliestCoveredT = prev.tick_at;
       }
-      if (!haveAny || phDaySum <= 0) continue;
+      if (earliestCoveredT === null || phDaySum <= 0) continue;
+      const span = points[i]!.tick_at - earliestCoveredT;
+      if (span < MIN_SPAN_MS) continue;
       const rate = deltaSum / phDaySum;
       if (!Number.isFinite(rate) || rate <= 0) continue;
       const bid = points[i]!.our_primary_price_sat_per_ph_day;

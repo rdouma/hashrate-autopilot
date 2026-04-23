@@ -2,6 +2,12 @@
 
 ## 2026-04-22
 
+### `[Fix]` Effective rate: suppress thin-data transients at window edge (#49 follow-up)
+
+Inspected the operator's DB directly: the weird 52k → 40k "crash" on the effective line right after the migration backfill was an artifact of thin-data aggregation. Braiins' `amount_consumed_sat` counter updates ~every minute on their side, so the very first observation in a fresh window sees a *catch-up delta* — the first Δ we compute spans more real matching activity than its wall-clock interval implies, and with only 1–2 intervals in the aggregation window the inflated first interval dominates. Manual calc on the DB: first aggregated rate came out 88k (outlier-filtered), second 52k (inside the 1.5×-bid guard so it rendered), then it collapsed to the real 40–46k range as the window filled with real data.
+
+Fix: require the aggregation to cover at least `max(90s, window/2)` of wall-clock span before emitting a point. With smoothing off (3-min window) that means waiting ~90s post-restart; with 30-min smoothing, ~15 min. The line starts drawing once its value is meaningful rather than showing spurious spikes that settle into the real value.
+
 ### `[Fix]` Effective rate: include in Y-axis scaling so the line is visible (#49 follow-up)
 
 Empirically the window-aggregated effective rate sits 2-20% below bid (~38k-46k sat/PH/day in fresh observation vs a ~47k bid), but the chart's Y-axis was auto-scaling off bid/fillable/hashprice only — so the effective line was rendering BELOW the visible viewport. Only the handful of points that happened to brush the 46k lower edge poked into the chart, drawing as near-vertical strokes from off-chart-bottom up to the 46k floor. The rest of the line was invisible.
