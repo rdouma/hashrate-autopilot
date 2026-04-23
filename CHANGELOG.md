@@ -2,6 +2,12 @@
 
 ## 2026-04-22
 
+### `[Fix]` Effective-rate chart line: outlier rejection + exclude from Y-scaling (#49 follow-up)
+
+First live look at the effective-rate line had one bad sample pull the Y-axis up to 100k sat/PH/day, squashing the real 45-50k data into a thin band. Root cause: `amount_consumed_sat` snapshots update asynchronously from Braiins while our tick's `delivered_ph` is an instantaneous reading — at a boundary where delivered briefly dips but consumed has already accumulated a chunk, the per-tick rate divides by a small denominator and reports multiples above reality for one tick.
+
+Two-part fix: (a) outlier rejection at point-construction — a rate above 1.5× the current bid price is physically implausible (bid is an upper bound by definition), so drop the sample; tightened the near-zero-delivery cutoff from 0.01 to 0.1 PH/s while there. (b) Excluded the effective series from Y-axis auto-scaling — same treatment as max bid and cap — so any residual noise doesn't distort the viewport.
+
 ### `[Feature]` Per-tick actual-spend snapshot + "effective rate" chart line (#49)
 
 Empirical analysis of `owned_bids.amount_consumed_sat` vs `tick_metrics.spend_sat` (modeled at pay-your-bid) across the operator's active bid showed actual consumed sitting ~7.7% below modeled — suggestive but not conclusive of CLOB/pay-at-ask. Contributing noise on either side (Braiins' rolling `avg_speed_ph` lag per `observe.ts:283`, our 1-min-per-tick `spend_sat` approximation, and a tiny possible CLOB effect) all mix into a single bid-aggregate number we can't cleanly decompose.

@@ -130,13 +130,24 @@ export const PriceChart = memo(function PriceChart({
     // between consecutive ticks (#49):
     //   rate = Δconsumed × 86_400_000 / (delivered_ph × Δt_ms)
     // (86.4M ms/day; the units cancel to sat/PH/day.)
-    // We skip intervals that aren't interpretable: either end missing
-    // the counter (pre-migration, or no primary bid), counter reset
-    // (new bid → delta goes negative), zero/near-zero delivery, or a
-    // gap longer than MAX_EFFECTIVE_DT_MS (spans daemon restarts etc).
+    // Intervals are skipped when not interpretable:
+    //   - either end missing the counter (pre-migration, or no primary
+    //     bid that tick);
+    //   - counter reset (new bid → delta < 0);
+    //   - gap > MAX_EFFECTIVE_DT_MS (daemon restart, etc);
+    //   - near-zero delivered_ph (rate blows up as a divide-by-small).
+    // Extra outlier rejection: the real rate can never exceed the bid's
+    // price by any meaningful amount (that's the whole point of a bid
+    // being an upper bound). When `amount_consumed_sat` snapshots
+    // update asynchronously vs `avg_speed_ph` at tick boundaries, a
+    // delta can line up against a momentary delivery dip and produce a
+    // transient rate several multiples above the bid — visible as a
+    // single spike that would pull the Y-axis off by an order of
+    // magnitude. Reject anything > OUTLIER_MULTIPLE × bid at that tick.
     // The rate is anchored at the endpoint timestamp to match how every
     // other per-tick value on the chart is positioned.
     const MAX_EFFECTIVE_DT_MS = 5 * 60_000;
+    const OUTLIER_MULTIPLE = 1.5;
     const effectivePoints: PricePoint[] = [];
     for (let i = 1; i < points.length; i += 1) {
       const prev = points[i - 1]!;
@@ -148,9 +159,13 @@ export const PriceChart = memo(function PriceChart({
       if (!Number.isFinite(delta) || delta < 0) continue;
       const dt = cur.tick_at - prev.tick_at;
       if (dt <= 0 || dt > MAX_EFFECTIVE_DT_MS) continue;
-      if (!Number.isFinite(cur.delivered_ph) || cur.delivered_ph < 0.01) continue;
+      if (!Number.isFinite(cur.delivered_ph) || cur.delivered_ph < 0.1) continue;
       const rate = (delta * 86_400_000) / (cur.delivered_ph * dt);
       if (!Number.isFinite(rate) || rate <= 0) continue;
+      const bid = cur.our_primary_price_sat_per_ph_day;
+      if (bid !== null && Number.isFinite(bid) && rate > bid * OUTLIER_MULTIPLE) {
+        continue;
+      }
       effectivePoints.push({ t: cur.tick_at, v: rate });
     }
 
@@ -198,11 +213,18 @@ export const PriceChart = memo(function PriceChart({
     // viewport and the excluded-zone shading clips to the top edge —
     // which is exactly the intended "the ceiling is up there somewhere"
     // affordance without hijacking the chart.
+    // Deliberately exclude effectivePoints from Y-axis scaling. Like
+    // the cap (comment below), a single anomalous tick — where the
+    // delta of amount_consumed_sat is out of phase with delivered_ph
+    // at that instant — can produce a brief spike multiples above the
+    // real rate, which would squash every other series into a thin
+    // band. Outlier rejection in the point-construction above drops
+    // the obviously-broken samples; this keeps residual noise from
+    // distorting the viewport.
     const priceSample = [
       ...pricePoints.map((p) => p.v),
       ...fillablePoints.map((p) => p.v),
       ...hashpricePoints.map((p) => p.v),
-      ...effectivePoints.map((p) => p.v),
       ...eventPrices,
     ];
     const hasPrice = priceSample.length > 0;
