@@ -250,6 +250,19 @@ export const PriceChart = memo(function PriceChart({
         if (dt <= 0 || dt > MAX_EFFECTIVE_DT_MS) break;
         if (!Number.isFinite(cur.delivered_ph) || cur.delivered_ph < 0.05) continue;
         if (delta === 0) continue;
+        // Lag filter: if the observed delta is much smaller than what
+        // `our_bid × delivered_ph × dt` predicts, it's a Braiins outage
+        // tick where the counter has nearly stopped while delivered_ph
+        // still carries its lagged rolling value. Folding those pairs
+        // into the rate drags it implausibly low (incident pairs have
+        // delta < 10% of expected vs the usual ~80% CLOB discount).
+        // Threshold 30% is well below normal matching and well above
+        // outage noise.
+        const bid = cur.our_primary_price_sat_per_ph_day;
+        if (bid !== null && Number.isFinite(bid) && bid > 0) {
+          const expected = (bid * cur.delivered_ph * dt) / 86_400_000;
+          if (expected > 0 && delta / expected < 0.3) continue;
+        }
         deltaSum += delta;
         phDaySum += (cur.delivered_ph * dt) / 86_400_000;
         earliestCoveredT = prev.tick_at;

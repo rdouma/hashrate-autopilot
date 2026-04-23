@@ -2,6 +2,14 @@
 
 ## 2026-04-23
 
+### `[Fix]` Effective-rate line: per-pair lag filter catches outage-dominated deep dips
+
+Earlier fix skipped zero-delta pairs and required ≥3 non-zero pairs in the window. Worked for "counter flat through settlement lulls", but missed the other failure mode: outage ticks where the counter barely ticks (delta 4–6 sat/min) while `delivered_ph` carries its stale 3.67 PH/s reading. Those pairs have non-zero deltas so they passed the earlier filter, but their implied rate is near zero (2,000 sat/PH/day where we actually pay 45,000). The effective-rate line still dipped to the floor during today's 10:00 outage.
+
+New per-pair guard: skip any pair where observed `delta / (our_bid × delivered_ph × dt / 86.4e6)` < 0.30 — i.e. we charged less than 30 % of what delivered_ph × our_bid would predict. Normal CLOB matches run at ~80 % of bid; outage pairs run at < 10 %. The 30 % cutoff sits comfortably between them.
+
+Empirical on 12 h of real data: minimum rate went from ~2,000 → 32,464; 33 lag-dominated pairs dropped across ~750 total. The line now stays honest during outages — it goes dark rather than plunging toward zero.
+
 ### `[Fix]` Hashrate chart + UPTIME: use counter-derived delivered instead of Braiins' lagged avg (#52)
 
 The dashboard trusted `tick_metrics.delivered_ph` — Braiins' own `avg_speed_ph` rolling-average — as the truth about "how much hashrate are we actually getting right now". That field lags reality by minutes: during the 2026-04-23 12:55-12:59 outage the counter delta dropped to ~4 sat/min (95% cut) and Datum/Ocean both fell below 0.2 PH/s, but `delivered_ph` still read 3.67 PH/s. Visible consequences: the hashrate chart's orange Braiins line sat flat through the outage (contradicting the other two series), and the UPTIME card advertised 100% through a multi-minute no-matching event.
