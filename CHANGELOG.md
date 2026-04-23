@@ -2,6 +2,10 @@
 
 ## 2026-04-23
 
+### `[Docs]` README: rewrite around CLOB mental model; retire simulator + fill-strategy framing
+
+The README was still pitching the pre-CLOB worldview: "careful bidding", three-mode escalation ladder, `lower_patience_minutes`, overpay-vs-fillable stats, and the what-if simulator. All of that has been retired in the code over the last week. Rewrote the narrative sections (hero description, Why, How it works, Key features, Configuration) around the actual design: bid is a matching-access ceiling, we pay the clearing ask, one bid held at `min(max_bid, hashprice + max_overpay_vs_hashprice)`, effective rate as a first-class measured metric. Added a short "How Braiins matches" section naming the CLOB mechanic explicitly and pointing at `scripts/verify-pricing-model.ts`. Removed `docs/images/simulator.jpg`. `dashboard.jpg` and `config.jpg` will be refreshed by the operator once market conditions give a good screenshot.
+
 ### `[Feature]` Cheap-mode: sustained-average engagement window (#50)
 
 Cheap-mode previously engaged on a per-tick spot comparison of `best_ask` vs `hashprice × cheap_threshold_pct`. A single flash-dip in best ask was enough to flip the target up; a single spike back flipped it straight off — with a matching EDIT_SPEED on each flip, each one requeuing the bid and incurring stale shares during resubscribe.
