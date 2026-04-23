@@ -209,9 +209,24 @@ export const PriceChart = memo(function PriceChart({
       Math.floor(effectiveWindowMs / 2),
     );
     const effectivePoints: PricePoint[] = [];
+    // Braiins' primary_bid_consumed_sat counter settles in lumps — for
+    // minutes at a time the counter stays flat while delivered_ph
+    // keeps reporting a lagged nonzero value. Averaging those "stale
+    // settlement" pairs into the rate pulls it toward zero, producing
+    // visually dramatic dips that imply we got hashrate almost for
+    // free — wrong and misleading. Two guards:
+    //   1. Skip zero-delta pairs entirely (neither numerator nor
+    //      denominator advance). They carry no information — the
+    //      counter hasn't reported yet.
+    //   2. Require at least MIN_NONZERO_PAIRS real settlements inside
+    //      the window before trusting the average. Settlement lulls
+    //      become gaps in the line (truthful) rather than dips toward
+    //      zero (misleading).
+    const MIN_NONZERO_PAIRS = 3;
     for (let i = 1; i < points.length; i += 1) {
       let deltaSum = 0;
       let phDaySum = 0;
+      let nonZeroPairs = 0;
       let earliestCoveredT: number | null = null;
       for (let j = i; j >= 1; j -= 1) {
         const anchorT = points[i]!.tick_at;
@@ -234,11 +249,14 @@ export const PriceChart = memo(function PriceChart({
         const dt = curT - prev.tick_at;
         if (dt <= 0 || dt > MAX_EFFECTIVE_DT_MS) break;
         if (!Number.isFinite(cur.delivered_ph) || cur.delivered_ph < 0.05) continue;
+        if (delta === 0) continue;
         deltaSum += delta;
         phDaySum += (cur.delivered_ph * dt) / 86_400_000;
         earliestCoveredT = prev.tick_at;
+        nonZeroPairs += 1;
       }
       if (earliestCoveredT === null || phDaySum <= 0) continue;
+      if (nonZeroPairs < MIN_NONZERO_PAIRS) continue;
       const span = points[i]!.tick_at - earliestCoveredT;
       if (span < MIN_SPAN_MS) continue;
       const rate = deltaSum / phDaySum;

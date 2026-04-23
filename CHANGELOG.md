@@ -2,6 +2,17 @@
 
 ## 2026-04-23
 
+### `[Fix]` Effective-rate line: no more misleading dips across Braiins settlement lulls
+
+The Price chart's `effective` line computed `Σdelta / Σ(delivered×dt)` over a rolling window. When Braiins' `primary_bid_consumed_sat` counter went flat for several minutes (a normal settlement-batching artifact — the counter doesn't tick every minute even though `delivered_ph` keeps reporting ~full delivery via its own lagged rolling average), the numerator stalled but the denominator kept accumulating. Result: effective rate read ~2,000 sat/PH/day through stretches where we were actually paying our normal ~45,000 — visually implying we got hashrate almost for free during settlement lulls.
+
+Two guards now applied inside the rolling-window loop:
+
+1. **Skip zero-delta pairs entirely** — neither numerator nor denominator advances across a "counter unchanged" pair. Those pairs carry no pricing information; averaging them in only pulls the estimate toward zero.
+2. **Require ≥3 non-zero pairs in the window** before emitting a point. Below that, the line goes dark (truthful gap) rather than drawing a rate we can't stand behind.
+
+Empirical on 12 h of real data: minimum effective rate went from 2,126 → 14,889; only 22 of 568 points dropped; rate distribution is now tight (p05 37,937, median 47,118, max 71,320).
+
 ### `[Docs]` README: rewrite around CLOB mental model; retire simulator + fill-strategy framing
 
 The README was still pitching the pre-CLOB worldview: "careful bidding", three-mode escalation ladder, `lower_patience_minutes`, overpay-vs-fillable stats, and the what-if simulator. All of that has been retired in the code over the last week. Rewrote the narrative sections (hero description, Why, How it works, Key features, Configuration) around the actual design: bid is a matching-access ceiling, we pay the clearing ask, one bid held at `min(max_bid, hashprice + max_overpay_vs_hashprice)`, effective rate as a first-class measured metric. Added a short "How Braiins matches" section naming the CLOB mechanic explicitly and pointing at `scripts/verify-pricing-model.ts`. Removed `docs/images/simulator.jpg`. `dashboard.jpg` and `config.jpg` will be refreshed by the operator once market conditions give a good screenshot.
