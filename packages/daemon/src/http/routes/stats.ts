@@ -49,8 +49,20 @@ export interface StatsResponse {
    */
   readonly avg_ocean_hashrate_ph: number | null;
   readonly total_ph_hours: number | null;
-  readonly avg_overpay_sat_per_ph_day: number | null;
+  /**
+   * Average effective rate MINUS average hashprice, weighted by
+   * delivery. Positive = paying above break-even, negative = paying
+   * below. Computed from `primary_bid_consumed_sat` deltas (actual
+   * spend from Braiins), not our bid price — CLOB matching means the
+   * bid is a ceiling and the realised price is what we actually pay.
+   * Null for ranges without usable tick coverage.
+   */
   readonly avg_overpay_vs_hashprice_sat_per_ph_day: number | null;
+  /**
+   * Average effective rate we paid per PH per day, weighted by
+   * delivery. Derived from `primary_bid_consumed_sat` deltas (what
+   * Braiins actually charged us) rather than our bid price.
+   */
   readonly avg_cost_per_ph_sat_per_ph_day: number | null;
   readonly avg_time_to_fill_ms: number | null;
   /**
@@ -104,7 +116,6 @@ export async function registerStatsRoute(
         avg_datum_hashrate_ph: metrics.avg_datum_hashrate_ph,
         avg_ocean_hashrate_ph: metrics.avg_ocean_hashrate_ph,
         total_ph_hours: metrics.total_ph_hours,
-        avg_overpay_sat_per_ph_day: metrics.avg_overpay_sat_per_ph_day,
         avg_overpay_vs_hashprice_sat_per_ph_day: metrics.avg_overpay_vs_hashprice_sat_per_ph_day,
         avg_cost_per_ph_sat_per_ph_day: metrics.avg_cost_per_ph_sat_per_ph_day,
         avg_time_to_fill_ms: avgFillMs,
@@ -127,7 +138,6 @@ async function computeMetrics(
   avg_datum_hashrate_ph: number | null;
   avg_ocean_hashrate_ph: number | null;
   total_ph_hours: number | null;
-  avg_overpay_sat_per_ph_day: number | null;
   avg_overpay_vs_hashprice_sat_per_ph_day: number | null;
   avg_cost_per_ph_sat_per_ph_day: number | null;
   tick_count: number;
@@ -162,33 +172,41 @@ async function computeMetrics(
 
       CAST(SUM(delivered_ph * dur) AS REAL) / 3600000.0 AS total_ph_hours,
 
-      CASE WHEN SUM(CASE WHEN price IS NOT NULL AND fillable IS NOT NULL THEN dur ELSE 0 END) > 0 THEN
-        CAST(SUM(CASE WHEN price IS NOT NULL AND fillable IS NOT NULL
-            THEN (price - fillable) * dur ELSE 0 END) AS REAL)
-        / SUM(CASE WHEN price IS NOT NULL AND fillable IS NOT NULL THEN dur ELSE 0 END)
-      ELSE NULL END AS avg_overpay,
+      -- Average effective cost per PH/day, derived from the actual
+      -- primary_bid_consumed_sat deltas rather than our bid price.
+      -- Sum of deltas over the range, divided by sum of PH-days
+      -- delivered, x 1000 to return sat/EH/day (the existing scale
+      -- the caller divides by EH_PER_PH = 1000).
+      CASE WHEN SUM(CASE WHEN delta IS NOT NULL AND delivered_ph > 0 AND dur > 0 THEN delivered_ph * dur ELSE 0 END) > 0 THEN
+        CAST(SUM(CASE WHEN delta IS NOT NULL THEN delta ELSE 0 END) AS REAL)
+        * 86400000000.0
+        / SUM(CASE WHEN delta IS NOT NULL AND delivered_ph > 0 AND dur > 0 THEN delivered_ph * dur ELSE 0 END)
+      ELSE NULL END AS avg_cost,
 
-      CASE WHEN SUM(CASE WHEN price IS NOT NULL AND hashprice IS NOT NULL THEN dur ELSE 0 END) > 0 THEN
-        CAST(SUM(CASE WHEN price IS NOT NULL AND hashprice IS NOT NULL
-            THEN (price - hashprice) * dur ELSE 0 END) AS REAL)
-        / SUM(CASE WHEN price IS NOT NULL AND hashprice IS NOT NULL THEN dur ELSE 0 END)
-      ELSE NULL END AS avg_overpay_vs_hashprice,
-
-      CASE WHEN SUM(CASE WHEN delivered_ph > 0 AND price IS NOT NULL THEN delivered_ph * dur ELSE 0 END) > 0 THEN
-        CAST(SUM(CASE WHEN delivered_ph > 0 AND price IS NOT NULL
-            THEN price * delivered_ph * dur ELSE 0 END) AS REAL)
-        / SUM(CASE WHEN delivered_ph > 0 AND price IS NOT NULL
-            THEN delivered_ph * dur ELSE 0 END)
-      ELSE NULL END AS avg_cost
+      -- Overpay vs hashprice using effective, not bid. Same numerator
+      -- weighting shape as avg_cost above, minus the average hashprice
+      -- over the same covered subset.
+      CASE WHEN SUM(CASE WHEN delta IS NOT NULL AND delivered_ph > 0 AND dur > 0 AND hashprice IS NOT NULL THEN delivered_ph * dur ELSE 0 END) > 0 THEN
+        (CAST(SUM(CASE WHEN delta IS NOT NULL AND hashprice IS NOT NULL THEN delta ELSE 0 END) AS REAL)
+          * 86400000000.0
+          / SUM(CASE WHEN delta IS NOT NULL AND delivered_ph > 0 AND dur > 0 AND hashprice IS NOT NULL THEN delivered_ph * dur ELSE 0 END))
+        - (CAST(SUM(CASE WHEN delta IS NOT NULL AND hashprice IS NOT NULL THEN hashprice * delivered_ph * dur ELSE 0 END) AS REAL)
+          / SUM(CASE WHEN delta IS NOT NULL AND delivered_ph > 0 AND dur > 0 AND hashprice IS NOT NULL THEN delivered_ph * dur ELSE 0 END))
+      ELSE NULL END AS avg_overpay_vs_hashprice
     FROM (
       SELECT
         tick_at,
         delivered_ph,
         datum_hashrate_ph,
         ocean_hashrate_ph,
-        our_primary_price_sat_per_eh_day AS price,
-        fillable_ask_sat_per_eh_day AS fillable,
         hashprice_sat_per_eh_day AS hashprice,
+        CASE
+          WHEN primary_bid_consumed_sat IS NOT NULL
+            AND LAG(primary_bid_consumed_sat) OVER (ORDER BY tick_at) IS NOT NULL
+            AND primary_bid_consumed_sat >= LAG(primary_bid_consumed_sat) OVER (ORDER BY tick_at)
+          THEN primary_bid_consumed_sat - LAG(primary_bid_consumed_sat) OVER (ORDER BY tick_at)
+          ELSE NULL
+        END AS delta,
         COALESCE(
           LEAD(tick_at) OVER (ORDER BY tick_at) - tick_at,
           60000
@@ -201,7 +219,7 @@ async function computeMetrics(
 
   const r = (row as unknown as { rows: Array<Record<string, number | null>> }).rows?.[0];
   if (!r) {
-    return { tick_count: 0, uptime_pct: null, avg_hashrate_ph: null, avg_datum_hashrate_ph: null, avg_ocean_hashrate_ph: null, total_ph_hours: null, avg_overpay_sat_per_ph_day: null, avg_overpay_vs_hashprice_sat_per_ph_day: null, avg_cost_per_ph_sat_per_ph_day: null };
+    return { tick_count: 0, uptime_pct: null, avg_hashrate_ph: null, avg_datum_hashrate_ph: null, avg_ocean_hashrate_ph: null, total_ph_hours: null, avg_overpay_vs_hashprice_sat_per_ph_day: null, avg_cost_per_ph_sat_per_ph_day: null };
   }
 
   return {
@@ -214,7 +232,6 @@ async function computeMetrics(
       r['avg_ocean_hashrate'] !== null ? Number(r['avg_ocean_hashrate']) : null,
     total_ph_hours: r['total_ph_hours'] !== null ? Number(r['total_ph_hours']) : null,
     // SQL returns sat/EH/day; convert to sat/PH/day for the dashboard.
-    avg_overpay_sat_per_ph_day: r['avg_overpay'] !== null ? Number(r['avg_overpay']) / EH_PER_PH : null,
     avg_overpay_vs_hashprice_sat_per_ph_day: r['avg_overpay_vs_hashprice'] !== null ? Number(r['avg_overpay_vs_hashprice']) / EH_PER_PH : null,
     avg_cost_per_ph_sat_per_ph_day: r['avg_cost'] !== null ? Number(r['avg_cost']) / EH_PER_PH : null,
   };

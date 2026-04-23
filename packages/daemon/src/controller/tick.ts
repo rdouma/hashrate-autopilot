@@ -3,22 +3,13 @@
  *
  * Pure-ish orchestration layer; hosts no business logic itself.
  *
- * Controller state (`belowFloorSince`, `lowerReadySince`, `aboveFloorTicks`)
- * is mirrored to `runtime_state` on every tick and seeded from there via
- * `hydrate()` on boot, so the escalation timer and the lower-patience
- * timer both survive restarts (issue #11). The `manualOverrideUntilMs`
- * lock is intentionally *not* persisted — it exists to bound a single
- * operator/escalation interaction and a restart is a clean reset point
- * for that.
- *
- * `lowerReadySince` tracks "time since the market has been continuously
- * cheap enough that lowering would save at least `min_lower_delta`".
- * The older heuristic (time since hashrate came back above floor) fired
- * too readily on bids that were filling but only marginally overpriced;
- * operators reported lowering kicking in after just a few minutes when
- * they'd set `lower_patience_minutes` to 30. The timer resets the
- * instant the condition becomes false, so a short market dip that
- * reverses inside the patience window can't trigger a lower.
+ * Controller state is minimal after the #49 redesign: only
+ * `belowFloorSince` and `aboveFloorTicks` (both drive the below-floor
+ * alerting in main.ts, nothing to do with fill strategy). The old
+ * escalation/lowering-patience timers (`lowerReadySince`,
+ * `belowTargetSince`) and the manual-override lock have been retired
+ * along with the fill-strategy subsystem. Their runtime_state columns
+ * are kept for backwards compatibility but always written as null.
  */
 
 import type { TickMetricsRepo } from '../state/repos/tick_metrics.js';
@@ -45,125 +36,32 @@ export interface TickResult {
 
 export class Controller {
   private belowFloorSince: number | null = null;
-  private lowerReadySince: number | null = null;
-  private belowTargetSince: number | null = null;
   private aboveFloorTicks: number = 0;
-  private manualOverrideUntilMs: number | null = null;
-  /**
-   * One-shot flag set by `bypassPacingOnce()` — consumed by the next
-   * tick() and cleared immediately, so a manual "Run decision now"
-   * override doesn't leak into the following automatic tick.
-   */
-  private bypassPacingNextTick = false;
   private lastResult: TickResult | null = null;
 
   constructor(private readonly deps: TickDeps) {}
 
   /**
-   * Arm a one-shot pacing bypass for the next tick — decide() will
-   * skip its self-imposed patience and escalation timers. Called by
-   * the "Run decision now" route (`/api/actions/tick-now`) so the
-   * operator can realise a pending decision without waiting out the
-   * full patience window. No effect on server-side gates (Braiins
-   * cooldown, run_mode).
-   */
-  bypassPacingOnce(): void {
-    this.bypassPacingNextTick = true;
-  }
-
-  /**
    * Seed in-memory floor-state from the persisted `runtime_state` row.
-   * Call once at boot, after the migration runner. Idempotent — safe to
-   * call multiple times if needed.
+   * Call once at boot, after the migration runner. Idempotent.
    */
   async hydrate(): Promise<void> {
     const row = await this.deps.runtimeRepo.get();
     if (!row) return;
     this.belowFloorSince = row.below_floor_since_ms;
-    this.lowerReadySince = row.lower_ready_since_ms;
-    this.belowTargetSince = row.below_target_since_ms;
     this.aboveFloorTicks = row.above_floor_ticks;
   }
 
-  /**
-   * Record a manual operator override — autopilot EDIT_PRICE proposals
-   * on the primary bid will be suppressed until `until`.
-   */
-  setManualOverrideUntil(until: number): void {
-    this.manualOverrideUntilMs = until;
-  }
-
-  getManualOverrideUntil(): number | null {
-    return this.manualOverrideUntilMs;
-  }
-
-  /**
-   * Drop the post-edit lock without waiting for it to expire. Used by
-   * the "Run decision now" route — when the operator manually invokes
-   * the controller, they're overriding their own autopilot's
-   * self-imposed pacing, so suppressing the next decision because of a
-   * stale lock is unhelpful. Returns the previous value so the caller
-   * can report what (if anything) was cleared.
-   */
-  clearManualOverride(): number | null {
-    const prev = this.manualOverrideUntilMs;
-    this.manualOverrideUntilMs = null;
-    return prev;
-  }
-
   async tick(): Promise<TickResult> {
-    if (this.manualOverrideUntilMs !== null && this.manualOverrideUntilMs <= this.deps.now()) {
-      this.manualOverrideUntilMs = null;
-    }
-    const bypassPacing = this.bypassPacingNextTick;
-    this.bypassPacingNextTick = false;
     let state = await observe(this.deps, {
       previousBelowFloorSince: this.belowFloorSince,
       previousAboveFloorTicks: this.aboveFloorTicks,
-      manualOverrideUntilMs: this.manualOverrideUntilMs,
+      manualOverrideUntilMs: null,
       hashpriceSatPerPhDay: this.deps.getHashprice?.() ?? null,
-      bypassPacing,
+      bypassPacing: false,
     });
     this.belowFloorSince = state.below_floor_since;
     this.aboveFloorTicks = state.above_floor_ticks;
-
-    // Lower-ready timer: continuously true when our primary bid is
-    // priced high enough above (fillable + overpay) that lowering
-    // would save at least `min_lower_delta_sat_per_eh_day`. When the
-    // condition flips false the timer resets — so a brief market dip
-    // that reverses inside `lower_patience_minutes` can't trigger a
-    // lower and burn the Braiins 10-min decrease cooldown. This
-    // mirrors the lowering condition in decide() exactly (modulo the
-    // capped-target edge case: when the market is too expensive
-    // decide() returns [] without touching the bid, so the timer's
-    // value is irrelevant).
-    const lowerReadyNow = computeLowerReady(state);
-    if (lowerReadyNow) {
-      if (this.lowerReadySince === null) this.lowerReadySince = state.tick_at;
-    } else {
-      this.lowerReadySince = null;
-    }
-
-    // Below-target timer for `escalation_mode = 'above_market'`.
-    // Condition: we have a primary bid, the market has a fillable ask,
-    // and our bid sits strictly under `fillable + overpay` (i.e., the
-    // market has closed the overpay gap we paid for). Same continuous-
-    // truth semantics as `lower_ready_since`: any tick where the
-    // condition flips false resets the timer, so a one-tick market
-    // spike that retreats within a minute can't fire the preemptive
-    // raise.
-    const belowTargetNow = computeBelowTarget(state);
-    if (belowTargetNow) {
-      if (this.belowTargetSince === null) this.belowTargetSince = state.tick_at;
-    } else {
-      this.belowTargetSince = null;
-    }
-
-    state = {
-      ...state,
-      lower_ready_since: this.lowerReadySince,
-      below_target_since: this.belowTargetSince,
-    };
 
     const proposals = decide(state);
     const gated = gate(proposals, state);
@@ -172,12 +70,7 @@ export class Controller {
     // observe() ran *before* execute(), so `state.owned_bids` still
     // reflects the pre-execute world. Patch it in-memory so anything
     // downstream this tick (metrics row, lastResult consumed by
-    // /api/status) sees the post-execute reality. Without this the
-    // dashboard shows a stale hero price + a "will lower" prediction
-    // for ~30s after a tick that just lowered, even though the chart's
-    // bid-event marker is already visible. Next observe() picks up the
-    // same data on its own a tick later, so this is a freshness-only
-    // patch — no source-of-truth shift.
+    // /api/status) sees the post-execute reality.
     const patchedOwnedBids = state.owned_bids
       .map((b) => {
         let next = b;
@@ -212,32 +105,16 @@ export class Controller {
       );
     state = { ...state, owned_bids: patchedOwnedBids };
 
-    // After any CREATE or EDIT_PRICE that actually fired, lock the
-    // price for one full escalation window. Prevents:
-    // - same-window re-escalation after an upward EDIT
-    // - immediate lowering after a CREATE at a high price (the fill
-    //   needs time to establish before we start chasing the market
-    //   back down and burning the Braiins 10-min decrease cooldown)
-    const windowMs = state.config.fill_escalation_after_minutes * 60_000;
-    for (const e of executed) {
-      if (
-        (e.proposal.kind === 'EDIT_PRICE' || e.proposal.kind === 'CREATE_BID') &&
-        e.outcome === 'EXECUTED'
-      ) {
-        this.manualOverrideUntilMs = state.tick_at + windowMs;
-        break;
-      }
-    }
-
-    // Also bump runtime_state diagnostics + persist floor-tracking
-    // state so the escalation timer survives daemon restarts (#11).
+    // Persist runtime diagnostics. The retired timers are nulled out
+    // on every tick — their columns are kept only for backwards-compat
+    // with the runtime_state table shape.
     await this.deps.runtimeRepo.patch({
       last_tick_at: state.tick_at,
       last_api_ok_at: state.last_api_ok_at,
       last_pool_ok_at: state.pool.last_ok_at,
       below_floor_since_ms: this.belowFloorSince,
-      lower_ready_since_ms: this.lowerReadySince,
-      below_target_since_ms: this.belowTargetSince,
+      lower_ready_since_ms: null,
+      below_target_since_ms: null,
       above_floor_ticks: this.aboveFloorTicks,
     });
 
@@ -253,10 +130,11 @@ export class Controller {
             state.config.target_hashrate_ph,
           )
         : null;
-      // Per-tick spend sat (issue #43): price (sat/EH/day) ÷ 1000 →
-      // sat/PH/day; × delivered PH → sat/day; ÷ 1440 → sat/min-chunk.
-      // Combined divisor is 1_440_000. Null when we have no primary
-      // bid for this tick (shows up as "no active bids" in the panel).
+      void fillable;
+      // Legacy pay-your-bid model — kept for backwards compat with the
+      // existing `spend_sat` column. The dashboard now reads
+      // `primary_bid_consumed_sat` deltas for authoritative actual
+      // spend (#49) and the modelled figure is unused there.
       const spendSat =
         primary && state.actual_hashrate.total_ph > 0
           ? (primary.price_sat * state.actual_hashrate.total_ph) / 1_440_000
@@ -271,7 +149,13 @@ export class Controller {
         our_primary_price_sat_per_eh_day: primary?.price_sat ?? null,
         best_bid_sat_per_eh_day: state.market?.best_bid_sat ?? null,
         best_ask_sat_per_eh_day: state.market?.best_ask_sat ?? null,
-        fillable_ask_sat_per_eh_day: fillable?.price_sat ?? null,
+        fillable_ask_sat_per_eh_day:
+          state.market
+            ? cheapestAskForDepth(
+                state.market.orderbook.asks ?? [],
+                state.config.target_hashrate_ph,
+              ).price_sat
+            : null,
         hashprice_sat_per_eh_day: state.hashprice_sat_per_ph_day !== null
           ? state.hashprice_sat_per_ph_day * 1000
           : null,
@@ -280,11 +164,6 @@ export class Controller {
         datum_hashrate_ph: state.datum?.hashrate_ph ?? null,
         ocean_hashrate_ph: state.ocean_hashrate_ph,
         spend_sat: spendSat,
-        // Authoritative per-tick cumulative spend from Braiins — the
-        // primary bid's amount_consumed_sat snapshotted each observe
-        // (#49). Client-side deltas of this column give the actual
-        // effective rate, independent of our pay-your-bid `spend_sat`
-        // model. Null when no primary owned bid exists this tick.
         primary_bid_consumed_sat: primary ? primary.amount_consumed_sat : null,
         run_mode: state.run_mode,
         action_mode: state.action_mode,
@@ -298,70 +177,7 @@ export class Controller {
     return result;
   }
 
-  /**
-   * Latest tick result, or null if the first tick hasn't completed yet.
-   * Consumed by the HTTP /api/status handler.
-   */
   getLastResult(): TickResult | null {
     return this.lastResult;
   }
-}
-
-/**
- * Mirror of decide()'s lowering condition, used to drive the
- * `lower_ready_since` patience timer. Returns true when lowering the
- * primary bid to (fillable + overpay) would save more than
- * `min_lower_delta_sat_per_eh_day`. Kept close to decide.ts so the
- * two stay in lockstep — any change to the lowering gate there should
- * update this predicate too.
- *
- * Returns false when: no market snapshot, no asks, no primary bid, or
- * the saving is under the deadband. Does NOT consult the effective
- * cap — on ticks where the market is too expensive decide() returns
- * [] without lowering anyway, so the timer's value is unused there;
- * keeping this predicate simple means `lower_ready_since` has a
- * straightforward "market is genuinely cheaper than my bid" meaning.
- */
-function computeLowerReady(state: State): boolean {
-  if (!state.market) return false;
-  const asks = state.market.orderbook.asks ?? [];
-  if (asks.length === 0) return false;
-  if (state.owned_bids.length === 0) return false;
-  const fillable = cheapestAskForDepth(asks, state.config.target_hashrate_ph);
-  if (fillable.price_sat === null) return false;
-  const desiredPrice = fillable.price_sat + state.config.overpay_sat_per_eh_day;
-  const primary = [...state.owned_bids].sort((a, b) =>
-    a.braiins_order_id.localeCompare(b.braiins_order_id),
-  )[0];
-  if (!primary || primary.price_sat === null) return false;
-  const tickSize = state.market.settings.tick_size_sat ?? 1000;
-  const lowerThreshold = Math.max(tickSize, state.config.min_lower_delta_sat_per_eh_day);
-  return primary.price_sat > desiredPrice + lowerThreshold;
-}
-
-/**
- * Mirror of `computeLowerReady` for the upward direction — drives the
- * `below_target_since` timer used under `escalation_mode =
- * 'above_market'`. Returns true when our primary bid sits strictly
- * below the `fillable + overpay` target, i.e., the market has closed
- * the overpay gap. Does NOT consult the effective cap, matching the
- * `computeLowerReady` simplification: on ticks where decide() can't
- * escalate (market too expensive vs. cap) the timer's value is
- * harmlessly unused because decide() returns [] up-front. Keeping
- * this predicate simple means the timer has a straightforward "market
- * has caught up to my bid" meaning.
- */
-function computeBelowTarget(state: State): boolean {
-  if (!state.market) return false;
-  const asks = state.market.orderbook.asks ?? [];
-  if (asks.length === 0) return false;
-  if (state.owned_bids.length === 0) return false;
-  const fillable = cheapestAskForDepth(asks, state.config.target_hashrate_ph);
-  if (fillable.price_sat === null) return false;
-  const desiredPrice = fillable.price_sat + state.config.overpay_sat_per_eh_day;
-  const primary = [...state.owned_bids].sort((a, b) =>
-    a.braiins_order_id.localeCompare(b.braiins_order_id),
-  )[0];
-  if (!primary || primary.price_sat === null) return false;
-  return primary.price_sat < desiredPrice;
 }

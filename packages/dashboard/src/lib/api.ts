@@ -175,12 +175,10 @@ export interface StatusResponse {
   config_summary: {
     target_hashrate_ph: number;
     minimum_floor_hashrate_ph: number;
-    overpay_sat_per_ph_day: number;
     max_bid_sat_per_ph_day: number;
     max_overpay_vs_hashprice_sat_per_ph_day: number | null;
     effective_cap_sat_per_ph_day: number;
     binding_cap: 'fixed' | 'dynamic';
-    fill_escalation_step_sat_per_ph_day: number;
     bid_budget_sat: number;
     pool_url: string;
     quiet_hours_start: string;
@@ -229,12 +227,6 @@ export interface AppConfig {
   handover_window_minutes: number;
   btc_payout_address: string;
   telegram_chat_id: string;
-  fill_escalation_step_sat_per_eh_day: number;
-  fill_escalation_after_minutes: number;
-  overpay_sat_per_eh_day: number;
-  escalation_mode: 'market' | 'dampened' | 'above_market';
-  min_lower_delta_sat_per_eh_day: number;
-  lower_patience_minutes: number;
   electrs_host: string | null;
   electrs_port: number | null;
   boot_mode: 'ALWAYS_DRY_RUN' | 'LAST_MODE' | 'ALWAYS_LIVE';
@@ -304,11 +296,6 @@ export const api = {
     }),
   stats: (range: ChartRange) =>
     request<StatsResponse>(`/api/stats?range=${encodeURIComponent(range)}`),
-  simulate: (params: SimulateRequest) =>
-    request<SimulateResponse>('/api/simulate', {
-      method: 'POST',
-      body: JSON.stringify(params),
-    }),
   ocean: () => request<OceanResponse>('/api/ocean'),
   // Test-auth call: hits /api/status to validate credentials.
   checkAuth: () => request<StatusResponse>('/api/status'),
@@ -320,7 +307,6 @@ export interface StatsResponse {
   avg_datum_hashrate_ph: number | null;
   avg_ocean_hashrate_ph: number | null;
   total_ph_hours: number | null;
-  avg_overpay_sat_per_ph_day: number | null;
   avg_overpay_vs_hashprice_sat_per_ph_day: number | null;
   avg_cost_per_ph_sat_per_ph_day: number | null;
   avg_time_to_fill_ms: number | null;
@@ -369,50 +355,6 @@ export interface FinanceResponse {
     fetched_at_ms: number | null;
   } | null;
   checked_at_ms: number;
-}
-
-export interface SimulateRequest {
-  range?: string;
-  overpay_sat_per_eh_day: number;
-  max_bid_sat_per_eh_day: number;
-  /**
-   * Dynamic hashprice-relative cap allowance. When non-null, the
-   * simulator uses min(max_bid, hashprice + this) as the per-tick
-   * effective cap — matching decide()'s behaviour. Null/0 disables.
-   */
-  max_overpay_vs_hashprice_sat_per_eh_day: number | null;
-  fill_escalation_step_sat_per_eh_day: number;
-  fill_escalation_after_minutes: number;
-  lower_patience_minutes: number;
-  min_lower_delta_sat_per_eh_day: number;
-  escalation_mode: 'market' | 'dampened' | 'above_market';
-}
-
-export interface SimStatsSummary {
-  uptime_pct: number | null;
-  avg_hashrate_ph: number | null;
-  total_ph_hours: number | null;
-  avg_cost_per_ph_sat_per_ph_day: number | null;
-  avg_overpay_sat_per_ph_day: number | null;
-  avg_overpay_vs_hashprice_sat_per_ph_day: number | null;
-  gap_count: number;
-  gap_minutes: number;
-  /** CREATE + EDIT_PRICE events the simulator would have issued. */
-  mutation_count: number;
-}
-
-export interface SimulatedTick {
-  tick_at: number;
-  simulated_price_sat_per_ph_day: number;
-  delivered_ph: number;
-}
-
-export interface SimulateResponse {
-  actual: SimStatsSummary;
-  simulated: SimStatsSummary;
-  ticks: SimulatedTick[];
-  tick_count: number;
-  range: string;
 }
 
 export interface OceanBlockView {

@@ -136,56 +136,6 @@ const SECTIONS: Section[] = [
     ],
   },
   {
-    title: 'Fill strategy',
-    description:
-      'Target price = min(fillable + overpay, max bid). Fillable = depth-aware price at which your full target hashrate is available.',
-    fields: [
-      {
-        key: 'overpay_sat_per_eh_day',
-        label: 'Overpay',
-        kind: 'price_sat_per_eh_day',
-        help: 'How much above the fillable ask we bid. Target = fillable + this, capped by max bid. Not a maximum — every tick aims for exactly this overpay (the cap only kicks in if it would push us above max bid).',
-      },
-      {
-        key: 'min_lower_delta_sat_per_eh_day',
-        label: 'Min delta',
-        kind: 'price_sat_per_eh_day',
-        help: 'Deadband applied in BOTH directions: only auto-edit (raise or lower) when the move vs target exceeds this. Avoids burning the Braiins 10-min price-decrease cooldown chasing a few-sat market tick.',
-      },
-      {
-        key: 'escalation_mode',
-        label: 'Escalation mode',
-        kind: 'select',
-        options: [
-          { value: 'dampened', label: 'Dampened (step up slowly after below floor)' },
-          { value: 'market', label: 'Market (jump to target after below floor)' },
-          { value: 'above_market', label: 'Above market (preemptive — raise before cut-off)' },
-        ],
-        help: '"Dampened" and "Market" are reactive: they wait for hashrate to drop under the floor for the escalation window, then either step up or jump to fillable + overpay. "Above market" is preemptive: the instant the market catches up and our bid drops below (fillable + overpay), it starts the same escalation window timer — when it fires, we jump to target. Fills fine, no cut-off needed. Same cap applies to all three modes.',
-      },
-      {
-        key: 'fill_escalation_step_sat_per_eh_day',
-        label: 'Escalation step',
-        kind: 'price_sat_per_eh_day',
-        help: 'Raise the bid by this much per escalation window when stuck below floor (dampened mode only).',
-      },
-      {
-        key: 'fill_escalation_after_minutes',
-        label: 'Escalation window',
-        kind: 'integer',
-        unit: 'min',
-        help: 'How long the trigger condition must hold before escalating. Dampened/Market modes: continuously below floor. Above-market mode: continuously below (fillable + overpay).',
-      },
-      {
-        key: 'lower_patience_minutes',
-        label: 'Wait before lowering',
-        kind: 'integer',
-        unit: 'min',
-        help: 'How long the autopilot must be continuously above floor before it will lower the bid price. Prevents chasing short market dips that reverse within minutes — each unnecessary lower burns the Braiins 10-min price-decrease cooldown.',
-      },
-    ],
-  },
-  {
     title: 'Budget',
     description: 'How big a single bid is. Set to 0 to use the full available wallet balance on each create — simpler mental model, no manual slicing.',
     fields: [

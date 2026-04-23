@@ -1,5 +1,31 @@
 # Changelog
 
+## 2026-04-23
+
+### `[Feature]` Retire the fill-strategy machinery — CLOB redesign (#49 master)
+
+Empirical verification confirmed Braiins matches CLOB-style: the bid is a ceiling, the actual price paid is the matched ask. Our entire fill-strategy subsystem (overpay-above-fillable, three-way escalation mode, lowering patience, min-lower-delta) was authored under a pay-your-bid assumption and turned out to be pointless complexity. This release removes it.
+
+**Daemon**:
+- Migration 0043 drops `overpay_sat_per_eh_day`, `escalation_mode`, `fill_escalation_step_sat_per_eh_day`, `fill_escalation_after_minutes`, `min_lower_delta_sat_per_eh_day`, `lower_patience_minutes` from the config table.
+- `decide()` rewritten from 329 lines to ~130: compute effective cap, keep one bid at it, EDIT_SPEED on cheap-mode transitions. No timers, no patience gates, no escalation modes.
+- `controller/tick.ts` loses its `lowerReadySince` / `belowTargetSince` / `manualOverrideUntilMs` state — dead under the new model.
+- `/api/simulate` endpoint + `SimulateRoute` deleted entirely. Replaying "what if overpay=X" against historical ticks had no decision value under CLOB.
+- `/api/stats` — `avg_cost_per_ph_sat_per_ph_day` and `avg_overpay_vs_hashprice_sat_per_ph_day` now computed from `primary_bid_consumed_sat` deltas (actual effective rate), not bid price. `avg_overpay_sat_per_ph_day` removed (bid-vs-fillable is meaningless under CLOB).
+- `/api/status` next-action inference simplified to match.
+
+**Dashboard**:
+- Simulation tab removed. No more Real-time / Simulation toggle.
+- Config page — entire "Fill strategy" section deleted.
+- Header stats bar loses "AVG OVERPAY VS FILLABLE" card. "AVG COST / PH DELIVERED" and "AVG OVERPAY VS HASHPRICE" re-label tooltips to explain they're effective-rate-based.
+- Status page's `SimParamBar` + `SIM_NUMBER_FIELDS` + sim-event synthesis + simulated-metric-overlay logic all removed. Price chart's sim-mode price line gone.
+
+The "our bid" line on the price chart is kept for now — once stable, it will be removed too (it equals the effective cap at all times).
+
+**Tests**: `decide.test.ts` rewritten to cover the minimal new contract (16 tests down from 51 — the deleted ones tested escalation/lowering/patience paths that no longer exist).
+
+Existing installs need a fresh pull + restart to pick up migration 0043. Any operator still relying on the retired knobs: they no longer exist. The autopilot now just sits at `min(max_bid, hashprice + max_overpay_vs_hashprice)` and lets CLOB do the work.
+
 ## 2026-04-22
 
 ### `[Fix]` Effective rate: suppress thin-data transients at window edge (#49 follow-up)

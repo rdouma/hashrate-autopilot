@@ -327,12 +327,11 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
       ...noEvent,
     };
   }
-  // Mirror decide.ts: target = min(fillable + overpay, effectiveCap)
-  // where effectiveCap = min(fixed max_bid, hashprice + max_overpay).
-  // Using the fixed cap alone here would hide the case where the
-  // *dynamic* cap is what's blocking the autopilot — the user would
-  // see an escalation countdown that can't fire.
-  const desiredPriceEH = cheapestAsk + state.config.overpay_sat_per_eh_day;
+
+  // Effective cap — what our bid will sit at under the #49 redesign.
+  // Under CLOB matching, the bid is a ceiling only; actual payments
+  // come from matched asks, so there's no "fillable + overpay" target
+  // to chase anymore.
   const fixedCapEH = state.config.max_bid_sat_per_eh_day;
   const dynamicCapEH =
     state.config.max_overpay_vs_hashprice_sat_per_eh_day !== null &&
@@ -341,20 +340,10 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
         state.config.max_overpay_vs_hashprice_sat_per_eh_day
       : null;
   const effectiveCapEH = dynamicCapEH !== null ? Math.min(fixedCapEH, dynamicCapEH) : fixedCapEH;
-  const targetPriceEH = Math.min(desiredPriceEH, effectiveCapEH);
-  const targetPricePH = Math.round(targetPriceEH / EH_PER_PH);
-  const cappedByMax = desiredPriceEH > effectiveCapEH;
-  const bindingCapLabel =
-    dynamicCapEH !== null && dynamicCapEH < fixedCapEH
-      ? 'dynamic hashprice+max_overpay'
-      : 'fixed max_bid';
+  const effectiveCapPH = Math.round(effectiveCapEH / EH_PER_PH);
 
   if (state.owned_bids.length === 0) {
     const verb = runMode === 'LIVE' ? 'place' : 'log (dry-run)';
-    // Mirror the sentinel resolution in decide.ts so the "detail" text
-    // reflects what amount_sat will actually be proposed, not the raw
-    // config value. 0 means "use full wallet balance" (#40); surface
-    // the resolved figure (or "full wallet" when no balance yet).
     let budgetText: string;
     if (state.config.bid_budget_sat === 0) {
       const availableSat =
@@ -367,8 +356,8 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
       budgetText = `${state.config.bid_budget_sat.toLocaleString('en-US')} sat budget`;
     }
     return {
-      summary: `Will ${verb} a CREATE_BID on the next tick.`,
-      detail: `~${targetPricePH.toLocaleString('en-US')} sat/PH/day, ${ph} PH/s target, ${budgetText}.`,
+      summary: `Will ${verb} a CREATE_BID at the effective cap on the next tick.`,
+      detail: `~${effectiveCapPH.toLocaleString('en-US')} sat/PH/day, ${ph} PH/s target, ${budgetText}.`,
       ...noEvent,
     };
   }
@@ -387,222 +376,40 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
     };
   }
 
-  // Preemptive-raise predictor for `escalation_mode = 'above_market'`.
-  // Fires off the below-target timer (not below-floor), so the raise
-  // can be scheduled while we're still filling fine — the whole point
-  // of the mode. Short-circuits the reactive shortfall path below,
-  // which in `above_market` mode is dead code (shouldTriggerEscalation
-  // keys off `below_target_since` in that mode).
-  if (state.config.escalation_mode === 'above_market') {
-    if (primary.price_sat < targetPriceEH) {
-      const windowMs = state.config.fill_escalation_after_minutes * 60_000;
-      if (cappedByMax) {
-        return {
-          summary: `Market caught up to bid — no preemptive raise will fire.`,
-          detail: `Fillable + overpay (${Math.round(desiredPriceEH / EH_PER_PH).toLocaleString('en-US')} sat/PH/day) exceeds your ${bindingCapLabel} cap (${Math.round(effectiveCapEH / EH_PER_PH).toLocaleString('en-US')} sat/PH/day). Waiting for the market to drop or the cap to relax.`,
-          ...noEvent,
-        };
-      }
-      const startMs = state.below_target_since ?? state.tick_at;
-      const elapsedMs = state.tick_at - startMs;
-      const remainingMs = windowMs - elapsedMs;
-      const countdownText =
-        remainingMs > 0
-          ? `Preemptive raise in ${Math.max(1, Math.ceil(remainingMs / 60_000))} min`
-          : `Preemptive raise overdue by ${Math.max(1, Math.ceil(-remainingMs / 60_000))} min`;
-      const nextEditPH = Math.round(targetPriceEH / EH_PER_PH);
-      return {
-        summary: `Market caught up to bid (${currentPricePH.toLocaleString('en-US')} < target ${nextEditPH.toLocaleString('en-US')} sat/PH/day).`,
-        detail: `${countdownText} if still below target. above_market mode will jump to ${nextEditPH.toLocaleString('en-US')} sat/PH/day.`,
-        eta_ms: startMs + windowMs,
-        event_started_ms: startMs,
-        event_kind: 'escalation',
-      };
-    }
-    // Bid at-or-above target under above_market: fall through to the
-    // overpay/lower branch below; if not overpaying, "on target".
-  }
-
-  const shortfall = ph - primary.avg_speed_ph;
-  if (shortfall > 0.1 && state.config.escalation_mode !== 'above_market') {
-    const windowMs = state.config.fill_escalation_after_minutes * 60_000;
-    // If the market is too expensive (fillable + overpay > max_bid),
-    // decide.ts returns [] — no escalation, no CREATE. The bid sits
-    // at its current price and we wait for the market to drop. Don't
-    // predict "will jump to max_bid" — that move would never fire.
-    if (cappedByMax) {
-      return {
-        summary: `Bid filling below target (${primary.avg_speed_ph.toFixed(2)}/${ph} PH/s) — no escalation will fire.`,
-        detail: `Fillable + overpay (${Math.round(desiredPriceEH / EH_PER_PH).toLocaleString('en-US')} sat/PH/day) exceeds your ${bindingCapLabel} cap (${Math.round(effectiveCapEH / EH_PER_PH).toLocaleString('en-US')} sat/PH/day). Waiting for the market to drop or for the cap to relax — raise "Max premium over hashprice" in Config to unblock.`,
-        ...noEvent,
-      };
-    }
-
-    // If current price is already at or above the target, escalation
-    // won't actually fire (decide.ts checks primary < targetPrice).
-    if (primary.price_sat >= targetPriceEH) {
-      return {
-        summary: `Bid filling below target (${primary.avg_speed_ph.toFixed(2)}/${ph} PH/s).`,
-        detail: `Already priced at ${currentPricePH.toLocaleString('en-US')} sat/PH/day (above target ${targetPricePH.toLocaleString('en-US')}). Waiting for hashrate to arrive.`,
-        ...noEvent,
-      };
-    }
-
-    // Escalation only fires when the bid has been continuously BELOW
-    // FLOOR (not merely below target) for `fill_escalation_after_minutes`.
-    // If we're below target but above floor, decide() won't escalate —
-    // no countdown should be shown (issue #29).
-    const floorPh = state.config.minimum_floor_hashrate_ph;
-    if (primary.avg_speed_ph >= floorPh) {
-      return {
-        summary: `Bid filling below target (${primary.avg_speed_ph.toFixed(2)}/${ph} PH/s).`,
-        detail: `Above floor (${floorPh} PH/s) — no escalation scheduled. Escalation only triggers after ${state.config.fill_escalation_after_minutes} min continuously below floor.`,
-        ...noEvent,
-      };
-    }
-
-    // Below floor. The below_floor_since timer may not have been set
-    // yet on the very first tick of this dip (observe() sets it each
-    // tick, but the first observed tick uses `previous ?? now` — so
-    // reading the state immediately after that tick returns a valid
-    // start). Still, if it's somehow null at this point we treat
-    // tick_at as the synthetic start so the progress bar + countdown
-    // text agree; escalation on the next tick will use the real
-    // persisted value.
-    const startMs = state.below_floor_since ?? state.tick_at;
-    const elapsedMs = state.tick_at - startMs;
-    const remainingMs = windowMs - elapsedMs;
-
-    const countdownText =
-      remainingMs > 0
-        ? `Escalation in ${Math.max(1, Math.ceil(remainingMs / 60_000))} min`
-        : `Escalation overdue by ${Math.max(1, Math.ceil(-remainingMs / 60_000))} min`;
-
-    const escalationStep = state.config.fill_escalation_step_sat_per_eh_day;
-    const nextEditEH =
-      state.config.escalation_mode === 'market'
-        ? targetPriceEH
-        : Math.min(primary.price_sat + escalationStep, targetPriceEH);
-    const nextEditPH = Math.round(nextEditEH / EH_PER_PH);
-    const ceilingPH = targetPricePH;
-    const modeWord = state.config.escalation_mode === 'market' ? 'market' : 'dampened';
-    const capLabel = cappedByMax ? ' (capped by max bid)' : ' (fillable + overpay)';
-    const stepDescription =
-      state.config.escalation_mode === 'market'
-        ? `will jump to ${nextEditPH.toLocaleString('en-US')}${capLabel}.`
-        : nextEditPH < ceilingPH
-          ? `will step up by ${Math.round(escalationStep / EH_PER_PH).toLocaleString('en-US')} to ${nextEditPH.toLocaleString('en-US')}${capLabel}.`
-          : `will reach ${ceilingPH.toLocaleString('en-US')}${capLabel}.`;
-
-    return {
-      summary: `Bid filling below target (${primary.avg_speed_ph.toFixed(2)}/${ph} PH/s).`,
-      detail: `${countdownText} if still under floor. Current ${currentPricePH.toLocaleString('en-US')} sat/PH/day; ${modeWord} mode ${stepDescription}`,
-      eta_ms: startMs + windowMs,
-      event_started_ms: startMs,
-      event_kind: 'escalation',
-    };
-  }
-
-  // Over-paying check: if our bid is materially above target (fillable +
-  // overpay) — by more than min_lower_delta — the next tick will
-  // lower us. Surface that, plus any gate currently holding the move.
-  const lowerThreshold = Math.max(tickSize, state.config.min_lower_delta_sat_per_eh_day);
-  if (primary.price_sat > targetPriceEH + lowerThreshold) {
-    const overpayPH = Math.round((primary.price_sat - targetPriceEH) / EH_PER_PH);
-    const overrideUntil = state.manual_override_until_ms;
-    const overrideActive = overrideUntil !== null && overrideUntil > state.tick_at;
+  // Bid diverges from effective cap: decide() will EDIT_PRICE next
+  // tick (subject to Braiins' 10-min decrease cooldown, if applicable).
+  const priceDelta = Math.abs(primary.price_sat - effectiveCapEH);
+  if (priceDelta >= tickSize) {
+    const verb = runMode === 'LIVE' ? 'edit' : 'log edit (dry-run)';
+    const direction = primary.price_sat > effectiveCapEH ? 'lower' : 'raise';
     const cooldownMs =
       (state.market.settings.min_bid_price_decrease_period_s ?? 600) * 1000;
     const lastDecrease = primary.last_price_decrease_at;
     const cooldownEndsMs = lastDecrease !== null ? lastDecrease + cooldownMs : null;
     const cooldownRemainsMs =
-      cooldownEndsMs !== null ? Math.max(0, cooldownEndsMs - state.tick_at) : 0;
-
-    // Three independent gates can delay a lower: override lock, market-
-    // settle patience, and the Braiins price-decrease cooldown. Any one
-    // of them pending is enough to hold the edit — so the operator-
-    // visible ETA must be the *latest* of the ones that are active.
-    // Previously we early-returned on the first pending gate, which
-    // produced "will lower in ~2 min" when a longer cooldown was in
-    // fact binding.
-    type LowerGate = {
-      readonly kind: 'override' | 'patience' | 'cooldown';
-      readonly endsMs: number;
-      readonly startedMs: number;
-    };
-    const gates: LowerGate[] = [];
-    if (overrideActive) {
-      const windowMs = state.config.fill_escalation_after_minutes * 60_000;
-      gates.push({
-        kind: 'override',
-        endsMs: overrideUntil!,
-        startedMs: overrideUntil! - windowMs,
-      });
-    }
-    const patienceMs = state.config.lower_patience_minutes * 60_000;
-    const lowerReadySince = state.lower_ready_since;
-    const patienceRemaining = lowerReadySince !== null
-      ? Math.max(0, patienceMs - (state.tick_at - lowerReadySince))
-      : patienceMs;
-    if (patienceRemaining > 0) {
-      gates.push({
-        kind: 'patience',
-        endsMs: state.tick_at + patienceRemaining,
-        startedMs: lowerReadySince ?? state.tick_at,
-      });
-    }
+      direction === 'lower' && cooldownEndsMs !== null
+        ? Math.max(0, cooldownEndsMs - state.tick_at)
+        : 0;
     if (cooldownRemainsMs > 0 && cooldownEndsMs !== null && lastDecrease !== null) {
-      gates.push({
-        kind: 'cooldown',
-        endsMs: cooldownEndsMs,
-        startedMs: lastDecrease,
-      });
-    }
-    const binding = gates.reduce<LowerGate | null>(
-      (best, g) => (best === null || g.endsMs > best.endsMs ? g : best),
-      null,
-    );
-    if (binding !== null) {
-      const minsLeft = Math.max(1, Math.ceil((binding.endsMs - state.tick_at) / 60_000));
-      const overpayLabel = `Overpaying by ${overpayPH.toLocaleString('en-US')} sat/PH/day vs target`;
-      const targetLabel = `${targetPricePH.toLocaleString('en-US')} sat/PH/day`;
-      if (binding.kind === 'override') {
-        return {
-          summary: `${overpayLabel} — held by override lock.`,
-          detail: `Will lower to ${targetLabel} after lock expires (~${minsLeft} min).`,
-          eta_ms: binding.endsMs,
-          event_started_ms: binding.startedMs,
-          event_kind: 'lower_after_override',
-        };
-      }
-      if (binding.kind === 'cooldown') {
-        return {
-          summary: `${overpayLabel} — Braiins price-decrease cooldown.`,
-          detail: `Will lower to ${targetLabel} in ~${minsLeft} min.`,
-          eta_ms: binding.endsMs,
-          event_started_ms: binding.startedMs,
-          event_kind: 'lower_after_cooldown',
-        };
-      }
+      const minsLeft = Math.max(1, Math.ceil(cooldownRemainsMs / 60_000));
       return {
-        summary: `${overpayLabel} — waiting for the market to settle before lowering.`,
-        detail: `Will lower to ${targetLabel} after ~${minsLeft} more min of the market staying this cheap.`,
-        eta_ms: binding.endsMs,
-        event_started_ms: binding.startedMs,
-        event_kind: 'lower_after_patience',
+        summary: `Bid above effective cap — Braiins price-decrease cooldown active.`,
+        detail: `Will ${direction} to ${effectiveCapPH.toLocaleString('en-US')} sat/PH/day in ~${minsLeft} min (current ${currentPricePH.toLocaleString('en-US')}).`,
+        eta_ms: cooldownEndsMs,
+        event_started_ms: lastDecrease,
+        event_kind: 'lower_after_cooldown',
       };
     }
-    const verb = runMode === 'LIVE' ? 'lower' : 'log lower (dry-run)';
     return {
-      summary: `Will ${verb} bid to ${targetPricePH.toLocaleString('en-US')} sat/PH/day on the next tick.`,
-      detail: `Currently overpaying by ${overpayPH.toLocaleString('en-US')} sat/PH/day vs fillable + overpay.`,
+      summary: `Will ${verb} bid to ${effectiveCapPH.toLocaleString('en-US')} sat/PH/day on the next tick.`,
+      detail: `Current ${currentPricePH.toLocaleString('en-US')} sat/PH/day — converging to the effective cap.`,
       ...noEvent,
     };
   }
 
   return {
-    summary: 'On target — no action expected.',
-    detail: `Bid filling at ${primary.avg_speed_ph.toFixed(2)} PH/s; re-evaluating every tick.`,
+    summary: 'On target — bid at effective cap.',
+    detail: `Bid filling at ${primary.avg_speed_ph.toFixed(2)} PH/s.`,
     ...noEvent,
   };
 }
@@ -611,10 +418,8 @@ function summariseConfig(
   config: {
     target_hashrate_ph: number;
     minimum_floor_hashrate_ph: number;
-    overpay_sat_per_eh_day: number;
     max_bid_sat_per_eh_day: number;
     max_overpay_vs_hashprice_sat_per_eh_day: number | null;
-    fill_escalation_step_sat_per_eh_day: number;
     bid_budget_sat: number;
     destination_pool_url: string;
     quiet_hours_start: string;
@@ -661,7 +466,6 @@ function summariseConfig(
   return {
     target_hashrate_ph: config.target_hashrate_ph,
     minimum_floor_hashrate_ph: config.minimum_floor_hashrate_ph,
-    overpay_sat_per_ph_day: config.overpay_sat_per_eh_day / EH_PER_PH,
     max_bid_sat_per_ph_day: fixedCapEh / EH_PER_PH,
     max_overpay_vs_hashprice_sat_per_ph_day:
       config.max_overpay_vs_hashprice_sat_per_eh_day !== null
@@ -669,7 +473,6 @@ function summariseConfig(
         : null,
     effective_cap_sat_per_ph_day: effectiveCapEh / EH_PER_PH,
     binding_cap: bindingCap,
-    fill_escalation_step_sat_per_ph_day: config.fill_escalation_step_sat_per_eh_day / EH_PER_PH,
     bid_budget_sat: config.bid_budget_sat,
     pool_url: config.destination_pool_url,
     quiet_hours_start: config.quiet_hours_start,

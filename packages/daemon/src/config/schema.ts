@@ -118,31 +118,13 @@ export const AppConfigSchema = z.object({
   // come with #18.
   telegram_chat_id: z.string().default(''),
 
-  // Strategy knobs (M4.6)
-  fill_escalation_step_sat_per_eh_day: positiveInt,
-  fill_escalation_after_minutes: positiveInt,
-  overpay_sat_per_eh_day: nonNegativeInt,
-  // Escalation mode for upward price adjustments:
-  // - 'market':       jump directly to fillable + overpay, but ONLY after
-  //                   we've been below the floor for
-  //                   `fill_escalation_after_minutes` — reactive.
-  // - 'dampened':     step from current_bid + escalation_step (avoids
-  //                   chasing spikes); same below-floor trigger as 'market'.
-  // - 'above_market': preemptive — the instant the market catches up enough
-  //                   that `current_bid < fillable + overpay`, start a
-  //                   `fill_escalation_after_minutes` timer; on timeout,
-  //                   jump to fillable + overpay. Fires without waiting
-  //                   for delivery to drop below floor. Same cap.
-  escalation_mode: z.enum(['market', 'dampened', 'above_market']).default('market'),
-  // Minimum overpay (vs fillable + overpay target) before lowering.
-  // Avoids micro-edits that burn the Braiins 10-min decrease cooldown for
-  // a few sat of savings.
-  min_lower_delta_sat_per_eh_day: nonNegativeInt,
-  // How long (minutes) the autopilot must be continuously above floor
-  // before it considers lowering the price. Prevents chasing short market
-  // dips that reverse within minutes — each unnecessary lower burns the
-  // Braiins 10-min price-decrease cooldown.
-  lower_patience_minutes: nonNegativeInt,
+  // Fill-strategy knobs have been retired (#49 redesign). Under CLOB
+  // matching (verified empirically), the bid is only a matching-access
+  // ceiling — the actual price paid is the matched ask. The whole
+  // machinery of overpay / escalation / lowering dampening became
+  // pointless complexity. decide() now keeps one bid at the effective
+  // cap (min(max_bid, hashprice + max_overpay_vs_hashprice)) and
+  // adjusts speed on cheap-mode transitions, nothing more.
 
   // Electrs (optional, for fast balance lookups)
   electrs_host: z.string().nullable().default(null),
@@ -301,12 +283,6 @@ export const APP_CONFIG_DEFAULTS: Omit<
   handover_window_minutes: 30,
 
   // Strategy knobs. sat/EH/day internally; 100 sat/PH/day = 100,000 sat/EH/day.
-  fill_escalation_step_sat_per_eh_day: 100_000, // 100 sat/PH/day
-  fill_escalation_after_minutes: 3,
-  overpay_sat_per_eh_day: 100_000, // 100 sat/PH/day
-  escalation_mode: 'market',
-  min_lower_delta_sat_per_eh_day: 100_000, // 100 sat/PH/day
-  lower_patience_minutes: 3,
 
   electrs_host: null,
   electrs_port: null,

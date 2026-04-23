@@ -30,21 +30,17 @@ export async function registerActionRoutes(
 ): Promise<void> {
   app.post('/api/actions/tick-now', async (_req, reply) => {
     try {
-      // Manual operator action — bypass every piece of self-imposed
-      // pacing so "Run decision now" actually runs the decision. That
-      // means clearing the post-edit override lock AND arming a one-
-      // shot pacing bypass so decide() skips its patience / escalation
-      // timers on this tick. Server-side gates (Braiins price-decrease
-      // cooldown, run_mode) are untouched — we don't override
-      // upstream's rules, just our own waiting-room logic.
-      const clearedOverrideUntil = deps.controller.clearManualOverride();
-      deps.controller.bypassPacingOnce();
+      // Manual operator action — just run a fresh tick. Post-#49
+      // the controller no longer has self-imposed patience / override
+      // timers to bypass; decide() is stateless on those dimensions.
+      // Server-side gates (Braiins price-decrease cooldown, run_mode)
+      // are untouched.
       const result = await deps.controller.tick();
       return {
         ok: true,
         tick_at: result.state.tick_at,
         proposals: result.proposals.length,
-        cleared_override_until_ms: clearedOverrideUntil,
+        cleared_override_until_ms: null,
         executed: result.executed.map((e) => ({
           kind: e.proposal.kind,
           outcome: e.outcome,

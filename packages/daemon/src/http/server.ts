@@ -44,7 +44,6 @@ import { registerOperatorRoutes } from './routes/operator.js';
 import { registerPayoutsRoute } from './routes/payouts.js';
 import { registerRunModeRoute } from './routes/run-mode.js';
 import { registerStatsRoute } from './routes/stats.js';
-import { registerSimulateRoute } from './routes/simulate.js';
 import { registerStatusRoute } from './routes/status.js';
 
 export interface HttpServerDeps {
@@ -113,7 +112,6 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<HttpServer
   await registerBidEventsRoute(app, deps);
   await registerPayoutsRoute(app, { payoutObserver: deps.payoutObserver });
   await registerStatsRoute(app, { db: deps.db, bidEventsDb: deps.db });
-  await registerSimulateRoute(app, { db: deps.db });
   await registerOceanRoute(app, {
     oceanClient: deps.oceanClient,
     configRepo: deps.configRepo,

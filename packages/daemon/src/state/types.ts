@@ -38,12 +38,6 @@ export interface ConfigTable {
   handover_window_minutes: number;
   btc_payout_address: string;
   telegram_chat_id: string;
-  fill_escalation_step_sat_per_eh_day: number;
-  fill_escalation_after_minutes: number;
-  overpay_sat_per_eh_day: number;
-  escalation_mode: 'market' | 'dampened' | 'above_market';
-  min_lower_delta_sat_per_eh_day: number;
-  lower_patience_minutes: number;
   /** @deprecated Legacy column — kept for NOT NULL; ignored by the app. */
   hibernate_on_expensive_market: 0 | 1;
   electrs_host: string | null;
@@ -83,23 +77,9 @@ export interface RuntimeStateTable {
   last_rpc_ok_at: number | null;
   last_pool_ok_at: number | null;
   below_floor_since_ms: number | null;
-  /**
-   * Timestamp when `primary.price_sat > fillable + overpay + min_lower_delta`
-   * became continuously true. Drives the `lower_patience_minutes` gate
-   * in decide(). Null means the condition is currently false — the
-   * market is not cheap enough to justify lowering, or there's no
-   * primary bid to lower.
-   */
+  /** @deprecated Kept as nullable column; escalation/lowering logic removed. */
   lower_ready_since_ms: number | null;
-  /**
-   * Timestamp when `primary.price_sat < fillable + overpay` first
-   * became true and has been continuously true since. Drives the
-   * preemptive-raise trigger under `escalation_mode = 'above_market'`.
-   * Unused under `market` / `dampened` modes, which key off
-   * `below_floor_since_ms` instead. Null when the condition is
-   * currently false (we're ahead of the market by at least the
-   * overpay gap).
-   */
+  /** @deprecated Kept as nullable column; escalation logic removed. */
   below_target_since_ms: number | null;
   above_floor_ticks: number;
 }

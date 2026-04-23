@@ -27,8 +27,6 @@ import {
   type NextActionView,
   type OceanResponse,
   type ProposalView,
-  type SimStatsSummary,
-  type SimulateResponse,
   type StatsResponse,
   type TickNowResponse,
   type StatusResponse,
@@ -153,164 +151,24 @@ export function Status() {
     refetchInterval: 60_000,
   });
 
-  // ---- Simulation mode ----
-  const [simMode, setSimMode] = useState(false);
-  const [simParams, setSimParams] = useState<Record<string, number> | null>(null);
-  const [simParamsDebounced, setSimParamsDebounced] = useState<Record<string, number> | null>(null);
-  // Escalation mode is a three-way enum, not a numeric field — kept in
-  // its own state slot so `simParams` can stay a plain
-  // Record<string, number> for the sim-number inputs and debounce loop.
-  const [simEscalationMode, setSimEscalationMode] = useState<'dampened' | 'market' | 'above_market'>('dampened');
-  const [simEscalationModeDebounced, setSimEscalationModeDebounced] = useState<'dampened' | 'market' | 'above_market'>('dampened');
+  // Simulation mode has been retired in the #49 redesign — under CLOB
+  // matching the bid is a ceiling and cost comes from matched asks,
+  // so replaying "what if I'd set overpay=X" against historical ticks
+  // no longer has decision value. The sim state/queries are gone; the
+  // component keeps `simMode`/`simParamsDebounced` as literal `false`
+  // / `null` so the downstream chart wiring (which still reads them
+  // for sim-only behaviour like the overlay price series) stays valid
+  // without conditionally stripping code paths.
+  const simMode = false;
+  const simParamsDebounced: null = null;
+  const simMetricPoints: MetricPoint[] | null = null;
+  const simEvents: BidEventView[] = [];
 
   const configQuery = useQuery({
     queryKey: ['config'],
     queryFn: () => api.config(),
     staleTime: 60_000,
-    enabled: simMode,
   });
-
-  // Seed sim params from config on first activation
-  useEffect(() => {
-    if (simMode && configQuery.data && !simParams) {
-      const c = configQuery.data.config;
-      setSimParams({
-        overpay_sat_per_eh_day: c.overpay_sat_per_eh_day,
-        max_bid_sat_per_eh_day: c.max_bid_sat_per_eh_day,
-        // Inherits the live config — simulator now uses the same
-        // dynamic cap (hashprice + allowance) as decide(). Stored as
-        // 0 when disabled (null in config) so simParams stays a plain
-        // Record<string, number>; 0 is coerced back to null server-
-        // side via the Zod preprocess on the request body.
-        max_overpay_vs_hashprice_sat_per_eh_day:
-          c.max_overpay_vs_hashprice_sat_per_eh_day ?? 0,
-        fill_escalation_step_sat_per_eh_day: c.fill_escalation_step_sat_per_eh_day,
-        fill_escalation_after_minutes: c.fill_escalation_after_minutes,
-        lower_patience_minutes: c.lower_patience_minutes,
-        min_lower_delta_sat_per_eh_day: c.min_lower_delta_sat_per_eh_day,
-      });
-      setSimEscalationMode(c.escalation_mode);
-    }
-  }, [simMode, configQuery.data, simParams]);
-
-  useEffect(() => {
-    if (!simParams) return;
-    const t = setTimeout(() => {
-      setSimParamsDebounced(simParams);
-      setSimEscalationModeDebounced(simEscalationMode);
-    }, 400);
-    return () => clearTimeout(t);
-  }, [simParams, simEscalationMode]);
-
-  const simQuery = useQuery({
-    queryKey: ['simulate', chartRange, simParamsDebounced, simEscalationModeDebounced],
-    queryFn: () => api.simulate({
-      range: chartRange,
-      overpay_sat_per_eh_day: simParamsDebounced!.overpay_sat_per_eh_day!,
-      max_bid_sat_per_eh_day: simParamsDebounced!.max_bid_sat_per_eh_day!,
-      // Dynamic-cap allowance — a live sim tuning knob now. 0 means
-      // disabled (coerced to null server-side); any positive value
-      // clamps the per-tick effective cap at hashprice + this. Exposed
-      // in SIM_NUMBER_FIELDS as "Max over hashprice".
-      max_overpay_vs_hashprice_sat_per_eh_day:
-        (simParamsDebounced!.max_overpay_vs_hashprice_sat_per_eh_day ?? 0) > 0
-          ? simParamsDebounced!.max_overpay_vs_hashprice_sat_per_eh_day!
-          : null,
-      fill_escalation_step_sat_per_eh_day: simParamsDebounced!.fill_escalation_step_sat_per_eh_day!,
-      fill_escalation_after_minutes: simParamsDebounced!.fill_escalation_after_minutes!,
-      lower_patience_minutes: simParamsDebounced!.lower_patience_minutes!,
-      min_lower_delta_sat_per_eh_day: simParamsDebounced!.min_lower_delta_sat_per_eh_day!,
-      escalation_mode: simEscalationModeDebounced,
-    }),
-    enabled: simMode && !!simParamsDebounced,
-    staleTime: 30_000,
-  });
-
-  const setSimParam = useCallback((key: string, value: number) => {
-    setSimParams((prev) => prev ? { ...prev, [key]: value } : prev);
-  }, []);
-
-  // Build simulated MetricPoints by overlaying simulated price/hashrate
-  // on the real metric points.
-  const simMetricPoints: MetricPoint[] | null = useMemo(() => {
-    const ticks = simQuery.data?.ticks;
-    const realPoints = metricsQuery.data?.points;
-    if (!ticks || !realPoints || ticks.length === 0) return null;
-
-    const simByTime = new Map(ticks.map((t) => [t.tick_at, t]));
-    return realPoints.map((p) => {
-      const sim = simByTime.get(p.tick_at);
-      if (!sim) return p;
-      return {
-        ...p,
-        our_primary_price_sat_per_ph_day: sim.simulated_price_sat_per_ph_day,
-        delivered_ph: sim.delivered_ph,
-      };
-    });
-  }, [simQuery.data, metricsQuery.data]);
-
-  // Generate synthetic bid events from simulated price trace
-  const simEvents: BidEventView[] = useMemo(() => {
-    const ticks = simQuery.data?.ticks;
-    if (!ticks || ticks.length === 0) return [];
-    const events: BidEventView[] = [];
-    let prevPrice: number | null = null;
-    for (let i = 0; i < ticks.length; i++) {
-      const t = ticks[i]!;
-      const price = Math.round(t.simulated_price_sat_per_ph_day);
-      if (prevPrice === null && price > 0) {
-        events.push({
-          id: -(i + 1),
-          occurred_at: t.tick_at,
-          source: 'AUTOPILOT',
-          kind: 'CREATE_BID',
-          braiins_order_id: null,
-          old_price_sat_per_ph_day: null,
-          new_price_sat_per_ph_day: price,
-          speed_limit_ph: null,
-          amount_sat: null,
-          reason: 'simulated create',
-        });
-      } else if (prevPrice !== null && price !== prevPrice && price > 0) {
-        events.push({
-          id: -(i + 1),
-          occurred_at: t.tick_at,
-          source: 'AUTOPILOT',
-          kind: 'EDIT_PRICE',
-          braiins_order_id: null,
-          old_price_sat_per_ph_day: prevPrice,
-          new_price_sat_per_ph_day: price,
-          speed_limit_ph: null,
-          amount_sat: null,
-          reason: price > prevPrice ? 'simulated escalation' : 'simulated lower',
-        });
-      }
-      if (price > 0) prevPrice = price;
-    }
-    return events;
-  }, [simQuery.data]);
-
-  // Convert sim stats to StatsResponse shape
-  const simStatsData: StatsResponse | undefined = useMemo(() => {
-    const sim = simQuery.data?.simulated;
-    if (!sim) return undefined;
-    return {
-      uptime_pct: sim.uptime_pct,
-      avg_hashrate_ph: sim.avg_hashrate_ph,
-      // Simulation doesn't model Datum or Ocean — the replay has no
-      // way to synthesize what either of those would have reported.
-      avg_datum_hashrate_ph: null,
-      avg_ocean_hashrate_ph: null,
-      total_ph_hours: sim.total_ph_hours,
-      avg_cost_per_ph_sat_per_ph_day: sim.avg_cost_per_ph_sat_per_ph_day,
-      avg_overpay_sat_per_ph_day: sim.avg_overpay_sat_per_ph_day,
-      avg_overpay_vs_hashprice_sat_per_ph_day: sim.avg_overpay_vs_hashprice_sat_per_ph_day,
-      avg_time_to_fill_ms: null,
-      mutation_count: sim.mutation_count,
-      range: chartRange,
-      tick_count: simQuery.data?.tick_count ?? 0,
-    };
-  }, [simQuery.data, chartRange]);
 
   // Operator availability removed from the UI (API bids bypass 2FA;
   // see research.md §0.9). Backend field remains in case Braiins
@@ -355,54 +213,9 @@ export function Status() {
       <FilterBar
         range={chartRange}
         onRangeChange={setChartRange}
-        simMode={simMode}
-        onSimModeChange={setSimMode}
       />
 
-      {simMode && simParams && configQuery.data && (
-        <SimParamBar
-          params={simParams}
-          escalationMode={simEscalationMode}
-          config={configQuery.data.config}
-          onChange={setSimParam}
-          onEscalationModeChange={setSimEscalationMode}
-          onReset={() => {
-            const c = configQuery.data!.config;
-            setSimParams({
-              overpay_sat_per_eh_day: c.overpay_sat_per_eh_day,
-              max_bid_sat_per_eh_day: c.max_bid_sat_per_eh_day,
-              max_overpay_vs_hashprice_sat_per_eh_day:
-                c.max_overpay_vs_hashprice_sat_per_eh_day ?? 0,
-              fill_escalation_step_sat_per_eh_day: c.fill_escalation_step_sat_per_eh_day,
-              fill_escalation_after_minutes: c.fill_escalation_after_minutes,
-              lower_patience_minutes: c.lower_patience_minutes,
-              min_lower_delta_sat_per_eh_day: c.min_lower_delta_sat_per_eh_day,
-            });
-            setSimEscalationMode(c.escalation_mode);
-          }}
-          onApply={async () => {
-            if (!simParams || !configQuery.data) return;
-            const updated = {
-              ...configQuery.data.config,
-              ...simParams,
-              escalation_mode: simEscalationMode,
-            };
-            await api.updateConfig(updated);
-            qc.invalidateQueries({ queryKey: ['config'] });
-            qc.invalidateQueries({ queryKey: ['status'] });
-          }}
-          loading={simQuery.isFetching}
-          dirty={
-            simParams !== null &&
-            configQuery.data !== undefined &&
-            (Object.keys(simParams).some(
-              (k) => simParams[k] !== (configQuery.data!.config as unknown as Record<string, number>)[k],
-            ) || simEscalationMode !== configQuery.data.config.escalation_mode)
-          }
-        />
-      )}
-
-      <StatsBar statsData={simMode ? simStatsData : statsQuery.data} />
+      <StatsBar statsData={statsQuery.data} />
 
       <HashrateChart
         points={(simMode && simMetricPoints ? simMetricPoints : metricsQuery.data?.points) ?? []}
@@ -431,39 +244,9 @@ export function Status() {
          * operator can see whether their tweak pushes the cap up or
          * down in the relevant market context.
          */
-        maxOverpayVsHashpriceSatPerPhDay={
-          simMode
-            ? ((simParamsDebounced?.max_overpay_vs_hashprice_sat_per_eh_day ?? 0) > 0
-                ? (simParamsDebounced!.max_overpay_vs_hashprice_sat_per_eh_day as number) / 1000
-                : null)
-            : s.config_summary.max_overpay_vs_hashprice_sat_per_ph_day
-        }
-        /*
-         * In simulation mode, the "max bid" line must reflect the
-         * simulated max_bid — not the historical one recorded on
-         * each tick_metrics row. Without this, raising Max bid from
-         * 49,000 to 52,000 in the sim inputs leaves the red line on
-         * the chart stuck at the historical 49,000 and the simulated
-         * escalations look clipped below it. Real-time mode passes
-         * null and the chart falls back to the per-tick historical
-         * value as before.
-         */
-        maxBidSatPerPhDay={
-          simMode
-            ? (simParamsDebounced?.max_bid_sat_per_eh_day ?? 0) / 1000
-            : null
-        }
-        /*
-         * Overpay allowance surfaced on the pinned event tooltip so the
-         * operator can verify fillable + overpay against the resulting
-         * bid at a glance. Sim mode uses the live sim param; real-time
-         * uses the live config value.
-         */
-        overpaySatPerPhDay={
-          simMode
-            ? (simParamsDebounced?.overpay_sat_per_eh_day ?? 0) / 1000
-            : s.config_summary.overpay_sat_per_ph_day
-        }
+        maxOverpayVsHashpriceSatPerPhDay={s.config_summary.max_overpay_vs_hashprice_sat_per_ph_day}
+        maxBidSatPerPhDay={null}
+        overpaySatPerPhDay={null}
         priceSmoothingMinutes={configQuery.data?.config?.braiins_price_smoothing_minutes ?? 1}
       />
 
@@ -1138,46 +921,16 @@ function formatRemaining(ms: number): string {
 
 const EH_PER_PH = 1000;
 
-const SIM_NUMBER_FIELDS = [
-  { key: 'overpay_sat_per_eh_day', label: 'Overpay', step: 50_000, ehToPh: true, unit: 'sat/PH/day' },
-  { key: 'max_bid_sat_per_eh_day', label: 'Max bid', step: 1_000_000, ehToPh: true, unit: 'sat/PH/day' },
-  // 0 = disabled (the daemon's Zod preprocess coerces 0 → null on
-  // save); any positive value caps the per-tick effective ceiling at
-  // hashprice + this.
-  { key: 'max_overpay_vs_hashprice_sat_per_eh_day', label: 'Max over hashprice', step: 50_000, ehToPh: true, unit: 'sat/PH/day' },
-  { key: 'fill_escalation_step_sat_per_eh_day', label: 'Esc. step', step: 50_000, ehToPh: true, unit: 'sat/PH/day' },
-  { key: 'fill_escalation_after_minutes', label: 'Esc. window', step: 5, ehToPh: false, unit: 'min' },
-  { key: 'lower_patience_minutes', label: 'Wait to lower', step: 5, ehToPh: false, unit: 'min' },
-  { key: 'min_lower_delta_sat_per_eh_day', label: 'Min delta', step: 50_000, ehToPh: true, unit: 'sat/PH/day' },
-] as const;
 
 function FilterBar({
   range,
   onRangeChange,
-  simMode,
-  onSimModeChange,
 }: {
   range: ChartRange;
   onRangeChange: (r: ChartRange) => void;
-  simMode: boolean;
-  onSimModeChange: (v: boolean) => void;
 }) {
   return (
-    <section className="flex items-center justify-between flex-wrap gap-2">
-      <div className="flex rounded overflow-hidden border border-slate-700 text-xs">
-        <button
-          onClick={() => onSimModeChange(false)}
-          className={`px-3 py-1.5 ${!simMode ? 'bg-emerald-700 text-emerald-100' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
-        >
-          Real-time
-        </button>
-        <button
-          onClick={() => onSimModeChange(true)}
-          className={`px-3 py-1.5 ${simMode ? 'bg-amber-700 text-amber-100' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
-        >
-          Simulation
-        </button>
-      </div>
+    <section className="flex items-center justify-end flex-wrap gap-2">
       <div className="flex gap-1">
         {CHART_RANGES.map((r) => (
           <button
@@ -1192,164 +945,6 @@ function FilterBar({
             {r === 'all' ? 'All' : r}
           </button>
         ))}
-      </div>
-    </section>
-  );
-}
-
-type EscalationMode = 'dampened' | 'market' | 'above_market';
-
-const ESC_MODE_OPTIONS: ReadonlyArray<{ value: EscalationMode; label: string }> = [
-  { value: 'dampened', label: 'Dampened' },
-  { value: 'market', label: 'Market' },
-  { value: 'above_market', label: 'Above mkt' },
-];
-
-function SimParamBar({
-  params,
-  escalationMode,
-  config,
-  onChange,
-  onEscalationModeChange,
-  onReset,
-  onApply,
-  loading,
-  dirty,
-}: {
-  params: Record<string, number>;
-  escalationMode: EscalationMode;
-  config: { escalation_mode: EscalationMode };
-  onChange: (key: string, value: number) => void;
-  onEscalationModeChange: (mode: EscalationMode) => void;
-  onReset: () => void;
-  onApply: () => Promise<void> | void;
-  loading: boolean;
-  dirty: boolean;
-}) {
-  const [applyState, setApplyState] = useState<'idle' | 'applying' | 'applied' | 'error'>('idle');
-  // The "Applied ✓" flash sticks around for 1.5 s after the save,
-  // then the Apply button disappears anyway because `dirty` goes
-  // false once config === simParams. Without the flash, the button
-  // just vanishes on click with no confirmation — an operator
-  // hitting it on a laggy network had nothing to tell them it
-  // registered.
-  useEffect(() => {
-    if (applyState !== 'applied') return;
-    const id = setTimeout(() => setApplyState('idle'), 1500);
-    return () => clearTimeout(id);
-  }, [applyState]);
-
-  const handleApply = async () => {
-    if (applyState === 'applying') return;
-    setApplyState('applying');
-    try {
-      await onApply();
-      setApplyState('applied');
-    } catch {
-      setApplyState('error');
-    }
-  };
-
-  const escModeChanged = escalationMode !== config.escalation_mode;
-
-  return (
-    <section className="bg-slate-900/50 border border-amber-800/30 rounded-lg p-3">
-      <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
-        <div className="flex items-center gap-3">
-          <span className="text-xs uppercase tracking-wider text-amber-300">Simulation parameters</span>
-          {loading && <span className="text-xs text-amber-400 animate-pulse">simulating...</span>}
-        </div>
-        {/* Esc. mode pill lives in the header row so it has a full three-
-            way control without eating grid width from the numeric inputs,
-            and visually groups with the Reset/Apply actions that also
-            represent tool-level (not field-level) state. */}
-        <div className="flex items-center gap-1.5">
-          <span className="text-[10px] uppercase tracking-wider text-slate-500">Esc. mode</span>
-          <div
-            className={`flex rounded overflow-hidden border text-[10px] h-[26px] ${
-              escModeChanged ? 'border-amber-600' : 'border-slate-700'
-            }`}
-          >
-            {ESC_MODE_OPTIONS.map((opt) => {
-              const selected = escalationMode === opt.value;
-              return (
-                <button
-                  key={opt.value}
-                  onClick={() => onEscalationModeChange(opt.value)}
-                  className={`px-2 ${
-                    selected
-                      ? 'bg-amber-800/60 text-amber-200'
-                      : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {(dirty || applyState !== 'idle') && (
-            <>
-              <button
-                onClick={onReset}
-                disabled={applyState === 'applying'}
-                className="text-[10px] px-2 py-1 rounded bg-slate-800 border border-slate-700 text-slate-400 hover:bg-slate-700 disabled:opacity-40"
-              >
-                Reset
-              </button>
-              <button
-                onClick={handleApply}
-                disabled={applyState === 'applying' || applyState === 'applied'}
-                className={
-                  'text-[10px] px-2 py-1 rounded border transition ' +
-                  (applyState === 'applied'
-                    ? 'bg-emerald-800/60 border-emerald-700/50 text-emerald-200'
-                    : applyState === 'error'
-                      ? 'bg-red-800/60 border-red-700/50 text-red-200'
-                      : 'bg-amber-800/60 border-amber-700/50 text-amber-200 hover:bg-amber-700/60 disabled:opacity-60')
-                }
-              >
-                {applyState === 'applying'
-                  ? 'Applying…'
-                  : applyState === 'applied'
-                    ? 'Applied ✓'
-                    : applyState === 'error'
-                      ? 'Failed — retry'
-                      : 'Apply to config'}
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-        {SIM_NUMBER_FIELDS.map((f) => {
-          const rawValue = params[f.key] ?? 0;
-          const configVal = (config as unknown as Record<string, number>)[f.key] ?? 0;
-          const displayValue = f.ehToPh ? Math.round(rawValue / EH_PER_PH) : rawValue;
-          const changed = rawValue !== configVal;
-          return (
-            <div key={f.key}>
-              <label className="text-[10px] text-slate-500 block mb-0.5">{f.label}</label>
-              <div className="flex items-center gap-1">
-                <input
-                  type="number"
-                  value={displayValue}
-                  step={f.ehToPh ? Math.round(f.step / EH_PER_PH) : f.step}
-                  min={0}
-                  onChange={(e) => {
-                    const v = Number(e.target.value) || 0;
-                    onChange(f.key, f.ehToPh ? v * EH_PER_PH : v);
-                  }}
-                  className={`w-full bg-slate-800 border rounded px-2 py-1 text-xs font-mono tabular-nums text-right ${
-                    changed ? 'border-amber-600 text-amber-300' : 'border-slate-700 text-slate-300'
-                  }`}
-                />
-                <span className="text-[9px] text-slate-600 whitespace-nowrap"><SatUnit unit={f.unit} /></span>
-              </div>
-            </div>
-          );
-        })}
       </div>
     </section>
   );
@@ -1381,7 +976,7 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
 
   if (statsData.tick_count < 2) return null;
 
-  const { uptime_pct, avg_hashrate_ph, avg_datum_hashrate_ph, avg_ocean_hashrate_ph, avg_overpay_sat_per_ph_day, avg_cost_per_ph_sat_per_ph_day, avg_overpay_vs_hashprice_sat_per_ph_day } = statsData;
+  const { uptime_pct, avg_hashrate_ph, avg_datum_hashrate_ph, avg_ocean_hashrate_ph, avg_cost_per_ph_sat_per_ph_day, avg_overpay_vs_hashprice_sat_per_ph_day } = statsData;
   // total_ph_hours + mutation_count remain on the server-side
   // StatsResponse even though no card consumes them — keeping the
   // shape stable so we can re-surface either later without a backend
@@ -1390,7 +985,7 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
   void statsData.mutation_count;
 
   return (
-    <section className="grid grid-cols-2 lg:grid-cols-7 gap-3">
+    <section className="grid grid-cols-2 lg:grid-cols-6 gap-3">
       <StatCard
         label="uptime"
         value={uptime_pct !== null ? `${uptime_pct.toFixed(1)}%` : '\u2014'}
@@ -1424,11 +1019,6 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
         label="avg cost / PH delivered"
         value={avg_cost_per_ph_sat_per_ph_day !== null ? denomination.formatSatPerPhDay(Math.round(avg_cost_per_ph_sat_per_ph_day), intlLocale) : '\u2014'}
         tooltip="Duration-weighted average price per PH delivered: sum(price × delivered × duration) / sum(delivered × duration). The efficiency metric."
-      />
-      <StatCard
-        label="avg overpay vs fillable"
-        value={avg_overpay_sat_per_ph_day !== null ? denomination.formatSatPerPhDay(Math.round(avg_overpay_sat_per_ph_day), intlLocale) : '\u2014'}
-        tooltip="Duration-weighted average of (our price − fillable ask). Each tick weighted by its actual duration. High = overpay too generous or lowering too slow."
       />
       <StatCard
         label="avg overpay vs hashprice"

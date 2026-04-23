@@ -375,34 +375,22 @@ function inferNoActionReason(state: State): string {
     return 'hashprice unknown/stale, dynamic-cap guard is holding trading';
   }
 
-  const desired = fillable.price_sat + cfg.overpay_sat_per_eh_day;
   const dynamicCap =
     dynamicCapConfigured && hashpriceSatPerEh !== null
       ? hashpriceSatPerEh + (cfg.max_overpay_vs_hashprice_sat_per_eh_day ?? 0)
       : null;
   const effectiveCap =
     dynamicCap !== null ? Math.min(cfg.max_bid_sat_per_eh_day, dynamicCap) : cfg.max_bid_sat_per_eh_day;
-  if (desired > effectiveCap) {
-    const bindingCap = dynamicCap !== null && dynamicCap < cfg.max_bid_sat_per_eh_day ? 'dynamic hashprice+max_overpay' : 'fixed max_bid';
-    const desiredPH = Math.round(desired / 1000);
-    const capPH = Math.round(effectiveCap / 1000);
-    return `market too expensive: fillable+overpay ${desiredPH.toLocaleString('en-US')} > ${capPH.toLocaleString('en-US')} sat/PH/day cap (${bindingCap})`;
-  }
 
   if (state.owned_bids.length === 0) {
-    // decide() reached the CREATE branch but we still returned [] — this
-    // shouldn't happen given the guards above. Surface it loudly so the
-    // inference stays honest as decide() evolves.
-    return 'decide() returned [] on an empty account — no diagnostic match (bug, please report)';
+    return 'no owned bid yet — CREATE pending';
   }
-
   const primary = state.owned_bids[0]!;
-  const currentPrice = primary.price_sat;
-  const tolerance = Math.max(cfg.min_lower_delta_sat_per_eh_day, (cfg.max_bid_sat_per_eh_day / 10000) * 5);
-  if (Math.abs(currentPrice - Math.min(desired, effectiveCap)) < tolerance) {
-    return 'bid already at target — no change needed';
+  const tickSize = state.market.settings.tick_size_sat ?? 1000;
+  if (Math.abs(primary.price_sat - effectiveCap) < tickSize) {
+    return 'bid already at effective cap — nothing to do';
   }
-  return 'primary bid is within tolerance of target — no change needed';
+  return 'bid within tolerance of effective cap — nothing to do';
 }
 
 function describeProposal(p: TickResult['gated'][number]['proposal']): string {
