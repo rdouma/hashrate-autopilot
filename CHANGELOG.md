@@ -2,6 +2,14 @@
 
 ## 2026-04-23
 
+### `[Feature]` Cheap-mode: sustained-average engagement window (#50)
+
+Cheap-mode previously engaged on a per-tick spot comparison of `best_ask` vs `hashprice × cheap_threshold_pct`. A single flash-dip in best ask was enough to flip the target up; a single spike back flipped it straight off — with a matching EDIT_SPEED on each flip, each one requeuing the bid and incurring stale shares during resubscribe.
+
+New `cheap_sustained_window_minutes` config (default 0 preserves legacy behaviour). When > 0, cheap-mode engages only when `avg(best_ask)` over that many minutes is below `cheap_threshold_pct × avg(hashprice)` over the same window — averages computed from `tick_metrics` (no new columns). Natural hysteresis falls out of the window: cheap-mode only flips when the window as a whole crosses the threshold. Requires ≥5 samples before honouring; below that it falls back to the spot check.
+
+Lives on the Config page under Hashrate targets next to `cheap_target` / `cheap_threshold`. Help text calls out the insufficient-history fallback.
+
 ### `[Fix]` P&L + runway: measured spend, not modelled bid × delivered
 
 Under CLOB the bid is a ceiling and the *actual* price we pay comes from matched asks. The dashboard had been computing "projected spend/day" and runway from `bid × delivered × time / 1_440_000` — the pay-your-bid formula. With a 48k bid, 3 PH/s delivery, and real spend matching asks around 41k, this consistently **overstated daily spend by 15-20%** and understated runway by the same amount. Wherever we used `bid`-based modelling, we now use `primary_bid_consumed_sat` deltas (the authoritative Braiins counter).

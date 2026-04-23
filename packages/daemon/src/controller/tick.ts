@@ -12,7 +12,6 @@
  * are kept for backwards compatibility but always written as null.
  */
 
-import type { TickMetricsRepo } from '../state/repos/tick_metrics.js';
 
 import { decide } from './decide.js';
 import { execute, type ExecuteDeps } from './execute.js';
@@ -22,7 +21,7 @@ import { cheapestAskForDepth } from './orderbook.js';
 import type { ExecutionResult, GateOutcome, Proposal, State } from './types.js';
 
 export interface TickDeps extends ObserveDeps, ExecuteDeps {
-  readonly tickMetricsRepo: TickMetricsRepo;
+  // `tickMetricsRepo` is inherited from ObserveDeps (#50).
   /** Sync read of the latest hashprice from Ocean stats (sat/PH/day). */
   readonly getHashprice?: () => number | null;
 }

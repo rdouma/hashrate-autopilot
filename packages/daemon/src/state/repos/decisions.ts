@@ -142,6 +142,7 @@ function trimStateForStorage(state: State): unknown {
       bid_budget_sat: config.bid_budget_sat,
       cheap_target_hashrate_ph: config.cheap_target_hashrate_ph,
       cheap_threshold_pct: config.cheap_threshold_pct,
+      cheap_sustained_window_minutes: config.cheap_sustained_window_minutes,
     },
     market: market
       ? {

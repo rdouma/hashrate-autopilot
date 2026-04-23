@@ -228,6 +228,43 @@ export class TickMetricsRepo {
   }
 
   /**
+   * Rolling-average inputs for the sustained cheap-mode check (#50).
+   * Returns the simple-mean best_ask and hashprice over the window, plus
+   * the count of samples that contributed to each. Samples with either
+   * field null are excluded from that field's average independently —
+   * matches how the rest of the stats endpoints handle the common case
+   * where hashprice may be cached-null while best_ask is present (or
+   * vice versa).
+   */
+  async cheapModeWindowAggregates(sinceMs: number): Promise<{
+    avg_best_ask_sat_per_eh_day: number | null;
+    avg_hashprice_sat_per_eh_day: number | null;
+    best_ask_sample_count: number;
+    hashprice_sample_count: number;
+  }> {
+    const row = await this.db
+      .selectFrom('tick_metrics')
+      .select([
+        sql<number | null>`AVG(best_ask_sat_per_eh_day)`.as('avg_best_ask'),
+        sql<number | null>`AVG(hashprice_sat_per_eh_day)`.as('avg_hashprice'),
+        sql<number>`SUM(CASE WHEN best_ask_sat_per_eh_day IS NOT NULL THEN 1 ELSE 0 END)`.as(
+          'best_ask_count',
+        ),
+        sql<number>`SUM(CASE WHEN hashprice_sat_per_eh_day IS NOT NULL THEN 1 ELSE 0 END)`.as(
+          'hashprice_count',
+        ),
+      ])
+      .where('tick_at', '>=', sinceMs)
+      .executeTakeFirst();
+    return {
+      avg_best_ask_sat_per_eh_day: row?.avg_best_ask ?? null,
+      avg_hashprice_sat_per_eh_day: row?.avg_hashprice ?? null,
+      best_ask_sample_count: Number(row?.best_ask_count ?? 0),
+      hashprice_sample_count: Number(row?.hashprice_count ?? 0),
+    };
+  }
+
+  /**
    * Total sat actually consumed across ticks at or after `sinceMs`,
    * summed from valid inter-tick deltas of `primary_bid_consumed_sat`.
    *

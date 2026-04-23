@@ -72,6 +72,7 @@ describe('openDatabase — migrations', () => {
       '0041_tick_metrics_primary_bid_consumed.sql',
       '0042_price_smoothing.sql',
       '0043_drop_fill_strategy_knobs.sql',
+      '0044_cheap_sustained_window.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });

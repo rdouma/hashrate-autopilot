@@ -87,6 +87,13 @@ const SECTIONS: Section[] = [
         unit: '%',
         help: '0 = disabled. Example: 95 = activate cheap mode when the best ask on the orderbook is below 95% of the break-even hashprice from Ocean. Under CLOB you pay the matched ask, so this is the price we can actually reach.',
       },
+      {
+        key: 'cheap_sustained_window_minutes',
+        label: 'Cheap-mode sustained window',
+        kind: 'integer',
+        unit: 'min',
+        help: 'Only engage cheap-mode when the rolling average of best-ask vs hashprice over this many minutes is below the threshold. Avoids flapping on single-tick market spikes. 0 = evaluate per tick (legacy). Requires ≥5 samples in the window before honouring it; below that falls back to the spot check.',
+      },
     ],
   },
   {

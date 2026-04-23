@@ -68,6 +68,7 @@ function state(overrides: Partial<State> = {}): State {
     pool: { reachable: true, last_ok_at: 1_700_000_000_000, consecutive_failures: 0 },
     last_api_ok_at: 1_700_000_000_000,
     hashprice_sat_per_ph_day: null,
+    cheap_mode_window: null,
     bypass_pacing: false,
     ...overrides,
   };
@@ -193,6 +194,73 @@ describe('decide — EDIT_SPEED', () => {
 
   it('does not propose EDIT_SPEED when speed already matches', () => {
     const proposals = decide(state({ owned_bids: [owned()] }));
+    expect(proposals.find((p) => p.kind === 'EDIT_SPEED')).toBeUndefined();
+  });
+});
+
+describe('decide — cheap-mode engagement (#50 sustained window)', () => {
+  // hashprice 50_000_000 sat/EH/day, threshold 90 → cheap when best_ask
+  // (or rolling avg) < 45_000_000.
+  const CHEAP_CONFIG = {
+    ...BASE_CONFIG,
+    target_hashrate_ph: 1,
+    cheap_target_hashrate_ph: 3,
+    cheap_threshold_pct: 90,
+  };
+  const HASHPRICE_PH = 50_000; // sat/PH/day
+
+  it('window null, spot best_ask below threshold → cheap-mode on (legacy spot path)', () => {
+    const s = state({
+      config: CHEAP_CONFIG,
+      market: market(44_000_000), // < 45M threshold
+      hashprice_sat_per_ph_day: HASHPRICE_PH,
+      cheap_mode_window: null,
+      owned_bids: [owned({ speed_limit_ph: 1 })],
+    });
+    const proposals = decide(s);
+    expect(proposals.find((p) => p.kind === 'EDIT_SPEED')).toMatchObject({
+      kind: 'EDIT_SPEED',
+      new_speed_limit_ph: 3,
+    });
+  });
+
+  it('window rolling-avg below threshold → cheap-mode on regardless of spot', () => {
+    const s = state({
+      config: CHEAP_CONFIG,
+      // Spot best_ask is ABOVE threshold (would keep cheap-mode off
+      // under legacy spot check) but the rolling window is below —
+      // should still engage cheap-mode from the window.
+      market: market(46_000_000),
+      hashprice_sat_per_ph_day: HASHPRICE_PH,
+      cheap_mode_window: {
+        avg_best_ask_sat_per_eh_day: 44_000_000,
+        avg_hashprice_sat_per_eh_day: 50_000_000,
+        sample_count: 10,
+      },
+      owned_bids: [owned({ speed_limit_ph: 1 })],
+    });
+    const proposals = decide(s);
+    expect(proposals.find((p) => p.kind === 'EDIT_SPEED')).toMatchObject({
+      kind: 'EDIT_SPEED',
+      new_speed_limit_ph: 3,
+    });
+  });
+
+  it('window rolling-avg above threshold → cheap-mode off despite spot dip', () => {
+    const s = state({
+      config: CHEAP_CONFIG,
+      // Spot below threshold (flash dip) — legacy spot path would
+      // turn cheap-mode on; the window averages above, so it stays off.
+      market: market(44_000_000),
+      hashprice_sat_per_ph_day: HASHPRICE_PH,
+      cheap_mode_window: {
+        avg_best_ask_sat_per_eh_day: 47_000_000,
+        avg_hashprice_sat_per_eh_day: 50_000_000,
+        sample_count: 10,
+      },
+      owned_bids: [owned({ speed_limit_ph: 1 })],
+    });
+    const proposals = decide(s);
     expect(proposals.find((p) => p.kind === 'EDIT_SPEED')).toBeUndefined();
   });
 });

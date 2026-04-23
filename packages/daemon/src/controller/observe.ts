@@ -26,6 +26,7 @@ import {
 import type { ConfigRepo } from '../state/repos/config.js';
 import type { OwnedBidsRepo, ReconcilableBid } from '../state/repos/owned_bids.js';
 import type { RuntimeStateRepo } from '../state/repos/runtime_state.js';
+import type { TickMetricsRepo } from '../state/repos/tick_metrics.js';
 import type {
   DatumSnapshot,
   MarketSnapshot,
@@ -41,6 +42,12 @@ export interface ObserveDeps {
   readonly configRepo: ConfigRepo;
   readonly runtimeRepo: RuntimeStateRepo;
   readonly ownedBidsRepo: OwnedBidsRepo;
+  /**
+   * Used to compute the rolling-average inputs to the sustained
+   * cheap-mode check (#50). Only hit when the operator has enabled
+   * `config.cheap_sustained_window_minutes > 0`.
+   */
+  readonly tickMetricsRepo: TickMetricsRepo;
   /**
    * Optional Datum Gateway poller. When present, invoked each tick
    * and the result goes into `state.datum`. When absent or its
@@ -205,6 +212,46 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
     total_ph: actual_owned_ph + actual_unknown_ph,
   };
 
+  // Cheap-mode sustained-window aggregates (#50). Only compute when the
+  // operator has opted in — keeps the default tick cheap for users who
+  // don't care about the feature. Requires at least 5 samples in each
+  // relevant series, matching the `/api/finance/range` "insufficient
+  // history" pattern; below that we return null so decide() falls back
+  // to the spot check.
+  const cheapWinMin = config.cheap_sustained_window_minutes;
+  const cheapEnabled =
+    config.cheap_threshold_pct > 0 &&
+    config.cheap_target_hashrate_ph > config.target_hashrate_ph;
+  const MIN_SAMPLES = 5;
+  let cheap_mode_window: State['cheap_mode_window'] = null;
+  if (cheapEnabled && cheapWinMin > 0) {
+    const sinceMs = tickAt - cheapWinMin * 60_000;
+    const agg = await deps.tickMetricsRepo
+      .cheapModeWindowAggregates(sinceMs)
+      .catch((err): Awaited<ReturnType<TickMetricsRepo['cheapModeWindowAggregates']>> => {
+        logAndReturnNull('cheap_mode_window', err);
+        return {
+          avg_best_ask_sat_per_eh_day: null,
+          avg_hashprice_sat_per_eh_day: null,
+          best_ask_sample_count: 0,
+          hashprice_sample_count: 0,
+        };
+      });
+    if (
+      agg.avg_best_ask_sat_per_eh_day !== null &&
+      agg.avg_hashprice_sat_per_eh_day !== null &&
+      agg.avg_hashprice_sat_per_eh_day > 0 &&
+      agg.best_ask_sample_count >= MIN_SAMPLES &&
+      agg.hashprice_sample_count >= MIN_SAMPLES
+    ) {
+      cheap_mode_window = {
+        avg_best_ask_sat_per_eh_day: agg.avg_best_ask_sat_per_eh_day,
+        avg_hashprice_sat_per_eh_day: agg.avg_hashprice_sat_per_eh_day,
+        sample_count: Math.min(agg.best_ask_sample_count, agg.hashprice_sample_count),
+      };
+    }
+  }
+
   const floorCheck = computeBelowFloorSince(
     actual_hashrate.total_ph,
     config.minimum_floor_hashrate_ph,
@@ -240,6 +287,7 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
     ocean_hashrate_ph,
     last_api_ok_at: deps.braiins.getLastApiOkAt(),
     hashprice_sat_per_ph_day: inputs.hashpriceSatPerPhDay,
+    cheap_mode_window,
     bypass_pacing: inputs.bypassPacing,
   };
 }

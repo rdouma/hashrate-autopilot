@@ -197,8 +197,16 @@ Lowering: when overpay vs target exceeds `min_lower_delta`, jump directly to tar
 **Opportunistic scaling (cheap-mode):**
 
 - `cheap_target_hashrate_ph` — higher-than-normal target to run when the market is cheap (default 0 = disabled).
-- `cheap_threshold_pct` — cheap-mode activates when the fillable price drops below `hashprice × (cheap_threshold_pct
-  / 100)`. Both knobs must be non-zero to activate.
+- `cheap_threshold_pct` — cheap-mode activates when the market price drops below `hashprice × (cheap_threshold_pct
+  / 100)`. Under CLOB the reference is `best_ask` (cheapest price at which any supply exists). Both knobs must be
+  non-zero to activate.
+- `cheap_sustained_window_minutes` — rolling-average window for the engagement check (#50). Default 0 keeps the
+  legacy per-tick spot behaviour. When > 0, cheap-mode engages only when `avg(best_ask)` over this many minutes is
+  below `cheap_threshold_pct × avg(hashprice)` over the same window — averages are computed from `tick_metrics`
+  (no new columns). Avoids flapping cheap-mode on single-tick market spikes; natural hysteresis falls out of the
+  window-based evaluation (the threshold only flips when the whole window crosses it). Requires ≥5 samples in the
+  window before honouring it; below that, falls back to the spot check (same "insufficient history" pattern used
+  by `/api/finance/range`).
 
 **Datum Gateway integration (optional, informational only):**
 

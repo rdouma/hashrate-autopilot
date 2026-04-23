@@ -78,19 +78,41 @@ export function decide(state: State): readonly Proposal[] {
   // we pay matched ask prices, so "cheap" = the best ask is below a
   // threshold of hashprice. best_ask is the cheapest price at which
   // any supply exists — exactly the CLOB-native analogue of fillable.
-  const bestAskSatEh = market.best_ask_sat;
+  //
+  // #50 extends this: when `cheap_sustained_window_minutes > 0`, use the
+  // rolling-average best_ask vs rolling-average hashprice over that
+  // window instead of the current-tick spot values. The rolling window
+  // is precomputed in observe() and exposed as `state.cheap_mode_window`;
+  // when null we fall back to spot (window disabled or insufficient
+  // samples). The window pattern gives implicit hysteresis — cheap-mode
+  // only flips when the whole window crosses the threshold, avoiding
+  // flap on single-tick spikes.
   const cheapEnabled =
     config.cheap_threshold_pct > 0 &&
-    config.cheap_target_hashrate_ph > config.target_hashrate_ph &&
-    hashpriceSatEh !== null &&
-    hashpriceSatEh > 0;
+    config.cheap_target_hashrate_ph > config.target_hashrate_ph;
   let effectiveTargetPh = config.target_hashrate_ph;
   let cheapModeActive = false;
-  if (cheapEnabled && bestAskSatEh !== null) {
-    const threshold = hashpriceSatEh! * (config.cheap_threshold_pct / 100);
-    if (bestAskSatEh < threshold) {
-      effectiveTargetPh = config.cheap_target_hashrate_ph;
-      cheapModeActive = true;
+  if (cheapEnabled) {
+    const win = state.cheap_mode_window;
+    if (win !== null) {
+      const threshold =
+        win.avg_hashprice_sat_per_eh_day * (config.cheap_threshold_pct / 100);
+      if (win.avg_best_ask_sat_per_eh_day < threshold) {
+        effectiveTargetPh = config.cheap_target_hashrate_ph;
+        cheapModeActive = true;
+      }
+    } else if (hashpriceSatEh !== null && hashpriceSatEh > 0) {
+      // Spot fallback — either the operator has the window disabled
+      // (cheap_sustained_window_minutes = 0, legacy behaviour) or the
+      // window is enabled but hasn't accumulated enough samples yet.
+      const bestAskSatEh = market.best_ask_sat;
+      if (bestAskSatEh !== null) {
+        const threshold = hashpriceSatEh * (config.cheap_threshold_pct / 100);
+        if (bestAskSatEh < threshold) {
+          effectiveTargetPh = config.cheap_target_hashrate_ph;
+          cheapModeActive = true;
+        }
+      }
     }
   }
 

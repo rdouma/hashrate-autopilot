@@ -174,6 +174,20 @@ export interface State {
   readonly hashprice_sat_per_ph_day: number | null;
 
   /**
+   * Rolling-average inputs to the cheap-mode engagement check (#50).
+   * Populated by observe() when `config.cheap_sustained_window_minutes > 0`;
+   * null when the window is disabled (legacy spot-only behaviour) or
+   * when there aren't enough samples in the window to trust the
+   * averages. `decide()` uses this when present and falls back to the
+   * spot `market.best_ask_sat` when it's null.
+   */
+  readonly cheap_mode_window: {
+    readonly avg_best_ask_sat_per_eh_day: number;
+    readonly avg_hashprice_sat_per_eh_day: number;
+    readonly sample_count: number;
+  } | null;
+
+  /**
    * One-shot operator override — when true, decide() skips its own
    * patience / escalation timers and executes whatever EDIT_PRICE
    * move the current state would justify on a settled basis. Set by
