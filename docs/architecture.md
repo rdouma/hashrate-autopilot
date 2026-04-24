@@ -1,10 +1,15 @@
-# Hashrate Autopilot — Architecture (v1.3)
+# Hashrate Autopilot — Architecture (v1.4)
 
-> Concretion of `docs/spec.md` into module boundaries, data flow, deployment shape, and a milestone-ordered build plan.
-> v1.0 was built around a 2FA gate on mutations that, on empirical verification, turns out not to apply to the
-> owner-token API path. This version removes the confirmation bot, quiet-hours buffering, pending-confirmation /
-> confirmation-timeout action modes, and operator-availability flag, and describes the simpler fully-autonomous
-> architecture now in the code.
+> Concretion of `docs/spec.md` into module boundaries, data flow, deployment shape, and a
+> milestone-ordered build plan.
+>
+> v1.0 was built around a 2FA gate on mutations that, on empirical verification, turns out not to
+> apply to the owner-token API path. v1.1 removed the confirmation bot, quiet-hours buffering,
+> pending-confirmation / confirmation-timeout action modes, and operator-availability flag. v1.2 added
+> the simulator and the depth-aware pricing machinery. v1.3 was a spec-consistency sweep. **v1.4**
+> (this revision, 2026-04-24) aligns the architecture doc with spec v2.1: the simulator has been
+> retired, `overpay_sat_per_eh_day` is back as the single pricing knob, and the config / routes / DB
+> schema sections now reflect the code through migration 0046.
 
 ## 1. High-level shape
 
@@ -97,7 +102,7 @@ hashrate-autopilot/
 │   │   └── src/http/               (Fastify; dashboard API)
 │   │       ├── server.ts
 │   │       └── routes/             (status, config, decisions, actions, operator, metrics, run-mode,
-│   │                                finance, stats, bid-events, ocean, payouts, btc-price, simulate)
+│   │                                finance, stats, bid-events, ocean, payouts, btc-price)
 │   │
 │   └── dashboard/                  React SPA
 │       ├── src/main.tsx
@@ -225,19 +230,18 @@ CREATE TABLE config (
   -- Chart smoothing (display-only, not read by control loop)
   braiins_hashrate_smoothing_minutes INTEGER NOT NULL DEFAULT 1,
   datum_hashrate_smoothing_minutes INTEGER NOT NULL DEFAULT 1,
+  braiins_price_smoothing_minutes INTEGER NOT NULL DEFAULT 1,
+  show_effective_rate_on_price_chart INTEGER NOT NULL DEFAULT 0,  -- bool (0 | 1)
   -- Retention
   tick_metrics_retention_days INTEGER NOT NULL DEFAULT 7,
   decisions_uneventful_retention_days INTEGER NOT NULL DEFAULT 7,
   decisions_eventful_retention_days INTEGER NOT NULL DEFAULT 90,
   -- Accounting
   spent_scope TEXT NOT NULL DEFAULT 'account',      -- 'autopilot' | 'account'
-  -- DEPRECATED columns (kept for NOT NULL; ignored by the app)
-  fill_escalation_step_sat_per_eh_day INTEGER NOT NULL DEFAULT 0,
-  fill_escalation_after_minutes INTEGER NOT NULL DEFAULT 0,
-  overpay_sat_per_eh_day INTEGER NOT NULL DEFAULT 0,
-  escalation_mode TEXT NOT NULL DEFAULT 'market',
-  min_lower_delta_sat_per_eh_day INTEGER NOT NULL DEFAULT 0,
-  lower_patience_minutes INTEGER NOT NULL DEFAULT 0,
+  -- Legacy columns still in the table (kept for NOT NULL + historical
+  -- schema continuity) but no longer read or written by the app. 0043
+  -- dropped the fill-strategy ones after the v2.0 CLOB redesign.
+  -- `hibernate_on_expensive_market` is a v1.0 relic never used post-v1.1.
   hibernate_on_expensive_market INTEGER NOT NULL DEFAULT 0,
   --
   updated_at INTEGER NOT NULL
@@ -247,14 +251,16 @@ CREATE TABLE config (
 CREATE TABLE runtime_state (
   id INTEGER PRIMARY KEY CHECK (id = 1),
   run_mode TEXT NOT NULL,                 -- 'DRY_RUN' | 'LIVE' | 'PAUSED'
-  manual_override_until_ms INTEGER,       -- suppresses EDIT_PRICE after operator actions
+  action_mode TEXT NOT NULL,              -- Legacy v1.0 state — always 'NORMAL' in v2.x
+  operator_available INTEGER NOT NULL,    -- Legacy v1.0 flag — always 0 in v2.x
   last_tick_at INTEGER,
   last_api_ok_at INTEGER,
-  last_rpc_ok_at INTEGER,
-  last_pool_ok_at INTEGER,
-  below_floor_since_ms INTEGER,           -- alert escalation timer
-  lower_ready_since_ms INTEGER,           -- DEPRECATED (CLOB redesign retired lowering logic)
-  below_target_since_ms INTEGER           -- DEPRECATED (above_market mode retired)
+  last_rpc_ok_at INTEGER,                 -- last successful bitcoind RPC call
+  last_pool_ok_at INTEGER,                -- last successful Datum Gateway TCP probe
+  below_floor_since_ms INTEGER,           -- alert timer start (debounced by FLOOR_DEBOUNCE_TICKS)
+  above_floor_ticks INTEGER NOT NULL,     -- debounce counter for below_floor_since_ms
+  lower_ready_since_ms INTEGER,           -- DEPRECATED (v2.0 retired lowering-patience)
+  below_target_since_ms INTEGER           -- DEPRECATED (v2.0 retired above_market escalation)
 );
 -- Note: run_mode is set on startup from config.boot_mode:
 --   ALWAYS_DRY_RUN (default) → always boots in DRY_RUN (safest)
@@ -275,7 +281,7 @@ CREATE TABLE owned_bids (
   abandoned INTEGER NOT NULL DEFAULT 0
 );
 
--- Decision log (every tick produces a row; powers the Decisions page)
+-- Decision log (every tick produces a row)
 CREATE TABLE decisions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   tick_at INTEGER NOT NULL,
@@ -283,22 +289,33 @@ CREATE TABLE decisions (
   proposed_json TEXT NOT NULL,
   gated_json TEXT NOT NULL,
   executed_json TEXT NOT NULL,
-  run_mode TEXT NOT NULL
+  run_mode TEXT NOT NULL,
+  action_mode TEXT NOT NULL
 );
 
 -- Tick metrics (time-series for the hashrate + price charts)
 CREATE TABLE tick_metrics (
-  tick_at INTEGER PRIMARY KEY,
-  actual_hashrate_ph REAL,
-  target_hashrate_ph REAL,
-  floor_hashrate_ph REAL,
-  best_ask_sat INTEGER,
-  wallet_balance_sat INTEGER,
-  fillable_ask_sat_per_eh_day INTEGER,    -- depth-aware ask at target capacity
-  hashprice_sat_per_ph_day REAL,          -- Ocean hashprice, recorded each tick
-  max_bid_sat_per_eh_day INTEGER,         -- effective ceiling used this tick
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  tick_at INTEGER NOT NULL,
+  delivered_ph REAL NOT NULL,             -- Braiins-reported avg_speed_ph (lagged rolling average)
+  target_ph REAL NOT NULL,
+  floor_ph REAL NOT NULL,
+  owned_bid_count INTEGER NOT NULL,
+  unknown_bid_count INTEGER NOT NULL,
+  our_primary_price_sat_per_eh_day INTEGER,
+  best_bid_sat_per_eh_day INTEGER,
+  best_ask_sat_per_eh_day INTEGER,        -- cheapest single ask (cheap-mode reference)
+  fillable_ask_sat_per_eh_day INTEGER,    -- depth-aware ask at target (controller anchor)
+  hashprice_sat_per_eh_day INTEGER,       -- Ocean break-even hashprice
+  max_bid_sat_per_eh_day INTEGER,         -- snapshot of config cap used this tick
+  available_balance_sat INTEGER,
   datum_hashrate_ph REAL,                 -- gateway-measured hashrate (null if not configured)
-  spend_sat REAL                          -- precomputed per-tick spend for range queries
+  ocean_hashrate_ph REAL,                 -- Ocean's credited 5-min hashrate for our payout address
+  spend_sat REAL,                         -- LEGACY column (bid × delivered model); no longer written
+  primary_bid_consumed_sat INTEGER,       -- per-tick snapshot of the primary bid's consumed counter;
+                                          -- deltas are the authoritative actual spend series
+  run_mode TEXT NOT NULL,
+  action_mode TEXT NOT NULL
 );
 
 -- Accounting — spend (sourced from Braiins)
@@ -350,29 +367,46 @@ CREATE TABLE fee_schedule_cache (
 );
 ```
 
-Migration history in `packages/daemon/src/state/migrations/` — forward-only, applied in filename order on
-startup. See `packages/daemon/src/state/db.test.ts` for the authoritative expected list. Grouped by concern:
+Migration history in `packages/daemon/src/state/migrations/` — forward-only, applied in filename order
+on startup. See `packages/daemon/src/state/db.test.ts` for the authoritative expected list. Grouped by
+concern (not by order; the file names are authoritative):
 
-- **Baseline (0001–0004):** initial schema, strategy knobs (overpay deadband, escalation),
-  `cl_order_id` unique-constraint fix, `tick_metrics` time-series.
-- **Payout observation (0005, 0021–0022):** electrs config, bitcoind RPC in the config table, `payout_source`
-  selector.
-- **Runtime state (0006, 0008, 0014, 0031):** `run_mode` index, `boot_mode`, persistent floor state,
-  `above_floor_since_ms` (so `lower_patience` survives restarts).
-- **Pricing simplification (0007, 0010–0011, 0013, 0015):** overpay-before-lowering, lowering-step dampener,
-  v1.6 formula rewrite, `min_lower_delta`, `max_overpay_sat_per_eh_day` rename.
-- **Bid events + ownership (0009, 0016–0017, 0026):** bid-event log, edit-speed kind, `owned_bids` consumed column,
-  terminal-bid cache.
-- **Accounting (0018–0019):** `spent_scope` toggle (`autopilot` vs `account`), BTC/USD price source.
-- **Ocean / hashprice (0012, 0023–0024):** `fillable_ask_sat_per_eh_day` column, per-tick hashprice record,
-  per-tick max-bid record.
-- **Cheap-mode scaling (0020, 0025):** `cheap_target_hashrate_ph` + `cheap_threshold_pct`; `lower_patience_minutes`.
+- **Baseline (0001–0004):** initial schema, strategy knobs, `cl_order_id` unique-constraint fix,
+  `tick_metrics` time-series.
+- **Payout observation (0005, 0021–0022):** electrs config, bitcoind RPC in the config table,
+  `payout_source` selector.
+- **Runtime state + alerting (0006, 0008, 0014, 0031, 0032, 0038):** `run_mode` index, `boot_mode`,
+  persistent floor state. Migrations 0031 → 0032 renamed the above-floor counter column; 0038 added
+  `below_target_since_ms` for an above-market escalation mode that was retired in v2.0 (column remains
+  as nullable). All fill-strategy timers are now defunct under v2.1.
+- **Pricing v1.x (0007, 0010–0011, 0013, 0015):** overpay-before-lowering, lowering-step dampener,
+  v1.6 formula rewrite, `min_lower_delta`, `max_overpay_sat_per_eh_day` rename. **Retired by 0043.**
+- **Bid events + ownership (0009, 0016–0017, 0026):** bid-event log, edit-speed kind, `owned_bids`
+  consumed column, terminal-bid cache.
+- **Accounting (0018–0019, 0037):** `spent_scope` toggle (`autopilot` vs `account`), BTC/USD price
+  source, `monthly_budget_ceiling_sat` drop.
+- **Block metadata (0033–0036):** block-explorer URL template, `tick_metrics_ocean_hashrate`, two
+  block-metadata migrations (added 0034, dropped 0036 — feature removed).
+- **Ocean / hashprice (0012, 0023–0024):** `fillable_ask_sat_per_eh_day`, per-tick hashprice,
+  per-tick max-bid snapshot.
+- **Cheap-mode scaling (0020, 0044):** `cheap_target_hashrate_ph` + `cheap_threshold_pct` in 0020,
+  `cheap_sustained_window_minutes` in 0044 (sustained-average hysteresis).
 - **Retention (0027):** `tick_metrics_retention_days`, `decisions_{uneventful,eventful}_retention_days`.
 - **Datum integration (0028–0029):** `datum_api_url` in config, `datum_hashrate_ph` on `tick_metrics`.
 - **Dynamic cap (0030):** `max_overpay_vs_hashprice_sat_per_eh_day` hashprice-relative ceiling.
-- **Chart smoothing (0039):** `braiins_hashrate_smoothing_minutes` and `datum_hashrate_smoothing_minutes`
-  store operator-picked rolling-mean minute windows the dashboard applies client-side; daemon stores but
-  never reads.
+- **Chart smoothing (0039, 0042, 0046):** rolling-mean minute windows the dashboard applies
+  client-side (`braiins_hashrate_smoothing_minutes`, `datum_hashrate_smoothing_minutes`, and
+  `braiins_price_smoothing_minutes`); `show_effective_rate_on_price_chart` boolean toggle in 0046.
+- **Actual-spend pipeline (0040–0041):** `spend_sat` column on `tick_metrics` (0040, now unused — see
+  note below), `primary_bid_consumed_sat` cumulative-counter snapshot (0041) — this is the
+  authoritative per-tick spend series that drives the effective-rate line, the UPTIME metric, and
+  counter-derived delivered hashrate.
+- **CLOB redesign + pay-your-bid correction (0043 + 0045):** 0043 retired the v1.x fill-strategy
+  knobs (`escalation_mode`, `fill_escalation_*`, `min_lower_delta_sat_per_eh_day`,
+  `lower_patience_minutes`). The same file originally also dropped `overpay_sat_per_eh_day`; after
+  v2.0 was reversed by v2.1, that specific drop was removed from 0043 and 0045 became a no-op, so
+  upgrading operators keep their configured overpay value. Other v1.x knobs stay retired because
+  v2.1's direct fillable tracking replaces them with a single formula.
 - **P&L per-day spend (0040):** `tick_metrics.spend_sat` precomputed per tick as
   `price_sat_per_eh_day × delivered_ph / 1_440_000`. Feeds the range-aware `/api/finance/range` aggregates
   that drive the per-day P&L panel.
@@ -487,3 +521,4 @@ Remaining work is tracked in GitHub issues.
 | 1.1     | 2026-04-16 | Post-empirical rewrite: removed the confirmation bot, quiet-hours buffering, `PENDING_CONFIRMATION` / `CONFIRMATION_TIMEOUT` action modes, operator-availability flag. Updated milestones, schema, diagrams, and risk register to reflect the fully-autonomous gate now in the code. |
 | 1.2     | 2026-04-19 | Refreshed the service inventory and HTTP-route listing in §2 to reflect everything shipped through mid-April: `ocean` + `datum` + `hashprice-cache` + `btc-price` + `account-spend` + `retention` services, and the `finance` / `stats` / `bid-events` / `ocean` / `payouts` / `btc-price` / `simulate` HTTP routes. Rewrote the migration summary in §5 with concern-grouped coverage of 0001–0031 instead of the stale "see git" placeholder. No schema or control-loop shape changes — this is a documentation catch-up, not a design revision. |
 | 1.3     | 2026-04-23 | Spec consistency sweep: updated §5 config/runtime_state/tick_metrics schemas to current state (all migrations through 0040+), marked CLOB-retired pricing columns as DEPRECATED, fixed port/bind to 3010/0.0.0.0, replaced Docker Compose deployment with bare-process scripts, removed stale "In flight" milestone tracker, fixed "collapsible" panel reference. |
+| 1.4     | 2026-04-24 | Aligned architecture with spec v2.1 (pay-your-bid controller). Removed `simulate` from the HTTP route list (retired in v2.0). Fixed §5 `config` schema — removed the duplicate/stray `overpay_sat_per_eh_day` line that was listed both as active and as DEPRECATED; added `braiins_price_smoothing_minutes`, `show_effective_rate_on_price_chart`. Fixed `runtime_state` block — added `action_mode` / `operator_available` (legacy-but-present) and `above_floor_ticks` (the debounce counter) which the code has but the doc omitted. Rewrote `tick_metrics` table to match the actual columns (was significantly wrong — old doc listed `actual_hashrate_ph`, `wallet_balance_sat`, etc. which the code doesn't use). Migration summary extended through 0046 with an explicit note on the 0043/0045 pay-your-bid preservation fix. |

@@ -6,34 +6,48 @@ landing at your own Datum-connected pool without manual babysitting.
 
 ![Dashboard in real-time mode](docs/images/dashboard.jpg)
 
-The Status page is a single scroll: a hero card with the **effective rate** (the clearing price actually paid,
-derived from measured spend ÷ delivered hashrate) and its delta versus hashprice, the delivered-hashrate number,
+The Status page is a single scroll: a hero card with the **effective rate** (the window-averaged price
+actually paid, derived from the per-tick delta of Braiins's `amount_consumed_sat` counter divided by
+delivered hashrate × elapsed time — this is an average over the selected chart range, not the live bid;
+hover the number for a tooltip that says so) and its delta versus hashprice, the delivered-hashrate number,
 and the DRY-RUN / LIVE / PAUSED switch on the left; the Next Action panel on the right explaining what the
-autopilot is about to do and when. Below that sit range-selectable hashrate and price charts overlayed with bid
-events and block markers, a stats strip (uptime, avg hashrate per source — Braiins / Datum / Ocean side-by-side,
-cost per PH delivered, effective rate vs hashprice), service panels for Braiins / Datum Gateway / Ocean, the
-active bids table, and per-day and lifetime P&L measured from actual account-ledger spend and on-chain receipts.
+autopilot is about to do and when. Below that sit range-selectable hashrate and price charts overlayed with
+bid events and block markers. The price chart draws your bid (amber), the fillable ask the controller
+tracks (cyan), hashprice (violet), and the safety ceiling (pink); the per-tick effective rate is a separate
+emerald line, off by default behind a config toggle because it's dramatically more volatile than the
+tracking lines and hijacks the Y-axis when enabled. Then a stats strip (uptime, avg hashrate per source —
+Braiins / Datum / Ocean side-by-side, cost per PH delivered, effective rate vs hashprice), service panels
+for Braiins / Datum Gateway / Ocean, the active bids table, and per-day and lifetime P&L measured from
+actual account-ledger spend and on-chain receipts.
 
 ## Why this exists
 
-The Braiins Hashpower marketplace works well, but bids cancel when the wallet drains, prices move, and fills stop
-the moment a bid sits below the clearing ask. The common failure mode for a home miner is: wake up and discover
-that the order cancelled hours ago and you've been sitting at zero hashrate since. This project replaces that with
-a controller that quietly holds a bid alive at a price ceiling the operator is comfortable with.
+The Braiins Hashpower marketplace works well, but bids cancel when the wallet drains, prices drift above
+your bid, and fills stop the moment a bid sits below the level at which enough supply is available. The
+common failure mode for a home miner is: wake up and discover that the order cancelled hours ago and
+you've been sitting at zero hashrate since. This project replaces that with a controller that quietly
+holds a bid alive at a price the operator is comfortable with, adjusted tick-to-tick to stay just above
+the cheapest fillable ask without chasing orderbook noise.
 
 The goal is **bounded, observable downtime** with an explicit recovery policy, not gapless uptime.
 
 ## How Braiins matches (the premise this tool is built on)
 
-Braiins is a **continuous limit order book** — matching is cheapest-ask-first, regardless of what you bid.
-Your bid is a **matching-access ceiling**, not the price you pay: if any ask sits at or below your bid, you
-match and pay that ask's price (the clearing price). Bidding higher doesn't cost more per EH·day — it just
-widens the set of asks you're eligible to match.
+Braiins matches **pay-your-bid**: the bid price on your order is the price you pay per delivered EH·day
+(not the clearing price of the cheapest ask). Lowering your bid by 100 sat/PH/day lowers the sat amount
+Braiins deducts per delivered EH·day by the same 100 — regardless of where the cheapest fillable ask sits.
 
-This was verified empirically against closed-bid data (`scripts/verify-pricing-model.ts`) and the market-mechanics
-conclusion drives the controller design: there is no cost penalty for sitting at a generous ceiling. The only
-reasons to cap at all are (a) wallet runway — lower ceilings burn funds slower when the clearing price spikes,
-and (b) to opt out of pathologically expensive market conditions entirely.
+This was verified directly on a live bid on 2026-04-23 (A/B: 50,000 → 49,000 sat/PH/day max_bid drop →
+effective cost 50,300 → 49,899 sat/PH/day, with the orderbook's fillable ask unchanged at ~47,158). An
+earlier version of this project assumed classic CLOB / pay-at-ask semantics and parked the bid at the
+max-bid ceiling; the A/B showed that left money on the table every tick. See `CHANGELOG.md` entry #53 and
+`docs/spec.md` §8 for the full history.
+
+Because the bid *is* the cost, the controller tracks the cheapest price at which the orderbook has enough
+supply to cover the operator's target (the "fillable ask") and sits just above it by a configurable
+`overpay_sat_per_eh_day` cushion. The `max_bid_sat_per_eh_day` and `max_overpay_vs_hashprice_sat_per_eh_day`
+knobs exist purely as safety ceilings — they clamp the bid if fillable + overpay ever reaches a price the
+operator wants to opt out of.
 
 ## Scope
 
@@ -72,20 +86,31 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
 
 ## Key features
 
-- **Fillable-tracking bid** — each tick the bid is set to `fillable_ask + overpay_sat_per_eh_day`, where
-  `fillable_ask` is the cheapest price at which the orderbook has enough unmatched supply to cover the target.
-  `overpay_sat_per_eh_day` is the one knob that trades "stability against short upward market moves" for
-  "closer to the cheapest fillable price".
+- **Fillable-tracking bid** — each tick the bid is set to `min(fillable_ask + overpay_sat_per_eh_day,
+  effective_cap)`, where `fillable_ask` is the cheapest price at which the orderbook has enough
+  unmatched supply to cover `target_hashrate_ph`. `overpay_sat_per_eh_day` is the one knob that trades
+  "stability against short upward market moves" for "closer to the cheapest fillable price" — default
+  1,000 sat/PH/day. The controller skips the tick entirely if `fillable_ask` is null (orderbook
+  empty / Braiins API down), rather than defaulting to the cap.
+- **EDIT_PRICE deadband** — a bid isn't edited for small drift. Threshold is `max(tick_size,
+  overpay_sat_per_eh_day / 5)`, which at the default 1,000 sat/PH/day overpay is a 200 sat/PH/day
+  window. Keeps noise out of the mutation log and avoids burning Braiins' 10-minute price-decrease
+  cooldown on moves the operator doesn't care about.
 - **Two-layer safety ceiling** — a fixed `max_bid_sat_per_eh_day` plus an optional dynamic cap
   `max_overpay_vs_hashprice_sat_per_eh_day`. The effective ceiling is the lower of the two. If
-  fillable + overpay would exceed the ceiling, the bid clamps down to it (and may not fill) — the ceiling is
-  the opt-out price, not the normal bid.
-- **Effective rate as a first-class metric** — the price actually paid is measured from per-tick spend (Braiins
-  account ledger deltas) divided by delivered hashrate × elapsed time, and plotted on the price chart next to
-  the bid line and hashprice. Gives the operator a direct read on the clearing price rather than a model of it.
-- **Cheap-mode opportunistic scaling** — when the market price (best ask) drops below a configurable percentage
-  of the break-even hashprice, the autopilot scales the target up to `cheap_target_hashrate_ph` to capture cheap
-  capacity. Reverts to the normal target when the market recovers.
+  fillable + overpay would exceed the ceiling, the bid clamps down to it (and may not fill) — the
+  ceiling is the opt-out price, not the normal bid.
+- **Effective rate as a first-class metric** — the price actually paid is measured per-tick from the
+  delta of Braiins' `primary_bid_consumed_sat` counter divided by delivered hashrate × elapsed time.
+  Surfaced as the hero PRICE number (window-averaged over the selected chart range) and as a stats
+  card ("avg cost / PH delivered"). An emerald per-tick effective line on the price chart is available
+  via a Config toggle, off by default — its counter-settlement volatility would crush the flatter
+  lines' detail.
+- **Cheap-mode opportunistic scaling** — when the market price (best ask) drops below a configurable
+  percentage of the break-even hashprice, the autopilot scales the target up to
+  `cheap_target_hashrate_ph` to capture cheap capacity. Reverts when the market recovers. A
+  `cheap_sustained_window_minutes` knob enables hysteresis: cheap-mode only engages when the rolling
+  average over that window is below threshold, avoiding flap on single-tick spikes.
 - **Ocean pool integration** — reads hashprice, pool earnings, time-to-payout, Ocean-credited hashrate, and
   recent pool blocks from the Ocean API. Hashprice is plotted historically on the price chart. Ocean-credited
   hashrate is a first-class line on the Hashrate chart alongside Braiins-delivered and Datum-received. Every
@@ -102,11 +127,15 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
 - **Measured P&L and runway** — spend is read from Braiins' account transaction ledger (settled cost, not
   modelled bid × delivered) and income from on-chain payouts observed via Electrs or bitcoind. Runway on the
   Braiins service card is days-of-balance at the current measured spend rate.
-- **Dashboard** — hashrate and price charts with time-range picker (3h / 6h / 12h / 24h / 1w / 1m / 1y / all),
-  bid event markers, block markers, pinned-tooltip JSON export, stats bar (uptime, three side-by-side
-  avg-hashrate cards for Braiins / Datum / Ocean, and cost metrics), service panels that include a runway
-  forecast on the Braiins card, split P&L panels (period and lifetime), live bid table with full IDs, and a
-  full config editor with live reload.
+- **Dashboard** — hashrate and price charts with time-range picker (3h / 6h / 12h / 24h / 1w / 1m / 1y /
+  all), bid event markers on the price chart (each dot corresponds to a CREATE / EDIT / CANCEL; click to
+  pin a detail panel that lists the target-price inputs at that tick — fillable, overpay, hashprice,
+  caps, effective cap, plus a JSON export button), block markers on the hashrate chart, per-series
+  rolling-mean smoothing configurable per chart (hashrate smoothing per-source; price chart smooths only
+  `our bid` and `effective` — fillable / hashprice / max bid stay raw), stats bar (uptime, three
+  side-by-side avg-hashrate cards for Braiins / Datum / Ocean, cost metrics), service panels that include
+  a runway forecast on the Braiins card, split P&L panels (period and lifetime), live bid table with full
+  IDs, and a full config editor with live reload.
 - **BTC/USD denomination toggle** — all prices and balances can be viewed in sats or USD using a live BTC price
   oracle (CoinGecko, Coinbase, Bitstamp, or Kraken).
 - **Operator overrides** — pause/resume, switch between dry-run and live, or trigger an immediate decision tick
@@ -121,15 +150,18 @@ Save writes the new row and the next tick picks it up. No daemon restart needed 
 
 ![Configuration page — all tunables in one place](docs/images/config.jpg)
 
-Sections map directly to the spec: **Hashrate targets** (target, floor, and the cheap-mode scale-up), **Pool
-destination** (pool URL, worker identity, Datum stats API URL), **Pricing ceiling** (fixed `max_bid` plus the
-optional dynamic `max_overpay_vs_hashprice`), **Budget** (per-bid `amount_sat`; set to 0 to use the full
-available wallet balance on each `CREATE_BID`, clamped to Braiins' 1 BTC per-bid cap), **Daemon startup** (boot
+Sections map directly to the spec: **Hashrate targets** (target, floor, cheap-mode scale-up target +
+threshold + sustained-window minutes), **Pool destination** (pool URL, worker identity, Datum stats API
+URL), **Pricing** (the fillable-tracking `overpay_sat_per_eh_day` cushion plus the two safety ceilings
+`max_bid_sat_per_eh_day` and `max_overpay_vs_hashprice_sat_per_eh_day`), **Budget** (per-bid `amount_sat`;
+set to 0 to use the full available wallet balance on each `CREATE_BID`, clamped to Braiins' 1 BTC per-bid
+cap), **Daemon startup** (boot
 mode — always dry-run / resume last / always live), **Block explorer** (template used by the block-marker cubes
 and the Ocean panel's last-pool-block link), **On-chain payouts** (payout address + Electrs-or-bitcoind
-backend), **Profit & Loss** spend scope, **BTC price oracle** (feeds the sat↔USD toggle), **Chart smoothing**
-(rolling-mean window applied to each hashrate series), and **Log retention** for the append-only `tick_metrics`
-and `decisions` tables.
+backend), **Profit & Loss** spend scope, **BTC price oracle** (feeds the sat↔USD toggle), **Chart
+smoothing** (rolling-mean window per-source on the hashrate chart plus the price-chart `our bid` /
+`effective` smoothing; also the toggle that enables the effective-rate line itself), and **Log retention**
+for the append-only `tick_metrics` and `decisions` tables.
 
 ## Tech stack
 
