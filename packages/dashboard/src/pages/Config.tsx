@@ -281,6 +281,13 @@ const SECTIONS: Section[] = [
         step: 5,
         help: 'Rolling-mean window for the Price chart\'s `our bid` and `effective` lines. Useful when the effective line is noisy at tick resolution. Hashprice / max bid are not smoothed — they\'re market-wide signals.',
       },
+      {
+        key: 'show_effective_rate_on_price_chart',
+        label: 'Show effective rate on price chart',
+        kind: 'boolean',
+        fullWidth: true,
+        help: 'Off by default. The emerald effective-rate line (what Braiins actually charged, from counter deltas) is dramatically more volatile than bid / fillable / hashprice — when enabled it auto-scales the Y-axis and visibly squashes the finer bot movements into a thin band. The hero PRICE card and the AVG COST / PH DELIVERED stat already show the same number without hijacking the chart. Flip on when you want to eyeball settlement behaviour directly, accept the loss of flatter-line detail in exchange.',
+      },
     ],
   },
   {

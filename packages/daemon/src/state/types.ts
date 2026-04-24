@@ -67,6 +67,7 @@ export interface ConfigTable {
   braiins_hashrate_smoothing_minutes: number;
   datum_hashrate_smoothing_minutes: number;
   braiins_price_smoothing_minutes: number;
+  show_effective_rate_on_price_chart: 0 | 1;
   updated_at: number;
 }
 

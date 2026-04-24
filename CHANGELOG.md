@@ -2,6 +2,12 @@
 
 ## 2026-04-23
 
+### `[Feature]` Config toggle: show the effective-rate line on the price chart
+
+Off by default. The emerald effective-rate line is window-aggregated Δconsumed_sat ÷ (delivered_ph × Δt) — legitimately dramatic dips every time Braiins' counter settles in lumps, which autoscales the Y-axis down by 10–15 k sat/PH/day and crushes the flatter bid/fillable/hashprice/max-bid detail into a thin band at the top. Flip on from Config → Chart smoothing when you want to eyeball settlement behaviour; you'll lose resolution on the finer controller movements in exchange.
+
+The hero PRICE card and the AVG COST / PH DELIVERED stat already surface the effective rate as a number without hijacking the chart, so the line is only useful for operators specifically inspecting the settlement rhythm.
+
 ### `[UI]` Hero PRICE + stats "avg cost" card: clarify these are averages, not spot (#53)
 
 The hero PRICE card read "48,290 sat/PH/day effective" while NEXT ACTION read "current 47,130" — same underlying question ("what am I paying?"), two different numbers, no tooltip explaining the relationship. Operator reasonably wondered why those disagreed.

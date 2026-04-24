@@ -219,6 +219,7 @@ export function Status() {
         showEvents={CHART_RANGE_SPECS[chartRange].showEvents}
         maxOverpayVsHashpriceSatPerPhDay={s.config_summary.max_overpay_vs_hashprice_sat_per_ph_day}
         priceSmoothingMinutes={configQuery.data?.config?.braiins_price_smoothing_minutes ?? 1}
+        showEffectiveRate={configQuery.data?.config?.show_effective_rate_on_price_chart ?? false}
       />
 
       {/*

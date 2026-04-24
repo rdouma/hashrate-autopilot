@@ -73,6 +73,7 @@ describe('openDatabase — migrations', () => {
       '0043_drop_fill_strategy_knobs.sql',
       '0044_cheap_sustained_window.sql',
       '0045_add_overpay_sat_per_eh_day.sql',
+      '0046_show_effective_rate_on_price_chart.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });

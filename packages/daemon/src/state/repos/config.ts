@@ -38,6 +38,10 @@ export class ConfigRepo {
       ...rest,
       electrs_host: rest.electrs_host ?? null,
       electrs_port: rest.electrs_port ?? null,
+      // SQLite stores booleans as 0/1; surface them as proper booleans
+      // to the rest of the app.
+      show_effective_rate_on_price_chart:
+        rest.show_effective_rate_on_price_chart === 1,
     };
   }
 
@@ -48,6 +52,10 @@ export class ConfigRepo {
     const validated = AppConfigInvariantsSchema.parse(cfg);
     const row = {
       ...validated,
+      // SQLite boolean columns hold 0 / 1.
+      show_effective_rate_on_price_chart: (validated.show_effective_rate_on_price_chart
+        ? 1
+        : 0) as 0 | 1,
       // Legacy NOT NULL columns still in the DB — provide harmless defaults
       // so INSERT succeeds.
       emergency_max_bid_sat_per_eh_day: validated.max_bid_sat_per_eh_day,

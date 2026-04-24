@@ -93,6 +93,7 @@ export const PriceChart = memo(function PriceChart({
   showEvents,
   maxOverpayVsHashpriceSatPerPhDay = null,
   priceSmoothingMinutes = 1,
+  showEffectiveRate = false,
 }: {
   points: readonly MetricPoint[];
   events?: readonly BidEventView[];
@@ -117,6 +118,14 @@ export const PriceChart = memo(function PriceChart({
    * around the real trend by ±a few percent.
    */
   priceSmoothingMinutes?: number;
+  /**
+   * Render the emerald "effective" line (window-aggregated Δconsumed
+   * ÷ delivered×Δt). Off by default — the line's per-tick volatility
+   * auto-scales the Y-axis and crushes the flatter bid/fillable/
+   * hashprice detail. Operator enables it from the Config page when
+   * they want to inspect settlement behaviour directly.
+   */
+  showEffectiveRate?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
@@ -312,10 +321,15 @@ export const PriceChart = memo(function PriceChart({
     // this line is to see that gap). Earlier we excluded effective
     // to protect against per-tick rate spikes; that threat is gone
     // now that aggregation is numerator-and-denominator-summed.
+    // Effective values are included in Y-scale sampling ONLY when the
+    // operator has opted-in to seeing the line. Otherwise they're
+    // excluded — the whole point of the toggle is that the flatter
+    // bid/fillable/hashprice detail is crushed when the volatile
+    // effective line drags the Y-axis range down.
     const priceSample = [
       ...pricePoints.map((p) => p.v),
       ...hashpricePoints.map((p) => p.v),
-      ...effectivePoints.map((p) => p.v),
+      ...(showEffectiveRate ? effectivePoints.map((p) => p.v) : []),
       ...eventPrices,
     ];
     const hasPrice = priceSample.length > 0;
@@ -521,7 +535,7 @@ export const PriceChart = memo(function PriceChart({
       : [];
 
     return { pricePoints, minX, maxX, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, hashpricePath, effectivePath, effectiveHasData: effectivePoints.length > 0, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents };
-  }, [points, events, showEvents, priceSmoothingMinutes, maxOverpayVsHashpriceSatPerPhDay, chartHeight]);
+  }, [points, events, showEvents, priceSmoothingMinutes, maxOverpayVsHashpriceSatPerPhDay, chartHeight, showEffectiveRate]);
 
   const eventPriceAt = useCallback((e: BidEventView): number | null => {
     const pricePoints = chartData?.pricePoints ?? [];
@@ -622,7 +636,7 @@ export const PriceChart = memo(function PriceChart({
         </div>
         <div className="flex items-center gap-3 text-xs flex-wrap">
           <Legend color={COLOR_PRICE} label="our bid" />
-          {effectiveHasData && <Legend color={COLOR_EFFECTIVE} label="effective" />}
+          {showEffectiveRate && effectiveHasData && <Legend color={COLOR_EFFECTIVE} label="effective" />}
           <Legend color={COLOR_HASHPRICE} label="hashprice" dashed />
           <Legend color={COLOR_MAXBID} label="max bid" />
           {showEvents && <EventLegend />}
@@ -711,7 +725,7 @@ export const PriceChart = memo(function PriceChart({
             of the bid (amber) line so the operator sees at a glance
             whether the two line up (pay-your-bid) or the effective
             sits systematically below (CLOB / pay-at-ask). #49. */}
-        {effectivePath && (
+        {showEffectiveRate && effectivePath && (
           <path
             d={effectivePath}
             stroke={COLOR_EFFECTIVE}

@@ -223,6 +223,15 @@ export const AppConfigSchema = z.object({
   // quantisation. Fillable / hashprice / max_bid are unaffected
   // (they're market-wide signals, not ours).
   braiins_price_smoothing_minutes: positiveInt.default(1),
+
+  // Operator toggle for the emerald "effective" line on the price
+  // chart. Off by default — the line's per-tick volatility auto-scales
+  // the Y-axis and crushes the much flatter bid/fillable/hashprice
+  // detail. The hero PRICE card + AVG COST / PH DELIVERED stat card
+  // already surface the effective rate as a number. Flip on to inspect
+  // the settlement rate directly; accept the loss of flatter-line
+  // detail in exchange.
+  show_effective_rate_on_price_chart: z.boolean().default(false),
 });
 
 export type AppConfig = z.infer<typeof AppConfigSchema>;
@@ -304,4 +313,6 @@ export const APP_CONFIG_DEFAULTS: Omit<
   braiins_hashrate_smoothing_minutes: 1,
   datum_hashrate_smoothing_minutes: 1,
   braiins_price_smoothing_minutes: 1,
+
+  show_effective_rate_on_price_chart: false,
 };
