@@ -2,6 +2,16 @@
 
 ## 2026-04-24
 
+### `[Infra]` Migrations 0043/0045: preserve `overpay_sat_per_eh_day` through the CLOB-redesign retirements
+
+Earlier the pair dropped (0043) then re-added (0045) `overpay_sat_per_eh_day`, resetting every operator's configured value to the 1,000 sat/PH/day default on upgrade. Revised 0043 to preserve the column (semantics are identical pre-#49 and post-#53, so the operator's value remains meaningful). Revised 0045 to a no-op (SELECT 1;) so the migration sequence stays contiguous and operators who already applied the column-adding version on dev don't re-execute it.
+
+Net effect: main-branch users pulling post-v2.1 keep their existing overpay through the upgrade rather than silently resetting. The other v1.x fill-strategy knobs (escalation_mode, fill_escalation_*, lower_patience_minutes, min_lower_delta_sat_per_eh_day) stay retired — they have no counterpart in the post-#53 controller.
+
+### `[UI]` Event-detail tooltip: promote `fillable` + `overpay` to first-class rows
+
+They were previously folded into an italic sentence at the bottom of the panel ("(fillable X + overpay Y)") while less-central values like `hashprice + max overpay` got line items. Swapped: `fillable` and `overpay` now appear as top rows in the "market at this tick" block — they're the load-bearing inputs the controller used to decide that edit, so the tooltip leads with them.
+
 ### `[UI]` Price chart: draw `fillable` as a first-class cyan line
 
 The controller targets `fillable_ask + overpay_sat_per_eh_day` every tick, yet the price chart had no line for fillable — so the operator saw the amber bid stepping around and hashprice drifting underneath, with no visible signal explaining *why* the bid moved. Every edit is explained by fillable moving; it belongs on the chart.

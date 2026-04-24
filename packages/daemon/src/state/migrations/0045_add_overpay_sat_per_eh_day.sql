@@ -1,22 +1,22 @@
--- Pay-your-bid controller (#53).
+-- Pay-your-bid controller (#53). NO-OP — see the note below.
 --
--- The CLOB redesign (#49, commit edf0156) retired the fill-strategy
--- subsystem under the assumption that Braiins matched CLOB-style and
--- actual spend was materially below bid. Empirical A/B on 2026-04-23
--- falsified that: effective cost tracks the bid, not the fillable ask.
--- Lowering the bid directly lowers the spend.
+-- Earlier versions of this file ran:
+--   ALTER TABLE config ADD COLUMN overpay_sat_per_eh_day INTEGER NOT NULL DEFAULT 1000000;
 --
--- The new controller targets `fillable_ask + overpay_sat_per_eh_day`
--- every tick, clamped to the same `effective_cap =
--- min(max_bid, hashprice + max_overpay_vs_hashprice)` as before.
--- `overpay_sat_per_eh_day` is the one knob that tunes "how far above
--- the fillable mark to sit" — higher = more resilient to short
--- upward market moves at the cost of a bigger pay-your-bid premium;
--- lower = pays closer to the market but risks losing fill on noise.
+-- That was a companion to the (now-revised) 0043, which used to drop
+-- `overpay_sat_per_eh_day`. Together the pair lost every operator's
+-- configured overpay value, resetting it to the 1,000 sat/PH/day
+-- default.
 --
--- Default 1_000_000 sat/EH/day = 1,000 sat/PH/day. Conservative vs
--- the observed ~3,000 sat/PH/day gap between fillable and the old
--- fixed-cap bid, while comfortably absorbing typical tick-to-tick
--- fillable movement.
+-- 0043 has since been edited to PRESERVE `overpay_sat_per_eh_day`
+-- through the CLOB-redesign retirements. So for any fresh migration
+-- chain the column already exists at this point and trying to add
+-- it again would raise "duplicate column". Operators who already
+-- applied the previous (column-adding) version of this migration on
+-- dev keep the _migrations row and skip this file on subsequent boots.
+--
+-- Net effect: this file is now a no-op, kept only so the migration
+-- sequence stays contiguous and the bookkeeping in `_migrations`
+-- remains stable.
 
-ALTER TABLE config ADD COLUMN overpay_sat_per_eh_day INTEGER NOT NULL DEFAULT 1000000;
+SELECT 1;

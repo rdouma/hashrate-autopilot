@@ -98,6 +98,7 @@ export const PriceChart = memo(function PriceChart({
   events = [],
   showEvents,
   maxOverpayVsHashpriceSatPerPhDay = null,
+  overpaySatPerPhDay = null,
   priceSmoothingMinutes = 1,
   showEffectiveRate = false,
 }: {
@@ -114,6 +115,13 @@ export const PriceChart = memo(function PriceChart({
    * value.
    */
   maxOverpayVsHashpriceSatPerPhDay?: number | null;
+  /**
+   * Current config's overpay above fillable (sat/PH/day). Used in the
+   * pinned event tooltip so the operator can read `fillable` and
+   * `overpay` as first-class rows. Applied as a constant across
+   * history — past tooltips are approximate if the value was tuned.
+   */
+  overpaySatPerPhDay?: number | null;
   /**
    * Rolling-mean window (minutes) applied to `our bid` and `effective`
    * only. 1 = raw (no smoothing). Mirrors the smoothing knobs the
@@ -886,6 +894,7 @@ export const PriceChart = memo(function PriceChart({
           onClose={closeTooltip}
           points={points}
           maxOverpayVsHashpriceSatPerPhDay={maxOverpayVsHashpriceSatPerPhDay}
+          overpaySatPerPhDay={overpaySatPerPhDay}
         />
       )}
     </div>
@@ -934,11 +943,13 @@ function EventTooltip({
   onClose,
   points = [],
   maxOverpayVsHashpriceSatPerPhDay = null,
+  overpaySatPerPhDay = null,
 }: {
   tip: TooltipState;
   onClose: () => void;
   points?: readonly MetricPoint[];
   maxOverpayVsHashpriceSatPerPhDay?: number | null;
+  overpaySatPerPhDay?: number | null;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
@@ -1176,6 +1187,18 @@ function EventTooltip({
           <div className="text-[10px] uppercase tracking-wider text-slate-500 mb-0.5">
             market at this tick
           </div>
+          {marketAtEvent.fillable_ask_sat_per_ph_day !== null && (
+            <Row
+              label="fillable"
+              value={`${formatNumber(Math.round(marketAtEvent.fillable_ask_sat_per_ph_day))} sat/PH/day`}
+            />
+          )}
+          {overpaySatPerPhDay !== null && (
+            <Row
+              label="overpay"
+              value={`${formatNumber(Math.round(overpaySatPerPhDay))} sat/PH/day`}
+            />
+          )}
           {marketAtEvent.hashprice_sat_per_ph_day !== null ? (
             <Row
               label="hashprice"
