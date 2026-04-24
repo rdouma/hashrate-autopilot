@@ -2,6 +2,12 @@
 
 ## 2026-04-23
 
+### `[Fix]` Pay-your-bid controller: deadband on EDIT_PRICE to stop the jitter storm (#53)
+
+First hour on the new controller surfaced a flap mode: `fillable_ask` naturally jitters ±1-5 sat/PH/day tick-to-tick as distant supply levels reshuffle, and the EDIT_PRICE tolerance was `tick_size = 1,000 sat/EH/day = 1 sat/PH/day` — so every jitter proposed a mutation. Dashboard filled with yellow edit-price dots, each lower burned the 10-min cooldown, the chart became unreadable.
+
+Deadband now scales to `max(tick_size, overpay/5)`. At the 1,000 sat/PH/day default overpay this is 200 sat/PH/day — below that, the current bid is still comfortably above fillable and chasing the noise buys nothing. NEXT ACTION's "will lower from 47,062 → 47,049 (delta 13 sat/PH/day)" style micro-moves are now absorbed.
+
 ### `[Feature]` Pay-your-bid controller: track `fillable_ask + overpay` (#53)
 
 Direct A/B on live data this afternoon falsified the CLOB assumption behind the #49 redesign: lowering

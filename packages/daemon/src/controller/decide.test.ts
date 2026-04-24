@@ -190,19 +190,20 @@ describe('decide — EDIT_PRICE to target', () => {
     expect(decide(state({ owned_bids: [owned()] }))).toEqual([]);
   });
 
-  it('proposes EDIT_PRICE upward when fillable rises above the current bid', () => {
+  it('proposes EDIT_PRICE upward when fillable rises above the current bid (past deadband)', () => {
+    // fillable 46,500,000 + overpay 1M = 47,500,000 target; current 46M → delta 1.5M clears deadband.
     const s = state({
-      fillable_ask_sat_per_eh_day: 46_000_000,
-      owned_bids: [owned({ price_sat: 46_000_000 })], // bid at old fillable, overpay gap now closed
+      fillable_ask_sat_per_eh_day: 46_500_000,
+      owned_bids: [owned({ price_sat: 46_000_000 })],
     });
     const proposals = decide(s);
     expect(proposals.find((p) => p.kind === 'EDIT_PRICE')).toMatchObject({
       kind: 'EDIT_PRICE',
-      new_price_sat: 47_000_000,
+      new_price_sat: 47_500_000,
     });
   });
 
-  it('proposes EDIT_PRICE downward when fillable falls below the current bid', () => {
+  it('proposes EDIT_PRICE downward when fillable falls below the current bid (past deadband)', () => {
     const s = state({
       fillable_ask_sat_per_eh_day: 43_000_000,
       owned_bids: [owned({ price_sat: 46_000_000 })],
@@ -213,14 +214,26 @@ describe('decide — EDIT_PRICE to target', () => {
     });
   });
 
-  it('tolerates sub-tick_size drift (no no-op EDIT_PRICE storm)', () => {
-    // default tick_size 1,000. fillable 45,000,500 + overpay 1M = 46,000,500.
-    // current bid at 46,000,000 — delta 500 < tick_size, no edit.
+  it('absorbs sub-deadband fillable jitter (no trade storm)', () => {
+    // Deadband = max(tick_size, overpay/5) = max(1,000, 200,000) = 200,000.
+    // fillable 45,150,000 + overpay 1M = 46,150,000; current 46M → delta 150k < 200k deadband → no edit.
     const s = state({
-      fillable_ask_sat_per_eh_day: 45_000_500,
+      fillable_ask_sat_per_eh_day: 45_150_000,
       owned_bids: [owned({ price_sat: 46_000_000 })],
     });
     expect(decide(s).find((p) => p.kind === 'EDIT_PRICE')).toBeUndefined();
+  });
+
+  it('edits once the drift clears the deadband', () => {
+    // fillable 45,300,000 + overpay 1M = 46,300,000; current 46M → delta 300k >= 200k deadband.
+    const s = state({
+      fillable_ask_sat_per_eh_day: 45_300_000,
+      owned_bids: [owned({ price_sat: 46_000_000 })],
+    });
+    expect(decide(s).find((p) => p.kind === 'EDIT_PRICE')).toMatchObject({
+      kind: 'EDIT_PRICE',
+      new_price_sat: 46_300_000,
+    });
   });
 });
 

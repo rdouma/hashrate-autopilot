@@ -124,6 +124,20 @@ export function decide(state: State): readonly Proposal[] {
   const minBidSpeed = Math.max(1.0, market.settings.min_bid_speed_limit_ph ?? 1.0);
   const speedLimitPh = Math.max(minBidSpeed, effectiveTargetPh);
   const tickSize = market.settings.tick_size_sat ?? 1000;
+  // Deadband on EDIT_PRICE (#53 fix). fillable_ask jitters ±1-5 sat/PH/day
+  // (~1,000-5,000 sat/EH/day) tick-to-tick as distant supply levels
+  // reshuffle. With the naive tick_size tolerance, every jitter triggers
+  // a mutation — dense trade storm on the chart, API noise, and each
+  // lower burns the 10-min cooldown. Scale the deadband to 1/5 of
+  // overpay: if fillable has moved by less than 20 % of our overpay
+  // cushion, the current bid still sits comfortably above fillable and
+  // delivery stays healthy. At the 1,000 sat/PH/day default overpay this
+  // gives a ~200 sat/PH/day deadband. Never below tick_size — Braiins
+  // would reject a smaller edit.
+  const editDeadband = Math.max(
+    tickSize,
+    Math.floor(config.overpay_sat_per_eh_day / 5),
+  );
 
   const priceSuffix = cappedByCeiling
     ? ` (clamped to effective cap ${fmtPricePH(effectiveCap)})`
@@ -171,11 +185,13 @@ export function decide(state: State): readonly Proposal[] {
     });
   }
 
-  // Price edit: move the live bid to target_price. Tolerance: tick_size
-  // to avoid round-tripping to the same on-wire value. gate.ts
-  // enforces Braiins' 10-min price-decrease cooldown below this layer.
+  // Price edit: move the live bid to target_price when it has drifted
+  // by more than `editDeadband`. Below the deadband we sit tight — the
+  // current bid is still a good approximation of fillable + overpay
+  // and each mutation is noise (chart + API). gate.ts enforces
+  // Braiins' 10-min price-decrease cooldown below this layer.
   const priceDelta = Math.abs(primary.price_sat - targetPrice);
-  if (priceDelta >= tickSize) {
+  if (priceDelta >= editDeadband) {
     proposals.push({
       kind: 'EDIT_PRICE',
       braiins_order_id: primary.braiins_order_id,
