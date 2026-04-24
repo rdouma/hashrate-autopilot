@@ -475,33 +475,35 @@ function OperationsCard({
     >
       {currentPricePH !== null ? (
         <div className="grid grid-cols-2 gap-6 w-full">
-          <div className="flex flex-col items-center">
-            <div className="text-[11px] uppercase tracking-wider text-slate-100 mb-1">price</div>
-            {/* relative wrapper so the ±delta can be position:absolute
-                outside the flow — that way the big number stays centered
-                regardless of how wide the badge gets (e.g. "+9" vs "+126"). */}
-            <div className="relative leading-none">
-              <span className="text-4xl font-mono font-semibold text-slate-100 tabular-nums">
-                {denomination.mode === 'usd' && denomination.btcPrice !== null
-                  ? `$${new Intl.NumberFormat(intlLocale, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    }).format((Math.round(currentPricePH) / 100_000_000) * denomination.btcPrice)}`
-                  : formatNumber(Math.round(currentPricePH), {}, intlLocale)}
-              </span>
-              <span className="absolute left-full top-1/2 -translate-y-1/2 ml-1.5 whitespace-nowrap">
-                <PriceDeltaVsHashprice
-                  currentPH={currentPricePH}
-                  hashpricePH={hashpricePH}
-                  intlLocale={intlLocale}
-                />
-              </span>
+          <Tooltip text="Average effective rate over the selected chart range (default 3h). Derived from per-tick Δconsumed_sat ÷ (delivered_ph × Δt). This is an average — not the live bid price. For the current bid see the NEXT ACTION panel. Duplicate of the AVG COST / PH DELIVERED stats card by design.">
+            <div className="flex flex-col items-center cursor-help">
+              <div className="text-[11px] uppercase tracking-wider text-slate-100 mb-1">price</div>
+              {/* relative wrapper so the ±delta can be position:absolute
+                  outside the flow — that way the big number stays centered
+                  regardless of how wide the badge gets (e.g. "+9" vs "+126"). */}
+              <div className="relative leading-none">
+                <span className="text-4xl font-mono font-semibold text-slate-100 tabular-nums">
+                  {denomination.mode === 'usd' && denomination.btcPrice !== null
+                    ? `$${new Intl.NumberFormat(intlLocale, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      }).format((Math.round(currentPricePH) / 100_000_000) * denomination.btcPrice)}`
+                    : formatNumber(Math.round(currentPricePH), {}, intlLocale)}
+                </span>
+                <span className="absolute left-full top-1/2 -translate-y-1/2 ml-1.5 whitespace-nowrap">
+                  <PriceDeltaVsHashprice
+                    currentPH={currentPricePH}
+                    hashpricePH={hashpricePH}
+                    intlLocale={intlLocale}
+                  />
+                </span>
+              </div>
+              <div className="text-xs text-slate-400 mt-1">
+                {denomination.mode === 'usd' ? '$' : <><SatSymbol /></>}/PH/day effective
+                {activeOwned.length > 1 ? ` · across ${activeOwned.length} bids` : ''}
+              </div>
             </div>
-            <div className="text-xs text-slate-400 mt-1">
-              {denomination.mode === 'usd' ? '$' : <><SatSymbol /></>}/PH/day effective
-              {activeOwned.length > 1 ? ` · across ${activeOwned.length} bids` : ''}
-            </div>
-          </div>
+          </Tooltip>
           <div className="flex flex-col items-center">
             <div className="text-[11px] uppercase tracking-wider text-slate-100 mb-1">delivered</div>
             <div className={`text-4xl font-mono font-semibold tabular-nums leading-none ${deliveredColor}`}>
@@ -980,7 +982,7 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
       <StatCard
         label="avg cost / PH delivered"
         value={avg_cost_per_ph_sat_per_ph_day !== null ? denomination.formatSatPerPhDay(Math.round(avg_cost_per_ph_sat_per_ph_day), intlLocale) : '\u2014'}
-        tooltip="Duration-weighted average price per PH delivered: sum(price × delivered × duration) / sum(delivered × duration). The efficiency metric."
+        tooltip="Average effective rate over the selected chart range (default 3h) — what Braiins actually charged per PH/day delivered, from per-tick Δconsumed_sat ÷ (delivered_ph × Δt). Same metric the hero PRICE card shows; this pair is duplicated so each panel stands on its own. For the current bid price see the NEXT ACTION panel."
       />
       <StatCard
         label="avg cost vs hashprice"

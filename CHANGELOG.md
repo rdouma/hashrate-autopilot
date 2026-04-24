@@ -2,6 +2,12 @@
 
 ## 2026-04-23
 
+### `[UI]` Hero PRICE + stats "avg cost" card: clarify these are averages, not spot (#53)
+
+The hero PRICE card read "48,290 sat/PH/day effective" while NEXT ACTION read "current 47,130" — same underlying question ("what am I paying?"), two different numbers, no tooltip explaining the relationship. Operator reasonably wondered why those disagreed.
+
+Added a tooltip on the hero PRICE card ("Average effective rate over the selected chart range — not the live bid. For the current bid see NEXT ACTION") and rewrote the AVG COST / PH DELIVERED stats tooltip to match. The two numbers are the same metric on the same window; they're deliberately duplicated so each panel stands on its own.
+
 ### `[Fix]` Pay-your-bid controller: deadband on EDIT_PRICE to stop the jitter storm (#53)
 
 First hour on the new controller surfaced a flap mode: `fillable_ask` naturally jitters ±1-5 sat/PH/day tick-to-tick as distant supply levels reshuffle, and the EDIT_PRICE tolerance was `tick_size = 1,000 sat/EH/day = 1 sat/PH/day` — so every jitter proposed a mutation. Dashboard filled with yellow edit-price dots, each lower burned the 10-min cooldown, the chart became unreadable.
