@@ -994,6 +994,15 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
         label="avg cost vs hashprice"
         value={avg_overpay_vs_hashprice_sat_per_ph_day !== null ? denomination.formatSatPerPhDay(Math.round(avg_overpay_vs_hashprice_sat_per_ph_day), intlLocale) : '\u2014'}
         tooltip="Duration-weighted average of (effective price − hashprice). Negative means matched asks averaged below the break-even hashprice (good — cheaper than mining at current difficulty). Positive means above break-even."
+        color={
+          avg_overpay_vs_hashprice_sat_per_ph_day === null
+            ? 'text-slate-100'
+            : avg_overpay_vs_hashprice_sat_per_ph_day < 0
+              ? 'text-emerald-300'
+              : avg_overpay_vs_hashprice_sat_per_ph_day > 0
+                ? 'text-red-300'
+                : 'text-slate-100'
+        }
       />
     </section>
   );

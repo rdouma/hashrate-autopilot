@@ -2,6 +2,10 @@
 
 ## 2026-04-24
 
+### `[UI]` Stats card: colour-code "avg cost vs hashprice" by sign (#54)
+
+Negative values (we paid under hashprice — cheaper than mining at current difficulty) now render emerald green; positive values (we paid over hashprice) render red. Null / zero keep the default slate. Mirrors the hero PRICE card's delta coloring so the stat strip reads consistently at a glance.
+
 ### `[Infra]` Migrations 0043/0045: preserve `overpay_sat_per_eh_day` through the CLOB-redesign retirements
 
 Earlier the pair dropped (0043) then re-added (0045) `overpay_sat_per_eh_day`, resetting every operator's configured value to the 1,000 sat/PH/day default on upgrade. Revised 0043 to preserve the column (semantics are identical pre-#49 and post-#53, so the operator's value remains meaningful). Revised 0045 to a no-op (SELECT 1;) so the migration sequence stays contiguous and operators who already applied the column-adding version on dev don't re-execute it.
