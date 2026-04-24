@@ -180,7 +180,7 @@ export function Status() {
         <div className="lg:col-span-2 h-full">
           <OperationsCard
             s={s}
-            effectivePricePH={statsQuery.data?.avg_cost_per_ph_sat_per_ph_day ?? null}
+            effectivePricePH={s.live_effective_sat_per_ph_day}
             hashpricePH={financeQuery.data?.ocean?.hashprice_sat_per_ph_day ?? null}
             onRunMode={(m) => runModeMutation.mutate(m)}
             runModePending={runModeMutation.isPending}
@@ -442,11 +442,11 @@ function OperationsCard({
 }: {
   s: StatusResponse;
   /**
-   * Window-aggregated effective rate (sat/PH/day) — what Braiins
-   * actually charged us over the current chart range, derived from
-   * `primary_bid_consumed_sat` deltas. Replaces the bid price as the
-   * "what am I paying" figure here; under CLOB the bid is a ceiling
-   * and the matched-ask rate is the truth.
+   * Live effective rate (sat/PH/day) from the most recent valid
+   * inter-tick `primary_bid_consumed_sat` delta — what Braiins charged
+   * us over the last tick gap. Under pay-your-bid the bid is what we
+   * asked to pay; the matched-ask rate is the truth. Distinct from the
+   * range-averaged `avg cost / PH delivered` in the stats row.
    */
   effectivePricePH: number | null;
   /**
@@ -481,7 +481,7 @@ function OperationsCard({
     >
       {currentPricePH !== null ? (
         <div className="grid grid-cols-2 gap-6 w-full">
-          <Tooltip text="Average effective rate over the selected chart range (default 3h). Derived from per-tick Δconsumed_sat ÷ (delivered_ph × Δt). This is an average — not the live bid price. For the current bid see the NEXT ACTION panel. Duplicate of the AVG COST / PH DELIVERED stats card by design.">
+          <Tooltip text="Live effective rate — what Braiins charged us over the last tick gap, from Δprimary_bid_consumed_sat ÷ (delivered_ph × Δt). Current, not averaged. For the range-averaged figure see the AVG COST / PH DELIVERED stats card. For the current bid ceiling see NEXT ACTION.">
             <div className="flex flex-col items-center cursor-help">
               <div className="text-[11px] uppercase tracking-wider text-slate-100 mb-1">price</div>
               {/* relative wrapper so the ±delta can be position:absolute

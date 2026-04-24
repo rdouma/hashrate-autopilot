@@ -171,6 +171,7 @@ export interface StatusResponse {
   actual_hashrate_ph: number;
   avg_delivered_ph_3h: number | null;
   actual_spend_per_day_sat_3h: number | null;
+  live_effective_sat_per_ph_day: number | null;
   below_floor_since: number | null;
   last_proposals: ProposalView[];
   config_summary: {

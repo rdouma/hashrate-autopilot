@@ -347,6 +347,46 @@ export class TickMetricsRepo {
   }
 
   /**
+   * Effective rate (sat/EH/day) derived from the *single most recent*
+   * valid inter-tick `primary_bid_consumed_sat` delta — what Braiins
+   * charged us over the last tick gap, normalised to a per-EH-per-day
+   * rate. Used by the hero PRICE card on the Status page as the
+   * "live" figure, distinct from the range-averaged `avg cost / PH
+   * delivered` in the stats row.
+   *
+   * Formula (sat/EH/day): Δsat × 86_400_000_000 / (delivered_ph × Δt_ms).
+   *
+   * Same zero-dip filter as `actualSpendSatSince`: null unless the two
+   * most recent ticks both have positive `primary_bid_consumed_sat`,
+   * c1 >= c0, a tick gap in [1ms, 5min], and non-zero delivered_ph.
+   */
+  async lastEffectiveSatPerEhDay(): Promise<number | null> {
+    const queryText = `
+      SELECT
+        CASE
+          WHEN c1 > 0 AND c0 > 0 AND c1 >= c0
+            AND dur BETWEEN 1 AND 300000
+            AND delivered_ph > 0
+          THEN (c1 - c0) * 86400000000.0 / (delivered_ph * dur)
+          ELSE NULL
+        END AS rate
+      FROM (
+        SELECT
+          primary_bid_consumed_sat AS c1,
+          LAG(primary_bid_consumed_sat) OVER (ORDER BY tick_at) AS c0,
+          tick_at - LAG(tick_at) OVER (ORDER BY tick_at) AS dur,
+          delivered_ph
+        FROM tick_metrics
+        ORDER BY tick_at DESC
+        LIMIT 1
+      )
+    `;
+    const res = await sql.raw(queryText).execute(this.db);
+    const row = (res as unknown as { rows: Array<{ rate: number | null }> }).rows?.[0];
+    return row?.rate ?? null;
+  }
+
+  /**
    * Timestamp of the earliest recorded tick, or `null` if the table is
    * empty. Used by the `all` preset to size its aggregation bucket to
    * whatever history actually exists.

@@ -2,6 +2,10 @@
 
 ## 2026-04-24
 
+### `[UI]` Hero PRICE card: live effective rate, not the 3h average (#55)
+
+The top-left price figure was reading `avg_cost_per_ph_sat_per_ph_day` — the same range-averaged number the `avg cost / PH delivered` stats card already showed below. Hero now reads a new `live_effective_sat_per_ph_day` field computed from just the most recent valid inter-tick `primary_bid_consumed_sat` delta (`Δsat × 86_400_000_000 / (delivered_ph × Δt_ms)`), matching the "current" semantics the operator expects from a hero card. The stats row keeps the range-averaged figure. Same zero-dip filter as the existing spend/hashrate helpers.
+
 ### `[UI]` Stats card: colour-code "avg cost vs hashprice" by sign (#54)
 
 Negative values (we paid under hashprice — cheaper than mining at current difficulty) now render emerald green; positive values (we paid over hashprice) render red. Null / zero keep the default slate. Mirrors the hero PRICE card's delta coloring so the stat strip reads consistently at a glance.

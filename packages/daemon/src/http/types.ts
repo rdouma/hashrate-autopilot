@@ -129,6 +129,13 @@ export interface StatusResponse {
    * until at least ~5 min of matched data exists in the window.
    */
   readonly actual_spend_per_day_sat_3h: number | null;
+  /**
+   * Live effective rate in sat/PH/day, derived from the single most
+   * recent valid inter-tick `primary_bid_consumed_sat` delta. Powers
+   * the hero PRICE card on the Status page — current, not averaged.
+   * Null until a valid delta exists.
+   */
+  readonly live_effective_sat_per_ph_day: number | null;
   readonly below_floor_since: number | null;
 
   readonly last_proposals: readonly ProposalView[];

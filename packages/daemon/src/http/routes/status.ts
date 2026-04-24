@@ -45,6 +45,12 @@ export async function registerStatusRoute(
       spend3hSat !== null && spend3hSat > 0
         ? spend3hSat * 8 // 3h → 24h
         : null;
+    // Live effective rate (most recent valid inter-tick delta). Powers
+    // the hero PRICE card; distinct from the range-averaged figure in
+    // the stats row. In sat/PH/day for direct dashboard consumption.
+    const liveEffectiveSatEhDay = await deps.tickMetricsRepo.lastEffectiveSatPerEhDay();
+    const liveEffectiveSatPhDay =
+      liveEffectiveSatEhDay !== null ? liveEffectiveSatEhDay / EH_PER_PH : null;
 
     if (!last) {
       return {
@@ -75,6 +81,7 @@ export async function registerStatusRoute(
         actual_hashrate_ph: 0,
         avg_delivered_ph_3h: avgDeliveredPh3h,
         actual_spend_per_day_sat_3h: actualSpendPerDay3h,
+        live_effective_sat_per_ph_day: liveEffectiveSatPhDay,
         below_floor_since: null,
         last_proposals: [],
         config_summary: summariseConfig(config, deps.hashpriceCache?.getFresh(Infinity) ?? null, null),
@@ -189,6 +196,7 @@ export async function registerStatusRoute(
       actual_hashrate_ph: state.actual_hashrate.total_ph,
       avg_delivered_ph_3h: avgDeliveredPh3h,
       actual_spend_per_day_sat_3h: actualSpendPerDay3h,
+      live_effective_sat_per_ph_day: liveEffectiveSatPhDay,
       below_floor_since: state.below_floor_since,
       last_proposals,
       config_summary: summariseConfig(
