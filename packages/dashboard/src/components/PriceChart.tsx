@@ -81,6 +81,12 @@ function rollingMeanPoints(
 
 const COLOR_HASHPRICE = '#a78bfa'; // violet-400
 const COLOR_MAXBID = '#f87171'; // red-400
+// fillable_ask = cheapestAskForDepth(orderbook, target_hashrate_ph).
+// This is what the controller tracks: bid = fillable + overpay,
+// clamped to the cap. Drawing it below the amber bid makes the
+// overpay cushion visually explicit — every bid edit is explained
+// by a move in this line.
+const COLOR_FILLABLE = '#22d3ee'; // cyan-400
 // Effective rate — what Braiins actually charged, per-tick from
 // primary_bid_consumed_sat deltas. Emerald so it's clearly a
 // "realised" number distinct from the bid (amber) and the market
@@ -142,6 +148,10 @@ export const PriceChart = memo(function PriceChart({
     const hashpricePoints: PricePoint[] = points
       .filter((p) => Number.isFinite(p.hashprice_sat_per_ph_day))
       .map((p) => ({ t: p.tick_at, v: p.hashprice_sat_per_ph_day as number }));
+
+    const fillablePoints: PricePoint[] = points
+      .filter((p) => Number.isFinite(p.fillable_ask_sat_per_ph_day))
+      .map((p) => ({ t: p.tick_at, v: p.fillable_ask_sat_per_ph_day as number }));
 
     // Effective rate — what Braiins actually charged per PH per day —
     // computed as a WINDOW-AGGREGATED ratio of total consumed vs total
@@ -329,6 +339,7 @@ export const PriceChart = memo(function PriceChart({
     const priceSample = [
       ...pricePoints.map((p) => p.v),
       ...hashpricePoints.map((p) => p.v),
+      ...fillablePoints.map((p) => p.v),
       ...(showEffectiveRate ? effectivePoints.map((p) => p.v) : []),
       ...eventPrices,
     ];
@@ -408,6 +419,7 @@ export const PriceChart = memo(function PriceChart({
       (p) => smoothedPriceByTick.get(p.tick_at) ?? null,
     );
     const hashpricePath = pathWithNullGaps((p) => p.hashprice_sat_per_ph_day);
+    const fillablePath = pathWithNullGaps((p) => p.fillable_ask_sat_per_ph_day);
 
     // Area-fill variant of the null-gap path. Each non-null run becomes
     // its own closed polygon down to the baseline — `M x0,y0 L…L xN,yN
@@ -534,7 +546,7 @@ export const PriceChart = memo(function PriceChart({
       ? events.filter((e) => e.occurred_at >= minX && e.occurred_at <= maxX)
       : [];
 
-    return { pricePoints, minX, maxX, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, hashpricePath, effectivePath, effectiveHasData: effectivePoints.length > 0, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents };
+    return { pricePoints, minX, maxX, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, hashpricePath, fillablePath, fillableHasData: fillablePoints.length > 0, effectivePath, effectiveHasData: effectivePoints.length > 0, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents };
   }, [points, events, showEvents, priceSmoothingMinutes, maxOverpayVsHashpriceSatPerPhDay, chartHeight, showEffectiveRate]);
 
   const eventPriceAt = useCallback((e: BidEventView): number | null => {
@@ -605,7 +617,7 @@ export const PriceChart = memo(function PriceChart({
     );
   }
 
-  const { pricePoints, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, hashpricePath, effectivePath, effectiveHasData, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents } = chartData;
+  const { pricePoints, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, hashpricePath, fillablePath, fillableHasData, effectivePath, effectiveHasData, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents } = chartData;
 
   // Format Y-axis tick values: in USD mode convert sat/PH/day to $/PH/day
   const priceFmt = (v: number): string => {
@@ -636,6 +648,7 @@ export const PriceChart = memo(function PriceChart({
         </div>
         <div className="flex items-center gap-3 text-xs flex-wrap">
           <Legend color={COLOR_PRICE} label="our bid" />
+          {fillableHasData && <Legend color={COLOR_FILLABLE} label="fillable" />}
           {showEffectiveRate && effectiveHasData && <Legend color={COLOR_EFFECTIVE} label="effective" />}
           <Legend color={COLOR_HASHPRICE} label="hashprice" dashed />
           <Legend color={COLOR_MAXBID} label="max bid" />
@@ -669,6 +682,21 @@ export const PriceChart = memo(function PriceChart({
             </text>
           </g>
         ))}
+
+        {/* Fillable ask — the tracking anchor for the controller.
+            bid = fillable + overpay (clamped to cap). Rendered below
+            the amber bid line so the vertical gap between them is the
+            overpay cushion at a glance; any edit the controller
+            makes is explained by this line moving. */}
+        {fillablePath && (
+          <path
+            d={fillablePath}
+            stroke={COLOR_FILLABLE}
+            strokeWidth="1.2"
+            fill="none"
+            opacity="0.75"
+          />
+        )}
 
         {/* Hashprice break-even line — now a time series, not a static
             horizontal line. Moves with difficulty adjustments + block

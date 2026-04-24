@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-04-24
+
+### `[UI]` Price chart: draw `fillable` as a first-class cyan line
+
+The controller targets `fillable_ask + overpay_sat_per_eh_day` every tick, yet the price chart had no line for fillable — so the operator saw the amber bid stepping around and hashprice drifting underneath, with no visible signal explaining *why* the bid moved. Every edit is explained by fillable moving; it belongs on the chart.
+
+Added a cyan `fillable` line below the amber bid. The vertical gap between the two is exactly `overpay_sat_per_eh_day` (clamped by the cap), so the cushion is now visually explicit. The line gets null-gap-bridged like hashprice and participates in Y-axis auto-scaling.
+
 ## 2026-04-23
 
 ### `[Feature]` Config toggle: show the effective-rate line on the price chart
