@@ -2,6 +2,16 @@
 
 ## 2026-04-25 (later)
 
+### `[Feature]` First-run web onboarding wizard (#57, #67)
+
+Daemon no longer hard-fails on missing config or secrets. When either is absent the daemon boots a slim NEEDS_SETUP HTTP server exposing a 3-step wizard at `/setup`: access (Braiins token + dashboard password), mining (target + floor hashrate, pool URL, worker identity, payout address; optional bitcoind RPC), review. On submit the daemon writes both rows to `state.db` and exits — the process manager (Docker, systemd, `restart.sh`) brings it back into operational mode, while the dashboard polls `/api/health` until `mode: OPERATIONAL` and auto-signs the operator in.
+
+Secrets resolution is now `env > SOPS file > db-backed wizard > NEEDS_SETUP`. Power-user `setup.ts` + SOPS path is unchanged. New `secrets` table (migration 0047) co-locates wizard-collected secrets with the existing config row, so the appliance backup/restore story is a single directory.
+
+Public `GET /api/health` (no auth) returns `{ status, mode }` in both boot phases. App-store hosts (Umbrel, Start9) consume it as the basic liveness probe (#67); the dashboard's `SetupGate` consumes the `mode` field to route between the wizard and the normal status flow.
+
+Foundation for #56 (appliance packaging umbrella). Closes #57 and #67.
+
 ### `[Feature]` Configuration via `BHA_*` environment variables (#59)
 
 Every field in `AppConfig` and `Secrets` now also resolves from a matching `BHA_<UPPER_SNAKE>` environment variable, with priority `env > db > defaults`. Read once at boot and re-validated through the same Zod schemas the dashboard uses, so a malformed value fails loudly on startup rather than being silently ignored. New `docs/configuration.md` lists every variable; README links to it.

@@ -97,10 +97,18 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<HttpServer
 
   // Guard all /api/* routes with Basic Auth. basicAuth expects the
   // callback-style Fastify middleware signature (req, reply, done).
+  // /api/health is exempt — appliance hosts (Umbrel, Start9, #67) and
+  // the dashboard's mode probe both need to reach it without creds.
   app.addHook('onRequest', (req, reply, done) => {
     if (!req.url.startsWith('/api/')) return done();
+    if (req.url.startsWith('/api/health')) return done();
     app.basicAuth(req, reply, done);
   });
+
+  // Public health + mode probe (#67 + #57 wizard detection). Mirrored
+  // by the NEEDS_SETUP server so the same URL works in both daemon
+  // boot phases.
+  app.get('/api/health', async () => ({ status: 'ok', mode: 'OPERATIONAL' }));
 
   await registerStatusRoute(app, deps);
   await registerDecisionsRoutes(app, deps);

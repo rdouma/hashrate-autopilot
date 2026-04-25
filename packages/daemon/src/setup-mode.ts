@@ -1,0 +1,204 @@
+/**
+ * NEEDS_SETUP HTTP server.
+ *
+ * Boots a slim Fastify app exposing only what the first-run web
+ * onboarding wizard (#57) needs:
+ *
+ *   GET  /api/status        (no auth) → `{ needs_setup: true, ... }`
+ *   GET  /api/setup-info    (no auth) → defaults + any pre-existing
+ *                                       config to pre-fill the form
+ *   POST /api/setup         (no auth) → write config + secrets, exit
+ *
+ * Every other `/api/*` path returns `412 Precondition Failed` with
+ * `{ needs_setup: true }` — clients see immediately that the daemon
+ * isn't ready yet and can route to the wizard. Static dashboard
+ * assets (and the SPA index.html fallback) are served just like in
+ * operational mode so the wizard URL renders end-to-end.
+ *
+ * After a successful POST /api/setup the daemon writes both the
+ * config and secrets rows, replies 200, and `process.exit(0)`s. The
+ * appliance / restart.sh / systemd / Docker brings the daemon back
+ * up; the wizard polls /api/status until it stops returning
+ * needs_setup, then redirects to /.
+ *
+ * Setup endpoints are intentionally unauthenticated — the dashboard
+ * password is one of the values the wizard *creates*, so requiring
+ * auth would be a chicken-and-egg. Operators on public networks
+ * should restrict access (firewall, Tailscale, etc.) until the
+ * wizard has run; the appliance platforms (Umbrel, Start9) handle
+ * this naturally via Tor / LAN-only exposure.
+ */
+
+import fastifyCors from '@fastify/cors';
+import fastifyStatic from '@fastify/static';
+import Fastify, { type FastifyInstance } from 'fastify';
+import { readdir } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import { z } from 'zod';
+
+import {
+  AppConfigInvariantsSchema,
+  APP_CONFIG_DEFAULTS,
+  SecretsSchema,
+} from './config/schema.js';
+import type { ConfigRepo } from './state/repos/config.js';
+import type { SecretsRepo } from './state/repos/secrets.js';
+
+export interface SetupModeServerDeps {
+  readonly configRepo: ConfigRepo;
+  readonly secretsRepo: SecretsRepo;
+  readonly staticRoot?: string | undefined;
+  readonly log?: (msg: string) => void;
+  /**
+   * Called after a successful POST /api/setup. Default: schedule
+   * `process.exit(0)` ~200 ms later so the response flushes first
+   * and the process manager (systemd / Docker / restart.sh) brings
+   * the daemon back into operational mode. Tests pass a no-op so
+   * the timer doesn't tear down the test runner.
+   */
+  readonly onSetupComplete?: () => void;
+}
+
+const defaultOnSetupComplete = (log?: (msg: string) => void) => () => {
+  setTimeout(() => {
+    log?.('setup: complete — exiting (process manager will restart)');
+    process.exit(0);
+  }, 200);
+};
+
+const SetupRequestSchema = z.object({
+  config: AppConfigInvariantsSchema,
+  secrets: SecretsSchema,
+});
+
+export interface SetupModeServer {
+  readonly app: FastifyInstance;
+  start(port: number, host?: string): Promise<string>;
+  stop(): Promise<void>;
+}
+
+export async function createSetupModeServer(
+  deps: SetupModeServerDeps,
+): Promise<SetupModeServer> {
+  const app = Fastify({ logger: false, disableRequestLogging: true });
+
+  // Same CORS treatment as the operational server so the dashboard's
+  // dev mode (Vite on :5173 → daemon on :3010) works end-to-end.
+  await app.register(fastifyCors, { origin: true, credentials: true });
+
+  // ---------------------------------------------------------------
+  // Setup endpoints — unauthenticated.
+  // ---------------------------------------------------------------
+
+  // Public mode probe — the dashboard hits this on every page load
+  // to decide between the wizard and the normal status flow, and
+  // appliance hosts (Umbrel, Start9) consume it as the basic
+  // liveness check (#67). Always 200 + `{ status: 'ok', mode }`.
+  app.get('/api/health', async () => ({
+    status: 'ok',
+    mode: 'NEEDS_SETUP',
+  }));
+
+  // Bootstrap data the wizard pre-fills its form from. If config
+  // already exists (re-setup after losing secrets) we surface it so
+  // the operator doesn't have to re-enter every field; otherwise we
+  // surface the schema defaults.
+  app.get('/api/setup-info', async () => {
+    const existing = await deps.configRepo.get();
+    return {
+      has_existing_config: existing !== null,
+      has_existing_secrets: await deps.secretsRepo.exists(),
+      // For a fresh install: the schema's compiled defaults for
+      // every field that has one. Required-without-default fields
+      // (pool URL, worker name, payout address) are surfaced as the
+      // empty string so the wizard knows to mark them mandatory.
+      defaults: {
+        ...APP_CONFIG_DEFAULTS,
+        destination_pool_url: 'stratum+tcp://datum.local:23334',
+        destination_pool_worker_name: '',
+        btc_payout_address: '',
+      },
+      // For re-setup: the current row, so the wizard can pre-fill.
+      current_config: existing,
+    };
+  });
+
+  app.post('/api/setup', async (req, reply) => {
+    const parsed = SetupRequestSchema.safeParse(req.body);
+    if (!parsed.success) {
+      reply.code(400).send({
+        error: 'invalid_setup_payload',
+        details: parsed.error.issues.map((i) => ({
+          path: i.path.join('.'),
+          message: i.message,
+        })),
+      });
+      return;
+    }
+    const { config, secrets } = parsed.data;
+
+    deps.log?.('setup: writing config + secrets to db');
+    await deps.configRepo.upsert(config);
+    await deps.secretsRepo.upsert(secrets);
+
+    reply.send({ ok: true, restart_required: true });
+
+    // Exit after the response flushes. systemd / Docker / restart.sh
+    // bring the daemon back, this time finding both rows and booting
+    // into operational mode. The dashboard polls /api/health until
+    // mode flips to OPERATIONAL, then redirects to the home page.
+    (deps.onSetupComplete ?? defaultOnSetupComplete(deps.log))();
+  });
+
+  // ---------------------------------------------------------------
+  // Catch-all: any other /api/* path returns 412 + needs_setup.
+  // The static-files / SPA fallback below handles non-/api paths.
+  // ---------------------------------------------------------------
+
+  // Static assets first — Fastify serves these via fastifyStatic and
+  // its built-in not-found handling routes anything else to our
+  // setNotFoundHandler.
+  if (deps.staticRoot) {
+    try {
+      await readdir(deps.staticRoot);
+      await app.register(fastifyStatic, {
+        root: resolve(deps.staticRoot),
+        prefix: '/',
+        maxAge: '1y',
+        immutable: true,
+        setHeaders(res, path) {
+          if (path.endsWith('.html')) {
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+          }
+        },
+      });
+    } catch {
+      deps.log?.(`dashboard static not found at ${deps.staticRoot}; setup API only`);
+    }
+  }
+
+  app.setNotFoundHandler((req, reply) => {
+    if (req.url.startsWith('/api/')) {
+      reply
+        .code(412)
+        .send({ error: 'needs_setup', needs_setup: true });
+      return;
+    }
+    // SPA fallback — let the dashboard handle the route, including
+    // the /setup wizard route itself.
+    reply
+      .type('text/html')
+      .header('Cache-Control', 'no-cache, no-store, must-revalidate')
+      .sendFile('index.html');
+  });
+
+  return {
+    app,
+    async start(port: number, host = '0.0.0.0'): Promise<string> {
+      return app.listen({ port, host });
+    },
+    async stop(): Promise<void> {
+      await app.close();
+    },
+  };
+}

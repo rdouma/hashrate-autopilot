@@ -5,11 +5,13 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
 import { Layout } from './components/Layout';
 import { RequireAuth } from './components/RequireAuth';
+import { SetupGate } from './components/SetupGate';
 import './index.css';
 import { DenominationProvider } from './lib/denomination';
 import { LocaleContext, useLocaleState } from './lib/locale';
 import { Config } from './pages/Config';
 import { Login } from './pages/Login';
+import { Setup } from './pages/Setup';
 import { Status } from './pages/Status';
 
 const queryClient = new QueryClient({
@@ -31,20 +33,23 @@ function AppShell() {
       <QueryClientProvider client={queryClient}>
         <DenominationProvider>
           <BrowserRouter>
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route
-                element={
-                  <RequireAuth>
-                    <Layout />
-                  </RequireAuth>
-                }
-              >
-                <Route index element={<Status />} />
-                <Route path="/config" element={<Config />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Route>
-            </Routes>
+            <SetupGate>
+              <Routes>
+                <Route path="/setup" element={<Setup />} />
+                <Route path="/login" element={<Login />} />
+                <Route
+                  element={
+                    <RequireAuth>
+                      <Layout />
+                    </RequireAuth>
+                  }
+                >
+                  <Route index element={<Status />} />
+                  <Route path="/config" element={<Config />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Route>
+              </Routes>
+            </SetupGate>
           </BrowserRouter>
         </DenominationProvider>
       </QueryClientProvider>

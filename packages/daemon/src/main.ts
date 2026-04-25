@@ -12,11 +12,10 @@ import { resolve } from 'node:path';
 import { createBitcoindClient } from '@braiins-hashrate/bitcoind-client';
 import { createBraiinsClient } from '@braiins-hashrate/braiins-client';
 
-import {
-  applyEnvOverridesToConfig,
-  applyEnvOverridesToSecrets,
-} from './config/env-overrides.js';
-import { loadSecrets } from './config/secrets.js';
+import { applyEnvOverridesToConfig } from './config/env-overrides.js';
+import { loadSecretsAnySource } from './config/secret-sources.js';
+import { createSetupModeServer } from './setup-mode.js';
+import { SecretsRepo } from './state/repos/secrets.js';
 import { createHttpServer } from './http/server.js';
 import { AccountSpendService } from './services/account-spend.js';
 import { RetentionService } from './services/retention.js';
@@ -64,16 +63,9 @@ async function main(): Promise<void> {
   log(`  age key:  ${ageKeyPath}`);
   log(`  tick:     ${DEFAULT_TICK_INTERVAL_MS} ms`);
 
-  // Fail-closed on config problems.
-  const fileSecrets = await loadSecrets(secretsPath, {
-    env: { ...process.env, SOPS_AGE_KEY_FILE: ageKeyPath },
-  });
-  // Overlay env-var overrides for appliance / Docker setups (#59).
-  // SOPS file remains the power-user path; env vars take precedence
-  // when both are set so a `docker run -e BHA_…` rotation works
-  // without needing to touch the encrypted file.
-  const secrets = applyEnvOverridesToSecrets(fileSecrets);
-
+  // Open the DB first — needed in both operational and NEEDS_SETUP
+  // boot paths (the wizard writes config + secrets through repos
+  // backed by the same handle).
   const handle = await openDatabase({ path: dbPath });
   const configRepo = new ConfigRepo(handle.db);
   const runtimeRepo = new RuntimeStateRepo(handle.db);
@@ -82,9 +74,44 @@ async function main(): Promise<void> {
   const tickMetricsRepo = new TickMetricsRepo(handle.db);
   const bidEventsRepo = new BidEventsRepo(handle.db);
   const closedBidsCacheRepo = new ClosedBidsCacheRepo(handle.db);
+  const secretsRepo = new SecretsRepo(handle.db);
 
+  // Try every secret source in priority order: env > SOPS file > db.
+  // Returns null if none provide a complete `Secrets`; combined with
+  // a missing config row that's the NEEDS_SETUP signal.
+  const secretsResult = await loadSecretsAnySource({
+    sopsPath: secretsPath,
+    ageKeyPath,
+    secretsRepo,
+    env: process.env,
+  });
   let dbCfg = await configRepo.get();
-  if (!dbCfg) throw new Error('config row missing — run `pnpm -w run setup` first');
+
+  if (!secretsResult || !dbCfg) {
+    // First-run / re-setup: stand up only the wizard endpoints. The
+    // user submits config+secrets via POST /api/setup, daemon writes
+    // both, exits, process manager restarts us into operational mode.
+    const missing: string[] = [];
+    if (!secretsResult) missing.push('secrets');
+    if (!dbCfg) missing.push('config');
+    log(`NEEDS_SETUP — missing: ${missing.join(', ')}; serving wizard only`);
+    log(
+      'WARNING: setup endpoints are unauthenticated. Restrict access ' +
+        '(firewall, Tailscale, Tor) until the wizard has run.',
+    );
+    const setupServer = await createSetupModeServer({
+      configRepo,
+      secretsRepo,
+      staticRoot: resolve(projectRoot, DASHBOARD_STATIC),
+      log,
+    });
+    const addr = await setupServer.start(HTTP_PORT, HTTP_HOST);
+    log(`setup server listening on ${addr}`);
+    return; // Skip operational boot; daemon will exit on POST /api/setup.
+  }
+
+  const secrets = secretsResult.secrets;
+  log(`secrets:  loaded from ${secretsResult.source}`);
 
   // Seed bitcoind credentials from secrets into config on first boot
   // so they become dashboard-editable (issue #14). Only runs when secrets

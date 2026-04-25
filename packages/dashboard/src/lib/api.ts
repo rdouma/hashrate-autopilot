@@ -257,7 +257,66 @@ export interface ConfigResponse {
   config: AppConfig;
 }
 
+// ---------------------------------------------------------------------------
+// First-run onboarding wizard (#57) — public endpoints, no auth.
+// ---------------------------------------------------------------------------
+
+export interface HealthResponse {
+  status: 'ok';
+  mode: 'NEEDS_SETUP' | 'OPERATIONAL';
+}
+
+export interface SetupInfoResponse {
+  has_existing_config: boolean;
+  has_existing_secrets: boolean;
+  defaults: AppConfig;
+  current_config: AppConfig | null;
+}
+
+export interface SetupRequestPayload {
+  config: AppConfig;
+  secrets: {
+    braiins_owner_token: string;
+    braiins_read_only_token?: string;
+    dashboard_password: string;
+    bitcoind_rpc_url?: string;
+    bitcoind_rpc_user?: string;
+    bitcoind_rpc_password?: string;
+  };
+}
+
+export interface SetupResponse {
+  ok: boolean;
+  restart_required: boolean;
+}
+
+/** Public probe — no auth, returns 200 in both setup and operational modes. */
+async function publicGet<T>(path: string): Promise<T> {
+  const res = await fetch(path, { headers: { Accept: 'application/json' } });
+  if (!res.ok) {
+    throw new Error(`${res.status} ${res.statusText}`);
+  }
+  return res.json() as Promise<T>;
+}
+
+async function publicPost<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const text = await res.text();
+  if (!res.ok) {
+    throw new Error(`${res.status} ${res.statusText}${text ? ` — ${text}` : ''}`);
+  }
+  return JSON.parse(text) as T;
+}
+
 export const api = {
+  health: () => publicGet<HealthResponse>('/api/health'),
+  setupInfo: () => publicGet<SetupInfoResponse>('/api/setup-info'),
+  submitSetup: (payload: SetupRequestPayload) =>
+    publicPost<SetupResponse>('/api/setup', payload),
   status: () => request<StatusResponse>('/api/status'),
   decisions: (limit = 500) =>
     request<DecisionSummary[]>(`/api/decisions?limit=${limit}`),
