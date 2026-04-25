@@ -257,9 +257,9 @@ docker run --rm hello-world
 
 ```bash
 docker run -d \
-  --name braiins-autopilot \
+  --name hashrate-autopilot \
   -p 3010:3010 \
-  -v braiins-autopilot-data:/app/data \
+  -v hashrate-autopilot-data:/app/data \
   --restart unless-stopped \
   ghcr.io/rdouma/hashrate-autopilot:latest
 ```
@@ -268,7 +268,7 @@ What that does:
 
 - `-d` — runs detached.
 - `-p 3010:3010` — exposes the dashboard on port 3010 of the host.
-- `-v braiins-autopilot-data:/app/data` — creates a Docker-managed named volume that persists every
+- `-v hashrate-autopilot-data:/app/data` — creates a Docker-managed named volume that persists every
   operator-relevant file (config, secrets, tick history, owned-bid ledger). Surviving container
   recreation is the whole point.
 - `--restart unless-stopped` — if the host reboots or the container crashes, Docker brings it back.
@@ -301,9 +301,9 @@ env vars on `docker run`:
 
 ```bash
 docker run -d \
-  --name braiins-autopilot \
+  --name hashrate-autopilot \
   -p 3010:3010 \
-  -v braiins-autopilot-data:/app/data \
+  -v hashrate-autopilot-data:/app/data \
   -e BHA_BRAIINS_OWNER_TOKEN=… \
   -e BHA_DASHBOARD_PASSWORD=… \
   -e BHA_TARGET_HASHRATE_PH=3.0 \
@@ -319,19 +319,19 @@ bitcoind. Full list of `BHA_*` overrides: [`docs/configuration.md`](docs/configu
 
 ```bash
 # Tail the logs (everything goes to stdout — no log files inside the container):
-docker logs -f braiins-autopilot
+docker logs -f hashrate-autopilot
 
 # Status:
-docker ps --filter name=braiins-autopilot
+docker ps --filter name=hashrate-autopilot
 
 # Stop / start / restart:
-docker stop braiins-autopilot
-docker start braiins-autopilot
-docker restart braiins-autopilot
+docker stop hashrate-autopilot
+docker start hashrate-autopilot
+docker restart hashrate-autopilot
 
 # Update to a new release:
 docker pull ghcr.io/rdouma/hashrate-autopilot:latest
-docker stop braiins-autopilot && docker rm braiins-autopilot
+docker stop hashrate-autopilot && docker rm hashrate-autopilot
 # re-run the docker run command from B.2 — the named volume preserves your state
 ```
 

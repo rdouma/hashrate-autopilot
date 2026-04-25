@@ -2,6 +2,14 @@
 
 ## 2026-04-25 (later)
 
+### `[Fix]` Docker image: drop `pnpm prune --prod` so workspace symlinks survive
+
+The v1.3.0 image built and pushed cleanly but crash-looped on every container start with `ERR_MODULE_NOT_FOUND: Cannot find package '@braiins-hashrate/bitcoind-client' imported from /app/packages/daemon/dist/main.js`. Operator caught it on first `docker run` against `:latest`. Cause: `pnpm prune --prod` deletes `node_modules` and reinstalls without the workspace-link wiring that the daemon needs to resolve sibling packages at runtime. Removed the prune step; image is ~100 MB larger but actually runs. v1.3.1 republishes with the fix.
+
+### `[UI/Docs]` Rename Docker container/volume to `hashrate-autopilot`
+
+The README's `docker run --name braiins-autopilot` line and the matching `--volume braiins-autopilot-data` predated the operator's "v2 supports multiple marketplaces" goal and read as Braiins-specific. Changed every README mention to `hashrate-autopilot` to match the registry path (`ghcr.io/<owner>/hashrate-autopilot`). Image name was already generic; this is a docs fix.
+
 ### `[Infra]` Multi-arch Docker image + GHCR publish workflow (#58)
 
 New `Dockerfile` (multi-stage, `node:22-slim` base) builds the daemon + dashboard into a single image and runs the daemon as a non-root user. Includes a `HEALTHCHECK` that probes `/api/health` (#67), `VOLUME /app/data` for persistent state, and the standard appliance env vars (`HTTP_HOST`, `HTTP_PORT`, `DB_PATH`) wired up.

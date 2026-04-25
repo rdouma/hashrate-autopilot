@@ -49,13 +49,14 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 RUN pnpm build
 
-# Drop dev dependencies. The remaining node_modules carries only
-# what's needed at runtime; combined with the dist directories that
-# `pnpm build` produced, this is the runnable artefact.
-# CI=true tells pnpm we're non-interactive — without it, prune asks
-# for tty confirmation before purging the modules dir and aborts in
-# a Docker build context.
-RUN CI=true pnpm prune --prod
+# NOTE: we intentionally do NOT run `pnpm prune --prod` here. In a
+# pnpm workspace, the daemon resolves sibling packages via symlinks
+# under `node_modules/@braiins-hashrate/*`; prune --prod deletes the
+# modules directory and reinstalls without preserving those workspace
+# links, which leaves the daemon throwing
+# `ERR_MODULE_NOT_FOUND: Cannot find package '@braiins-hashrate/...'`
+# at runtime. The size cost of keeping dev deps is ~100 MB, accepted
+# until we move to a pnpm-deploy-based pipeline.
 
 # ---------------------------------------------------------------------------
 # Runtime
