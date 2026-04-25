@@ -60,10 +60,10 @@ RUN pnpm prune --prod
 FROM node:${NODE_VERSION}-slim AS runtime
 WORKDIR /app
 
-# Non-root operator user. Apps under Umbrel/Start9 run with constrained
-# UIDs already, but baking it in here keeps `docker run` parity sane.
-RUN groupadd --system --gid 1000 app \
-    && useradd --system --uid 1000 --gid app --home-dir /home/app --create-home app
+# Run as the official `node` image's pre-baked non-root user (uid 1000,
+# gid 1000) — already exists in node:22-slim, so we just chown the
+# copied files and switch to it. Avoids a useradd that would conflict
+# with the pre-existing UID.
 
 # Pull the runnable bits from the builder. We need:
 #   - node_modules (production deps + workspace symlinks)
@@ -71,17 +71,17 @@ RUN groupadd --system --gid 1000 app \
 #   - packages/<each>/package.json (so the workspace symlinks resolve)
 #   - root pnpm-workspace.yaml + package.json (workspace roots)
 #   - migrations (copied into dist by the daemon's build script)
-COPY --from=builder --chown=app:app /app/node_modules /app/node_modules
-COPY --from=builder --chown=app:app /app/packages /app/packages
-COPY --from=builder --chown=app:app /app/package.json /app/pnpm-workspace.yaml ./
+COPY --from=builder --chown=node:node /app/node_modules /app/node_modules
+COPY --from=builder --chown=node:node /app/packages /app/packages
+COPY --from=builder --chown=node:node /app/package.json /app/pnpm-workspace.yaml ./
 
 # Persistent state directory. Operators should mount a volume here
 # (Umbrel/Start9 do this declaratively in their app manifests; for
 # `docker run` use `-v hashrate-data:/app/data`).
-RUN mkdir -p /app/data && chown app:app /app/data
+RUN mkdir -p /app/data && chown node:node /app/data
 VOLUME /app/data
 
-USER app
+USER node
 EXPOSE 3010
 
 # Health probe — the daemon's /api/health is the canonical liveness
