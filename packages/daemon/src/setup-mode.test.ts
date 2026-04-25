@@ -3,7 +3,11 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ConfigRepo } from './state/repos/config.js';
 import { SecretsRepo } from './state/repos/secrets.js';
 import { closeDatabase, openDatabase, type DatabaseHandle } from './state/db.js';
-import { createSetupModeServer, type SetupModeServer } from './setup-mode.js';
+import {
+  createSetupModeServer,
+  detectBitcoindEnv,
+  type SetupModeServer,
+} from './setup-mode.js';
 import { APP_CONFIG_DEFAULTS } from './config/schema.js';
 
 function validSetupPayload() {
@@ -194,5 +198,78 @@ describe('createSetupModeServer', () => {
     // file rather than the 412 from the API gate.
     const res = await server.app.inject({ method: 'GET', url: '/setup' });
     expect(res.statusCode).not.toBe(412);
+  });
+});
+
+describe('detectBitcoindEnv', () => {
+  it('returns all-null when no env vars are set', () => {
+    expect(detectBitcoindEnv({})).toEqual({ url: null, user: null, password: null });
+  });
+
+  it('uses BITCOIN_RPC_URL when present', () => {
+    expect(
+      detectBitcoindEnv({ BITCOIN_RPC_URL: 'http://10.0.0.1:8332' }),
+    ).toEqual({ url: 'http://10.0.0.1:8332', user: null, password: null });
+  });
+
+  it('synthesises URL from BITCOIN_RPC_HOST + BITCOIN_RPC_PORT when URL is absent', () => {
+    expect(
+      detectBitcoindEnv({
+        BITCOIN_RPC_HOST: '10.21.21.8',
+        BITCOIN_RPC_PORT: '8332',
+      }),
+    ).toEqual({ url: 'http://10.21.21.8:8332', user: null, password: null });
+  });
+
+  it('host alone (no port) does not synthesise a URL', () => {
+    expect(
+      detectBitcoindEnv({ BITCOIN_RPC_HOST: '10.21.21.8' }),
+    ).toEqual({ url: null, user: null, password: null });
+  });
+
+  it('explicit URL wins over the host+port pair', () => {
+    expect(
+      detectBitcoindEnv({
+        BITCOIN_RPC_URL: 'http://from-url:18332',
+        BITCOIN_RPC_HOST: 'ignored',
+        BITCOIN_RPC_PORT: '8332',
+      }),
+    ).toEqual({ url: 'http://from-url:18332', user: null, password: null });
+  });
+
+  it('captures user + password', () => {
+    expect(
+      detectBitcoindEnv({
+        BITCOIN_RPC_URL: 'http://10.0.0.1:8332',
+        BITCOIN_RPC_USER: 'alice',
+        BITCOIN_RPC_PASSWORD: 'secret',
+      }),
+    ).toEqual({
+      url: 'http://10.0.0.1:8332',
+      user: 'alice',
+      password: 'secret',
+    });
+  });
+
+  it('accepts BITCOIN_RPC_PASS as a synonym for BITCOIN_RPC_PASSWORD', () => {
+    expect(
+      detectBitcoindEnv({
+        BITCOIN_RPC_URL: 'http://10.0.0.1:8332',
+        BITCOIN_RPC_PASS: 'pass-via-PASS',
+      }),
+    ).toEqual({
+      url: 'http://10.0.0.1:8332',
+      user: null,
+      password: 'pass-via-PASS',
+    });
+  });
+
+  it('whitespace-only values are treated as missing', () => {
+    expect(
+      detectBitcoindEnv({
+        BITCOIN_RPC_URL: '   ',
+        BITCOIN_RPC_USER: '\t\n',
+      }),
+    ).toEqual({ url: null, user: null, password: null });
   });
 });

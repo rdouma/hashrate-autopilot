@@ -2,6 +2,10 @@
 
 ## 2026-04-25 (later)
 
+### `[Feature]` Wizard auto-detects bitcoind RPC creds from appliance env vars (#60)
+
+Both Umbrel and Start9 inject standard env vars (`BITCOIN_RPC_HOST`/`PORT`/`USER`/`PASSWORD`, optionally `BITCOIN_RPC_URL`) when an app declares a Bitcoin Core dependency. New `detectBitcoindEnv()` helper reads them and the setup-info endpoint surfaces both pre-filled defaults *and* a `detected_bitcoind` summary so the wizard can show a green "Detected from environment" badge above the RPC fields. Operator can still override; falls back cleanly to empty defaults when no vars are present. When the URL is detected, `payout_source` defaults to `bitcoind` (instead of `none`) so an Umbrel install gets an end-to-end working setup with no manual data entry on the payout side.
+
 ### `[Infra]` Graceful SIGTERM in setup mode + 8s hard force-exit fence (#61)
 
 Operational shutdown already handled SIGTERM/SIGINT (drain tick loop → close HTTP → close DB), but the NEEDS_SETUP path didn't — a `docker stop` mid-wizard would force-kill the daemon and risk a half-flushed WAL. Added a setup-mode shutdown handler that closes the wizard server + DB cleanly on signal, and a `forceExitAfter(8_000)` fence on both shutdown paths so a stuck Braiins API call inside an in-flight tick can't ride out the 10 s Docker grace and earn a SIGKILL with the WAL mid-flush. Hard exit code is 124 (matching `timeout(1)`'s convention). Setup-mode handlers are removed before `bootOperational` installs its own — otherwise both fire on the next signal and the setup handler closes the DB out from under the operational shutdown.

@@ -210,6 +210,7 @@ export function Setup() {
         <MiningStep
           form={form}
           update={update}
+          info={info}
           onBack={() => setStep('access')}
           onNext={() => setStep('review')}
         />
@@ -355,11 +356,13 @@ function AccessStep({
 function MiningStep({
   form,
   update,
+  info,
   onBack,
   onNext,
 }: {
   form: FormState;
   update: <K extends keyof FormState>(k: K, v: FormState[K]) => void;
+  info: SetupInfoResponse;
   onBack: () => void;
   onNext: () => void;
 }) {
@@ -510,6 +513,15 @@ function MiningStep({
         </Field>
         {form.payout_source === 'bitcoind' && (
           <div className="space-y-3 bg-slate-900/40 border border-slate-800 rounded p-3">
+            {(info.detected_bitcoind?.url ||
+              info.detected_bitcoind?.user ||
+              info.detected_bitcoind?.password) && (
+              <div className="text-xs bg-emerald-950/30 border border-emerald-800/40 rounded px-3 py-2 text-emerald-200 leading-snug">
+                <strong>Detected from environment:</strong> Umbrel/Start9-style{' '}
+                <code>BITCOIN_RPC_*</code> env vars are set. The fields below are
+                pre-filled — check them and override if needed.
+              </div>
+            )}
             <Field label="RPC URL">
               <input
                 type="text"

@@ -103,24 +103,36 @@ export async function createSetupModeServer(
   // Bootstrap data the wizard pre-fills its form from. If config
   // already exists (re-setup after losing secrets) we surface it so
   // the operator doesn't have to re-enter every field; otherwise we
-  // surface the schema defaults.
+  // surface the schema defaults — with appliance-detected bitcoind
+  // RPC creds layered on top (#60) so an Umbrel/Start9 install with
+  // bitcoind already running pre-fills that side automatically.
   app.get('/api/setup-info', async () => {
     const existing = await deps.configRepo.get();
+    const detected = detectBitcoindEnv(process.env);
     return {
       has_existing_config: existing !== null,
       has_existing_secrets: await deps.secretsRepo.exists(),
-      // For a fresh install: the schema's compiled defaults for
-      // every field that has one. Required-without-default fields
-      // (pool URL, worker name, payout address) are surfaced as the
-      // empty string so the wizard knows to mark them mandatory.
       defaults: {
         ...APP_CONFIG_DEFAULTS,
         destination_pool_url: 'stratum+tcp://datum.local:23334',
         destination_pool_worker_name: '',
         btc_payout_address: '',
+        // Pre-fill from appliance env vars if detected; the wizard
+        // can offer a one-click "use detected bitcoind" affordance
+        // and falls back to the empty defaults otherwise.
+        bitcoind_rpc_url: detected.url ?? APP_CONFIG_DEFAULTS.bitcoind_rpc_url,
+        bitcoind_rpc_user: detected.user ?? APP_CONFIG_DEFAULTS.bitcoind_rpc_user,
+        bitcoind_rpc_password:
+          detected.password ?? APP_CONFIG_DEFAULTS.bitcoind_rpc_password,
+        // If we found a working URL, suggest bitcoind as the payout
+        // source out of the box. The operator can flip back to none
+        // or pick electrs in the wizard.
+        payout_source: detected.url ? 'bitcoind' : APP_CONFIG_DEFAULTS.payout_source,
       },
-      // For re-setup: the current row, so the wizard can pre-fill.
       current_config: existing,
+      // Surface raw detected values so the wizard can show a
+      // "detected: …" hint next to the bitcoind section.
+      detected_bitcoind: detected,
     };
   });
 
@@ -203,4 +215,41 @@ export async function createSetupModeServer(
       await app.close();
     },
   };
+}
+
+/**
+ * Look at the process environment for the standard env-var triples
+ * Umbrel and Start9 inject when an app declares a Bitcoin Core
+ * dependency. Returns whichever pieces we found — the wizard uses
+ * this to prefill the bitcoind section so an operator who already
+ * runs bitcoind on the same appliance doesn't have to re-enter creds.
+ *
+ * Both platforms use the same env var names in 2025, so a single
+ * lookup covers both. We accept a pair of common synonyms for the
+ * URL (`BITCOIN_RPC_URL` directly, or split `BITCOIN_RPC_HOST` +
+ * `BITCOIN_RPC_PORT`) so different deployment manifests don't have
+ * to rename their existing variables.
+ *
+ * Returns nulls (not the empty string) for missing fields so the
+ * wizard can distinguish "not detected" from "detected as empty".
+ */
+export interface DetectedBitcoindEnv {
+  readonly url: string | null;
+  readonly user: string | null;
+  readonly password: string | null;
+}
+
+export function detectBitcoindEnv(env: NodeJS.ProcessEnv): DetectedBitcoindEnv {
+  const url =
+    env['BITCOIN_RPC_URL']?.trim() ||
+    (env['BITCOIN_RPC_HOST']?.trim() && env['BITCOIN_RPC_PORT']?.trim()
+      ? `http://${env['BITCOIN_RPC_HOST']}:${env['BITCOIN_RPC_PORT']}`
+      : '') ||
+    null;
+  const user = env['BITCOIN_RPC_USER']?.trim() || null;
+  // Both BITCOIN_RPC_PASS and BITCOIN_RPC_PASSWORD show up in the
+  // wild; accept either.
+  const password =
+    env['BITCOIN_RPC_PASSWORD']?.trim() || env['BITCOIN_RPC_PASS']?.trim() || null;
+  return { url: url || null, user, password };
 }
