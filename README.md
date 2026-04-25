@@ -169,7 +169,8 @@ schema. See [docs/configuration.md](docs/configuration.md) for the full list.
 
 ## Tech stack
 
-TypeScript monorepo (pnpm workspaces), Node 22+, React dashboard, SQLite (better-sqlite3), sops-encrypted secrets.
+TypeScript monorepo (pnpm workspaces), Node 22+, React dashboard, SQLite (better-sqlite3). Secrets persist
+in `data/state.db` via the first-run wizard by default; SOPS-encrypted file remains supported for power users.
 
 ```
 packages/
@@ -191,8 +192,9 @@ packages/
   see [`docs/setup-datum-api.md`](docs/setup-datum-api.md) for the verified recipe and the landmines to avoid
   (do **not** use `umbreld apps.restart.mutate` — it wedged the Umbrel box on our first live attempt; the dashboard
   Restart button or a cold-boot is fine and has run uninterrupted since).
-- `sops` + `age` for encrypted secrets (API tokens, optional bitcoind credentials)
 - *(Optional)* A running `bitcoind` or Electrs endpoint for on-chain payout tracking
+- *(Power users only)* `sops` + `age` if you'd rather store secrets in an encrypted file at rest instead of
+  using the wizard's DB-backed flow — see [Power-user setup with SOPS](#power-user-setup-with-sops)
 
 ### Installing Node + pnpm
 
@@ -218,61 +220,44 @@ On **macOS** (Homebrew):
 brew install node pnpm
 ```
 
-### Installing sops + age
-
-Required before `pnpm run setup` — it shells out to both.
-
-On **Ubuntu / Debian**:
-
-```bash
-sudo apt install -y age
-
-# sops isn't in apt. Releases are version-named, so resolve the latest tag
-# from GitHub's /latest redirect, then download the matching .deb. On arm64
-# (Raspberry Pi) replace `amd64` with `arm64`.
-SOPS_VER=$(curl -fsSL -o /dev/null -w '%{url_effective}' https://github.com/getsops/sops/releases/latest | sed 's|.*/||')
-curl -fsSL "https://github.com/getsops/sops/releases/download/${SOPS_VER}/sops_${SOPS_VER#v}_amd64.deb" -o /tmp/sops.deb
-sudo apt install -y /tmp/sops.deb
-sops --version
-```
-
-On **macOS**:
-
-```bash
-brew install age sops
-```
-
 ## Getting started
 
 ```bash
 git clone https://github.com/rdouma/hashrate-autopilot && cd hashrate-autopilot
 pnpm install
 pnpm build
-pnpm run setup
-```
-
-`pnpm run setup` is the interactive first-run wizard — it generates an `age` key, writes the `sops` policy,
-prompts for your Braiins tokens + core config, and initialises the SQLite database. Refuses to overwrite an
-existing setup unless you pass `--force`. (Install `age` and `sops` first — see prerequisites above.)
-
-> Use `pnpm run setup`, not `pnpm setup`. The bare `pnpm setup` is a pnpm built-in command that configures
-> pnpm's own shell environment — it silently shadows any `setup` script in `package.json`. `pnpm run setup`
-> disambiguates and invokes the wizard.
-
-Then start the daemon:
-
-```bash
 ./scripts/start.sh
 ```
 
-`start.sh` backgrounds the process, writes its PID to `data/daemon.pid`, and appends stdout/stderr to
+`start.sh` backgrounds the daemon, writes its PID to `data/daemon.pid`, and appends stdout/stderr to
 `data/logs/daemon.log`. Companion scripts: `scripts/stop.sh`, `scripts/restart.sh`, `scripts/status.sh`,
-`scripts/logs.sh`. For a foreground run (e.g. debugging), use `pnpm -w run daemon` from the repo root.
+`scripts/logs.sh`. For a foreground run (debugging), use `pnpm -w run daemon` from the repo root.
 
-The dashboard is served on **port 3010**, bound to `0.0.0.0` (all interfaces) by default — reachable from any
-machine on the LAN as `http://<this-host>:3010` or `http://<lan-ip>:3010`. On first launch the daemon boots in
-DRY-RUN mode — promote to LIVE from the dashboard when ready. Remaining configuration (target hashrate, caps,
-payout source, etc.) is editable from the dashboard's Config page.
+The dashboard is served on **port 3010**, bound to `0.0.0.0` by default — reachable from any machine on the
+LAN as `http://<this-host>:3010` or `http://<lan-ip>:3010`.
+
+### First-run setup wizard
+
+On a fresh install (no `state.db` configured yet) the daemon boots into a special **NEEDS_SETUP** mode
+exposing only the onboarding wizard. Open the dashboard URL in a browser and you'll be redirected to
+`/setup` automatically. The wizard walks you through three steps:
+
+1. **Access** — your Braiins owner token (from hashpower.braiins.com → API tokens), an optional read-only
+   token, and a dashboard password.
+2. **Mining** — target + minimum-floor hashrate, your Datum gateway / pool URL, the worker identity
+   (`<btc-address>.<label>` — the period is mandatory; without it Ocean TIDES won't credit your shares),
+   the Bitcoin address payouts go to. Bitcoin Core RPC is optional and tucked behind a collapsed section.
+3. **Review** — sanity-check, submit.
+
+On submit the daemon writes everything to `data/state.db` and restarts itself. The wizard polls until the
+daemon is back, then signs you in automatically and drops you on the Status page. Daemon boots in
+**DRY-RUN** by default — promote to LIVE from the dashboard when you've verified the autopilot is doing
+what you expect.
+
+> The setup endpoints are unauthenticated by design (the dashboard password is one of the values the wizard
+> *creates*). On a public network, restrict access to port 3010 with a firewall, Tailscale, or Tor until the
+> wizard has run. Appliance platforms (Umbrel, Start9) handle this automatically — the dashboard is exposed
+> only over Tor / LAN there.
 
 ### Opening the port on the host firewall
 
@@ -301,31 +286,32 @@ nc -zv <host>.local 3010    # or the host's LAN IP
 To change the port, set `HTTP_PORT=nnnn` in the daemon's environment; to bind only to loopback, set
 `HTTP_HOST=127.0.0.1`.
 
-### Manually editing secrets later
+### Editing secrets later
 
-`pnpm run setup` covers the initial secrets file. If you need to re-edit it (rotate a token, add bitcoind
-credentials, etc.), open it with `sops`:
+The wizard persists everything (config + secrets) into `data/state.db`. To rotate a token or change the
+dashboard password after setup, the easiest path is to run the wizard again:
 
-```bash
-SOPS_AGE_KEY_FILE=~/.config/braiins-hashrate/age.key sops .env.sops.yaml
-```
+1. Stop the daemon (`./scripts/stop.sh`).
+2. Delete the `secrets` row to force NEEDS_SETUP on next boot:
+   `sqlite3 data/state.db 'DELETE FROM secrets;'`
+3. Start the daemon (`./scripts/start.sh`); the dashboard redirects to `/setup`. Your existing config is
+   pre-filled — only the secrets need to be re-entered.
 
-The explicit `SOPS_AGE_KEY_FILE` is only needed if you don't have the key at the default sops location
-(`~/.config/sops/age/keys.txt`) — `pnpm run setup` writes it to `~/.config/braiins-hashrate/age.key` by design, so
-this project's key stays separate from any other sops-encrypted project on the same host.
+Alternatively, every secret is overridable from the environment with a `BHA_*` variable — no file edit
+needed. See [docs/configuration.md](docs/configuration.md). Set
+`BHA_BRAIINS_OWNER_TOKEN=…` (etc.) in the daemon's environment and they take precedence over the
+DB-stored values on every restart.
 
 ### Running on a second host (or migrating)
 
-`.env.sops.yaml` is **not** in the repo — it's generated locally by `pnpm run setup` and gitignored. Each host
-the operator stands up gets its own. Two ways to bring up a second host:
+All operator-relevant state (config, secrets, tick metrics, decisions, owned-bid ledger) lives under
+`data/`. Two ways to bring up a second host:
 
-1. **Fresh setup on the new host** (simplest — recommended): clone the repo, `pnpm install && pnpm build &&
-   pnpm run setup`, re-enter your tokens. Produces a brand-new age key and a fresh `.env.sops.yaml`. The two
-   hosts now have independent encrypted envelopes against independent keys.
-2. **Copy the whole secret bundle over** (one key, shared state): scp both
-   `~/.config/braiins-hashrate/age.key` *and* `.env.sops.yaml` from the origin host onto the target. Then the
-   daemon on the new host will decrypt the same secrets without needing to re-run setup. `chmod 600` the age
-   key after the copy.
+1. **Fresh setup on the new host** (simplest): clone the repo, `pnpm install && pnpm build &&
+   ./scripts/start.sh`, re-run the wizard. The two hosts have independent state.
+2. **Copy `data/` over**: scp the entire `data/` directory from the origin host to the target. The daemon
+   on the new host boots straight into operational mode — no wizard needed. Stop the daemon first on both
+   sides; SQLite WAL files don't appreciate concurrent processes.
 
 See [`docs/spec.md`](docs/spec.md) for the full design and [`docs/architecture.md`](docs/architecture.md) for
 deployment details.
@@ -352,6 +338,86 @@ The script does a `git pull --ff-only` internally, so it only runs on a tracking
 rather pin to a tagged release, manage the checkout manually (`git fetch --tags && git checkout v1.0.1 && pnpm
 install && pnpm build && ./scripts/restart.sh`) — deploy.sh will fail on a detached HEAD, which is safer than
 silently moving you off the pin.
+
+## Power-user setup with SOPS
+
+The default flow (web wizard → secrets in `state.db`) is appliance-friendly and what most users should pick.
+If you'd rather store secrets in a SOPS-encrypted file at rest — typical reasons: ops workflow already
+standardised on SOPS + age, or you want to keep secrets out of the SQLite file that backups roll up — that
+path remains supported.
+
+### Installing sops + age
+
+On **Ubuntu / Debian**:
+
+```bash
+sudo apt install -y age
+
+# sops isn't in apt. Releases are version-named, so resolve the latest tag
+# from GitHub's /latest redirect, then download the matching .deb. On arm64
+# (Raspberry Pi) replace `amd64` with `arm64`.
+SOPS_VER=$(curl -fsSL -o /dev/null -w '%{url_effective}' https://github.com/getsops/sops/releases/latest | sed 's|.*/||')
+curl -fsSL "https://github.com/getsops/sops/releases/download/${SOPS_VER}/sops_${SOPS_VER#v}_amd64.deb" -o /tmp/sops.deb
+sudo apt install -y /tmp/sops.deb
+sops --version
+```
+
+On **macOS**:
+
+```bash
+brew install age sops
+```
+
+### The CLI setup script
+
+```bash
+pnpm run setup
+```
+
+This is the legacy interactive setup CLI. It generates an `age` key at
+`~/.config/braiins-hashrate/age.key`, writes a `.sops.yaml` policy, prompts for your tokens + core config,
+encrypts the secrets to `.env.sops.yaml`, and bootstraps `data/state.db`. Refuses to overwrite an existing
+setup unless you pass `--force`.
+
+> Use `pnpm run setup`, not `pnpm setup`. The bare `pnpm setup` is a pnpm built-in that configures pnpm's
+> own shell environment — it silently shadows any `setup` script in `package.json`. `pnpm run setup`
+> disambiguates and invokes the autopilot's CLI.
+
+After `pnpm run setup` completes, start the daemon with `./scripts/start.sh`. The web wizard is *not*
+triggered — the daemon finds the SOPS file + populated config and goes straight into operational mode.
+
+### Resolution priority
+
+The daemon resolves secrets in this order on every boot:
+
+1. **`BHA_*` environment variables** (full set — `BHA_BRAIINS_OWNER_TOKEN` and `BHA_DASHBOARD_PASSWORD`
+   required). Lets a Docker / Umbrel / Start9 deployment skip both file and DB entirely.
+2. **`.env.sops.yaml` file**, if present. Decrypted with the age key at
+   `~/.config/braiins-hashrate/age.key` (or `SOPS_AGE_KEY_FILE`).
+3. **`secrets` table in `data/state.db`** (populated by the web wizard).
+4. **NEEDS_SETUP** (web wizard offered).
+
+Env-var overrides apply on top of whatever source above won — so a `docker run -e BHA_BRAIINS_OWNER_TOKEN=…`
+rotates a single secret without touching the SOPS file or the DB.
+
+### Editing the SOPS file later
+
+```bash
+SOPS_AGE_KEY_FILE=~/.config/braiins-hashrate/age.key sops .env.sops.yaml
+```
+
+The explicit `SOPS_AGE_KEY_FILE` is only needed if your age key isn't at the default sops location
+(`~/.config/sops/age/keys.txt`) — `pnpm run setup` writes the project's key to a separate path on purpose so
+it doesn't collide with other sops-encrypted projects on the same host.
+
+### Migrating between hosts (SOPS path)
+
+`.env.sops.yaml` is gitignored. Two options:
+
+1. **Fresh setup on the new host**: clone, `pnpm install && pnpm build && pnpm run setup`. Independent
+   age key and encrypted file per host.
+2. **Copy the secret bundle**: scp both `~/.config/braiins-hashrate/age.key` *and* `.env.sops.yaml` from
+   origin to target. `chmod 600` the age key after the copy.
 
 ## Disclaimer
 

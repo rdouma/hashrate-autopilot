@@ -2,6 +2,10 @@
 
 ## 2026-04-25 (later)
 
+### `[Docs]` README: lead with the web wizard; SOPS becomes a power-user appendix
+
+The Getting started section now points operators at `./scripts/start.sh` followed by opening the dashboard, where the wizard handles everything `setup.ts` used to. SOPS-related prerequisites and instructions moved into a single "Power-user setup with SOPS" section near the bottom, including the resolution-priority table (env > SOPS > db > NEEDS_SETUP) so power users can see exactly where their values come from. "Editing secrets later" + "Running on a second host" updated to reflect `data/state.db` as the canonical store.
+
 ### `[Feature]` First-run web onboarding wizard (#57, #67)
 
 Daemon no longer hard-fails on missing config or secrets. When either is absent the daemon boots a slim NEEDS_SETUP HTTP server exposing a 3-step wizard at `/setup`: access (Braiins token + dashboard password), mining (target + floor hashrate, pool URL, worker identity, payout address; optional bitcoind RPC), review. On submit the daemon writes both rows to `state.db` and exits — the process manager (Docker, systemd, `restart.sh`) brings it back into operational mode, while the dashboard polls `/api/health` until `mode: OPERATIONAL` and auto-signs the operator in.
