@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-04-25 (later)
+
+### `[Feature]` Configuration via `BHA_*` environment variables (#59)
+
+Every field in `AppConfig` and `Secrets` now also resolves from a matching `BHA_<UPPER_SNAKE>` environment variable, with priority `env > db > defaults`. Read once at boot and re-validated through the same Zod schemas the dashboard uses, so a malformed value fails loudly on startup rather than being silently ignored. New `docs/configuration.md` lists every variable; README links to it.
+
+Foundation for #57 (web onboarding wizard) and the wider appliance-packaging effort (#56). Power-user SOPS path is unchanged — env-vars overlay on top of whatever the SOPS file produces, so a `docker run -e BHA_BRAIINS_OWNER_TOKEN=…` rotation works without touching the encrypted file. Cross-field invariants (e.g. `floor <= target`) are still enforced after the overlay.
+
 ## 2026-04-25
 
 ### `[Fix]` Hero PRICE card: cap at bid + lengthen window to 30 min (#55)

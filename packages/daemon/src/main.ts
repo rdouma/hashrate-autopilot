@@ -12,6 +12,10 @@ import { resolve } from 'node:path';
 import { createBitcoindClient } from '@braiins-hashrate/bitcoind-client';
 import { createBraiinsClient } from '@braiins-hashrate/braiins-client';
 
+import {
+  applyEnvOverridesToConfig,
+  applyEnvOverridesToSecrets,
+} from './config/env-overrides.js';
 import { loadSecrets } from './config/secrets.js';
 import { createHttpServer } from './http/server.js';
 import { AccountSpendService } from './services/account-spend.js';
@@ -61,9 +65,14 @@ async function main(): Promise<void> {
   log(`  tick:     ${DEFAULT_TICK_INTERVAL_MS} ms`);
 
   // Fail-closed on config problems.
-  const secrets = await loadSecrets(secretsPath, {
+  const fileSecrets = await loadSecrets(secretsPath, {
     env: { ...process.env, SOPS_AGE_KEY_FILE: ageKeyPath },
   });
+  // Overlay env-var overrides for appliance / Docker setups (#59).
+  // SOPS file remains the power-user path; env vars take precedence
+  // when both are set so a `docker run -e BHA_…` rotation works
+  // without needing to touch the encrypted file.
+  const secrets = applyEnvOverridesToSecrets(fileSecrets);
 
   const handle = await openDatabase({ path: dbPath });
   const configRepo = new ConfigRepo(handle.db);
@@ -74,31 +83,37 @@ async function main(): Promise<void> {
   const bidEventsRepo = new BidEventsRepo(handle.db);
   const closedBidsCacheRepo = new ClosedBidsCacheRepo(handle.db);
 
-  let cfg = await configRepo.get();
-  if (!cfg) throw new Error('config row missing — run `pnpm -w run setup` first');
+  let dbCfg = await configRepo.get();
+  if (!dbCfg) throw new Error('config row missing — run `pnpm -w run setup` first');
 
   // Seed bitcoind credentials from secrets into config on first boot
   // so they become dashboard-editable (issue #14). Only runs when secrets
   // carries all three fields — setup no longer prompts for them, so fresh
   // installs typically skip this path entirely.
   if (
-    !cfg.bitcoind_rpc_url &&
+    !dbCfg.bitcoind_rpc_url &&
     secrets.bitcoind_rpc_url &&
     secrets.bitcoind_rpc_user &&
     secrets.bitcoind_rpc_password
   ) {
     await configRepo.upsert({
-      ...cfg,
+      ...dbCfg,
       bitcoind_rpc_url: secrets.bitcoind_rpc_url,
       bitcoind_rpc_user: secrets.bitcoind_rpc_user,
       bitcoind_rpc_password: secrets.bitcoind_rpc_password,
     });
-    cfg = (await configRepo.get())!;
+    dbCfg = (await configRepo.get())!;
     log('bitcoind credentials seeded from secrets into config');
   }
 
   // payout_source auto-detection moved to migration 0022 (runs once).
   // No per-boot override — operator's choice sticks.
+
+  // Overlay env-var overrides on top of the db config (#59). The
+  // dashboard still edits the db row directly, so its view stays
+  // authoritative for the operator; env-var overrides only take
+  // effect on (re)boot, which matches docker-compose semantics.
+  const cfg = applyEnvOverridesToConfig(dbCfg);
 
   log(`config:   target=${cfg.target_hashrate_ph} PH/s  floor=${cfg.minimum_floor_hashrate_ph} PH/s`);
 

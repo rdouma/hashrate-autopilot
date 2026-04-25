@@ -163,6 +163,10 @@ smoothing** (rolling-mean window per-source on the hashrate chart plus the price
 `effective` smoothing; also the toggle that enables the effective-rate line itself), and **Log retention**
 for the append-only `tick_metrics` and `decisions` tables.
 
+For appliance / Docker setups every configurable field is also overridable via `BHA_*` environment
+variables — priority is `env > db > defaults`, read once at boot and re-validated through the same
+schema. See [docs/configuration.md](docs/configuration.md) for the full list.
+
 ## Tech stack
 
 TypeScript monorepo (pnpm workspaces), Node 22+, React dashboard, SQLite (better-sqlite3), sops-encrypted secrets.
