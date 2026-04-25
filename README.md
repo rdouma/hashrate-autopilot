@@ -339,6 +339,31 @@ rather pin to a tagged release, manage the checkout manually (`git fetch --tags 
 install && pnpm build && ./scripts/restart.sh`) — deploy.sh will fail on a detached HEAD, which is safer than
 silently moving you off the pin.
 
+## Running with Docker
+
+For appliance deployments (Umbrel, Start9) and anyone who wants the daemon in a container without
+managing the Node + pnpm + better-sqlite3 native-build dance themselves:
+
+```bash
+docker run -d \
+  --name braiins-autopilot \
+  -p 3010:3010 \
+  -v braiins-autopilot-data:/app/data \
+  ghcr.io/rdouma/hashrate-autopilot:latest
+```
+
+Open `http://<host>:3010` and you'll be redirected to the wizard, same as the bare-metal flow above.
+Every operator-relevant value (config, secrets, tick history) lives under `/app/data` — mount that
+volume and the container is upgrade-safe.
+
+The image is built for `linux/amd64` and `linux/arm64` (Raspberry Pi / Apple Silicon NUCs both
+work). Image source: [`Dockerfile`](Dockerfile); CI: [`.github/workflows/docker-publish.yml`](.github/workflows/docker-publish.yml).
+
+To pre-seed configuration from environment variables (skip parts of the wizard, or skip it entirely
+if you provide the required secrets), pass `BHA_*` env vars on `docker run` — see
+[docs/configuration.md](docs/configuration.md). Bitcoin Core RPC creds in particular auto-detect
+from the standard `BITCOIN_RPC_*` env vars Umbrel/Start9 inject.
+
 ## Power-user setup with SOPS
 
 The default flow (web wizard → secrets in `state.db`) is appliance-friendly and what most users should pick.

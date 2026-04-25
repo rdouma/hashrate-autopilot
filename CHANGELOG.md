@@ -2,6 +2,14 @@
 
 ## 2026-04-25 (later)
 
+### `[Infra]` Multi-arch Docker image + GHCR publish workflow (#58)
+
+New `Dockerfile` (multi-stage, `node:22-slim` base) builds the daemon + dashboard into a single image and runs the daemon as a non-root user. Includes a `HEALTHCHECK` that probes `/api/health` (#67), `VOLUME /app/data` for persistent state, and the standard appliance env vars (`HTTP_HOST`, `HTTP_PORT`, `DB_PATH`) wired up.
+
+`.github/workflows/docker-publish.yml` runs in two modes: on every push/PR it does a `linux/amd64` validation build (no push); on `v*` tags it builds `linux/amd64` + `linux/arm64` and publishes to `ghcr.io/<owner>/hashrate-autopilot` with semver-derived tags (`vX.Y.Z`, `vX.Y`, `vX`, `latest`). ARM64 is mandatory: Pi-class hardware on Umbrel/Start9 won't run amd64-only images.
+
+`.dockerignore` excludes `node_modules`, `dist`, `data`, secrets, and editor noise from the build context. README gets a "Running with Docker" section between the bare-metal install and the SOPS appendix.
+
 ### `[Feature]` Wizard auto-detects bitcoind RPC creds from appliance env vars (#60)
 
 Both Umbrel and Start9 inject standard env vars (`BITCOIN_RPC_HOST`/`PORT`/`USER`/`PASSWORD`, optionally `BITCOIN_RPC_URL`) when an app declares a Bitcoin Core dependency. New `detectBitcoindEnv()` helper reads them and the setup-info endpoint surfaces both pre-filled defaults *and* a `detected_bitcoind` summary so the wizard can show a green "Detected from environment" badge above the RPC fields. Operator can still override; falls back cleanly to empty defaults when no vars are present. When the URL is detected, `payout_source` defaults to `bitcoind` (instead of `none`) so an Umbrel install gets an end-to-end working setup with no manual data entry on the payout side.

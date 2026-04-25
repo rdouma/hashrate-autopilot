@@ -1,0 +1,46 @@
+# Keep the build context small + free of host-specific artefacts.
+# Note: this list mirrors .gitignore's runtime-state + secrets entries
+# but is independent — Docker build context is constructed from the
+# filesystem, not from `git ls-files`, so anything you don't want in
+# the image must be listed here even if it's also gitignored.
+
+# Node / build outputs (rebuilt inside the image)
+node_modules
+**/node_modules
+dist
+**/dist
+coverage
+*.log
+*.tsbuildinfo
+.tsbuildinfo
+.vite
+.cache
+.vitest-cache
+
+# Operator-specific runtime state (must NEVER bake into an image)
+data
+**/*.db
+**/*.db-shm
+**/*.db-wal
+.env
+.env.local
+.env.*.local
+.env.sops.yaml
+
+# Repo / IDE noise
+.git
+.github
+.idea
+.DS_Store
+*.iml
+
+# Docs + ops artefacts not needed inside the runtime
+CHANGELOG.md
+README.md
+docs/images
+.claude
+**/.claude
+.gitignore
+.gitattributes
+.dockerignore
+Dockerfile
