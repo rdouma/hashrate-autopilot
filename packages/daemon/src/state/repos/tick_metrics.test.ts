@@ -210,13 +210,12 @@ describe('TickMetricsRepo.effectiveSatPerEhDayWindow', () => {
     expect(r).toBeNull();
   });
 
-  it('computes the duration-weighted rate across multiple ticks', async () => {
+  it('computes the duration-weighted rate across multiple ticks (well below bid)', async () => {
     // 10 evenly-spaced ticks, 60 s apart, each adding 100 sat at
-    // delivered_ph = 4 PH. Expected rate per EH/day:
-    //   100 sat × 86_400_000_000 / (4 × 60_000) = 36_000_000_000 — wait,
-    // careful: that's per-tick. Σ delta = 9 × 100 = 900 sat,
+    // delivered_ph = 4 PH. Σ delta = 9 × 100 = 900 sat,
     // Σ phms = 9 × 4 × 60_000 = 2_160_000.
     //   900 × 86.4e9 / 2_160_000 = 36_000_000 sat/EH/day.
+    // Bid (46M) is well above the realised rate, so the cap is inert.
     const base = now() - 10 * MINUTE;
     for (let i = 0; i < 10; i++) {
       await repo.insert(
@@ -229,6 +228,31 @@ describe('TickMetricsRepo.effectiveSatPerEhDayWindow', () => {
     }
     const r = await repo.effectiveSatPerEhDayWindow(11 * MINUTE);
     expect(r).toBeCloseTo(36_000_000, -3);
+  });
+
+  it('caps at the weighted-average bid when delivered_ph lag inflates the raw ratio', async () => {
+    // Reproduces the live failure mode: under pay-your-bid the bid is
+    // a hard ceiling, but `delivered_ph` (a trailing avg_speed_ph)
+    // lags real-time delivery. When Braiins meters faster than
+    // avg_speed_ph reflects, Σ Δsat / Σ (delivered_ph × Δt) lands
+    // above the bid — physically impossible. Cap must kick in.
+    //
+    // Construct: bid = 47_000_000, but charge 200 sat per 60 s at
+    // delivered_ph = 2.93 (raw rate ~98M, way above bid). Result must
+    // be the bid weighted by delivered_ph × Δt = 47_000_000 exactly.
+    const base = now() - 10 * MINUTE;
+    for (let i = 0; i < 10; i++) {
+      await repo.insert(
+        sampleRow({
+          tick_at: base + i * MINUTE,
+          delivered_ph: 2.93,
+          our_primary_price_sat_per_eh_day: 47_000_000,
+          primary_bid_consumed_sat: 1000 + i * 200,
+        }),
+      );
+    }
+    const r = await repo.effectiveSatPerEhDayWindow(11 * MINUTE);
+    expect(r).toBeCloseTo(47_000_000, -3);
   });
 
   it('smooths through delivered_ph + spend jitter — average matches the steady-state rate', async () => {

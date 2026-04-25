@@ -443,12 +443,11 @@ function OperationsCard({
   s: StatusResponse;
   /**
    * Live effective rate (sat/PH/day) — duration-weighted average of
-   * inter-tick `primary_bid_consumed_sat` deltas over a short trailing
-   * window (~10 min). What Braiins charged us, smoothed enough to
-   * absorb polling and metering jitter without feeling stale. Under
-   * pay-your-bid the bid is what we asked to pay; the matched-ask
-   * rate is the truth. Distinct from the range-averaged `avg cost /
-   * PH delivered` in the stats row.
+   * inter-tick `primary_bid_consumed_sat` deltas over a 30-min
+   * trailing window, capped at the duration-weighted average bid
+   * (under pay-your-bid the bid is a hard ceiling). Distinct from the
+   * range-averaged `avg cost / PH delivered` in the stats row, which
+   * uses the same formula over the chart-selected range.
    */
   effectivePricePH: number | null;
   /**
@@ -483,7 +482,7 @@ function OperationsCard({
     >
       {currentPricePH !== null ? (
         <div className="grid grid-cols-2 gap-6 w-full">
-          <Tooltip text="Live effective rate — what Braiins charged us, duration-weighted over the last ~10 minutes (Σ Δprimary_bid_consumed_sat ÷ Σ delivered_ph × Δt). The short window is needed because per-tick delivered hashrate and per-tick metering both jitter ~25–30%, so the spot rate is unusable. For the range-averaged figure see the AVG COST / PH DELIVERED stats card. For the current bid ceiling see NEXT ACTION.">
+          <Tooltip text="Live effective rate — what Braiins charged us, duration-weighted over the last 30 minutes (Σ Δprimary_bid_consumed_sat ÷ Σ delivered_ph × Δt), capped at the average bid since under pay-your-bid the bid is a hard ceiling. Same formula as the AVG COST / PH DELIVERED stats card, just over a shorter window so the hero stays live. For the current bid ceiling see NEXT ACTION.">
             <div className="flex flex-col items-center cursor-help">
               <div className="text-[11px] uppercase tracking-wider text-slate-100 mb-1">price</div>
               {/* relative wrapper so the ±delta can be position:absolute

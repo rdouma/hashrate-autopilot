@@ -352,26 +352,38 @@ export class TickMetricsRepo {
    * PRICE card on the Status page — the "live" figure, distinct from
    * the range-averaged `avg cost / PH delivered` in the stats row.
    *
-   * The single-tick read this replaced was unusable: per-tick
-   * `delivered_ph` alternates ~25% from polling-cadence quanta and
-   * `Δprimary_bid_consumed_sat` swings ~30% from Braiins's metering
-   * granularity, so the spot rate fluctuated 30k–200k+ sat/EH/day
-   * while the underlying truth sat near 40k. A short trailing window
-   * (typically 10 min, ~10 ticks) washes out both jitters.
-   *
    * Formula (sat/EH/day):
-   *   Σ(Δsat) × 86_400_000_000 / Σ(delivered_ph × Δt_ms)
-   * with the same zero-dip filter as `actualSpendSatSince`: each
-   * sample requires both endpoints positive, c1 >= c0, tick gap in
-   * [1ms, 5min], and delivered_ph > 0. Returns null if no sample in
-   * the window passes the filter.
+   *   MIN(
+   *     Σ(Δsat) × 86_400_000_000 / Σ(delivered_ph × Δt_ms),
+   *     Σ(bid × delivered_ph × Δt_ms) / Σ(delivered_ph × Δt_ms)
+   *   )
+   * — duration-weighted realised rate, capped at the duration-weighted
+   * average bid. The cap is structurally required: under pay-your-bid
+   * Braiins cannot charge above our bid, so any uncapped result above
+   * it is a computation artefact from `delivered_ph` (a trailing
+   * `avg_speed_ph`) under-reporting relative to real-time
+   * `Δprimary_bid_consumed_sat`. Same cap discipline as `/api/stats`
+   * (see stats.ts → "the bid is a hard ceiling").
+   *
+   * Window choice matters: at 5–20 min the raw ratio routinely exceeds
+   * the bid (capped result pegs flat at the bid, hiding all signal).
+   * 30+ min lets the avg_speed_ph lag wash out so the unfiltered ratio
+   * is self-consistent. Caller picks the window.
+   *
+   * Same zero-dip filter as `actualSpendSatSince`: each sample
+   * requires both endpoints positive, c1 >= c0, tick gap in [1ms,
+   * 5min], and delivered_ph > 0. Returns null if no sample in the
+   * window passes the filter.
    */
   async effectiveSatPerEhDayWindow(windowMs: number): Promise<number | null> {
     const sinceMs = Date.now() - windowMs;
     const queryText = `
       SELECT
         CASE WHEN SUM(phms) > 0 THEN
-          CAST(SUM(dsat) AS REAL) * 86400000000.0 / SUM(phms)
+          MIN(
+            CAST(SUM(dsat) AS REAL) * 86400000000.0 / SUM(phms),
+            CAST(SUM(bid_phms) AS REAL) / SUM(phms)
+          )
         ELSE NULL END AS rate
       FROM (
         SELECT
@@ -379,6 +391,7 @@ export class TickMetricsRepo {
             WHEN c1 > 0 AND c0 > 0 AND c1 >= c0
               AND dur BETWEEN 1 AND 300000
               AND delivered_ph > 0
+              AND bid > 0
             THEN c1 - c0
             ELSE 0
           END AS dsat,
@@ -386,15 +399,25 @@ export class TickMetricsRepo {
             WHEN c1 > 0 AND c0 > 0 AND c1 >= c0
               AND dur BETWEEN 1 AND 300000
               AND delivered_ph > 0
+              AND bid > 0
             THEN delivered_ph * dur
             ELSE 0
-          END AS phms
+          END AS phms,
+          CASE
+            WHEN c1 > 0 AND c0 > 0 AND c1 >= c0
+              AND dur BETWEEN 1 AND 300000
+              AND delivered_ph > 0
+              AND bid > 0
+            THEN bid * delivered_ph * dur
+            ELSE 0
+          END AS bid_phms
         FROM (
           SELECT
             primary_bid_consumed_sat AS c1,
             LAG(primary_bid_consumed_sat) OVER (ORDER BY tick_at) AS c0,
             tick_at - LAG(tick_at) OVER (ORDER BY tick_at) AS dur,
-            delivered_ph
+            delivered_ph,
+            our_primary_price_sat_per_eh_day AS bid
           FROM tick_metrics
           WHERE tick_at >= ${sinceMs}
         )

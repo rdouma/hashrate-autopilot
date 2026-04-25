@@ -20,12 +20,14 @@ const EH_PER_PH = 1000;
 const AVG_DELIVERED_WINDOW_MS = 3 * 60 * 60 * 1000;
 
 // Trailing window for the hero PRICE card's "live effective rate".
-// Per-tick delivered_ph alternates ~25% from polling quanta and
-// per-tick Δconsumed_sat swings ~30% from Braiins metering, so the
-// raw single-tick rate ran 30k–200k+ sat/EH/day while truth sat near
-// 40k. ~10 ticks of trailing duration-weighted average kills the
-// noise without making the figure feel stale.
-const LIVE_EFFECTIVE_WINDOW_MS = 10 * 60 * 1000;
+// 30 min is the shortest window where the unfiltered ratio
+// Σ Δsat / Σ (delivered_ph × Δt) becomes self-consistent: at 5–20 min,
+// `delivered_ph` (a trailing `avg_speed_ph` from Braiins) runs ~5–10%
+// below real-time delivery, so the ratio routinely exceeds the bid
+// and the cap-at-bid pegs flat. By 30 min the lag bias washes out
+// and the metric reads below the bid like the 3 h stats card. Still
+// far shorter than the stats card's range so the hero stays "live."
+const LIVE_EFFECTIVE_WINDOW_MS = 30 * 60 * 1000;
 
 export async function registerStatusRoute(
   app: FastifyInstance,

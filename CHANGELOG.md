@@ -2,11 +2,17 @@
 
 ## 2026-04-25
 
-### `[Fix]` Hero PRICE card: smooth the live effective rate over a 10-min trailing window (#55)
+### `[Fix]` Hero PRICE card: cap at bid + lengthen window to 30 min (#55)
 
-The single-tick read introduced yesterday for the hero PRICE card was unusable in practice: per-tick `delivered_ph` alternates ~25% from polling-cadence quanta (Datum/Ocean reporting cadence vs daemon tick cadence) and per-tick `Δprimary_bid_consumed_sat` swings ~30% from Braiins's own metering granularity. The product gave a spot rate that fluctuated 30k–200k+ sat/EH/day on a database whose underlying truth sat near 40k — so the operator could see the hero card read 60k+ (impossibly above their own bid) one minute and 37k the next, neither close to reality.
+The first round of this fix earlier today switched the hero card to a 10-min trailing duration-weighted average, expecting that to wash out the per-tick polling and metering jitter. It addressed the wild per-tick swings, but the operator caught a deeper bug: the smoothed value still read above the bid (52k vs a 47k bid) — physically impossible under pay-your-bid, where the bid is a hard ceiling.
 
-`TickMetricsRepo.lastEffectiveSatPerEhDay()` is replaced by `effectiveSatPerEhDayWindow(windowMs)`, which returns a duration-weighted average — `Σ Δsat × 86_400_000_000 / Σ (delivered_ph × Δt_ms)` — over a trailing window. The status route hardcodes 10 minutes (≈10 ticks at the default cadence), enough samples to wash out both jitters while staying within ~5% of the 5-min and 15-min windows so the choice isn't load-bearing. Same zero-dip filter as `actualSpendSatSince`. Hero card tooltip and the `live_effective_sat_per_ph_day` field doc updated to match.
+Root cause: `delivered_ph` is sourced from Braiins's `avg_speed_ph`, which is itself a *trailing* moving average, while `Δprimary_bid_consumed_sat` is real-time. When recent delivery has trended above the smoothed reading, Σ Δsat / Σ (delivered_ph × Δt) overshoots the bid by 5–15%. The stats card already handles this by capping at the duration-weighted average bid (see stats.ts → "the bid is a hard ceiling"); the hero query just missed the same cap.
+
+Two changes:
+- **Cap at the weighted-average bid** in `effectiveSatPerEhDayWindow`, mirroring `/api/stats`. Eliminates the above-bid impossibility regardless of window length.
+- **Lengthen the window to 30 min**. At 5–20 min the raw ratio routinely exceeds the bid, so the cap pegs the value flat at the bid (useless — just a duplicate of NEXT ACTION). At 30+ min the avg_speed_ph lag bias washes out and the unfiltered metric is self-consistent on the operator's data, while still being far shorter than the stats card's range so the hero stays "live."
+
+Hero card tooltip + `live_effective_sat_per_ph_day` field doc updated to match.
 
 ## 2026-04-24
 
