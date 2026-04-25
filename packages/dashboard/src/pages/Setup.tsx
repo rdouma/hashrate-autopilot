@@ -34,10 +34,13 @@ interface FormState {
   // Pricing — already-defaulted, exposed so the operator sees them
   max_bid_sat_per_ph_day: number; // converted from sat/EH/day
   overpay_sat_per_ph_day: number;
-  // Optional bitcoind
+  // Payout-tracking backend selector + per-backend connection fields.
+  payout_source: 'none' | 'bitcoind' | 'electrs';
   bitcoind_rpc_url: string;
   bitcoind_rpc_user: string;
   bitcoind_rpc_password: string;
+  electrs_host: string;
+  electrs_port: number;
 }
 
 type Step = 'access' | 'mining' | 'review' | 'submitting';
@@ -71,9 +74,12 @@ export function Setup() {
           btc_payout_address: base.btc_payout_address,
           max_bid_sat_per_ph_day: base.max_bid_sat_per_eh_day / SAT_PER_EH_PER_PH,
           overpay_sat_per_ph_day: base.overpay_sat_per_eh_day / SAT_PER_EH_PER_PH,
+          payout_source: base.payout_source,
           bitcoind_rpc_url: base.bitcoind_rpc_url,
           bitcoind_rpc_user: base.bitcoind_rpc_user,
           bitcoind_rpc_password: base.bitcoind_rpc_password,
+          electrs_host: base.electrs_host ?? '',
+          electrs_port: base.electrs_port ?? 50001,
         });
       } catch (err) {
         if (cancelled) return;
@@ -122,9 +128,12 @@ export function Setup() {
         btc_payout_address: form.btc_payout_address,
         max_bid_sat_per_eh_day: Math.round(form.max_bid_sat_per_ph_day * SAT_PER_EH_PER_PH),
         overpay_sat_per_eh_day: Math.round(form.overpay_sat_per_ph_day * SAT_PER_EH_PER_PH),
-        bitcoind_rpc_url: form.bitcoind_rpc_url,
-        bitcoind_rpc_user: form.bitcoind_rpc_user,
-        bitcoind_rpc_password: form.bitcoind_rpc_password,
+        payout_source: form.payout_source,
+        bitcoind_rpc_url: form.payout_source === 'bitcoind' ? form.bitcoind_rpc_url : '',
+        bitcoind_rpc_user: form.payout_source === 'bitcoind' ? form.bitcoind_rpc_user : '',
+        bitcoind_rpc_password: form.payout_source === 'bitcoind' ? form.bitcoind_rpc_password : '',
+        electrs_host: form.payout_source === 'electrs' ? form.electrs_host : null,
+        electrs_port: form.payout_source === 'electrs' ? form.electrs_port : null,
       };
       await api.submitSetup({
         config,
@@ -134,7 +143,7 @@ export function Setup() {
             ? { braiins_read_only_token: form.braiins_read_only_token }
             : {}),
           dashboard_password: form.dashboard_password,
-          ...(form.bitcoind_rpc_url
+          ...(form.payout_source === 'bitcoind' && form.bitcoind_rpc_url
             ? {
                 bitcoind_rpc_url: form.bitcoind_rpc_url,
                 bitcoind_rpc_user: form.bitcoind_rpc_user,
@@ -343,13 +352,54 @@ function MiningStep({
   onBack: () => void;
   onNext: () => void;
 }) {
+  // Worker identity must be `<btc_payout_address>.<label>` — Ocean
+  // TIDES credits shares by the address prefix. Anything else
+  // silently sends shares somewhere else (or to nobody). Treat a
+  // mismatch as a hard error, not a soft warning.
+  const addr = form.btc_payout_address.trim();
+  const worker = form.destination_pool_worker_name.trim();
+  const workerPrefixOk =
+    addr.length === 0 || (worker.startsWith(addr + '.') && worker.length > addr.length + 1);
+
+  const bitcoindOk =
+    form.payout_source !== 'bitcoind' ||
+    (form.bitcoind_rpc_url.trim().length > 0 &&
+      form.bitcoind_rpc_user.length > 0 &&
+      form.bitcoind_rpc_password.length > 0);
+  const electrsOk =
+    form.payout_source !== 'electrs' ||
+    (form.electrs_host.trim().length > 0 && form.electrs_port > 0);
+
   const valid =
     form.target_hashrate_ph > 0 &&
     form.minimum_floor_hashrate_ph > 0 &&
     form.minimum_floor_hashrate_ph <= form.target_hashrate_ph &&
     form.destination_pool_url.trim().length > 0 &&
-    form.destination_pool_worker_name.includes('.') &&
-    form.btc_payout_address.trim().length > 0;
+    addr.length > 0 &&
+    worker.includes('.') &&
+    workerPrefixOk &&
+    bitcoindOk &&
+    electrsOk;
+
+  // Auto-bind worker to address: when the operator changes the BTC
+  // payout address, follow with the worker identity if its current
+  // value is the obvious "addr.label" derivation. Preserves any
+  // custom label the operator typed.
+  const onAddressChange = (next: string) => {
+    const oldAddr = form.btc_payout_address.trim();
+    const oldWorker = form.destination_pool_worker_name.trim();
+    update('btc_payout_address', next);
+    const looksLikeOldDerivation =
+      oldAddr.length > 0 && oldWorker.startsWith(oldAddr + '.');
+    if (looksLikeOldDerivation || oldWorker.length === 0) {
+      const label =
+        oldWorker.length > 0
+          ? oldWorker.slice(oldAddr.length + 1) || 'autopilot'
+          : 'autopilot';
+      update('destination_pool_worker_name', `${next}.${label}`);
+    }
+  };
+
   return (
     <form
       onSubmit={(e) => {
@@ -394,8 +444,19 @@ function MiningStep({
           />
         </Field>
         <Field
+          label="Bitcoin payout address"
+          hint="Your address that receives Ocean TIDES payouts. The worker identity below is auto-derived from this."
+        >
+          <input
+            type="text"
+            value={form.btc_payout_address}
+            onChange={(e) => onAddressChange(e.target.value)}
+            className={textInputCss}
+          />
+        </Field>
+        <Field
           label="Worker identity"
-          hint="Format: <btc-address>.<label> — Ocean TIDES credits hashrate to the address. The period is mandatory."
+          hint="Format: <btc-address>.<label>. Ocean TIDES credits shares by the address prefix — anything else routes shares to nobody."
         >
           <input
             type="text"
@@ -404,65 +465,101 @@ function MiningStep({
             onChange={(e) => update('destination_pool_worker_name', e.target.value)}
             className={textInputCss}
           />
-          {form.destination_pool_worker_name.length > 0 &&
-            !form.destination_pool_worker_name.includes('.') && (
-              <div className="text-xs text-red-400 mt-1">
-                must contain a period — without it shares are uncredited on Ocean
-              </div>
-            )}
+          {worker.length > 0 && !worker.includes('.') && (
+            <div className="text-xs text-red-400 mt-1">
+              must contain a period — without it shares are uncredited on Ocean
+            </div>
+          )}
+          {worker.length > 0 && worker.includes('.') && !workerPrefixOk && addr.length > 0 && (
+            <div className="text-xs text-red-400 mt-1 leading-snug">
+              <strong>Mismatch:</strong> the worker identity must start with{' '}
+              <code>{addr}.</code> — otherwise Ocean credits shares to a different address (or
+              nobody). Edit the address above first; this field follows it automatically.
+            </div>
+          )}
         </Field>
       </Section>
-      <Section title="On-chain payouts">
-        <Field
-          label="Bitcoin payout address"
-          hint="Your address that receives Ocean TIDES payouts. Used to observe block credits."
-        >
-          <input
-            type="text"
-            value={form.btc_payout_address}
-            onChange={(e) => update('btc_payout_address', e.target.value)}
+      <Section title="On-chain payout tracking (optional)">
+        <p className="text-xs text-slate-400 -mt-1">
+          Lets the dashboard show Ocean TIDES payouts as they arrive. Pick a backend that can read
+          your wallet's on-chain balance.
+        </p>
+        <Field label="Backend">
+          <select
+            value={form.payout_source}
+            onChange={(e) =>
+              update('payout_source', e.target.value as FormState['payout_source'])
+            }
             className={textInputCss}
-          />
+          >
+            <option value="none">None — skip payout tracking</option>
+            <option value="bitcoind">Bitcoin Core (bitcoind RPC)</option>
+            <option value="electrs">Electrs (Electrum-style indexed lookup, faster)</option>
+          </select>
         </Field>
-      </Section>
-      <details className="bg-slate-900/40 border border-slate-800 rounded p-3">
-        <summary className="cursor-pointer text-sm text-slate-300 select-none">
-          Bitcoin Core RPC (optional)
-        </summary>
-        <div className="mt-3 space-y-3">
-          <p className="text-xs text-slate-400">
-            Connect to a bitcoind instance to observe on-chain payouts. You can also configure this
-            from the Config page after setup.
-          </p>
-          <Field label="RPC URL">
-            <input
-              type="text"
-              placeholder="http://10.21.21.8:8332"
-              value={form.bitcoind_rpc_url}
-              onChange={(e) => update('bitcoind_rpc_url', e.target.value)}
-              className={textInputCss}
-            />
-          </Field>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="RPC user">
+        {form.payout_source === 'bitcoind' && (
+          <div className="space-y-3 bg-slate-900/40 border border-slate-800 rounded p-3">
+            <Field label="RPC URL">
               <input
                 type="text"
-                value={form.bitcoind_rpc_user}
-                onChange={(e) => update('bitcoind_rpc_user', e.target.value)}
+                placeholder="http://10.21.21.8:8332"
+                value={form.bitcoind_rpc_url}
+                onChange={(e) => update('bitcoind_rpc_url', e.target.value)}
                 className={textInputCss}
               />
             </Field>
-            <Field label="RPC password">
-              <input
-                type="password"
-                value={form.bitcoind_rpc_password}
-                onChange={(e) => update('bitcoind_rpc_password', e.target.value)}
-                className={textInputCss}
-              />
-            </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="RPC user">
+                <input
+                  type="text"
+                  value={form.bitcoind_rpc_user}
+                  onChange={(e) => update('bitcoind_rpc_user', e.target.value)}
+                  className={textInputCss}
+                />
+              </Field>
+              <Field label="RPC password">
+                <input
+                  type="password"
+                  value={form.bitcoind_rpc_password}
+                  onChange={(e) => update('bitcoind_rpc_password', e.target.value)}
+                  className={textInputCss}
+                />
+              </Field>
+            </div>
           </div>
-        </div>
-      </details>
+        )}
+        {form.payout_source === 'electrs' && (
+          <div className="space-y-3 bg-slate-900/40 border border-slate-800 rounded p-3">
+            <div className="grid grid-cols-3 gap-3">
+              <div className="col-span-2">
+                <Field label="Host">
+                  <input
+                    type="text"
+                    placeholder="10.21.21.8"
+                    value={form.electrs_host}
+                    onChange={(e) => update('electrs_host', e.target.value)}
+                    className={textInputCss}
+                  />
+                </Field>
+              </div>
+              <Field label="Port">
+                <input
+                  type="number"
+                  min="1"
+                  max="65535"
+                  value={form.electrs_port}
+                  onChange={(e) => update('electrs_port', Number(e.target.value))}
+                  className={textInputCss}
+                />
+              </Field>
+            </div>
+            <p className="text-xs text-slate-500">
+              Default Electrs port is 50001 (TCP). On Umbrel the in-cluster hostname is typically
+              <code> 10.21.21.10</code> or similar — check the Electrs app's connection details.
+            </p>
+          </div>
+        )}
+      </Section>
       <div className="flex justify-between pt-2">
         <button type="button" onClick={onBack} className={secondaryButtonCss}>
           ← Back
@@ -507,9 +604,16 @@ function ReviewStep({
           label="Overpay above fillable"
           value={`${form.overpay_sat_per_ph_day.toLocaleString()} sat/PH/day (default — tunable later)`}
         />
-        {form.bitcoind_rpc_url && (
-          <ReviewRow label="Bitcoin Core RPC" value={form.bitcoind_rpc_url} />
-        )}
+        <ReviewRow
+          label="Payout tracking"
+          value={
+            form.payout_source === 'bitcoind'
+              ? `Bitcoin Core RPC (${form.bitcoind_rpc_url})`
+              : form.payout_source === 'electrs'
+                ? `Electrs (${form.electrs_host}:${form.electrs_port})`
+                : 'None'
+          }
+        />
       </Section>
       <p className="text-xs text-slate-400">
         After submit, the daemon will write everything to <code>state.db</code>, restart, and start

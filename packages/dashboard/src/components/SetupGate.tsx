@@ -21,6 +21,7 @@ import { type ReactNode, useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 
 import { api } from '../lib/api';
+import { clearPassword, getPassword } from '../lib/auth';
 
 type ProbeState =
   | { kind: 'loading' }
@@ -41,6 +42,16 @@ export function SetupGate({ children }: { children: ReactNode }) {
       try {
         const h = await api.health();
         if (cancelled) return;
+        // If the daemon reports NEEDS_SETUP but the browser still has
+        // a stored password from a prior install on this host, blow
+        // away that stored credential. Otherwise RequireAuth would
+        // happily route the user into the (now non-existent) auth'd
+        // pages and they'd never see the wizard. Caught us once on a
+        // genuine fresh install where the operator's browser
+        // remembered an old session.
+        if (h.mode === 'NEEDS_SETUP' && getPassword() !== null) {
+          clearPassword();
+        }
         setProbe({ kind: 'mode', mode: h.mode });
       } catch {
         if (cancelled) return;

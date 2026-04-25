@@ -2,6 +2,14 @@
 
 ## 2026-04-25 (later)
 
+### `[UI]` Setup wizard: clear stale auth, payout backend selector, worker-identity guard
+
+Three first-bug-report fixes after shipping the wizard:
+
+- **`SetupGate` clears stored auth when the daemon reports `NEEDS_SETUP`.** Operators with a remembered password from a previous install on the same host were getting routed straight to the auth flow on a fresh install, never seeing the wizard. Caught us once on a genuine fresh install — the operator's browser remembered the dashboard from a wiped+re-cloned working directory.
+- **Mining step now has a "Payout tracking" backend selector** (None / Bitcoin Core / Electrs) with per-backend connection fields. The previous wizard hardcoded Bitcoin Core RPC as the only option, hiding the Electrs path entirely.
+- **Worker identity is auto-derived from the BTC payout address** (`<address>.<label>`). Editing the address now follows through to the worker. Editing the worker to anything that doesn't have the address as its prefix surfaces a hard error blocking submission — Ocean TIDES credits shares by the address prefix, so a mismatch silently routes shares to nobody.
+
 ### `[Docs]` README: lead with the web wizard; SOPS becomes a power-user appendix
 
 The Getting started section now points operators at `./scripts/start.sh` followed by opening the dashboard, where the wizard handles everything `setup.ts` used to. SOPS-related prerequisites and instructions moved into a single "Power-user setup with SOPS" section near the bottom, including the resolution-priority table (env > SOPS > db > NEEDS_SETUP) so power users can see exactly where their values come from. "Editing secrets later" + "Running on a second host" updated to reflect `data/state.db` as the canonical store.
