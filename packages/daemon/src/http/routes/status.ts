@@ -19,6 +19,14 @@ const EH_PER_PH = 1000;
 // and spend sides of the dashboard P&L panel are on the same cadence.
 const AVG_DELIVERED_WINDOW_MS = 3 * 60 * 60 * 1000;
 
+// Trailing window for the hero PRICE card's "live effective rate".
+// Per-tick delivered_ph alternates ~25% from polling quanta and
+// per-tick Δconsumed_sat swings ~30% from Braiins metering, so the
+// raw single-tick rate ran 30k–200k+ sat/EH/day while truth sat near
+// 40k. ~10 ticks of trailing duration-weighted average kills the
+// noise without making the figure feel stale.
+const LIVE_EFFECTIVE_WINDOW_MS = 10 * 60 * 1000;
+
 export async function registerStatusRoute(
   app: FastifyInstance,
   deps: HttpServerDeps,
@@ -45,10 +53,13 @@ export async function registerStatusRoute(
       spend3hSat !== null && spend3hSat > 0
         ? spend3hSat * 8 // 3h → 24h
         : null;
-    // Live effective rate (most recent valid inter-tick delta). Powers
-    // the hero PRICE card; distinct from the range-averaged figure in
-    // the stats row. In sat/PH/day for direct dashboard consumption.
-    const liveEffectiveSatEhDay = await deps.tickMetricsRepo.lastEffectiveSatPerEhDay();
+    // Live effective rate — duration-weighted across a short trailing
+    // window (LIVE_EFFECTIVE_WINDOW_MS). Powers the hero PRICE card;
+    // distinct from the range-averaged figure in the stats row. In
+    // sat/PH/day for direct dashboard consumption.
+    const liveEffectiveSatEhDay = await deps.tickMetricsRepo.effectiveSatPerEhDayWindow(
+      LIVE_EFFECTIVE_WINDOW_MS,
+    );
     const liveEffectiveSatPhDay =
       liveEffectiveSatEhDay !== null ? liveEffectiveSatEhDay / EH_PER_PH : null;
 

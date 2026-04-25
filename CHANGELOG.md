@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-04-25
+
+### `[Fix]` Hero PRICE card: smooth the live effective rate over a 10-min trailing window (#55)
+
+The single-tick read introduced yesterday for the hero PRICE card was unusable in practice: per-tick `delivered_ph` alternates ~25% from polling-cadence quanta (Datum/Ocean reporting cadence vs daemon tick cadence) and per-tick `Δprimary_bid_consumed_sat` swings ~30% from Braiins's own metering granularity. The product gave a spot rate that fluctuated 30k–200k+ sat/EH/day on a database whose underlying truth sat near 40k — so the operator could see the hero card read 60k+ (impossibly above their own bid) one minute and 37k the next, neither close to reality.
+
+`TickMetricsRepo.lastEffectiveSatPerEhDay()` is replaced by `effectiveSatPerEhDayWindow(windowMs)`, which returns a duration-weighted average — `Σ Δsat × 86_400_000_000 / Σ (delivered_ph × Δt_ms)` — over a trailing window. The status route hardcodes 10 minutes (≈10 ticks at the default cadence), enough samples to wash out both jitters while staying within ~5% of the 5-min and 15-min windows so the choice isn't load-bearing. Same zero-dip filter as `actualSpendSatSince`. Hero card tooltip and the `live_effective_sat_per_ph_day` field doc updated to match.
+
 ## 2026-04-24
 
 ### `[UI]` Hero PRICE card: live effective rate, not the 3h average (#55)

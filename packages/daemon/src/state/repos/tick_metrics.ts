@@ -347,38 +347,57 @@ export class TickMetricsRepo {
   }
 
   /**
-   * Effective rate (sat/EH/day) derived from the *single most recent*
-   * valid inter-tick `primary_bid_consumed_sat` delta — what Braiins
-   * charged us over the last tick gap, normalised to a per-EH-per-day
-   * rate. Used by the hero PRICE card on the Status page as the
-   * "live" figure, distinct from the range-averaged `avg cost / PH
-   * delivered` in the stats row.
+   * Trailing duration-weighted effective rate (sat/EH/day) over a
+   * rolling window ending at the most recent tick. Powers the hero
+   * PRICE card on the Status page — the "live" figure, distinct from
+   * the range-averaged `avg cost / PH delivered` in the stats row.
    *
-   * Formula (sat/EH/day): Δsat × 86_400_000_000 / (delivered_ph × Δt_ms).
+   * The single-tick read this replaced was unusable: per-tick
+   * `delivered_ph` alternates ~25% from polling-cadence quanta and
+   * `Δprimary_bid_consumed_sat` swings ~30% from Braiins's metering
+   * granularity, so the spot rate fluctuated 30k–200k+ sat/EH/day
+   * while the underlying truth sat near 40k. A short trailing window
+   * (typically 10 min, ~10 ticks) washes out both jitters.
    *
-   * Same zero-dip filter as `actualSpendSatSince`: null unless the two
-   * most recent ticks both have positive `primary_bid_consumed_sat`,
-   * c1 >= c0, a tick gap in [1ms, 5min], and non-zero delivered_ph.
+   * Formula (sat/EH/day):
+   *   Σ(Δsat) × 86_400_000_000 / Σ(delivered_ph × Δt_ms)
+   * with the same zero-dip filter as `actualSpendSatSince`: each
+   * sample requires both endpoints positive, c1 >= c0, tick gap in
+   * [1ms, 5min], and delivered_ph > 0. Returns null if no sample in
+   * the window passes the filter.
    */
-  async lastEffectiveSatPerEhDay(): Promise<number | null> {
+  async effectiveSatPerEhDayWindow(windowMs: number): Promise<number | null> {
+    const sinceMs = Date.now() - windowMs;
     const queryText = `
       SELECT
-        CASE
-          WHEN c1 > 0 AND c0 > 0 AND c1 >= c0
-            AND dur BETWEEN 1 AND 300000
-            AND delivered_ph > 0
-          THEN (c1 - c0) * 86400000000.0 / (delivered_ph * dur)
-          ELSE NULL
-        END AS rate
+        CASE WHEN SUM(phms) > 0 THEN
+          CAST(SUM(dsat) AS REAL) * 86400000000.0 / SUM(phms)
+        ELSE NULL END AS rate
       FROM (
         SELECT
-          primary_bid_consumed_sat AS c1,
-          LAG(primary_bid_consumed_sat) OVER (ORDER BY tick_at) AS c0,
-          tick_at - LAG(tick_at) OVER (ORDER BY tick_at) AS dur,
-          delivered_ph
-        FROM tick_metrics
-        ORDER BY tick_at DESC
-        LIMIT 1
+          CASE
+            WHEN c1 > 0 AND c0 > 0 AND c1 >= c0
+              AND dur BETWEEN 1 AND 300000
+              AND delivered_ph > 0
+            THEN c1 - c0
+            ELSE 0
+          END AS dsat,
+          CASE
+            WHEN c1 > 0 AND c0 > 0 AND c1 >= c0
+              AND dur BETWEEN 1 AND 300000
+              AND delivered_ph > 0
+            THEN delivered_ph * dur
+            ELSE 0
+          END AS phms
+        FROM (
+          SELECT
+            primary_bid_consumed_sat AS c1,
+            LAG(primary_bid_consumed_sat) OVER (ORDER BY tick_at) AS c0,
+            tick_at - LAG(tick_at) OVER (ORDER BY tick_at) AS dur,
+            delivered_ph
+          FROM tick_metrics
+          WHERE tick_at >= ${sinceMs}
+        )
       )
     `;
     const res = await sql.raw(queryText).execute(this.db);

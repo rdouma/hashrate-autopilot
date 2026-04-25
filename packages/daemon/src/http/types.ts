@@ -130,10 +130,13 @@ export interface StatusResponse {
    */
   readonly actual_spend_per_day_sat_3h: number | null;
   /**
-   * Live effective rate in sat/PH/day, derived from the single most
-   * recent valid inter-tick `primary_bid_consumed_sat` delta. Powers
-   * the hero PRICE card on the Status page — current, not averaged.
-   * Null until a valid delta exists.
+   * Live effective rate in sat/PH/day, derived as the duration-weighted
+   * average of valid inter-tick `primary_bid_consumed_sat` deltas over
+   * a short trailing window (~10 min). Powers the hero PRICE card on
+   * the Status page. Smoothed enough to absorb per-tick polling and
+   * Braiins-metering jitter, short enough to feel live (distinct from
+   * the range-averaged `avg cost / PH delivered` in the stats row).
+   * Null until at least one valid sample exists in the window.
    */
   readonly live_effective_sat_per_ph_day: number | null;
   readonly below_floor_since: number | null;
