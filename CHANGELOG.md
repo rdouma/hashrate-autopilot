@@ -2,6 +2,14 @@
 
 ## 2026-04-25 (later)
 
+### `[UI]` Setup wizard polish: eye toggles, hard-reload on success; Config page address↔worker binding
+
+Three operator-feedback fixes:
+
+- **Eye-toggle on every secret field** in the wizard (owner token, optional read-only token, dashboard password + confirm, bitcoind RPC password). Operators copy-paste tokens and want to verify what they pasted before submitting. Click-to-reveal SVG icon, no library dependency.
+- **Hard reload after wizard success** instead of `navigate('/')`. SetupGate's poll runs every 30 s, so its cached probe state lags a wizard completion by up to that interval — a soft navigation could land on `/`, get bounced back to `/setup` by the stale probe, and then 401 on `/api/setup-info` (no longer in setup mode). `window.location.replace('/')` drops React state, refreshes the gate, and lands cleanly. Also: setup page now self-redirects home if `setup-info` returns 401, as a belt-and-suspenders defence against the same race.
+- **Config page now mirrors the wizard's address ↔ worker binding.** BTC payout address moved from the on-chain-payouts section into the Pool destination section, sitting directly above the worker identity. Editing the address auto-derives the worker (`<address>.<label>`) preserving the operator's chosen label. Editing the worker into anything that doesn't have the address as its prefix surfaces a hard-red mismatch warning (same logic as the wizard) so an operator can't silently route shares to a different address. The on-chain-payouts section now displays the address read-only with a pointer to where to edit it.
+
 ### `[Fix]` Login page also bounces to wizard on NEEDS_SETUP
 
 Belt-and-suspenders for the SetupGate redirect race. SetupGate already redirects when the daemon reports needs-setup, but if a browser is running a stale JS bundle (cached from a prior install where SetupGate didn't exist) it never gets there — it falls through `RequireAuth` to `/login`. The Login page now re-probes `/api/health` on mount and, if `NEEDS_SETUP`, clears any stored auth and redirects to `/setup` itself. Even an old-bundle browser eventually catches itself.

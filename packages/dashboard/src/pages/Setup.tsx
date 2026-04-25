@@ -60,6 +60,8 @@ export function Setup() {
       try {
         const i = await api.setupInfo();
         if (cancelled) return;
+        // /api/setup-info exists only in setup mode. A 200 response
+        // means we're really on the wizard path; nothing to do here.
         setInfo(i);
         const base: AppConfig = i.current_config ?? i.defaults;
         setForm({
@@ -83,7 +85,16 @@ export function Setup() {
         });
       } catch (err) {
         if (cancelled) return;
-        setLoadErr((err as Error).message);
+        const msg = (err as Error).message;
+        // 401 means the daemon is in *operational* mode but we're
+        // on /setup — usually because SetupGate's cached probe lagged
+        // a wizard completion. Bounce home; SetupGate's fresh probe
+        // will route correctly from there.
+        if (msg.includes('401')) {
+          window.location.replace('/');
+          return;
+        }
+        setLoadErr(msg);
       }
     })();
     return () => {
@@ -152,11 +163,19 @@ export function Setup() {
             : {}),
         },
       });
-      // Daemon writes + exits ~200 ms after the response. Wait for it
-      // to come back operational, then auto-sign-in and redirect.
+      // Daemon writes config + secrets, then transitions in-place to
+      // operational mode (#57 followup: no process restart). Wait for
+      // /api/health to flip, store the password, and do a *full* page
+      // reload — not a `navigate('/')`. SetupGate's last cached probe
+      // still says NEEDS_SETUP, so a client-side navigation would
+      // bounce right back to /setup; the next setup-info call there
+      // 401s (daemon is operational now), and the user sees a confusing
+      // "Failed to load setup data: 401". A hard reload drops React
+      // state, refreshes SetupGate, and lands cleanly on the Status
+      // page with the operator already signed in.
       await waitForOperational();
       setPassword(form.dashboard_password, true);
-      navigate('/');
+      window.location.replace('/');
     } catch (err) {
       setSubmitErr((err as Error).message);
       setStep('review');
@@ -284,23 +303,19 @@ function AccessStep({
     >
       <Section title="Braiins API access">
         <Field label="Owner token" hint="From hashpower.braiins.com → API tokens. Required.">
-          <input
-            type="password"
+          <PasswordField
             value={form.braiins_owner_token}
-            onChange={(e) => update('braiins_owner_token', e.target.value)}
+            onChange={(v) => update('braiins_owner_token', v)}
             autoFocus
-            className={textInputCss}
           />
         </Field>
         <Field
           label="Read-only token"
           hint="Optional. Useful if you'd like a second token only for read paths."
         >
-          <input
-            type="password"
+          <PasswordField
             value={form.braiins_read_only_token}
-            onChange={(e) => update('braiins_read_only_token', e.target.value)}
-            className={textInputCss}
+            onChange={(v) => update('braiins_read_only_token', v)}
           />
         </Field>
       </Section>
@@ -309,19 +324,15 @@ function AccessStep({
           You'll use this to sign in to the dashboard after setup. At least 8 characters.
         </p>
         <Field label="Password">
-          <input
-            type="password"
+          <PasswordField
             value={form.dashboard_password}
-            onChange={(e) => update('dashboard_password', e.target.value)}
-            className={textInputCss}
+            onChange={(v) => update('dashboard_password', v)}
           />
         </Field>
         <Field label="Confirm password">
-          <input
-            type="password"
+          <PasswordField
             value={form.dashboard_password_confirm}
-            onChange={(e) => update('dashboard_password_confirm', e.target.value)}
-            className={textInputCss}
+            onChange={(v) => update('dashboard_password_confirm', v)}
           />
           {!passwordsMatch && form.dashboard_password_confirm.length > 0 && (
             <div className="text-xs text-red-400 mt-1">passwords don't match</div>
@@ -518,11 +529,9 @@ function MiningStep({
                 />
               </Field>
               <Field label="RPC password">
-                <input
-                  type="password"
+                <PasswordField
                   value={form.bitcoind_rpc_password}
-                  onChange={(e) => update('bitcoind_rpc_password', e.target.value)}
-                  className={textInputCss}
+                  onChange={(v) => update('bitcoind_rpc_password', v)}
                 />
               </Field>
             </div>
@@ -680,6 +689,68 @@ function Field({
       {children}
       {hint && <div className="text-xs text-slate-500 mt-1">{hint}</div>}
     </label>
+  );
+}
+
+/**
+ * Password-style input with a click-to-reveal eye toggle. Used for
+ * every secret in the wizard — owner token, dashboard password +
+ * confirmation, optional read-only token, bitcoind RPC password —
+ * because operators copy-paste tokens and like to verify what they
+ * pasted before submitting.
+ */
+function PasswordField({
+  value,
+  onChange,
+  autoFocus,
+  placeholder,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+  autoFocus?: boolean;
+  placeholder?: string;
+}) {
+  const [shown, setShown] = useState(false);
+  return (
+    <div className="relative">
+      <input
+        type={shown ? 'text' : 'password'}
+        value={value}
+        autoFocus={autoFocus}
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value)}
+        className={`${textInputCss} pr-10`}
+      />
+      <button
+        type="button"
+        onClick={() => setShown((s) => !s)}
+        aria-label={shown ? 'Hide value' : 'Show value'}
+        title={shown ? 'Hide' : 'Show'}
+        className="absolute inset-y-0 right-2 flex items-center text-slate-400 hover:text-slate-200 focus:outline-none"
+      >
+        {shown ? <EyeOffIcon /> : <EyeIcon />}
+      </button>
+    </div>
+  );
+}
+
+function EyeIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+function EyeOffIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+      <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
+      <line x1="1" y1="1" x2="23" y2="23" />
+    </svg>
   );
 }
 

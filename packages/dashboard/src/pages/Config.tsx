@@ -99,7 +99,7 @@ const SECTIONS: Section[] = [
   {
     title: 'Pool destination',
     description:
-      'Where rented hashrate lands. Change only if your pool endpoint moves.',
+      'Where rented hashrate lands. Change only if your pool endpoint moves. The BTC payout address sits here too — the worker identity below is auto-derived from it whenever you edit the address, same as the first-run wizard.',
     fields: [
       {
         key: 'destination_pool_url',
@@ -109,10 +109,17 @@ const SECTIONS: Section[] = [
         fullWidth: true,
       },
       {
+        key: 'btc_payout_address',
+        label: 'BTC payout address',
+        kind: 'text',
+        help: 'The BTC address Ocean TIDES credits payouts to. Editing this auto-updates the worker identity below.',
+        fullWidth: true,
+      },
+      {
         key: 'destination_pool_worker_name',
         label: 'Worker identity',
         kind: 'text',
-        help: 'For Ocean TIDES this must be "<your BTC payout address>.<label>" — e.g. bc1qxyz….rig1. Without the address prefix your hashrate is credited to no one.',
+        help: 'Format: <btc-address>.<label>. Ocean TIDES credits shares by the address prefix — anything else routes shares to nobody.',
         fullWidth: true,
       },
       {
@@ -377,6 +384,34 @@ export function Config() {
   if (!draft) return <div className="text-slate-400">loading…</div>;
 
   const update = <K extends keyof AppConfig>(key: K, value: AppConfig[K]) => {
+    if (key === 'btc_payout_address') {
+      // Auto-bind worker identity to the address — same shape as the
+      // first-run wizard. When the operator edits the BTC payout
+      // address, follow with `destination_pool_worker_name` if its
+      // current value is the obvious "<oldAddr>.<label>" derivation
+      // (or empty). Preserves any custom label the operator typed;
+      // never silently overwrites a worker that intentionally points
+      // at a different address.
+      const nextAddr = typeof value === 'string' ? value : '';
+      const oldAddr = (draft.btc_payout_address as string) ?? '';
+      const oldWorker = (draft.destination_pool_worker_name as string) ?? '';
+      const looksLikeOldDerivation =
+        oldAddr.length > 0 && oldWorker.startsWith(oldAddr + '.');
+      let nextWorker = oldWorker;
+      if (looksLikeOldDerivation || oldWorker.length === 0) {
+        const label =
+          oldWorker.length > 0
+            ? oldWorker.slice(oldAddr.length + 1) || 'autopilot'
+            : 'autopilot';
+        nextWorker = nextAddr.length > 0 ? `${nextAddr}.${label}` : '';
+      }
+      setDraft({
+        ...draft,
+        btc_payout_address: nextAddr,
+        destination_pool_worker_name: nextWorker,
+      });
+      return;
+    }
     setDraft({ ...draft, [key]: value });
   };
 
@@ -700,19 +735,22 @@ function PayoutSourceSection({
       </header>
 
       <div className="space-y-4">
-        {/* BTC payout address — always visible */}
-        <label className="block">
-          <span className="block text-sm text-slate-300 mb-1">BTC payout address</span>
-          <input
-            type="text"
-            value={(draft.btc_payout_address as string) ?? ''}
-            onChange={(e) => onChange('btc_payout_address', e.target.value as never)}
-            className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm font-mono"
-          />
-          <span className="block text-xs text-slate-500 mt-1">
-            The same address used in your worker identity (bech32 only — bc1q... / bc1p...).
-          </span>
-        </label>
+        {/* BTC payout address is now edited in the Pool destination
+            section (so the auto-bound worker identity sits next to it).
+            Show a read-only mirror here so the operator can confirm
+            which address this section is observing. */}
+        <div className="bg-slate-900/40 border border-slate-800 rounded p-3 text-xs text-slate-400">
+          Observing payouts to{' '}
+          {((draft.btc_payout_address as string) ?? '').length > 0 ? (
+            <code className="text-slate-200 break-all">
+              {draft.btc_payout_address as string}
+            </code>
+          ) : (
+            <span className="text-amber-400">(no address set)</span>
+          )}
+          . Edit this in the <strong>Pool destination</strong> section above — the worker
+          identity is auto-derived from it.
+        </div>
 
         {/* Source radio */}
         <fieldset>
@@ -916,10 +954,24 @@ function Field({
   if (spec.kind === 'text') {
     const v = (value as string | null) ?? '';
     // Ocean/TIDES worker-name sanity check: should be <btc-addr>.<label>.
-    // Warn when the value has no period (no payout address prefix) —
-    // that's the "worker mines but nobody gets credited" trap.
-    const showWorkerWarning =
-      spec.key === 'destination_pool_worker_name' && v.length > 0 && !v.includes('.');
+    // Two failure modes worth surfacing distinctly:
+    //   1. No period at all → Ocean credits shares to nobody.
+    //   2. Period exists but the prefix isn't the configured BTC payout
+    //      address → Ocean credits shares to a *different* address
+    //      (or nobody, if the typo'd prefix isn't a real address).
+    // The second is the trap the operator hit in the wizard; mirror
+    // the wizard's prefix-match check here so the regular Config
+    // page is just as protective.
+    const isWorker = spec.key === 'destination_pool_worker_name';
+    const addr = (draft.btc_payout_address as string | null) ?? '';
+    const noPeriod = isWorker && v.length > 0 && !v.includes('.');
+    const prefixMismatch =
+      isWorker &&
+      v.length > 0 &&
+      v.includes('.') &&
+      addr.length > 0 &&
+      !(v.startsWith(addr + '.') && v.length > addr.length + 1);
+    const showWarning = noPeriod || prefixMismatch;
     return (
       <label className="block">
         <span className="block text-sm text-slate-300 mb-1">{spec.label}</span>
@@ -929,13 +981,21 @@ function Field({
           onChange={(e) => onChange(spec.key, e.target.value as never)}
           className={
             'w-full bg-slate-800 border rounded px-3 py-1.5 text-sm font-mono ' +
-            (showWorkerWarning ? 'border-amber-600' : 'border-slate-700')
+            (showWarning ? 'border-amber-600' : 'border-slate-700')
           }
         />
-        {showWorkerWarning && (
+        {noPeriod && (
           <span className="block text-xs text-amber-400 mt-1">
             ⚠ No period found. Ocean TIDES requires "&lt;BTC address&gt;.&lt;label&gt;".
             Without the address prefix, shares go uncredited.
+          </span>
+        )}
+        {prefixMismatch && (
+          <span className="block text-xs text-red-400 mt-1 leading-snug">
+            <strong>Mismatch:</strong> the worker identity must start with{' '}
+            <code className="text-slate-200">{addr}.</code> — otherwise Ocean credits shares to
+            a different address (or nobody). Edit the BTC payout address above; this field
+            follows it automatically.
           </span>
         )}
         {spec.help && <span className="block text-xs text-slate-500 mt-1">{spec.help}</span>}
