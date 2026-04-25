@@ -2,6 +2,10 @@
 
 ## 2026-04-25 (later)
 
+### `[Fix]` Login page also bounces to wizard on NEEDS_SETUP
+
+Belt-and-suspenders for the SetupGate redirect race. SetupGate already redirects when the daemon reports needs-setup, but if a browser is running a stale JS bundle (cached from a prior install where SetupGate didn't exist) it never gets there — it falls through `RequireAuth` to `/login`. The Login page now re-probes `/api/health` on mount and, if `NEEDS_SETUP`, clears any stored auth and redirects to `/setup` itself. Even an old-bundle browser eventually catches itself.
+
 ### `[Fix]` Setup wizard: in-place transition; spinner step 0.5
 
 The wizard previously exited the daemon via `process.exit(0)` after writing config + secrets, on the assumption that systemd / Docker / a supervisor would relaunch. That breaks on plain `./scripts/start.sh` deployments — `start.sh` has no respawn loop, so the daemon stayed dead and the wizard's poll-for-OPERATIONAL hung indefinitely.

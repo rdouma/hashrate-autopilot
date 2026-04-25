@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { api, UnauthorizedError } from '../lib/api';
-import { setPassword } from '../lib/auth';
+import { clearPassword, setPassword } from '../lib/auth';
 
 export function Login() {
   const navigate = useNavigate();
@@ -10,6 +10,31 @@ export function Login() {
   const [remember, setRemember] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  // Belt-and-suspenders for the NEEDS_SETUP race. The SetupGate above
+  // already redirects when the daemon reports needs-setup, but a
+  // browser running a stale JS bundle (cached from a prior install)
+  // may not have that gate yet. Re-probe here so anyone landing on
+  // /login while the daemon is in NEEDS_SETUP bounces straight to
+  // the wizard, with any stored auth wiped on the way out.
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .health()
+      .then((h) => {
+        if (cancelled) return;
+        if (h.mode === 'NEEDS_SETUP') {
+          clearPassword();
+          navigate('/setup', { replace: true });
+        }
+      })
+      .catch(() => {
+        /* probe failed — fall through, let the form render */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
