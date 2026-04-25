@@ -181,26 +181,172 @@ packages/
 └── shared           # shared types and utilities
 ```
 
-## Prerequisites
+## Installation
 
-- Node.js 22+ and `pnpm` 10+ (install commands below — neither is in Ubuntu's default apt repos at the right version)
-- A Braiins account with API tokens (one **owner** token, and optionally a read-only token)
-- An Ocean pool account with a Datum Gateway running locally (stratum port 23334), and a BTC payout address
-  configured as the worker identity (`<btc-address>.<worker-label>` — Ocean credits shares by address, not by label)
-- *(Optional but recommended)* The Datum Gateway HTTP API exposed on your LAN for the dashboard's second-source
-  hashrate panel. On Umbrel this is a one-line `docker-compose.yml` edit plus a full OS reboot —
-  see [`docs/setup-datum-api.md`](docs/setup-datum-api.md) for the verified recipe and the landmines to avoid
-  (do **not** use `umbreld apps.restart.mutate` — it wedged the Umbrel box on our first live attempt; the dashboard
-  Restart button or a cold-boot is fine and has run uninterrupted since).
-- *(Optional)* A running `bitcoind` or Electrs endpoint for on-chain payout tracking
-- *(Power users only)* `sops` + `age` if you'd rather store secrets in an encrypted file at rest instead of
-  using the wizard's DB-backed flow — see [Power-user setup with SOPS](#power-user-setup-with-sops)
+The daemon needs a place to live (somewhere it can stay running 24/7), a Braiins account with an API
+token, and a way for you to reach the dashboard from a browser. Beyond that, four install paths exist.
+Pick whichever matches how the rest of your stack is run.
 
-### Installing Node + pnpm
+### Choose your path
 
-On **Ubuntu / Debian** (tested on Ubuntu 22.04 and Raspberry Pi OS) the default apt `nodejs` is too old and
-`pnpm` isn't packaged at all. Grab Node 22 from NodeSource, then use `corepack` (bundled with Node) to
-activate `pnpm`:
+| Path | Best when | Footprint |
+|---|---|---|
+| **A — Umbrel / Start9 app store** | You already run Umbrel or Start9 and want a one-click install. | App-store install. Pending Phase 2 of [#56](https://github.com/rdouma/hashrate-autopilot/issues/56) — see below. |
+| **B — Docker on a Linux box** | You have a small always-on Linux machine (NUC, Mini PC, Raspberry Pi, VPS) and don't want to install a Node.js toolchain on it. | One container, one volume, one port. Recommended for a fresh box. |
+| **C — Bare-metal Node install** | You want to run from source, hack on it, or already have Node 22 + pnpm 10 around. | A git checkout + `pnpm install` + `./scripts/start.sh`. Same wizard as Path B. |
+| **D — Power-user CLI with SOPS** | You want secrets at rest in a `sops`-encrypted file (because that's how the rest of your ops is structured), not in `state.db`. | Adds `sops` + `age` to the bare-metal install; runs `pnpm run setup` instead of the web wizard. |
+
+All four end up at the same dashboard on port **3010**. All four boot the daemon in **DRY-RUN** —
+nothing trades real money until you flip the switch from the dashboard's Status page.
+
+> The wizard's setup endpoints are intentionally unauthenticated (the dashboard password is one of the
+> things you *create* there). On a public network, restrict access to port 3010 with a firewall,
+> Tailscale, or Tor until you've finished the wizard. Appliance platforms (Umbrel, Start9) handle
+> this automatically — the dashboard is exposed only over Tor / LAN there.
+
+### Path A — Umbrel or Start9 app
+
+The Umbrel and Start9 packagings are tracked in [#56](https://github.com/rdouma/hashrate-autopilot/issues/56) (Phase 2). Once they're submitted to the
+official stores, install will be a single click. Until then, an interim Community App Store can be
+added by URL — watch the project releases for a pointer when it lands.
+
+The Docker image (Path B) is what those packagings wrap, so any progress on the image is also
+progress on the appliance flow.
+
+### Path B — Docker on a Linux box
+
+Recommended for the typical "I have a Mini PC / Raspberry Pi / VPS that just needs to run this thing"
+case. Docker handles the Node + pnpm + native-binding-build dance for you, and updating to a new
+version is a single `docker pull`.
+
+#### B.1. Install Docker (Ubuntu)
+
+If Docker isn't on the box yet, install it via the official Docker repository (the `apt`-shipped
+`docker.io` is older and missing buildx-style features). On a fresh Ubuntu 22.04 / 24.04:
+
+```bash
+# Pre-reqs
+sudo apt update
+sudo apt install -y ca-certificates curl gnupg
+
+# Add Docker's GPG key + repo
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+    https://download.docker.com/linux/ubuntu $(. /etc/os-release; echo "$VERSION_CODENAME") stable" \
+  | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+# Install
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+# (Optional) let your normal user run docker without sudo
+sudo usermod -aG docker "$USER"
+# log out + back in (or `newgrp docker`) for the group change to take effect
+```
+
+Verify:
+
+```bash
+docker --version          # → Docker version 27.x or newer
+docker run --rm hello-world
+```
+
+#### B.2. Run the autopilot
+
+```bash
+docker run -d \
+  --name braiins-autopilot \
+  -p 3010:3010 \
+  -v braiins-autopilot-data:/app/data \
+  --restart unless-stopped \
+  ghcr.io/rdouma/hashrate-autopilot:latest
+```
+
+What that does:
+
+- `-d` — runs detached.
+- `-p 3010:3010` — exposes the dashboard on port 3010 of the host.
+- `-v braiins-autopilot-data:/app/data` — creates a Docker-managed named volume that persists every
+  operator-relevant file (config, secrets, tick history, owned-bid ledger). Surviving container
+  recreation is the whole point.
+- `--restart unless-stopped` — if the host reboots or the container crashes, Docker brings it back.
+- `ghcr.io/rdouma/hashrate-autopilot:latest` — pulls the image from the GitHub Container Registry.
+  Multi-arch (`linux/amd64` + `linux/arm64`) so the same line works on a Pi.
+
+#### B.3. Open the wizard
+
+In a browser on any machine on the same LAN:
+
+```
+http://<docker-host>:3010
+```
+
+You'll be auto-redirected to `/setup`. Walk through the three steps; on submit the daemon writes
+everything into the volume, transitions to operational mode, and signs you in. See **First-run
+wizard** below for the per-step detail.
+
+If your Ubuntu host has `ufw` active, allow inbound 3010:
+
+```bash
+sudo ufw allow 3010/tcp
+sudo ufw reload
+```
+
+#### B.4. Pre-seed config via env vars (optional)
+
+To skip parts of the wizard (or skip it entirely if you provide the required secrets), pass `BHA_*`
+env vars on `docker run`:
+
+```bash
+docker run -d \
+  --name braiins-autopilot \
+  -p 3010:3010 \
+  -v braiins-autopilot-data:/app/data \
+  -e BHA_BRAIINS_OWNER_TOKEN=… \
+  -e BHA_DASHBOARD_PASSWORD=… \
+  -e BHA_TARGET_HASHRATE_PH=3.0 \
+  --restart unless-stopped \
+  ghcr.io/rdouma/hashrate-autopilot:latest
+```
+
+Bitcoin Core RPC creds auto-detect from the standard `BITCOIN_RPC_*` env vars Umbrel/Start9 inject —
+no override needed when running alongside their bitcoind. Full list of `BHA_*` overrides:
+[`docs/configuration.md`](docs/configuration.md).
+
+#### B.5. Day-to-day
+
+```bash
+# Tail the logs (everything goes to stdout — no log files inside the container):
+docker logs -f braiins-autopilot
+
+# Status:
+docker ps --filter name=braiins-autopilot
+
+# Stop / start / restart:
+docker stop braiins-autopilot
+docker start braiins-autopilot
+docker restart braiins-autopilot
+
+# Update to a new release:
+docker pull ghcr.io/rdouma/hashrate-autopilot:latest
+docker stop braiins-autopilot && docker rm braiins-autopilot
+# re-run the docker run command from B.2 — the named volume preserves your state
+```
+
+To pin to a specific version (recommended for production), replace `:latest` with `:vX.Y.Z`. See
+the [releases page](https://github.com/rdouma/hashrate-autopilot/releases).
+
+### Path C — Bare-metal Node install
+
+For source hackers, anyone already running Node 22 + pnpm 10, and operators who want
+`scripts/deploy.sh`-style git-pull updates rather than container pulls.
+
+#### C.1. Install Node 22 + pnpm
+
+On **Ubuntu / Debian** (tested on 22.04 + Raspberry Pi OS) the default apt `nodejs` is too old and
+`pnpm` isn't packaged at all. Grab Node 22 from NodeSource, then use `corepack` to activate `pnpm`:
 
 ```bash
 # Node 22 via NodeSource
@@ -220,7 +366,7 @@ On **macOS** (Homebrew):
 brew install node pnpm
 ```
 
-## Getting started
+#### C.2. Clone, build, run
 
 ```bash
 git clone https://github.com/rdouma/hashrate-autopilot && cd hashrate-autopilot
@@ -230,157 +376,73 @@ pnpm build
 ```
 
 `start.sh` backgrounds the daemon, writes its PID to `data/daemon.pid`, and appends stdout/stderr to
-`data/logs/daemon.log`. Companion scripts: `scripts/stop.sh`, `scripts/restart.sh`, `scripts/status.sh`,
-`scripts/logs.sh`. For a foreground run (debugging), use `pnpm -w run daemon` from the repo root.
+`data/logs/daemon.log`. Companion scripts: `scripts/stop.sh`, `scripts/restart.sh`,
+`scripts/status.sh`, `scripts/logs.sh`. For a foreground run (debugging), use
+`pnpm -w run daemon` from the repo root.
 
-The dashboard is served on **port 3010**, bound to `0.0.0.0` by default — reachable from any machine on the
-LAN as `http://<this-host>:3010` or `http://<lan-ip>:3010`.
+The dashboard is served on port 3010, bound to `0.0.0.0` — reachable from any LAN machine as
+`http://<this-host>:3010` or `http://<lan-ip>:3010`.
 
-### First-run setup wizard
+#### C.3. Open the wizard
 
-On a fresh install (no `state.db` configured yet) the daemon boots into a special **NEEDS_SETUP** mode
-exposing only the onboarding wizard. Open the dashboard URL in a browser and you'll be redirected to
-`/setup` automatically. The wizard walks you through three steps:
+Same as Path B.3 — open the dashboard URL, get redirected to `/setup`, walk the three steps. See
+**First-run wizard** below.
 
-1. **Access** — your Braiins owner token (from hashpower.braiins.com → API tokens), an optional read-only
-   token, and a dashboard password.
-2. **Mining** — target + minimum-floor hashrate, your Datum gateway / pool URL, the worker identity
-   (`<btc-address>.<label>` — the period is mandatory; without it Ocean TIDES won't credit your shares),
-   the Bitcoin address payouts go to. Bitcoin Core RPC is optional and tucked behind a collapsed section.
-3. **Review** — sanity-check, submit.
-
-On submit the daemon writes everything to `data/state.db` and restarts itself. The wizard polls until the
-daemon is back, then signs you in automatically and drops you on the Status page. Daemon boots in
-**DRY-RUN** by default — promote to LIVE from the dashboard when you've verified the autopilot is doing
-what you expect.
-
-> The setup endpoints are unauthenticated by design (the dashboard password is one of the values the wizard
-> *creates*). On a public network, restrict access to port 3010 with a firewall, Tailscale, or Tor until the
-> wizard has run. Appliance platforms (Umbrel, Start9) handle this automatically — the dashboard is exposed
-> only over Tor / LAN there.
-
-### Opening the port on the host firewall
-
-Accessing the dashboard from another machine on the LAN requires the host firewall to allow inbound
-connections on port 3010. Ubuntu ships with `ufw` present but inactive — check before assuming either way:
-
-```bash
-sudo ufw status verbose
-```
-
-If the output is `Status: inactive`, nothing is blocking you and no change is needed. If it's `Status: active`
-and `3010/tcp` isn't in the ALLOW list:
+If your Ubuntu host has `ufw` active:
 
 ```bash
 sudo ufw allow 3010/tcp
 sudo ufw reload
 ```
 
-To verify from another box on the LAN:
+To verify reachability from another LAN box:
 
 ```bash
 nc -zv <host>.local 3010    # or the host's LAN IP
 # → "succeeded" = port reachable; "timed out" / "refused" = firewall (or daemon not listening)
 ```
 
-To change the port, set `HTTP_PORT=nnnn` in the daemon's environment; to bind only to loopback, set
-`HTTP_HOST=127.0.0.1`.
-
-### Editing secrets later
-
-The wizard persists everything (config + secrets) into `data/state.db`. To rotate a token or change the
-dashboard password after setup, the easiest path is to run the wizard again:
-
-1. Stop the daemon (`./scripts/stop.sh`).
-2. Delete the `secrets` row to force NEEDS_SETUP on next boot:
-   `sqlite3 data/state.db 'DELETE FROM secrets;'`
-3. Start the daemon (`./scripts/start.sh`); the dashboard redirects to `/setup`. Your existing config is
-   pre-filled — only the secrets need to be re-entered.
-
-Alternatively, every secret is overridable from the environment with a `BHA_*` variable — no file edit
-needed. See [docs/configuration.md](docs/configuration.md). Set
-`BHA_BRAIINS_OWNER_TOKEN=…` (etc.) in the daemon's environment and they take precedence over the
-DB-stored values on every restart.
-
-### Running on a second host (or migrating)
-
-All operator-relevant state (config, secrets, tick metrics, decisions, owned-bid ledger) lives under
-`data/`. Two ways to bring up a second host:
-
-1. **Fresh setup on the new host** (simplest): clone the repo, `pnpm install && pnpm build &&
-   ./scripts/start.sh`, re-run the wizard. The two hosts have independent state.
-2. **Copy `data/` over**: scp the entire `data/` directory from the origin host to the target. The daemon
-   on the new host boots straight into operational mode — no wizard needed. Stop the daemon first on both
-   sides; SQLite WAL files don't appreciate concurrent processes.
-
-See [`docs/spec.md`](docs/spec.md) for the full design and [`docs/architecture.md`](docs/architecture.md) for
-deployment details.
-
-## Updating a running deployment
-
-`scripts/deploy.sh` is the one-shot updater for a machine that already has the repo checked out and the daemon
-running. It pulls `main`, reinstalls pinned deps, builds, runs the tests, and only then restarts the daemon —
-so a broken commit won't take your running autopilot down with it.
+#### C.4. Day-to-day
 
 ```bash
-./scripts/deploy.sh
+./scripts/logs.sh        # tail data/logs/daemon.log
+./scripts/status.sh      # is the daemon running?
+./scripts/restart.sh     # bounce
+./scripts/stop.sh        # stop
+./scripts/deploy.sh      # one-shot update: git pull, build, test, restart
 ```
 
-Safe to run while the daemon is live; the restart happens after the build + tests succeed. No state loss —
-`data/state.db` is untouched across restarts.
+`deploy.sh` is safe to run while the daemon is live — the restart only happens after the build +
+tests succeed, so a broken commit can't take your running autopilot down. Common patterns:
 
-Common patterns:
-
-- **Manual update** after you see a new release or commit you want: just run it.
+- **Manual update** after you see a new release: just run it.
 - **Nightly cron** (fully hands-off): `0 4 * * * cd /path/to/hashrate-autopilot && ./scripts/deploy.sh >> ~/deploy.log 2>&1`
 
-The script does a `git pull --ff-only` internally, so it only runs on a tracking branch (e.g. `main`). If you'd
-rather pin to a tagged release, manage the checkout manually (`git fetch --tags && git checkout v1.0.1 && pnpm
-install && pnpm build && ./scripts/restart.sh`) — deploy.sh will fail on a detached HEAD, which is safer than
-silently moving you off the pin.
-
-## Running with Docker
-
-For appliance deployments (Umbrel, Start9) and anyone who wants the daemon in a container without
-managing the Node + pnpm + better-sqlite3 native-build dance themselves:
+The script does a `git pull --ff-only`, so it only runs on a tracking branch (e.g. `main`). To pin
+to a tagged release, manage the checkout manually:
 
 ```bash
-docker run -d \
-  --name braiins-autopilot \
-  -p 3010:3010 \
-  -v braiins-autopilot-data:/app/data \
-  ghcr.io/rdouma/hashrate-autopilot:latest
+git fetch --tags && git checkout v1.3.0
+pnpm install && pnpm build && ./scripts/restart.sh
 ```
 
-Open `http://<host>:3010` and you'll be redirected to the wizard, same as the bare-metal flow above.
-Every operator-relevant value (config, secrets, tick history) lives under `/app/data` — mount that
-volume and the container is upgrade-safe.
+### Path D — Power-user CLI with SOPS
 
-The image is built for `linux/amd64` and `linux/arm64` (Raspberry Pi / Apple Silicon NUCs both
-work). Image source: [`Dockerfile`](Dockerfile); CI: [`.github/workflows/docker-publish.yml`](.github/workflows/docker-publish.yml).
+The default Path B/C flow (web wizard → secrets in `state.db`) is appliance-friendly and what most
+users should pick. If you'd rather store secrets in a `sops`-encrypted file at rest — typical reasons:
+your ops workflow is already standardised on `sops` + `age`, or you don't want secrets in the
+SQLite file that your backups roll up — that path remains fully supported.
 
-To pre-seed configuration from environment variables (skip parts of the wizard, or skip it entirely
-if you provide the required secrets), pass `BHA_*` env vars on `docker run` — see
-[docs/configuration.md](docs/configuration.md). Bitcoin Core RPC creds in particular auto-detect
-from the standard `BITCOIN_RPC_*` env vars Umbrel/Start9 inject.
-
-## Power-user setup with SOPS
-
-The default flow (web wizard → secrets in `state.db`) is appliance-friendly and what most users should pick.
-If you'd rather store secrets in a SOPS-encrypted file at rest — typical reasons: ops workflow already
-standardised on SOPS + age, or you want to keep secrets out of the SQLite file that backups roll up — that
-path remains supported.
-
-### Installing sops + age
+#### D.1. Install sops + age
 
 On **Ubuntu / Debian**:
 
 ```bash
 sudo apt install -y age
 
-# sops isn't in apt. Releases are version-named, so resolve the latest tag
-# from GitHub's /latest redirect, then download the matching .deb. On arm64
-# (Raspberry Pi) replace `amd64` with `arm64`.
+# sops isn't in apt. Releases are version-named; resolve the latest tag from
+# GitHub's /latest redirect, then download the matching .deb. On arm64 (Pi)
+# replace `amd64` with `arm64`.
 SOPS_VER=$(curl -fsSL -o /dev/null -w '%{url_effective}' https://github.com/getsops/sops/releases/latest | sed 's|.*/||')
 curl -fsSL "https://github.com/getsops/sops/releases/download/${SOPS_VER}/sops_${SOPS_VER#v}_amd64.deb" -o /tmp/sops.deb
 sudo apt install -y /tmp/sops.deb
@@ -393,56 +455,97 @@ On **macOS**:
 brew install age sops
 ```
 
-### The CLI setup script
+#### D.2. Run the CLI setup script
+
+After cloning + installing dependencies (see Path C.1–C.2):
 
 ```bash
 pnpm run setup
 ```
 
-This is the legacy interactive setup CLI. It generates an `age` key at
-`~/.config/braiins-hashrate/age.key`, writes a `.sops.yaml` policy, prompts for your tokens + core config,
-encrypts the secrets to `.env.sops.yaml`, and bootstraps `data/state.db`. Refuses to overwrite an existing
-setup unless you pass `--force`.
+The legacy interactive CLI. Generates an `age` key at `~/.config/braiins-hashrate/age.key`, writes
+a `.sops.yaml` policy, prompts for your tokens + core config, encrypts the secrets to
+`.env.sops.yaml`, and bootstraps `data/state.db`. Refuses to overwrite an existing setup unless you
+pass `--force`.
 
-> Use `pnpm run setup`, not `pnpm setup`. The bare `pnpm setup` is a pnpm built-in that configures pnpm's
-> own shell environment — it silently shadows any `setup` script in `package.json`. `pnpm run setup`
-> disambiguates and invokes the autopilot's CLI.
+> Use `pnpm run setup`, not `pnpm setup`. The bare `pnpm setup` is a built-in pnpm command that
+> configures pnpm's own shell environment — it silently shadows any `setup` script in
+> `package.json`. `pnpm run setup` disambiguates and invokes the autopilot's CLI.
 
-After `pnpm run setup` completes, start the daemon with `./scripts/start.sh`. The web wizard is *not*
-triggered — the daemon finds the SOPS file + populated config and goes straight into operational mode.
+Then start the daemon as in Path C:
 
-### Resolution priority
+```bash
+./scripts/start.sh
+```
 
-The daemon resolves secrets in this order on every boot:
+The web wizard is *not* triggered — the daemon finds the SOPS file + populated config row and boots
+straight into operational mode.
 
-1. **`BHA_*` environment variables** (full set — `BHA_BRAIINS_OWNER_TOKEN` and `BHA_DASHBOARD_PASSWORD`
-   required). Lets a Docker / Umbrel / Start9 deployment skip both file and DB entirely.
-2. **`.env.sops.yaml` file**, if present. Decrypted with the age key at
-   `~/.config/braiins-hashrate/age.key` (or `SOPS_AGE_KEY_FILE`).
-3. **`secrets` table in `data/state.db`** (populated by the web wizard).
-4. **NEEDS_SETUP** (web wizard offered).
-
-Env-var overrides apply on top of whatever source above won — so a `docker run -e BHA_BRAIINS_OWNER_TOKEN=…`
-rotates a single secret without touching the SOPS file or the DB.
-
-### Editing the SOPS file later
+#### D.3. Editing the SOPS file later
 
 ```bash
 SOPS_AGE_KEY_FILE=~/.config/braiins-hashrate/age.key sops .env.sops.yaml
 ```
 
-The explicit `SOPS_AGE_KEY_FILE` is only needed if your age key isn't at the default sops location
-(`~/.config/sops/age/keys.txt`) — `pnpm run setup` writes the project's key to a separate path on purpose so
-it doesn't collide with other sops-encrypted projects on the same host.
+The explicit `SOPS_AGE_KEY_FILE` is only needed if your `age` key isn't at the default `sops`
+location (`~/.config/sops/age/keys.txt`) — `pnpm run setup` writes the project's key to a separate
+path on purpose so it doesn't collide with other `sops`-encrypted projects on the same host.
 
-### Migrating between hosts (SOPS path)
+#### D.4. Migrating between hosts (SOPS path)
 
 `.env.sops.yaml` is gitignored. Two options:
 
 1. **Fresh setup on the new host**: clone, `pnpm install && pnpm build && pnpm run setup`. Independent
-   age key and encrypted file per host.
-2. **Copy the secret bundle**: scp both `~/.config/braiins-hashrate/age.key` *and* `.env.sops.yaml` from
-   origin to target. `chmod 600` the age key after the copy.
+   `age` key + encrypted file per host.
+2. **Copy the secret bundle**: `scp` both `~/.config/braiins-hashrate/age.key` *and* `.env.sops.yaml`
+   from origin to target. `chmod 600` the age key after the copy.
+
+## First-run wizard
+
+On a fresh install (no secrets configured) the daemon enters **NEEDS_SETUP** mode and the dashboard
+auto-redirects to `/setup`. Three steps:
+
+1. **Access** — your Braiins owner token (from hashpower.braiins.com → API tokens), an optional
+   read-only token, and a dashboard password. Eye-toggle on every secret field so you can verify
+   pasted tokens.
+2. **Mining** — target + minimum-floor hashrate, your Datum gateway / pool URL, the BTC payout
+   address, the worker identity (`<btc-address>.<label>` — auto-derived from the address; the period
+   is mandatory or Ocean TIDES won't credit your shares), and an optional payout-tracking backend
+   (Bitcoin Core RPC or Electrs).
+3. **Review** — sanity-check, submit.
+
+On submit the daemon writes everything to `state.db` and transitions to operational mode in-place
+(no process restart). The wizard polls until the daemon is back, then signs you in automatically and
+drops you on the Status page.
+
+Daemon boots in **DRY-RUN** by default — promote to LIVE from the dashboard when you've verified the
+autopilot is doing what you expect.
+
+## Editing secrets / running on a second host
+
+Both behaviours are independent of which install path you picked.
+
+**Editing secrets later:** the wizard persists everything (config + secrets) into `data/state.db`
+(or `/app/data/state.db` in the Docker case). Two ways to rotate:
+
+1. **Re-run the wizard:** stop the daemon, run
+   `sqlite3 data/state.db 'DELETE FROM secrets;'` to force NEEDS_SETUP, restart, and the dashboard
+   redirects to `/setup` with your existing config pre-filled.
+2. **`BHA_*` env-var override:** set the env var (e.g. `BHA_BRAIINS_OWNER_TOKEN=…`) in the daemon's
+   environment and it takes precedence over the DB value on every boot. On Docker, that's
+   `docker run -e BHA_…`. See [`docs/configuration.md`](docs/configuration.md).
+
+**Running on a second host (or migrating):** all operator-relevant state lives under `data/`
+(bare-metal) or in the named volume (Docker). Either:
+
+1. **Fresh setup on the new host**: install via the same path you used on the first host, re-run
+   the wizard. Independent state per host.
+2. **Copy `data/` (or the volume) over**: `scp -r data/` from origin to target (bare-metal), or
+   `docker volume export … | docker volume import …` (Docker). Stop the daemon on both sides first;
+   SQLite WAL files don't appreciate concurrent processes.
+
+See [`docs/spec.md`](docs/spec.md) for the full design and [`docs/architecture.md`](docs/architecture.md)
+for deployment details.
 
 ## Disclaimer
 
