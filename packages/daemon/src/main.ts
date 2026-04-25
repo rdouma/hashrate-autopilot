@@ -122,6 +122,30 @@ async function main(): Promise<void> {
     );
 
     let setupServer: SetupModeServer | null = null;
+    let setupShuttingDown = false;
+    const setupShutdown = async (signal: string): Promise<void> => {
+      if (setupShuttingDown) return;
+      setupShuttingDown = true;
+      log(`received ${signal} (setup mode); closing wizard server`);
+      forceExitAfter(8_000);
+      try {
+        await setupServer?.stop();
+      } catch (err) {
+        log(`setup: error stopping setup server: ${(err as Error).message}`);
+      }
+      try {
+        await closeDatabase(deps.handle);
+      } catch (err) {
+        log(`setup: error closing database: ${(err as Error).message}`);
+      }
+      log('setup: shutdown complete');
+      process.exit(0);
+    };
+    const setupSigint = () => void setupShutdown('SIGINT');
+    const setupSigterm = () => void setupShutdown('SIGTERM');
+    process.on('SIGINT', setupSigint);
+    process.on('SIGTERM', setupSigterm);
+
     const transition = async (): Promise<void> => {
       // Wizard wrote config + secrets to db; close the wizard server
       // and boot operational without restarting the process. Polling
@@ -129,6 +153,12 @@ async function main(): Promise<void> {
       // OPERATIONAL once createHttpServer is listening on the same
       // port the setup server just released.
       log('setup: transitioning in-place to operational mode');
+      // Drop the setup-mode signal handlers — bootOperational will
+      // install its own. Otherwise both fire on shutdown and the
+      // setup handler closes the DB out from under the operational
+      // shutdown.
+      process.off('SIGINT', setupSigint);
+      process.off('SIGTERM', setupSigterm);
       if (setupServer) {
         try {
           await setupServer.stop();
@@ -424,6 +454,14 @@ async function bootOperational(
     if (shuttingDown) return;
     shuttingDown = true;
     log(`received ${signal}; draining loop`);
+    // Hard force-exit fence: Docker's default stop grace is 10 s, so
+    // if anything (a stuck Braiins API call inside the in-flight
+    // tick, a slow http.close, etc.) doesn't return within 8 s we
+    // exit anyway. The DB will have been WAL-flushed by the time
+    // we got this far for any tick that completed; the worst case
+    // is losing the in-flight tick's writes, which the next tick
+    // would have produced anyway.
+    forceExitAfter(8_000);
     payoutObserver?.stop();
     retentionService.stop();
     hashpriceRefresher.stop();
@@ -541,6 +579,22 @@ function short(id: string): string {
 function log(msg: string): void {
   const ts = new Date().toISOString();
   console.log(`${ts}  ${msg}`);
+}
+
+/**
+ * Force-exit fence for graceful shutdown. If the shutdown sequence
+ * doesn't `process.exit(0)` within `ms` we exit with code 124
+ * (matching `timeout(1)`'s convention) — better to lose an in-flight
+ * tick than get SIGKILL'd at the Docker grace boundary with the WAL
+ * mid-flush. The timer is `unref`'d so it never *prevents* a clean
+ * exit on its own.
+ */
+function forceExitAfter(ms: number): void {
+  const t = setTimeout(() => {
+    log(`FORCE-EXIT after ${ms} ms grace; shutdown didn't complete in time`);
+    process.exit(124);
+  }, ms);
+  t.unref();
 }
 
 main().catch((err) => {
