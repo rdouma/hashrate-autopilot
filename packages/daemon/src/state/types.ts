@@ -293,6 +293,25 @@ export interface ClosedBidsCacheTable {
 // Kysely database descriptor
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// secrets — single-row table mirroring SecretsSchema, populated by the
+// first-run web wizard (#57) so appliance installs that can't carry a
+// SOPS-encrypted file have a persistent home for token + password.
+// ---------------------------------------------------------------------------
+
+export interface SecretsTable {
+  id: Generated<number>;
+  braiins_owner_token: string;
+  braiins_read_only_token: string | null;
+  dashboard_password: string;
+  bitcoind_rpc_url: string | null;
+  bitcoind_rpc_user: string | null;
+  bitcoind_rpc_password: string | null;
+  telegram_bot_token: string | null;
+  telegram_webhook_secret: string | null;
+  updated_at: number;
+}
+
 export interface Database {
   config: ConfigTable;
   runtime_state: RuntimeStateTable;
@@ -307,5 +326,6 @@ export interface Database {
   tick_metrics: TickMetricsTable;
   bid_events: BidEventsTable;
   closed_bids_cache: ClosedBidsCacheTable;
+  secrets: SecretsTable;
   _migrations: MigrationsTable;
 }
