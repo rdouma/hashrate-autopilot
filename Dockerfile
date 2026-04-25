@@ -52,7 +52,10 @@ RUN pnpm build
 # Drop dev dependencies. The remaining node_modules carries only
 # what's needed at runtime; combined with the dist directories that
 # `pnpm build` produced, this is the runnable artefact.
-RUN pnpm prune --prod
+# CI=true tells pnpm we're non-interactive — without it, prune asks
+# for tty confirmation before purging the modules dir and aborts in
+# a Docker build context.
+RUN CI=true pnpm prune --prod
 
 # ---------------------------------------------------------------------------
 # Runtime
