@@ -287,7 +287,6 @@ export interface SetupRequestPayload {
 
 export interface SetupResponse {
   ok: boolean;
-  restart_required: boolean;
 }
 
 /** Public probe — no auth, returns 200 in both setup and operational modes. */

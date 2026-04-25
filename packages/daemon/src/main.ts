@@ -1,9 +1,13 @@
 /**
  * Daemon entry point.
  *
- * Boots the process, loads config + secrets, constructs the controller
- * with all its dependencies, and runs the observe→decide→gate→execute
- * tick loop until SIGINT / SIGTERM.
+ * Boots the process, loads config + secrets, and either:
+ *   - Runs the operational tick loop until SIGINT/SIGTERM (normal path), or
+ *   - Stands up the first-run wizard server when config/secrets are absent
+ *     and transitions in-place to operational mode after the wizard
+ *     submits (no external process manager required — see #57 followup
+ *     for why the original "exit and let supervisor restart" approach
+ *     didn't work on plain `start.sh` deployments).
  */
 
 import { homedir } from 'node:os';
@@ -13,8 +17,9 @@ import { createBitcoindClient } from '@braiins-hashrate/bitcoind-client';
 import { createBraiinsClient } from '@braiins-hashrate/braiins-client';
 
 import { applyEnvOverridesToConfig } from './config/env-overrides.js';
+import type { AppConfig, Secrets } from './config/schema.js';
 import { loadSecretsAnySource } from './config/secret-sources.js';
-import { createSetupModeServer } from './setup-mode.js';
+import { createSetupModeServer, type SetupModeServer } from './setup-mode.js';
 import { SecretsRepo } from './state/repos/secrets.js';
 import { createHttpServer } from './http/server.js';
 import { AccountSpendService } from './services/account-spend.js';
@@ -27,7 +32,7 @@ import { HashpriceRefresher } from './services/hashprice-refresher.js';
 import { createOceanClient } from './services/ocean.js';
 import { PayoutObserver } from './services/payout-observer.js';
 import { PoolHealthTracker } from './services/pool-health.js';
-import { closeDatabase, openDatabase } from './state/db.js';
+import { closeDatabase, openDatabase, type DatabaseHandle } from './state/db.js';
 import { BidEventsRepo } from './state/repos/bid_events.js';
 import { ClosedBidsCacheRepo } from './state/repos/closed_bids_cache.js';
 import { ConfigRepo } from './state/repos/config.js';
@@ -51,6 +56,20 @@ function defaultAgeKeyPath(): string {
   return `${xdg}/braiins-hashrate/age.key`;
 }
 
+interface BootDeps {
+  readonly handle: DatabaseHandle;
+  readonly configRepo: ConfigRepo;
+  readonly runtimeRepo: RuntimeStateRepo;
+  readonly ownedBidsRepo: OwnedBidsRepo;
+  readonly decisionsRepo: DecisionsRepo;
+  readonly tickMetricsRepo: TickMetricsRepo;
+  readonly bidEventsRepo: BidEventsRepo;
+  readonly closedBidsCacheRepo: ClosedBidsCacheRepo;
+  readonly secretsRepo: SecretsRepo;
+  readonly secretsPath: string;
+  readonly ageKeyPath: string;
+}
+
 async function main(): Promise<void> {
   const projectRoot = process.cwd();
   const secretsPath = process.env['SECRETS_PATH'] ?? resolve(projectRoot, '.env.sops.yaml');
@@ -67,14 +86,19 @@ async function main(): Promise<void> {
   // boot paths (the wizard writes config + secrets through repos
   // backed by the same handle).
   const handle = await openDatabase({ path: dbPath });
-  const configRepo = new ConfigRepo(handle.db);
-  const runtimeRepo = new RuntimeStateRepo(handle.db);
-  const ownedBidsRepo = new OwnedBidsRepo(handle.db);
-  const decisionsRepo = new DecisionsRepo(handle.db);
-  const tickMetricsRepo = new TickMetricsRepo(handle.db);
-  const bidEventsRepo = new BidEventsRepo(handle.db);
-  const closedBidsCacheRepo = new ClosedBidsCacheRepo(handle.db);
-  const secretsRepo = new SecretsRepo(handle.db);
+  const deps: BootDeps = {
+    handle,
+    configRepo: new ConfigRepo(handle.db),
+    runtimeRepo: new RuntimeStateRepo(handle.db),
+    ownedBidsRepo: new OwnedBidsRepo(handle.db),
+    decisionsRepo: new DecisionsRepo(handle.db),
+    tickMetricsRepo: new TickMetricsRepo(handle.db),
+    bidEventsRepo: new BidEventsRepo(handle.db),
+    closedBidsCacheRepo: new ClosedBidsCacheRepo(handle.db),
+    secretsRepo: new SecretsRepo(handle.db),
+    secretsPath,
+    ageKeyPath,
+  };
 
   // Try every secret source in priority order: env > SOPS file > db.
   // Returns null if none provide a complete `Secrets`; combined with
@@ -82,15 +106,12 @@ async function main(): Promise<void> {
   const secretsResult = await loadSecretsAnySource({
     sopsPath: secretsPath,
     ageKeyPath,
-    secretsRepo,
+    secretsRepo: deps.secretsRepo,
     env: process.env,
   });
-  let dbCfg = await configRepo.get();
+  const dbCfg = await deps.configRepo.get();
 
   if (!secretsResult || !dbCfg) {
-    // First-run / re-setup: stand up only the wizard endpoints. The
-    // user submits config+secrets via POST /api/setup, daemon writes
-    // both, exits, process manager restarts us into operational mode.
     const missing: string[] = [];
     if (!secretsResult) missing.push('secrets');
     if (!dbCfg) missing.push('config');
@@ -99,24 +120,85 @@ async function main(): Promise<void> {
       'WARNING: setup endpoints are unauthenticated. Restrict access ' +
         '(firewall, Tailscale, Tor) until the wizard has run.',
     );
-    const setupServer = await createSetupModeServer({
-      configRepo,
-      secretsRepo,
+
+    let setupServer: SetupModeServer | null = null;
+    const transition = async (): Promise<void> => {
+      // Wizard wrote config + secrets to db; close the wizard server
+      // and boot operational without restarting the process. Polling
+      // /api/health from the wizard tab observes mode flip to
+      // OPERATIONAL once createHttpServer is listening on the same
+      // port the setup server just released.
+      log('setup: transitioning in-place to operational mode');
+      if (setupServer) {
+        try {
+          await setupServer.stop();
+        } catch (err) {
+          log(`setup: error stopping setup server: ${(err as Error).message}`);
+        }
+      }
+      const reloaded = await loadSecretsAnySource({
+        sopsPath: secretsPath,
+        ageKeyPath,
+        secretsRepo: deps.secretsRepo,
+        env: process.env,
+      });
+      const reloadedCfg = await deps.configRepo.get();
+      if (!reloaded || !reloadedCfg) {
+        log('FATAL: post-setup reload returned null secrets or config');
+        process.exit(1);
+      }
+      log(`setup: reloaded secrets from ${reloaded.source}`);
+      await bootOperational(deps, reloaded.secrets, reloadedCfg);
+    };
+
+    setupServer = await createSetupModeServer({
+      configRepo: deps.configRepo,
+      secretsRepo: deps.secretsRepo,
       staticRoot: resolve(projectRoot, DASHBOARD_STATIC),
       log,
+      onSetupComplete: () => {
+        // Defer briefly so the POST /api/setup response flushes
+        // before we close the listener out from under it.
+        setTimeout(() => {
+          transition().catch((err) => {
+            log(`FATAL: in-place transition failed: ${(err as Error).stack ?? err}`);
+            process.exit(1);
+          });
+        }, 200);
+      },
     });
     const addr = await setupServer.start(HTTP_PORT, HTTP_HOST);
     log(`setup server listening on ${addr}`);
-    return; // Skip operational boot; daemon will exit on POST /api/setup.
+    return;
   }
 
-  const secrets = secretsResult.secrets;
   log(`secrets:  loaded from ${secretsResult.source}`);
+  await bootOperational(deps, secretsResult.secrets, dbCfg);
+}
+
+async function bootOperational(
+  deps: BootDeps,
+  secrets: Secrets,
+  dbCfgIn: AppConfig,
+): Promise<void> {
+  const {
+    handle,
+    configRepo,
+    runtimeRepo,
+    ownedBidsRepo,
+    decisionsRepo,
+    tickMetricsRepo,
+    bidEventsRepo,
+    closedBidsCacheRepo,
+    secretsPath,
+    ageKeyPath,
+  } = deps;
+  let dbCfg = dbCfgIn;
 
   // Seed bitcoind credentials from secrets into config on first boot
   // so they become dashboard-editable (issue #14). Only runs when secrets
-  // carries all three fields — setup no longer prompts for them, so fresh
-  // installs typically skip this path entirely.
+  // carries all three fields — the wizard no longer collects them
+  // there, so wizard-driven installs typically skip this entirely.
   if (
     !dbCfg.bitcoind_rpc_url &&
     secrets.bitcoind_rpc_url &&
@@ -132,9 +214,6 @@ async function main(): Promise<void> {
     dbCfg = (await configRepo.get())!;
     log('bitcoind credentials seeded from secrets into config');
   }
-
-  // payout_source auto-detection moved to migration 0022 (runs once).
-  // No per-boot override — operator's choice sticks.
 
   // Overlay env-var overrides on top of the db config (#59). The
   // dashboard still edits the db row directly, so its view stays

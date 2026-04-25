@@ -2,6 +2,14 @@
 
 ## 2026-04-25 (later)
 
+### `[Fix]` Setup wizard: in-place transition; spinner step 0.5
+
+The wizard previously exited the daemon via `process.exit(0)` after writing config + secrets, on the assumption that systemd / Docker / a supervisor would relaunch. That breaks on plain `./scripts/start.sh` deployments — `start.sh` has no respawn loop, so the daemon stayed dead and the wizard's poll-for-OPERATIONAL hung indefinitely.
+
+Refactor `main.ts` to extract the operational boot into a `bootOperational(deps, secrets, cfg)` function. The `onSetupComplete` callback now stops the setup-mode HTTP server (releasing port 3010), re-loads secrets + config from db, and calls `bootOperational` directly — same process, same DB handle, no exit. Wizard's polling sees `mode: OPERATIONAL` within a couple seconds and signs the operator in. No external supervisor required, which is what every appliance platform expects anyway.
+
+Also: the wizard's PH/s number inputs used `step="0.1"` + `min="0.001"`, which combine to make `3.0` invalid (browser thinks the valid grid is 0.001, 0.101, …, 2.901, 3.001). Switched to `step="0.5"` + `min="0.5"` so whole and half PH/s values are valid.
+
 ### `[UI]` Setup wizard: clear stale auth, payout backend selector, worker-identity guard
 
 Three first-bug-report fixes after shipping the wizard:

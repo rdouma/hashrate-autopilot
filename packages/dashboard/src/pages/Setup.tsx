@@ -168,7 +168,7 @@ export function Setup() {
       <CenteredCard wide>
         <h1 className="text-xl text-amber-400 font-semibold">Setting up…</h1>
         <p className="text-slate-300 text-sm mt-2">
-          Writing config + secrets and restarting the daemon. This usually takes a few seconds.
+          Writing config + secrets and bringing the controller online. Usually a few seconds.
         </p>
         <div className="mt-4 h-2 w-full bg-slate-800 rounded overflow-hidden">
           <div className="h-full bg-amber-400 animate-pulse w-1/3" />
@@ -413,8 +413,8 @@ function MiningStep({
           <Field label="Target (PH/s)" hint="What the controller aims for.">
             <input
               type="number"
-              step="0.1"
-              min="0.001"
+              step="0.5"
+              min="0.5"
               value={form.target_hashrate_ph}
               onChange={(e) => update('target_hashrate_ph', Number(e.target.value))}
               className={textInputCss}
@@ -423,8 +423,8 @@ function MiningStep({
           <Field label="Floor (PH/s)" hint="Below this triggers an alert. ≤ target.">
             <input
               type="number"
-              step="0.1"
-              min="0.001"
+              step="0.5"
+              min="0.5"
               value={form.minimum_floor_hashrate_ph}
               onChange={(e) =>
                 update('minimum_floor_hashrate_ph', Number(e.target.value))
@@ -616,9 +616,9 @@ function ReviewStep({
         />
       </Section>
       <p className="text-xs text-slate-400">
-        After submit, the daemon will write everything to <code>state.db</code>, restart, and start
-        in <strong>DRY-RUN</strong> mode. The dashboard will sign you in automatically once the
-        daemon is back. Promote to LIVE from the Status page when you're ready.
+        After submit, the daemon writes everything to <code>state.db</code> and brings the
+        controller online in-place. Boots in <strong>DRY-RUN</strong> mode; the dashboard signs you
+        in automatically. Promote to LIVE from the Status page when you're ready.
       </p>
       {err && <div className="text-sm text-red-400">{err}</div>}
       <div className="flex justify-between pt-2">

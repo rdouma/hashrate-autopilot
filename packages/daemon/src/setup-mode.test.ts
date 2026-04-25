@@ -83,7 +83,7 @@ describe('createSetupModeServer', () => {
       payload: validSetupPayload(),
     });
     expect(res.statusCode).toBe(200);
-    expect(res.json()).toEqual({ ok: true, restart_required: true });
+    expect(res.json()).toEqual({ ok: true });
     const cfg = await configRepo.get();
     expect(cfg).not.toBeNull();
     expect(cfg!.btc_payout_address).toBe('bc1qexample');

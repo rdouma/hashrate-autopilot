@@ -4,10 +4,11 @@
  * Boots a slim Fastify app exposing only what the first-run web
  * onboarding wizard (#57) needs:
  *
- *   GET  /api/status        (no auth) → `{ needs_setup: true, ... }`
+ *   GET  /api/health        (no auth) → `{ status, mode: 'NEEDS_SETUP' }`
  *   GET  /api/setup-info    (no auth) → defaults + any pre-existing
  *                                       config to pre-fill the form
- *   POST /api/setup         (no auth) → write config + secrets, exit
+ *   POST /api/setup         (no auth) → write config + secrets, hand
+ *                                       off to operational boot
  *
  * Every other `/api/*` path returns `412 Precondition Failed` with
  * `{ needs_setup: true }` — clients see immediately that the daemon
@@ -15,11 +16,14 @@
  * assets (and the SPA index.html fallback) are served just like in
  * operational mode so the wizard URL renders end-to-end.
  *
- * After a successful POST /api/setup the daemon writes both the
- * config and secrets rows, replies 200, and `process.exit(0)`s. The
- * appliance / restart.sh / systemd / Docker brings the daemon back
- * up; the wizard polls /api/status until it stops returning
- * needs_setup, then redirects to /.
+ * After a successful POST /api/setup, this server writes both rows
+ * and invokes `onSetupComplete`. The default behaviour is an
+ * in-place handoff: the daemon's main entrypoint stops this server,
+ * re-loads from db, and brings the operational HTTP server up on
+ * the same port — no process restart, no external supervisor
+ * required. (The earlier shipped behaviour was `process.exit(0)` on
+ * the assumption a process manager would relaunch us; that broke on
+ * plain `start.sh` deployments where there's no supervisor.)
  *
  * Setup endpoints are intentionally unauthenticated — the dashboard
  * password is one of the values the wizard *creates*, so requiring
@@ -50,20 +54,17 @@ export interface SetupModeServerDeps {
   readonly staticRoot?: string | undefined;
   readonly log?: (msg: string) => void;
   /**
-   * Called after a successful POST /api/setup. Default: schedule
-   * `process.exit(0)` ~200 ms later so the response flushes first
-   * and the process manager (systemd / Docker / restart.sh) brings
-   * the daemon back into operational mode. Tests pass a no-op so
-   * the timer doesn't tear down the test runner.
+   * Called after a successful POST /api/setup. The daemon entrypoint
+   * provides one that stops this server and hands off to operational
+   * boot in-place (no process restart). The default below is a
+   * fail-safe — used only when no callback is provided (e.g. tests):
+   * it logs and stays running, so the test runner isn't torn down.
    */
   readonly onSetupComplete?: () => void;
 }
 
 const defaultOnSetupComplete = (log?: (msg: string) => void) => () => {
-  setTimeout(() => {
-    log?.('setup: complete — exiting (process manager will restart)');
-    process.exit(0);
-  }, 200);
+  log?.('setup: complete — no onSetupComplete handler provided; staying in setup mode');
 };
 
 const SetupRequestSchema = z.object({
@@ -141,12 +142,13 @@ export async function createSetupModeServer(
     await deps.configRepo.upsert(config);
     await deps.secretsRepo.upsert(secrets);
 
-    reply.send({ ok: true, restart_required: true });
+    reply.send({ ok: true });
 
-    // Exit after the response flushes. systemd / Docker / restart.sh
-    // bring the daemon back, this time finding both rows and booting
-    // into operational mode. The dashboard polls /api/health until
-    // mode flips to OPERATIONAL, then redirects to the home page.
+    // Hand off to the daemon entrypoint's transition logic. The
+    // entrypoint waits ~200 ms (so this response flushes) before
+    // closing this server and bringing operational boot up on the
+    // same port. The dashboard polls /api/health until mode flips
+    // to OPERATIONAL, then redirects.
     (deps.onSetupComplete ?? defaultOnSetupComplete(deps.log))();
   });
 
