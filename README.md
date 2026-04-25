@@ -191,7 +191,7 @@ Pick whichever matches how the rest of your stack is run.
 
 | Path | Best when | Footprint |
 |---|---|---|
-| **A — Umbrel / Start9 app store** | You already run Umbrel or Start9 and want a one-click install. | App-store install. Pending Phase 2 of [#56](https://github.com/rdouma/hashrate-autopilot/issues/56) — see below. |
+| **A — Umbrel app store** | You already run Umbrel and want a one-click install. | App-store install. Pending Phase 2 of [#56](https://github.com/rdouma/hashrate-autopilot/issues/56) — see below. |
 | **B — Docker on a Linux box** | You have a small always-on Linux machine (NUC, Mini PC, Raspberry Pi, VPS) and don't want to install a Node.js toolchain on it. | One container, one volume, one port. Recommended for a fresh box. |
 | **C — Bare-metal Node install** | You want to run from source, hack on it, or already have Node 22 + pnpm 10 around. | A git checkout + `pnpm install` + `./scripts/start.sh`. Same wizard as Path B. |
 | **D — Power-user CLI with SOPS** | You want secrets at rest in a `sops`-encrypted file (because that's how the rest of your ops is structured), not in `state.db`. | Adds `sops` + `age` to the bare-metal install; runs `pnpm run setup` instead of the web wizard. |
@@ -201,16 +201,16 @@ nothing trades real money until you flip the switch from the dashboard's Status 
 
 > The wizard's setup endpoints are intentionally unauthenticated (the dashboard password is one of the
 > things you *create* there). On a public network, restrict access to port 3010 with a firewall,
-> Tailscale, or Tor until you've finished the wizard. Appliance platforms (Umbrel, Start9) handle
-> this automatically — the dashboard is exposed only over Tor / LAN there.
+> Tailscale, or Tor until you've finished the wizard. Appliance platforms like Umbrel handle this
+> automatically — the dashboard is exposed only over Tor / LAN there.
 
-### Path A — Umbrel or Start9 app
+### Path A — Umbrel app
 
-The Umbrel and Start9 packagings are tracked in [#56](https://github.com/rdouma/hashrate-autopilot/issues/56) (Phase 2). Once they're submitted to the
-official stores, install will be a single click. Until then, an interim Community App Store can be
-added by URL — watch the project releases for a pointer when it lands.
+The Umbrel packaging is tracked in [#56](https://github.com/rdouma/hashrate-autopilot/issues/56) (Phase 2). Once it's submitted to the official Umbrel app
+store, install will be a single click. Until then, an interim Community App Store can be added by URL
+— watch the project releases for a pointer when it lands.
 
-The Docker image (Path B) is what those packagings wrap, so any progress on the image is also
+The Docker image (Path B) is what the Umbrel packaging wraps, so any progress on the image is also
 progress on the appliance flow.
 
 ### Path B — Docker on a Linux box
@@ -311,9 +311,9 @@ docker run -d \
   ghcr.io/rdouma/hashrate-autopilot:latest
 ```
 
-Bitcoin Core RPC creds auto-detect from the standard `BITCOIN_RPC_*` env vars Umbrel/Start9 inject —
-no override needed when running alongside their bitcoind. Full list of `BHA_*` overrides:
-[`docs/configuration.md`](docs/configuration.md).
+Bitcoin Core RPC creds auto-detect from the standard `BITCOIN_RPC_*` env vars Umbrel injects when
+an app declares a Bitcoin Core dependency — no override needed when running alongside Umbrel's
+bitcoind. Full list of `BHA_*` overrides: [`docs/configuration.md`](docs/configuration.md).
 
 #### B.5. Day-to-day
 
