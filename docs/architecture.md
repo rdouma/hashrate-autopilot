@@ -1,4 +1,4 @@
-# Hashrate Autopilot — Architecture (v1.4)
+# Hashrate Autopilot — Architecture (v1.5)
 
 > Concretion of `docs/spec.md` into module boundaries, data flow, deployment shape, and a
 > milestone-ordered build plan.
@@ -112,7 +112,8 @@ hashrate-autopilot/
 │       └── vite.config.ts
 │
 └── scripts/                        operator-facing helpers
-    ├── setup.ts                    (first-run interview; validates worker identity shape)
+    ├── setup.ts                    (power-user CLI setup with sops; the dashboard's
+    │                                first-run wizard is the appliance-friendly path)
     ├── smoke-braiins.ts
     ├── regen-openapi-types.sh
     ├── sops-edit.sh
@@ -167,8 +168,9 @@ done.
 
 Two tiers of config:
 
-- **Secrets** (tokens, RPC creds, dashboard password): loaded once at startup from sops-decrypted `.env`. Restart
-  required to change.
+- **Secrets** (tokens, RPC creds, dashboard password): loaded once at startup from one of three sources, in
+  priority order: `BHA_*` environment variables > `.env.sops.yaml` (sops-decrypted) > the `secrets` table in
+  `state.db` (populated by the first-run web onboarding wizard). Restart required to change.
 - **Live tunables** (§8 of SPEC): stored in SQLite. The HTTP API writes them; the control loop reads the current row
   at the start of every tick. No watcher / pub-sub — cheap enough to re-read each tick.
 
@@ -522,3 +524,4 @@ Remaining work is tracked in GitHub issues.
 | 1.2     | 2026-04-19 | Refreshed the service inventory and HTTP-route listing in §2 to reflect everything shipped through mid-April: `ocean` + `datum` + `hashprice-cache` + `btc-price` + `account-spend` + `retention` services, and the `finance` / `stats` / `bid-events` / `ocean` / `payouts` / `btc-price` / `simulate` HTTP routes. Rewrote the migration summary in §5 with concern-grouped coverage of 0001–0031 instead of the stale "see git" placeholder. No schema or control-loop shape changes — this is a documentation catch-up, not a design revision. |
 | 1.3     | 2026-04-23 | Spec consistency sweep: updated §5 config/runtime_state/tick_metrics schemas to current state (all migrations through 0040+), marked CLOB-retired pricing columns as DEPRECATED, fixed port/bind to 3010/0.0.0.0, replaced Docker Compose deployment with bare-process scripts, removed stale "In flight" milestone tracker, fixed "collapsible" panel reference. |
 | 1.4     | 2026-04-24 | Aligned architecture with spec v2.1 (pay-your-bid controller). Removed `simulate` from the HTTP route list (retired in v2.0). Fixed §5 `config` schema — removed the duplicate/stray `overpay_sat_per_eh_day` line that was listed both as active and as DEPRECATED; added `braiins_price_smoothing_minutes`, `show_effective_rate_on_price_chart`. Fixed `runtime_state` block — added `action_mode` / `operator_available` (legacy-but-present) and `above_floor_ticks` (the debounce counter) which the code has but the doc omitted. Rewrote `tick_metrics` table to match the actual columns (was significantly wrong — old doc listed `actual_hashrate_ph`, `wallet_balance_sat`, etc. which the code doesn't use). Migration summary extended through 0046 with an explicit note on the 0043/0045 pay-your-bid preservation fix. |
+| 1.5     | 2026-04-25 | Aligned with spec v2.2 (appliance packaging, v1.3.0 release, umbrella #56). Documented three-layer secrets resolution (env > sops > db) and the new `secrets` table (migration 0047). Added the NEEDS_SETUP boot path: when secrets or config are absent, daemon stands up only the wizard's three endpoints and transitions in-place to operational on submit. Added `/api/health` as a public probe shared by both boot phases. Noted setup.ts as the power-user CLI path; the dashboard wizard is the appliance default. Touched §3.3 and §10 (operator-facing helpers) only — no schema or control-loop shape changes. |

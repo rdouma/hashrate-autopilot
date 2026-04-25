@@ -1,6 +1,6 @@
-# Hashrate Autopilot — Specification (v2.1)
+# Hashrate Autopilot — Specification (v2.2)
 
-> Status: current, aligned with code through 2026-04-24.
+> Status: current, aligned with code through 2026-04-25 (v1.3.0 release).
 >
 > This spec has been through three pricing regimes. **v1.x** used a depth-aware "fillable + overpay"
 > controller with escalation timers, lowering-patience, and a dampening subsystem. **v2.0** (2026-04-23,
@@ -58,7 +58,8 @@ Exactly one: the operator, running this on a home always-on box alongside an Umb
 - **Persistence:** state, ledger, and tick history must survive host reboots. Run mode is deliberately *not* persisted
   — every boot lands in DRY-RUN (§7).
 - **Secrets:** Braiins owner token (required) + optional read-only token, `bitcoind` RPC credentials, dashboard
-  password, stored in a sops-encrypted file (age key). Decrypted at startup. Tokens must never appear in logs.
+  password. Resolution priority on boot is `BHA_*` env vars > sops-encrypted file (`.env.sops.yaml`) > the `secrets`
+  table in `state.db` (populated by the first-run web onboarding wizard). Tokens must never appear in logs.
 - **Dashboard access:** binds to LAN interface only. Remote access via operator's existing VPN/Tailscale. Shared
   password on the dashboard (VPN is the real perimeter).
 - **Tech stack (locked):** TypeScript monorepo. Node daemon (control loop, API clients, ledger) + React dashboard +
@@ -589,3 +590,4 @@ Still open:
 | 2.0     | 2026-04-23 | CLOB pricing rewrite: retired the depth-aware `fillable + overpay` formula and all associated knobs (`overpay_sat_per_eh_day`, `escalation_mode`, `fill_escalation_step_sat_per_eh_day`, `fill_escalation_after_minutes`, `min_lower_delta_sat_per_eh_day`, `lower_patience_minutes`). The bid now sits at the effective ceiling `min(max_bid, hashprice + max_overpay_vs_hashprice)` every tick — matching is cheapest-ask-first so the ceiling is a matching-access threshold, not the price paid. Also retired the what-if simulator (v1.8e). |
 | 2.1     | 2026-04-23 | Pay-your-bid correction (#53). Direct A/B verification on live data (50k→49k bid drop → 50,300→49,899 sat/PH/day effective cost drop, with fillable ask unchanged) falsified v2.0's CLOB assumption. Restored depth-aware fillable tracking: bid = `min(fillable_ask + overpay_sat_per_eh_day, effective_cap)`. Reintroduced `overpay_sat_per_eh_day` (default 1,000 sat/PH/day) as the one pricing knob; the escalation/patience/min-lower-delta subsystem from v1.x stayed retired — under direct fillable tracking the optimal price is proposed every tick and Braiins' own 10-min cooldown is the only pacing rule needed. |
 | 2.1.1   | 2026-04-24 | Follow-ons to v2.1: EDIT_PRICE deadband `max(tick_size, overpay/5)` to absorb orderbook jitter (was causing a trade storm at naive tick_size tolerance); migrations 0043/0045 revised to preserve `overpay_sat_per_eh_day` through the CLOB-redesign retirements (was silently resetting every operator's value on upgrade); `show_effective_rate_on_price_chart` config toggle added with migration 0046 (effective line hidden by default because its volatility crushes the flatter-line detail); fillable drawn as first-class cyan line on the Price chart; hero PRICE and AVG COST / PH cards got explanatory tooltips; event-detail tooltip surfaces `fillable` and `overpay` as first-class rows. Docs sync against code same day — README / spec / architecture rewritten to match the pay-your-bid reality; older CLOB-era phrasing removed. |
+| 2.2     | 2026-04-25 | Appliance packaging release (v1.3.0; closes umbrella issue #56). Three resolution layers for both config and secrets: `BHA_*` env vars (priority 1) > `.env.sops.yaml` (priority 2) > `secrets`/`config` rows in `state.db` (priority 3, populated by the new first-run web wizard). Migration 0047 adds the `secrets` table. Daemon enters `NEEDS_SETUP` mode when both config and secrets are absent, exposing only the wizard's three endpoints (`/api/health`, `/api/setup-info`, `/api/setup`); on POST /api/setup it transitions in-place to operational mode without a process restart. New public `/api/health` endpoint (`{ status, mode }`) doubles as the appliance liveness probe and the dashboard's setup-mode probe. Dockerfile + GHCR publish workflow (multi-arch `linux/amd64` + `linux/arm64`); image at `ghcr.io/<owner>/hashrate-autopilot:vX.Y.Z`. Bitcoind RPC creds auto-detect from the standard `BITCOIN_RPC_*` env vars Umbrel/Start9 inject. Wizard auto-binds the worker identity (`<btc-address>.<label>`) to the BTC payout address with a hard-red mismatch warning; same logic ported into the Config page. Power-user `setup.ts` + SOPS path is unchanged. |
