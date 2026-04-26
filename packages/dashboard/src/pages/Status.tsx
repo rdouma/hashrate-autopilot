@@ -47,6 +47,7 @@ import { useDenomination } from '../lib/denomination';
 import { copyToClipboard } from '../lib/clipboard';
 import { actionModeLabel, bidStatusClass, bidStatusLabel } from '../lib/labels';
 import { useLocale } from '../lib/locale';
+import { localizedRangeLabel } from '../lib/range-label';
 
 const RUN_MODES = ['DRY_RUN', 'LIVE', 'PAUSED'] as const;
 const CHART_RANGE_STORAGE_KEY = 'hashrate-chart-range';
@@ -216,6 +217,7 @@ export function Status() {
         shareLogPct={oceanQuery.data?.user?.share_log_pct ?? null}
         braiinsSmoothingMinutes={configQuery.data?.config?.braiins_hashrate_smoothing_minutes ?? 1}
         datumSmoothingMinutes={configQuery.data?.config?.datum_hashrate_smoothing_minutes ?? 1}
+        showShareLogOverlay={configQuery.data?.config?.show_share_log_on_hashrate_chart ?? false}
       />
       <PriceChart
         points={metricsQuery.data?.points ?? []}
@@ -2164,27 +2166,6 @@ function FinanceFootnote({
  * threshold" when the rate is so low Ocean refuses to estimate, or
  * any future format we haven't seen yet).
  */
-/**
- * Localize the chart-range label CHART_RANGE_SPECS hands us. Source
- * format is English-conventional (`3 h`, `1 w`, `All`). Dutch swaps
- * `h` for `u` (uur) on hour ranges and translates `All`. Spanish
- * shares the same single-letter abbreviations as English so only
- * `All` translates there. Returns the source label unchanged for any
- * other locale.
- */
-function localizedRangeLabel(range: ChartRange, locale: string): string {
-  const base = CHART_RANGE_SPECS[range].label;
-  if (locale === 'nl') {
-    if (base === 'All') return 'Alle';
-    return base.replace(/\bh\b/, 'u');
-  }
-  if (locale === 'es') {
-    if (base === 'All') return 'Todo';
-    return base;
-  }
-  return base;
-}
-
 function formatNextPayout(raw: string, intlLocale: string | undefined): string {
   const ms = parseDurationMs(raw);
   if (ms === null || ms <= 0) return localizeDurationRaw(raw);

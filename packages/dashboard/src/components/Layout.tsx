@@ -61,8 +61,7 @@ export function Layout() {
       <header className="bg-slate-900 border-b border-slate-800 sticky top-0 z-20 backdrop-blur">
         <div className="px-4 sm:px-6 flex flex-wrap items-center gap-x-6 gap-y-2 py-2">
           <div className="flex items-center gap-3 mr-4">
-            <div className="text-amber-400 font-semibold leading-tight">Braiins</div>
-            <div className="text-[11px] text-slate-500 leading-tight">Hashrate&nbsp;Autopilot</div>
+            <div className="text-amber-400 font-semibold leading-tight">Hashrate Autopilot</div>
           </div>
 
           <nav className="flex items-center gap-1">

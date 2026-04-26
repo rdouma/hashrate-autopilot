@@ -1316,15 +1316,19 @@ function splitUnit(v: string): { num: string; unit: string } | null {
 }
 
 function SatUnit({ unit }: { unit: string }) {
-  if (unit.startsWith('sat')) {
+  // Localize the `/PH/day` slug before rendering. Mirror of Status.tsx
+  // SatUnit so chart tooltips translate in NL/ES alongside the rest.
+  const phDayLabel = t`/PH/day`;
+  const localized = unit.replace('/PH/day', phDayLabel);
+  if (localized.startsWith('sat')) {
     return (
       <>
         <SatSymbol className="opacity-70" />
-        {unit.slice(3)}
+        {localized.slice(3)}
       </>
     );
   }
-  return <>{unit}</>;
+  return <>{localized}</>;
 }
 
 function Legend({ color, label, dashed }: { color: string; label: string; dashed?: boolean }) {

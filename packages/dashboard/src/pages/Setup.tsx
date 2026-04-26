@@ -16,6 +16,7 @@ import { useLingui } from '@lingui/react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { LanguagePicker } from '../components/LanguagePicker';
 import { api, type AppConfig, type SetupInfoResponse } from '../lib/api';
 import { setPassword } from '../lib/auth';
 
@@ -263,7 +264,7 @@ function Header({ step, info }: { step: Step; info: SetupInfoResponse }) {
   const stepLabels = [t`Access`, t`Mining`, t`Review`];
   return (
     <div className="mb-6">
-      <h1 className="text-2xl text-amber-400 font-semibold">Braiins Autopilot — {verb}</h1>
+      <h1 className="text-2xl text-amber-400 font-semibold">Hashrate Autopilot — {verb}</h1>
       <p className="text-sm text-slate-400 mt-1">
         {info.has_existing_config ? (
           <Trans>Existing config detected — fields are pre-filled. Update what changed and click through.</Trans>
@@ -693,11 +694,20 @@ const secondaryButtonCss =
 
 function CenteredCard({ children, wide = false }: { children: React.ReactNode; wide?: boolean }) {
   return (
-    <div className="min-h-full flex items-center justify-center py-8 px-4">
+    <div className="min-h-full flex flex-col items-center justify-center py-8 px-4">
       <div
         className={`w-full ${wide ? 'max-w-2xl' : 'max-w-md'} bg-slate-900 border border-slate-800 rounded-lg p-6`}
       >
+        {/* Language picker sits inside the card so it follows the
+            wizard width and is the first thing the operator sees on a
+            fresh install — language is the right thing to set first. */}
+        <div className="flex justify-end mb-3">
+          <LanguagePicker />
+        </div>
         {children}
+      </div>
+      <div className="text-center text-[10px] text-slate-600 mt-3">
+        <Trans>build {__BUILD_NUMBER__} · {__BUILD_HASH__}</Trans>
       </div>
     </div>
   );

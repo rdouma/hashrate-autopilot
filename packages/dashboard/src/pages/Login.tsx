@@ -66,7 +66,7 @@ export function Login() {
         className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-lg p-6 space-y-4"
       >
         <div>
-          <h1 className="text-xl text-amber-400 font-semibold">Braiins Autopilot</h1>
+          <h1 className="text-xl text-amber-400 font-semibold">Hashrate Autopilot</h1>
           <p className="text-sm text-slate-400"><Trans>dashboard sign-in</Trans></p>
         </div>
         <label className="block text-sm">

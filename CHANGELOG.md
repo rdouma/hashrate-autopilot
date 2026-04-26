@@ -2,6 +2,20 @@
 
 ## 2026-04-26
 
+### `[UI]` Wizard polish + drop "Braiins" prefix from app branding
+
+The setup wizard now opens with a language picker at the top of the card so a fresh install lets the operator switch language before reading anything else, and shows `build N - <sha>` underneath the card for debugging across versions.
+
+App headers no longer prefix "Braiins" - the brand was leaking the marketplace name into chrome that should stay neutral as v2 prepares to support multiple markets. `Braiins | Hashrate Autopilot` in the top header collapses to `Hashrate Autopilot`. `Braiins Autopilot` titles on the login and setup-wizard cards become `Hashrate Autopilot`. The literal "Braiins" string survives only where it refers to the actual marketplace product (Braiins API access section, "Pool destination (where Braiins delivers)" hint, panel labels).
+
+Range-picker labels (`3 h`, `6 h`, etc.) tightened to `3h` / `6h` / `12h` / `24h` / `1w` / `1m` / `1y` to match the unit-glued-to-number convention used everywhere else on the dashboard. NL translation swaps `h` for `u` (`3u`, `6u`, ...). `localizedRangeLabel()` moved into a shared `lib/range-label.ts` so chart components can call it directly. PriceChart event tooltip's local `SatUnit` now translates `/PH/day` (was an unfixed duplicate of the Status helper).
+
+### `[Feature]` Plot Ocean share_log % on the hashrate chart (#72)
+
+New opt-in fourth series on the Hashrate chart: our share of Ocean's TIDES window (`share_log %`), rendered as a violet line on a right-side Y-axis labelled `% of Ocean` and formatted to 4 decimals (e.g. `0.0182%`) to match Ocean's own display. Useful for tracking how our slice of the pool drifts as Ocean's total hashrate grows or our delivered PH/s fluctuates - a single signal that captures both effects.
+
+The daemon records `share_log_pct` once per tick (migration 0048) from the same Ocean `/statsnap` + `/pool_stat` fetch that already supplies `hashprice_sat_per_ph_day`, so the new data costs zero extra HTTP traffic. The dashboard exposes a new boolean toggle `show_share_log_on_hashrate_chart` (migration 0049, default `false`) under Chart smoothing on the Config page; when off, the chart is layout-identical to today (no extra padding, no axis stub). Null samples (Ocean unreachable, pre-migration history) break the line into segments via the existing `pathWithNullGaps` helper. The controller never reads this value - display only.
+
 ### `[Fix]` i18n: unit suffixes, mode badges, range labels, time-relative strings (#1 followup)
 
 Sweep of every unit/abbreviation that should follow the active language but didn't:
