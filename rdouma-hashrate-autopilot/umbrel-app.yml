@@ -7,7 +7,7 @@ manifestVersion: 1
 id: rdouma-hashrate-autopilot
 category: bitcoin
 name: Hashrate Autopilot
-version: "1.3.2"
+version: "1.3.3"
 tagline: Autopilot for renting hashrate to a non-custodial pool
 icon: https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/assets/icon-512.png
 description: >-
@@ -31,17 +31,23 @@ description: >-
   Ocean+Datum pool setup.
 
 
-  Setup is a three-step web wizard accessible at port 3010. Bitcoin
-  Core RPC credentials auto-fill from this Umbrel's bitcoind, so no
-  copy/paste. After setup you get a dashboard with live decisions,
-  charts, the DRY-RUN / LIVE / PAUSED switch, and a P&L panel that
-  reads spend from Braiins and earnings from your on-chain wallet.
+  Setup is a three-step web wizard accessible at port 3010. After
+  setup you get a dashboard with live decisions, charts, the
+  DRY-RUN / LIVE / PAUSED switch, and a P&L panel that reads spend
+  from Braiins and earnings from your on-chain wallet.
+
+
+  Companion apps (recommended, not required): the autopilot needs
+  somewhere to point its rented hashrate. The simplest path is to
+  also install the Datum Gateway app on this Umbrel, but any
+  reachable Datum gateway works (anywhere on your network or
+  remote). For the P&L panel's earnings figure, a Bitcoin Knots /
+  Bitcoin Core RPC endpoint is helpful but optional - the autopilot
+  does not need Bitcoin RPC to bid. Endpoints are entered in the
+  setup wizard.
 
 developer: Remco Douma
 website: https://github.com/rdouma/hashrate-autopilot
-dependencies:
-  - bitcoin
-  - datum
 repo: https://github.com/rdouma/hashrate-autopilot
 support: https://github.com/rdouma/hashrate-autopilot/issues
 port: 3010

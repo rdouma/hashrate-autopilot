@@ -11,11 +11,16 @@
 #   port 3010 and reads/writes its single state directory at /app/data,
 #   which is bind-mounted to Umbrel's per-app persistent storage.
 #
-# bitcoind credentials come in via the standard `BITCOIN_RPC_*` env
-# vars — Umbrel injects `APP_BITCOIN_*` because we declared `bitcoin`
-# as a dependency in umbrel-app.yml; we just rename them so the daemon's
-# auto-detect picks them up. See packages/daemon/src/setup-mode.ts →
-# detectBitcoindEnv() for the lookup logic.
+# Bitcoin RPC + Datum endpoints are entered manually in the setup
+# wizard. We do not declare `bitcoin` or `datum` as dependencies in
+# umbrel-app.yml because the autopilot can talk to any Bitcoin RPC
+# and any Datum gateway over the network - they don't need to be
+# co-located on this Umbrel. The BITCOIN_RPC_* env block below is
+# left in place as a no-op fallback: `${APP_BITCOIN_*}` resolves to
+# empty when the dep isn't declared, and the daemon's
+# detectBitcoindEnv() handles empty values cleanly. If a future
+# manifest revision re-declares `bitcoin` as a dep, this just starts
+# working.
 
 version: "3.7"
 
@@ -41,10 +46,11 @@ services:
       HTTP_HOST: 0.0.0.0
       DB_PATH: /app/data/state.db
       DASHBOARD_STATIC: packages/dashboard/dist
-      # Auto-detect inputs for the wizard. The daemon's
-      # detectBitcoindEnv() reads these and pre-fills the bitcoind RPC
-      # section of the wizard so the operator doesn't have to copy
-      # Umbrel's bitcoind creds out manually.
+      # No-op fallback: only meaningful if a future manifest re-adds
+      # `bitcoin` to dependencies (which makes Umbrel inject
+      # APP_BITCOIN_*). With no dep declared they resolve to empty,
+      # the wizard shows blank RPC fields, and the operator types
+      # creds manually. See note at top of file.
       BITCOIN_RPC_HOST: "${APP_BITCOIN_NODE_IP}"
       BITCOIN_RPC_PORT: "${APP_BITCOIN_RPC_PORT}"
       BITCOIN_RPC_USER: "${APP_BITCOIN_RPC_USER}"
