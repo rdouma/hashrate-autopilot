@@ -354,6 +354,15 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
 
   const ph = state.config.target_hashrate_ph;
   const tickSize = state.market.settings.tick_size_sat ?? 1000;
+  // Mirror the deadband decide() actually applies. Without this the
+  // panel predicts "Will edit" for any delta >= tickSize, but decide()
+  // only fires when delta >= max(tickSize, overpay/5) - so panels with
+  // a 60 sat/PH/day deadband (overpay=300) confidently promised an
+  // edit at delta=1 that never fired. Issue #71.
+  const editDeadband = Math.max(
+    tickSize,
+    Math.floor(state.config.overpay_sat_per_eh_day / 5),
+  );
   const fillable = cheapestAskForDepth(state.market.orderbook.asks, ph);
   const cheapestAsk = fillable.price_sat;
   if (cheapestAsk === null) {
@@ -439,7 +448,7 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
   // Bid diverges from target: decide() will EDIT_PRICE next tick
   // (subject to Braiins' 10-min decrease cooldown on lowers).
   const priceDelta = Math.abs(primary.price_sat - targetEH);
-  if (priceDelta >= tickSize) {
+  if (priceDelta >= editDeadband) {
     const verb = runMode === 'LIVE' ? 'edit' : 'log edit (dry-run)';
     const direction = primary.price_sat > targetEH ? 'lower' : 'raise';
     const cooldownMs =

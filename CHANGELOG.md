@@ -2,6 +2,10 @@
 
 ## 2026-04-26
 
+### `[Fix]` NEXT ACTION panel: mirror the deadband decide() actually applies (#71)
+
+The status route's `describeNextAction()` predicted "Will edit bid" any time `|current - target| >= tickSize` (1 sat/PH/day), but `decide()` only fires the EDIT_PRICE when delta is above `max(tickSize, overpay/5)` (~60 sat/PH/day at the default overpay=300). So any delta in the 1 to 60 sat/PH/day band produced a confident prediction that never fired - operator saw "Bewerkt bod naar X" stick on the panel for many ticks while nothing actually happened. The prediction now uses the same deadband as `decide()`, so the panel and the controller agree. Operator restart required for the new logic to take effect.
+
 ### `[UI]` Wizard polish + drop "Braiins" prefix from app branding
 
 The setup wizard now opens with a language picker at the top of the card so a fresh install lets the operator switch language before reading anything else, and shows `build N - <sha>` underneath the card for debugging across versions.
