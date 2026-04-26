@@ -2,9 +2,13 @@
 
 ## 2026-04-26
 
-### `[Feature]` i18n infrastructure: Lingui + EN/NL/ES (#1, in progress)
+### `[Feature]` i18n: dashboard now translatable into Dutch and Spanish (#1)
 
-Wired @lingui/react v5 into the dashboard. New `lib/i18n.ts` holds the singleton i18n instance, `getInitialLocale()` resolves the operator's stored choice → browser language → English, and `loadAndActivate(locale)` dynamically imports the compiled catalog (one chunk per locale). `vite.config.ts` enables babel-macros so `<Trans>` and the `t` template tag transform at compile time. The `pnpm build` script now runs `lingui:compile` first so catalogs are always in sync. New `LanguagePicker` component sits in the header next to "sign out" and persists selection to localStorage. Three locales scaffolded: `en` (source), `nl`, `es`. Czech (Braiins-culture) deferred until a CZ reviewer is available. The string-sweep across Status/Config/Setup pages is in progress; this commit ships the infrastructure plus one proof string ("sign out"). The format-locale picker on the Config page (number/date display) is unchanged; that mechanism is independent of this language switch.
+The dashboard UI is fully translatable. A language picker sits in the header next to "sign out"; the choice persists to `localStorage` and the page boots in the operator's stored language (or browser language as fallback). Three launch locales: `en` (source), `nl`, `es`. Czech is deferred until a CZ reviewer is available. The format-locale picker (number/date display) on the Config page is unchanged and remains independent: it governs how 1,234.56 looks, not which language the surrounding chrome speaks.
+
+Under the hood: @lingui/react v5, with macros that hash message IDs at compile time and one code-split catalog chunk per locale (~30 KB gzipped each, lazy-loaded). 421 source strings extracted across the dashboard - Status, Config, Setup wizard, Login, header chrome, the bids/event panels, the hashrate + price charts, time-relative format helpers (`5m ago`), and the bid-status labels. Units (`PH/s`, `sat/PH/day`, `BTC`), proper nouns (`Datum`, `Ocean`, `Braiins`, `Bitcoin Core`, `Electrs`, `TIDES`, `Stratum`), and mode badges (`DRY-RUN`, `LIVE`, `PAUSED`) deliberately stay in English regardless of locale.
+
+`lib/locale.ts` was reframed in its header doc to clarify it's the format-locale picker only - distinct from the new UI-language picker.
 
 ### `[Fix]` Dashboard footer: bake real git SHA into the Docker image
 

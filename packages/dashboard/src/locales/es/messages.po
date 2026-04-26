@@ -13,10 +13,72 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
+#: src/components/PriceChart.tsx
+msgid "— (not recorded this tick)"
+msgstr "- (no registrado este tick)"
+
+#: src/pages/Config.tsx
+msgid "\"Autopilot only\" sums consumed across bids the daemon has tagged in its ledger — accurate for what *this* autopilot has cost. \"Whole account\" sums counters_committed.amount_consumed_sat across every bid on /v1/spot/bid — covers active + historical bids (including any placed before the autopilot was switched on). May lag the latest hour of active-bid consumption."
+msgstr "\"Solo autopilot\" suma lo consumido en las ofertas que el daemon ha etiquetado en su libro contable - exacto para lo que *este* autopilot ha costado. \"Cuenta completa\" suma counters_committed.amount_consumed_sat en cada oferta de /v1/spot/bid - cubre ofertas activas + históricas (incluyendo cualquiera colocada antes de activar el autopilot). Puede retrasarse respecto a la última hora de consumo de ofertas activas."
+
+#: src/pages/Config.tsx
+msgid "\"system default\" follows your browser. The other entries lock to a specific format regardless of browser language."
+msgstr "\"predeterminado del sistema\" sigue tu navegador. Las otras opciones fijan un formato específico sin importar el idioma del navegador."
+
+#: src/pages/Status.tsx
+msgid "(cheap mode)"
+msgstr "(modo barato)"
+
 #. placeholder {0}: n.toLocaleString()
 #: src/pages/Setup.tsx
 msgid "{0} sat/PH/day (default — tunable later)"
 msgstr "{0} sat/PH/día (predeterminado - ajustable después)"
+
+#: src/lib/format.ts
+msgid "{days}d ago"
+msgstr "hace {days}d"
+
+#: src/pages/Status.tsx
+msgid "{daysCount} days · ~{dateLabel}"
+msgstr "{daysCount} días · ~{dateLabel}"
+
+#: src/lib/format.ts
+msgid "{hours}h ago"
+msgstr "hace {hours}h"
+
+#: src/pages/Status.tsx
+msgid "{label} DOWN"
+msgstr "{label} CAÍDO"
+
+#: src/lib/format.ts
+msgid "{minutes}m ago"
+msgstr "hace {minutes}m"
+
+#: src/lib/format.ts
+msgid "{seconds}s ago"
+msgstr "hace {seconds}s"
+
+#: src/lib/format.ts
+#: src/lib/format.ts
+msgid "{totalDay}d {h}h ago"
+msgstr "hace {totalDay}d {h}h"
+
+#: src/lib/format.ts
+#: src/lib/format.ts
+msgid "{totalHr}h {m}m ago"
+msgstr "hace {totalHr}h {m}m"
+
+#: src/lib/format.ts
+msgid "{totalMin}m {s}s ago"
+msgstr "hace {totalMin}m {s}s"
+
+#: src/lib/format.ts
+msgid "{totalMin}m ago"
+msgstr "hace {totalMin}m"
+
+#: src/lib/format.ts
+msgid "{totalSec}s ago"
+msgstr "hace {totalSec}s"
 
 #: src/pages/Setup.tsx
 #: src/pages/Setup.tsx
@@ -31,6 +93,46 @@ msgstr "<0>Detectado del entorno:</0> variables de entorno <1>BITCOIN_RPC_*</1> 
 msgid "<0>Mismatch:</0> the worker identity must start with <1>{addr}.</1> — otherwise Ocean credits shares to a different address (or nobody). Edit the address above first; this field follows it automatically."
 msgstr "<0>Discordancia:</0> la identidad del worker debe empezar con <1>{addr}.</1> - de lo contrario Ocean acreditará shares a otra dirección (o a nadie). Edita primero la dirección de arriba; este campo la sigue automáticamente."
 
+#: src/pages/Config.tsx
+msgid "<0>Mismatch:</0> the worker identity must start with <1>{addr}.</1> — otherwise Ocean credits shares to a different address (or nobody). Edit the BTC payout address above; this field follows it automatically."
+msgstr "<0>Discordancia:</0> la identidad del worker debe empezar con <1>{addr}.</1> - de lo contrario Ocean acreditará shares a otra dirección (o a nadie). Edita la dirección de pago BTC arriba; este campo la sigue automáticamente."
+
+#: src/pages/Config.tsx
+msgid "⚠ No period found. Ocean TIDES requires \"<BTC address>.<label>\". Without the address prefix, shares go uncredited."
+msgstr "⚠ No se encontró ningún punto. Ocean TIDES requiere \"<dirección BTC>.<etiqueta>\". Sin el prefijo de la dirección, las shares no se acreditan."
+
+#: src/pages/Config.tsx
+msgid "0 = disabled. Example: 95 = activate cheap mode when the best ask on the orderbook is below 95% of the break-even hashprice from Ocean. Under CLOB you pay the matched ask, so this is the price we can actually reach."
+msgstr "0 = desactivado. Ejemplo: 95 = activar modo barato cuando el mejor precio de venta en el orderbook esté por debajo del 95% del hashprice de equilibrio de Ocean. Bajo CLOB pagas el precio de venta matcheado, así que este es el precio al que realmente podemos llegar."
+
+#: src/pages/Config.tsx
+msgid "0 = use the full available wallet balance each CREATE (clamped to 1 BTC — the Braiins per-bid hard cap). Any positive value pins every new bid to that exact amount regardless of balance."
+msgstr "0 = usar todo el saldo disponible del wallet en cada CREATE (limitado a 1 BTC - el tope duro por oferta de Braiins). Cualquier valor positivo fija cada nueva oferta a esa cantidad exacta sin importar el saldo."
+
+#: src/pages/Config.tsx
+msgid "A bid is currently running (≈ {remainingSatStr} sat left). The next CREATE fires when it finishes — at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat, capped at 1 BTC) will be used."
+msgstr "Hay una oferta activa (≈ {remainingSatStr} sat restantes). El próximo CREATE se dispara cuando termine - en ese momento se usará todo el saldo disponible del wallet (actualmente ≈ {resolvedSatStr} sat, limitado a 1 BTC)."
+
+#: src/pages/Config.tsx
+msgid "A bid is currently running (≈ {remainingSatStr} sat left). The next CREATE fires when it finishes — at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat) will be used."
+msgstr "Hay una oferta activa (≈ {remainingSatStr} sat restantes). El próximo CREATE se dispara cuando termine - en ese momento se usará todo el saldo disponible del wallet (actualmente ≈ {resolvedSatStr} sat)."
+
+#: src/pages/Config.tsx
+msgid "A bid is currently running (≈ {remainingSatStr} sat left). The next CREATE fires when it finishes — at that point the full available wallet balance will be used."
+msgstr "Hay una oferta activa (≈ {remainingSatStr} sat restantes). El próximo CREATE se dispara cuando termine - en ese momento se usará todo el saldo disponible del wallet."
+
+#: src/pages/Config.tsx
+msgid "A bid is currently running. The next CREATE fires when it finishes — at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat, capped at 1 BTC) will be used."
+msgstr "Hay una oferta activa. El próximo CREATE se dispara cuando termine - en ese momento se usará todo el saldo disponible del wallet (actualmente ≈ {resolvedSatStr} sat, limitado a 1 BTC)."
+
+#: src/pages/Config.tsx
+msgid "A bid is currently running. The next CREATE fires when it finishes — at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat) will be used."
+msgstr "Hay una oferta activa. El próximo CREATE se dispara cuando termine - en ese momento se usará todo el saldo disponible del wallet (actualmente ≈ {resolvedSatStr} sat)."
+
+#: src/pages/Config.tsx
+msgid "A bid is currently running. The next CREATE fires when it finishes — at that point the full available wallet balance will be used."
+msgstr "Hay una oferta activa. El próximo CREATE se dispara cuando termine - en ese momento se usará todo el saldo disponible del wallet."
+
 #: src/pages/Setup.tsx
 msgid "A few questions to get the daemon operational. Defaults work for typical home miners; tune later from the Config page."
 msgstr "Unas preguntas para poner el daemon operativo. Los valores predeterminados funcionan para mineros caseros típicos; ajusta más tarde desde la página Config."
@@ -39,42 +141,306 @@ msgstr "Unas preguntas para poner el daemon operativo. Los valores predeterminad
 msgid "Access"
 msgstr "Acceso"
 
+#: src/pages/Status.tsx
+msgid "action mode blocks this"
+msgstr "el modo de acción bloquea esto"
+
+#: src/lib/labels.ts
+msgid "Active"
+msgstr "Activa"
+
+#: src/pages/Status.tsx
+msgid "active (in-flight)"
+msgstr "activas (en curso)"
+
+#: src/pages/Status.tsx
+msgid "Actual sat consumed across the selected range, scaled to a 24h rate. Derived from primary_bid_consumed_sat deltas (what Braiins charged us), not a modelled bid × delivered."
+msgstr "Sats realmente consumidos en el rango seleccionado, escalado a una tasa de 24h. Derivado de los deltas de primary_bid_consumed_sat (lo que Braiins nos cobró), no de un modelo bid × entregado."
+
+#: src/pages/Status.tsx
+msgid "Actual sat consumed over the last 3 h, scaled to a 24h rate. Uses Braiins’s authoritative primary_bid_consumed_sat counter, not a bid × delivered model. Fallback used when the selected range has fewer than ~5 ticks."
+msgstr "Sats realmente consumidos en las últimas 3 h, escalado a una tasa de 24h. Usa el contador autoritativo primary_bid_consumed_sat de Braiins, no un modelo bid × entregado. Se usa como respaldo cuando el rango seleccionado tiene menos de ~5 ticks."
+
 #: src/pages/Setup.tsx
 msgid "After submit, the daemon writes everything to <0>state.db</0> and brings the controller online in-place. Boots in <1>DRY-RUN</1> mode; the dashboard signs you in automatically. Promote to LIVE from the Status page when you're ready."
 msgstr "Tras enviar, el daemon escribe todo en <0>state.db</0> y pone el controlador en línea en el sitio. Arranca en modo <1>DRY-RUN</1>; el panel te conecta automáticamente. Cambia a LIVE desde la página Status cuando estés listo."
+
+#: src/pages/Status.tsx
+msgid "All"
+msgstr "Todo"
+
+#: src/pages/Config.tsx
+msgid "All values live-editable. Save to apply."
+msgstr "Todos los valores son editables en vivo. Guarda para aplicar."
+
+#: src/pages/Config.tsx
+msgid "Always dry-run (safest)"
+msgstr "Siempre dry-run (más seguro)"
+
+#: src/pages/Config.tsx
+msgid "Always live (for trusted deployments)"
+msgstr "Siempre live (para despliegues de confianza)"
+
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+msgid "API DOWN"
+msgstr "API CAÍDA"
+
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+msgid "API reachable"
+msgstr "API accesible"
+
+#. placeholder {0}: datum.consecutive_failures
+#: src/pages/Status.tsx
+msgid "API unreachable ({0})"
+msgstr "API inaccesible ({0})"
+
+#: src/components/PriceChart.tsx
+msgid "automatic"
+msgstr "automático"
+
+#: src/pages/Status.tsx
+msgid "autopilot"
+msgstr "autopilot"
+
+#: src/pages/Config.tsx
+msgid "Autopilot only (autopilot-tagged bids)"
+msgstr "Solo autopilot (ofertas etiquetadas por el autopilot)"
+
+#: src/pages/Status.tsx
+msgid "available"
+msgstr "disponible"
+
+#: src/pages/Status.tsx
+msgid "Average break-even unit price over the selected range. Multiplied by avg delivered to get projected income. Different from the spot hashprice row below — this is what the projection actually uses."
+msgstr "Precio unitario de equilibrio promedio en el rango seleccionado. Multiplicado por el promedio entregado para obtener el ingreso proyectado. Distinto del hashprice spot de la fila inferior - este es el que la proyección realmente usa."
+
+#: src/pages/Status.tsx
+msgid "Average delivered hashrate over the selected chart range. Multiplied by avg hashprice to get projected income. Spend is measured directly (primary_bid_consumed_sat deltas), so this is not a factor on the spend side."
+msgstr "Hashrate entregado promedio en el rango del gráfico seleccionado. Multiplicado por el hashprice promedio para obtener el ingreso proyectado. El gasto se mide directamente (deltas de primary_bid_consumed_sat), así que esto no es un factor en el lado del gasto."
+
+#: src/pages/Status.tsx
+msgid "Average effective rate over the selected chart range (default 3h) — what Braiins actually charged per PH/day delivered, from per-tick Δconsumed_sat ÷ (delivered_ph × Δt). Same metric the hero PRICE card shows; this pair is duplicated so each panel stands on its own. For the current bid price see the NEXT ACTION panel."
+msgstr "Tasa efectiva promedio en el rango del gráfico seleccionado (predeterminado 3h) - lo que Braiins realmente cobró por PH/día entregado, calculado como Δconsumed_sat por tick ÷ (delivered_ph × Δt). Misma métrica que muestra la tarjeta principal PRICE; este par está duplicado para que cada panel sea autónomo. Para el precio actual de la oferta ver el panel NEXT ACTION."
+
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+msgid "avg braiins"
+msgstr "promedio braiins"
+
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+msgid "avg cost / PH delivered"
+msgstr "costo promedio / PH entregado"
+
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+msgid "avg cost vs hashprice"
+msgstr "costo promedio vs hashprice"
+
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+msgid "avg datum"
+msgstr "promedio datum"
+
+#: src/pages/Status.tsx
+msgid "avg delivered ({rangeLabel})"
+msgstr "entregado promedio ({rangeLabel})"
+
+#: src/pages/Status.tsx
+msgid "avg hashprice ({rangeLabel})"
+msgstr "hashprice promedio ({rangeLabel})"
+
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+msgid "avg ocean"
+msgstr "promedio ocean"
 
 #: src/pages/Setup.tsx
 msgid "Backend"
 msgstr "Backend"
 
+#: src/pages/Config.tsx
+msgid "Balance-check backend"
+msgstr "Backend de verificación de saldo"
+
+#. placeholder {0}: formatAge(s.below_floor_since)
+#: src/pages/Status.tsx
+msgid "below floor since {0}"
+msgstr "debajo del mínimo desde {0}"
+
 #: src/pages/Setup.tsx
 msgid "Below this triggers an alert. ≤ target."
 msgstr "Por debajo dispara una alerta. ≤ objetivo."
 
+#: src/pages/Status.tsx
+msgid "best ask"
+msgstr "mejor precio de venta"
+
+#: src/pages/Status.tsx
+msgid "best bid"
+msgstr "mejor oferta"
+
+#: src/pages/Status.tsx
+msgid "Bids"
+msgstr "Ofertas"
+
 #: src/pages/Setup.tsx
 msgid "Bitcoin Core (bitcoind RPC)"
 msgstr "Bitcoin Core (bitcoind RPC)"
+
+#: src/pages/Config.tsx
+msgid "Bitcoin Core RPC"
+msgstr "Bitcoin Core RPC"
 
 #. placeholder {0}: form.bitcoind_rpc_url
 #: src/pages/Setup.tsx
 msgid "Bitcoin Core RPC ({0})"
 msgstr "Bitcoin Core RPC ({0})"
 
+#: src/pages/Config.tsx
+msgid "Bitcoin Core RPC URL"
+msgstr "URL del RPC de Bitcoin Core"
+
 #: src/pages/Setup.tsx
 msgid "Bitcoin payout address"
 msgstr "Dirección de pago Bitcoin"
+
+#: src/pages/Config.tsx
+msgid "Block explorer"
+msgstr "Explorador de bloques"
+
+#: src/pages/Status.tsx
+msgid "blocked"
+msgstr "bloqueado"
+
+#: src/pages/Config.tsx
+msgid "Boot directly into LIVE. Use only when the autopilot is proven and the box reboots should not interrupt bidding."
+msgstr "Arrancar directamente en LIVE. Usa solo cuando el autopilot esté probado y los reinicios de la máquina no deban interrumpir las ofertas."
+
+#: src/pages/Config.tsx
+msgid "Boot mode"
+msgstr "Modo de arranque"
+
+#: src/pages/Config.tsx
+msgid "Braiins (delivered)"
+msgstr "Braiins (entregado)"
+
+#: src/pages/Config.tsx
+msgid "Braiins (price, effective)"
+msgstr "Braiins (precio, efectivo)"
+
+#: src/pages/Status.tsx
+msgid "Braiins 10-min cooldown"
+msgstr "Cooldown de 10 min de Braiins"
 
 #: src/pages/Setup.tsx
 msgid "Braiins API access"
 msgstr "Acceso a la API de Braiins"
 
+#: src/pages/Status.tsx
+msgid "Braiins marketplace API — reachable when the last observe() read market/orderbook/balance without error."
+msgstr "API del marketplace de Braiins - accesible cuando el último observe() leyó market/orderbook/balance sin error."
+
+#: src/pages/Config.tsx
+msgid "BTC payout address"
+msgstr "Dirección de pago BTC"
+
+#: src/pages/Config.tsx
+msgid "BTC price oracle"
+msgstr "Oráculo de precio BTC"
+
 #: src/components/Layout.tsx
 msgid "BTC/USD: ${priceStr} - click to toggle denomination"
 msgstr "BTC/USD: ${priceStr} - haz clic para cambiar la denominación"
 
+#: src/components/PriceChart.tsx
+#: src/pages/Status.tsx
+msgid "budget"
+msgstr "presupuesto"
+
+#: src/pages/Config.tsx
+msgid "Budget"
+msgstr "Presupuesto"
+
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+msgid "calculating…"
+msgstr "calculando…"
+
+#: src/components/PriceChart.tsx
+msgid "cancel"
+msgstr "cancelar"
+
+#: src/components/PriceChart.tsx
+msgid "CANCEL"
+msgstr "CANCELAR"
+
+#: src/pages/Status.tsx
+msgid "Cancel bid"
+msgstr "Cancelar oferta"
+
+#: src/lib/labels.ts
+msgid "Cancelled"
+msgstr "Cancelada"
+
+#: src/lib/labels.ts
+msgid "Cancelling…"
+msgstr "Cancelando…"
+
 #: src/components/Layout.tsx
 msgid "changelog"
 msgstr "registro de cambios"
+
+#: src/pages/Config.tsx
+msgid "Chart smoothing"
+msgstr "Suavizado del gráfico"
+
+#: src/pages/Config.tsx
+msgid "Cheap threshold"
+msgstr "Umbral barato"
+
+#: src/pages/Config.tsx
+msgid "Cheap-mode sustained window"
+msgstr "Ventana sostenida de modo barato"
+
+#: src/pages/Config.tsx
+msgid "Cheap-mode target"
+msgstr "Objetivo en modo barato"
+
+#: src/components/PriceChart.tsx
+msgid "click outside to close"
+msgstr "haz clic fuera para cerrar"
+
+#: src/components/HashrateChart.tsx
+#: src/components/PriceChart.tsx
+msgid "close"
+msgstr "cerrar"
+
+#: src/pages/Status.tsx
+msgid "closed bids"
+msgstr "ofertas cerradas"
+
+#: src/components/PriceChart.tsx
+msgid "collapse"
+msgstr "contraer"
+
+#: src/components/PriceChart.tsx
+msgid "Collapse to default height"
+msgstr "Contraer a altura predeterminada"
+
+#: src/pages/Status.tsx
+msgid "collected (on-chain)"
+msgstr "cobrado (on-chain)"
+
+#: src/pages/Status.tsx
+msgid "Collected on-chain + Ocean's unpaid earnings − spent on bids. Missing collected is treated as 0 (the on-chain row still shows — so the operator sees the gap). Negative = still recouping the initial deposit."
+msgstr "Cobrado on-chain + ganancias no pagadas de Ocean - gastado en ofertas. Si falta el cobrado se trata como 0 (la fila on-chain sigue apareciendo - así el operador ve el hueco). Negativo = aún recuperando el depósito inicial."
 
 #: src/pages/Setup.tsx
 msgid "Complete setup"
@@ -84,13 +450,100 @@ msgstr "Completar configuración"
 msgid "Config"
 msgstr "Config"
 
+#: src/pages/Config.tsx
+msgid "Configuration"
+msgstr "Configuración"
+
 #: src/pages/Setup.tsx
 msgid "Confirm password"
 msgstr "Confirmar contraseña"
 
+#: src/components/SetupGate.tsx
+msgid "Connecting to daemon…"
+msgstr "Conectando al daemon…"
+
+#: src/pages/Config.tsx
+msgid "Controls how the P&L panel computes the \"spent\" figure that feeds the net result."
+msgstr "Controla cómo el panel de P&L calcula la cifra \"gastado\" que alimenta el resultado neto."
+
+#: src/pages/Status.tsx
+msgid "Cooldown clears in"
+msgstr "El cooldown se libera en"
+
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+msgid "copied bid ID"
+msgstr "ID de oferta copiado"
+
+#: src/components/PriceChart.tsx
+#: src/components/PriceChart.tsx
+msgid "copied JSON"
+msgstr "JSON copiado"
+
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+msgid "copied URL"
+msgstr "URL copiada"
+
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+msgid "copy bid ID"
+msgstr "copiar ID de oferta"
+
+#: src/components/PriceChart.tsx
+#: src/components/PriceChart.tsx
+msgid "copy JSON"
+msgstr "copiar JSON"
+
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+msgid "copy URL"
+msgstr "copiar URL"
+
+#: src/components/PriceChart.tsx
+msgid "create"
+msgstr "crear"
+
+#: src/components/PriceChart.tsx
+msgid "CREATE"
+msgstr "CREATE"
+
+#: src/pages/Status.tsx
+msgid "Create bid"
+msgstr "Crear oferta"
+
+#: src/pages/Status.tsx
+msgid "created"
+msgstr "creada"
+
+#: src/pages/Status.tsx
+msgid "Current (spot) market break-even. Revenue per PH/s per day from mining at the current network difficulty + block reward. The avg-hashprice row above is what the projection uses; this one is the spot value right now for quick market-drift comparison."
+msgstr "Equilibrio de mercado actual (spot). Ingreso por PH/s por día minando con la dificultad de red actual + recompensa por bloque. La fila de hashprice promedio de arriba es la que usa la proyección; esta es el valor spot ahora mismo para comparar rápidamente la deriva del mercado."
+
+#: src/pages/Status.tsx
+msgid "current bid"
+msgstr "oferta actual"
+
+#. placeholder {0}: activeOwned.length
+#: src/pages/Status.tsx
+msgid "current bid · primary of {0}"
+msgstr "oferta actual · principal de {0}"
+
+#: src/pages/Status.tsx
+msgid "Current owned-bid price (sat/PH/day). Under pay-your-bid this is exactly what Braiins charges per delivered EH-day - the live price you're paying. The plus/minus next to it is the spread vs Ocean's spot hashprice (positive = paying above break-even, negative = below). For the realised effective rate (post-hoc, range-averaged across actual delivery and metering noise), see the AVG COST / PH DELIVERED stats card."
+msgstr "Precio actual de tu oferta (sat/PH/día). Bajo pay-your-bid esto es exactamente lo que Braiins cobra por EH-día entregado - el precio en vivo que estás pagando. El más/menos al lado es el spread vs el hashprice spot de Ocean (positivo = pagando sobre el equilibrio, negativo = por debajo). Para la tasa efectiva realizada (a posteriori, promediada sobre el rango con la entrega real y ruido de medición), ver la tarjeta AVG COST / PH DELIVERED."
+
+#: src/pages/Config.tsx
+msgid "custom"
+msgstr "personalizado"
+
 #: src/pages/Setup.tsx
 msgid "Daemon did not return to OPERATIONAL within 90 seconds."
 msgstr "El daemon no volvió a OPERATIONAL en 90 segundos."
+
+#: src/pages/Config.tsx
+msgid "Daemon startup"
+msgstr "Arranque del daemon"
 
 #: src/pages/Setup.tsx
 #: src/pages/Setup.tsx
@@ -101,9 +554,155 @@ msgstr "Contraseña del panel"
 msgid "dashboard sign-in"
 msgstr "iniciar sesión en el panel"
 
+#: src/pages/Config.tsx
+msgid "Datum (received)"
+msgstr "Datum (recibido)"
+
+#: src/pages/Status.tsx
+msgid "Datum /umbrel-api HTTP poll."
+msgstr "Sondeo HTTP a /umbrel-api de Datum."
+
+#: src/pages/Status.tsx
+msgid "Datum Gateway"
+msgstr "Datum Gateway"
+
+#: src/pages/Status.tsx
+msgid "datum hashrate"
+msgstr "hashrate datum"
+
+#: src/pages/Config.tsx
+msgid "Datum stats API (optional)"
+msgstr "API de estadísticas de Datum (opcional)"
+
+#: src/pages/Status.tsx
+msgid "Datum stats not configured — set <0>datum_api_url</0> in Config to display connected workers and reported hashrate. See <1>docs/setup-datum-api.md</1>."
+msgstr "Estadísticas de Datum no configuradas - ajusta <0>datum_api_url</0> en Config para mostrar workers conectados y hashrate reportado. Ver <1>docs/setup-datum-api.md</1>."
+
+#: src/pages/Config.tsx
+msgid "decisions rows that proposed at least one action. Forensic records for figuring out why the autopilot did something weeks later."
+msgstr "filas de decisiones que propusieron al menos una acción. Registros forenses para entender por qué el autopilot hizo algo semanas después."
+
+#: src/pages/Config.tsx
+msgid "decisions rows with empty proposed_json — ticks where the controller had nothing to do. These are the vast majority; prune aggressively."
+msgstr "filas de decisiones con proposed_json vacío - ticks donde el controller no tenía nada que hacer. Son la gran mayoría; poda con agresividad."
+
+#: src/pages/Config.tsx
+msgid "decrease"
+msgstr "disminuir"
+
+#: src/pages/Config.tsx
+msgid "Default 50001."
+msgstr "Predeterminado 50001."
+
 #: src/pages/Setup.tsx
 msgid "Default Electrs port is 50001 (TCP). On Umbrel the in-cluster hostname is typically<0> 10.21.21.10</0> or similar — check the Electrs app's connection details."
 msgstr "El puerto Electrs predeterminado es 50001 (TCP). En Umbrel el nombre de host dentro del clúster suele ser<0> 10.21.21.10</0> o similar - revisa los detalles de conexión de la app Electrs."
+
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+msgid "delivered"
+msgstr "entregado"
+
+#: src/components/HashrateChart.tsx
+msgid "delivered (Braiins)"
+msgstr "entregado (Braiins)"
+
+#: src/pages/Status.tsx
+msgid "delivered / cap"
+msgstr "entregado / tope"
+
+#: src/components/PriceChart.tsx
+msgid "delta"
+msgstr "delta"
+
+#: src/pages/Config.tsx
+msgid "Disabled (sats only)"
+msgstr "Desactivado (solo sats)"
+
+#: src/pages/Config.tsx
+msgid "Display"
+msgstr "Visualización"
+
+#: src/pages/Config.tsx
+msgid "Do not scan"
+msgstr "No escanear"
+
+#: src/pages/Status.tsx
+msgid "Duration-weighted % of time with delivered hashrate > 0. Each tick is weighted by its actual duration (time until the next tick) so gaps after restarts count proportionally."
+msgstr "% de tiempo ponderado por duración con hashrate entregado > 0. Cada tick se pondera por su duración real (tiempo hasta el siguiente tick) para que los huecos tras reinicios cuenten proporcionalmente."
+
+#: src/pages/Status.tsx
+msgid "Duration-weighted average of (effective price − hashprice). Negative means matched asks averaged below the break-even hashprice (good — cheaper than mining at current difficulty). Positive means above break-even."
+msgstr "Promedio ponderado por duración de (precio efectivo - hashprice). Negativo significa que los precios de venta matcheados promediaron por debajo del hashprice de equilibrio (bueno - más barato que minar con la dificultad actual). Positivo significa por encima del equilibrio."
+
+#: src/pages/Status.tsx
+msgid "Duration-weighted average of the hashrate Braiins reports delivering. Includes downtime (where delivered = 0) so a bad stretch shows up in the average, not just the live card."
+msgstr "Promedio ponderado por duración del hashrate que Braiins reporta entregar. Incluye tiempo caído (donde entregado = 0) para que un mal tramo aparezca en el promedio, no solo en la tarjeta en vivo."
+
+#: src/pages/Status.tsx
+msgid "Duration-weighted average of the hashrate Datum measures at the gateway. A sustained gap below Avg Braiins means Braiins is billing for hashrate Datum never saw arrive."
+msgstr "Promedio ponderado por duración del hashrate que Datum mide en el gateway. Una brecha sostenida por debajo del promedio Braiins significa que Braiins está cobrando por hashrate que Datum nunca vio llegar."
+
+#: src/pages/Status.tsx
+msgid "Duration-weighted average of the hashrate Ocean credits to our payout address. Each tick (every 60 s) the daemon calls Ocean's /v1/user_hashrate endpoint and reads the `hashrate_300s` field — Ocean's own 5-minute sliding-window estimate for this wallet. So: sampled every minute, each sample is a 5-minute smoothed value. A sustained gap below Avg Braiins / Avg Datum means the pool isn't crediting work we think we delivered."
+msgstr "Promedio ponderado por duración del hashrate que Ocean acredita a nuestra dirección de pago. En cada tick (cada 60 s) el daemon llama al endpoint /v1/user_hashrate de Ocean y lee el campo `hashrate_300s` - la propia estimación de Ocean en una ventana móvil de 5 minutos para este wallet. Es decir: muestreado cada minuto, cada muestra es un valor suavizado de 5 minutos. Una brecha sostenida por debajo del promedio Braiins / promedio Datum significa que el pool no está acreditando trabajo que creemos haber entregado."
+
+#: src/pages/Config.tsx
+msgid "e.g. 192.168.1.121 or umbrel.local"
+msgstr "p.ej. 192.168.1.121 o umbrel.local"
+
+#: src/pages/Config.tsx
+msgid "e.g. http://192.168.1.121:8332 — your Bitcoin Core RPC endpoint."
+msgstr "p.ej. http://192.168.1.121:8332 - tu endpoint RPC de Bitcoin Core."
+
+#: src/components/PriceChart.tsx
+msgid "edit price"
+msgstr "editar precio"
+
+#: src/pages/Status.tsx
+msgid "Edit price"
+msgstr "Editar precio"
+
+#: src/components/PriceChart.tsx
+msgid "EDIT PRICE"
+msgstr "EDIT PRICE"
+
+#: src/components/PriceChart.tsx
+msgid "edit speed"
+msgstr "editar velocidad"
+
+#: src/pages/Status.tsx
+msgid "Edit speed"
+msgstr "Editar velocidad"
+
+#: src/components/PriceChart.tsx
+msgid "EDIT SPEED"
+msgstr "EDIT SPEED"
+
+#: src/components/PriceChart.tsx
+msgid "effective"
+msgstr "efectivo"
+
+#: src/components/PriceChart.tsx
+#: src/pages/Status.tsx
+msgid "effective cap"
+msgstr "tope efectivo"
+
+#: src/pages/Status.tsx
+msgid "effective cap (binding)"
+msgstr "tope efectivo (vinculante)"
+
+#: src/pages/Status.tsx
+msgid "Effective rate {sign}{deltaFormatted} above hashprice ({hashpricePretty}) — positive means paying above break-even, negative means paying below (profitable)."
+msgstr "Tasa efectiva {sign}{deltaFormatted} sobre el hashprice ({hashpricePretty}) - positivo significa pagar por encima del equilibrio, negativo significa pagar por debajo (rentable)."
+
+#: src/pages/Status.tsx
+msgid "Effective rate {sign}{deltaFormatted} below hashprice ({hashpricePretty}) — positive means paying above break-even, negative means paying below (profitable)."
+msgstr "Tasa efectiva {sign}{deltaFormatted} bajo el hashprice ({hashpricePretty}) - positivo significa pagar por encima del equilibrio, negativo significa pagar por debajo (rentable)."
+
+#: src/pages/Status.tsx
+msgid "Effective rate equals hashprice ({hashpricePretty}) — breaking even."
+msgstr "Tasa efectiva igual al hashprice ({hashpricePretty}) - en el punto de equilibrio."
 
 #. placeholder {0}: form.electrs_host
 #. placeholder {1}: form.electrs_port
@@ -115,17 +714,76 @@ msgstr "Electrs ({0}:{1})"
 msgid "Electrs (Electrum-style indexed lookup, faster)"
 msgstr "Electrs (búsqueda indexada estilo Electrum, más rápida)"
 
+#: src/pages/Config.tsx
+msgid "Electrs (recommended)"
+msgstr "Electrs (recomendado)"
+
+#: src/pages/Config.tsx
+msgid "Electrs host"
+msgstr "Host de Electrs"
+
+#: src/pages/Config.tsx
+msgid "Electrs port"
+msgstr "Puerto de Electrs"
+
+#: src/pages/Status.tsx
+msgid "Escalation in"
+msgstr "Escalada en"
+
+#: src/pages/Config.tsx
+msgid "Eventful decisions"
+msgstr "Decisiones con eventos"
+
+#: src/pages/Config.tsx
+msgid "Every restart resets to DRY_RUN. You explicitly flip to LIVE from the dashboard."
+msgstr "Cada reinicio vuelve a DRY_RUN. Pasas explícitamente a LIVE desde el panel."
+
 #: src/pages/Setup.tsx
 msgid "Existing config detected — fields are pre-filled. Update what changed and click through."
 msgstr "Configuración existente detectada - los campos están rellenados previamente. Actualiza lo que cambió y continúa."
+
+#: src/components/PriceChart.tsx
+msgid "expand"
+msgstr "expandir"
+
+#: src/components/PriceChart.tsx
+msgid "Expand to double height"
+msgstr "Expandir al doble de altura"
 
 #: src/pages/Setup.tsx
 msgid "Failed to load setup data: {loadErr}"
 msgstr "No se pudieron cargar los datos de configuración: {loadErr}"
 
+#. placeholder {0}: (query.error as Error)?.message
+#: src/pages/Status.tsx
+msgid "failed to load: {0}"
+msgstr "fallo al cargar: {0}"
+
+#: src/pages/Config.tsx
+msgid "Fast and lightweight. Polled every minute. Instant balance lookups via your Electrum server."
+msgstr "Rápido y ligero. Consultado cada minuto. Búsqueda instantánea de saldo vía tu servidor Electrum."
+
+#: src/components/HashrateChart.tsx
+msgid "fees"
+msgstr "fees"
+
+#: src/pages/Config.tsx
+msgid "Fetches the BTC/USD spot price from a public exchange API. Enables a sats/USD denomination toggle in the dashboard header. No API key required — uses unauthenticated public endpoints."
+msgstr "Obtiene el precio spot BTC/USD desde una API pública de exchange. Habilita un toggle de denominación sats/USD en la cabecera del panel. No requiere API key - usa endpoints públicos sin autenticación."
+
+#: src/components/PriceChart.tsx
+#: src/components/PriceChart.tsx
+msgid "fillable"
+msgstr "rellenable"
+
 #: src/pages/Setup.tsx
 msgid "First-run setup"
 msgstr "Configuración inicial"
+
+#: src/components/HashrateChart.tsx
+#: src/pages/Status.tsx
+msgid "floor"
+msgstr "mínimo"
 
 #: src/pages/Setup.tsx
 msgid "Floor (PH/s)"
@@ -135,14 +793,75 @@ msgstr "Mínimo (PH/s)"
 msgid "Floor hashrate"
 msgstr "Hashrate mínimo"
 
+#: src/pages/Config.tsx
 #: src/pages/Setup.tsx
 msgid "Format: <btc-address>.<label>. Ocean TIDES credits shares by the address prefix — anything else routes shares to nobody."
 msgstr "Formato: <dirección-btc>.<etiqueta>. Ocean TIDES acredita shares por el prefijo de la dirección - cualquier otra cosa envía las shares a nadie."
+
+#: src/pages/Status.tsx
+msgid "found"
+msgstr "encontrados"
+
+#: src/components/HashrateChart.tsx
+msgid "found by us"
+msgstr "encontrado por nosotros"
+
+#: src/components/HashrateChart.tsx
+msgid "FOUND BY US"
+msgstr "ENCONTRADO POR NOSOTROS"
 
 #: src/pages/Setup.tsx
 msgid "From hashpower.braiins.com → API tokens. Required."
 msgstr "De hashpower.braiins.com → API tokens. Obligatorio."
 
+#: src/lib/labels.ts
+msgid "Frozen"
+msgstr "Congelada"
+
+#: src/lib/labels.ts
+msgid "Fulfilled"
+msgstr "Completada"
+
+#: src/pages/Config.tsx
+msgid "Full wallet balance per bid. Awaiting wallet balance from the daemon."
+msgstr "Saldo completo del wallet por oferta. Esperando saldo del wallet desde el daemon."
+
+#: src/pages/Config.tsx
+msgid "Full wallet balance per bid. Currently ≈ {resolvedSatStr} sat (capped at 1 BTC)."
+msgstr "Saldo completo del wallet por oferta. Actualmente ≈ {resolvedSatStr} sat (limitado a 1 BTC)."
+
+#: src/pages/Config.tsx
+msgid "Full wallet balance per bid. Currently ≈ {resolvedSatStr} sat."
+msgstr "Saldo completo del wallet por oferta. Actualmente ≈ {resolvedSatStr} sat."
+
+#: src/pages/Config.tsx
+msgid "Hard ceiling. If fillable + overpay would exceed this, the bid is clamped down to this value (and may not fill)."
+msgstr "Tope duro. Si rellenable + sobrepago lo superara, la oferta se limita a este valor (y puede no rellenarse)."
+
+#: src/components/PriceChart.tsx
+#: src/components/PriceChart.tsx
+#: src/components/PriceChart.tsx
+msgid "hashprice"
+msgstr "hashprice"
+
+#: src/pages/Status.tsx
+msgid "hashprice (break-even)"
+msgstr "hashprice (equilibrio)"
+
+#: src/pages/Status.tsx
+msgid "hashprice (now)"
+msgstr "hashprice (ahora)"
+
+#: src/components/PriceChart.tsx
+msgid "hashprice + max overpay"
+msgstr "hashprice + sobrepago máximo"
+
+#: src/components/HashrateChart.tsx
+#: src/components/HashrateChart.tsx
+msgid "Hashrate"
+msgstr "Hashrate"
+
+#: src/pages/Config.tsx
 #: src/pages/Setup.tsx
 msgid "Hashrate targets"
 msgstr "Objetivos de hashrate"
@@ -155,42 +874,224 @@ msgstr "Ocultar"
 msgid "Hide value"
 msgstr "Ocultar valor"
 
+#: src/pages/Status.tsx
+msgid "host"
+msgstr "host"
+
 #: src/pages/Setup.tsx
 msgid "Host"
 msgstr "Host"
+
+#: src/pages/Config.tsx
+msgid "How big a single bid is. Set to 0 to use the full available wallet balance on each create — simpler mental model, no manual slicing."
+msgstr "Tamaño de una oferta. Pon 0 para usar todo el saldo disponible del wallet en cada creación - modelo mental más simple, sin trocear manualmente."
+
+#: src/pages/Config.tsx
+msgid "How long the daemon keeps append-only log rows. Tick records are pruned hourly once older than the cutoff. 0 = keep forever."
+msgstr "Cuánto tiempo guarda el daemon las filas de log en modo append-only. Los registros de tick se podan cada hora una vez superado el corte. 0 = guardar para siempre."
+
+#: src/pages/Config.tsx
+msgid "How numbers and dates render in this browser. Doesn't change the UI language. Saved locally — every operator can pick their own."
+msgstr "Cómo se muestran los números y fechas en este navegador. No cambia el idioma de la UI. Se guarda localmente - cada operador puede elegir el suyo."
+
+#: src/pages/Config.tsx
+msgid "How the daemon checks your BTC payout balance. Pick a backend and fill in the connection details. Requires a restart to take effect."
+msgstr "Cómo verifica el daemon el saldo de tu dirección de pago BTC. Elige un backend y rellena los detalles de conexión. Requiere reiniciar para que tenga efecto."
+
+#: src/pages/Config.tsx
+msgid "How the daemon chooses its run mode when it boots."
+msgstr "Cómo elige el daemon su modo de ejecución al arrancar."
+
+#: src/pages/Status.tsx
+msgid "id"
+msgstr "id"
+
+#. placeholder {0}: e.braiins_order_id
+#: src/components/PriceChart.tsx
+msgid "id {0}"
+msgstr "id {0}"
+
+#: src/pages/Status.tsx
+msgid "income/day est."
+msgstr "ingreso/día est."
 
 #: src/pages/Login.tsx
 msgid "incorrect password"
 msgstr "contraseña incorrecta"
 
+#: src/pages/Config.tsx
+msgid "increase"
+msgstr "aumentar"
+
+#: src/pages/Status.tsx
+msgid "insufficient history"
+msgstr "histórico insuficiente"
+
+#: src/lib/format.ts
+msgid "just now"
+msgstr "ahora mismo"
+
+#: src/pages/Config.tsx
+msgid "Keep whatever run mode was active before the restart. PAUSED is demoted to DRY_RUN."
+msgstr "Mantener el modo de ejecución que estaba activo antes del reinicio. PAUSED se degrada a DRY_RUN."
+
 #: src/components/LanguagePicker.tsx
 msgid "Language"
 msgstr "Idioma"
+
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+msgid "last pool block"
+msgstr "último bloque del pool"
+
+#: src/pages/Status.tsx
+msgid "Last tick proposals"
+msgstr "Propuestas del último tick"
+
+#: src/pages/Status.tsx
+msgid "last tick:"
+msgstr "último tick:"
 
 #: src/pages/Setup.tsx
 msgid "Lets the dashboard show Ocean TIDES payouts as they arrive. Pick a backend that can read your wallet's on-chain balance."
 msgstr "Permite que el panel muestre los pagos Ocean TIDES cuando llegan. Elige un backend que pueda leer el saldo on-chain de tu wallet."
 
+#: src/pages/Status.tsx
+msgid "Lifetime sum of (amount_sat − amount_remaining_sat) across every bid the autopilot has tagged. Excludes any bids placed before the autopilot was switched on. Switch to \"whole account\" via Config → Money panel."
+msgstr "Suma de toda la vida de (amount_sat - amount_remaining_sat) en cada oferta etiquetada por el autopilot. Excluye cualquier oferta colocada antes de activar el autopilot. Cambia a \"cuenta completa\" en Config → panel Money."
+
+#: src/components/PriceChart.tsx
+msgid "loading decision…"
+msgstr "cargando decisión…"
+
+#: src/pages/Status.tsx
+msgid "Loading or daemon restart required."
+msgstr "Cargando o se requiere reiniciar el daemon."
+
+#: src/pages/Config.tsx
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+msgid "loading…"
+msgstr "cargando…"
+
 #: src/pages/Setup.tsx
 msgid "Loading…"
 msgstr "Cargando…"
+
+#: src/pages/Config.tsx
+msgid "Log retention"
+msgstr "Retención de logs"
+
+#: src/components/PriceChart.tsx
+msgid "manual"
+msgstr "manual"
+
+#: src/components/PriceChart.tsx
+msgid "market at this tick"
+msgstr "mercado en este tick"
+
+#: src/components/PriceChart.tsx
+#: src/components/PriceChart.tsx
+#: src/pages/Status.tsx
+msgid "max bid"
+msgstr "oferta máxima"
 
 #: src/pages/Setup.tsx
 msgid "Max bid"
 msgstr "Oferta máxima"
 
+#: src/pages/Status.tsx
+msgid "max bid (binding)"
+msgstr "oferta máxima (vinculante)"
+
+#: src/pages/Status.tsx
+msgid "max over hashprice"
+msgstr "máx sobre hashprice"
+
+#: src/components/PriceChart.tsx
+msgid "max overpay vs hashprice"
+msgstr "sobrepago máximo vs hashprice"
+
+#: src/pages/Config.tsx
+msgid "Max premium over hashprice"
+msgstr "Prima máxima sobre hashprice"
+
+#: src/pages/Config.tsx
+msgid "Maximum"
+msgstr "Máximo"
+
+#: src/pages/Config.tsx
+msgid "Minimum floor"
+msgstr "Mínimo absoluto"
+
 #: src/pages/Setup.tsx
 msgid "Mining"
 msgstr "Minería"
+
+#: src/pages/Config.tsx
+msgid "Must be reachable from the public internet — Braiins probes it."
+msgstr "Debe ser accesible desde internet público - Braiins lo verifica."
 
 #: src/pages/Setup.tsx
 msgid "must contain a period — without it shares are uncredited on Ocean"
 msgstr "debe contener un punto - sin él las shares no se acreditan en Ocean"
 
+#: src/pages/Status.tsx
+msgid "net"
+msgstr "neto"
+
+#: src/pages/Status.tsx
+msgid "net/day ({rangeLabel})"
+msgstr "neto/día ({rangeLabel})"
+
+#: src/pages/Status.tsx
+msgid "net/day (3h)"
+msgstr "neto/día (3h)"
+
+#: src/components/PriceChart.tsx
+msgid "new speed"
+msgstr "nueva velocidad"
+
 #: src/pages/Setup.tsx
 #: src/pages/Setup.tsx
 msgid "Next →"
 msgstr "Siguiente →"
+
+#: src/pages/Status.tsx
+msgid "Next action"
+msgstr "Próxima acción"
+
+#: src/pages/Status.tsx
+msgid "next block est."
+msgstr "próx. bloque est."
+
+#: src/pages/Status.tsx
+msgid "next in <0>{remainingSec}s</0>"
+msgstr "siguiente en <0>{remainingSec}s</0>"
+
+#: src/pages/Status.tsx
+msgid "next payout"
+msgstr "próximo pago"
+
+#: src/pages/Status.tsx
+msgid "No action needed this tick."
+msgstr "No se necesita acción en este tick."
+
+#: src/pages/Status.tsx
+msgid "no active bid"
+msgstr "sin oferta activa"
+
+#: src/pages/Status.tsx
+msgid "no active bids"
+msgstr "sin ofertas activas"
+
+#: src/pages/Status.tsx
+msgid "no bids on this account"
+msgstr "sin ofertas en esta cuenta"
+
+#: src/pages/Config.tsx
+msgid "No on-chain balance tracking. The Profit & Loss panel won't show collected BTC."
+msgstr "Sin seguimiento de saldo on-chain. El panel de Profit & Loss no mostrará el BTC cobrado."
 
 #: src/pages/Setup.tsx
 msgid "None"
@@ -200,17 +1101,140 @@ msgstr "Ninguno"
 msgid "None — skip payout tracking"
 msgstr "Ninguno - omitir seguimiento de pagos"
 
+#: src/lib/labels.ts
+msgid "Normal"
+msgstr "Normal"
+
+#: src/pages/Status.tsx
+msgid "Not configured"
+msgstr "No configurado"
+
+#: src/pages/Status.tsx
+msgid "Not configured. Go to Config → On-chain payouts and select Electrs or Bitcoin Core RPC to track your on-chain balance. The net line treats missing collected as 0 so the arithmetic still reads — a blank row here is the hint that a piece of the income side isn't wired up."
+msgstr "No configurado. Ve a Config → On-chain payouts y selecciona Electrs o Bitcoin Core RPC para hacer seguimiento de tu saldo on-chain. La línea neta trata el cobrado faltante como 0 para que la cuenta siga leyéndose - una fila en blanco aquí es la pista de que falta cablear una parte del lado del ingreso."
+
+#: src/components/HashrateChart.tsx
+#: src/components/PriceChart.tsx
+msgid "Not enough data in this range yet."
+msgstr "Aún no hay suficientes datos en este rango."
+
+#: src/pages/Status.tsx
+msgid "not in LIVE mode"
+msgstr "no está en modo LIVE"
+
+#: src/lib/format.ts
+msgid "now"
+msgstr "ahora"
+
+#: src/pages/Config.tsx
+msgid "Number & date format"
+msgstr "Formato de números y fechas"
+
+#: src/pages/Config.tsx
+msgid "Observing payouts to <0>(no address set)</0>. Edit this in the <1>Pool destination</1> section above — the worker identity is auto-derived from it."
+msgstr "Observando pagos a <0>(sin dirección configurada)</0>. Edita esto en la sección <1>Pool destination</1> de arriba - la identidad del worker se deriva automáticamente."
+
+#: src/pages/Config.tsx
+msgid "Observing payouts to <0>{payoutAddr}</0>. Edit this in the <1>Pool destination</1> section above — the worker identity is auto-derived from it."
+msgstr "Observando pagos a <0>{payoutAddr}</0>. Edita esto en la sección <1>Pool destination</1> de arriba - la identidad del worker se deriva automáticamente."
+
+#: src/pages/Status.tsx
+msgid "ocean est. income/day (3h)"
+msgstr "ingreso/día est. ocean (3h)"
+
+#: src/pages/Status.tsx
+msgid "ocean hashrate"
+msgstr "hashrate ocean"
+
+#: src/pages/Status.tsx
+msgid "ocean lifetime"
+msgstr "ocean histórico total"
+
+#: src/pages/Status.tsx
+msgid "Ocean stats API — reachable when the last /api/ocean fetch returned a pool snapshot."
+msgstr "API de estadísticas de Ocean - accesible cuando el último fetch a /api/ocean devolvió un snapshot del pool."
+
+#: src/pages/Status.tsx
+msgid "Ocean stats unavailable."
+msgstr "Estadísticas de Ocean no disponibles."
+
+#: src/pages/Status.tsx
+msgid "Ocean's own estimate — the pool extrapolates from the address's last 3-hour hashrate and its share of pool output. Always 3h-based regardless of the chart range you've picked, so it may differ from projected income at other ranges."
+msgstr "La propia estimación de Ocean - el pool extrapola desde el hashrate de las últimas 3 horas de la dirección y su proporción del output del pool. Siempre basado en 3h sin importar el rango del gráfico que hayas elegido, así que puede diferir del ingreso proyectado en otros rangos."
+
+#. placeholder {0}: formatSats(data.ocean.payout_threshold_sat)
+#: src/pages/Status.tsx
+msgid "Ocean's Unpaid Earnings — what will land on-chain at the next payout. Threshold: {0} sat (~0.01 BTC)."
+msgstr "Ganancias no pagadas de Ocean - lo que llegará on-chain en el próximo pago. Umbral: {0} sat (~0.01 BTC)."
+
+#: src/pages/Config.tsx
+msgid "Off by default. The emerald effective-rate line (what Braiins actually charged, from counter deltas) is dramatically more volatile than bid / fillable / hashprice — when enabled it auto-scales the Y-axis and visibly squashes the finer bot movements into a thin band. The hero PRICE card and the AVG COST / PH DELIVERED stat already show the same number without hijacking the chart. Flip on when you want to eyeball settlement behaviour directly, accept the loss of flatter-line detail in exchange."
+msgstr "Desactivado por defecto. La línea esmeralda de tasa efectiva (lo que Braiins realmente cobró, calculado desde deltas del contador) es mucho más volátil que oferta / rellenable / hashprice - al habilitarla, autoescala el eje Y y aplasta visiblemente los movimientos más finos del bot en una banda estrecha. La tarjeta principal PRICE y la estadística AVG COST / PH DELIVERED ya muestran el mismo número sin secuestrar el gráfico. Actívala cuando quieras ver directamente el comportamiento de liquidación, aceptando la pérdida de detalle en las líneas más planas a cambio."
+
 #: src/pages/Setup.tsx
 msgid "On-chain payout tracking (optional)"
 msgstr "Seguimiento de pagos on-chain (opcional)"
+
+#: src/pages/Config.tsx
+msgid "On-chain payouts"
+msgstr "Pagos on-chain"
+
+#: src/pages/Config.tsx
+msgid "Only engage cheap-mode when the rolling average of best-ask vs hashprice over this many minutes is below the threshold. Avoids flapping on single-tick market spikes. 0 = evaluate per tick (legacy). Requires ≥5 samples in the window before honouring it; below that falls back to the spot check."
+msgstr "Activa el modo barato solo cuando el promedio móvil del mejor precio de venta vs hashprice durante estos minutos esté por debajo del umbral. Evita que oscile por picos de mercado de un solo tick. 0 = evaluar por tick (legado). Requiere ≥5 muestras en la ventana antes de aplicarlo; por debajo de eso vuelve a la verificación spot."
+
+#: src/components/HashrateChart.tsx
+msgid "open in block explorer →"
+msgstr "abrir en explorador de bloques →"
+
+#: src/pages/Config.tsx
+msgid "Optional dynamic ceiling. On each tick the effective cap = min(Maximum, hashprice + this). Stops the autopilot from wildly overpaying when hashprice drops sharply and the fixed Maximum alone would still allow it. Set to 0 to disable."
+msgstr "Tope dinámico opcional. En cada tick el tope efectivo = min(Máximo, hashprice + este valor). Evita que el autopilot pague descontroladamente cuando el hashprice cae bruscamente y el Máximo fijo aún lo permitiría. Pon 0 para desactivar."
+
+#: src/pages/Config.tsx
+msgid "Optional. Datum Gateway's /umbrel-api endpoint — e.g. http://192.168.1.121:7152. Leave empty to disable; the Datum panel will show \"not configured\". See docs/setup-datum-api.md for the Umbrel-side port-exposure recipe."
+msgstr "Opcional. Endpoint /umbrel-api de Datum Gateway - p.ej. http://192.168.1.121:7152. Déjalo vacío para desactivar; el panel Datum mostrará \"no configurado\". Ver docs/setup-datum-api.md para la receta de exposición de puerto del lado Umbrel."
 
 #: src/pages/Setup.tsx
 msgid "Optional. Useful if you'd like a second token only for read paths."
 msgstr "Opcional. Útil si quieres un segundo token solo para lectura."
 
+#: src/components/PriceChart.tsx
+msgid "our bid"
+msgstr "nuestra oferta"
+
+#: src/components/HashrateChart.tsx
+msgid "our earnings"
+msgstr "nuestras ganancias"
+
+#: src/pages/Status.tsx
+msgid "our earnings (est.)"
+msgstr "nuestras ganancias (est.)"
+
+#: src/components/HashrateChart.tsx
+msgid "our share (est.)"
+msgstr "nuestra parte (est.)"
+
+#: src/pages/Status.tsx
+msgid "overdue {overdueFormatted}"
+msgstr "atrasado {overdueFormatted}"
+
+#: src/components/PriceChart.tsx
+msgid "overpay"
+msgstr "sobrepago"
+
+#: src/pages/Config.tsx
 #: src/pages/Setup.tsx
 msgid "Overpay above fillable"
 msgstr "Sobrepago sobre el precio rellenable"
+
+#: src/pages/Status.tsx
+msgid "Override lock clears in"
+msgstr "El bloqueo de override se libera en"
+
+#: src/pages/Status.tsx
+msgid "owner"
+msgstr "propietario"
 
 #: src/pages/Setup.tsx
 #: src/pages/Setup.tsx
@@ -229,6 +1253,22 @@ msgstr "Contraseña"
 msgid "passwords don't match"
 msgstr "las contraseñas no coinciden"
 
+#: src/pages/Status.tsx
+msgid "Patience clears in"
+msgstr "La paciencia se libera en"
+
+#: src/pages/Status.tsx
+msgid "Pause"
+msgstr "Pausar"
+
+#: src/pages/Status.tsx
+msgid "paused"
+msgstr "pausado"
+
+#: src/lib/labels.ts
+msgid "Paused"
+msgstr "Pausada"
+
 #: src/pages/Setup.tsx
 msgid "Payout address"
 msgstr "Dirección de pago"
@@ -237,18 +1277,136 @@ msgstr "Dirección de pago"
 msgid "Payout tracking"
 msgstr "Seguimiento de pagos"
 
+#: src/lib/labels.ts
+msgid "Pending 2FA"
+msgstr "2FA pendiente"
+
+#: src/pages/Config.tsx
+msgid "Per-bid budget"
+msgstr "Presupuesto por oferta"
+
+#: src/pages/Config.tsx
+msgid "Per-tick bid = fillable_ask + this. Braiins matches pay-your-bid, so this is the real premium you pay over the cheapest available price. Higher = more resilient to short upward market moves, bigger premium; lower = closer to the cheapest fillable price, more sensitive to noise. 300 sat/PH/day is a reasonable starting point."
+msgstr "Oferta por tick = fillable_ask + este valor. Braiins matchea pay-your-bid, así que esta es la prima real que pagas sobre el precio más barato disponible. Mayor = más resistente a movimientos breves de subida del mercado, prima más grande; menor = más cerca del precio rellenable más barato, más sensible al ruido. 300 sat/PH/día es un punto de partida razonable."
+
+#: src/pages/Config.tsx
+msgid "Pick a preset or paste your own template — at least one placeholder ({hash} or {height}) is required. Example custom: http://umbrel.local:3006/block/{hash}."
+msgstr "Elige un preset o pega tu propia plantilla - se requiere al menos un placeholder ({hash} o {height}). Ejemplo personalizado: http://umbrel.local:3006/block/{hash}."
+
+#: src/pages/Config.tsx
+msgid "Polled every 5 minutes. The daemon never makes decisions based on fiat price — this is purely a display convenience. Set to \"Disabled\" if you want a sats-only dashboard."
+msgstr "Consultado cada 5 minutos. El daemon nunca toma decisiones basadas en el precio fiat - esto es puramente una conveniencia de visualización. Pon \"Desactivado\" si quieres un panel solo en sats."
+
+#: src/pages/Status.tsx
+msgid "pool"
+msgstr "pool"
+
+#: src/components/HashrateChart.tsx
+msgid "pool block"
+msgstr "bloque del pool"
+
+#: src/components/HashrateChart.tsx
+msgid "POOL BLOCK"
+msgstr "BLOQUE DEL POOL"
+
+#: src/pages/Status.tsx
+msgid "pool blocks 24h"
+msgstr "bloques del pool 24h"
+
+#: src/pages/Status.tsx
+msgid "pool blocks 7d"
+msgstr "bloques del pool 7d"
+
+#: src/pages/Config.tsx
+msgid "Pool destination"
+msgstr "Destino del pool"
+
 #: src/pages/Setup.tsx
 msgid "Pool destination (where Braiins delivers)"
 msgstr "Destino del pool (a donde entrega Braiins)"
 
+#: src/components/HashrateChart.tsx
+msgid "pool reward"
+msgstr "recompensa del pool"
+
+#: src/pages/Config.tsx
 #: src/pages/Setup.tsx
 #: src/pages/Setup.tsx
 msgid "Pool URL"
 msgstr "URL del pool"
 
+#: src/pages/Status.tsx
+msgid "pool users"
+msgstr "usuarios del pool"
+
+#: src/pages/Status.tsx
+msgid "pool workers"
+msgstr "workers del pool"
+
+#: src/pages/Status.tsx
+msgid "port"
+msgstr "puerto"
+
 #: src/pages/Setup.tsx
 msgid "Port"
 msgstr "Puerto"
+
+#: src/components/PriceChart.tsx
+#: src/components/PriceChart.tsx
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+msgid "price"
+msgstr "precio"
+
+#: src/components/PriceChart.tsx
+#: src/components/PriceChart.tsx
+msgid "Price"
+msgstr "Precio"
+
+#: src/pages/Config.tsx
+msgid "Price source"
+msgstr "Fuente del precio"
+
+#: src/pages/Config.tsx
+msgid "Pricing"
+msgstr "Precios"
+
+#: src/pages/Config.tsx
+#: src/pages/Status.tsx
+msgid "Profit & Loss"
+msgstr "Profit & Loss"
+
+#: src/pages/Status.tsx
+msgid "Profit & Loss · lifetime"
+msgstr "Profit & Loss · histórico total"
+
+#: src/pages/Status.tsx
+msgid "Profit & Loss · per day"
+msgstr "Profit & Loss · por día"
+
+#: src/pages/Status.tsx
+msgid "progress"
+msgstr "progreso"
+
+#: src/pages/Status.tsx
+msgid "Projected income − actual spend (rows above). Positive = the autopilot is profitable at current rates; negative = burning money per day. Income is a projection (avg hashprice × avg delivered); spend is measured. Don’t confuse with the lifetime net on the other panel."
+msgstr "Ingreso proyectado - gasto real (filas de arriba). Positivo = el autopilot es rentable a las tasas actuales; negativo = quemando dinero al día. El ingreso es una proyección (hashprice promedio × entregado promedio); el gasto está medido. No confundir con el neto histórico del otro panel."
+
+#: src/pages/Status.tsx
+msgid "projected income/day ({rangeLabel})"
+msgstr "ingreso/día proyectado ({rangeLabel})"
+
+#: src/pages/Status.tsx
+msgid "Projection: avg hashprice × avg delivered (rows above), both averaged over the selected chart range. Range-aware counterpart to Ocean's own 3h estimate."
+msgstr "Proyección: hashprice promedio × entregado promedio (filas de arriba), ambos promediados sobre el rango del gráfico seleccionado. Contraparte sensible al rango de la propia estimación de Ocean a 3h."
+
+#: src/pages/Status.tsx
+msgid "protocol"
+msgstr "protocolo"
+
+#: src/components/HashrateChart.tsx
+msgid "range"
+msgstr "rango"
 
 #: src/pages/Setup.tsx
 msgid "Re-setup"
@@ -259,18 +1417,65 @@ msgstr "Reconfigurar"
 msgid "Read-only token"
 msgstr "Token de solo lectura"
 
+#: src/pages/Status.tsx
+msgid "rebuild"
+msgstr "reconstruir"
+
+#: src/components/HashrateChart.tsx
+msgid "received (Datum)"
+msgstr "recibido (Datum)"
+
+#: src/components/HashrateChart.tsx
+msgid "received (Ocean)"
+msgstr "recibido (Ocean)"
+
+#: src/pages/Status.tsx
+msgid "Refresh the money panel now (normally updates hourly)."
+msgstr "Refresca el panel de dinero ahora (normalmente se actualiza cada hora)."
+
+#. placeholder {0}: formatCountdownPrecise(msUntil)
+#: src/pages/Status.tsx
+msgid "refreshes in {0}"
+msgstr "se refresca en {0}"
+
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+msgid "refreshing…"
+msgstr "refrescando…"
+
 #: src/pages/Login.tsx
 msgid "Remember me on this device"
 msgstr "Recordarme en este dispositivo"
+
+#: src/pages/Config.tsx
+msgid "Resume last mode"
+msgstr "Reanudar último modo"
+
+#: src/pages/Config.tsx
+msgid "revert"
+msgstr "revertir"
 
 #: src/pages/Setup.tsx
 #: src/pages/Setup.tsx
 msgid "Review"
 msgstr "Revisar"
 
+#: src/pages/Config.tsx
+msgid "Rolling-mean window applied to the hashrate chart. 1 = raw (no smoothing). Ocean is excluded — its /user_hashrate endpoint already returns a server-side 5-min average, so set these to 5 to line all three series up on the same cadence."
+msgstr "Ventana de media móvil aplicada al gráfico de hashrate. 1 = crudo (sin suavizado). Ocean queda excluido - su endpoint /user_hashrate ya devuelve un promedio de 5 min del lado servidor, así que ponlos en 5 para alinear las tres series con la misma cadencia."
+
+#: src/pages/Config.tsx
+msgid "Rolling-mean window for the Price chart's `our bid` and `effective` lines. Useful when the effective line is noisy at tick resolution. Hashprice / max bid are not smoothed — they're market-wide signals."
+msgstr "Ventana de media móvil para las líneas `our bid` y `effective` del gráfico Price. Útil cuando la línea efectiva es ruidosa a resolución de tick. Hashprice / max bid no se suavizan - son señales de mercado completo."
+
+#: src/pages/Config.tsx
 #: src/pages/Setup.tsx
 msgid "RPC password"
 msgstr "Contraseña RPC"
+
+#: src/pages/Config.tsx
+msgid "RPC password — stored in the config database, not in logs."
+msgstr "Contraseña RPC - almacenada en la base de datos de configuración, no en los logs."
 
 #: src/pages/Setup.tsx
 msgid "RPC URL"
@@ -280,17 +1485,58 @@ msgstr "URL RPC"
 msgid "RPC user"
 msgstr "Usuario RPC"
 
+#: src/pages/Config.tsx
+msgid "RPC username"
+msgstr "Usuario RPC"
+
+#: src/pages/Config.tsx
+msgid "RPC username from your bitcoin.conf."
+msgstr "Usuario RPC de tu bitcoin.conf."
+
+#: src/pages/Status.tsx
+msgid "Run decision now"
+msgstr "Ejecutar decisión ahora"
+
+#: src/pages/Status.tsx
+msgid "Run the pending decision immediately — clears the post-edit lock and bypasses the patience/escalation timers so a waiting-to-settle EDIT_PRICE fires on this tick instead of after the full window."
+msgstr "Ejecuta la decisión pendiente inmediatamente - libera el bloqueo post-edición y omite los temporizadores de paciencia/escalada para que un EDIT_PRICE pendiente de liquidación se dispare en este tick en lugar de tras la ventana completa."
+
+#: src/pages/Status.tsx
+msgid "runway"
+msgstr "autonomía"
+
 #: src/components/Layout.tsx
 msgid "sats"
 msgstr "sats"
+
+#: src/pages/Config.tsx
+msgid "save"
+msgstr "guardar"
+
+#: src/pages/Config.tsx
+msgid "saved."
+msgstr "guardado."
+
+#: src/pages/Config.tsx
+msgid "saving…"
+msgstr "guardando…"
 
 #: src/pages/Setup.tsx
 msgid "Setting up…"
 msgstr "Configurando…"
 
+#: src/components/HashrateChart.tsx
+#: src/pages/Status.tsx
+msgid "share log"
+msgstr "share log"
+
 #: src/pages/Setup.tsx
 msgid "Show"
 msgstr "Mostrar"
+
+#: src/pages/Config.tsx
+msgid "Show effective rate on price chart"
+msgstr "Mostrar tasa efectiva en el gráfico de precio"
 
 #: src/pages/Setup.tsx
 msgid "Show value"
@@ -308,34 +1554,208 @@ msgstr "cerrar sesión"
 msgid "signing in…"
 msgstr "iniciando sesión…"
 
+#: src/components/PriceChart.tsx
+msgid "speed"
+msgstr "velocidad"
+
+#: src/pages/Config.tsx
+msgid "Spend scope"
+msgstr "Alcance del gasto"
+
+#: src/pages/Status.tsx
+msgid "spend/day ({rangeLabel})"
+msgstr "gasto/día ({rangeLabel})"
+
+#: src/pages/Status.tsx
+msgid "spend/day (3h)"
+msgstr "gasto/día (3h)"
+
+#: src/pages/Status.tsx
+msgid "spent (autopilot)"
+msgstr "gastado (autopilot)"
+
+#: src/pages/Status.tsx
+msgid "spent (whole account)"
+msgstr "gastado (cuenta completa)"
+
+#: src/pages/Status.tsx
+msgid "status"
+msgstr "estado"
+
 #: src/components/Layout.tsx
 msgid "Status"
 msgstr "Status"
+
+#: src/pages/Status.tsx
+msgid "stratum DOWN ({consecutiveFailures} consecutive)"
+msgstr "stratum CAÍDO ({consecutiveFailures} consecutivos)"
+
+#: src/pages/Status.tsx
+msgid "stratum reachable"
+msgstr "stratum accesible"
 
 #: src/pages/Setup.tsx
 msgid "Stratum URL for your Datum gateway or pool."
 msgstr "URL stratum para tu gateway Datum o pool."
 
+#: src/components/HashrateChart.tsx
+msgid "subsidy"
+msgstr "subsidio"
+
+#: src/pages/Status.tsx
+msgid "Sum across still-running bids — status ACTIVE / PAUSED / etc. (is_current=true). Live in-flight consumption; not yet settled in Braiins' hourly ledger."
+msgstr "Suma a través de ofertas aún en curso - estado ACTIVE / PAUSED / etc. (is_current=true). Consumo en vivo en curso; aún no liquidado en el libro horario de Braiins."
+
+#: src/pages/Status.tsx
+msgid "Sum across terminal bids — status CANCELED or FULFILLED (is_current=false). Money that has definitively left the account."
+msgstr "Suma a través de ofertas terminales - estado CANCELED o FULFILLED (is_current=false). Dinero que ha salido definitivamente de la cuenta."
+
+#: src/pages/Status.tsx
+msgid "Sum of counters_committed.amount_consumed_sat across every bid on /v1/spot/bid — covers active + historical bids, including any that existed before the autopilot was switched on. May lag the latest hour of active-bid consumption (Braiins only updates committed counters on each hourly settlement tick). Switch via Config → P&L panel."
+msgstr "Suma de counters_committed.amount_consumed_sat en cada oferta de /v1/spot/bid - cubre ofertas activas + históricas, incluyendo cualquiera que existiera antes de activar el autopilot. Puede retrasarse respecto a la última hora de consumo de ofertas activas (Braiins solo actualiza los contadores comprometidos en cada tick de liquidación horario). Cambia en Config → panel P&L."
+
+#: src/components/HashrateChart.tsx
+#: src/pages/Status.tsx
+msgid "target"
+msgstr "objetivo"
+
 #: src/pages/Setup.tsx
 msgid "Target (PH/s)"
 msgstr "Objetivo (PH/s)"
 
+#: src/pages/Config.tsx
 #: src/pages/Setup.tsx
 msgid "Target hashrate"
 msgstr "Hashrate objetivo"
+
+#: src/pages/Status.tsx
+msgid "TCP probe of the Datum gateway's stratum port."
+msgstr "Sondeo TCP al puerto stratum del gateway Datum."
+
+#: src/pages/Config.tsx
+msgid "The bid tracks the cheapest ask with enough depth for your target, plus a small premium. Two hard ceilings sit above that so the premium can never run away. Entered in sat/PH/day."
+msgstr "La oferta sigue al precio de venta más barato con profundidad suficiente para tu objetivo, más una pequeña prima. Encima hay dos topes duros para que la prima nunca se descontrole. Se introduce en sat/PH/día."
+
+#: src/pages/Config.tsx
+msgid "The BTC address Ocean TIDES credits payouts to. Editing this auto-updates the worker identity below."
+msgstr "La dirección BTC a la que Ocean TIDES acredita los pagos. Editar esto actualiza automáticamente la identidad del worker abajo."
 
 #: src/pages/Setup.tsx
 msgid "The daemon may not be in setup mode. Reload the page or check the daemon logs."
 msgstr "El daemon puede no estar en modo setup. Recarga la página o revisa los logs del daemon."
 
+#. placeholder {0}: tickResult.error
+#: src/pages/Status.tsx
+msgid "tick failed: {0}"
+msgstr "tick fallido: {0}"
+
+#: src/pages/Config.tsx
+msgid "Tick metrics"
+msgstr "Métricas de tick"
+
+#: src/pages/Config.tsx
+msgid "tick_metrics rows drive the hashrate / price / overpay charts. One row per tick (~1,440/day). Default 7 covers every standard chart range."
+msgstr "las filas de tick_metrics alimentan los gráficos de hashrate / precio / sobrepago. Una fila por tick (~1.440/día). El predeterminado 7 cubre todos los rangos estándar del gráfico."
+
+#: src/pages/Status.tsx
+msgid "ticking…"
+msgstr "ejecutando tick…"
+
+#: src/pages/Status.tsx
+msgid "total"
+msgstr "total"
+
+#: src/pages/Status.tsx
+msgid "Total earned at this address since first share, per Ocean."
+msgstr "Total ganado en esta dirección desde la primera share, según Ocean."
+
+#: src/pages/Config.tsx
+msgid "Uneventful decisions"
+msgstr "Decisiones sin eventos"
+
+#: src/pages/Status.tsx
+msgid "unknown"
+msgstr "desconocido"
+
+#: src/lib/labels.ts
+msgid "Unknown"
+msgstr "Desconocido"
+
+#: src/pages/Status.tsx
+msgid "unpaid"
+msgstr "no pagado"
+
+#: src/pages/Status.tsx
+msgid "unpaid earnings (Ocean)"
+msgstr "ganancias no pagadas (Ocean)"
+
+#. placeholder {0}: formatAgePrecise(epochMs)
+#: src/pages/Status.tsx
+msgid "updated {0}"
+msgstr "actualizado {0}"
+
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+msgid "uptime"
+msgstr "uptime"
+
+#: src/pages/Config.tsx
+msgid "URL template"
+msgstr "Plantilla de URL"
+
+#: src/pages/Config.tsx
+msgid "Used for click-through from the Ocean panel's \"last pool block\" row and the block-marker tooltips on the Hashrate chart. `{hash}` and `{height}` placeholders are substituted."
+msgstr "Se usa para los enlaces desde la fila \"último bloque del pool\" del panel Ocean y los tooltips de marcadores de bloque en el gráfico de Hashrate. Los placeholders `{hash}` y `{height}` se sustituyen."
+
+#: src/components/HashrateChart.tsx
+msgid "uses current share_log — an approximation for older blocks, since share_log drifts as pool hashrate moves."
+msgstr "usa el share_log actual - una aproximación para bloques antiguos, ya que el share_log se desplaza conforme cambia el hashrate del pool."
+
+#: src/pages/Config.tsx
+msgid "Uses scantxoutset -- CPU-heavy, 30+ seconds per scan. Polled hourly. Use only if you don't have Electrs."
+msgstr "Usa scantxoutset - intensivo en CPU, 30+ segundos por escaneo. Consultado cada hora. Úsalo solo si no tienes Electrs."
+
+#: src/pages/Status.tsx
+msgid "UTXOs at the configured payout address. Read via Electrs (preferred, instant) or bitcoind RPC (slower)."
+msgstr "UTXOs en la dirección de pago configurada. Se leen vía Electrs (preferido, instantáneo) o bitcoind RPC (más lento)."
+
 #: src/pages/Setup.tsx
 msgid "What the controller aims for."
 msgstr "A lo que apunta el controlador."
 
+#: src/pages/Config.tsx
+msgid "When the market is cheap (below the hashprice threshold), scale up to this target instead of the normal one. Set to 0 to disable."
+msgstr "Cuando el mercado está barato (por debajo del umbral de hashprice), escalar hasta este objetivo en lugar del normal. Pon 0 para desactivar."
+
+#: src/pages/Config.tsx
+msgid "Where rented hashrate lands. Change only if your pool endpoint moves. The BTC payout address sits here too — the worker identity below is auto-derived from it whenever you edit the address, same as the first-run wizard."
+msgstr "Donde aterriza el hashrate alquilado. Cámbialo solo si se mueve tu endpoint del pool. La dirección de pago BTC también está aquí - la identidad del worker abajo se deriva automáticamente cada vez que editas la dirección, igual que en el asistente de primera ejecución."
+
+#: src/pages/Config.tsx
+msgid "Where the autopilot aims, and the floor below which it starts escalating."
+msgstr "Hacia dónde apunta el autopilot, y el mínimo por debajo del cual empieza a escalar."
+
+#: src/pages/Config.tsx
+msgid "Whole account (all settled bids ever)"
+msgstr "Cuenta completa (todas las ofertas liquidadas)"
+
+#: src/pages/Status.tsx
+msgid "Wipe the local terminal-bid cache and re-paginate every bid from Braiins on the next refresh? This is safe but slower than a normal refresh."
+msgstr "¿Borrar la caché local de ofertas terminales y volver a paginar cada oferta desde Braiins en el próximo refresco? Es seguro pero más lento que un refresco normal."
+
+#: src/pages/Status.tsx
+msgid "Wipe the local terminal-bid cache and re-paginate every bid from Braiins on the next refresh. Use if the 'spent (whole account)' figure looks wrong."
+msgstr "Borra la caché local de ofertas terminales y vuelve a paginar cada oferta desde Braiins en el próximo refresco. Úsalo si la cifra 'gastado (cuenta completa)' parece incorrecta."
+
+#: src/pages/Config.tsx
 #: src/pages/Setup.tsx
 #: src/pages/Setup.tsx
 msgid "Worker identity"
 msgstr "Identidad del worker"
+
+#: src/pages/Status.tsx
+msgid "workers connected"
+msgstr "workers conectados"
 
 #: src/pages/Setup.tsx
 msgid "Writing config + secrets and bringing the controller online. Usually a few seconds."
@@ -344,3 +1764,7 @@ msgstr "Escribiendo configuración + secretos y poniendo el controlador en líne
 #: src/pages/Setup.tsx
 msgid "You'll use this to sign in to the dashboard after setup. At least 8 characters."
 msgstr "Lo usarás para iniciar sesión en el panel tras la configuración. Al menos 8 caracteres."
+
+#: src/pages/Setup.tsx
+msgid "Your address that receives Ocean TIDES payouts. The worker identity below is auto-derived from this."
+msgstr "Tu dirección que recibe los pagos Ocean TIDES. La identidad del worker abajo se deriva automáticamente de esto."
