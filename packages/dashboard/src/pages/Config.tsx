@@ -139,7 +139,7 @@ const SECTIONS: Section[] = [
         key: 'overpay_sat_per_eh_day',
         label: 'Overpay above fillable',
         kind: 'price_sat_per_eh_day',
-        help: 'Per-tick bid = fillable_ask + this. Braiins matches pay-your-bid, so this is the real premium you pay over the cheapest available price. Higher = more resilient to short upward market moves, bigger premium; lower = closer to the cheapest fillable price, more sensitive to noise. 1,000 sat/PH/day is a reasonable starting point.',
+        help: 'Per-tick bid = fillable_ask + this. Braiins matches pay-your-bid, so this is the real premium you pay over the cheapest available price. Higher = more resilient to short upward market moves, bigger premium; lower = closer to the cheapest fillable price, more sensitive to noise. 300 sat/PH/day is a reasonable starting point.',
       },
       {
         key: 'max_bid_sat_per_eh_day',
