@@ -48,4 +48,4 @@ Dockerfile
 # Umbrel Community App Store files (live at the repo root for Umbrel's
 # Add App Store flow; not needed inside the daemon image).
 umbrel-app-store.yml
-hashrate-autopilot/
+rdouma-hashrate-autopilot/

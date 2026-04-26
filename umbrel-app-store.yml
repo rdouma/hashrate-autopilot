@@ -11,6 +11,8 @@
 # manifest, this Community Store entry can be deprecated in favour
 # of the official one.
 
-id: rdouma-store
-name: Remco's apps
-tagline: Personal-scale Bitcoin tooling
+id: rdouma
+# Umbrel renders this as "<name> App Store" — so this becomes
+# "Hashrate Autopilot App Store".
+name: Hashrate Autopilot
+tagline: Decentralizing Bitcoin mining, one pleb at a time

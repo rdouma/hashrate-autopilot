@@ -1,0 +1,44 @@
+# Umbrel app manifest. Loaded when this repo is added as a Community
+# App Store. Umbrel community-store convention: the directory name
+# (and the `id:` field below) must be prefixed with the store's id
+# from `umbrel-app-store.yml` — here that's `rdouma-`.
+
+manifestVersion: 1
+id: rdouma-hashrate-autopilot
+category: bitcoin
+name: Hashrate Autopilot
+version: "1.3.1"
+tagline: Autopilot for renting hashrate to a non-custodial pool
+description: >-
+  Rent hashrate on the Braiins Hashpower marketplace and route it to
+  your own Ocean+Datum non-custodial mining pool — automatically, with
+  the spam-filtered template selection that comes with that setup. A
+  small contribution to keeping Bitcoin mining decentralized.
+
+  The controller sets a single bid each tick to `min(fillable_ask +
+  overpay, effective_cap)`. Braiins matches pay-your-bid, so the bid
+  price *is* the price paid; the autopilot tracks the cheapest fillable
+  ask + a small operator-chosen cushion, never higher than the
+  configured ceiling. A React dashboard on port 3010 shows live
+  decisions and charts, and exposes the DRY-RUN / LIVE / PAUSED switch.
+
+  First-run is a three-step web wizard. Bitcoin Core RPC credentials
+  auto-detect from this Umbrel's bitcoind dependency — no copy/paste.
+
+developer: Remco Douma
+website: https://github.com/rdouma/hashrate-autopilot
+dependencies:
+  - bitcoin
+repo: https://github.com/rdouma/hashrate-autopilot
+support: https://github.com/rdouma/hashrate-autopilot/issues
+port: 3010
+gallery:
+  - 1.jpg
+path: ""
+defaultUsername: ""
+defaultPassword: ""
+submitter: Remco Douma
+submission: https://github.com/rdouma/hashrate-autopilot
+releaseNotes: >-
+  Initial Community App Store release. The app's first-run wizard handles
+  setup; Bitcoin Core RPC auto-detects from Umbrel's injected env vars.
