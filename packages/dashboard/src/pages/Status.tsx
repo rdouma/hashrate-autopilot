@@ -1092,7 +1092,7 @@ function FilterBar({
                 : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
             }`}
           >
-            {r === 'all' ? t`All` : r}
+            {localizedRangeLabel(r, i18n.locale)}
           </button>
         ))}
       </div>
