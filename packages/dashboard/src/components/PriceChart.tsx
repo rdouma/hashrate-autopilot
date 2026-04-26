@@ -6,6 +6,8 @@
  * X-axis aligns visually when stacked.
  */
 
+import { Trans, t } from '@lingui/macro';
+import { useLingui } from '@lingui/react';
 import { useQuery } from '@tanstack/react-query';
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
@@ -141,6 +143,8 @@ export const PriceChart = memo(function PriceChart({
    */
   showEffectiveRate?: boolean;
 }) {
+  const { i18n } = useLingui();
+  void i18n;
   const containerRef = useRef<HTMLDivElement>(null);
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
   const [expanded, setExpanded] = useState(false);
@@ -617,9 +621,9 @@ export const PriceChart = memo(function PriceChart({
   if (!chartData) {
     return (
       <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
-        <h3 className="text-xs uppercase tracking-wider text-slate-100">Price</h3>
+        <h3 className="text-xs uppercase tracking-wider text-slate-100"><Trans>Price</Trans></h3>
         <div className="mt-4 text-sm text-slate-500">
-          Not enough data in this range yet.
+          <Trans>Not enough data in this range yet.</Trans>
         </div>
       </div>
     );
@@ -644,22 +648,22 @@ export const PriceChart = memo(function PriceChart({
     <div ref={containerRef} className="bg-slate-900 border rounded-lg p-4 relative border-slate-800">
       <div className="flex items-center justify-between mb-2 gap-3 flex-wrap">
         <div className="flex items-center gap-2">
-          <h3 className="text-xs uppercase tracking-wider text-slate-100">Price</h3>
+          <h3 className="text-xs uppercase tracking-wider text-slate-100"><Trans>Price</Trans></h3>
           <button
             type="button"
             onClick={() => setExpanded((e) => !e)}
             className="text-[10px] uppercase tracking-wider text-slate-400 hover:text-slate-200 border border-slate-700 rounded px-1.5 py-0.5"
-            title={expanded ? 'Collapse to default height' : 'Expand to double height'}
+            title={expanded ? t`Collapse to default height` : t`Expand to double height`}
           >
-            {expanded ? 'collapse' : 'expand'}
+            {expanded ? t`collapse` : t`expand`}
           </button>
         </div>
         <div className="flex items-center gap-3 text-xs flex-wrap">
-          <Legend color={COLOR_PRICE} label="our bid" />
-          {fillableHasData && <Legend color={COLOR_FILLABLE} label="fillable" />}
-          {showEffectiveRate && effectiveHasData && <Legend color={COLOR_EFFECTIVE} label="effective" />}
-          <Legend color={COLOR_HASHPRICE} label="hashprice" dashed />
-          <Legend color={COLOR_MAXBID} label="max bid" />
+          <Legend color={COLOR_PRICE} label={t`our bid`} />
+          {fillableHasData && <Legend color={COLOR_FILLABLE} label={t`fillable`} />}
+          {showEffectiveRate && effectiveHasData && <Legend color={COLOR_EFFECTIVE} label={t`effective`} />}
+          <Legend color={COLOR_HASHPRICE} label={t`hashprice`} dashed />
+          <Legend color={COLOR_MAXBID} label={t`max bid`} />
           {showEvents && <EventLegend />}
         </div>
       </div>
@@ -951,6 +955,8 @@ function EventTooltip({
   maxOverpayVsHashpriceSatPerPhDay?: number | null;
   overpaySatPerPhDay?: number | null;
 }) {
+  const { i18n } = useLingui();
+  void i18n;
   const ref = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
 
@@ -1064,15 +1070,15 @@ function EventTooltip({
   }, [tip.x, tip.y, tip.event.id]);
 
   const e = tip.event;
-  const sourceLabel = e.source === 'OPERATOR' ? 'manual' : 'automatic';
+  const sourceLabel = e.source === 'OPERATOR' ? t`manual` : t`automatic`;
   const kindLabel =
     e.kind === 'CREATE_BID'
-      ? 'CREATE'
+      ? t`CREATE`
       : e.kind === 'EDIT_PRICE'
-        ? 'EDIT PRICE'
+        ? t`EDIT PRICE`
         : e.kind === 'EDIT_SPEED'
-          ? 'EDIT SPEED'
-          : 'CANCEL';
+          ? t`EDIT SPEED`
+          : t`CANCEL`;
   const headerColor =
     e.kind === 'CREATE_BID'
       ? 'text-emerald-300'
@@ -1138,7 +1144,7 @@ function EventTooltip({
           <button
             type="button"
             onClick={onClose}
-            aria-label="close"
+            aria-label={t`close`}
             className="text-slate-500 hover:text-slate-200 leading-none text-base -mt-0.5 -mr-0.5"
           >
             ×
@@ -1153,21 +1159,21 @@ function EventTooltip({
 
       {e.kind === 'CREATE_BID' && (
         <div className="mt-2 space-y-0.5 text-slate-300">
-          <Row label="price" value={`${formatNumber(Math.round(e.new_price_sat_per_ph_day ?? 0))} sat/PH/day`} />
-          <Row label="speed" value={`${e.speed_limit_ph ?? '—'} PH/s`} />
-          <Row label="budget" value={`${formatNumber(e.amount_sat ?? 0)} sat`} />
+          <Row label={t`price`} value={`${formatNumber(Math.round(e.new_price_sat_per_ph_day ?? 0))} sat/PH/day`} />
+          <Row label={t`speed`} value={`${e.speed_limit_ph ?? '—'} PH/s`} />
+          <Row label={t`budget`} value={`${formatNumber(e.amount_sat ?? 0)} sat`} />
         </div>
       )}
 
       {e.kind === 'EDIT_PRICE' && (
         <div className="mt-2 space-y-0.5 text-slate-300">
           <Row
-            label="price"
+            label={t`price`}
             value={`${formatNumber(Math.round(e.old_price_sat_per_ph_day ?? 0))} → ${formatNumber(Math.round(e.new_price_sat_per_ph_day ?? 0))} sat/PH/day`}
           />
           {e.old_price_sat_per_ph_day !== null && e.new_price_sat_per_ph_day !== null && (
             <Row
-              label="delta"
+              label={t`delta`}
               value={`${e.new_price_sat_per_ph_day >= e.old_price_sat_per_ph_day ? '+' : ''}${formatNumber(
                 Math.round(e.new_price_sat_per_ph_day - e.old_price_sat_per_ph_day),
               )} sat/PH/day`}
@@ -1178,45 +1184,45 @@ function EventTooltip({
 
       {e.kind === 'EDIT_SPEED' && (
         <div className="mt-2 space-y-0.5 text-slate-300">
-          <Row label="new speed" value={`${e.speed_limit_ph ?? '—'} PH/s`} />
+          <Row label={t`new speed`} value={`${e.speed_limit_ph ?? '—'} PH/s`} />
         </div>
       )}
 
       {tip.pinned && marketAtEvent && (
         <div className="mt-2 pt-2 border-t border-slate-800 space-y-0.5 text-slate-300">
           <div className="text-[10px] uppercase tracking-wider text-slate-500 mb-0.5">
-            market at this tick
+            <Trans>market at this tick</Trans>
           </div>
           {marketAtEvent.fillable_ask_sat_per_ph_day !== null && (
             <Row
-              label="fillable"
+              label={t`fillable`}
               value={`${formatNumber(Math.round(marketAtEvent.fillable_ask_sat_per_ph_day))} sat/PH/day`}
             />
           )}
           {overpaySatPerPhDay !== null && (
             <Row
-              label="overpay"
+              label={t`overpay`}
               value={`${formatNumber(Math.round(overpaySatPerPhDay))} sat/PH/day`}
             />
           )}
           {marketAtEvent.hashprice_sat_per_ph_day !== null ? (
             <Row
-              label="hashprice"
+              label={t`hashprice`}
               value={`${formatNumber(Math.round(marketAtEvent.hashprice_sat_per_ph_day))} sat/PH/day`}
             />
           ) : (
-            <Row label="hashprice" value="— (not recorded this tick)" />
+            <Row label={t`hashprice`} value={t`— (not recorded this tick)`} />
           )}
           {maxOverpayVsHashpriceSatPerPhDay !== null && (
             <Row
-              label="max overpay vs hashprice"
+              label={t`max overpay vs hashprice`}
               value={`${formatNumber(Math.round(maxOverpayVsHashpriceSatPerPhDay))} sat/PH/day`}
             />
           )}
           {maxOverpayVsHashpriceSatPerPhDay !== null &&
             marketAtEvent.hashprice_sat_per_ph_day !== null && (
               <Row
-                label="hashprice + max overpay"
+                label={t`hashprice + max overpay`}
                 value={`${formatNumber(
                   Math.round(
                     marketAtEvent.hashprice_sat_per_ph_day + maxOverpayVsHashpriceSatPerPhDay,
@@ -1226,13 +1232,13 @@ function EventTooltip({
             )}
           {marketAtEvent.max_bid_sat_per_ph_day !== null && (
             <Row
-              label="max bid"
+              label={t`max bid`}
               value={`${formatNumber(Math.round(marketAtEvent.max_bid_sat_per_ph_day))} sat/PH/day`}
             />
           )}
           {effectiveCapAtEvent !== null && (
             <Row
-              label="effective cap"
+              label={t`effective cap`}
               value={`${formatNumber(Math.round(effectiveCapAtEvent))} sat/PH/day`}
             />
           )}
@@ -1241,7 +1247,7 @@ function EventTooltip({
 
       {e.braiins_order_id && (
         <div className="mt-2 text-[10px] font-mono text-slate-500">
-          id {e.braiins_order_id}
+          <Trans>id {e.braiins_order_id}</Trans>
         </div>
       )}
       {e.reason && (
@@ -1255,13 +1261,13 @@ function EventTooltip({
       {tip.pinned && (
         <div className="mt-3 pt-2 border-t border-slate-800 flex items-center justify-between gap-3">
           <span className="text-[10px] text-slate-500">
-            {detailLoading ? 'loading decision…' : 'click outside to close'}
+            {detailLoading ? t`loading decision…` : t`click outside to close`}
           </span>
           <button
             type="button"
             onClick={copyJson}
-            aria-label={copied ? 'copied JSON' : 'copy JSON'}
-            title={copied ? 'copied JSON' : 'copy JSON'}
+            aria-label={copied ? t`copied JSON` : t`copy JSON`}
+            title={copied ? t`copied JSON` : t`copy JSON`}
             className={`px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 inline-flex items-center gap-1.5 text-[11px] ${copied ? 'text-emerald-300' : 'text-slate-200'}`}
           >
             {copied ? <CheckIcon /> : <CopyIcon />}
@@ -1348,13 +1354,13 @@ function EventLegend() {
           <line x1="1" y1="5" x2="9" y2="5" stroke={COLOR_CREATE} strokeWidth="2" />
           <line x1="5" y1="1" x2="5" y2="9" stroke={COLOR_CREATE} strokeWidth="2" />
         </svg>
-        create
+        <Trans>create</Trans>
       </span>
       <span className="flex items-center gap-1">
         <svg width="10" height="10">
           <circle cx="5" cy="5" r="3.5" fill={COLOR_EDIT} />
         </svg>
-        edit price
+        <Trans>edit price</Trans>
       </span>
       <span className="flex items-center gap-1">
         <svg width="10" height="10">
@@ -1365,14 +1371,14 @@ function EventLegend() {
             strokeWidth="1.4"
           />
         </svg>
-        edit speed
+        <Trans>edit speed</Trans>
       </span>
       <span className="flex items-center gap-1">
         <svg width="10" height="10">
           <line x1="1" y1="1" x2="9" y2="9" stroke={COLOR_CANCEL} strokeWidth="2" />
           <line x1="9" y1="1" x2="1" y2="9" stroke={COLOR_CANCEL} strokeWidth="2" />
         </svg>
-        cancel
+        <Trans>cancel</Trans>
       </span>
     </span>
   );

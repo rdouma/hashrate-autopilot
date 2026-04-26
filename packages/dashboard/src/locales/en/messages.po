@@ -13,10 +13,72 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
+#: src/components/PriceChart.tsx
+msgid "— (not recorded this tick)"
+msgstr "— (not recorded this tick)"
+
+#: src/pages/Config.tsx
+msgid "\"Autopilot only\" sums consumed across bids the daemon has tagged in its ledger — accurate for what *this* autopilot has cost. \"Whole account\" sums counters_committed.amount_consumed_sat across every bid on /v1/spot/bid — covers active + historical bids (including any placed before the autopilot was switched on). May lag the latest hour of active-bid consumption."
+msgstr "\"Autopilot only\" sums consumed across bids the daemon has tagged in its ledger — accurate for what *this* autopilot has cost. \"Whole account\" sums counters_committed.amount_consumed_sat across every bid on /v1/spot/bid — covers active + historical bids (including any placed before the autopilot was switched on). May lag the latest hour of active-bid consumption."
+
+#: src/pages/Config.tsx
+msgid "\"system default\" follows your browser. The other entries lock to a specific format regardless of browser language."
+msgstr "\"system default\" follows your browser. The other entries lock to a specific format regardless of browser language."
+
+#: src/pages/Status.tsx
+msgid "(cheap mode)"
+msgstr "(cheap mode)"
+
 #. placeholder {0}: n.toLocaleString()
 #: src/pages/Setup.tsx
 msgid "{0} sat/PH/day (default — tunable later)"
 msgstr "{0} sat/PH/day (default — tunable later)"
+
+#: src/lib/format.ts
+msgid "{days}d ago"
+msgstr "{days}d ago"
+
+#: src/pages/Status.tsx
+msgid "{daysCount} days · ~{dateLabel}"
+msgstr "{daysCount} days · ~{dateLabel}"
+
+#: src/lib/format.ts
+msgid "{hours}h ago"
+msgstr "{hours}h ago"
+
+#: src/pages/Status.tsx
+msgid "{label} DOWN"
+msgstr "{label} DOWN"
+
+#: src/lib/format.ts
+msgid "{minutes}m ago"
+msgstr "{minutes}m ago"
+
+#: src/lib/format.ts
+msgid "{seconds}s ago"
+msgstr "{seconds}s ago"
+
+#: src/lib/format.ts
+#: src/lib/format.ts
+msgid "{totalDay}d {h}h ago"
+msgstr "{totalDay}d {h}h ago"
+
+#: src/lib/format.ts
+#: src/lib/format.ts
+msgid "{totalHr}h {m}m ago"
+msgstr "{totalHr}h {m}m ago"
+
+#: src/lib/format.ts
+msgid "{totalMin}m {s}s ago"
+msgstr "{totalMin}m {s}s ago"
+
+#: src/lib/format.ts
+msgid "{totalMin}m ago"
+msgstr "{totalMin}m ago"
+
+#: src/lib/format.ts
+msgid "{totalSec}s ago"
+msgstr "{totalSec}s ago"
 
 #: src/pages/Setup.tsx
 #: src/pages/Setup.tsx
@@ -31,6 +93,46 @@ msgstr "<0>Detected from environment:</0> Umbrel/Start9-style <1>BITCOIN_RPC_*</
 msgid "<0>Mismatch:</0> the worker identity must start with <1>{addr}.</1> — otherwise Ocean credits shares to a different address (or nobody). Edit the address above first; this field follows it automatically."
 msgstr "<0>Mismatch:</0> the worker identity must start with <1>{addr}.</1> — otherwise Ocean credits shares to a different address (or nobody). Edit the address above first; this field follows it automatically."
 
+#: src/pages/Config.tsx
+msgid "<0>Mismatch:</0> the worker identity must start with <1>{addr}.</1> — otherwise Ocean credits shares to a different address (or nobody). Edit the BTC payout address above; this field follows it automatically."
+msgstr "<0>Mismatch:</0> the worker identity must start with <1>{addr}.</1> — otherwise Ocean credits shares to a different address (or nobody). Edit the BTC payout address above; this field follows it automatically."
+
+#: src/pages/Config.tsx
+msgid "⚠ No period found. Ocean TIDES requires \"<BTC address>.<label>\". Without the address prefix, shares go uncredited."
+msgstr "⚠ No period found. Ocean TIDES requires \"<BTC address>.<label>\". Without the address prefix, shares go uncredited."
+
+#: src/pages/Config.tsx
+msgid "0 = disabled. Example: 95 = activate cheap mode when the best ask on the orderbook is below 95% of the break-even hashprice from Ocean. Under CLOB you pay the matched ask, so this is the price we can actually reach."
+msgstr "0 = disabled. Example: 95 = activate cheap mode when the best ask on the orderbook is below 95% of the break-even hashprice from Ocean. Under CLOB you pay the matched ask, so this is the price we can actually reach."
+
+#: src/pages/Config.tsx
+msgid "0 = use the full available wallet balance each CREATE (clamped to 1 BTC — the Braiins per-bid hard cap). Any positive value pins every new bid to that exact amount regardless of balance."
+msgstr "0 = use the full available wallet balance each CREATE (clamped to 1 BTC — the Braiins per-bid hard cap). Any positive value pins every new bid to that exact amount regardless of balance."
+
+#: src/pages/Config.tsx
+msgid "A bid is currently running (≈ {remainingSatStr} sat left). The next CREATE fires when it finishes — at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat, capped at 1 BTC) will be used."
+msgstr "A bid is currently running (≈ {remainingSatStr} sat left). The next CREATE fires when it finishes — at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat, capped at 1 BTC) will be used."
+
+#: src/pages/Config.tsx
+msgid "A bid is currently running (≈ {remainingSatStr} sat left). The next CREATE fires when it finishes — at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat) will be used."
+msgstr "A bid is currently running (≈ {remainingSatStr} sat left). The next CREATE fires when it finishes — at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat) will be used."
+
+#: src/pages/Config.tsx
+msgid "A bid is currently running (≈ {remainingSatStr} sat left). The next CREATE fires when it finishes — at that point the full available wallet balance will be used."
+msgstr "A bid is currently running (≈ {remainingSatStr} sat left). The next CREATE fires when it finishes — at that point the full available wallet balance will be used."
+
+#: src/pages/Config.tsx
+msgid "A bid is currently running. The next CREATE fires when it finishes — at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat, capped at 1 BTC) will be used."
+msgstr "A bid is currently running. The next CREATE fires when it finishes — at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat, capped at 1 BTC) will be used."
+
+#: src/pages/Config.tsx
+msgid "A bid is currently running. The next CREATE fires when it finishes — at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat) will be used."
+msgstr "A bid is currently running. The next CREATE fires when it finishes — at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat) will be used."
+
+#: src/pages/Config.tsx
+msgid "A bid is currently running. The next CREATE fires when it finishes — at that point the full available wallet balance will be used."
+msgstr "A bid is currently running. The next CREATE fires when it finishes — at that point the full available wallet balance will be used."
+
 #: src/pages/Setup.tsx
 msgid "A few questions to get the daemon operational. Defaults work for typical home miners; tune later from the Config page."
 msgstr "A few questions to get the daemon operational. Defaults work for typical home miners; tune later from the Config page."
@@ -39,42 +141,306 @@ msgstr "A few questions to get the daemon operational. Defaults work for typical
 msgid "Access"
 msgstr "Access"
 
+#: src/pages/Status.tsx
+msgid "action mode blocks this"
+msgstr "action mode blocks this"
+
+#: src/lib/labels.ts
+msgid "Active"
+msgstr "Active"
+
+#: src/pages/Status.tsx
+msgid "active (in-flight)"
+msgstr "active (in-flight)"
+
+#: src/pages/Status.tsx
+msgid "Actual sat consumed across the selected range, scaled to a 24h rate. Derived from primary_bid_consumed_sat deltas (what Braiins charged us), not a modelled bid × delivered."
+msgstr "Actual sat consumed across the selected range, scaled to a 24h rate. Derived from primary_bid_consumed_sat deltas (what Braiins charged us), not a modelled bid × delivered."
+
+#: src/pages/Status.tsx
+msgid "Actual sat consumed over the last 3 h, scaled to a 24h rate. Uses Braiins’s authoritative primary_bid_consumed_sat counter, not a bid × delivered model. Fallback used when the selected range has fewer than ~5 ticks."
+msgstr "Actual sat consumed over the last 3 h, scaled to a 24h rate. Uses Braiins’s authoritative primary_bid_consumed_sat counter, not a bid × delivered model. Fallback used when the selected range has fewer than ~5 ticks."
+
 #: src/pages/Setup.tsx
 msgid "After submit, the daemon writes everything to <0>state.db</0> and brings the controller online in-place. Boots in <1>DRY-RUN</1> mode; the dashboard signs you in automatically. Promote to LIVE from the Status page when you're ready."
 msgstr "After submit, the daemon writes everything to <0>state.db</0> and brings the controller online in-place. Boots in <1>DRY-RUN</1> mode; the dashboard signs you in automatically. Promote to LIVE from the Status page when you're ready."
+
+#: src/pages/Status.tsx
+msgid "All"
+msgstr "All"
+
+#: src/pages/Config.tsx
+msgid "All values live-editable. Save to apply."
+msgstr "All values live-editable. Save to apply."
+
+#: src/pages/Config.tsx
+msgid "Always dry-run (safest)"
+msgstr "Always dry-run (safest)"
+
+#: src/pages/Config.tsx
+msgid "Always live (for trusted deployments)"
+msgstr "Always live (for trusted deployments)"
+
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+msgid "API DOWN"
+msgstr "API DOWN"
+
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+msgid "API reachable"
+msgstr "API reachable"
+
+#. placeholder {0}: datum.consecutive_failures
+#: src/pages/Status.tsx
+msgid "API unreachable ({0})"
+msgstr "API unreachable ({0})"
+
+#: src/components/PriceChart.tsx
+msgid "automatic"
+msgstr "automatic"
+
+#: src/pages/Status.tsx
+msgid "autopilot"
+msgstr "autopilot"
+
+#: src/pages/Config.tsx
+msgid "Autopilot only (autopilot-tagged bids)"
+msgstr "Autopilot only (autopilot-tagged bids)"
+
+#: src/pages/Status.tsx
+msgid "available"
+msgstr "available"
+
+#: src/pages/Status.tsx
+msgid "Average break-even unit price over the selected range. Multiplied by avg delivered to get projected income. Different from the spot hashprice row below — this is what the projection actually uses."
+msgstr "Average break-even unit price over the selected range. Multiplied by avg delivered to get projected income. Different from the spot hashprice row below — this is what the projection actually uses."
+
+#: src/pages/Status.tsx
+msgid "Average delivered hashrate over the selected chart range. Multiplied by avg hashprice to get projected income. Spend is measured directly (primary_bid_consumed_sat deltas), so this is not a factor on the spend side."
+msgstr "Average delivered hashrate over the selected chart range. Multiplied by avg hashprice to get projected income. Spend is measured directly (primary_bid_consumed_sat deltas), so this is not a factor on the spend side."
+
+#: src/pages/Status.tsx
+msgid "Average effective rate over the selected chart range (default 3h) — what Braiins actually charged per PH/day delivered, from per-tick Δconsumed_sat ÷ (delivered_ph × Δt). Same metric the hero PRICE card shows; this pair is duplicated so each panel stands on its own. For the current bid price see the NEXT ACTION panel."
+msgstr "Average effective rate over the selected chart range (default 3h) — what Braiins actually charged per PH/day delivered, from per-tick Δconsumed_sat ÷ (delivered_ph × Δt). Same metric the hero PRICE card shows; this pair is duplicated so each panel stands on its own. For the current bid price see the NEXT ACTION panel."
+
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+msgid "avg braiins"
+msgstr "avg braiins"
+
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+msgid "avg cost / PH delivered"
+msgstr "avg cost / PH delivered"
+
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+msgid "avg cost vs hashprice"
+msgstr "avg cost vs hashprice"
+
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+msgid "avg datum"
+msgstr "avg datum"
+
+#: src/pages/Status.tsx
+msgid "avg delivered ({rangeLabel})"
+msgstr "avg delivered ({rangeLabel})"
+
+#: src/pages/Status.tsx
+msgid "avg hashprice ({rangeLabel})"
+msgstr "avg hashprice ({rangeLabel})"
+
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+msgid "avg ocean"
+msgstr "avg ocean"
 
 #: src/pages/Setup.tsx
 msgid "Backend"
 msgstr "Backend"
 
+#: src/pages/Config.tsx
+msgid "Balance-check backend"
+msgstr "Balance-check backend"
+
+#. placeholder {0}: formatAge(s.below_floor_since)
+#: src/pages/Status.tsx
+msgid "below floor since {0}"
+msgstr "below floor since {0}"
+
 #: src/pages/Setup.tsx
 msgid "Below this triggers an alert. ≤ target."
 msgstr "Below this triggers an alert. ≤ target."
 
+#: src/pages/Status.tsx
+msgid "best ask"
+msgstr "best ask"
+
+#: src/pages/Status.tsx
+msgid "best bid"
+msgstr "best bid"
+
+#: src/pages/Status.tsx
+msgid "Bids"
+msgstr "Bids"
+
 #: src/pages/Setup.tsx
 msgid "Bitcoin Core (bitcoind RPC)"
 msgstr "Bitcoin Core (bitcoind RPC)"
+
+#: src/pages/Config.tsx
+msgid "Bitcoin Core RPC"
+msgstr "Bitcoin Core RPC"
 
 #. placeholder {0}: form.bitcoind_rpc_url
 #: src/pages/Setup.tsx
 msgid "Bitcoin Core RPC ({0})"
 msgstr "Bitcoin Core RPC ({0})"
 
+#: src/pages/Config.tsx
+msgid "Bitcoin Core RPC URL"
+msgstr "Bitcoin Core RPC URL"
+
 #: src/pages/Setup.tsx
 msgid "Bitcoin payout address"
 msgstr "Bitcoin payout address"
+
+#: src/pages/Config.tsx
+msgid "Block explorer"
+msgstr "Block explorer"
+
+#: src/pages/Status.tsx
+msgid "blocked"
+msgstr "blocked"
+
+#: src/pages/Config.tsx
+msgid "Boot directly into LIVE. Use only when the autopilot is proven and the box reboots should not interrupt bidding."
+msgstr "Boot directly into LIVE. Use only when the autopilot is proven and the box reboots should not interrupt bidding."
+
+#: src/pages/Config.tsx
+msgid "Boot mode"
+msgstr "Boot mode"
+
+#: src/pages/Config.tsx
+msgid "Braiins (delivered)"
+msgstr "Braiins (delivered)"
+
+#: src/pages/Config.tsx
+msgid "Braiins (price, effective)"
+msgstr "Braiins (price, effective)"
+
+#: src/pages/Status.tsx
+msgid "Braiins 10-min cooldown"
+msgstr "Braiins 10-min cooldown"
 
 #: src/pages/Setup.tsx
 msgid "Braiins API access"
 msgstr "Braiins API access"
 
+#: src/pages/Status.tsx
+msgid "Braiins marketplace API — reachable when the last observe() read market/orderbook/balance without error."
+msgstr "Braiins marketplace API — reachable when the last observe() read market/orderbook/balance without error."
+
+#: src/pages/Config.tsx
+msgid "BTC payout address"
+msgstr "BTC payout address"
+
+#: src/pages/Config.tsx
+msgid "BTC price oracle"
+msgstr "BTC price oracle"
+
 #: src/components/Layout.tsx
 msgid "BTC/USD: ${priceStr} - click to toggle denomination"
 msgstr "BTC/USD: ${priceStr} - click to toggle denomination"
 
+#: src/components/PriceChart.tsx
+#: src/pages/Status.tsx
+msgid "budget"
+msgstr "budget"
+
+#: src/pages/Config.tsx
+msgid "Budget"
+msgstr "Budget"
+
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+msgid "calculating…"
+msgstr "calculating…"
+
+#: src/components/PriceChart.tsx
+msgid "cancel"
+msgstr "cancel"
+
+#: src/components/PriceChart.tsx
+msgid "CANCEL"
+msgstr "CANCEL"
+
+#: src/pages/Status.tsx
+msgid "Cancel bid"
+msgstr "Cancel bid"
+
+#: src/lib/labels.ts
+msgid "Cancelled"
+msgstr "Cancelled"
+
+#: src/lib/labels.ts
+msgid "Cancelling…"
+msgstr "Cancelling…"
+
 #: src/components/Layout.tsx
 msgid "changelog"
 msgstr "changelog"
+
+#: src/pages/Config.tsx
+msgid "Chart smoothing"
+msgstr "Chart smoothing"
+
+#: src/pages/Config.tsx
+msgid "Cheap threshold"
+msgstr "Cheap threshold"
+
+#: src/pages/Config.tsx
+msgid "Cheap-mode sustained window"
+msgstr "Cheap-mode sustained window"
+
+#: src/pages/Config.tsx
+msgid "Cheap-mode target"
+msgstr "Cheap-mode target"
+
+#: src/components/PriceChart.tsx
+msgid "click outside to close"
+msgstr "click outside to close"
+
+#: src/components/HashrateChart.tsx
+#: src/components/PriceChart.tsx
+msgid "close"
+msgstr "close"
+
+#: src/pages/Status.tsx
+msgid "closed bids"
+msgstr "closed bids"
+
+#: src/components/PriceChart.tsx
+msgid "collapse"
+msgstr "collapse"
+
+#: src/components/PriceChart.tsx
+msgid "Collapse to default height"
+msgstr "Collapse to default height"
+
+#: src/pages/Status.tsx
+msgid "collected (on-chain)"
+msgstr "collected (on-chain)"
+
+#: src/pages/Status.tsx
+msgid "Collected on-chain + Ocean's unpaid earnings − spent on bids. Missing collected is treated as 0 (the on-chain row still shows — so the operator sees the gap). Negative = still recouping the initial deposit."
+msgstr "Collected on-chain + Ocean's unpaid earnings − spent on bids. Missing collected is treated as 0 (the on-chain row still shows — so the operator sees the gap). Negative = still recouping the initial deposit."
 
 #: src/pages/Setup.tsx
 msgid "Complete setup"
@@ -84,13 +450,100 @@ msgstr "Complete setup"
 msgid "Config"
 msgstr "Config"
 
+#: src/pages/Config.tsx
+msgid "Configuration"
+msgstr "Configuration"
+
 #: src/pages/Setup.tsx
 msgid "Confirm password"
 msgstr "Confirm password"
 
+#: src/components/SetupGate.tsx
+msgid "Connecting to daemon…"
+msgstr "Connecting to daemon…"
+
+#: src/pages/Config.tsx
+msgid "Controls how the P&L panel computes the \"spent\" figure that feeds the net result."
+msgstr "Controls how the P&L panel computes the \"spent\" figure that feeds the net result."
+
+#: src/pages/Status.tsx
+msgid "Cooldown clears in"
+msgstr "Cooldown clears in"
+
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+msgid "copied bid ID"
+msgstr "copied bid ID"
+
+#: src/components/PriceChart.tsx
+#: src/components/PriceChart.tsx
+msgid "copied JSON"
+msgstr "copied JSON"
+
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+msgid "copied URL"
+msgstr "copied URL"
+
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+msgid "copy bid ID"
+msgstr "copy bid ID"
+
+#: src/components/PriceChart.tsx
+#: src/components/PriceChart.tsx
+msgid "copy JSON"
+msgstr "copy JSON"
+
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+msgid "copy URL"
+msgstr "copy URL"
+
+#: src/components/PriceChart.tsx
+msgid "create"
+msgstr "create"
+
+#: src/components/PriceChart.tsx
+msgid "CREATE"
+msgstr "CREATE"
+
+#: src/pages/Status.tsx
+msgid "Create bid"
+msgstr "Create bid"
+
+#: src/pages/Status.tsx
+msgid "created"
+msgstr "created"
+
+#: src/pages/Status.tsx
+msgid "Current (spot) market break-even. Revenue per PH/s per day from mining at the current network difficulty + block reward. The avg-hashprice row above is what the projection uses; this one is the spot value right now for quick market-drift comparison."
+msgstr "Current (spot) market break-even. Revenue per PH/s per day from mining at the current network difficulty + block reward. The avg-hashprice row above is what the projection uses; this one is the spot value right now for quick market-drift comparison."
+
+#: src/pages/Status.tsx
+msgid "current bid"
+msgstr "current bid"
+
+#. placeholder {0}: activeOwned.length
+#: src/pages/Status.tsx
+msgid "current bid · primary of {0}"
+msgstr "current bid · primary of {0}"
+
+#: src/pages/Status.tsx
+msgid "Current owned-bid price (sat/PH/day). Under pay-your-bid this is exactly what Braiins charges per delivered EH-day - the live price you're paying. The plus/minus next to it is the spread vs Ocean's spot hashprice (positive = paying above break-even, negative = below). For the realised effective rate (post-hoc, range-averaged across actual delivery and metering noise), see the AVG COST / PH DELIVERED stats card."
+msgstr "Current owned-bid price (sat/PH/day). Under pay-your-bid this is exactly what Braiins charges per delivered EH-day - the live price you're paying. The plus/minus next to it is the spread vs Ocean's spot hashprice (positive = paying above break-even, negative = below). For the realised effective rate (post-hoc, range-averaged across actual delivery and metering noise), see the AVG COST / PH DELIVERED stats card."
+
+#: src/pages/Config.tsx
+msgid "custom"
+msgstr "custom"
+
 #: src/pages/Setup.tsx
 msgid "Daemon did not return to OPERATIONAL within 90 seconds."
 msgstr "Daemon did not return to OPERATIONAL within 90 seconds."
+
+#: src/pages/Config.tsx
+msgid "Daemon startup"
+msgstr "Daemon startup"
 
 #: src/pages/Setup.tsx
 #: src/pages/Setup.tsx
@@ -101,9 +554,155 @@ msgstr "Dashboard password"
 msgid "dashboard sign-in"
 msgstr "dashboard sign-in"
 
+#: src/pages/Config.tsx
+msgid "Datum (received)"
+msgstr "Datum (received)"
+
+#: src/pages/Status.tsx
+msgid "Datum /umbrel-api HTTP poll."
+msgstr "Datum /umbrel-api HTTP poll."
+
+#: src/pages/Status.tsx
+msgid "Datum Gateway"
+msgstr "Datum Gateway"
+
+#: src/pages/Status.tsx
+msgid "datum hashrate"
+msgstr "datum hashrate"
+
+#: src/pages/Config.tsx
+msgid "Datum stats API (optional)"
+msgstr "Datum stats API (optional)"
+
+#: src/pages/Status.tsx
+msgid "Datum stats not configured — set <0>datum_api_url</0> in Config to display connected workers and reported hashrate. See <1>docs/setup-datum-api.md</1>."
+msgstr "Datum stats not configured — set <0>datum_api_url</0> in Config to display connected workers and reported hashrate. See <1>docs/setup-datum-api.md</1>."
+
+#: src/pages/Config.tsx
+msgid "decisions rows that proposed at least one action. Forensic records for figuring out why the autopilot did something weeks later."
+msgstr "decisions rows that proposed at least one action. Forensic records for figuring out why the autopilot did something weeks later."
+
+#: src/pages/Config.tsx
+msgid "decisions rows with empty proposed_json — ticks where the controller had nothing to do. These are the vast majority; prune aggressively."
+msgstr "decisions rows with empty proposed_json — ticks where the controller had nothing to do. These are the vast majority; prune aggressively."
+
+#: src/pages/Config.tsx
+msgid "decrease"
+msgstr "decrease"
+
+#: src/pages/Config.tsx
+msgid "Default 50001."
+msgstr "Default 50001."
+
 #: src/pages/Setup.tsx
 msgid "Default Electrs port is 50001 (TCP). On Umbrel the in-cluster hostname is typically<0> 10.21.21.10</0> or similar — check the Electrs app's connection details."
 msgstr "Default Electrs port is 50001 (TCP). On Umbrel the in-cluster hostname is typically<0> 10.21.21.10</0> or similar — check the Electrs app's connection details."
+
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+msgid "delivered"
+msgstr "delivered"
+
+#: src/components/HashrateChart.tsx
+msgid "delivered (Braiins)"
+msgstr "delivered (Braiins)"
+
+#: src/pages/Status.tsx
+msgid "delivered / cap"
+msgstr "delivered / cap"
+
+#: src/components/PriceChart.tsx
+msgid "delta"
+msgstr "delta"
+
+#: src/pages/Config.tsx
+msgid "Disabled (sats only)"
+msgstr "Disabled (sats only)"
+
+#: src/pages/Config.tsx
+msgid "Display"
+msgstr "Display"
+
+#: src/pages/Config.tsx
+msgid "Do not scan"
+msgstr "Do not scan"
+
+#: src/pages/Status.tsx
+msgid "Duration-weighted % of time with delivered hashrate > 0. Each tick is weighted by its actual duration (time until the next tick) so gaps after restarts count proportionally."
+msgstr "Duration-weighted % of time with delivered hashrate > 0. Each tick is weighted by its actual duration (time until the next tick) so gaps after restarts count proportionally."
+
+#: src/pages/Status.tsx
+msgid "Duration-weighted average of (effective price − hashprice). Negative means matched asks averaged below the break-even hashprice (good — cheaper than mining at current difficulty). Positive means above break-even."
+msgstr "Duration-weighted average of (effective price − hashprice). Negative means matched asks averaged below the break-even hashprice (good — cheaper than mining at current difficulty). Positive means above break-even."
+
+#: src/pages/Status.tsx
+msgid "Duration-weighted average of the hashrate Braiins reports delivering. Includes downtime (where delivered = 0) so a bad stretch shows up in the average, not just the live card."
+msgstr "Duration-weighted average of the hashrate Braiins reports delivering. Includes downtime (where delivered = 0) so a bad stretch shows up in the average, not just the live card."
+
+#: src/pages/Status.tsx
+msgid "Duration-weighted average of the hashrate Datum measures at the gateway. A sustained gap below Avg Braiins means Braiins is billing for hashrate Datum never saw arrive."
+msgstr "Duration-weighted average of the hashrate Datum measures at the gateway. A sustained gap below Avg Braiins means Braiins is billing for hashrate Datum never saw arrive."
+
+#: src/pages/Status.tsx
+msgid "Duration-weighted average of the hashrate Ocean credits to our payout address. Each tick (every 60 s) the daemon calls Ocean's /v1/user_hashrate endpoint and reads the `hashrate_300s` field — Ocean's own 5-minute sliding-window estimate for this wallet. So: sampled every minute, each sample is a 5-minute smoothed value. A sustained gap below Avg Braiins / Avg Datum means the pool isn't crediting work we think we delivered."
+msgstr "Duration-weighted average of the hashrate Ocean credits to our payout address. Each tick (every 60 s) the daemon calls Ocean's /v1/user_hashrate endpoint and reads the `hashrate_300s` field — Ocean's own 5-minute sliding-window estimate for this wallet. So: sampled every minute, each sample is a 5-minute smoothed value. A sustained gap below Avg Braiins / Avg Datum means the pool isn't crediting work we think we delivered."
+
+#: src/pages/Config.tsx
+msgid "e.g. 192.168.1.121 or umbrel.local"
+msgstr "e.g. 192.168.1.121 or umbrel.local"
+
+#: src/pages/Config.tsx
+msgid "e.g. http://192.168.1.121:8332 — your Bitcoin Core RPC endpoint."
+msgstr "e.g. http://192.168.1.121:8332 — your Bitcoin Core RPC endpoint."
+
+#: src/components/PriceChart.tsx
+msgid "edit price"
+msgstr "edit price"
+
+#: src/pages/Status.tsx
+msgid "Edit price"
+msgstr "Edit price"
+
+#: src/components/PriceChart.tsx
+msgid "EDIT PRICE"
+msgstr "EDIT PRICE"
+
+#: src/components/PriceChart.tsx
+msgid "edit speed"
+msgstr "edit speed"
+
+#: src/pages/Status.tsx
+msgid "Edit speed"
+msgstr "Edit speed"
+
+#: src/components/PriceChart.tsx
+msgid "EDIT SPEED"
+msgstr "EDIT SPEED"
+
+#: src/components/PriceChart.tsx
+msgid "effective"
+msgstr "effective"
+
+#: src/components/PriceChart.tsx
+#: src/pages/Status.tsx
+msgid "effective cap"
+msgstr "effective cap"
+
+#: src/pages/Status.tsx
+msgid "effective cap (binding)"
+msgstr "effective cap (binding)"
+
+#: src/pages/Status.tsx
+msgid "Effective rate {sign}{deltaFormatted} above hashprice ({hashpricePretty}) — positive means paying above break-even, negative means paying below (profitable)."
+msgstr "Effective rate {sign}{deltaFormatted} above hashprice ({hashpricePretty}) — positive means paying above break-even, negative means paying below (profitable)."
+
+#: src/pages/Status.tsx
+msgid "Effective rate {sign}{deltaFormatted} below hashprice ({hashpricePretty}) — positive means paying above break-even, negative means paying below (profitable)."
+msgstr "Effective rate {sign}{deltaFormatted} below hashprice ({hashpricePretty}) — positive means paying above break-even, negative means paying below (profitable)."
+
+#: src/pages/Status.tsx
+msgid "Effective rate equals hashprice ({hashpricePretty}) — breaking even."
+msgstr "Effective rate equals hashprice ({hashpricePretty}) — breaking even."
 
 #. placeholder {0}: form.electrs_host
 #. placeholder {1}: form.electrs_port
@@ -115,17 +714,76 @@ msgstr "Electrs ({0}:{1})"
 msgid "Electrs (Electrum-style indexed lookup, faster)"
 msgstr "Electrs (Electrum-style indexed lookup, faster)"
 
+#: src/pages/Config.tsx
+msgid "Electrs (recommended)"
+msgstr "Electrs (recommended)"
+
+#: src/pages/Config.tsx
+msgid "Electrs host"
+msgstr "Electrs host"
+
+#: src/pages/Config.tsx
+msgid "Electrs port"
+msgstr "Electrs port"
+
+#: src/pages/Status.tsx
+msgid "Escalation in"
+msgstr "Escalation in"
+
+#: src/pages/Config.tsx
+msgid "Eventful decisions"
+msgstr "Eventful decisions"
+
+#: src/pages/Config.tsx
+msgid "Every restart resets to DRY_RUN. You explicitly flip to LIVE from the dashboard."
+msgstr "Every restart resets to DRY_RUN. You explicitly flip to LIVE from the dashboard."
+
 #: src/pages/Setup.tsx
 msgid "Existing config detected — fields are pre-filled. Update what changed and click through."
 msgstr "Existing config detected — fields are pre-filled. Update what changed and click through."
+
+#: src/components/PriceChart.tsx
+msgid "expand"
+msgstr "expand"
+
+#: src/components/PriceChart.tsx
+msgid "Expand to double height"
+msgstr "Expand to double height"
 
 #: src/pages/Setup.tsx
 msgid "Failed to load setup data: {loadErr}"
 msgstr "Failed to load setup data: {loadErr}"
 
+#. placeholder {0}: (query.error as Error)?.message
+#: src/pages/Status.tsx
+msgid "failed to load: {0}"
+msgstr "failed to load: {0}"
+
+#: src/pages/Config.tsx
+msgid "Fast and lightweight. Polled every minute. Instant balance lookups via your Electrum server."
+msgstr "Fast and lightweight. Polled every minute. Instant balance lookups via your Electrum server."
+
+#: src/components/HashrateChart.tsx
+msgid "fees"
+msgstr "fees"
+
+#: src/pages/Config.tsx
+msgid "Fetches the BTC/USD spot price from a public exchange API. Enables a sats/USD denomination toggle in the dashboard header. No API key required — uses unauthenticated public endpoints."
+msgstr "Fetches the BTC/USD spot price from a public exchange API. Enables a sats/USD denomination toggle in the dashboard header. No API key required — uses unauthenticated public endpoints."
+
+#: src/components/PriceChart.tsx
+#: src/components/PriceChart.tsx
+msgid "fillable"
+msgstr "fillable"
+
 #: src/pages/Setup.tsx
 msgid "First-run setup"
 msgstr "First-run setup"
+
+#: src/components/HashrateChart.tsx
+#: src/pages/Status.tsx
+msgid "floor"
+msgstr "floor"
 
 #: src/pages/Setup.tsx
 msgid "Floor (PH/s)"
@@ -135,14 +793,75 @@ msgstr "Floor (PH/s)"
 msgid "Floor hashrate"
 msgstr "Floor hashrate"
 
+#: src/pages/Config.tsx
 #: src/pages/Setup.tsx
 msgid "Format: <btc-address>.<label>. Ocean TIDES credits shares by the address prefix — anything else routes shares to nobody."
 msgstr "Format: <btc-address>.<label>. Ocean TIDES credits shares by the address prefix — anything else routes shares to nobody."
+
+#: src/pages/Status.tsx
+msgid "found"
+msgstr "found"
+
+#: src/components/HashrateChart.tsx
+msgid "found by us"
+msgstr "found by us"
+
+#: src/components/HashrateChart.tsx
+msgid "FOUND BY US"
+msgstr "FOUND BY US"
 
 #: src/pages/Setup.tsx
 msgid "From hashpower.braiins.com → API tokens. Required."
 msgstr "From hashpower.braiins.com → API tokens. Required."
 
+#: src/lib/labels.ts
+msgid "Frozen"
+msgstr "Frozen"
+
+#: src/lib/labels.ts
+msgid "Fulfilled"
+msgstr "Fulfilled"
+
+#: src/pages/Config.tsx
+msgid "Full wallet balance per bid. Awaiting wallet balance from the daemon."
+msgstr "Full wallet balance per bid. Awaiting wallet balance from the daemon."
+
+#: src/pages/Config.tsx
+msgid "Full wallet balance per bid. Currently ≈ {resolvedSatStr} sat (capped at 1 BTC)."
+msgstr "Full wallet balance per bid. Currently ≈ {resolvedSatStr} sat (capped at 1 BTC)."
+
+#: src/pages/Config.tsx
+msgid "Full wallet balance per bid. Currently ≈ {resolvedSatStr} sat."
+msgstr "Full wallet balance per bid. Currently ≈ {resolvedSatStr} sat."
+
+#: src/pages/Config.tsx
+msgid "Hard ceiling. If fillable + overpay would exceed this, the bid is clamped down to this value (and may not fill)."
+msgstr "Hard ceiling. If fillable + overpay would exceed this, the bid is clamped down to this value (and may not fill)."
+
+#: src/components/PriceChart.tsx
+#: src/components/PriceChart.tsx
+#: src/components/PriceChart.tsx
+msgid "hashprice"
+msgstr "hashprice"
+
+#: src/pages/Status.tsx
+msgid "hashprice (break-even)"
+msgstr "hashprice (break-even)"
+
+#: src/pages/Status.tsx
+msgid "hashprice (now)"
+msgstr "hashprice (now)"
+
+#: src/components/PriceChart.tsx
+msgid "hashprice + max overpay"
+msgstr "hashprice + max overpay"
+
+#: src/components/HashrateChart.tsx
+#: src/components/HashrateChart.tsx
+msgid "Hashrate"
+msgstr "Hashrate"
+
+#: src/pages/Config.tsx
 #: src/pages/Setup.tsx
 msgid "Hashrate targets"
 msgstr "Hashrate targets"
@@ -155,42 +874,224 @@ msgstr "Hide"
 msgid "Hide value"
 msgstr "Hide value"
 
+#: src/pages/Status.tsx
+msgid "host"
+msgstr "host"
+
 #: src/pages/Setup.tsx
 msgid "Host"
 msgstr "Host"
+
+#: src/pages/Config.tsx
+msgid "How big a single bid is. Set to 0 to use the full available wallet balance on each create — simpler mental model, no manual slicing."
+msgstr "How big a single bid is. Set to 0 to use the full available wallet balance on each create — simpler mental model, no manual slicing."
+
+#: src/pages/Config.tsx
+msgid "How long the daemon keeps append-only log rows. Tick records are pruned hourly once older than the cutoff. 0 = keep forever."
+msgstr "How long the daemon keeps append-only log rows. Tick records are pruned hourly once older than the cutoff. 0 = keep forever."
+
+#: src/pages/Config.tsx
+msgid "How numbers and dates render in this browser. Doesn't change the UI language. Saved locally — every operator can pick their own."
+msgstr "How numbers and dates render in this browser. Doesn't change the UI language. Saved locally — every operator can pick their own."
+
+#: src/pages/Config.tsx
+msgid "How the daemon checks your BTC payout balance. Pick a backend and fill in the connection details. Requires a restart to take effect."
+msgstr "How the daemon checks your BTC payout balance. Pick a backend and fill in the connection details. Requires a restart to take effect."
+
+#: src/pages/Config.tsx
+msgid "How the daemon chooses its run mode when it boots."
+msgstr "How the daemon chooses its run mode when it boots."
+
+#: src/pages/Status.tsx
+msgid "id"
+msgstr "id"
+
+#. placeholder {0}: e.braiins_order_id
+#: src/components/PriceChart.tsx
+msgid "id {0}"
+msgstr "id {0}"
+
+#: src/pages/Status.tsx
+msgid "income/day est."
+msgstr "income/day est."
 
 #: src/pages/Login.tsx
 msgid "incorrect password"
 msgstr "incorrect password"
 
+#: src/pages/Config.tsx
+msgid "increase"
+msgstr "increase"
+
+#: src/pages/Status.tsx
+msgid "insufficient history"
+msgstr "insufficient history"
+
+#: src/lib/format.ts
+msgid "just now"
+msgstr "just now"
+
+#: src/pages/Config.tsx
+msgid "Keep whatever run mode was active before the restart. PAUSED is demoted to DRY_RUN."
+msgstr "Keep whatever run mode was active before the restart. PAUSED is demoted to DRY_RUN."
+
 #: src/components/LanguagePicker.tsx
 msgid "Language"
 msgstr "Language"
+
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+msgid "last pool block"
+msgstr "last pool block"
+
+#: src/pages/Status.tsx
+msgid "Last tick proposals"
+msgstr "Last tick proposals"
+
+#: src/pages/Status.tsx
+msgid "last tick:"
+msgstr "last tick:"
 
 #: src/pages/Setup.tsx
 msgid "Lets the dashboard show Ocean TIDES payouts as they arrive. Pick a backend that can read your wallet's on-chain balance."
 msgstr "Lets the dashboard show Ocean TIDES payouts as they arrive. Pick a backend that can read your wallet's on-chain balance."
 
+#: src/pages/Status.tsx
+msgid "Lifetime sum of (amount_sat − amount_remaining_sat) across every bid the autopilot has tagged. Excludes any bids placed before the autopilot was switched on. Switch to \"whole account\" via Config → Money panel."
+msgstr "Lifetime sum of (amount_sat − amount_remaining_sat) across every bid the autopilot has tagged. Excludes any bids placed before the autopilot was switched on. Switch to \"whole account\" via Config → Money panel."
+
+#: src/components/PriceChart.tsx
+msgid "loading decision…"
+msgstr "loading decision…"
+
+#: src/pages/Status.tsx
+msgid "Loading or daemon restart required."
+msgstr "Loading or daemon restart required."
+
+#: src/pages/Config.tsx
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+msgid "loading…"
+msgstr "loading…"
+
 #: src/pages/Setup.tsx
 msgid "Loading…"
 msgstr "Loading…"
+
+#: src/pages/Config.tsx
+msgid "Log retention"
+msgstr "Log retention"
+
+#: src/components/PriceChart.tsx
+msgid "manual"
+msgstr "manual"
+
+#: src/components/PriceChart.tsx
+msgid "market at this tick"
+msgstr "market at this tick"
+
+#: src/components/PriceChart.tsx
+#: src/components/PriceChart.tsx
+#: src/pages/Status.tsx
+msgid "max bid"
+msgstr "max bid"
 
 #: src/pages/Setup.tsx
 msgid "Max bid"
 msgstr "Max bid"
 
+#: src/pages/Status.tsx
+msgid "max bid (binding)"
+msgstr "max bid (binding)"
+
+#: src/pages/Status.tsx
+msgid "max over hashprice"
+msgstr "max over hashprice"
+
+#: src/components/PriceChart.tsx
+msgid "max overpay vs hashprice"
+msgstr "max overpay vs hashprice"
+
+#: src/pages/Config.tsx
+msgid "Max premium over hashprice"
+msgstr "Max premium over hashprice"
+
+#: src/pages/Config.tsx
+msgid "Maximum"
+msgstr "Maximum"
+
+#: src/pages/Config.tsx
+msgid "Minimum floor"
+msgstr "Minimum floor"
+
 #: src/pages/Setup.tsx
 msgid "Mining"
 msgstr "Mining"
+
+#: src/pages/Config.tsx
+msgid "Must be reachable from the public internet — Braiins probes it."
+msgstr "Must be reachable from the public internet — Braiins probes it."
 
 #: src/pages/Setup.tsx
 msgid "must contain a period — without it shares are uncredited on Ocean"
 msgstr "must contain a period — without it shares are uncredited on Ocean"
 
+#: src/pages/Status.tsx
+msgid "net"
+msgstr "net"
+
+#: src/pages/Status.tsx
+msgid "net/day ({rangeLabel})"
+msgstr "net/day ({rangeLabel})"
+
+#: src/pages/Status.tsx
+msgid "net/day (3h)"
+msgstr "net/day (3h)"
+
+#: src/components/PriceChart.tsx
+msgid "new speed"
+msgstr "new speed"
+
 #: src/pages/Setup.tsx
 #: src/pages/Setup.tsx
 msgid "Next →"
 msgstr "Next →"
+
+#: src/pages/Status.tsx
+msgid "Next action"
+msgstr "Next action"
+
+#: src/pages/Status.tsx
+msgid "next block est."
+msgstr "next block est."
+
+#: src/pages/Status.tsx
+msgid "next in <0>{remainingSec}s</0>"
+msgstr "next in <0>{remainingSec}s</0>"
+
+#: src/pages/Status.tsx
+msgid "next payout"
+msgstr "next payout"
+
+#: src/pages/Status.tsx
+msgid "No action needed this tick."
+msgstr "No action needed this tick."
+
+#: src/pages/Status.tsx
+msgid "no active bid"
+msgstr "no active bid"
+
+#: src/pages/Status.tsx
+msgid "no active bids"
+msgstr "no active bids"
+
+#: src/pages/Status.tsx
+msgid "no bids on this account"
+msgstr "no bids on this account"
+
+#: src/pages/Config.tsx
+msgid "No on-chain balance tracking. The Profit & Loss panel won't show collected BTC."
+msgstr "No on-chain balance tracking. The Profit & Loss panel won't show collected BTC."
 
 #: src/pages/Setup.tsx
 msgid "None"
@@ -200,17 +1101,140 @@ msgstr "None"
 msgid "None — skip payout tracking"
 msgstr "None — skip payout tracking"
 
+#: src/lib/labels.ts
+msgid "Normal"
+msgstr "Normal"
+
+#: src/pages/Status.tsx
+msgid "Not configured"
+msgstr "Not configured"
+
+#: src/pages/Status.tsx
+msgid "Not configured. Go to Config → On-chain payouts and select Electrs or Bitcoin Core RPC to track your on-chain balance. The net line treats missing collected as 0 so the arithmetic still reads — a blank row here is the hint that a piece of the income side isn't wired up."
+msgstr "Not configured. Go to Config → On-chain payouts and select Electrs or Bitcoin Core RPC to track your on-chain balance. The net line treats missing collected as 0 so the arithmetic still reads — a blank row here is the hint that a piece of the income side isn't wired up."
+
+#: src/components/HashrateChart.tsx
+#: src/components/PriceChart.tsx
+msgid "Not enough data in this range yet."
+msgstr "Not enough data in this range yet."
+
+#: src/pages/Status.tsx
+msgid "not in LIVE mode"
+msgstr "not in LIVE mode"
+
+#: src/lib/format.ts
+msgid "now"
+msgstr "now"
+
+#: src/pages/Config.tsx
+msgid "Number & date format"
+msgstr "Number & date format"
+
+#: src/pages/Config.tsx
+msgid "Observing payouts to <0>(no address set)</0>. Edit this in the <1>Pool destination</1> section above — the worker identity is auto-derived from it."
+msgstr "Observing payouts to <0>(no address set)</0>. Edit this in the <1>Pool destination</1> section above — the worker identity is auto-derived from it."
+
+#: src/pages/Config.tsx
+msgid "Observing payouts to <0>{payoutAddr}</0>. Edit this in the <1>Pool destination</1> section above — the worker identity is auto-derived from it."
+msgstr "Observing payouts to <0>{payoutAddr}</0>. Edit this in the <1>Pool destination</1> section above — the worker identity is auto-derived from it."
+
+#: src/pages/Status.tsx
+msgid "ocean est. income/day (3h)"
+msgstr "ocean est. income/day (3h)"
+
+#: src/pages/Status.tsx
+msgid "ocean hashrate"
+msgstr "ocean hashrate"
+
+#: src/pages/Status.tsx
+msgid "ocean lifetime"
+msgstr "ocean lifetime"
+
+#: src/pages/Status.tsx
+msgid "Ocean stats API — reachable when the last /api/ocean fetch returned a pool snapshot."
+msgstr "Ocean stats API — reachable when the last /api/ocean fetch returned a pool snapshot."
+
+#: src/pages/Status.tsx
+msgid "Ocean stats unavailable."
+msgstr "Ocean stats unavailable."
+
+#: src/pages/Status.tsx
+msgid "Ocean's own estimate — the pool extrapolates from the address's last 3-hour hashrate and its share of pool output. Always 3h-based regardless of the chart range you've picked, so it may differ from projected income at other ranges."
+msgstr "Ocean's own estimate — the pool extrapolates from the address's last 3-hour hashrate and its share of pool output. Always 3h-based regardless of the chart range you've picked, so it may differ from projected income at other ranges."
+
+#. placeholder {0}: formatSats(data.ocean.payout_threshold_sat)
+#: src/pages/Status.tsx
+msgid "Ocean's Unpaid Earnings — what will land on-chain at the next payout. Threshold: {0} sat (~0.01 BTC)."
+msgstr "Ocean's Unpaid Earnings — what will land on-chain at the next payout. Threshold: {0} sat (~0.01 BTC)."
+
+#: src/pages/Config.tsx
+msgid "Off by default. The emerald effective-rate line (what Braiins actually charged, from counter deltas) is dramatically more volatile than bid / fillable / hashprice — when enabled it auto-scales the Y-axis and visibly squashes the finer bot movements into a thin band. The hero PRICE card and the AVG COST / PH DELIVERED stat already show the same number without hijacking the chart. Flip on when you want to eyeball settlement behaviour directly, accept the loss of flatter-line detail in exchange."
+msgstr "Off by default. The emerald effective-rate line (what Braiins actually charged, from counter deltas) is dramatically more volatile than bid / fillable / hashprice — when enabled it auto-scales the Y-axis and visibly squashes the finer bot movements into a thin band. The hero PRICE card and the AVG COST / PH DELIVERED stat already show the same number without hijacking the chart. Flip on when you want to eyeball settlement behaviour directly, accept the loss of flatter-line detail in exchange."
+
 #: src/pages/Setup.tsx
 msgid "On-chain payout tracking (optional)"
 msgstr "On-chain payout tracking (optional)"
+
+#: src/pages/Config.tsx
+msgid "On-chain payouts"
+msgstr "On-chain payouts"
+
+#: src/pages/Config.tsx
+msgid "Only engage cheap-mode when the rolling average of best-ask vs hashprice over this many minutes is below the threshold. Avoids flapping on single-tick market spikes. 0 = evaluate per tick (legacy). Requires ≥5 samples in the window before honouring it; below that falls back to the spot check."
+msgstr "Only engage cheap-mode when the rolling average of best-ask vs hashprice over this many minutes is below the threshold. Avoids flapping on single-tick market spikes. 0 = evaluate per tick (legacy). Requires ≥5 samples in the window before honouring it; below that falls back to the spot check."
+
+#: src/components/HashrateChart.tsx
+msgid "open in block explorer →"
+msgstr "open in block explorer →"
+
+#: src/pages/Config.tsx
+msgid "Optional dynamic ceiling. On each tick the effective cap = min(Maximum, hashprice + this). Stops the autopilot from wildly overpaying when hashprice drops sharply and the fixed Maximum alone would still allow it. Set to 0 to disable."
+msgstr "Optional dynamic ceiling. On each tick the effective cap = min(Maximum, hashprice + this). Stops the autopilot from wildly overpaying when hashprice drops sharply and the fixed Maximum alone would still allow it. Set to 0 to disable."
+
+#: src/pages/Config.tsx
+msgid "Optional. Datum Gateway's /umbrel-api endpoint — e.g. http://192.168.1.121:7152. Leave empty to disable; the Datum panel will show \"not configured\". See docs/setup-datum-api.md for the Umbrel-side port-exposure recipe."
+msgstr "Optional. Datum Gateway's /umbrel-api endpoint — e.g. http://192.168.1.121:7152. Leave empty to disable; the Datum panel will show \"not configured\". See docs/setup-datum-api.md for the Umbrel-side port-exposure recipe."
 
 #: src/pages/Setup.tsx
 msgid "Optional. Useful if you'd like a second token only for read paths."
 msgstr "Optional. Useful if you'd like a second token only for read paths."
 
+#: src/components/PriceChart.tsx
+msgid "our bid"
+msgstr "our bid"
+
+#: src/components/HashrateChart.tsx
+msgid "our earnings"
+msgstr "our earnings"
+
+#: src/pages/Status.tsx
+msgid "our earnings (est.)"
+msgstr "our earnings (est.)"
+
+#: src/components/HashrateChart.tsx
+msgid "our share (est.)"
+msgstr "our share (est.)"
+
+#: src/pages/Status.tsx
+msgid "overdue {overdueFormatted}"
+msgstr "overdue {overdueFormatted}"
+
+#: src/components/PriceChart.tsx
+msgid "overpay"
+msgstr "overpay"
+
+#: src/pages/Config.tsx
 #: src/pages/Setup.tsx
 msgid "Overpay above fillable"
 msgstr "Overpay above fillable"
+
+#: src/pages/Status.tsx
+msgid "Override lock clears in"
+msgstr "Override lock clears in"
+
+#: src/pages/Status.tsx
+msgid "owner"
+msgstr "owner"
 
 #: src/pages/Setup.tsx
 #: src/pages/Setup.tsx
@@ -229,6 +1253,22 @@ msgstr "Password"
 msgid "passwords don't match"
 msgstr "passwords don't match"
 
+#: src/pages/Status.tsx
+msgid "Patience clears in"
+msgstr "Patience clears in"
+
+#: src/pages/Status.tsx
+msgid "Pause"
+msgstr "Pause"
+
+#: src/pages/Status.tsx
+msgid "paused"
+msgstr "paused"
+
+#: src/lib/labels.ts
+msgid "Paused"
+msgstr "Paused"
+
 #: src/pages/Setup.tsx
 msgid "Payout address"
 msgstr "Payout address"
@@ -237,18 +1277,136 @@ msgstr "Payout address"
 msgid "Payout tracking"
 msgstr "Payout tracking"
 
+#: src/lib/labels.ts
+msgid "Pending 2FA"
+msgstr "Pending 2FA"
+
+#: src/pages/Config.tsx
+msgid "Per-bid budget"
+msgstr "Per-bid budget"
+
+#: src/pages/Config.tsx
+msgid "Per-tick bid = fillable_ask + this. Braiins matches pay-your-bid, so this is the real premium you pay over the cheapest available price. Higher = more resilient to short upward market moves, bigger premium; lower = closer to the cheapest fillable price, more sensitive to noise. 300 sat/PH/day is a reasonable starting point."
+msgstr "Per-tick bid = fillable_ask + this. Braiins matches pay-your-bid, so this is the real premium you pay over the cheapest available price. Higher = more resilient to short upward market moves, bigger premium; lower = closer to the cheapest fillable price, more sensitive to noise. 300 sat/PH/day is a reasonable starting point."
+
+#: src/pages/Config.tsx
+msgid "Pick a preset or paste your own template — at least one placeholder ({hash} or {height}) is required. Example custom: http://umbrel.local:3006/block/{hash}."
+msgstr "Pick a preset or paste your own template — at least one placeholder ({hash} or {height}) is required. Example custom: http://umbrel.local:3006/block/{hash}."
+
+#: src/pages/Config.tsx
+msgid "Polled every 5 minutes. The daemon never makes decisions based on fiat price — this is purely a display convenience. Set to \"Disabled\" if you want a sats-only dashboard."
+msgstr "Polled every 5 minutes. The daemon never makes decisions based on fiat price — this is purely a display convenience. Set to \"Disabled\" if you want a sats-only dashboard."
+
+#: src/pages/Status.tsx
+msgid "pool"
+msgstr "pool"
+
+#: src/components/HashrateChart.tsx
+msgid "pool block"
+msgstr "pool block"
+
+#: src/components/HashrateChart.tsx
+msgid "POOL BLOCK"
+msgstr "POOL BLOCK"
+
+#: src/pages/Status.tsx
+msgid "pool blocks 24h"
+msgstr "pool blocks 24h"
+
+#: src/pages/Status.tsx
+msgid "pool blocks 7d"
+msgstr "pool blocks 7d"
+
+#: src/pages/Config.tsx
+msgid "Pool destination"
+msgstr "Pool destination"
+
 #: src/pages/Setup.tsx
 msgid "Pool destination (where Braiins delivers)"
 msgstr "Pool destination (where Braiins delivers)"
 
+#: src/components/HashrateChart.tsx
+msgid "pool reward"
+msgstr "pool reward"
+
+#: src/pages/Config.tsx
 #: src/pages/Setup.tsx
 #: src/pages/Setup.tsx
 msgid "Pool URL"
 msgstr "Pool URL"
 
+#: src/pages/Status.tsx
+msgid "pool users"
+msgstr "pool users"
+
+#: src/pages/Status.tsx
+msgid "pool workers"
+msgstr "pool workers"
+
+#: src/pages/Status.tsx
+msgid "port"
+msgstr "port"
+
 #: src/pages/Setup.tsx
 msgid "Port"
 msgstr "Port"
+
+#: src/components/PriceChart.tsx
+#: src/components/PriceChart.tsx
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+msgid "price"
+msgstr "price"
+
+#: src/components/PriceChart.tsx
+#: src/components/PriceChart.tsx
+msgid "Price"
+msgstr "Price"
+
+#: src/pages/Config.tsx
+msgid "Price source"
+msgstr "Price source"
+
+#: src/pages/Config.tsx
+msgid "Pricing"
+msgstr "Pricing"
+
+#: src/pages/Config.tsx
+#: src/pages/Status.tsx
+msgid "Profit & Loss"
+msgstr "Profit & Loss"
+
+#: src/pages/Status.tsx
+msgid "Profit & Loss · lifetime"
+msgstr "Profit & Loss · lifetime"
+
+#: src/pages/Status.tsx
+msgid "Profit & Loss · per day"
+msgstr "Profit & Loss · per day"
+
+#: src/pages/Status.tsx
+msgid "progress"
+msgstr "progress"
+
+#: src/pages/Status.tsx
+msgid "Projected income − actual spend (rows above). Positive = the autopilot is profitable at current rates; negative = burning money per day. Income is a projection (avg hashprice × avg delivered); spend is measured. Don’t confuse with the lifetime net on the other panel."
+msgstr "Projected income − actual spend (rows above). Positive = the autopilot is profitable at current rates; negative = burning money per day. Income is a projection (avg hashprice × avg delivered); spend is measured. Don’t confuse with the lifetime net on the other panel."
+
+#: src/pages/Status.tsx
+msgid "projected income/day ({rangeLabel})"
+msgstr "projected income/day ({rangeLabel})"
+
+#: src/pages/Status.tsx
+msgid "Projection: avg hashprice × avg delivered (rows above), both averaged over the selected chart range. Range-aware counterpart to Ocean's own 3h estimate."
+msgstr "Projection: avg hashprice × avg delivered (rows above), both averaged over the selected chart range. Range-aware counterpart to Ocean's own 3h estimate."
+
+#: src/pages/Status.tsx
+msgid "protocol"
+msgstr "protocol"
+
+#: src/components/HashrateChart.tsx
+msgid "range"
+msgstr "range"
 
 #: src/pages/Setup.tsx
 msgid "Re-setup"
@@ -259,18 +1417,65 @@ msgstr "Re-setup"
 msgid "Read-only token"
 msgstr "Read-only token"
 
+#: src/pages/Status.tsx
+msgid "rebuild"
+msgstr "rebuild"
+
+#: src/components/HashrateChart.tsx
+msgid "received (Datum)"
+msgstr "received (Datum)"
+
+#: src/components/HashrateChart.tsx
+msgid "received (Ocean)"
+msgstr "received (Ocean)"
+
+#: src/pages/Status.tsx
+msgid "Refresh the money panel now (normally updates hourly)."
+msgstr "Refresh the money panel now (normally updates hourly)."
+
+#. placeholder {0}: formatCountdownPrecise(msUntil)
+#: src/pages/Status.tsx
+msgid "refreshes in {0}"
+msgstr "refreshes in {0}"
+
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+msgid "refreshing…"
+msgstr "refreshing…"
+
 #: src/pages/Login.tsx
 msgid "Remember me on this device"
 msgstr "Remember me on this device"
+
+#: src/pages/Config.tsx
+msgid "Resume last mode"
+msgstr "Resume last mode"
+
+#: src/pages/Config.tsx
+msgid "revert"
+msgstr "revert"
 
 #: src/pages/Setup.tsx
 #: src/pages/Setup.tsx
 msgid "Review"
 msgstr "Review"
 
+#: src/pages/Config.tsx
+msgid "Rolling-mean window applied to the hashrate chart. 1 = raw (no smoothing). Ocean is excluded — its /user_hashrate endpoint already returns a server-side 5-min average, so set these to 5 to line all three series up on the same cadence."
+msgstr "Rolling-mean window applied to the hashrate chart. 1 = raw (no smoothing). Ocean is excluded — its /user_hashrate endpoint already returns a server-side 5-min average, so set these to 5 to line all three series up on the same cadence."
+
+#: src/pages/Config.tsx
+msgid "Rolling-mean window for the Price chart's `our bid` and `effective` lines. Useful when the effective line is noisy at tick resolution. Hashprice / max bid are not smoothed — they're market-wide signals."
+msgstr "Rolling-mean window for the Price chart's `our bid` and `effective` lines. Useful when the effective line is noisy at tick resolution. Hashprice / max bid are not smoothed — they're market-wide signals."
+
+#: src/pages/Config.tsx
 #: src/pages/Setup.tsx
 msgid "RPC password"
 msgstr "RPC password"
+
+#: src/pages/Config.tsx
+msgid "RPC password — stored in the config database, not in logs."
+msgstr "RPC password — stored in the config database, not in logs."
 
 #: src/pages/Setup.tsx
 msgid "RPC URL"
@@ -280,17 +1485,58 @@ msgstr "RPC URL"
 msgid "RPC user"
 msgstr "RPC user"
 
+#: src/pages/Config.tsx
+msgid "RPC username"
+msgstr "RPC username"
+
+#: src/pages/Config.tsx
+msgid "RPC username from your bitcoin.conf."
+msgstr "RPC username from your bitcoin.conf."
+
+#: src/pages/Status.tsx
+msgid "Run decision now"
+msgstr "Run decision now"
+
+#: src/pages/Status.tsx
+msgid "Run the pending decision immediately — clears the post-edit lock and bypasses the patience/escalation timers so a waiting-to-settle EDIT_PRICE fires on this tick instead of after the full window."
+msgstr "Run the pending decision immediately — clears the post-edit lock and bypasses the patience/escalation timers so a waiting-to-settle EDIT_PRICE fires on this tick instead of after the full window."
+
+#: src/pages/Status.tsx
+msgid "runway"
+msgstr "runway"
+
 #: src/components/Layout.tsx
 msgid "sats"
 msgstr "sats"
+
+#: src/pages/Config.tsx
+msgid "save"
+msgstr "save"
+
+#: src/pages/Config.tsx
+msgid "saved."
+msgstr "saved."
+
+#: src/pages/Config.tsx
+msgid "saving…"
+msgstr "saving…"
 
 #: src/pages/Setup.tsx
 msgid "Setting up…"
 msgstr "Setting up…"
 
+#: src/components/HashrateChart.tsx
+#: src/pages/Status.tsx
+msgid "share log"
+msgstr "share log"
+
 #: src/pages/Setup.tsx
 msgid "Show"
 msgstr "Show"
+
+#: src/pages/Config.tsx
+msgid "Show effective rate on price chart"
+msgstr "Show effective rate on price chart"
 
 #: src/pages/Setup.tsx
 msgid "Show value"
@@ -308,34 +1554,208 @@ msgstr "sign out"
 msgid "signing in…"
 msgstr "signing in…"
 
+#: src/components/PriceChart.tsx
+msgid "speed"
+msgstr "speed"
+
+#: src/pages/Config.tsx
+msgid "Spend scope"
+msgstr "Spend scope"
+
+#: src/pages/Status.tsx
+msgid "spend/day ({rangeLabel})"
+msgstr "spend/day ({rangeLabel})"
+
+#: src/pages/Status.tsx
+msgid "spend/day (3h)"
+msgstr "spend/day (3h)"
+
+#: src/pages/Status.tsx
+msgid "spent (autopilot)"
+msgstr "spent (autopilot)"
+
+#: src/pages/Status.tsx
+msgid "spent (whole account)"
+msgstr "spent (whole account)"
+
+#: src/pages/Status.tsx
+msgid "status"
+msgstr "status"
+
 #: src/components/Layout.tsx
 msgid "Status"
 msgstr "Status"
+
+#: src/pages/Status.tsx
+msgid "stratum DOWN ({consecutiveFailures} consecutive)"
+msgstr "stratum DOWN ({consecutiveFailures} consecutive)"
+
+#: src/pages/Status.tsx
+msgid "stratum reachable"
+msgstr "stratum reachable"
 
 #: src/pages/Setup.tsx
 msgid "Stratum URL for your Datum gateway or pool."
 msgstr "Stratum URL for your Datum gateway or pool."
 
+#: src/components/HashrateChart.tsx
+msgid "subsidy"
+msgstr "subsidy"
+
+#: src/pages/Status.tsx
+msgid "Sum across still-running bids — status ACTIVE / PAUSED / etc. (is_current=true). Live in-flight consumption; not yet settled in Braiins' hourly ledger."
+msgstr "Sum across still-running bids — status ACTIVE / PAUSED / etc. (is_current=true). Live in-flight consumption; not yet settled in Braiins' hourly ledger."
+
+#: src/pages/Status.tsx
+msgid "Sum across terminal bids — status CANCELED or FULFILLED (is_current=false). Money that has definitively left the account."
+msgstr "Sum across terminal bids — status CANCELED or FULFILLED (is_current=false). Money that has definitively left the account."
+
+#: src/pages/Status.tsx
+msgid "Sum of counters_committed.amount_consumed_sat across every bid on /v1/spot/bid — covers active + historical bids, including any that existed before the autopilot was switched on. May lag the latest hour of active-bid consumption (Braiins only updates committed counters on each hourly settlement tick). Switch via Config → P&L panel."
+msgstr "Sum of counters_committed.amount_consumed_sat across every bid on /v1/spot/bid — covers active + historical bids, including any that existed before the autopilot was switched on. May lag the latest hour of active-bid consumption (Braiins only updates committed counters on each hourly settlement tick). Switch via Config → P&L panel."
+
+#: src/components/HashrateChart.tsx
+#: src/pages/Status.tsx
+msgid "target"
+msgstr "target"
+
 #: src/pages/Setup.tsx
 msgid "Target (PH/s)"
 msgstr "Target (PH/s)"
 
+#: src/pages/Config.tsx
 #: src/pages/Setup.tsx
 msgid "Target hashrate"
 msgstr "Target hashrate"
+
+#: src/pages/Status.tsx
+msgid "TCP probe of the Datum gateway's stratum port."
+msgstr "TCP probe of the Datum gateway's stratum port."
+
+#: src/pages/Config.tsx
+msgid "The bid tracks the cheapest ask with enough depth for your target, plus a small premium. Two hard ceilings sit above that so the premium can never run away. Entered in sat/PH/day."
+msgstr "The bid tracks the cheapest ask with enough depth for your target, plus a small premium. Two hard ceilings sit above that so the premium can never run away. Entered in sat/PH/day."
+
+#: src/pages/Config.tsx
+msgid "The BTC address Ocean TIDES credits payouts to. Editing this auto-updates the worker identity below."
+msgstr "The BTC address Ocean TIDES credits payouts to. Editing this auto-updates the worker identity below."
 
 #: src/pages/Setup.tsx
 msgid "The daemon may not be in setup mode. Reload the page or check the daemon logs."
 msgstr "The daemon may not be in setup mode. Reload the page or check the daemon logs."
 
+#. placeholder {0}: tickResult.error
+#: src/pages/Status.tsx
+msgid "tick failed: {0}"
+msgstr "tick failed: {0}"
+
+#: src/pages/Config.tsx
+msgid "Tick metrics"
+msgstr "Tick metrics"
+
+#: src/pages/Config.tsx
+msgid "tick_metrics rows drive the hashrate / price / overpay charts. One row per tick (~1,440/day). Default 7 covers every standard chart range."
+msgstr "tick_metrics rows drive the hashrate / price / overpay charts. One row per tick (~1,440/day). Default 7 covers every standard chart range."
+
+#: src/pages/Status.tsx
+msgid "ticking…"
+msgstr "ticking…"
+
+#: src/pages/Status.tsx
+msgid "total"
+msgstr "total"
+
+#: src/pages/Status.tsx
+msgid "Total earned at this address since first share, per Ocean."
+msgstr "Total earned at this address since first share, per Ocean."
+
+#: src/pages/Config.tsx
+msgid "Uneventful decisions"
+msgstr "Uneventful decisions"
+
+#: src/pages/Status.tsx
+msgid "unknown"
+msgstr "unknown"
+
+#: src/lib/labels.ts
+msgid "Unknown"
+msgstr "Unknown"
+
+#: src/pages/Status.tsx
+msgid "unpaid"
+msgstr "unpaid"
+
+#: src/pages/Status.tsx
+msgid "unpaid earnings (Ocean)"
+msgstr "unpaid earnings (Ocean)"
+
+#. placeholder {0}: formatAgePrecise(epochMs)
+#: src/pages/Status.tsx
+msgid "updated {0}"
+msgstr "updated {0}"
+
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+msgid "uptime"
+msgstr "uptime"
+
+#: src/pages/Config.tsx
+msgid "URL template"
+msgstr "URL template"
+
+#: src/pages/Config.tsx
+msgid "Used for click-through from the Ocean panel's \"last pool block\" row and the block-marker tooltips on the Hashrate chart. `{hash}` and `{height}` placeholders are substituted."
+msgstr "Used for click-through from the Ocean panel's \"last pool block\" row and the block-marker tooltips on the Hashrate chart. `{hash}` and `{height}` placeholders are substituted."
+
+#: src/components/HashrateChart.tsx
+msgid "uses current share_log — an approximation for older blocks, since share_log drifts as pool hashrate moves."
+msgstr "uses current share_log — an approximation for older blocks, since share_log drifts as pool hashrate moves."
+
+#: src/pages/Config.tsx
+msgid "Uses scantxoutset -- CPU-heavy, 30+ seconds per scan. Polled hourly. Use only if you don't have Electrs."
+msgstr "Uses scantxoutset -- CPU-heavy, 30+ seconds per scan. Polled hourly. Use only if you don't have Electrs."
+
+#: src/pages/Status.tsx
+msgid "UTXOs at the configured payout address. Read via Electrs (preferred, instant) or bitcoind RPC (slower)."
+msgstr "UTXOs at the configured payout address. Read via Electrs (preferred, instant) or bitcoind RPC (slower)."
+
 #: src/pages/Setup.tsx
 msgid "What the controller aims for."
 msgstr "What the controller aims for."
 
+#: src/pages/Config.tsx
+msgid "When the market is cheap (below the hashprice threshold), scale up to this target instead of the normal one. Set to 0 to disable."
+msgstr "When the market is cheap (below the hashprice threshold), scale up to this target instead of the normal one. Set to 0 to disable."
+
+#: src/pages/Config.tsx
+msgid "Where rented hashrate lands. Change only if your pool endpoint moves. The BTC payout address sits here too — the worker identity below is auto-derived from it whenever you edit the address, same as the first-run wizard."
+msgstr "Where rented hashrate lands. Change only if your pool endpoint moves. The BTC payout address sits here too — the worker identity below is auto-derived from it whenever you edit the address, same as the first-run wizard."
+
+#: src/pages/Config.tsx
+msgid "Where the autopilot aims, and the floor below which it starts escalating."
+msgstr "Where the autopilot aims, and the floor below which it starts escalating."
+
+#: src/pages/Config.tsx
+msgid "Whole account (all settled bids ever)"
+msgstr "Whole account (all settled bids ever)"
+
+#: src/pages/Status.tsx
+msgid "Wipe the local terminal-bid cache and re-paginate every bid from Braiins on the next refresh? This is safe but slower than a normal refresh."
+msgstr "Wipe the local terminal-bid cache and re-paginate every bid from Braiins on the next refresh? This is safe but slower than a normal refresh."
+
+#: src/pages/Status.tsx
+msgid "Wipe the local terminal-bid cache and re-paginate every bid from Braiins on the next refresh. Use if the 'spent (whole account)' figure looks wrong."
+msgstr "Wipe the local terminal-bid cache and re-paginate every bid from Braiins on the next refresh. Use if the 'spent (whole account)' figure looks wrong."
+
+#: src/pages/Config.tsx
 #: src/pages/Setup.tsx
 #: src/pages/Setup.tsx
 msgid "Worker identity"
 msgstr "Worker identity"
+
+#: src/pages/Status.tsx
+msgid "workers connected"
+msgstr "workers connected"
 
 #: src/pages/Setup.tsx
 msgid "Writing config + secrets and bringing the controller online. Usually a few seconds."

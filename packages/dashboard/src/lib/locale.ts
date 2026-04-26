@@ -1,9 +1,14 @@
 /**
- * Locale override — lets the operator pick a date/number format that's
- * independent of their browser's language. Persists to localStorage.
+ * Format-locale picker - governs only how numbers and dates look on
+ * screen (thousand separators, date layout, time format). NOT the UI
+ * language: that lives in `lib/i18n.ts` and is driven by the
+ * Lingui-backed LanguagePicker dropdown in the header. The two
+ * settings are deliberately independent so an operator can run the UI
+ * in Dutch but keep "1,234.56" comma-decimal display, or vice versa.
  *
- * The `auto` value means "use whatever the browser reports"
- * (`navigator.language`). Any other value is passed directly to Intl APIs.
+ * Persists to localStorage as `braiins.displayLocale`. The `auto`
+ * value means "follow `navigator.language`"; any other value is
+ * passed directly to Intl APIs.
  */
 
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
@@ -21,10 +26,10 @@ const STORAGE_KEY = 'braiins.displayLocale';
 
 /**
  * Number/date format presets. Listed format-first (the example
- * separators + date layout) rather than language-first — the picker
- * is for *how numbers and dates look*, not for translation. Until
- * the dashboard has real i18n (#1) the UI strings stay English no
- * matter what's selected here.
+ * separators + date layout) rather than language-first - the picker
+ * is for *how numbers and dates look*, not for translation. The UI
+ * language is a separate setting (see `lib/i18n.ts` and the
+ * LanguagePicker in the header).
  */
 export const LOCALE_PRESETS: Array<{ code: string; label: string }> = [
   { code: 'auto', label: 'system default' },

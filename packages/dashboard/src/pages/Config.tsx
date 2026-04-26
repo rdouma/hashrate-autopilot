@@ -1,5 +1,7 @@
+import { Trans, t } from '@lingui/macro';
+import { useLingui } from '@lingui/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { NumberField } from '../components/NumberField';
@@ -9,6 +11,8 @@ import { LOCALE_PRESETS, useLocale } from '../lib/locale';
 const EH_PER_PH = 1000;
 
 type Section = {
+  /** Stable English identity used for keys and structural decisions (e.g. inserting the payout-source card before "Profit & Loss"). The visible `title` is translated via `t\`...\``; this stays untranslated. */
+  id: string;
   title: string;
   description?: string;
   fields: FieldSpec[];
@@ -66,271 +70,287 @@ type FieldSpec = (
     }
 ) & { fullWidth?: boolean };
 
-const SECTIONS: Section[] = [
-  {
-    title: 'Hashrate targets',
-    description: 'Where the autopilot aims, and the floor below which it starts escalating.',
-    fields: [
-      { key: 'target_hashrate_ph', label: 'Target hashrate', kind: 'decimal', unit: 'PH/s' },
-      { key: 'minimum_floor_hashrate_ph', label: 'Minimum floor', kind: 'decimal', unit: 'PH/s' },
+function useSections(): Section[] {
+  const { i18n } = useLingui();
+  void i18n;
+  return useMemo<Section[]>(
+    () => [
       {
-        key: 'cheap_target_hashrate_ph',
-        label: 'Cheap-mode target',
-        kind: 'decimal',
-        unit: 'PH/s',
-        help: 'When the market is cheap (below the hashprice threshold), scale up to this target instead of the normal one. Set to 0 to disable.',
-      },
-      {
-        key: 'cheap_threshold_pct',
-        label: 'Cheap threshold',
-        kind: 'integer',
-        unit: '%',
-        help: '0 = disabled. Example: 95 = activate cheap mode when the best ask on the orderbook is below 95% of the break-even hashprice from Ocean. Under CLOB you pay the matched ask, so this is the price we can actually reach.',
-      },
-      {
-        key: 'cheap_sustained_window_minutes',
-        label: 'Cheap-mode sustained window',
-        kind: 'integer',
-        unit: 'min',
-        help: 'Only engage cheap-mode when the rolling average of best-ask vs hashprice over this many minutes is below the threshold. Avoids flapping on single-tick market spikes. 0 = evaluate per tick (legacy). Requires ≥5 samples in the window before honouring it; below that falls back to the spot check.',
-      },
-    ],
-  },
-  {
-    title: 'Pool destination',
-    description:
-      'Where rented hashrate lands. Change only if your pool endpoint moves. The BTC payout address sits here too — the worker identity below is auto-derived from it whenever you edit the address, same as the first-run wizard.',
-    fields: [
-      {
-        key: 'destination_pool_url',
-        label: 'Pool URL',
-        kind: 'text',
-        help: 'Must be reachable from the public internet — Braiins probes it.',
-        fullWidth: true,
-      },
-      {
-        key: 'btc_payout_address',
-        label: 'BTC payout address',
-        kind: 'text',
-        help: 'The BTC address Ocean TIDES credits payouts to. Editing this auto-updates the worker identity below.',
-        fullWidth: true,
-      },
-      {
-        key: 'destination_pool_worker_name',
-        label: 'Worker identity',
-        kind: 'text',
-        help: 'Format: <btc-address>.<label>. Ocean TIDES credits shares by the address prefix — anything else routes shares to nobody.',
-        fullWidth: true,
-      },
-      {
-        key: 'datum_api_url',
-        label: 'Datum stats API (optional)',
-        kind: 'text',
-        help: 'Optional. Datum Gateway\'s /umbrel-api endpoint — e.g. http://192.168.1.121:7152. Leave empty to disable; the Datum panel will show "not configured". See docs/setup-datum-api.md for the Umbrel-side port-exposure recipe.',
-        fullWidth: true,
-      },
-    ],
-  },
-  {
-    title: 'Pricing',
-    description: 'The bid tracks the cheapest ask with enough depth for your target, plus a small premium. Two hard ceilings sit above that so the premium can never run away. Entered in sat/PH/day.',
-    fields: [
-      {
-        key: 'overpay_sat_per_eh_day',
-        label: 'Overpay above fillable',
-        kind: 'price_sat_per_eh_day',
-        help: 'Per-tick bid = fillable_ask + this. Braiins matches pay-your-bid, so this is the real premium you pay over the cheapest available price. Higher = more resilient to short upward market moves, bigger premium; lower = closer to the cheapest fillable price, more sensitive to noise. 300 sat/PH/day is a reasonable starting point.',
-      },
-      {
-        key: 'max_bid_sat_per_eh_day',
-        label: 'Maximum',
-        kind: 'price_sat_per_eh_day',
-        help: 'Hard ceiling. If fillable + overpay would exceed this, the bid is clamped down to this value (and may not fill).',
-      },
-      {
-        key: 'max_overpay_vs_hashprice_sat_per_eh_day',
-        label: 'Max premium over hashprice',
-        kind: 'price_sat_per_eh_day',
-        help: 'Optional dynamic ceiling. On each tick the effective cap = min(Maximum, hashprice + this). Stops the autopilot from wildly overpaying when hashprice drops sharply and the fixed Maximum alone would still allow it. Set to 0 to disable.',
-      },
-    ],
-  },
-  {
-    title: 'Budget',
-    description: 'How big a single bid is. Set to 0 to use the full available wallet balance on each create — simpler mental model, no manual slicing.',
-    fields: [
-      {
-        key: 'bid_budget_sat',
-        label: 'Per-bid budget',
-        kind: 'integer',
-        unit: 'sat',
-        fullWidth: true,
-        help: '0 = use the full available wallet balance each CREATE (clamped to 1 BTC — the Braiins per-bid hard cap). Any positive value pins every new bid to that exact amount regardless of balance.',
-      },
-    ],
-  },
-  {
-    title: 'Daemon startup',
-    description: 'How the daemon chooses its run mode when it boots.',
-    fields: [
-      {
-        key: 'boot_mode',
-        label: 'Boot mode',
-        kind: 'radio',
-        fullWidth: true,
-        options: [
+        id: 'hashrate-targets',
+        title: t`Hashrate targets`,
+        description: t`Where the autopilot aims, and the floor below which it starts escalating.`,
+        fields: [
+          { key: 'target_hashrate_ph', label: t`Target hashrate`, kind: 'decimal', unit: 'PH/s' },
+          { key: 'minimum_floor_hashrate_ph', label: t`Minimum floor`, kind: 'decimal', unit: 'PH/s' },
           {
-            value: 'ALWAYS_DRY_RUN',
-            label: 'Always dry-run (safest)',
-            help: 'Every restart resets to DRY_RUN. You explicitly flip to LIVE from the dashboard.',
+            key: 'cheap_target_hashrate_ph',
+            label: t`Cheap-mode target`,
+            kind: 'decimal',
+            unit: 'PH/s',
+            help: t`When the market is cheap (below the hashprice threshold), scale up to this target instead of the normal one. Set to 0 to disable.`,
           },
           {
-            value: 'LAST_MODE',
-            label: 'Resume last mode',
-            help: 'Keep whatever run mode was active before the restart. PAUSED is demoted to DRY_RUN.',
+            key: 'cheap_threshold_pct',
+            label: t`Cheap threshold`,
+            kind: 'integer',
+            unit: '%',
+            help: t`0 = disabled. Example: 95 = activate cheap mode when the best ask on the orderbook is below 95% of the break-even hashprice from Ocean. Under CLOB you pay the matched ask, so this is the price we can actually reach.`,
           },
           {
-            value: 'ALWAYS_LIVE',
-            label: 'Always live (for trusted deployments)',
-            help: 'Boot directly into LIVE. Use only when the autopilot is proven and the box reboots should not interrupt bidding.',
+            key: 'cheap_sustained_window_minutes',
+            label: t`Cheap-mode sustained window`,
+            kind: 'integer',
+            unit: 'min',
+            help: t`Only engage cheap-mode when the rolling average of best-ask vs hashprice over this many minutes is below the threshold. Avoids flapping on single-tick market spikes. 0 = evaluate per tick (legacy). Requires ≥5 samples in the window before honouring it; below that falls back to the spot check.`,
           },
         ],
       },
-    ],
-  },
-  {
-    title: 'Block explorer',
-    description:
-      'Used for click-through from the Ocean panel\'s "last pool block" row and the block-marker tooltips on the Hashrate chart. `{hash}` and `{height}` placeholders are substituted.',
-    fields: [
       {
-        key: 'block_explorer_url_template',
-        label: 'URL template',
-        kind: 'text_with_presets',
-        fullWidth: true,
-        help: 'Pick a preset or paste your own template — at least one placeholder ({hash} or {height}) is required. Example custom: http://umbrel.local:3006/block/{hash}.',
-        presets: [
-          { label: 'mempool.space', template: 'https://mempool.space/block/{hash}' },
-          { label: 'blockstream.info', template: 'https://blockstream.info/block/{hash}' },
-          { label: 'blockchair.com', template: 'https://blockchair.com/bitcoin/block/{hash}' },
-          { label: 'btcscan.org', template: 'https://btcscan.org/block/{hash}' },
-          { label: 'btc.com', template: 'https://btc.com/btc/block/{hash}' },
+        id: 'pool-destination',
+        title: t`Pool destination`,
+        description: t`Where rented hashrate lands. Change only if your pool endpoint moves. The BTC payout address sits here too — the worker identity below is auto-derived from it whenever you edit the address, same as the first-run wizard.`,
+        fields: [
+          {
+            key: 'destination_pool_url',
+            label: t`Pool URL`,
+            kind: 'text',
+            help: t`Must be reachable from the public internet — Braiins probes it.`,
+            fullWidth: true,
+          },
+          {
+            key: 'btc_payout_address',
+            label: t`BTC payout address`,
+            kind: 'text',
+            help: t`The BTC address Ocean TIDES credits payouts to. Editing this auto-updates the worker identity below.`,
+            fullWidth: true,
+          },
+          {
+            key: 'destination_pool_worker_name',
+            label: t`Worker identity`,
+            kind: 'text',
+            help: t`Format: <btc-address>.<label>. Ocean TIDES credits shares by the address prefix — anything else routes shares to nobody.`,
+            fullWidth: true,
+          },
+          {
+            key: 'datum_api_url',
+            label: t`Datum stats API (optional)`,
+            kind: 'text',
+            help: t`Optional. Datum Gateway's /umbrel-api endpoint — e.g. http://192.168.1.121:7152. Leave empty to disable; the Datum panel will show "not configured". See docs/setup-datum-api.md for the Umbrel-side port-exposure recipe.`,
+            fullWidth: true,
+          },
+        ],
+      },
+      {
+        id: 'pricing',
+        title: t`Pricing`,
+        description: t`The bid tracks the cheapest ask with enough depth for your target, plus a small premium. Two hard ceilings sit above that so the premium can never run away. Entered in sat/PH/day.`,
+        fields: [
+          {
+            key: 'overpay_sat_per_eh_day',
+            label: t`Overpay above fillable`,
+            kind: 'price_sat_per_eh_day',
+            help: t`Per-tick bid = fillable_ask + this. Braiins matches pay-your-bid, so this is the real premium you pay over the cheapest available price. Higher = more resilient to short upward market moves, bigger premium; lower = closer to the cheapest fillable price, more sensitive to noise. 300 sat/PH/day is a reasonable starting point.`,
+          },
+          {
+            key: 'max_bid_sat_per_eh_day',
+            label: t`Maximum`,
+            kind: 'price_sat_per_eh_day',
+            help: t`Hard ceiling. If fillable + overpay would exceed this, the bid is clamped down to this value (and may not fill).`,
+          },
+          {
+            key: 'max_overpay_vs_hashprice_sat_per_eh_day',
+            label: t`Max premium over hashprice`,
+            kind: 'price_sat_per_eh_day',
+            help: t`Optional dynamic ceiling. On each tick the effective cap = min(Maximum, hashprice + this). Stops the autopilot from wildly overpaying when hashprice drops sharply and the fixed Maximum alone would still allow it. Set to 0 to disable.`,
+          },
+        ],
+      },
+      {
+        id: 'budget',
+        title: t`Budget`,
+        description: t`How big a single bid is. Set to 0 to use the full available wallet balance on each create — simpler mental model, no manual slicing.`,
+        fields: [
+          {
+            key: 'bid_budget_sat',
+            label: t`Per-bid budget`,
+            kind: 'integer',
+            unit: 'sat',
+            fullWidth: true,
+            help: t`0 = use the full available wallet balance each CREATE (clamped to 1 BTC — the Braiins per-bid hard cap). Any positive value pins every new bid to that exact amount regardless of balance.`,
+          },
+        ],
+      },
+      {
+        id: 'daemon-startup',
+        title: t`Daemon startup`,
+        description: t`How the daemon chooses its run mode when it boots.`,
+        fields: [
+          {
+            key: 'boot_mode',
+            label: t`Boot mode`,
+            kind: 'radio',
+            fullWidth: true,
+            options: [
+              {
+                value: 'ALWAYS_DRY_RUN',
+                label: t`Always dry-run (safest)`,
+                help: t`Every restart resets to DRY_RUN. You explicitly flip to LIVE from the dashboard.`,
+              },
+              {
+                value: 'LAST_MODE',
+                label: t`Resume last mode`,
+                help: t`Keep whatever run mode was active before the restart. PAUSED is demoted to DRY_RUN.`,
+              },
+              {
+                value: 'ALWAYS_LIVE',
+                label: t`Always live (for trusted deployments)`,
+                help: t`Boot directly into LIVE. Use only when the autopilot is proven and the box reboots should not interrupt bidding.`,
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'block-explorer',
+        title: t`Block explorer`,
+        description: t`Used for click-through from the Ocean panel's "last pool block" row and the block-marker tooltips on the Hashrate chart. \`{hash}\` and \`{height}\` placeholders are substituted.`,
+        fields: [
+          {
+            key: 'block_explorer_url_template',
+            label: t`URL template`,
+            kind: 'text_with_presets',
+            fullWidth: true,
+            help: t`Pick a preset or paste your own template — at least one placeholder ({hash} or {height}) is required. Example custom: http://umbrel.local:3006/block/{hash}.`,
+            presets: [
+              { label: 'mempool.space', template: 'https://mempool.space/block/{hash}' },
+              { label: 'blockstream.info', template: 'https://blockstream.info/block/{hash}' },
+              { label: 'blockchair.com', template: 'https://blockchair.com/bitcoin/block/{hash}' },
+              { label: 'btcscan.org', template: 'https://btcscan.org/block/{hash}' },
+              { label: 'btc.com', template: 'https://btc.com/btc/block/{hash}' },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'profit-and-loss',
+        title: t`Profit & Loss`,
+        description: t`Controls how the P&L panel computes the "spent" figure that feeds the net result.`,
+        sideBySide: true,
+        fields: [
+          {
+            key: 'spent_scope',
+            label: t`Spend scope`,
+            kind: 'select',
+            options: [
+              { value: 'autopilot', label: t`Autopilot only (autopilot-tagged bids)` },
+              { value: 'account', label: t`Whole account (all settled bids ever)` },
+            ],
+            help: t`"Autopilot only" sums consumed across bids the daemon has tagged in its ledger — accurate for what *this* autopilot has cost. "Whole account" sums counters_committed.amount_consumed_sat across every bid on /v1/spot/bid — covers active + historical bids (including any placed before the autopilot was switched on). May lag the latest hour of active-bid consumption.`,
+          },
+        ],
+      },
+      {
+        id: 'btc-price-oracle',
+        title: t`BTC price oracle`,
+        description: t`Fetches the BTC/USD spot price from a public exchange API. Enables a sats/USD denomination toggle in the dashboard header. No API key required — uses unauthenticated public endpoints.`,
+        sideBySide: true,
+        fields: [
+          {
+            key: 'btc_price_source',
+            label: t`Price source`,
+            kind: 'select',
+            options: [
+              { value: 'none', label: t`Disabled (sats only)` },
+              { value: 'coingecko', label: 'CoinGecko' },
+              { value: 'coinbase', label: 'Coinbase' },
+              { value: 'bitstamp', label: 'Bitstamp' },
+              { value: 'kraken', label: 'Kraken' },
+            ],
+            help: t`Polled every 5 minutes. The daemon never makes decisions based on fiat price — this is purely a display convenience. Set to "Disabled" if you want a sats-only dashboard.`,
+          },
+        ],
+      },
+      {
+        id: 'chart-smoothing',
+        title: t`Chart smoothing`,
+        description: t`Rolling-mean window applied to the hashrate chart. 1 = raw (no smoothing). Ocean is excluded — its /user_hashrate endpoint already returns a server-side 5-min average, so set these to 5 to line all three series up on the same cadence.`,
+        fields: [
+          {
+            key: 'braiins_hashrate_smoothing_minutes',
+            label: t`Braiins (delivered)`,
+            kind: 'integer_spinner',
+            unit: 'min',
+            min: 1,
+            step: 5,
+          },
+          {
+            key: 'datum_hashrate_smoothing_minutes',
+            label: t`Datum (received)`,
+            kind: 'integer_spinner',
+            unit: 'min',
+            min: 1,
+            step: 5,
+          },
+          {
+            key: 'braiins_price_smoothing_minutes',
+            label: t`Braiins (price, effective)`,
+            kind: 'integer_spinner',
+            unit: 'min',
+            min: 1,
+            step: 5,
+            help: t`Rolling-mean window for the Price chart's \`our bid\` and \`effective\` lines. Useful when the effective line is noisy at tick resolution. Hashprice / max bid are not smoothed — they're market-wide signals.`,
+          },
+          {
+            key: 'show_effective_rate_on_price_chart',
+            label: t`Show effective rate on price chart`,
+            kind: 'boolean',
+            fullWidth: true,
+            help: t`Off by default. The emerald effective-rate line (what Braiins actually charged, from counter deltas) is dramatically more volatile than bid / fillable / hashprice — when enabled it auto-scales the Y-axis and visibly squashes the finer bot movements into a thin band. The hero PRICE card and the AVG COST / PH DELIVERED stat already show the same number without hijacking the chart. Flip on when you want to eyeball settlement behaviour directly, accept the loss of flatter-line detail in exchange.`,
+          },
+        ],
+      },
+      {
+        id: 'log-retention',
+        title: t`Log retention`,
+        description: t`How long the daemon keeps append-only log rows. Tick records are pruned hourly once older than the cutoff. 0 = keep forever.`,
+        fields: [
+          {
+            key: 'tick_metrics_retention_days',
+            label: t`Tick metrics`,
+            kind: 'integer',
+            unit: 'days',
+            help: t`tick_metrics rows drive the hashrate / price / overpay charts. One row per tick (~1,440/day). Default 7 covers every standard chart range.`,
+          },
+          {
+            key: 'decisions_uneventful_retention_days',
+            label: t`Uneventful decisions`,
+            kind: 'integer',
+            unit: 'days',
+            help: t`decisions rows with empty proposed_json — ticks where the controller had nothing to do. These are the vast majority; prune aggressively.`,
+          },
+          {
+            key: 'decisions_eventful_retention_days',
+            label: t`Eventful decisions`,
+            kind: 'integer',
+            unit: 'days',
+            help: t`decisions rows that proposed at least one action. Forensic records for figuring out why the autopilot did something weeks later.`,
+          },
         ],
       },
     ],
-  },
-  {
-    title: 'Profit & Loss',
-    description:
-      'Controls how the P&L panel computes the "spent" figure that feeds the net result.',
-    sideBySide: true,
-    fields: [
-      {
-        key: 'spent_scope',
-        label: 'Spend scope',
-        kind: 'select',
-        options: [
-          { value: 'autopilot', label: 'Autopilot only (autopilot-tagged bids)' },
-          { value: 'account', label: 'Whole account (all settled bids ever)' },
-        ],
-        help: '"Autopilot only" sums consumed across bids the daemon has tagged in its ledger — accurate for what *this* autopilot has cost. "Whole account" sums counters_committed.amount_consumed_sat across every bid on /v1/spot/bid — covers active + historical bids (including any placed before the autopilot was switched on). May lag the latest hour of active-bid consumption.',
-      },
-    ],
-  },
-  {
-    title: 'BTC price oracle',
-    description:
-      'Fetches the BTC/USD spot price from a public exchange API. Enables a sats/USD denomination toggle in the dashboard header. No API key required — uses unauthenticated public endpoints.',
-    sideBySide: true,
-    fields: [
-      {
-        key: 'btc_price_source',
-        label: 'Price source',
-        kind: 'select',
-        options: [
-          { value: 'none', label: 'Disabled (sats only)' },
-          { value: 'coingecko', label: 'CoinGecko' },
-          { value: 'coinbase', label: 'Coinbase' },
-          { value: 'bitstamp', label: 'Bitstamp' },
-          { value: 'kraken', label: 'Kraken' },
-        ],
-        help: 'Polled every 5 minutes. The daemon never makes decisions based on fiat price — this is purely a display convenience. Set to "Disabled" if you want a sats-only dashboard.',
-      },
-    ],
-  },
-  {
-    title: 'Chart smoothing',
-    description:
-      'Rolling-mean window applied to the hashrate chart. 1 = raw (no smoothing). Ocean is excluded — its /user_hashrate endpoint already returns a server-side 5-min average, so set these to 5 to line all three series up on the same cadence.',
-    fields: [
-      {
-        key: 'braiins_hashrate_smoothing_minutes',
-        label: 'Braiins (delivered)',
-        kind: 'integer_spinner',
-        unit: 'min',
-        min: 1,
-        step: 5,
-      },
-      {
-        key: 'datum_hashrate_smoothing_minutes',
-        label: 'Datum (received)',
-        kind: 'integer_spinner',
-        unit: 'min',
-        min: 1,
-        step: 5,
-      },
-      {
-        key: 'braiins_price_smoothing_minutes',
-        label: 'Braiins (price, effective)',
-        kind: 'integer_spinner',
-        unit: 'min',
-        min: 1,
-        step: 5,
-        help: 'Rolling-mean window for the Price chart\'s `our bid` and `effective` lines. Useful when the effective line is noisy at tick resolution. Hashprice / max bid are not smoothed — they\'re market-wide signals.',
-      },
-      {
-        key: 'show_effective_rate_on_price_chart',
-        label: 'Show effective rate on price chart',
-        kind: 'boolean',
-        fullWidth: true,
-        help: 'Off by default. The emerald effective-rate line (what Braiins actually charged, from counter deltas) is dramatically more volatile than bid / fillable / hashprice — when enabled it auto-scales the Y-axis and visibly squashes the finer bot movements into a thin band. The hero PRICE card and the AVG COST / PH DELIVERED stat already show the same number without hijacking the chart. Flip on when you want to eyeball settlement behaviour directly, accept the loss of flatter-line detail in exchange.',
-      },
-    ],
-  },
-  {
-    title: 'Log retention',
-    description:
-      'How long the daemon keeps append-only log rows. Tick records are pruned hourly once older than the cutoff. 0 = keep forever.',
-    fields: [
-      {
-        key: 'tick_metrics_retention_days',
-        label: 'Tick metrics',
-        kind: 'integer',
-        unit: 'days',
-        help: 'tick_metrics rows drive the hashrate / price / overpay charts. One row per tick (~1,440/day). Default 7 covers every standard chart range.',
-      },
-      {
-        key: 'decisions_uneventful_retention_days',
-        label: 'Uneventful decisions',
-        kind: 'integer',
-        unit: 'days',
-        help: 'decisions rows with empty proposed_json — ticks where the controller had nothing to do. These are the vast majority; prune aggressively.',
-      },
-      {
-        key: 'decisions_eventful_retention_days',
-        label: 'Eventful decisions',
-        kind: 'integer',
-        unit: 'days',
-        help: 'decisions rows that proposed at least one action. Forensic records for figuring out why the autopilot did something weeks later.',
-      },
-    ],
-  },
-];
+    // Re-derive when locale changes so all `t\`...\`` strings re-evaluate.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [i18n.locale],
+  );
+}
 
 export function Config() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { intlLocale } = useLocale();
+  const { i18n } = useLingui();
+  void i18n;
+  const sections = useSections();
 
   const query = useQuery({ queryKey: ['config'], queryFn: api.config });
 
@@ -381,7 +401,12 @@ export function Config() {
     return null;
   }
 
-  if (!draft) return <div className="text-slate-400">loading…</div>;
+  if (!draft)
+    return (
+      <div className="text-slate-400">
+        <Trans>loading…</Trans>
+      </div>
+    );
 
   const update = <K extends keyof AppConfig>(key: K, value: AppConfig[K]) => {
     if (key === 'btc_payout_address') {
@@ -419,8 +444,12 @@ export function Config() {
     <div className="space-y-6 max-w-3xl mx-auto pb-24">
       <header className="flex items-baseline justify-between">
         <div>
-          <h2 className="text-2xl text-slate-100">Configuration</h2>
-          <p className="text-sm text-slate-500">All values live-editable. Save to apply.</p>
+          <h2 className="text-2xl text-slate-100">
+            <Trans>Configuration</Trans>
+          </h2>
+          <p className="text-sm text-slate-500">
+            <Trans>All values live-editable. Save to apply.</Trans>
+          </p>
         </div>
         <div className="flex gap-2">
           <button
@@ -428,14 +457,14 @@ export function Config() {
             disabled={mutation.isPending}
             className="px-3 py-1.5 text-xs text-slate-300 border border-slate-700 rounded hover:bg-slate-800 disabled:opacity-50"
           >
-            revert
+            <Trans>revert</Trans>
           </button>
           <button
             onClick={() => mutation.mutate(draft)}
             disabled={mutation.isPending}
             className="px-4 py-1.5 text-sm bg-amber-400 text-slate-900 font-medium rounded hover:bg-amber-300 disabled:opacity-50"
           >
-            {mutation.isPending ? 'saving…' : 'save'}
+            {mutation.isPending ? <Trans>saving…</Trans> : <Trans>save</Trans>}
           </button>
         </div>
       </header>
@@ -447,7 +476,7 @@ export function Config() {
       )}
       {mutation.isSuccess && !error && (
         <div className="bg-emerald-900/30 border border-emerald-800 text-emerald-200 rounded p-3 text-sm">
-          saved.
+          <Trans>saved.</Trans>
         </div>
       )}
 
@@ -456,10 +485,10 @@ export function Config() {
       {(() => {
         const nodes: React.ReactNode[] = [];
         let i = 0;
-        while (i < SECTIONS.length) {
-          const section = SECTIONS[i] as Section;
+        while (i < sections.length) {
+          const section = sections[i] as Section;
           // Insert the custom payout-source section right before "Profit & Loss"
-          if (section.title === 'Profit & Loss') {
+          if (section.id === 'profit-and-loss') {
             nodes.push(
               <PayoutSourceSection
                 key="payout-source"
@@ -472,19 +501,19 @@ export function Config() {
           // Group consecutive sideBySide sections into one row.
           if (section.sideBySide) {
             const group: Section[] = [];
-            while (i < SECTIONS.length && (SECTIONS[i] as Section).sideBySide) {
-              group.push(SECTIONS[i] as Section);
+            while (i < sections.length && (sections[i] as Section).sideBySide) {
+              group.push(sections[i] as Section);
               i += 1;
             }
-            const firstTitle = (group[0] as Section).title;
+            const firstId = (group[0] as Section).id;
             nodes.push(
               <div
-                key={`side-by-side-${firstTitle}`}
+                key={`side-by-side-${firstId}`}
                 className="grid grid-cols-1 sm:grid-cols-2 gap-6"
               >
                 {group.map((s) => (
                   <SectionCard
-                    key={s.title}
+                    key={s.id}
                     section={s}
                     draft={draft}
                     locale={intlLocale}
@@ -497,7 +526,7 @@ export function Config() {
           }
           nodes.push(
             <SectionCard
-              key={section.title}
+              key={section.id}
               section={section}
               draft={draft}
               locale={intlLocale}
@@ -547,6 +576,18 @@ function BidBudgetField({
   );
   const activeRemainingSat = activeOwnedBid?.amount_remaining_sat ?? null;
 
+  // Subscribe to locale changes so the t`...` strings below re-render.
+  const { i18n } = useLingui();
+  void i18n;
+
+  // Pre-format the dynamic numeric pieces so the surrounding sentence
+  // can stay inside one <Trans> for translator context, instead of
+  // being shredded into a dozen string fragments.
+  const remainingSatStr =
+    activeRemainingSat !== null ? activeRemainingSat.toLocaleString(locale) : '';
+  const resolvedSatStr = resolvedSat !== null ? resolvedSat.toLocaleString(locale) : '';
+  const isCapped = availableSat !== null && availableSat > BRAIINS_MAX_AMOUNT_SAT;
+
   return (
     <label className="block">
       <span className="block text-sm text-slate-300 mb-1">{spec.label}</span>
@@ -565,38 +606,50 @@ function BidBudgetField({
         <span className="block text-xs text-amber-300 mt-1">
           {activeOwnedBid ? (
             <>
-              A bid is currently running
-              {activeRemainingSat !== null && activeRemainingSat > 0 && (
-                <> (≈ {activeRemainingSat.toLocaleString(locale)} sat left)</>
-              )}
-              . The next CREATE fires when it finishes — at that point the full
-              available wallet balance
-              {resolvedSat !== null ? (
-                <>
-                  {' '}(currently ≈ {resolvedSat.toLocaleString(locale)} sat
-                  {availableSat !== null && availableSat > BRAIINS_MAX_AMOUNT_SAT
-                    ? ', capped at 1 BTC'
-                    : ''}
-                  ){' '}
-                </>
+              {activeRemainingSat !== null && activeRemainingSat > 0 ? (
+                resolvedSat !== null ? (
+                  isCapped ? (
+                    <Trans>
+                      A bid is currently running (≈ {remainingSatStr} sat left). The next CREATE fires when it finishes — at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat, capped at 1 BTC) will be used.
+                    </Trans>
+                  ) : (
+                    <Trans>
+                      A bid is currently running (≈ {remainingSatStr} sat left). The next CREATE fires when it finishes — at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat) will be used.
+                    </Trans>
+                  )
+                ) : (
+                  <Trans>
+                    A bid is currently running (≈ {remainingSatStr} sat left). The next CREATE fires when it finishes — at that point the full available wallet balance will be used.
+                  </Trans>
+                )
+              ) : resolvedSat !== null ? (
+                isCapped ? (
+                  <Trans>
+                    A bid is currently running. The next CREATE fires when it finishes — at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat, capped at 1 BTC) will be used.
+                  </Trans>
+                ) : (
+                  <Trans>
+                    A bid is currently running. The next CREATE fires when it finishes — at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat) will be used.
+                  </Trans>
+                )
               ) : (
-                ' '
+                <Trans>
+                  A bid is currently running. The next CREATE fires when it finishes — at that point the full available wallet balance will be used.
+                </Trans>
               )}
-              will be used.
             </>
           ) : (
             <>
-              Full wallet balance per bid.
               {resolvedSat !== null ? (
-                <>
-                  {' '}Currently ≈ {resolvedSat.toLocaleString(locale)} sat
-                  {availableSat !== null && availableSat > BRAIINS_MAX_AMOUNT_SAT
-                    ? ' (capped at 1 BTC)'
-                    : ''}
-                  .
-                </>
+                isCapped ? (
+                  <Trans>
+                    Full wallet balance per bid. Currently ≈ {resolvedSatStr} sat (capped at 1 BTC).
+                  </Trans>
+                ) : (
+                  <Trans>Full wallet balance per bid. Currently ≈ {resolvedSatStr} sat.</Trans>
+                )
               ) : (
-                <> Awaiting wallet balance from the daemon.</>
+                <Trans>Full wallet balance per bid. Awaiting wallet balance from the daemon.</Trans>
               )}
             </>
           )}
@@ -658,14 +711,20 @@ function DisplaySettingsSection() {
   return (
     <section className="bg-slate-900 border border-slate-800 rounded-lg p-4">
       <header className="mb-3">
-        <h3 className="text-sm uppercase tracking-wider text-amber-400">Display</h3>
+        <h3 className="text-sm uppercase tracking-wider text-amber-400">
+          <Trans>Display</Trans>
+        </h3>
         <p className="text-xs text-slate-500 mt-1">
-          How numbers and dates render in this browser. Doesn't change the
-          UI language. Saved locally — every operator can pick their own.
+          <Trans>
+            How numbers and dates render in this browser. Doesn't change the
+            UI language. Saved locally — every operator can pick their own.
+          </Trans>
         </p>
       </header>
       <label className="block max-w-md">
-        <span className="block text-sm text-slate-300 mb-1">Number &amp; date format</span>
+        <span className="block text-sm text-slate-300 mb-1">
+          <Trans>Number &amp; date format</Trans>
+        </span>
         <select
           value={selected}
           onChange={(e) => setSelected(e.target.value)}
@@ -678,8 +737,10 @@ function DisplaySettingsSection() {
           ))}
         </select>
         <span className="block text-xs text-slate-500 mt-1">
-          "system default" follows your browser. The other entries lock
-          to a specific format regardless of browser language.
+          <Trans>
+            "system default" follows your browser. The other entries lock
+            to a specific format regardless of browser language.
+          </Trans>
         </span>
       </label>
     </section>
@@ -701,6 +762,8 @@ function PayoutSourceSection({
   onChange: <K extends keyof AppConfig>(k: K, v: AppConfig[K]) => void;
 }) {
   const source = draft.payout_source;
+  const { i18n } = useLingui();
+  void i18n;
 
   const PAYOUT_OPTIONS: ReadonlyArray<{
     value: AppConfig['payout_source'];
@@ -709,28 +772,34 @@ function PayoutSourceSection({
   }> = [
     {
       value: 'none',
-      label: 'Do not scan',
-      help: "No on-chain balance tracking. The Profit & Loss panel won't show collected BTC.",
+      label: t`Do not scan`,
+      help: t`No on-chain balance tracking. The Profit & Loss panel won't show collected BTC.`,
     },
     {
       value: 'electrs',
-      label: 'Electrs (recommended)',
-      help: 'Fast and lightweight. Polled every minute. Instant balance lookups via your Electrum server.',
+      label: t`Electrs (recommended)`,
+      help: t`Fast and lightweight. Polled every minute. Instant balance lookups via your Electrum server.`,
     },
     {
       value: 'bitcoind',
-      label: 'Bitcoin Core RPC',
-      help: 'Uses scantxoutset -- CPU-heavy, 30+ seconds per scan. Polled hourly. Use only if you don\'t have Electrs.',
+      label: t`Bitcoin Core RPC`,
+      help: t`Uses scantxoutset -- CPU-heavy, 30+ seconds per scan. Polled hourly. Use only if you don't have Electrs.`,
     },
   ];
+
+  const payoutAddr = (draft.btc_payout_address as string) ?? '';
 
   return (
     <section className="bg-slate-900 border border-slate-800 rounded-lg p-4">
       <header className="mb-3">
-        <h3 className="text-sm uppercase tracking-wider text-amber-400">On-chain payouts</h3>
+        <h3 className="text-sm uppercase tracking-wider text-amber-400">
+          <Trans>On-chain payouts</Trans>
+        </h3>
         <p className="text-xs text-slate-500 mt-1">
-          How the daemon checks your BTC payout balance. Pick a backend and fill in the
-          connection details. Requires a restart to take effect.
+          <Trans>
+            How the daemon checks your BTC payout balance. Pick a backend and fill in the
+            connection details. Requires a restart to take effect.
+          </Trans>
         </p>
       </header>
 
@@ -740,21 +809,26 @@ function PayoutSourceSection({
             Show a read-only mirror here so the operator can confirm
             which address this section is observing. */}
         <div className="bg-slate-900/40 border border-slate-800 rounded p-3 text-xs text-slate-400">
-          Observing payouts to{' '}
-          {((draft.btc_payout_address as string) ?? '').length > 0 ? (
-            <code className="text-slate-200 break-all">
-              {draft.btc_payout_address as string}
-            </code>
+          {payoutAddr.length > 0 ? (
+            <Trans>
+              Observing payouts to <code className="text-slate-200 break-all">{payoutAddr}</code>.
+              Edit this in the <strong>Pool destination</strong> section above — the worker
+              identity is auto-derived from it.
+            </Trans>
           ) : (
-            <span className="text-amber-400">(no address set)</span>
+            <Trans>
+              Observing payouts to <span className="text-amber-400">(no address set)</span>. Edit
+              this in the <strong>Pool destination</strong> section above — the worker identity
+              is auto-derived from it.
+            </Trans>
           )}
-          . Edit this in the <strong>Pool destination</strong> section above — the worker
-          identity is auto-derived from it.
         </div>
 
         {/* Source radio */}
         <fieldset>
-          <legend className="block text-sm text-slate-300 mb-2">Balance-check backend</legend>
+          <legend className="block text-sm text-slate-300 mb-2">
+            <Trans>Balance-check backend</Trans>
+          </legend>
           <div className="space-y-2">
             {PAYOUT_OPTIONS.map((opt) => (
               <label
@@ -787,7 +861,9 @@ function PayoutSourceSection({
         {source === 'electrs' && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 pt-1">
             <label className="block">
-              <span className="block text-sm text-slate-300 mb-1">Electrs host</span>
+              <span className="block text-sm text-slate-300 mb-1">
+                <Trans>Electrs host</Trans>
+              </span>
               <input
                 type="text"
                 value={(draft.electrs_host as string | null) ?? ''}
@@ -795,11 +871,13 @@ function PayoutSourceSection({
                 className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm font-mono"
               />
               <span className="block text-xs text-slate-500 mt-1">
-                e.g. 192.168.1.121 or umbrel.local
+                <Trans>e.g. 192.168.1.121 or umbrel.local</Trans>
               </span>
             </label>
             <label className="block">
-              <span className="block text-sm text-slate-300 mb-1">Electrs port</span>
+              <span className="block text-sm text-slate-300 mb-1">
+                <Trans>Electrs port</Trans>
+              </span>
               <NumberField
                 value={(draft.electrs_port as number | null) ?? 0}
                 onChange={(n) => onChange('electrs_port', (n || null) as never)}
@@ -807,7 +885,9 @@ function PayoutSourceSection({
                 locale={locale}
                 noGrouping
               />
-              <span className="block text-xs text-slate-500 mt-1">Default 50001.</span>
+              <span className="block text-xs text-slate-500 mt-1">
+                <Trans>Default 50001.</Trans>
+              </span>
             </label>
           </div>
         )}
@@ -816,7 +896,9 @@ function PayoutSourceSection({
         {source === 'bitcoind' && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 pt-1">
             <label className="block sm:col-span-2">
-              <span className="block text-sm text-slate-300 mb-1">Bitcoin Core RPC URL</span>
+              <span className="block text-sm text-slate-300 mb-1">
+                <Trans>Bitcoin Core RPC URL</Trans>
+              </span>
               <input
                 type="text"
                 value={draft.bitcoind_rpc_url ?? ''}
@@ -824,11 +906,13 @@ function PayoutSourceSection({
                 className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm font-mono"
               />
               <span className="block text-xs text-slate-500 mt-1">
-                e.g. http://192.168.1.121:8332 — your Bitcoin Core RPC endpoint.
+                <Trans>e.g. http://192.168.1.121:8332 — your Bitcoin Core RPC endpoint.</Trans>
               </span>
             </label>
             <label className="block">
-              <span className="block text-sm text-slate-300 mb-1">RPC username</span>
+              <span className="block text-sm text-slate-300 mb-1">
+                <Trans>RPC username</Trans>
+              </span>
               <input
                 type="text"
                 value={draft.bitcoind_rpc_user ?? ''}
@@ -836,11 +920,13 @@ function PayoutSourceSection({
                 className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm font-mono"
               />
               <span className="block text-xs text-slate-500 mt-1">
-                RPC username from your bitcoin.conf.
+                <Trans>RPC username from your bitcoin.conf.</Trans>
               </span>
             </label>
             <label className="block">
-              <span className="block text-sm text-slate-300 mb-1">RPC password</span>
+              <span className="block text-sm text-slate-300 mb-1">
+                <Trans>RPC password</Trans>
+              </span>
               <input
                 type="password"
                 value={draft.bitcoind_rpc_password ?? ''}
@@ -848,7 +934,7 @@ function PayoutSourceSection({
                 className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm font-mono"
               />
               <span className="block text-xs text-slate-500 mt-1">
-                RPC password — stored in the config database, not in logs.
+                <Trans>RPC password — stored in the config database, not in logs.</Trans>
               </span>
             </label>
           </div>
@@ -870,6 +956,8 @@ function Field({
   onChange: <K extends keyof AppConfig>(k: K, v: AppConfig[K]) => void;
 }) {
   const value = draft[spec.key];
+  const { i18n } = useLingui();
+  void i18n;
 
   if (spec.key === 'bid_budget_sat' && spec.kind === 'integer') {
     return <BidBudgetField spec={spec} value={value as number} locale={locale} onChange={onChange} />;
@@ -986,16 +1074,20 @@ function Field({
         />
         {noPeriod && (
           <span className="block text-xs text-amber-400 mt-1">
-            ⚠ No period found. Ocean TIDES requires "&lt;BTC address&gt;.&lt;label&gt;".
-            Without the address prefix, shares go uncredited.
+            <Trans>
+              ⚠ No period found. Ocean TIDES requires "&lt;BTC address&gt;.&lt;label&gt;".
+              Without the address prefix, shares go uncredited.
+            </Trans>
           </span>
         )}
         {prefixMismatch && (
           <span className="block text-xs text-red-400 mt-1 leading-snug">
-            <strong>Mismatch:</strong> the worker identity must start with{' '}
-            <code className="text-slate-200">{addr}.</code> — otherwise Ocean credits shares to
-            a different address (or nobody). Edit the BTC payout address above; this field
-            follows it automatically.
+            <Trans>
+              <strong>Mismatch:</strong> the worker identity must start with{' '}
+              <code className="text-slate-200">{addr}.</code> — otherwise Ocean credits shares
+              to a different address (or nobody). Edit the BTC payout address above; this
+              field follows it automatically.
+            </Trans>
           </span>
         )}
         {spec.help && <span className="block text-xs text-slate-500 mt-1">{spec.help}</span>}
@@ -1036,7 +1128,7 @@ function Field({
           })}
           {!activePreset && v && (
             <span className="px-2 py-0.5 rounded text-[11px] border border-slate-700 bg-slate-900 text-slate-500 italic">
-              custom
+              <Trans>custom</Trans>
             </span>
           )}
         </div>
@@ -1076,7 +1168,7 @@ function Field({
               onClick={() => onChange(spec.key, stepDown(current) as never)}
               disabled={current <= spec.min}
               className="px-2 bg-slate-800 border border-slate-700 rounded-l text-slate-300 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-sm"
-              aria-label="decrease"
+              aria-label={t`decrease`}
             >
               −
             </button>
@@ -1095,7 +1187,7 @@ function Field({
               type="button"
               onClick={() => onChange(spec.key, stepUp(current) as never)}
               className="px-2 bg-slate-800 border border-slate-700 rounded-r text-slate-300 hover:bg-slate-700 text-sm"
-              aria-label="increase"
+              aria-label={t`increase`}
             >
               +
             </button>

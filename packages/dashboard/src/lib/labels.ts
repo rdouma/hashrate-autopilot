@@ -3,19 +3,29 @@
  * Braiins and our own controller. Keep UI strings out of the wire model.
  */
 
-const BID_STATUS: Record<string, string> = {
-  BID_STATUS_UNSPECIFIED: 'Unknown',
-  BID_STATUS_ACTIVE: 'Active',
-  BID_STATUS_CREATED: 'Pending 2FA',
-  BID_STATUS_PAUSED: 'Paused',
-  BID_STATUS_FROZEN: 'Frozen',
-  BID_STATUS_PENDING_CANCEL: 'Cancelling…',
-  BID_STATUS_CANCELED: 'Cancelled',
-  BID_STATUS_FULFILLED: 'Fulfilled',
-};
+import { t } from '@lingui/macro';
 
 export function bidStatusLabel(raw: string): string {
-  return BID_STATUS[raw] ?? prettyFallback(raw);
+  switch (raw) {
+    case 'BID_STATUS_UNSPECIFIED':
+      return t`Unknown`;
+    case 'BID_STATUS_ACTIVE':
+      return t`Active`;
+    case 'BID_STATUS_CREATED':
+      return t`Pending 2FA`;
+    case 'BID_STATUS_PAUSED':
+      return t`Paused`;
+    case 'BID_STATUS_FROZEN':
+      return t`Frozen`;
+    case 'BID_STATUS_PENDING_CANCEL':
+      return t`Cancelling…`;
+    case 'BID_STATUS_CANCELED':
+      return t`Cancelled`;
+    case 'BID_STATUS_FULFILLED':
+      return t`Fulfilled`;
+    default:
+      return prettyFallback(raw);
+  }
 }
 
 export function bidStatusClass(raw: string): string {
@@ -38,7 +48,7 @@ export function bidStatusClass(raw: string): string {
 
 /** @deprecated ActionMode is always 'NORMAL' since v1.1. */
 export function actionModeLabel(raw: string): string {
-  return raw === 'NORMAL' ? 'Normal' : raw;
+  return raw === 'NORMAL' ? t`Normal` : raw;
 }
 
 /**

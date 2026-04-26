@@ -17,6 +17,7 @@
  * having to refresh manually.
  */
 
+import { Trans } from '@lingui/macro';
 import { type ReactNode, useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 
@@ -78,7 +79,7 @@ export function SetupGate({ children }: { children: ReactNode }) {
   if (probe.kind === 'loading' && location.pathname !== '/setup') {
     return (
       <div className="min-h-full flex items-center justify-center text-slate-400 text-sm">
-        Connecting to daemon…
+        <Trans>Connecting to daemon…</Trans>
       </div>
     );
   }

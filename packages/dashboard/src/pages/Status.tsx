@@ -1,3 +1,5 @@
+import { Trans, t } from '@lingui/macro';
+import { useLingui } from '@lingui/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -60,6 +62,8 @@ export function Status() {
   const qc = useQueryClient();
   const { intlLocale } = useLocale();
   const denomination = useDenomination();
+  const { i18n } = useLingui();
+  void i18n;
 
   const [chartRange, setChartRangeState] = useState<ChartRange>(() => readStoredChartRange());
   useEffect(() => {
@@ -163,9 +167,9 @@ export function Status() {
     return null;
   }
 
-  if (query.isLoading) return <div className="text-slate-400">loading…</div>;
+  if (query.isLoading) return <div className="text-slate-400"><Trans>loading…</Trans></div>;
   if (!query.data) {
-    return <div className="text-red-400">failed to load: {(query.error as Error)?.message}</div>;
+    return <div className="text-red-400"><Trans>failed to load: {(query.error as Error)?.message}</Trans></div>;
   }
 
   const s: StatusResponse = query.data;
@@ -242,26 +246,26 @@ export function Status() {
           refetchQueryKey={STATUS_QUERY_KEY}
           badges={
             <ReachabilityBadge
-              label="API reachable"
+              label={t`API reachable`}
               reachable={s.market !== null}
-              downLabel="API DOWN"
-              title="Braiins marketplace API — reachable when the last observe() read market/orderbook/balance without error."
+              downLabel={t`API DOWN`}
+              title={t`Braiins marketplace API — reachable when the last observe() read market/orderbook/balance without error.`}
             />
           }
         >
-          <Row k="delivered" v={formatHashratePH(s.actual_hashrate_ph)} />
+          <Row k={t`delivered`} v={formatHashratePH(s.actual_hashrate_ph)} />
           <Row
-            k="target"
+            k={t`target`}
             v={
               s.config_summary.cheap_mode_active
-                ? `${formatHashratePH(s.config_summary.effective_target_hashrate_ph)} (cheap mode)`
+                ? `${formatHashratePH(s.config_summary.effective_target_hashrate_ph)} ${t`(cheap mode)`}`
                 : formatHashratePH(s.config_summary.target_hashrate_ph)
             }
           />
-          <Row k="floor" v={formatHashratePH(s.config_summary.minimum_floor_hashrate_ph)} />
+          <Row k={t`floor`} v={formatHashratePH(s.config_summary.minimum_floor_hashrate_ph)} />
           {s.below_floor_since && (
             <div className="text-xs text-amber-400 mt-1">
-              below floor since {formatAge(s.below_floor_since)}
+              <Trans>below floor since {formatAge(s.below_floor_since)}</Trans>
             </div>
           )}
           {/*
@@ -277,20 +281,20 @@ export function Status() {
            */}
           <div className="border-t border-slate-800 mt-2 pt-2">
             <Row
-              k={`max bid${s.config_summary.binding_cap === 'fixed' ? ' (binding)' : ''}`}
+              k={s.config_summary.binding_cap === 'fixed' ? t`max bid (binding)` : t`max bid`}
               v={denomination.formatSatPerPhDay(s.config_summary.max_bid_sat_per_ph_day, intlLocale)}
             />
             {s.config_summary.max_overpay_vs_hashprice_sat_per_ph_day !== null && (
               <>
                 <Row
-                  k="max over hashprice"
+                  k={t`max over hashprice`}
                   v={denomination.formatSatPerPhDay(
                     s.config_summary.max_overpay_vs_hashprice_sat_per_ph_day,
                     intlLocale,
                   )}
                 />
                 <Row
-                  k={`effective cap${s.config_summary.binding_cap === 'dynamic' ? ' (binding)' : ''}`}
+                  k={s.config_summary.binding_cap === 'dynamic' ? t`effective cap (binding)` : t`effective cap`}
                   v={denomination.formatSatPerPhDay(
                     s.config_summary.effective_cap_sat_per_ph_day,
                     intlLocale,
@@ -298,8 +302,8 @@ export function Status() {
                 />
               </>
             )}
-            <Row k="best bid" v={denomination.formatSatPerPhDay(s.market?.best_bid_sat_per_ph_day ?? null, intlLocale)} />
-            <Row k="best ask" v={denomination.formatSatPerPhDay(s.market?.best_ask_sat_per_ph_day ?? null, intlLocale)} />
+            <Row k={t`best bid`} v={denomination.formatSatPerPhDay(s.market?.best_bid_sat_per_ph_day ?? null, intlLocale)} />
+            <Row k={t`best ask`} v={denomination.formatSatPerPhDay(s.market?.best_ask_sat_per_ph_day ?? null, intlLocale)} />
           </div>
           <div className="border-t border-slate-800 mt-2 pt-2">
             <BraiinsBalances
@@ -321,24 +325,24 @@ export function Status() {
       </section>
 
       <section>
-        <h3 className="text-xs uppercase tracking-wider text-slate-100 mb-2">Bids</h3>
+        <h3 className="text-xs uppercase tracking-wider text-slate-100 mb-2"><Trans>Bids</Trans></h3>
         {s.bids.length === 0 ? (
           <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 text-slate-500 text-sm">
-            no bids on this account
+            <Trans>no bids on this account</Trans>
           </div>
         ) : (
           <div className="bg-slate-900 border border-slate-800 rounded-lg overflow-hidden">
             <table className="w-full text-sm">
               <thead className="text-xs text-slate-400 bg-slate-900/50">
                 <tr>
-                  <th className="text-left py-2 px-3">id</th>
-                  <th className="text-left py-2 px-3">owner</th>
-                  <th className="text-left py-2 px-3">created</th>
-                  <th className="text-right py-2 px-3">price</th>
-                  <th className="text-right py-2 px-3">delivered / cap</th>
-                  <th className="text-right py-2 px-3">budget</th>
-                  <th className="text-left py-2 px-3 w-32">progress</th>
-                  <th className="text-left py-2 px-3">status</th>
+                  <th className="text-left py-2 px-3"><Trans>id</Trans></th>
+                  <th className="text-left py-2 px-3"><Trans>owner</Trans></th>
+                  <th className="text-left py-2 px-3"><Trans>created</Trans></th>
+                  <th className="text-right py-2 px-3"><Trans>price</Trans></th>
+                  <th className="text-right py-2 px-3"><Trans>delivered / cap</Trans></th>
+                  <th className="text-right py-2 px-3"><Trans>budget</Trans></th>
+                  <th className="text-left py-2 px-3 w-32"><Trans>progress</Trans></th>
+                  <th className="text-left py-2 px-3"><Trans>status</Trans></th>
                 </tr>
               </thead>
               <tbody>
@@ -349,9 +353,9 @@ export function Status() {
                     </td>
                     <td className="py-2 px-3">
                       {b.is_owned ? (
-                        <span className="text-emerald-400">autopilot</span>
+                        <span className="text-emerald-400"><Trans>autopilot</Trans></span>
                       ) : (
-                        <span className="text-amber-400">unknown</span>
+                        <span className="text-amber-400"><Trans>unknown</Trans></span>
                       )}
                     </td>
                     <td className="py-2 px-3 text-xs">
@@ -409,7 +413,7 @@ export function Status() {
 
       {s.last_proposals.length > 0 && (
         <section>
-          <h3 className="text-xs uppercase tracking-wider text-slate-100 mb-2">Last tick proposals</h3>
+          <h3 className="text-xs uppercase tracking-wider text-slate-100 mb-2"><Trans>Last tick proposals</Trans></h3>
           <ul className="space-y-1">
             {s.last_proposals.map((p, i) => (
               <li key={i}>
@@ -482,6 +486,8 @@ function OperationsCard({
 }) {
   const { intlLocale } = useLocale();
   const denomination = useDenomination();
+  const { i18n } = useLingui();
+  void i18n;
 
   const actionVisible = s.action_mode !== 'NORMAL';
 
@@ -503,9 +509,9 @@ function OperationsCard({
     >
       {currentPricePH !== null ? (
         <div className="grid grid-cols-2 gap-6 w-full">
-          <Tooltip text="Current owned-bid price (sat/PH/day). Under pay-your-bid this is exactly what Braiins charges per delivered EH-day - the live price you're paying. The plus/minus next to it is the spread vs Ocean's spot hashprice (positive = paying above break-even, negative = below). For the realised effective rate (post-hoc, range-averaged across actual delivery and metering noise), see the AVG COST / PH DELIVERED stats card.">
+          <Tooltip text={t`Current owned-bid price (sat/PH/day). Under pay-your-bid this is exactly what Braiins charges per delivered EH-day - the live price you're paying. The plus/minus next to it is the spread vs Ocean's spot hashprice (positive = paying above break-even, negative = below). For the realised effective rate (post-hoc, range-averaged across actual delivery and metering noise), see the AVG COST / PH DELIVERED stats card.`}>
             <div className="flex flex-col items-center cursor-help">
-              <div className="text-[11px] uppercase tracking-wider text-slate-100 mb-1">price</div>
+              <div className="text-[11px] uppercase tracking-wider text-slate-100 mb-1"><Trans>price</Trans></div>
               {/* relative wrapper so the ±delta can be position:absolute
                   outside the flow — that way the big number stays centered
                   regardless of how wide the badge gets (e.g. "+9" vs "+126"). */}
@@ -527,13 +533,18 @@ function OperationsCard({
                 </span>
               </div>
               <div className="text-xs text-slate-400 mt-1">
-                {denomination.mode === 'usd' ? '$' : <><SatSymbol /></>}/PH/day current bid
-                {activeOwned.length > 1 ? ` · primary of ${activeOwned.length}` : ''}
+                {denomination.mode === 'usd' ? '$' : <><SatSymbol /></>}
+                {'/PH/day '}
+                {activeOwned.length > 1 ? (
+                  <Trans>current bid · primary of {activeOwned.length}</Trans>
+                ) : (
+                  <Trans>current bid</Trans>
+                )}
               </div>
             </div>
           </Tooltip>
           <div className="flex flex-col items-center">
-            <div className="text-[11px] uppercase tracking-wider text-slate-100 mb-1">delivered</div>
+            <div className="text-[11px] uppercase tracking-wider text-slate-100 mb-1"><Trans>delivered</Trans></div>
             <div className={`text-4xl font-mono font-semibold tabular-nums leading-none ${deliveredColor}`}>
               {formatNumber(s.actual_hashrate_ph, {
                 minimumFractionDigits: 2,
@@ -546,7 +557,7 @@ function OperationsCard({
       ) : (
         <div className="flex flex-col items-center">
           <div className="text-3xl font-mono text-slate-500">—</div>
-          <div className="text-xs text-slate-400 mt-0.5">no active bid</div>
+          <div className="text-xs text-slate-400 mt-0.5"><Trans>no active bid</Trans></div>
         </div>
       )}
       <RunModeToggle current={s.run_mode} onChange={onRunMode} disabled={runModePending} />
@@ -565,26 +576,11 @@ function OperationsCard({
 
 const TICK_RESULT_STALE_MS = 30_000;
 
-const TICK_RESULT_KIND_LABELS: Record<string, string> = {
-  CREATE_BID: 'Create bid',
-  EDIT_PRICE: 'Edit price',
-  EDIT_SPEED: 'Edit speed',
-  CANCEL_BID: 'Cancel bid',
-  PAUSE: 'Pause',
-};
-
 const TICK_RESULT_OUTCOME_STYLES: Record<string, string> = {
   EXECUTED: 'bg-emerald-900/40 text-emerald-300 border-emerald-700',
   DRY_RUN: 'bg-slate-800 text-slate-300 border-slate-700',
   BLOCKED: 'bg-amber-900/40 text-amber-300 border-amber-700',
   FAILED: 'bg-red-900/40 text-red-300 border-red-700',
-};
-
-const TICK_RESULT_REASON_LABELS: Record<string, string> = {
-  RUN_MODE_NOT_LIVE: 'not in LIVE mode',
-  RUN_MODE_PAUSED: 'paused',
-  ACTION_MODE_BLOCKS_CREATE_OR_EDIT: 'action mode blocks this',
-  PRICE_DECREASE_COOLDOWN: 'Braiins 10-min cooldown',
 };
 
 function NextActionCard({
@@ -598,6 +594,8 @@ function NextActionCard({
   tickPending: boolean;
   tickResult: TickNowResponse | undefined;
 }) {
+  const { i18n } = useLingui();
+  void i18n;
   // Auto-fade the tick-result banner after a short window. Without
   // this the "Edit price: executed" line sits there long after the
   // decision ran and confuses "what just happened" with "what's
@@ -614,10 +612,24 @@ function NextActionCard({
   }, [tickResult]);
   const showTickResult = tickResult && !tickResultStale;
 
+  const tickResultKindLabels: Record<string, string> = {
+    CREATE_BID: t`Create bid`,
+    EDIT_PRICE: t`Edit price`,
+    EDIT_SPEED: t`Edit speed`,
+    CANCEL_BID: t`Cancel bid`,
+    PAUSE: t`Pause`,
+  };
+  const tickResultReasonLabels: Record<string, string> = {
+    RUN_MODE_NOT_LIVE: t`not in LIVE mode`,
+    RUN_MODE_PAUSED: t`paused`,
+    ACTION_MODE_BLOCKS_CREATE_OR_EDIT: t`action mode blocks this`,
+    PRICE_DECREASE_COOLDOWN: t`Braiins 10-min cooldown`,
+  };
+
   return (
     <section className="bg-slate-900 border border-slate-800 rounded-lg p-4 h-full flex flex-col">
       <div>
-        <h3 className="text-xs uppercase tracking-wider text-slate-100 mb-1">Next action</h3>
+        <h3 className="text-xs uppercase tracking-wider text-slate-100 mb-1"><Trans>Next action</Trans></h3>
         <JustExecutedBanner last={s.next_action.last_executed} />
         <div className="text-slate-100">{s.next_action.summary}</div>
         {s.next_action.detail && (
@@ -630,10 +642,10 @@ function NextActionCard({
         <button
           onClick={onTickNow}
           disabled={tickPending}
-          title="Run the pending decision immediately — clears the post-edit lock and bypasses the patience/escalation timers so a waiting-to-settle EDIT_PRICE fires on this tick instead of after the full window."
+          title={t`Run the pending decision immediately — clears the post-edit lock and bypasses the patience/escalation timers so a waiting-to-settle EDIT_PRICE fires on this tick instead of after the full window.`}
           className="px-3 py-1.5 text-xs rounded border border-slate-700 text-slate-200 hover:bg-slate-800 disabled:opacity-50"
         >
-          {tickPending ? 'ticking…' : 'Run decision now'}
+          {tickPending ? <Trans>ticking…</Trans> : <Trans>Run decision now</Trans>}
         </button>
       </div>
 
@@ -644,19 +656,19 @@ function NextActionCard({
                 const executed = tickResult.executed ?? [];
                 if (executed.length === 0) {
                   return (
-                    <span className="text-slate-400">No action needed this tick.</span>
+                    <span className="text-slate-400"><Trans>No action needed this tick.</Trans></span>
                   );
                 }
                 return (
                   <div className="flex flex-wrap items-center gap-1.5">
                     {executed.map((e, i) => {
-                      const label = TICK_RESULT_KIND_LABELS[e.kind] ?? e.kind;
+                      const label = tickResultKindLabels[e.kind] ?? e.kind;
                       const pillClass =
                         TICK_RESULT_OUTCOME_STYLES[e.outcome] ??
                         'bg-slate-800 text-slate-300 border-slate-700';
                       const outcomeLabel = e.outcome.toLowerCase();
                       const reasonLabel = e.reason
-                        ? TICK_RESULT_REASON_LABELS[e.reason] ?? e.reason
+                        ? tickResultReasonLabels[e.reason] ?? e.reason
                         : null;
                       return (
                         <span key={i} className="inline-flex items-center gap-1.5">
@@ -678,7 +690,7 @@ function NextActionCard({
                 );
               })()
             : (
-              <span className="text-red-400">tick failed: {tickResult.error}</span>
+              <span className="text-red-400"><Trans>tick failed: {tickResult.error}</Trans></span>
             )}
         </div>
       )}
@@ -724,7 +736,7 @@ function NextActionFooter({
   return (
     <div className="mt-3 pt-2 border-t border-slate-800 flex items-baseline justify-between gap-3 text-[11px] text-slate-500 font-mono">
       <span title={tickAt !== null ? formatTimestampUtc(tickAt) : ''}>
-        last tick:{' '}
+        <Trans>last tick:</Trans>{' '}
         <span className="text-slate-400">
           {tickAt !== null ? formatTimestamp(tickAt) : '—'}
         </span>
@@ -736,12 +748,12 @@ function NextActionFooter({
         {remainingSec === null
           ? '—'
           : remainingSec > 0 ? (
-              <>
+              <Trans>
                 next in{' '}
                 <span className="text-slate-300 tabular-nums">{remainingSec}s</span>
-              </>
+              </Trans>
             )
-          : <span className="text-slate-400">refreshing…</span>}
+          : <span className="text-slate-400"><Trans>refreshing…</Trans></span>}
       </span>
     </div>
   );
@@ -766,6 +778,8 @@ function PriceDeltaVsHashprice({
   intlLocale: string | undefined;
 }) {
   const denomination = useDenomination();
+  const { i18n } = useLingui();
+  void i18n;
   if (hashpricePH === null) return null;
   const delta = Math.round(currentPH - hashpricePH);
   const hashpricePretty = denomination.formatSatPerPhDay(Math.round(hashpricePH));
@@ -774,7 +788,7 @@ function PriceDeltaVsHashprice({
     return (
       <span
         className="text-xs font-mono text-slate-400 cursor-help"
-        title={`Effective rate equals hashprice (${hashpricePretty}) — breaking even.`}
+        title={t`Effective rate equals hashprice (${hashpricePretty}) — breaking even.`}
       >
         ±0
       </span>
@@ -783,11 +797,11 @@ function PriceDeltaVsHashprice({
 
   const sign = delta > 0 ? '+' : '−';
   const color = delta > 0 ? 'text-red-300' : 'text-emerald-300';
-  const verb = delta > 0 ? 'above' : 'below';
   const deltaFormatted = denomination.formatSatPerPhDay(Math.abs(delta));
   const tooltip =
-    `Effective rate ${sign}${deltaFormatted} ${verb} hashprice (${hashpricePretty}) — ` +
-    `positive means paying above break-even, negative means paying below (profitable).`;
+    delta > 0
+      ? t`Effective rate ${sign}${deltaFormatted} above hashprice (${hashpricePretty}) — positive means paying above break-even, negative means paying below (profitable).`
+      : t`Effective rate ${sign}${deltaFormatted} below hashprice (${hashpricePretty}) — positive means paying above break-even, negative means paying below (profitable).`;
 
   return (
     <Tooltip text={tooltip}>
@@ -837,13 +851,6 @@ function JustExecutedBanner({ last }: { last: NextActionView['last_executed'] })
 // Next-action progress bar (issue #4)
 // ---------------------------------------------------------------------------
 
-const EVENT_LABELS: Record<NonNullable<NextActionView['event_kind']>, string> = {
-  escalation: 'Escalation in',
-  lower_after_override: 'Override lock clears in',
-  lower_after_patience: 'Patience clears in',
-  lower_after_cooldown: 'Cooldown clears in',
-};
-
 const EVENT_COLORS: Record<NonNullable<NextActionView['event_kind']>, string> = {
   escalation: 'bg-amber-400',
   lower_after_override: 'bg-sky-400',
@@ -852,6 +859,8 @@ const EVENT_COLORS: Record<NonNullable<NextActionView['event_kind']>, string> = 
 };
 
 function NextActionProgress({ next }: { next: NextActionView }) {
+  const { i18n } = useLingui();
+  void i18n;
   // Re-render every second so the bar visibly creeps even between the
   // 5s status polls. Hook is only useful when an event is queued; gate
   // the interval below to avoid burning a timer in steady state.
@@ -872,15 +881,23 @@ function NextActionProgress({ next }: { next: NextActionView }) {
   const fraction = elapsed / span;
   const remainingMs = Math.max(0, end - now);
   const overdue = end < now;
-  const label = EVENT_LABELS[next.event_kind!];
+  const eventLabels: Record<NonNullable<NextActionView['event_kind']>, string> = {
+    escalation: t`Escalation in`,
+    lower_after_override: t`Override lock clears in`,
+    lower_after_patience: t`Patience clears in`,
+    lower_after_cooldown: t`Cooldown clears in`,
+  };
+  const label = eventLabels[next.event_kind!];
   const fillColor = overdue ? 'bg-red-400' : EVENT_COLORS[next.event_kind!];
+  const remainingFormatted = formatRemaining(remainingMs);
+  const overdueFormatted = formatRemaining(now - end);
 
   return (
     <div className="mt-3">
       <div className="flex items-baseline justify-between text-[11px] text-slate-400 mb-1 font-mono">
         <span>{label}</span>
         <span className={overdue ? 'text-red-300' : ''}>
-          {overdue ? `overdue ${formatRemaining(now - end)}` : formatRemaining(remainingMs)}
+          {overdue ? <Trans>overdue {overdueFormatted}</Trans> : remainingFormatted}
         </span>
       </div>
       <div className="h-1.5 bg-slate-800 rounded overflow-hidden">
@@ -921,6 +938,8 @@ function FilterBar({
   range: ChartRange;
   onRangeChange: (r: ChartRange) => void;
 }) {
+  const { i18n } = useLingui();
+  void i18n;
   return (
     <section className="flex items-center justify-end flex-wrap gap-2">
       <div className="flex gap-1">
@@ -934,7 +953,7 @@ function FilterBar({
                 : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
             }`}
           >
-            {r === 'all' ? 'All' : r}
+            {r === 'all' ? t`All` : r}
           </button>
         ))}
       </div>
@@ -955,12 +974,22 @@ function FilterBar({
 function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
   const { intlLocale } = useLocale();
   const denomination = useDenomination();
+  const { i18n } = useLingui();
+  void i18n;
 
   if (!statsData) {
+    const placeholderCards = [
+      t`uptime`,
+      t`avg braiins`,
+      t`avg datum`,
+      t`avg ocean`,
+      t`avg cost / PH delivered`,
+      t`avg cost vs hashprice`,
+    ];
     return (
       <section className="grid grid-cols-2 lg:grid-cols-6 gap-3">
-        {['uptime', 'avg braiins', 'avg datum', 'avg ocean', 'avg cost / PH delivered', 'avg cost vs hashprice'].map((label) => (
-          <StatCard key={label} label={label} value="—" tooltip="Loading or daemon restart required." />
+        {placeholderCards.map((label) => (
+          <StatCard key={label} label={label} value="—" tooltip={t`Loading or daemon restart required.`} />
         ))}
       </section>
     );
@@ -979,9 +1008,9 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
   return (
     <section className="grid grid-cols-2 lg:grid-cols-6 gap-3">
       <StatCard
-        label="uptime"
+        label={t`uptime`}
         value={uptime_pct !== null ? `${uptime_pct.toFixed(1)}%` : '\u2014'}
-        tooltip="Duration-weighted % of time with delivered hashrate > 0. Each tick is weighted by its actual duration (time until the next tick) so gaps after restarts count proportionally."
+        tooltip={t`Duration-weighted % of time with delivered hashrate > 0. Each tick is weighted by its actual duration (time until the next tick) so gaps after restarts count proportionally.`}
         color={
           uptime_pct === null
             ? 'text-slate-400'
@@ -993,29 +1022,29 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
         }
       />
       <StatCard
-        label="avg braiins"
+        label={t`avg braiins`}
         value={formatHashratePH(avg_hashrate_ph, intlLocale)}
-        tooltip="Duration-weighted average of the hashrate Braiins reports delivering. Includes downtime (where delivered = 0) so a bad stretch shows up in the average, not just the live card."
+        tooltip={t`Duration-weighted average of the hashrate Braiins reports delivering. Includes downtime (where delivered = 0) so a bad stretch shows up in the average, not just the live card.`}
       />
       <StatCard
-        label="avg datum"
+        label={t`avg datum`}
         value={formatHashratePH(avg_datum_hashrate_ph, intlLocale)}
-        tooltip="Duration-weighted average of the hashrate Datum measures at the gateway. A sustained gap below Avg Braiins means Braiins is billing for hashrate Datum never saw arrive."
+        tooltip={t`Duration-weighted average of the hashrate Datum measures at the gateway. A sustained gap below Avg Braiins means Braiins is billing for hashrate Datum never saw arrive.`}
       />
       <StatCard
-        label="avg ocean"
+        label={t`avg ocean`}
         value={formatHashratePH(avg_ocean_hashrate_ph, intlLocale)}
-        tooltip="Duration-weighted average of the hashrate Ocean credits to our payout address. Each tick (every 60 s) the daemon calls Ocean's /v1/user_hashrate endpoint and reads the `hashrate_300s` field — Ocean's own 5-minute sliding-window estimate for this wallet. So: sampled every minute, each sample is a 5-minute smoothed value. A sustained gap below Avg Braiins / Avg Datum means the pool isn't crediting work we think we delivered."
+        tooltip={t`Duration-weighted average of the hashrate Ocean credits to our payout address. Each tick (every 60 s) the daemon calls Ocean's /v1/user_hashrate endpoint and reads the \`hashrate_300s\` field — Ocean's own 5-minute sliding-window estimate for this wallet. So: sampled every minute, each sample is a 5-minute smoothed value. A sustained gap below Avg Braiins / Avg Datum means the pool isn't crediting work we think we delivered.`}
       />
       <StatCard
-        label="avg cost / PH delivered"
+        label={t`avg cost / PH delivered`}
         value={avg_cost_per_ph_sat_per_ph_day !== null ? denomination.formatSatPerPhDay(Math.round(avg_cost_per_ph_sat_per_ph_day), intlLocale) : '\u2014'}
-        tooltip="Average effective rate over the selected chart range (default 3h) — what Braiins actually charged per PH/day delivered, from per-tick Δconsumed_sat ÷ (delivered_ph × Δt). Same metric the hero PRICE card shows; this pair is duplicated so each panel stands on its own. For the current bid price see the NEXT ACTION panel."
+        tooltip={t`Average effective rate over the selected chart range (default 3h) — what Braiins actually charged per PH/day delivered, from per-tick Δconsumed_sat ÷ (delivered_ph × Δt). Same metric the hero PRICE card shows; this pair is duplicated so each panel stands on its own. For the current bid price see the NEXT ACTION panel.`}
       />
       <StatCard
-        label="avg cost vs hashprice"
+        label={t`avg cost vs hashprice`}
         value={avg_overpay_vs_hashprice_sat_per_ph_day !== null ? denomination.formatSatPerPhDay(Math.round(avg_overpay_vs_hashprice_sat_per_ph_day), intlLocale) : '\u2014'}
-        tooltip="Duration-weighted average of (effective price − hashprice). Negative means matched asks averaged below the break-even hashprice (good — cheaper than mining at current difficulty). Positive means above break-even."
+        tooltip={t`Duration-weighted average of (effective price − hashprice). Negative means matched asks averaged below the break-even hashprice (good — cheaper than mining at current difficulty). Positive means above break-even.`}
         color={
           avg_overpay_vs_hashprice_sat_per_ph_day === null
             ? 'text-slate-100'
@@ -1085,7 +1114,7 @@ function TickingAge({ epochMs }: { epochMs: number | null | undefined }) {
     const id = setInterval(() => setTick((n) => n + 1), 1_000);
     return () => clearInterval(id);
   }, []);
-  return <span>updated {formatAgePrecise(epochMs)}</span>;
+  return <span><Trans>updated {formatAgePrecise(epochMs)}</Trans></span>;
 }
 
 /**
@@ -1163,8 +1192,8 @@ function RefreshCountdown({
   // dashboard's next react-query poll. Either way "now" stuck on
   // screen for 30 seconds reads as broken; "refreshing…" is honest
   // about what's happening.
-  if (msUntil <= 0) return <span>refreshing…</span>;
-  return <span>refreshes in {formatCountdownPrecise(msUntil)}</span>;
+  if (msUntil <= 0) return <span><Trans>refreshing…</Trans></span>;
+  return <span><Trans>refreshes in {formatCountdownPrecise(msUntil)}</Trans></span>;
 }
 
 function BidIdCell({ id }: { id: string }) {
@@ -1173,6 +1202,8 @@ function BidIdCell({ id }: { id: string }) {
   // char per line on narrow screens (#34). Keeping the full ID always
   // visible on desktop preserves the #26 behavior.
   const [copied, setCopied] = useState(false);
+  const { i18n } = useLingui();
+  void i18n;
   const copy = async () => {
     try {
       await copyToClipboard(id);
@@ -1190,8 +1221,8 @@ function BidIdCell({ id }: { id: string }) {
         <span>{shortId}</span>
         <button
           onClick={copy}
-          aria-label={copied ? 'copied bid ID' : 'copy bid ID'}
-          title={copied ? 'copied bid ID' : 'copy bid ID'}
+          aria-label={copied ? t`copied bid ID` : t`copy bid ID`}
+          title={copied ? t`copied bid ID` : t`copy bid ID`}
           className={
             'shrink-0 p-0.5 rounded border border-slate-700 hover:bg-slate-800 ' +
             (copied ? 'text-emerald-300' : 'text-slate-400')
@@ -1238,6 +1269,8 @@ function ReachabilityBadge({
   downLabel?: string;
   title?: string;
 }) {
+  const { i18n } = useLingui();
+  void i18n;
   return (
     <span
       className={
@@ -1253,7 +1286,7 @@ function ReachabilityBadge({
           'w-1.5 h-1.5 rounded-full ' + (reachable ? 'bg-emerald-400' : 'bg-red-400')
         }
       />
-      {reachable ? label : (downLabel ?? `${label} DOWN`)}
+      {reachable ? label : (downLabel ?? t`${label} DOWN`)}
     </span>
   );
 }
@@ -1292,6 +1325,8 @@ function BraiinsBalances({
 }) {
   const dailySpendSat = actualSpendPerDaySat3h ?? 0;
   const nowMs = Date.now();
+  const { i18n } = useLingui();
+  void i18n;
   if (balances.length === 0) {
     return <div className="text-slate-500 text-sm">{'\u2014'}</div>;
   }
@@ -1309,18 +1344,17 @@ function BraiinsBalances({
             month: 'short',
             day: 'numeric',
           });
-          const daysLabel =
-            runwayDays >= 10
-              ? `${Math.round(runwayDays)} days`
-              : `${runwayDays.toFixed(1)} days`;
-          return `${daysLabel} \u00b7 ~${dateLabel}`;
+          const daysCount = runwayDays >= 10
+            ? Math.round(runwayDays).toString()
+            : runwayDays.toFixed(1);
+          return t`${daysCount} days \u00b7 ~${dateLabel}`;
         })();
         return (
           <div key={b.subaccount}>
-            <Row k="available" v={denomination.formatSat(b.available_balance_sat, locale)} />
-            <Row k="blocked" v={denomination.formatSat(b.blocked_balance_sat, locale)} />
-            <Row k="total" v={denomination.formatSat(b.total_balance_sat, locale)} />
-            <Row k="runway" v={runwayText} />
+            <Row k={t`available`} v={denomination.formatSat(b.available_balance_sat, locale)} />
+            <Row k={t`blocked`} v={denomination.formatSat(b.blocked_balance_sat, locale)} />
+            <Row k={t`total`} v={denomination.formatSat(b.total_balance_sat, locale)} />
+            <Row k={t`runway`} v={runwayText} />
           </div>
         );
       })}
@@ -1331,6 +1365,8 @@ function BraiinsBalances({
 function OceanPanel() {
   const { intlLocale } = useLocale();
   const denomination = useDenomination();
+  const { i18n } = useLingui();
+  void i18n;
 
   // React-query dedupes by queryKey, so this shares the in-flight
   // fetch + cached response with the parent's own `['ocean']` query
@@ -1353,7 +1389,7 @@ function OceanPanel() {
   if (!o || !o.configured) {
     return (
       <Card title="Ocean">
-        <div className="text-slate-500 text-sm">Not configured</div>
+        <div className="text-slate-500 text-sm"><Trans>Not configured</Trans></div>
       </Card>
     );
   }
@@ -1370,10 +1406,10 @@ function OceanPanel() {
       nextRefreshAtMs={nextOceanRefreshMs}
       badges={
         <ReachabilityBadge
-          label="API reachable"
+          label={t`API reachable`}
           reachable={o.fetched_at_ms !== null && o.pool !== null}
-          downLabel="API DOWN"
-          title="Ocean stats API — reachable when the last /api/ocean fetch returned a pool snapshot."
+          downLabel={t`API DOWN`}
+          title={t`Ocean stats API — reachable when the last /api/ocean fetch returned a pool snapshot.`}
         />
       }
     >
@@ -1382,10 +1418,10 @@ function OceanPanel() {
           wallet right now. */}
       {o.user && (
         <>
-          <Row k="ocean hashrate" v={formatHashratePH(o.user.hashrate_5m_ph, intlLocale)} />
+          <Row k={t`ocean hashrate`} v={formatHashratePH(o.user.hashrate_5m_ph, intlLocale)} />
           {o.user.hashprice_sat_per_ph_day != null && (
             <Row
-              k="hashprice (break-even)"
+              k={t`hashprice (break-even)`}
               v={denomination.formatSatPerPhDay(o.user.hashprice_sat_per_ph_day, intlLocale)}
             />
           )}
@@ -1396,24 +1432,24 @@ function OceanPanel() {
       {o.user && (
         <div className="border-t border-slate-800 mt-2 pt-2">
           <Row
-            k="share log"
+            k={t`share log`}
             v={
               o.user.share_log_pct !== null
                 ? `${o.user.share_log_pct.toFixed(4)}%`
                 : '\u2014'
             }
           />
-          <Row k="unpaid" v={denomination.formatSat(o.user.unpaid_sat, intlLocale)} />
+          <Row k={t`unpaid`} v={denomination.formatSat(o.user.unpaid_sat, intlLocale)} />
           <Row
-            k="next block est."
+            k={t`next block est.`}
             v={denomination.formatSat(o.user.next_block_sat, intlLocale)}
           />
           <Row
-            k="income/day est."
+            k={t`income/day est.`}
             v={denomination.formatSat(o.user.daily_estimate_sat, intlLocale)}
           />
           {o.user.time_to_payout_text && (
-            <Row k="next payout" v={formatNextPayout(o.user.time_to_payout_text)} />
+            <Row k={t`next payout`} v={formatNextPayout(o.user.time_to_payout_text)} />
           )}
         </div>
       )}
@@ -1424,21 +1460,21 @@ function OceanPanel() {
         {o.last_block ? (
           <>
             <LinkRow
-              k="last pool block"
+              k={t`last pool block`}
               v={`#${o.last_block.height.toLocaleString(intlLocale)}`}
               href={applyExplorerTemplate(explorerTemplate, {
                 block_hash: o.last_block.block_hash,
                 height: o.last_block.height,
               })}
             />
-            <Row k="found" v={o.last_block.ago_text} />
+            <Row k={t`found`} v={o.last_block.ago_text} />
             {/* Our estimated share of this block — same math as the
                 chart tooltip: total_reward × current share_log. An
                 approximation for older blocks since share_log drifts,
                 but operator-relevant rather than the total block
                 reward (which tells you nothing about our cut). */}
             <Row
-              k="our earnings (est.)"
+              k={t`our earnings (est.)`}
               v={
                 o.user?.share_log_pct != null
                   ? denomination.formatSat(
@@ -1452,18 +1488,18 @@ function OceanPanel() {
             />
           </>
         ) : (
-          <Row k="last pool block" v={'\u2014'} />
+          <Row k={t`last pool block`} v={'\u2014'} />
         )}
-        <Row k="pool blocks 24h" v={String(o.blocks_24h)} />
-        <Row k="pool blocks 7d" v={String(o.blocks_7d)} />
+        <Row k={t`pool blocks 24h`} v={String(o.blocks_24h)} />
+        <Row k={t`pool blocks 7d`} v={String(o.blocks_7d)} />
       </div>
       {o.pool && (
         <div className="border-t border-slate-800 mt-2 pt-2">
           {o.pool.active_users !== null && (
-            <Row k="pool users" v={o.pool.active_users.toLocaleString(intlLocale)} />
+            <Row k={t`pool users`} v={o.pool.active_users.toLocaleString(intlLocale)} />
           )}
           {o.pool.active_workers !== null && (
-            <Row k="pool workers" v={o.pool.active_workers.toLocaleString(intlLocale)} />
+            <Row k={t`pool workers`} v={o.pool.active_workers.toLocaleString(intlLocale)} />
           )}
         </div>
       )}
@@ -1490,10 +1526,12 @@ function FinancePanel({
   const denomination = useDenomination();
   const qc = useQueryClient();
   const [rebuilding, setRebuilding] = useState(false);
+  const { i18n } = useLingui();
+  void i18n;
 
   const handleRebuild = async () => {
     if (rebuilding) return;
-    if (!window.confirm('Wipe the local terminal-bid cache and re-paginate every bid from Braiins on the next refresh? This is safe but slower than a normal refresh.')) {
+    if (!window.confirm(t`Wipe the local terminal-bid cache and re-paginate every bid from Braiins on the next refresh? This is safe but slower than a normal refresh.`)) {
       return;
     }
     setRebuilding(true);
@@ -1573,8 +1611,8 @@ function FinancePanel({
   if (!data) {
     return (
       <section className="bg-slate-900 border border-slate-800 rounded-lg p-4">
-        <div className="text-xs uppercase tracking-wider text-slate-100 mb-2">Profit &amp; Loss</div>
-        <div className="text-slate-500 text-sm">loading…</div>
+        <div className="text-xs uppercase tracking-wider text-slate-100 mb-2"><Trans>Profit &amp; Loss</Trans></div>
+        <div className="text-slate-500 text-sm"><Trans>loading…</Trans></div>
       </section>
     );
   }
@@ -1612,7 +1650,7 @@ function FinancePanel({
         onClick={onRefresh}
         disabled={refreshing}
         className="px-1.5 py-0.5 rounded border border-slate-700 text-slate-400 hover:bg-slate-800 disabled:opacity-50"
-        title="Refresh the money panel now (normally updates hourly)."
+        title={t`Refresh the money panel now (normally updates hourly).`}
       >
         {refreshing ? '…' : '↻'}
       </button>
@@ -1621,9 +1659,9 @@ function FinancePanel({
           onClick={handleRebuild}
           disabled={rebuilding}
           className="px-1.5 py-0.5 rounded border border-slate-700 text-slate-400 hover:bg-slate-800 disabled:opacity-50"
-          title="Wipe the local terminal-bid cache and re-paginate every bid from Braiins on the next refresh. Use if the 'spent (whole account)' figure looks wrong."
+          title={t`Wipe the local terminal-bid cache and re-paginate every bid from Braiins on the next refresh. Use if the 'spent (whole account)' figure looks wrong.`}
         >
-          {rebuilding ? '…' : 'rebuild'}
+          {rebuilding ? '…' : <Trans>rebuild</Trans>}
         </button>
       )}
     </div>
@@ -1639,7 +1677,7 @@ function FinancePanel({
       <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 flex flex-col">
         <div className="flex items-baseline justify-between mb-3">
           <div className="text-xs uppercase tracking-wider text-slate-100">
-            Profit &amp; Loss · per day
+            <Trans>Profit &amp; Loss · per day</Trans>
           </div>
           {headerControls}
         </div>
@@ -1668,25 +1706,25 @@ function FinancePanel({
             {!rangeFallback && rangeData && (
               <>
                 <FinanceFootnote
-                  label={`avg delivered (${rangeLabel})`}
+                  label={t`avg delivered (${rangeLabel})`}
                   value={
                     rangeData.avg_delivered_ph !== null
                       ? formatHashratePH(rangeData.avg_delivered_ph, intlLocale)
-                      : 'calculating…'
+                      : t`calculating…`
                   }
-                  tooltip="Average delivered hashrate over the selected chart range. Multiplied by avg hashprice to get projected income. Spend is measured directly (primary_bid_consumed_sat deltas), so this is not a factor on the spend side."
+                  tooltip={t`Average delivered hashrate over the selected chart range. Multiplied by avg hashprice to get projected income. Spend is measured directly (primary_bid_consumed_sat deltas), so this is not a factor on the spend side.`}
                 />
                 <FinanceFootnote
-                  label={`avg hashprice (${rangeLabel})`}
+                  label={t`avg hashprice (${rangeLabel})`}
                   value={
                     rangeData.avg_hashprice_sat_per_ph_day !== null
                       ? denomination.formatSatPerPhDay(
                           rangeData.avg_hashprice_sat_per_ph_day,
                           intlLocale,
                         )
-                      : 'calculating…'
+                      : t`calculating…`
                   }
-                  tooltip="Average break-even unit price over the selected range. Multiplied by avg delivered to get projected income. Different from the spot hashprice row below — this is what the projection actually uses."
+                  tooltip={t`Average break-even unit price over the selected range. Multiplied by avg delivered to get projected income. Different from the spot hashprice row below — this is what the projection actually uses.`}
                 />
               </>
             )}
@@ -1699,35 +1737,35 @@ function FinancePanel({
               }
             >
             <FinanceFootnote
-              label={`projected income/day (${rangeLabel})`}
+              label={t`projected income/day (${rangeLabel})`}
               value={
                 projectedDailyIncomeSat !== null
                   ? denomination.formatSat(Math.round(projectedDailyIncomeSat), intlLocale)
                   : rangeFallback
-                    ? 'insufficient history'
-                    : 'calculating…'
+                    ? t`insufficient history`
+                    : t`calculating…`
               }
-              tooltip="Projection: avg hashprice × avg delivered (rows above), both averaged over the selected chart range. Range-aware counterpart to Ocean's own 3h estimate."
+              tooltip={t`Projection: avg hashprice × avg delivered (rows above), both averaged over the selected chart range. Range-aware counterpart to Ocean's own 3h estimate.`}
             />
             <FinanceFootnote
-              label={`spend/day${rangeFallback ? ' (3h)' : ' (' + rangeLabel + ')'}`}
+              label={rangeFallback ? t`spend/day (3h)` : t`spend/day (${rangeLabel})`}
               value={denomination.formatSat(Math.round(dailySpendSat), intlLocale)}
               tooltip={
                 rangeFallback
-                  ? 'Actual sat consumed over the last 3 h, scaled to a 24h rate. Uses Braiins\u2019s authoritative primary_bid_consumed_sat counter, not a bid \u00d7 delivered model. Fallback used when the selected range has fewer than ~5 ticks.'
-                  : 'Actual sat consumed across the selected range, scaled to a 24h rate. Derived from primary_bid_consumed_sat deltas (what Braiins charged us), not a modelled bid \u00d7 delivered.'
+                  ? t`Actual sat consumed over the last 3 h, scaled to a 24h rate. Uses Braiins\u2019s authoritative primary_bid_consumed_sat counter, not a bid \u00d7 delivered model. Fallback used when the selected range has fewer than ~5 ticks.`
+                  : t`Actual sat consumed across the selected range, scaled to a 24h rate. Derived from primary_bid_consumed_sat deltas (what Braiins charged us), not a modelled bid \u00d7 delivered.`
               }
             />
             <FinanceFootnote
-              label={`net/day${rangeFallback ? ' (3h)' : ' (' + rangeLabel + ')'}`}
+              label={rangeFallback ? t`net/day (3h)` : t`net/day (${rangeLabel})`}
               value={
                 dailyNetSat !== null
                   ? denomination.mode === 'usd' && denomination.btcPrice !== null
                     ? `${dailyNetSat >= 0 ? '+' : ''}${denomination.formatSat(dailyNetSat, intlLocale)}`
                     : `${dailyNetSat >= 0 ? '+' : ''}${formatNumber(dailyNetSat, {}, intlLocale)} sat`
-                  : 'calculating\u2026'
+                  : t`calculating\u2026`
               }
-              tooltip={'Projected income \u2212 actual spend (rows above). Positive = the autopilot is profitable at current rates; negative = burning money per day. Income is a projection (avg hashprice \u00d7 avg delivered); spend is measured. Don\u2019t confuse with the lifetime net on the other panel.'}
+              tooltip={t`Projected income \u2212 actual spend (rows above). Positive = the autopilot is profitable at current rates; negative = burning money per day. Income is a projection (avg hashprice \u00d7 avg delivered); spend is measured. Don\u2019t confuse with the lifetime net on the other panel.`}
               valueClass={dailyNetColor}
             />
             </div>
@@ -1736,32 +1774,32 @@ function FinancePanel({
                 derive from. */}
             <div className="pt-2 mt-2 border-t border-slate-800 space-y-1.5">
               <FinanceFootnote
-                label="ocean est. income/day (3h)"
+                label={t`ocean est. income/day (3h)`}
                 value={
                   oceanDailyIncomeSat !== null
                     ? denomination.formatSat(oceanDailyIncomeSat, intlLocale)
-                    : 'calculating…'
+                    : t`calculating…`
                 }
-                tooltip="Ocean's own estimate — the pool extrapolates from the address's last 3-hour hashrate and its share of pool output. Always 3h-based regardless of the chart range you've picked, so it may differ from projected income at other ranges."
+                tooltip={t`Ocean's own estimate — the pool extrapolates from the address's last 3-hour hashrate and its share of pool output. Always 3h-based regardless of the chart range you've picked, so it may differ from projected income at other ranges.`}
               />
               {data.ocean?.hashprice_sat_per_ph_day != null && (
                 <FinanceFootnote
-                  label="hashprice (now)"
+                  label={t`hashprice (now)`}
                   value={denomination.formatSatPerPhDay(data.ocean.hashprice_sat_per_ph_day, intlLocale)}
-                  tooltip="Current (spot) market break-even. Revenue per PH/s per day from mining at the current network difficulty + block reward. The avg-hashprice row above is what the projection uses; this one is the spot value right now for quick market-drift comparison."
+                  tooltip={t`Current (spot) market break-even. Revenue per PH/s per day from mining at the current network difficulty + block reward. The avg-hashprice row above is what the projection uses; this one is the spot value right now for quick market-drift comparison.`}
                 />
               )}
               {data.ocean?.lifetime_sat != null && (
                 <FinanceFootnote
-                  label="ocean lifetime"
+                  label={t`ocean lifetime`}
                   value={denomination.formatSat(data.ocean.lifetime_sat, intlLocale)}
-                  tooltip="Total earned at this address since first share, per Ocean."
+                  tooltip={t`Total earned at this address since first share, per Ocean.`}
                 />
               )}
             </div>
           </div>
         ) : (
-          <div className="text-sm text-slate-600">no active bids</div>
+          <div className="text-sm text-slate-600"><Trans>no active bids</Trans></div>
         )}
       </div>
 
@@ -1769,7 +1807,7 @@ function FinancePanel({
       <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 flex flex-col">
         <div className="flex items-baseline justify-between mb-3">
           <div className="text-xs uppercase tracking-wider text-slate-100">
-            Profit &amp; Loss · lifetime
+            <Trans>Profit &amp; Loss · lifetime</Trans>
           </div>
           {/* refresh/rebuild controls live on the per-day card only —
               they refresh the same data, no point duplicating them */}
@@ -1781,12 +1819,12 @@ function FinancePanel({
             sum. */}
         <FinanceRow
           sign="minus"
-          label={data.spent_scope === 'account' ? 'spent (whole account)' : 'spent (autopilot)'}
+          label={data.spent_scope === 'account' ? t`spent (whole account)` : t`spent (autopilot)`}
           value={data.spent_sat}
           tooltip={
             data.spent_scope === 'account'
-              ? 'Sum of counters_committed.amount_consumed_sat across every bid on /v1/spot/bid — covers active + historical bids, including any that existed before the autopilot was switched on. May lag the latest hour of active-bid consumption (Braiins only updates committed counters on each hourly settlement tick). Switch via Config → P&L panel.'
-              : 'Lifetime sum of (amount_sat − amount_remaining_sat) across every bid the autopilot has tagged. Excludes any bids placed before the autopilot was switched on. Switch to "whole account" via Config → Money panel.'
+              ? t`Sum of counters_committed.amount_consumed_sat across every bid on /v1/spot/bid — covers active + historical bids, including any that existed before the autopilot was switched on. May lag the latest hour of active-bid consumption (Braiins only updates committed counters on each hourly settlement tick). Switch via Config → P&L panel.`
+              : t`Lifetime sum of (amount_sat − amount_remaining_sat) across every bid the autopilot has tagged. Excludes any bids placed before the autopilot was switched on. Switch to "whole account" via Config → Money panel.`
           }
         />
         {data.spent_scope === 'account' &&
@@ -1794,49 +1832,49 @@ function FinancePanel({
           data.spent_active_sat !== null && (
             <>
               <FinanceSubRow
-                label="closed bids"
+                label={t`closed bids`}
                 value={data.spent_closed_sat}
-                tooltip="Sum across terminal bids — status CANCELED or FULFILLED (is_current=false). Money that has definitively left the account."
+                tooltip={t`Sum across terminal bids — status CANCELED or FULFILLED (is_current=false). Money that has definitively left the account.`}
               />
               <FinanceSubRow
-                label="active (in-flight)"
+                label={t`active (in-flight)`}
                 value={data.spent_active_sat}
-                tooltip="Sum across still-running bids — status ACTIVE / PAUSED / etc. (is_current=true). Live in-flight consumption; not yet settled in Braiins' hourly ledger."
+                tooltip={t`Sum across still-running bids — status ACTIVE / PAUSED / etc. (is_current=true). Live in-flight consumption; not yet settled in Braiins' hourly ledger.`}
               />
             </>
           )}
         <FinanceRow
           sign="plus"
-          label="unpaid earnings (Ocean)"
+          label={t`unpaid earnings (Ocean)`}
           value={data.expected_sat}
           tooltip={
             data.ocean
-              ? `Ocean's Unpaid Earnings — what will land on-chain at the next payout. Threshold: ${formatSats(data.ocean.payout_threshold_sat)} sat (~0.01 BTC).`
-              : 'Ocean stats unavailable.'
+              ? t`Ocean's Unpaid Earnings — what will land on-chain at the next payout. Threshold: ${formatSats(data.ocean.payout_threshold_sat)} sat (~0.01 BTC).`
+              : t`Ocean stats unavailable.`
           }
         />
         <FinanceRow
           sign="plus"
-          label="collected (on-chain)"
+          label={t`collected (on-chain)`}
           value={data.collected_sat}
           tooltip={
             data.collected_sat !== null
-              ? 'UTXOs at the configured payout address. Read via Electrs (preferred, instant) or bitcoind RPC (slower).'
-              : 'Not configured. Go to Config → On-chain payouts and select Electrs or Bitcoin Core RPC to track your on-chain balance. The net line treats missing collected as 0 so the arithmetic still reads — a blank row here is the hint that a piece of the income side isn\'t wired up.'
+              ? t`UTXOs at the configured payout address. Read via Electrs (preferred, instant) or bitcoind RPC (slower).`
+              : t`Not configured. Go to Config → On-chain payouts and select Electrs or Bitcoin Core RPC to track your on-chain balance. The net line treats missing collected as 0 so the arithmetic still reads — a blank row here is the hint that a piece of the income side isn't wired up.`
           }
         />
 
         <div className="mt-3 pt-3 border-t border-slate-800">
           <FinanceRow
             sign="equals"
-            label="net"
+            label={t`net`}
             value={data.net_sat}
             // Only the bottom-line gets a sentiment color — green when
             // the autopilot has paid for itself, red when it's still
             // digging out of the initial deposit. Keeps the rest of
             // the panel calm so the eye lands on the conclusion.
             valueClass={netColor}
-            tooltip="Collected on-chain + Ocean's unpaid earnings − spent on bids. Missing collected is treated as 0 (the on-chain row still shows — so the operator sees the gap). Negative = still recouping the initial deposit."
+            tooltip={t`Collected on-chain + Ocean's unpaid earnings − spent on bids. Missing collected is treated as 0 (the on-chain row still shows — so the operator sees the gap). Negative = still recouping the initial deposit.`}
           />
         </div>
       </div>
@@ -2033,6 +2071,8 @@ function DatumPanel({
   nextTickAt: number | null;
 }) {
   const [copied, setCopied] = useState(false);
+  const { i18n } = useLingui();
+  void i18n;
 
   // Split the pool URL into scheme / host / port so the card doesn't
   // wrap an unreadable 60-character string. Pool URLs on Ocean look
@@ -2053,43 +2093,45 @@ function DatumPanel({
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
       <div className="flex items-baseline justify-between mb-2">
-        <div className="text-xs uppercase tracking-wider text-slate-100">Datum Gateway</div>
+        <div className="text-xs uppercase tracking-wider text-slate-100"><Trans>Datum Gateway</Trans></div>
         <div className="text-[11px] text-slate-500 font-mono">
           <RefreshCountdown nextAtMs={nextTickAt} refetchQueryKey={STATUS_QUERY_KEY} />
         </div>
       </div>
       <div className="flex items-center gap-2 mb-2 flex-wrap">
         <ReachabilityBadge
-          label="stratum reachable"
+          label={t`stratum reachable`}
           reachable={reachable}
-          downLabel={`stratum DOWN (${consecutiveFailures} consecutive)`}
-          title="TCP probe of the Datum gateway's stratum port."
+          downLabel={t`stratum DOWN (${consecutiveFailures} consecutive)`}
+          title={t`TCP probe of the Datum gateway's stratum port.`}
         />
         {datum && (
           <ReachabilityBadge
-            label="API reachable"
+            label={t`API reachable`}
             reachable={datum.reachable}
-            downLabel={`API unreachable (${datum.consecutive_failures})`}
-            title="Datum /umbrel-api HTTP poll."
+            downLabel={t`API unreachable (${datum.consecutive_failures})`}
+            title={t`Datum /umbrel-api HTTP poll.`}
           />
         )}
       </div>
       {datum ? (
         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-          <div className="text-slate-400">datum hashrate</div>
+          <div className="text-slate-400"><Trans>datum hashrate</Trans></div>
           <div className="text-right font-mono text-slate-200">
             {datum.hashrate_ph !== null ? formatHashratePH(datum.hashrate_ph) : '—'}
           </div>
-          <div className="text-slate-400">workers connected</div>
+          <div className="text-slate-400"><Trans>workers connected</Trans></div>
           <div className="text-right font-mono text-slate-200">
             {datum.connections ?? '—'}
           </div>
         </div>
       ) : (
         <div className="text-xs text-slate-500">
-          Datum stats not configured — set <span className="font-mono text-slate-400">datum_api_url</span>{' '}
-          in Config to display connected workers and reported hashrate. See{' '}
-          <span className="font-mono text-slate-400">docs/setup-datum-api.md</span>.
+          <Trans>
+            Datum stats not configured — set <span className="font-mono text-slate-400">datum_api_url</span>{' '}
+            in Config to display connected workers and reported hashrate. See{' '}
+            <span className="font-mono text-slate-400">docs/setup-datum-api.md</span>.
+          </Trans>
         </div>
       )}
       {/* Pool info lives at the bottom — stratum URL rarely changes
@@ -2098,11 +2140,11 @@ function DatumPanel({
           footprint small. */}
       <div className="mt-3 pt-2 border-t border-slate-800">
         <div className="flex items-start justify-between gap-2 mb-1">
-          <div className="text-[10px] uppercase tracking-wider text-slate-500">pool</div>
+          <div className="text-[10px] uppercase tracking-wider text-slate-500"><Trans>pool</Trans></div>
           <button
             onClick={copy}
-            aria-label={copied ? 'copied URL' : 'copy URL'}
-            title={copied ? 'copied URL' : 'copy URL'}
+            aria-label={copied ? t`copied URL` : t`copy URL`}
+            title={copied ? t`copied URL` : t`copy URL`}
             className={
               'shrink-0 p-1 rounded border border-slate-700 hover:bg-slate-800 ' +
               (copied ? 'text-emerald-300' : 'text-slate-400')
@@ -2112,15 +2154,15 @@ function DatumPanel({
           </button>
         </div>
         <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-          <div className="text-slate-400">protocol</div>
+          <div className="text-slate-400"><Trans>protocol</Trans></div>
           <div className="text-right font-mono text-slate-200 break-all">
             {urlParts.scheme ?? '\u2014'}
           </div>
-          <div className="text-slate-400">host</div>
+          <div className="text-slate-400"><Trans>host</Trans></div>
           <div className="text-right font-mono text-slate-200 break-all">
             {urlParts.host ?? '\u2014'}
           </div>
-          <div className="text-slate-400">port</div>
+          <div className="text-slate-400"><Trans>port</Trans></div>
           <div className="text-right font-mono text-slate-200">
             {urlParts.port ?? '\u2014'}
           </div>

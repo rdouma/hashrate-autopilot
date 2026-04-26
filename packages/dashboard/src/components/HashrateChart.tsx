@@ -9,6 +9,8 @@
  * time-range filter and X-axis layout.
  */
 
+import { Trans, t } from '@lingui/macro';
+import { useLingui } from '@lingui/react';
 import { memo, useCallback, useEffect, useMemo, useState, useRef, useLayoutEffect } from 'react';
 import type React from 'react';
 
@@ -147,6 +149,8 @@ export const HashrateChart = memo(function HashrateChart({
   braiinsSmoothingMinutes?: number;
   datumSmoothingMinutes?: number;
 }) {
+  const { i18n } = useLingui();
+  void i18n;
   const { intlLocale } = useLocale();
   const [blockTip, setBlockTip] = useState<BlockTooltipState | null>(null);
 
@@ -331,11 +335,11 @@ export const HashrateChart = memo(function HashrateChart({
       <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <h3 className="text-xs uppercase tracking-wider text-slate-100">
-            Hashrate
+            <Trans>Hashrate</Trans>
           </h3>
         </div>
         <div className="mt-4 text-sm text-slate-500">
-          Not enough data in this range yet.
+          <Trans>Not enough data in this range yet.</Trans>
         </div>
       </div>
     );
@@ -347,30 +351,30 @@ export const HashrateChart = memo(function HashrateChart({
     <div className="bg-slate-900 border rounded-lg p-4 border-slate-800">
       <div className="flex items-center justify-between mb-2 gap-3 flex-wrap">
         <h3 className="text-xs uppercase tracking-wider text-slate-100">
-          Hashrate
+          <Trans>Hashrate</Trans>
         </h3>
         <div className="flex items-center gap-3 text-xs flex-wrap">
-          <Legend color={COLOR_DELIVERED} label="delivered (Braiins)" />
+          <Legend color={COLOR_DELIVERED} label={t`delivered (Braiins)`} />
           {hasDatum && (
-            <Legend color={COLOR_DATUM} label="received (Datum)" />
+            <Legend color={COLOR_DATUM} label={t`received (Datum)`} />
           )}
           {hasOcean && (
-            <Legend color={COLOR_OCEAN} label="received (Ocean)" />
+            <Legend color={COLOR_OCEAN} label={t`received (Ocean)`} />
           )}
-          <Legend color={COLOR_TARGET} label="target" dashed />
-          <Legend color={COLOR_FLOOR} label="floor" dashed />
+          <Legend color={COLOR_TARGET} label={t`target`} dashed />
+          <Legend color={COLOR_FLOOR} label={t`floor`} dashed />
           {ourBlocks.some(
               (b) =>
                 b.timestamp_ms >= chartData.minX &&
                 b.timestamp_ms <= chartData.maxX &&
                 !b.found_by_us,
-            ) && <Legend color={COLOR_POOL_BLOCK} label="pool block" dashed />}
+            ) && <Legend color={COLOR_POOL_BLOCK} label={t`pool block`} dashed />}
           {ourBlocks.some(
               (b) =>
                 b.timestamp_ms >= chartData.minX &&
                 b.timestamp_ms <= chartData.maxX &&
                 b.found_by_us,
-            ) && <Legend color={COLOR_OUR_BLOCK} label="found by us" dashed />}
+            ) && <Legend color={COLOR_OUR_BLOCK} label={t`found by us`} dashed />}
         </div>
       </div>
       <svg
@@ -561,6 +565,8 @@ function BlockTooltip({
   shareLogPct: number | null;
   onClose: () => void;
 }) {
+  const { i18n } = useLingui();
+  void i18n;
   const { block, pinned } = tip;
   const ref = useRef<HTMLDivElement | null>(null);
   const [pos, setPos] = useState<{ left: number; top: number; ready: boolean }>({
@@ -588,7 +594,7 @@ function BlockTooltip({
   const subsidyBtc = block.subsidy_sat / 1e8;
   const feesBtc = block.fees_sat / 1e8;
   const headerColor = block.found_by_us ? 'text-amber-300' : 'text-sky-300';
-  const kindLabel = block.found_by_us ? 'FOUND BY US' : 'POOL BLOCK';
+  const kindLabel = block.found_by_us ? t`FOUND BY US` : t`POOL BLOCK`;
 
   return (
     <div
@@ -605,7 +611,7 @@ function BlockTooltip({
           <button
             type="button"
             onClick={onClose}
-            aria-label="close"
+            aria-label={t`close`}
             className="text-slate-500 hover:text-slate-200 leading-none text-base -mt-0.5 -mr-0.5"
           >
             ×
@@ -619,28 +625,30 @@ function BlockTooltip({
       <div className="text-slate-500 text-[10px]">{formatTimestampUtc(block.timestamp_ms)}</div>
 
       <div className="mt-2 space-y-0.5 text-slate-300">
-        <BtcRow label="pool reward" btc={rewardBtc} locale={locale} />
-        <BtcRow label="subsidy" btc={subsidyBtc} locale={locale} muted />
-        <BtcRow label="fees" btc={feesBtc} locale={locale} muted />
+        <BtcRow label={t`pool reward`} btc={rewardBtc} locale={locale} />
+        <BtcRow label={t`subsidy`} btc={subsidyBtc} locale={locale} muted />
+        <BtcRow label={t`fees`} btc={feesBtc} locale={locale} muted />
       </div>
 
       {shareLogPct !== null && shareLogPct > 0 && (
         <div className="mt-2 pt-2 border-t border-slate-800 space-y-0.5 text-slate-300">
           <div className="text-[10px] uppercase tracking-wider text-slate-500 mb-0.5">
-            our share (est.)
+            <Trans>our share (est.)</Trans>
           </div>
           <div className="flex justify-between gap-3">
-            <span className="text-slate-500">share log</span>
+            <span className="text-slate-500"><Trans>share log</Trans></span>
             <span className="font-mono tabular-nums">{shareLogPct.toFixed(4)}%</span>
           </div>
           <BtcRow
-            label="our earnings"
+            label={t`our earnings`}
             btc={(rewardBtc * shareLogPct) / 100}
             locale={locale}
           />
           <div className="text-[10px] text-slate-500 italic mt-0.5 whitespace-normal max-w-[18rem]">
-            uses current share_log — an approximation for older blocks,
-            since share_log drifts as pool hashrate moves.
+            <Trans>
+              uses current share_log — an approximation for older blocks,
+              since share_log drifts as pool hashrate moves.
+            </Trans>
           </div>
         </div>
       )}
@@ -652,7 +660,7 @@ function BlockTooltip({
           rel="noopener noreferrer"
           className="text-sky-400 hover:text-sky-300 underline text-[11px]"
         >
-          open in block explorer →
+          <Trans>open in block explorer →</Trans>
         </a>
       </div>
     </div>
@@ -713,7 +721,7 @@ function RangePicker({
 }) {
   return (
     <div className="flex gap-0.5 bg-slate-950/70 border border-slate-800 rounded-md p-0.5 pl-2 items-center">
-      <span className="text-[10px] uppercase tracking-wider text-slate-500 pr-1">range</span>
+      <span className="text-[10px] uppercase tracking-wider text-slate-500 pr-1"><Trans>range</Trans></span>
       {CHART_RANGES.map((r) => {
         const active = r === current;
         return (

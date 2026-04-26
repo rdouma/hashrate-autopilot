@@ -8,6 +8,8 @@
  * override per call.
  */
 
+import { t } from '@lingui/macro';
+
 type Locale = string | undefined;
 
 const LOCALE_STORAGE_KEY = 'braiins.displayLocale';
@@ -114,13 +116,13 @@ export function formatTimestampUtc(ms: number | null | undefined): string {
 export function formatAge(ms: number | null | undefined, now: number = Date.now()): string {
   if (!ms) return '—';
   const seconds = Math.max(0, Math.round((now - ms) / 1000));
-  if (seconds < 60) return `${seconds}s ago`;
+  if (seconds < 60) return t`${seconds}s ago`;
   const minutes = Math.round(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
+  if (minutes < 60) return t`${minutes}m ago`;
   const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) return t`${hours}h ago`;
   const days = Math.round(hours / 24);
-  return `${days}d ago`;
+  return t`${days}d ago`;
 }
 
 /**
@@ -134,17 +136,17 @@ export function formatAgeMinutes(
 ): string {
   if (!ms) return '—';
   const totalSec = Math.max(0, Math.floor((now - ms) / 1000));
-  if (totalSec < 60) return 'just now';
+  if (totalSec < 60) return t`just now`;
   const totalMin = Math.floor(totalSec / 60);
-  if (totalMin < 60) return `${totalMin}m ago`;
+  if (totalMin < 60) return t`${totalMin}m ago`;
   const totalHr = Math.floor(totalMin / 60);
   if (totalHr < 24) {
     const m = totalMin - totalHr * 60;
-    return `${totalHr}h ${m}m ago`;
+    return t`${totalHr}h ${m}m ago`;
   }
   const totalDay = Math.floor(totalHr / 24);
   const h = totalHr - totalDay * 24;
-  return `${totalDay}d ${h}h ago`;
+  return t`${totalDay}d ${h}h ago`;
 }
 
 /**
@@ -158,20 +160,20 @@ export function formatAgePrecise(
 ): string {
   if (!ms) return '—';
   const totalSec = Math.max(0, Math.floor((now - ms) / 1000));
-  if (totalSec < 60) return `${totalSec}s ago`;
+  if (totalSec < 60) return t`${totalSec}s ago`;
   const totalMin = Math.floor(totalSec / 60);
   if (totalMin < 60) {
     const s = totalSec - totalMin * 60;
-    return `${totalMin}m ${s}s ago`;
+    return t`${totalMin}m ${s}s ago`;
   }
   const totalHr = Math.floor(totalMin / 60);
   if (totalHr < 24) {
     const m = totalMin - totalHr * 60;
-    return `${totalHr}h ${m}m ago`;
+    return t`${totalHr}h ${m}m ago`;
   }
   const totalDay = Math.floor(totalHr / 24);
   const h = totalHr - totalDay * 24;
-  return `${totalDay}d ${h}h ago`;
+  return t`${totalDay}d ${h}h ago`;
 }
 
 /**
@@ -182,7 +184,7 @@ export function formatAgePrecise(
  * Returns "now" when the target has already passed.
  */
 export function formatCountdownPrecise(msUntil: number): string {
-  if (msUntil <= 0) return 'now';
+  if (msUntil <= 0) return t`now`;
   const totalSec = Math.ceil(msUntil / 1000);
   if (totalSec < 60) return `${totalSec}s`;
   const totalMin = Math.floor(totalSec / 60);
