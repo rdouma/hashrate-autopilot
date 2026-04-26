@@ -16,11 +16,23 @@
 
 ARG NODE_VERSION=22
 
+# Short git SHA threaded in by CI (`docker buildx build --build-arg
+# GIT_SHA=...`). The dashboard footer reads it via Vite's
+# `process.env.GIT_SHA` to print `build N - <sha>`. .dockerignore
+# excludes the .git/ dir from the build context, so without this
+# arg every Docker-baked dashboard footer would say "dev".
+ARG GIT_SHA=dev
+
 # ---------------------------------------------------------------------------
 # Builder
 # ---------------------------------------------------------------------------
 FROM node:${NODE_VERSION}-slim AS builder
 WORKDIR /app
+
+# Re-declare in the builder stage scope and export to environment
+# so vite.config.ts's `process.env.GIT_SHA` lookup picks it up.
+ARG GIT_SHA
+ENV GIT_SHA=${GIT_SHA}
 
 # better-sqlite3 needs python3 + a C++ toolchain to compile its
 # native binding when prebuilt binaries aren't available for the

@@ -12,11 +12,21 @@ function getBuildInfo(): { build: number; hash: string } {
   try {
     build = parseInt(readFileSync(buildFile, 'utf8').trim(), 10) || 0;
   } catch { /* first build */ }
-  let hash = 'dev';
-  try {
-    hash = execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim();
-  } catch { /* not a git repo */ }
-  return { build, hash };
+  // Prefer an explicit GIT_SHA env var (set by Docker build-arg in CI
+  // and locally injected when needed) over running git, because the
+  // Docker build context excludes .git/ - without the env override
+  // every Docker-baked dashboard would footer "dev". Fall back to a
+  // live git call for bare-metal/dev builds, then to "dev" if we
+  // really cannot determine it. Truncate to 7 chars to match the
+  // short-SHA convention regardless of whether the env var carries
+  // the full 40-char form (GitHub Actions sets `github.sha` long).
+  let hash = process.env.GIT_SHA?.trim() || '';
+  if (!hash) {
+    try {
+      hash = execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim();
+    } catch { /* not a git repo */ }
+  }
+  return { build, hash: hash ? hash.slice(0, 7) : 'dev' };
 }
 
 const info = getBuildInfo();

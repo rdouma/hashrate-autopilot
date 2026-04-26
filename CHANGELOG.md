@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-04-26
+
+### `[Fix]` Dashboard footer: bake real git SHA into the Docker image
+
+The footer line `build N - <hash>` was reading "dev" instead of the actual short SHA on every Umbrel/Docker install. Cause: `vite.config.ts`'s `getBuildInfo()` ran `git rev-parse --short HEAD` at build time, but `.dockerignore` strips `.git/` from the build context so the git command always failed inside the image build, falling back to the literal string "dev". Fix: thread `GIT_SHA` in as a Docker build-arg from the publish workflow (`${{ github.sha }}`), surface it as an env var in the builder stage, and have `vite.config.ts` prefer it over the git CLI. Bare-metal builds keep working via the existing git fallback.
+
+### `[Infra]` Umbrel manifest: Datum dep + auto-set datum_api_url
+
+Re-added `datum` to `dependencies:` in `umbrel-app.yml`. Joining the Datum app's docker-compose project network gives our containers cross-network access to the Datum HTTP API on `datum_datum_1:21000` (the Umbrel package overrides Datum's default 7152 to match its app_proxy). docker-compose.yml now sets `BHA_DATUM_API_URL=http://datum_datum_1:21000`, which the daemon's existing env-override layer applies on top of any DB-stored value. Net effect on Umbrel: the wizard never needs to ask for the Datum API URL, and the dashboard's worker-count + reported-hashrate panels populate on first boot. `bitcoin` deliberately stays out of `dependencies:` because the autopilot does not need a co-located Bitcoin RPC to bid (Bitcoin RPC is only used by the optional P&L panel).
+
 ## 2026-04-25 (later)
 
 ### `[Fix]` Umbrel install: app_proxy hostname + container DB write permissions
