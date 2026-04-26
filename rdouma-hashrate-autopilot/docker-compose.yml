@@ -11,16 +11,27 @@
 #   port 3010 and reads/writes its single state directory at /app/data,
 #   which is bind-mounted to Umbrel's per-app persistent storage.
 #
-# Bitcoin RPC + Datum endpoints are entered manually in the setup
-# wizard. We do not declare `bitcoin` or `datum` as dependencies in
-# umbrel-app.yml because the autopilot can talk to any Bitcoin RPC
-# and any Datum gateway over the network - they don't need to be
-# co-located on this Umbrel. The BITCOIN_RPC_* env block below is
-# left in place as a no-op fallback: `${APP_BITCOIN_*}` resolves to
-# empty when the dep isn't declared, and the daemon's
-# detectBitcoindEnv() handles empty values cleanly. If a future
-# manifest revision re-declares `bitcoin` as a dep, this just starts
-# working.
+# Cross-app reach via Umbrel's shared network:
+#
+# - We declare `datum` as a dependency in umbrel-app.yml, which makes
+#   Umbrel join our containers to the Datum app's docker-compose
+#   project network. From there we can address Datum's main service
+#   container by its compose-generated hostname (`datum_datum_1`).
+#   Datum's HTTP API is configured to listen on :21000 inside its
+#   container (the Umbrel package overrides Datum's default :7152 to
+#   match its app_proxy port). The API port itself is *not* published
+#   to the host network, but cross-container access on the shared
+#   network bypasses that constraint and the app_proxy auth layer.
+#   We pre-set the daemon's `datum_api_url` config value via the
+#   BHA_DATUM_API_URL env override, so the wizard never needs to ask.
+#
+# - Bitcoin RPC is *not* declared as a dependency (the autopilot does
+#   not strictly need Bitcoin RPC to bid - it is only used by the
+#   optional P&L panel's earnings figure). The BITCOIN_RPC_* env
+#   block below resolves to empty when the dep is not declared, and
+#   the daemon's detectBitcoindEnv() handles empty values cleanly,
+#   so the wizard shows blank RPC fields and the operator types in
+#   any reachable RPC after setup.
 
 version: "3.7"
 
@@ -55,3 +66,9 @@ services:
       BITCOIN_RPC_PORT: "${APP_BITCOIN_RPC_PORT}"
       BITCOIN_RPC_USER: "${APP_BITCOIN_RPC_USER}"
       BITCOIN_RPC_PASS: "${APP_BITCOIN_RPC_PASS}"
+      # Datum API auto-config (see note at top of file). Resolves to
+      # the Umbrel Datum app's container on the shared cross-app
+      # network. The daemon's `datum_api_url` config field is set via
+      # the BHA_* env-override layer, so this overrides whatever is in
+      # the database and the operator never needs to type it.
+      BHA_DATUM_API_URL: "http://datum_datum_1:21000"
