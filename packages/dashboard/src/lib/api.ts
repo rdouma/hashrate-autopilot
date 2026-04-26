@@ -127,6 +127,13 @@ export interface MetricPoint {
   datum_hashrate_ph: number | null;
   ocean_hashrate_ph: number | null;
   /**
+   * Ocean `share_log` percentage at this tick (e.g. 0.0182 for
+   * 0.0182%). Drives the opt-in violet `% of Ocean` line on the
+   * Hashrate chart. Null when Ocean isn't configured, the poll
+   * failed, or the tick predates migration 0048.
+   */
+  share_log_pct: number | null;
+  /**
    * Primary owned bid's cumulative `amount_consumed_sat` at this tick
    * (sat). Per-tick deltas against this give the authoritative actual
    * effective rate — drives the chart's "effective" line. Null for
@@ -287,6 +294,7 @@ export interface AppConfig {
   datum_hashrate_smoothing_minutes: number;
   braiins_price_smoothing_minutes: number;
   show_effective_rate_on_price_chart: boolean;
+  show_share_log_on_hashrate_chart: boolean;
 }
 
 export interface ConfigResponse {

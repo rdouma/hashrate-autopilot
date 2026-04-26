@@ -143,6 +143,7 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
       : Promise.resolve(null),
   ]);
   const ocean_hashrate_ph = oceanStats?.user_hashrate_5m_ph ?? null;
+  const share_log_pct = oceanStats?.share_log_pct ?? null;
 
   const apiBids = extractBids(bidsResponse);
   const owned_bids: OwnedBidSnapshot[] = [];
@@ -290,6 +291,7 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
     pool,
     datum,
     ocean_hashrate_ph,
+    share_log_pct,
     last_api_ok_at: deps.braiins.getLastApiOkAt(),
     hashprice_sat_per_ph_day: inputs.hashpriceSatPerPhDay,
     fillable_ask_sat_per_eh_day,

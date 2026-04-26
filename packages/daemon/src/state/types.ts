@@ -68,6 +68,7 @@ export interface ConfigTable {
   datum_hashrate_smoothing_minutes: number;
   braiins_price_smoothing_minutes: number;
   show_effective_rate_on_price_chart: 0 | 1;
+  show_share_log_on_hashrate_chart: 0 | 1;
   updated_at: number;
 }
 
@@ -252,6 +253,17 @@ export interface TickMetricsTable {
   available_balance_sat: number | null;
   datum_hashrate_ph: number | null;
   ocean_hashrate_ph: number | null;
+  /**
+   * Ocean `share_log` percentage at this tick (e.g. 0.0182 for
+   * 0.0182%). Derived from Ocean's `/statsnap.shares_in_tides ÷
+   * pool_stat.current_tides_shares × 100`, sampled from the same
+   * cached fetch that supplies `hashprice_sat_per_eh_day`. Display-only
+   * — opt-in fourth series on the Hashrate chart via the
+   * `show_share_log_on_hashrate_chart` config toggle. Null when Ocean
+   * isn't configured, the poll failed, or for ticks predating
+   * migration 0048.
+   */
+  share_log_pct: number | null;
   spend_sat: number | null;
   /**
    * Primary owned bid's cumulative `amount_consumed_sat` at this tick,

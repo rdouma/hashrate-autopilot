@@ -56,6 +56,16 @@ export interface MetricPoint {
    */
   readonly ocean_hashrate_ph: number | null;
   /**
+   * Ocean `share_log` percentage at this tick (e.g. 0.0182 for
+   * 0.0182%) — our slice of the pool's TIDES window, sampled from
+   * the same `/statsnap` + `/pool_stat` fetch that supplies
+   * `hashprice_sat_per_ph_day`. Drives the optional violet `% of
+   * Ocean` overlay on the Hashrate chart's right Y-axis. Null when
+   * Ocean isn't configured, the poll failed, or the tick predates
+   * migration 0048.
+   */
+  readonly share_log_pct: number | null;
+  /**
    * Primary owned bid's cumulative `amount_consumed_sat` at this tick
    * (sat). Per-tick deltas give the authoritative actual-spend rate
    * (independent of our pay-your-bid `spend_sat` model). Null on pre-
@@ -123,6 +133,7 @@ function toMetricPoint(r: {
   available_balance_sat: number | null;
   datum_hashrate_ph: number | null;
   ocean_hashrate_ph: number | null;
+  share_log_pct: number | null;
   primary_bid_consumed_sat: number | null;
 }): MetricPoint {
   return {
@@ -153,6 +164,7 @@ function toMetricPoint(r: {
     available_balance_sat: r.available_balance_sat,
     datum_hashrate_ph: r.datum_hashrate_ph,
     ocean_hashrate_ph: r.ocean_hashrate_ph,
+    share_log_pct: r.share_log_pct,
     primary_bid_consumed_sat: r.primary_bid_consumed_sat,
   };
 }

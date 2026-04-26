@@ -23,6 +23,7 @@ function sampleRow(overrides: Partial<InsertTickMetricArgs> = {}): InsertTickMet
     available_balance_sat: 500_000,
     datum_hashrate_ph: null,
     ocean_hashrate_ph: null,
+    share_log_pct: null,
     spend_sat: null,
     run_mode: 'LIVE',
     action_mode: 'NORMAL',

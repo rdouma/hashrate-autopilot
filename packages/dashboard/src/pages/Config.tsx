@@ -307,6 +307,13 @@ function useSections(): Section[] {
             fullWidth: true,
             help: t`Off by default. The emerald effective-rate line (what Braiins actually charged, from counter deltas) is dramatically more volatile than bid / fillable / hashprice — when enabled it auto-scales the Y-axis and visibly squashes the finer bot movements into a thin band. The hero PRICE card and the AVG COST / PH DELIVERED stat already show the same number without hijacking the chart. Flip on when you want to eyeball settlement behaviour directly, accept the loss of flatter-line detail in exchange.`,
           },
+          {
+            key: 'show_share_log_on_hashrate_chart',
+            label: t`Show share_log % on hashrate chart`,
+            kind: 'boolean',
+            fullWidth: true,
+            help: t`Off by default. When enabled, the Hashrate chart renders our share of Ocean's TIDES window (share_log %) as a violet line on a right-side Y-axis labelled "% of Ocean", formatted to 4 decimals. Useful for tracking how our slice of the pool drifts as Ocean's total hashrate grows or our delivered PH/s fluctuates. The controller does not read this signal — display only.`,
+          },
         ],
       },
       {

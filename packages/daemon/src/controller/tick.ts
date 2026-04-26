@@ -145,6 +145,7 @@ export class Controller {
         available_balance_sat: primaryBalance?.available_balance_sat ?? null,
         datum_hashrate_ph: state.datum?.hashrate_ph ?? null,
         ocean_hashrate_ph: state.ocean_hashrate_ph,
+        share_log_pct: state.share_log_pct,
         spend_sat: spendSat,
         primary_bid_consumed_sat: primary ? primary.amount_consumed_sat : null,
         run_mode: state.run_mode,

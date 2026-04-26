@@ -145,6 +145,11 @@ msgstr "hace {totalSec}s"
 msgid "/PH/day"
 msgstr "/PH/día"
 
+#: src/components/HashrateChart.tsx
+#: src/components/HashrateChart.tsx
+msgid "% of Ocean"
+msgstr "% de Ocean"
+
 #: src/pages/Setup.tsx
 #: src/pages/Setup.tsx
 msgid "← Back"
@@ -1301,6 +1306,10 @@ msgstr "Ganancias no pagadas de Ocean - lo que llegará on-chain en el próximo 
 msgid "Off by default. The emerald effective-rate line (what Braiins actually charged, from counter deltas) is dramatically more volatile than bid / fillable / hashprice — when enabled it auto-scales the Y-axis and visibly squashes the finer bot movements into a thin band. The hero PRICE card and the AVG COST / PH DELIVERED stat already show the same number without hijacking the chart. Flip on when you want to eyeball settlement behaviour directly, accept the loss of flatter-line detail in exchange."
 msgstr "Desactivado por defecto. La línea esmeralda de tasa efectiva (lo que Braiins realmente cobró, calculado desde deltas del contador) es mucho más volátil que oferta / rellenable / hashprice - al habilitarla, autoescala el eje Y y aplasta visiblemente los movimientos más finos del bot en una banda estrecha. La tarjeta principal PRICE y la estadística AVG COST / PH DELIVERED ya muestran el mismo número sin secuestrar el gráfico. Actívala cuando quieras ver directamente el comportamiento de liquidación, aceptando la pérdida de detalle en las líneas más planas a cambio."
 
+#: src/pages/Config.tsx
+msgid "Off by default. When enabled, the Hashrate chart renders our share of Ocean's TIDES window (share_log %) as a violet line on a right-side Y-axis labelled \"% of Ocean\", formatted to 4 decimals. Useful for tracking how our slice of the pool drifts as Ocean's total hashrate grows or our delivered PH/s fluctuates. The controller does not read this signal — display only."
+msgstr "Desactivado por defecto. Cuando está activo, el gráfico de hashrate muestra nuestra parte de la ventana TIDES de Ocean (share_log %) como una línea violeta en un eje Y derecho etiquetado \"% de Ocean\", con 4 decimales. Útil para seguir cómo nuestra porción del pool varía a medida que el hashrate total de Ocean crece o nuestra PH/s entregada fluctúa. El controlador no lee esta señal - solo visualización."
+
 #: src/pages/Status.tsx
 msgid "On target - bid at fillable + overpay."
 msgstr "En el objetivo - oferta igual a rellenable + sobrepago."
@@ -1684,6 +1693,10 @@ msgstr "Mostrar"
 #: src/pages/Config.tsx
 msgid "Show effective rate on price chart"
 msgstr "Mostrar tasa efectiva en el gráfico de precio"
+
+#: src/pages/Config.tsx
+msgid "Show share_log % on hashrate chart"
+msgstr "Mostrar share_log % en gráfico de hashrate"
 
 #: src/pages/Setup.tsx
 msgid "Show value"

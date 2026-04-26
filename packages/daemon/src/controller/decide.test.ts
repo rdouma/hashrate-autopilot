@@ -69,6 +69,7 @@ function state(overrides: Partial<State> = {}): State {
     pool: { reachable: true, last_ok_at: 1_700_000_000_000, consecutive_failures: 0 },
     datum: null,
     ocean_hashrate_ph: null,
+    share_log_pct: null,
     last_api_ok_at: 1_700_000_000_000,
     hashprice_sat_per_ph_day: null,
     fillable_ask_sat_per_eh_day: fillable,

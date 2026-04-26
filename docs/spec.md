@@ -272,6 +272,15 @@ The daemon runs a pruning pass once per hour; the controller is untouched by ret
   the Y-axis down and crushes the flatter bid / fillable / hashprice / max-bid detail into a thin band.
   The hero PRICE card and the AVG COST / PH DELIVERED stats card already surface the effective rate as
   a number — the line is only useful for operators inspecting settlement rhythm directly.
+- `show_share_log_on_hashrate_chart` — default `false`. When true, the Hashrate chart renders our
+  share of Ocean's pool hashrate (`share_log_pct`) as a violet line on a second Y-axis (right side,
+  labelled `% of Ocean`, formatted to 4 decimals — matches Ocean's display, e.g. `0.0182%`). The
+  series is sourced from a new `tick_metrics.share_log_pct` column (recorded each tick from Ocean's
+  `/statsnap` payload, alongside `hashprice_sat_per_ph_day`). Off by default because the line is
+  informational — the controller does not read it — and adding a second Y-axis to a chart that
+  already carries 3-5 hashrate lines costs more glance-time than most operators need. Useful when
+  comparing how our slice of the pool drifts as Ocean's total hashrate grows or our delivered PH/s
+  fluctuates.
 
 Ocean is not smoothed client-side because `/user_hashrate` already returns a server-side 5-min average;
 setting `braiins_hashrate_smoothing_minutes` and `datum_hashrate_smoothing_minutes` to 5 visually aligns
@@ -447,7 +456,9 @@ perimeter; the dashboard has a shared-password second gate, not full auth.
   `received (Ocean)` (blue). Target + floor as dashed horizontal references. Per-series rolling-mean
   smoothing via `braiins_hashrate_smoothing_minutes` and `datum_hashrate_smoothing_minutes`; Ocean is
   server-smoothed. Ocean-credited pool-block markers appear as isometric cubes (blue for TIDES,
-  gold for own-found); click opens the configured block explorer.
+  gold for own-found); click opens the configured block explorer. Optional fourth series `% of Ocean`
+  (violet) on a right-side Y-axis, hidden by default behind the `show_share_log_on_hashrate_chart`
+  config toggle — historical share_log_pct from `tick_metrics`, formatted as a 4-decimal percentage.
 - **Price chart.** Four always-on lines: `our bid` (amber), `fillable` (cyan, the controller's tracking
   anchor), `hashprice` (violet, dashed), `max bid` / effective ceiling (red). The `effective` line
   (emerald, per-tick Δconsumed_sat ÷ delivered×Δt) is hidden by default behind the
@@ -471,9 +482,9 @@ perimeter; the dashboard has a shared-password second gate, not full auth.
 
 One long form mirroring §8. Sections: Hashrate targets, Pool destination, Pricing (fillable-tracking
 overpay + two safety ceilings), Budget, Alerting / outage tolerance, Daemon startup, Chart smoothing
-(including the effective-line toggle), Log retention, Integrations (Ocean / Datum / bitcoind / electrs /
-BTC price), On-chain payouts. Saves go through the Zod `AppConfigInvariantsSchema` and take effect on
-the next tick; no daemon restart needed.
+(including the effective-line toggle and the share-log overlay toggle), Log retention, Integrations
+(Ocean / Datum / bitcoind / electrs / BTC price), On-chain payouts. Saves go through the Zod
+`AppConfigInvariantsSchema` and take effect on the next tick; no daemon restart needed.
 
 ### 12.3 Things the v1 spec listed but v2.1 does not ship
 

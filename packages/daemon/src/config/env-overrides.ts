@@ -155,6 +155,10 @@ const APP_CONFIG_ENV: {
     varName: 'BHA_SHOW_EFFECTIVE_RATE_ON_PRICE_CHART',
     coerce: asBoolean,
   },
+  show_share_log_on_hashrate_chart: {
+    varName: 'BHA_SHOW_SHARE_LOG_ON_HASHRATE_CHART',
+    coerce: asBoolean,
+  },
 };
 
 // ---------------------------------------------------------------------------

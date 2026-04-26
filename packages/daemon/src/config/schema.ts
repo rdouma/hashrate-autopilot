@@ -232,6 +232,15 @@ export const AppConfigSchema = z.object({
   // the settlement rate directly; accept the loss of flatter-line
   // detail in exchange.
   show_effective_rate_on_price_chart: z.boolean().default(false),
+
+  // Operator toggle for the violet `% of Ocean` line on the Hashrate
+  // chart (issue #72). Off by default — the controller does not read
+  // share_log_pct; adding a second Y-axis to a chart that already
+  // carries 3-5 hashrate lines costs more glance-time than most
+  // operators need. Flip on when you want to track how our slice of
+  // the pool drifts as Ocean's total hashrate grows or our delivered
+  // PH/s fluctuates.
+  show_share_log_on_hashrate_chart: z.boolean().default(false),
 });
 
 export type AppConfig = z.infer<typeof AppConfigSchema>;
@@ -315,4 +324,5 @@ export const APP_CONFIG_DEFAULTS: Omit<
   braiins_price_smoothing_minutes: 1,
 
   show_effective_rate_on_price_chart: false,
+  show_share_log_on_hashrate_chart: false,
 };

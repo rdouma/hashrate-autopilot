@@ -31,6 +31,7 @@ export interface InsertTickMetricArgs {
   readonly available_balance_sat: number | null;
   readonly datum_hashrate_ph: number | null;
   readonly ocean_hashrate_ph: number | null;
+  readonly share_log_pct: number | null;
   readonly spend_sat: number | null;
   readonly primary_bid_consumed_sat: number | null;
   readonly run_mode: TickMetricsTable['run_mode'];
@@ -58,6 +59,7 @@ export interface AggregatedTickMetricRow {
   available_balance_sat: number | null;
   datum_hashrate_ph: number | null;
   ocean_hashrate_ph: number | null;
+  share_log_pct: number | null;
   primary_bid_consumed_sat: number | null;
 }
 
@@ -113,6 +115,7 @@ export class TickMetricsRepo {
         available_balance_sat: r.available_balance_sat,
         datum_hashrate_ph: r.datum_hashrate_ph,
         ocean_hashrate_ph: r.ocean_hashrate_ph,
+        share_log_pct: r.share_log_pct,
         primary_bid_consumed_sat: r.primary_bid_consumed_sat,
       }));
     }
@@ -141,6 +144,7 @@ export class TickMetricsRepo {
         sql<number | null>`AVG(available_balance_sat)`.as('available_balance_sat'),
         sql<number | null>`AVG(datum_hashrate_ph)`.as('datum_hashrate_ph'),
         sql<number | null>`AVG(ocean_hashrate_ph)`.as('ocean_hashrate_ph'),
+        sql<number | null>`AVG(share_log_pct)`.as('share_log_pct'),
         // Cumulative counter — MAX gives the end-of-bucket value, so
         // bucket-to-bucket deltas yield the actual-spend per bucket.
         // AVG would smear the ramp and break the derived rate.

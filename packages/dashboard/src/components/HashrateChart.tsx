@@ -28,6 +28,7 @@ import type { MetricPoint, OurBlockMarker } from '../lib/api';
 import { formatAgeMinutes, formatNumber, formatTimestamp, formatTimestampUtc } from '../lib/format';
 import { useLocale } from '../lib/locale';
 import { applyExplorerTemplate } from '../lib/blockExplorer';
+import { localizedRangeLabel } from '../lib/range-label';
 
 const WIDTH = 880;
 const HEIGHT = 200;
@@ -36,6 +37,10 @@ const HEIGHT = 200;
 // the price-side Y-axis moved to the left — just enough to keep the
 // rightmost timestamp from clipping the edge.
 const PADDING = { top: 16, right: 16, bottom: 24, left: 80 };
+// When the optional share_log overlay is on, the chart grows a second
+// (right-hand) Y-axis. Mirror the left-axis padding so the violet axis
+// labels have the same breathing room as PH/s on the left.
+const PADDING_RIGHT_WITH_SHARE_LOG = 80;
 
 // Tailwind amber-500 — the deeper "our bid" amber on the PriceChart.
 // Previously #fbbf24 (amber-400); nudged a shade darker at the
@@ -58,6 +63,10 @@ const COLOR_OUR_BLOCK = '#fbbf24';
 // Same hue as COLOR_OCEAN by design — TIDES-credited block cubes
 // and the Ocean hashrate line share the Ocean-is-blue association.
 const COLOR_POOL_BLOCK = '#3b82f6';
+// Tailwind violet-400 — distinct from amber/green/blue/gray; reads
+// well against the slate background. Used for the opt-in `% of Ocean`
+// (share_log) overlay on the right Y-axis.
+const COLOR_SHARE_LOG = '#a78bfa';
 
 /**
  * Rolling-mean smoother over a time window. For each point at time
@@ -125,6 +134,7 @@ export const HashrateChart = memo(function HashrateChart({
   shareLogPct = null,
   braiinsSmoothingMinutes = 1,
   datumSmoothingMinutes = 1,
+  showShareLogOverlay = false,
 }: {
   points: readonly MetricPoint[];
   range: ChartRange;
@@ -148,6 +158,11 @@ export const HashrateChart = memo(function HashrateChart({
    *  already returns a server-side 5-min average. */
   braiinsSmoothingMinutes?: number;
   datumSmoothingMinutes?: number;
+  /** When true AND at least one non-null `share_log_pct` exists in
+   *  the visible range, render the violet `% of Ocean` line on a
+   *  second (right-side) Y-axis. Bound to the
+   *  `show_share_log_on_hashrate_chart` config toggle. */
+  showShareLogOverlay?: boolean;
 }) {
   const { i18n } = useLingui();
   void i18n;
@@ -227,6 +242,13 @@ export const HashrateChart = memo(function HashrateChart({
     const rawDatumYs = points.map((p) => p.datum_hashrate_ph);
     const hasDatum = rawDatumYs.some((v) => v !== null);
     const oceanYs = points.map((p) => p.ocean_hashrate_ph);
+    const shareLogYs = points.map((p) => p.share_log_pct);
+    const hasShareLog =
+      showShareLogOverlay && shareLogYs.some((v) => v !== null);
+    // Mirror the left-axis padding when the overlay is on so the
+    // violet `% of Ocean` axis labels have breathing room equal to
+    // PH/s on the left. Off → unchanged from today (no layout shift).
+    const padRight = hasShareLog ? PADDING_RIGHT_WITH_SHARE_LOG : PADDING.right;
     // Apply operator-configured rolling-mean smoothing to the raw
     // per-tick signals. Ocean is left alone — /user_hashrate is
     // already a 5-min server-side average. The counter-derived
@@ -258,13 +280,48 @@ export const HashrateChart = memo(function HashrateChart({
     const yMax = yTicks[yTicks.length - 1] ?? 1;
 
     const xScale = (x: number): number => {
-      const usable = WIDTH - PADDING.left - PADDING.right;
+      const usable = WIDTH - PADDING.left - padRight;
       if (maxX === minX) return PADDING.left + usable / 2;
       return PADDING.left + ((x - minX) / (maxX - minX)) * usable;
     };
     const yScale = (y: number): number => {
       const usable = HEIGHT - PADDING.top - PADDING.bottom;
       return HEIGHT - PADDING.bottom - ((y - yMin) / (yMax - yMin)) * usable;
+    };
+
+    // Right-side Y-axis for the share_log overlay. niceYTicks gives a
+    // human-readable scale (0.01, 0.02, 0.03 etc.) without us having
+    // to special-case the 4-decimal magnitude — the ticks come out as
+    // round numbers and the formatter renders them with 4 decimals to
+    // match Ocean's display convention.
+    let shareLogYTicks: number[] = [];
+    let shareLogYMin = 0;
+    let shareLogYMax = 1;
+    if (hasShareLog) {
+      const validShareLogs = shareLogYs.filter(
+        (v): v is number => v !== null && Number.isFinite(v),
+      );
+      const slMin = Math.min(...validShareLogs);
+      const slMax = Math.max(...validShareLogs);
+      // 5% breathing room above + below so the line never sits on the
+      // top/bottom rule. Falls back to a [0, slMax] band when slMin
+      // approaches zero so the axis still makes sense.
+      const span = Math.max(slMax - slMin, slMax * 0.1, 1e-6);
+      shareLogYTicks = niceYTicks(
+        Math.max(0, slMin - span * 0.1),
+        slMax + span * 0.1,
+        5,
+      );
+      shareLogYMin = shareLogYTicks[0] ?? 0;
+      shareLogYMax = shareLogYTicks[shareLogYTicks.length - 1] ?? 1;
+    }
+    const shareLogYScale = (y: number): number => {
+      const usable = HEIGHT - PADDING.top - PADDING.bottom;
+      const span = shareLogYMax - shareLogYMin;
+      if (span <= 0) return HEIGHT - PADDING.bottom;
+      return (
+        HEIGHT - PADDING.bottom - ((y - shareLogYMin) / span) * usable
+      );
     };
 
     const hashratePath = (values: readonly number[]): string =>
@@ -299,6 +356,29 @@ export const HashrateChart = memo(function HashrateChart({
     };
     const datumPath = pathWithNullGaps(datumYs);
     const oceanPath = pathWithNullGaps(oceanYs);
+    // Share-log uses its own Y-scale (right-side axis), so it can't
+    // share `pathWithNullGaps` above which closes over the left-axis
+    // yScale. Build the path inline against shareLogYScale.
+    const shareLogPath = ((): string => {
+      if (!hasShareLog) return '';
+      const segments: string[] = [];
+      let current = '';
+      for (let i = 0; i < shareLogYs.length; i += 1) {
+        const v = shareLogYs[i];
+        if (v === null || v === undefined || !Number.isFinite(v)) {
+          if (current) {
+            segments.push(current);
+            current = '';
+          }
+          continue;
+        }
+        const x = xScale(xs[i]!).toFixed(1);
+        const y = shareLogYScale(v).toFixed(1);
+        current += `${current ? 'L' : 'M'}${x},${y} `;
+      }
+      if (current) segments.push(current);
+      return segments.join(' ');
+    })();
 
     const deliveredPath = hashratePath(ys);
     const targetPath = hashratePath(targets);
@@ -327,8 +407,13 @@ export const HashrateChart = memo(function HashrateChart({
       yTicks,
       xTickInterval,
       xTicks,
+      hasShareLog,
+      shareLogPath,
+      shareLogYTicks,
+      shareLogYScale,
+      padRight,
     };
-  }, [points, braiinsSmoothingMinutes, datumSmoothingMinutes]);
+  }, [points, braiinsSmoothingMinutes, datumSmoothingMinutes, showShareLogOverlay]);
 
   if (!chartData) {
     return (
@@ -345,7 +430,7 @@ export const HashrateChart = memo(function HashrateChart({
     );
   }
 
-  const { minX, maxX, xScale, yScale, deliveredPath, datumPath, hasDatum, oceanPath, hasOcean, targetPath, floorPath, yTicks, xTickInterval, xTicks } = chartData;
+  const { minX, maxX, xScale, yScale, deliveredPath, datumPath, hasDatum, oceanPath, hasOcean, targetPath, floorPath, yTicks, xTickInterval, xTicks, hasShareLog, shareLogPath, shareLogYTicks, shareLogYScale, padRight } = chartData;
 
   return (
     <div className="bg-slate-900 border rounded-lg p-4 border-slate-800">
@@ -360,6 +445,9 @@ export const HashrateChart = memo(function HashrateChart({
           )}
           {hasOcean && (
             <Legend color={COLOR_OCEAN} label={t`received (Ocean)`} />
+          )}
+          {hasShareLog && (
+            <Legend color={COLOR_SHARE_LOG} label={t`% of Ocean`} />
           )}
           <Legend color={COLOR_TARGET} label={t`target`} dashed />
           <Legend color={COLOR_FLOOR} label={t`floor`} dashed />
@@ -386,7 +474,7 @@ export const HashrateChart = memo(function HashrateChart({
           <g key={`y-${i}`}>
             <line
               x1={PADDING.left}
-              x2={WIDTH - PADDING.right}
+              x2={WIDTH - padRight}
               y1={yScale(v)}
               y2={yScale(v)}
               stroke="#1e293b"
@@ -404,6 +492,22 @@ export const HashrateChart = memo(function HashrateChart({
             </text>
           </g>
         ))}
+
+        {hasShareLog &&
+          shareLogYTicks.map((v, i) => (
+            <g key={`y-share-${i}`}>
+              <text
+                x={WIDTH - padRight + 6}
+                y={shareLogYScale(v) + 4}
+                textAnchor="start"
+                fontSize="10"
+                fill="#a78bfa"
+                fontFamily="monospace"
+              >
+                {`${formatNumber(v, { minimumFractionDigits: 4, maximumFractionDigits: 4 }, intlLocale)}%`}
+              </text>
+            </g>
+          ))}
 
         <path d={targetPath} stroke={COLOR_TARGET} strokeWidth="1.2" strokeDasharray="4 3" fill="none" opacity="0.6" />
         <path d={floorPath} stroke={COLOR_FLOOR} strokeWidth="1" strokeDasharray="2 3" fill="none" opacity="0.5" />
@@ -428,6 +532,16 @@ export const HashrateChart = memo(function HashrateChart({
           <path
             d={oceanPath}
             stroke={COLOR_OCEAN}
+            strokeWidth="1.6"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        )}
+        {hasShareLog && (
+          <path
+            d={shareLogPath}
+            stroke={COLOR_SHARE_LOG}
             strokeWidth="1.6"
             fill="none"
             strokeLinecap="round"
@@ -494,7 +608,7 @@ export const HashrateChart = memo(function HashrateChart({
 
         <line
           x1={PADDING.left}
-          x2={WIDTH - PADDING.right}
+          x2={WIDTH - padRight}
           y1={HEIGHT - PADDING.bottom}
           y2={HEIGHT - PADDING.bottom}
           stroke="#334155"
@@ -538,6 +652,19 @@ export const HashrateChart = memo(function HashrateChart({
         >
           PH/s
         </text>
+        {hasShareLog && (
+          <text
+            x={WIDTH - 14}
+            y={PADDING.top + (HEIGHT - PADDING.top - PADDING.bottom) / 2}
+            textAnchor="middle"
+            fontSize="10"
+            fill="#a78bfa"
+            fontFamily="monospace"
+            transform={`rotate(90 ${WIDTH - 14} ${PADDING.top + (HEIGHT - PADDING.top - PADDING.bottom) / 2})`}
+          >
+            {t`% of Ocean`}
+          </text>
+        )}
       </svg>
       {blockTip && (
         <BlockTooltip
@@ -719,6 +846,7 @@ function RangePicker({
   current: ChartRange;
   onChange: (r: ChartRange) => void;
 }) {
+  const { i18n } = useLingui();
   return (
     <div className="flex gap-0.5 bg-slate-950/70 border border-slate-800 rounded-md p-0.5 pl-2 items-center">
       <span className="text-[10px] uppercase tracking-wider text-slate-500 pr-1"><Trans>range</Trans></span>
@@ -735,7 +863,7 @@ function RangePicker({
                 : 'text-slate-300 hover:bg-slate-800')
             }
           >
-            {CHART_RANGE_SPECS[r].label}
+            {localizedRangeLabel(r, i18n.locale)}
           </button>
         );
       })}

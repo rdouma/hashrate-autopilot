@@ -140,6 +140,17 @@ export interface State {
    */
   readonly ocean_hashrate_ph: number | null;
 
+  /**
+   * Ocean's `share_log` percentage at this tick (e.g. 0.0182 for
+   * 0.0182%) — our slice of the pool's TIDES window. Sourced from
+   * the same cached `/statsnap` + `/pool_stat` fetch that supplies
+   * `hashprice_sat_per_ph_day`. Display-only — opt-in fourth series
+   * on the Hashrate chart via `show_share_log_on_hashrate_chart`.
+   * Null when Ocean isn't configured, the poll failed, or pool
+   * tides shares were zero.
+   */
+  readonly share_log_pct: number | null;
+
   /** Last successful API read timestamp (ms). */
   readonly last_api_ok_at: number | null;
 

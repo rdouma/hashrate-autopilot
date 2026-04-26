@@ -42,6 +42,8 @@ export class ConfigRepo {
       // to the rest of the app.
       show_effective_rate_on_price_chart:
         rest.show_effective_rate_on_price_chart === 1,
+      show_share_log_on_hashrate_chart:
+        rest.show_share_log_on_hashrate_chart === 1,
     };
   }
 
@@ -54,6 +56,9 @@ export class ConfigRepo {
       ...validated,
       // SQLite boolean columns hold 0 / 1.
       show_effective_rate_on_price_chart: (validated.show_effective_rate_on_price_chart
+        ? 1
+        : 0) as 0 | 1,
+      show_share_log_on_hashrate_chart: (validated.show_share_log_on_hashrate_chart
         ? 1
         : 0) as 0 | 1,
       // Legacy NOT NULL columns still in the DB — provide harmless defaults
