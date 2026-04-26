@@ -8,6 +8,7 @@
 // when supported, English otherwise (see getInitialLocale in
 // lib/i18n.ts).
 
+import { t } from '@lingui/macro';
 import { useLingui } from '@lingui/react';
 
 import {
@@ -36,7 +37,7 @@ export function LanguagePicker() {
     <select
       value={current}
       onChange={onChange}
-      aria-label="Language"
+      aria-label={t`Language`}
       className="px-1 py-1 text-[11px] text-slate-300 bg-slate-900 border border-slate-700 rounded hover:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-amber-500"
     >
       {SUPPORTED_LOCALES.map((code) => (

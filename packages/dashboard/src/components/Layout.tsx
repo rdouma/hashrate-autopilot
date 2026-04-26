@@ -1,4 +1,5 @@
-import { Trans } from '@lingui/macro';
+import { Trans, t } from '@lingui/macro';
+import { useLingui } from '@lingui/react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 
@@ -11,16 +12,27 @@ import { LanguagePicker } from './LanguagePicker';
 import { ModeBadge } from './ModeBadge';
 import { SatSymbol } from './SatSymbol';
 
-const NAV_ITEMS: Array<{ label: string; to: string }> = [
-  { label: 'Status', to: '/' },
-  { label: 'Config', to: '/config' },
-];
+// Nav items are translated at render time. Using `t\`...\`` inside the
+// component (rather than at module load) so the active locale wins -
+// otherwise the first-render snapshot would freeze in whatever locale
+// was active when the module was imported.
+function useNavItems() {
+  const { i18n } = useLingui();
+  // i18n is referenced so the hook re-runs on locale change; the
+  // template tag picks up the active catalog implicitly.
+  void i18n;
+  return [
+    { label: t`Status`, to: '/' },
+    { label: t`Config`, to: '/config' },
+  ];
+}
 
 export function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { intlLocale } = useLocale();
   const denomination = useDenomination();
+  const navItems = useNavItems();
 
   // Status powers the global header (mode badge + balance) on every
   // page. 30 s mirrors the Status-page polling cadence — header
@@ -54,7 +66,7 @@ export function Layout() {
           </div>
 
           <nav className="flex items-center gap-1">
-            {NAV_ITEMS.map((item) => {
+            {navItems.map((item) => {
               const active =
                 item.to === '/'
                   ? location.pathname === '/'
@@ -108,7 +120,7 @@ export function Layout() {
           rel="noopener noreferrer"
           className="underline decoration-dotted hover:text-slate-400"
         >
-          changelog
+          <Trans>changelog</Trans>
         </a>
       </footer>
     </div>
@@ -122,13 +134,18 @@ export function Layout() {
  */
 function DenominationToggle() {
   const { mode, toggle, btcPrice } = useDenomination();
+  const { i18n } = useLingui();
+  void i18n;
   if (btcPrice === null) return null;
+
+  const priceStr = btcPrice.toLocaleString('en-US', { maximumFractionDigits: 0 });
+  const titleText = t`BTC/USD: $${priceStr} - click to toggle denomination`;
 
   return (
     <button
       onClick={toggle}
       className="inline-flex items-center border border-slate-700 rounded-md overflow-hidden text-[11px] leading-none"
-      title={`BTC/USD: $${btcPrice.toLocaleString('en-US', { maximumFractionDigits: 0 })} — click to toggle denomination`}
+      title={titleText}
     >
       <span
         className={
@@ -138,7 +155,7 @@ function DenominationToggle() {
             : 'text-slate-400 hover:bg-slate-800')
         }
       >
-        <SatSymbol /> sats
+        <SatSymbol /> <Trans>sats</Trans>
       </span>
       <span
         className={

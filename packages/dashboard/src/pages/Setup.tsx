@@ -11,6 +11,8 @@
  * just collected and redirect to /.
  */
 
+import { Trans, t } from '@lingui/macro';
+import { useLingui } from '@lingui/react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -47,6 +49,8 @@ type Step = 'access' | 'mining' | 'review' | 'submitting';
 
 export function Setup() {
   const navigate = useNavigate();
+  const { i18n } = useLingui();
+  void i18n;
   const [info, setInfo] = useState<SetupInfoResponse | null>(null);
   const [loadErr, setLoadErr] = useState<string | null>(null);
   const [step, setStep] = useState<Step>('access');
@@ -105,9 +109,11 @@ export function Setup() {
   if (loadErr) {
     return (
       <CenteredCard>
-        <div className="text-red-400">Failed to load setup data: {loadErr}</div>
+        <div className="text-red-400">
+          <Trans>Failed to load setup data: {loadErr}</Trans>
+        </div>
         <p className="text-sm text-slate-400 mt-2">
-          The daemon may not be in setup mode. Reload the page or check the daemon logs.
+          <Trans>The daemon may not be in setup mode. Reload the page or check the daemon logs.</Trans>
         </p>
       </CenteredCard>
     );
@@ -116,7 +122,7 @@ export function Setup() {
   if (!form || !info) {
     return (
       <CenteredCard>
-        <div className="text-slate-400">Loading…</div>
+        <div className="text-slate-400"><Trans>Loading…</Trans></div>
       </CenteredCard>
     );
   }
@@ -185,9 +191,9 @@ export function Setup() {
   if (step === 'submitting') {
     return (
       <CenteredCard wide>
-        <h1 className="text-xl text-amber-400 font-semibold">Setting up…</h1>
+        <h1 className="text-xl text-amber-400 font-semibold"><Trans>Setting up…</Trans></h1>
         <p className="text-slate-300 text-sm mt-2">
-          Writing config + secrets and bringing the controller online. Usually a few seconds.
+          <Trans>Writing config + secrets and bringing the controller online. Usually a few seconds.</Trans>
         </p>
         <div className="mt-4 h-2 w-full bg-slate-800 rounded overflow-hidden">
           <div className="h-full bg-amber-400 animate-pulse w-1/3" />
@@ -242,7 +248,7 @@ async function waitForOperational(maxAttempts = 60): Promise<void> {
     }
     await new Promise((r) => setTimeout(r, 1500));
   }
-  throw new Error('Daemon did not return to OPERATIONAL within 90 seconds.');
+  throw new Error(t`Daemon did not return to OPERATIONAL within 90 seconds.`);
 }
 
 // ---------------------------------------------------------------------------
@@ -250,18 +256,23 @@ async function waitForOperational(maxAttempts = 60): Promise<void> {
 // ---------------------------------------------------------------------------
 
 function Header({ step, info }: { step: Step; info: SetupInfoResponse }) {
+  const { i18n } = useLingui();
+  void i18n;
   const stepIndex = step === 'access' ? 0 : step === 'mining' ? 1 : 2;
-  const verb = info.has_existing_config ? 'Re-setup' : 'First-run setup';
+  const verb = info.has_existing_config ? t`Re-setup` : t`First-run setup`;
+  const stepLabels = [t`Access`, t`Mining`, t`Review`];
   return (
     <div className="mb-6">
       <h1 className="text-2xl text-amber-400 font-semibold">Braiins Autopilot — {verb}</h1>
       <p className="text-sm text-slate-400 mt-1">
-        {info.has_existing_config
-          ? 'Existing config detected — fields are pre-filled. Update what changed and click through.'
-          : 'A few questions to get the daemon operational. Defaults work for typical home miners; tune later from the Config page.'}
+        {info.has_existing_config ? (
+          <Trans>Existing config detected — fields are pre-filled. Update what changed and click through.</Trans>
+        ) : (
+          <Trans>A few questions to get the daemon operational. Defaults work for typical home miners; tune later from the Config page.</Trans>
+        )}
       </p>
       <div className="flex gap-2 mt-4">
-        {['Access', 'Mining', 'Review'].map((label, i) => (
+        {stepLabels.map((label, i) => (
           <div
             key={label}
             className={`flex-1 px-3 py-1.5 rounded text-xs font-medium text-center ${
@@ -289,6 +300,8 @@ function AccessStep({
   update: <K extends keyof FormState>(k: K, v: FormState[K]) => void;
   onNext: () => void;
 }) {
+  const { i18n } = useLingui();
+  void i18n;
   const passwordsMatch = form.dashboard_password === form.dashboard_password_confirm;
   const valid =
     form.braiins_owner_token.trim().length > 0 &&
@@ -302,8 +315,8 @@ function AccessStep({
       }}
       className="space-y-4"
     >
-      <Section title="Braiins API access">
-        <Field label="Owner token" hint="From hashpower.braiins.com → API tokens. Required.">
+      <Section title={t`Braiins API access`}>
+        <Field label={t`Owner token`} hint={t`From hashpower.braiins.com → API tokens. Required.`}>
           <PasswordField
             value={form.braiins_owner_token}
             onChange={(v) => update('braiins_owner_token', v)}
@@ -311,8 +324,8 @@ function AccessStep({
           />
         </Field>
         <Field
-          label="Read-only token"
-          hint="Optional. Useful if you'd like a second token only for read paths."
+          label={t`Read-only token`}
+          hint={t`Optional. Useful if you'd like a second token only for read paths.`}
         >
           <PasswordField
             value={form.braiins_read_only_token}
@@ -320,23 +333,23 @@ function AccessStep({
           />
         </Field>
       </Section>
-      <Section title="Dashboard password">
+      <Section title={t`Dashboard password`}>
         <p className="text-xs text-slate-400 -mt-1">
-          You'll use this to sign in to the dashboard after setup. At least 8 characters.
+          <Trans>You'll use this to sign in to the dashboard after setup. At least 8 characters.</Trans>
         </p>
-        <Field label="Password">
+        <Field label={t`Password`}>
           <PasswordField
             value={form.dashboard_password}
             onChange={(v) => update('dashboard_password', v)}
           />
         </Field>
-        <Field label="Confirm password">
+        <Field label={t`Confirm password`}>
           <PasswordField
             value={form.dashboard_password_confirm}
             onChange={(v) => update('dashboard_password_confirm', v)}
           />
           {!passwordsMatch && form.dashboard_password_confirm.length > 0 && (
-            <div className="text-xs text-red-400 mt-1">passwords don't match</div>
+            <div className="text-xs text-red-400 mt-1"><Trans>passwords don't match</Trans></div>
           )}
         </Field>
       </Section>
@@ -346,7 +359,7 @@ function AccessStep({
           disabled={!valid}
           className={primaryButtonCss}
         >
-          Next →
+          <Trans>Next →</Trans>
         </button>
       </div>
     </form>
@@ -366,6 +379,8 @@ function MiningStep({
   onBack: () => void;
   onNext: () => void;
 }) {
+  const { i18n } = useLingui();
+  void i18n;
   // Worker identity must be `<btc_payout_address>.<label>` — Ocean
   // TIDES credits shares by the address prefix. Anything else
   // silently sends shares somewhere else (or to nobody). Treat a
@@ -422,9 +437,9 @@ function MiningStep({
       }}
       className="space-y-4"
     >
-      <Section title="Hashrate targets">
+      <Section title={t`Hashrate targets`}>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Target (PH/s)" hint="What the controller aims for.">
+          <Field label={t`Target (PH/s)`} hint={t`What the controller aims for.`}>
             <input
               type="number"
               step="0.5"
@@ -434,7 +449,7 @@ function MiningStep({
               className={textInputCss}
             />
           </Field>
-          <Field label="Floor (PH/s)" hint="Below this triggers an alert. ≤ target.">
+          <Field label={t`Floor (PH/s)`} hint={t`Below this triggers an alert. ≤ target.`}>
             <input
               type="number"
               step="0.5"
@@ -448,8 +463,8 @@ function MiningStep({
           </Field>
         </div>
       </Section>
-      <Section title="Pool destination (where Braiins delivers)">
-        <Field label="Pool URL" hint="Stratum URL for your Datum gateway or pool.">
+      <Section title={t`Pool destination (where Braiins delivers)`}>
+        <Field label={t`Pool URL`} hint={t`Stratum URL for your Datum gateway or pool.`}>
           <input
             type="text"
             value={form.destination_pool_url}
@@ -458,8 +473,8 @@ function MiningStep({
           />
         </Field>
         <Field
-          label="Bitcoin payout address"
-          hint="Your address that receives Ocean TIDES payouts. The worker identity below is auto-derived from this."
+          label={t`Bitcoin payout address`}
+          hint={t`Your address that receives Ocean TIDES payouts. The worker identity below is auto-derived from this.`}
         >
           <input
             type="text"
@@ -469,8 +484,8 @@ function MiningStep({
           />
         </Field>
         <Field
-          label="Worker identity"
-          hint="Format: <btc-address>.<label>. Ocean TIDES credits shares by the address prefix — anything else routes shares to nobody."
+          label={t`Worker identity`}
+          hint={t`Format: <btc-address>.<label>. Ocean TIDES credits shares by the address prefix — anything else routes shares to nobody.`}
         >
           <input
             type="text"
@@ -481,24 +496,25 @@ function MiningStep({
           />
           {worker.length > 0 && !worker.includes('.') && (
             <div className="text-xs text-red-400 mt-1">
-              must contain a period — without it shares are uncredited on Ocean
+              <Trans>must contain a period — without it shares are uncredited on Ocean</Trans>
             </div>
           )}
           {worker.length > 0 && worker.includes('.') && !workerPrefixOk && addr.length > 0 && (
             <div className="text-xs text-red-400 mt-1 leading-snug">
-              <strong>Mismatch:</strong> the worker identity must start with{' '}
-              <code>{addr}.</code> — otherwise Ocean credits shares to a different address (or
-              nobody). Edit the address above first; this field follows it automatically.
+              <Trans>
+                <strong>Mismatch:</strong> the worker identity must start with{' '}
+                <code>{addr}.</code> — otherwise Ocean credits shares to a different address (or
+                nobody). Edit the address above first; this field follows it automatically.
+              </Trans>
             </div>
           )}
         </Field>
       </Section>
-      <Section title="On-chain payout tracking (optional)">
+      <Section title={t`On-chain payout tracking (optional)`}>
         <p className="text-xs text-slate-400 -mt-1">
-          Lets the dashboard show Ocean TIDES payouts as they arrive. Pick a backend that can read
-          your wallet's on-chain balance.
+          <Trans>Lets the dashboard show Ocean TIDES payouts as they arrive. Pick a backend that can read your wallet's on-chain balance.</Trans>
         </p>
-        <Field label="Backend">
+        <Field label={t`Backend`}>
           <select
             value={form.payout_source}
             onChange={(e) =>
@@ -506,9 +522,9 @@ function MiningStep({
             }
             className={textInputCss}
           >
-            <option value="none">None — skip payout tracking</option>
-            <option value="bitcoind">Bitcoin Core (bitcoind RPC)</option>
-            <option value="electrs">Electrs (Electrum-style indexed lookup, faster)</option>
+            <option value="none">{t`None — skip payout tracking`}</option>
+            <option value="bitcoind">{t`Bitcoin Core (bitcoind RPC)`}</option>
+            <option value="electrs">{t`Electrs (Electrum-style indexed lookup, faster)`}</option>
           </select>
         </Field>
         {form.payout_source === 'bitcoind' && (
@@ -517,12 +533,14 @@ function MiningStep({
               info.detected_bitcoind?.user ||
               info.detected_bitcoind?.password) && (
               <div className="text-xs bg-emerald-950/30 border border-emerald-800/40 rounded px-3 py-2 text-emerald-200 leading-snug">
-                <strong>Detected from environment:</strong> Umbrel/Start9-style{' '}
-                <code>BITCOIN_RPC_*</code> env vars are set. The fields below are
-                pre-filled — check them and override if needed.
+                <Trans>
+                  <strong>Detected from environment:</strong> Umbrel/Start9-style{' '}
+                  <code>BITCOIN_RPC_*</code> env vars are set. The fields below are
+                  pre-filled — check them and override if needed.
+                </Trans>
               </div>
             )}
-            <Field label="RPC URL">
+            <Field label={t`RPC URL`}>
               <input
                 type="text"
                 placeholder="http://10.21.21.8:8332"
@@ -532,7 +550,7 @@ function MiningStep({
               />
             </Field>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="RPC user">
+              <Field label={t`RPC user`}>
                 <input
                   type="text"
                   value={form.bitcoind_rpc_user}
@@ -540,7 +558,7 @@ function MiningStep({
                   className={textInputCss}
                 />
               </Field>
-              <Field label="RPC password">
+              <Field label={t`RPC password`}>
                 <PasswordField
                   value={form.bitcoind_rpc_password}
                   onChange={(v) => update('bitcoind_rpc_password', v)}
@@ -553,7 +571,7 @@ function MiningStep({
           <div className="space-y-3 bg-slate-900/40 border border-slate-800 rounded p-3">
             <div className="grid grid-cols-3 gap-3">
               <div className="col-span-2">
-                <Field label="Host">
+                <Field label={t`Host`}>
                   <input
                     type="text"
                     placeholder="10.21.21.8"
@@ -563,7 +581,7 @@ function MiningStep({
                   />
                 </Field>
               </div>
-              <Field label="Port">
+              <Field label={t`Port`}>
                 <input
                   type="number"
                   min="1"
@@ -575,18 +593,20 @@ function MiningStep({
               </Field>
             </div>
             <p className="text-xs text-slate-500">
-              Default Electrs port is 50001 (TCP). On Umbrel the in-cluster hostname is typically
-              <code> 10.21.21.10</code> or similar — check the Electrs app's connection details.
+              <Trans>
+                Default Electrs port is 50001 (TCP). On Umbrel the in-cluster hostname is typically
+                <code> 10.21.21.10</code> or similar — check the Electrs app's connection details.
+              </Trans>
             </p>
           </div>
         )}
       </Section>
       <div className="flex justify-between pt-2">
         <button type="button" onClick={onBack} className={secondaryButtonCss}>
-          ← Back
+          <Trans>← Back</Trans>
         </button>
         <button type="submit" disabled={!valid} className={primaryButtonCss}>
-          Next →
+          <Trans>Next →</Trans>
         </button>
       </div>
     </form>
@@ -604,50 +624,56 @@ function ReviewStep({
   onBack: () => void;
   onSubmit: () => void;
 }) {
+  const { i18n } = useLingui();
+  void i18n;
+  const phLabel = (n: number) => `${n} PH/s`;
+  const satLabel = (n: number) => t`${n.toLocaleString()} sat/PH/day (default — tunable later)`;
   return (
     <div className="space-y-4">
-      <Section title="Review">
-        <ReviewRow label="Owner token" value={maskToken(form.braiins_owner_token)} />
+      <Section title={t`Review`}>
+        <ReviewRow label={t`Owner token`} value={maskToken(form.braiins_owner_token)} />
         {form.braiins_read_only_token && (
-          <ReviewRow label="Read-only token" value={maskToken(form.braiins_read_only_token)} />
+          <ReviewRow label={t`Read-only token`} value={maskToken(form.braiins_read_only_token)} />
         )}
-        <ReviewRow label="Dashboard password" value="••••••••" />
-        <ReviewRow label="Target hashrate" value={`${form.target_hashrate_ph} PH/s`} />
-        <ReviewRow label="Floor hashrate" value={`${form.minimum_floor_hashrate_ph} PH/s`} />
-        <ReviewRow label="Pool URL" value={form.destination_pool_url} />
-        <ReviewRow label="Worker identity" value={form.destination_pool_worker_name} />
-        <ReviewRow label="Payout address" value={form.btc_payout_address} />
+        <ReviewRow label={t`Dashboard password`} value="••••••••" />
+        <ReviewRow label={t`Target hashrate`} value={phLabel(form.target_hashrate_ph)} />
+        <ReviewRow label={t`Floor hashrate`} value={phLabel(form.minimum_floor_hashrate_ph)} />
+        <ReviewRow label={t`Pool URL`} value={form.destination_pool_url} />
+        <ReviewRow label={t`Worker identity`} value={form.destination_pool_worker_name} />
+        <ReviewRow label={t`Payout address`} value={form.btc_payout_address} />
         <ReviewRow
-          label="Max bid"
-          value={`${form.max_bid_sat_per_ph_day.toLocaleString()} sat/PH/day (default — tunable later)`}
+          label={t`Max bid`}
+          value={satLabel(form.max_bid_sat_per_ph_day)}
         />
         <ReviewRow
-          label="Overpay above fillable"
-          value={`${form.overpay_sat_per_ph_day.toLocaleString()} sat/PH/day (default — tunable later)`}
+          label={t`Overpay above fillable`}
+          value={satLabel(form.overpay_sat_per_ph_day)}
         />
         <ReviewRow
-          label="Payout tracking"
+          label={t`Payout tracking`}
           value={
             form.payout_source === 'bitcoind'
-              ? `Bitcoin Core RPC (${form.bitcoind_rpc_url})`
+              ? t`Bitcoin Core RPC (${form.bitcoind_rpc_url})`
               : form.payout_source === 'electrs'
-                ? `Electrs (${form.electrs_host}:${form.electrs_port})`
-                : 'None'
+                ? t`Electrs (${form.electrs_host}:${form.electrs_port})`
+                : t`None`
           }
         />
       </Section>
       <p className="text-xs text-slate-400">
-        After submit, the daemon writes everything to <code>state.db</code> and brings the
-        controller online in-place. Boots in <strong>DRY-RUN</strong> mode; the dashboard signs you
-        in automatically. Promote to LIVE from the Status page when you're ready.
+        <Trans>
+          After submit, the daemon writes everything to <code>state.db</code> and brings the
+          controller online in-place. Boots in <strong>DRY-RUN</strong> mode; the dashboard signs you
+          in automatically. Promote to LIVE from the Status page when you're ready.
+        </Trans>
       </p>
       {err && <div className="text-sm text-red-400">{err}</div>}
       <div className="flex justify-between pt-2">
         <button type="button" onClick={onBack} className={secondaryButtonCss}>
-          ← Back
+          <Trans>← Back</Trans>
         </button>
         <button type="button" onClick={onSubmit} className={primaryButtonCss}>
-          Complete setup
+          <Trans>Complete setup</Trans>
         </button>
       </div>
     </div>
@@ -722,6 +748,8 @@ function PasswordField({
   autoFocus?: boolean;
   placeholder?: string;
 }) {
+  const { i18n } = useLingui();
+  void i18n;
   const [shown, setShown] = useState(false);
   return (
     <div className="relative">
@@ -736,8 +764,8 @@ function PasswordField({
       <button
         type="button"
         onClick={() => setShown((s) => !s)}
-        aria-label={shown ? 'Hide value' : 'Show value'}
-        title={shown ? 'Hide' : 'Show'}
+        aria-label={shown ? t`Hide value` : t`Show value`}
+        title={shown ? t`Hide` : t`Show`}
         className="absolute inset-y-0 right-2 flex items-center text-slate-400 hover:text-slate-200 focus:outline-none"
       >
         {shown ? <EyeOffIcon /> : <EyeIcon />}
@@ -775,7 +803,7 @@ function ReviewRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function maskToken(t: string): string {
-  if (t.length <= 6) return '••••••';
-  return `${t.slice(0, 3)}…${t.slice(-3)}`;
+function maskToken(token: string): string {
+  if (token.length <= 6) return '••••••';
+  return `${token.slice(0, 3)}…${token.slice(-3)}`;
 }

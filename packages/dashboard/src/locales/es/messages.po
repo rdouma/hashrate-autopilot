@@ -6,7 +6,341 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: @lingui/cli\n"
 "Language: es\n"
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Plural-Forms: \n"
+
+#. placeholder {0}: n.toLocaleString()
+#: src/pages/Setup.tsx
+msgid "{0} sat/PH/day (default — tunable later)"
+msgstr "{0} sat/PH/día (predeterminado - ajustable después)"
+
+#: src/pages/Setup.tsx
+#: src/pages/Setup.tsx
+msgid "← Back"
+msgstr "← Atrás"
+
+#: src/pages/Setup.tsx
+msgid "<0>Detected from environment:</0> Umbrel/Start9-style <1>BITCOIN_RPC_*</1> env vars are set. The fields below are pre-filled — check them and override if needed."
+msgstr "<0>Detectado del entorno:</0> variables de entorno <1>BITCOIN_RPC_*</1> al estilo Umbrel/Start9 están establecidas. Los campos siguientes están rellenados previamente - revísalos y sobrescribe si es necesario."
+
+#: src/pages/Setup.tsx
+msgid "<0>Mismatch:</0> the worker identity must start with <1>{addr}.</1> — otherwise Ocean credits shares to a different address (or nobody). Edit the address above first; this field follows it automatically."
+msgstr "<0>Discordancia:</0> la identidad del worker debe empezar con <1>{addr}.</1> - de lo contrario Ocean acreditará shares a otra dirección (o a nadie). Edita primero la dirección de arriba; este campo la sigue automáticamente."
+
+#: src/pages/Setup.tsx
+msgid "A few questions to get the daemon operational. Defaults work for typical home miners; tune later from the Config page."
+msgstr "Unas preguntas para poner el daemon operativo. Los valores predeterminados funcionan para mineros caseros típicos; ajusta más tarde desde la página Config."
+
+#: src/pages/Setup.tsx
+msgid "Access"
+msgstr "Acceso"
+
+#: src/pages/Setup.tsx
+msgid "After submit, the daemon writes everything to <0>state.db</0> and brings the controller online in-place. Boots in <1>DRY-RUN</1> mode; the dashboard signs you in automatically. Promote to LIVE from the Status page when you're ready."
+msgstr "Tras enviar, el daemon escribe todo en <0>state.db</0> y pone el controlador en línea en el sitio. Arranca en modo <1>DRY-RUN</1>; el panel te conecta automáticamente. Cambia a LIVE desde la página Status cuando estés listo."
+
+#: src/pages/Setup.tsx
+msgid "Backend"
+msgstr "Backend"
+
+#: src/pages/Setup.tsx
+msgid "Below this triggers an alert. ≤ target."
+msgstr "Por debajo dispara una alerta. ≤ objetivo."
+
+#: src/pages/Setup.tsx
+msgid "Bitcoin Core (bitcoind RPC)"
+msgstr "Bitcoin Core (bitcoind RPC)"
+
+#. placeholder {0}: form.bitcoind_rpc_url
+#: src/pages/Setup.tsx
+msgid "Bitcoin Core RPC ({0})"
+msgstr "Bitcoin Core RPC ({0})"
+
+#: src/pages/Setup.tsx
+msgid "Bitcoin payout address"
+msgstr "Dirección de pago Bitcoin"
+
+#: src/pages/Setup.tsx
+msgid "Braiins API access"
+msgstr "Acceso a la API de Braiins"
+
+#: src/components/Layout.tsx
+msgid "BTC/USD: ${priceStr} - click to toggle denomination"
+msgstr "BTC/USD: ${priceStr} - haz clic para cambiar la denominación"
+
+#: src/components/Layout.tsx
+msgid "changelog"
+msgstr "registro de cambios"
+
+#: src/pages/Setup.tsx
+msgid "Complete setup"
+msgstr "Completar configuración"
+
+#: src/components/Layout.tsx
+msgid "Config"
+msgstr "Config"
+
+#: src/pages/Setup.tsx
+msgid "Confirm password"
+msgstr "Confirmar contraseña"
+
+#: src/pages/Setup.tsx
+msgid "Daemon did not return to OPERATIONAL within 90 seconds."
+msgstr "El daemon no volvió a OPERATIONAL en 90 segundos."
+
+#: src/pages/Setup.tsx
+#: src/pages/Setup.tsx
+msgid "Dashboard password"
+msgstr "Contraseña del panel"
+
+#: src/pages/Login.tsx
+msgid "dashboard sign-in"
+msgstr "iniciar sesión en el panel"
+
+#: src/pages/Setup.tsx
+msgid "Default Electrs port is 50001 (TCP). On Umbrel the in-cluster hostname is typically<0> 10.21.21.10</0> or similar — check the Electrs app's connection details."
+msgstr "El puerto Electrs predeterminado es 50001 (TCP). En Umbrel el nombre de host dentro del clúster suele ser<0> 10.21.21.10</0> o similar - revisa los detalles de conexión de la app Electrs."
+
+#. placeholder {0}: form.electrs_host
+#. placeholder {1}: form.electrs_port
+#: src/pages/Setup.tsx
+msgid "Electrs ({0}:{1})"
+msgstr "Electrs ({0}:{1})"
+
+#: src/pages/Setup.tsx
+msgid "Electrs (Electrum-style indexed lookup, faster)"
+msgstr "Electrs (búsqueda indexada estilo Electrum, más rápida)"
+
+#: src/pages/Setup.tsx
+msgid "Existing config detected — fields are pre-filled. Update what changed and click through."
+msgstr "Configuración existente detectada - los campos están rellenados previamente. Actualiza lo que cambió y continúa."
+
+#: src/pages/Setup.tsx
+msgid "Failed to load setup data: {loadErr}"
+msgstr "No se pudieron cargar los datos de configuración: {loadErr}"
+
+#: src/pages/Setup.tsx
+msgid "First-run setup"
+msgstr "Configuración inicial"
+
+#: src/pages/Setup.tsx
+msgid "Floor (PH/s)"
+msgstr "Mínimo (PH/s)"
+
+#: src/pages/Setup.tsx
+msgid "Floor hashrate"
+msgstr "Hashrate mínimo"
+
+#: src/pages/Setup.tsx
+msgid "Format: <btc-address>.<label>. Ocean TIDES credits shares by the address prefix — anything else routes shares to nobody."
+msgstr "Formato: <dirección-btc>.<etiqueta>. Ocean TIDES acredita shares por el prefijo de la dirección - cualquier otra cosa envía las shares a nadie."
+
+#: src/pages/Setup.tsx
+msgid "From hashpower.braiins.com → API tokens. Required."
+msgstr "De hashpower.braiins.com → API tokens. Obligatorio."
+
+#: src/pages/Setup.tsx
+msgid "Hashrate targets"
+msgstr "Objetivos de hashrate"
+
+#: src/pages/Setup.tsx
+msgid "Hide"
+msgstr "Ocultar"
+
+#: src/pages/Setup.tsx
+msgid "Hide value"
+msgstr "Ocultar valor"
+
+#: src/pages/Setup.tsx
+msgid "Host"
+msgstr "Host"
+
+#: src/pages/Login.tsx
+msgid "incorrect password"
+msgstr "contraseña incorrecta"
+
+#: src/components/LanguagePicker.tsx
+msgid "Language"
+msgstr "Idioma"
+
+#: src/pages/Setup.tsx
+msgid "Lets the dashboard show Ocean TIDES payouts as they arrive. Pick a backend that can read your wallet's on-chain balance."
+msgstr "Permite que el panel muestre los pagos Ocean TIDES cuando llegan. Elige un backend que pueda leer el saldo on-chain de tu wallet."
+
+#: src/pages/Setup.tsx
+msgid "Loading…"
+msgstr "Cargando…"
+
+#: src/pages/Setup.tsx
+msgid "Max bid"
+msgstr "Oferta máxima"
+
+#: src/pages/Setup.tsx
+msgid "Mining"
+msgstr "Minería"
+
+#: src/pages/Setup.tsx
+msgid "must contain a period — without it shares are uncredited on Ocean"
+msgstr "debe contener un punto - sin él las shares no se acreditan en Ocean"
+
+#: src/pages/Setup.tsx
+#: src/pages/Setup.tsx
+msgid "Next →"
+msgstr "Siguiente →"
+
+#: src/pages/Setup.tsx
+msgid "None"
+msgstr "Ninguno"
+
+#: src/pages/Setup.tsx
+msgid "None — skip payout tracking"
+msgstr "Ninguno - omitir seguimiento de pagos"
+
+#: src/pages/Setup.tsx
+msgid "On-chain payout tracking (optional)"
+msgstr "Seguimiento de pagos on-chain (opcional)"
+
+#: src/pages/Setup.tsx
+msgid "Optional. Useful if you'd like a second token only for read paths."
+msgstr "Opcional. Útil si quieres un segundo token solo para lectura."
+
+#: src/pages/Setup.tsx
+msgid "Overpay above fillable"
+msgstr "Sobrepago sobre el precio rellenable"
+
+#: src/pages/Setup.tsx
+#: src/pages/Setup.tsx
+msgid "Owner token"
+msgstr "Token de propietario"
+
+#: src/pages/Login.tsx
+msgid "password"
+msgstr "contraseña"
+
+#: src/pages/Setup.tsx
+msgid "Password"
+msgstr "Contraseña"
+
+#: src/pages/Setup.tsx
+msgid "passwords don't match"
+msgstr "las contraseñas no coinciden"
+
+#: src/pages/Setup.tsx
+msgid "Payout address"
+msgstr "Dirección de pago"
+
+#: src/pages/Setup.tsx
+msgid "Payout tracking"
+msgstr "Seguimiento de pagos"
+
+#: src/pages/Setup.tsx
+msgid "Pool destination (where Braiins delivers)"
+msgstr "Destino del pool (a donde entrega Braiins)"
+
+#: src/pages/Setup.tsx
+#: src/pages/Setup.tsx
+msgid "Pool URL"
+msgstr "URL del pool"
+
+#: src/pages/Setup.tsx
+msgid "Port"
+msgstr "Puerto"
+
+#: src/pages/Setup.tsx
+msgid "Re-setup"
+msgstr "Reconfigurar"
+
+#: src/pages/Setup.tsx
+#: src/pages/Setup.tsx
+msgid "Read-only token"
+msgstr "Token de solo lectura"
+
+#: src/pages/Login.tsx
+msgid "Remember me on this device"
+msgstr "Recordarme en este dispositivo"
+
+#: src/pages/Setup.tsx
+#: src/pages/Setup.tsx
+msgid "Review"
+msgstr "Revisar"
+
+#: src/pages/Setup.tsx
+msgid "RPC password"
+msgstr "Contraseña RPC"
+
+#: src/pages/Setup.tsx
+msgid "RPC URL"
+msgstr "URL RPC"
+
+#: src/pages/Setup.tsx
+msgid "RPC user"
+msgstr "Usuario RPC"
+
+#: src/components/Layout.tsx
+msgid "sats"
+msgstr "sats"
+
+#: src/pages/Setup.tsx
+msgid "Setting up…"
+msgstr "Configurando…"
+
+#: src/pages/Setup.tsx
+msgid "Show"
+msgstr "Mostrar"
+
+#: src/pages/Setup.tsx
+msgid "Show value"
+msgstr "Mostrar valor"
+
+#: src/pages/Login.tsx
+msgid "sign in"
+msgstr "iniciar sesión"
 
 #: src/components/Layout.tsx
 msgid "sign out"
 msgstr "cerrar sesión"
+
+#: src/pages/Login.tsx
+msgid "signing in…"
+msgstr "iniciando sesión…"
+
+#: src/components/Layout.tsx
+msgid "Status"
+msgstr "Status"
+
+#: src/pages/Setup.tsx
+msgid "Stratum URL for your Datum gateway or pool."
+msgstr "URL stratum para tu gateway Datum o pool."
+
+#: src/pages/Setup.tsx
+msgid "Target (PH/s)"
+msgstr "Objetivo (PH/s)"
+
+#: src/pages/Setup.tsx
+msgid "Target hashrate"
+msgstr "Hashrate objetivo"
+
+#: src/pages/Setup.tsx
+msgid "The daemon may not be in setup mode. Reload the page or check the daemon logs."
+msgstr "El daemon puede no estar en modo setup. Recarga la página o revisa los logs del daemon."
+
+#: src/pages/Setup.tsx
+msgid "What the controller aims for."
+msgstr "A lo que apunta el controlador."
+
+#: src/pages/Setup.tsx
+#: src/pages/Setup.tsx
+msgid "Worker identity"
+msgstr "Identidad del worker"
+
+#: src/pages/Setup.tsx
+msgid "Writing config + secrets and bringing the controller online. Usually a few seconds."
+msgstr "Escribiendo configuración + secretos y poniendo el controlador en línea. Normalmente unos segundos."
+
+#: src/pages/Setup.tsx
+msgid "You'll use this to sign in to the dashboard after setup. At least 8 characters."
+msgstr "Lo usarás para iniciar sesión en el panel tras la configuración. Al menos 8 caracteres."

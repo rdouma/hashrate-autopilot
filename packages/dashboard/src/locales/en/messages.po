@@ -6,7 +6,345 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: @lingui/cli\n"
 "Language: en\n"
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Plural-Forms: \n"
+
+#. placeholder {0}: n.toLocaleString()
+#: src/pages/Setup.tsx
+msgid "{0} sat/PH/day (default — tunable later)"
+msgstr "{0} sat/PH/day (default — tunable later)"
+
+#: src/pages/Setup.tsx
+#: src/pages/Setup.tsx
+msgid "← Back"
+msgstr "← Back"
+
+#: src/pages/Setup.tsx
+msgid "<0>Detected from environment:</0> Umbrel/Start9-style <1>BITCOIN_RPC_*</1> env vars are set. The fields below are pre-filled — check them and override if needed."
+msgstr "<0>Detected from environment:</0> Umbrel/Start9-style <1>BITCOIN_RPC_*</1> env vars are set. The fields below are pre-filled — check them and override if needed."
+
+#: src/pages/Setup.tsx
+msgid "<0>Mismatch:</0> the worker identity must start with <1>{addr}.</1> — otherwise Ocean credits shares to a different address (or nobody). Edit the address above first; this field follows it automatically."
+msgstr "<0>Mismatch:</0> the worker identity must start with <1>{addr}.</1> — otherwise Ocean credits shares to a different address (or nobody). Edit the address above first; this field follows it automatically."
+
+#: src/pages/Setup.tsx
+msgid "A few questions to get the daemon operational. Defaults work for typical home miners; tune later from the Config page."
+msgstr "A few questions to get the daemon operational. Defaults work for typical home miners; tune later from the Config page."
+
+#: src/pages/Setup.tsx
+msgid "Access"
+msgstr "Access"
+
+#: src/pages/Setup.tsx
+msgid "After submit, the daemon writes everything to <0>state.db</0> and brings the controller online in-place. Boots in <1>DRY-RUN</1> mode; the dashboard signs you in automatically. Promote to LIVE from the Status page when you're ready."
+msgstr "After submit, the daemon writes everything to <0>state.db</0> and brings the controller online in-place. Boots in <1>DRY-RUN</1> mode; the dashboard signs you in automatically. Promote to LIVE from the Status page when you're ready."
+
+#: src/pages/Setup.tsx
+msgid "Backend"
+msgstr "Backend"
+
+#: src/pages/Setup.tsx
+msgid "Below this triggers an alert. ≤ target."
+msgstr "Below this triggers an alert. ≤ target."
+
+#: src/pages/Setup.tsx
+msgid "Bitcoin Core (bitcoind RPC)"
+msgstr "Bitcoin Core (bitcoind RPC)"
+
+#. placeholder {0}: form.bitcoind_rpc_url
+#: src/pages/Setup.tsx
+msgid "Bitcoin Core RPC ({0})"
+msgstr "Bitcoin Core RPC ({0})"
+
+#: src/pages/Setup.tsx
+msgid "Bitcoin payout address"
+msgstr "Bitcoin payout address"
+
+#: src/pages/Setup.tsx
+msgid "Braiins API access"
+msgstr "Braiins API access"
+
+#: src/components/Layout.tsx
+msgid "BTC/USD: ${priceStr} - click to toggle denomination"
+msgstr "BTC/USD: ${priceStr} - click to toggle denomination"
+
+#: src/components/Layout.tsx
+msgid "changelog"
+msgstr "changelog"
+
+#: src/pages/Setup.tsx
+msgid "Complete setup"
+msgstr "Complete setup"
+
+#: src/components/Layout.tsx
+msgid "Config"
+msgstr "Config"
+
+#: src/pages/Setup.tsx
+msgid "Confirm password"
+msgstr "Confirm password"
+
+#: src/pages/Setup.tsx
+msgid "Daemon did not return to OPERATIONAL within 90 seconds."
+msgstr "Daemon did not return to OPERATIONAL within 90 seconds."
+
+#: src/pages/Setup.tsx
+#: src/pages/Setup.tsx
+msgid "Dashboard password"
+msgstr "Dashboard password"
+
+#: src/pages/Login.tsx
+msgid "dashboard sign-in"
+msgstr "dashboard sign-in"
+
+#: src/pages/Setup.tsx
+msgid "Default Electrs port is 50001 (TCP). On Umbrel the in-cluster hostname is typically<0> 10.21.21.10</0> or similar — check the Electrs app's connection details."
+msgstr "Default Electrs port is 50001 (TCP). On Umbrel the in-cluster hostname is typically<0> 10.21.21.10</0> or similar — check the Electrs app's connection details."
+
+#. placeholder {0}: form.electrs_host
+#. placeholder {1}: form.electrs_port
+#: src/pages/Setup.tsx
+msgid "Electrs ({0}:{1})"
+msgstr "Electrs ({0}:{1})"
+
+#: src/pages/Setup.tsx
+msgid "Electrs (Electrum-style indexed lookup, faster)"
+msgstr "Electrs (Electrum-style indexed lookup, faster)"
+
+#: src/pages/Setup.tsx
+msgid "Existing config detected — fields are pre-filled. Update what changed and click through."
+msgstr "Existing config detected — fields are pre-filled. Update what changed and click through."
+
+#: src/pages/Setup.tsx
+msgid "Failed to load setup data: {loadErr}"
+msgstr "Failed to load setup data: {loadErr}"
+
+#: src/pages/Setup.tsx
+msgid "First-run setup"
+msgstr "First-run setup"
+
+#: src/pages/Setup.tsx
+msgid "Floor (PH/s)"
+msgstr "Floor (PH/s)"
+
+#: src/pages/Setup.tsx
+msgid "Floor hashrate"
+msgstr "Floor hashrate"
+
+#: src/pages/Setup.tsx
+msgid "Format: <btc-address>.<label>. Ocean TIDES credits shares by the address prefix — anything else routes shares to nobody."
+msgstr "Format: <btc-address>.<label>. Ocean TIDES credits shares by the address prefix — anything else routes shares to nobody."
+
+#: src/pages/Setup.tsx
+msgid "From hashpower.braiins.com → API tokens. Required."
+msgstr "From hashpower.braiins.com → API tokens. Required."
+
+#: src/pages/Setup.tsx
+msgid "Hashrate targets"
+msgstr "Hashrate targets"
+
+#: src/pages/Setup.tsx
+msgid "Hide"
+msgstr "Hide"
+
+#: src/pages/Setup.tsx
+msgid "Hide value"
+msgstr "Hide value"
+
+#: src/pages/Setup.tsx
+msgid "Host"
+msgstr "Host"
+
+#: src/pages/Login.tsx
+msgid "incorrect password"
+msgstr "incorrect password"
+
+#: src/components/LanguagePicker.tsx
+msgid "Language"
+msgstr "Language"
+
+#: src/pages/Setup.tsx
+msgid "Lets the dashboard show Ocean TIDES payouts as they arrive. Pick a backend that can read your wallet's on-chain balance."
+msgstr "Lets the dashboard show Ocean TIDES payouts as they arrive. Pick a backend that can read your wallet's on-chain balance."
+
+#: src/pages/Setup.tsx
+msgid "Loading…"
+msgstr "Loading…"
+
+#: src/pages/Setup.tsx
+msgid "Max bid"
+msgstr "Max bid"
+
+#: src/pages/Setup.tsx
+msgid "Mining"
+msgstr "Mining"
+
+#: src/pages/Setup.tsx
+msgid "must contain a period — without it shares are uncredited on Ocean"
+msgstr "must contain a period — without it shares are uncredited on Ocean"
+
+#: src/pages/Setup.tsx
+#: src/pages/Setup.tsx
+msgid "Next →"
+msgstr "Next →"
+
+#: src/pages/Setup.tsx
+msgid "None"
+msgstr "None"
+
+#: src/pages/Setup.tsx
+msgid "None — skip payout tracking"
+msgstr "None — skip payout tracking"
+
+#: src/pages/Setup.tsx
+msgid "On-chain payout tracking (optional)"
+msgstr "On-chain payout tracking (optional)"
+
+#: src/pages/Setup.tsx
+msgid "Optional. Useful if you'd like a second token only for read paths."
+msgstr "Optional. Useful if you'd like a second token only for read paths."
+
+#: src/pages/Setup.tsx
+msgid "Overpay above fillable"
+msgstr "Overpay above fillable"
+
+#: src/pages/Setup.tsx
+#: src/pages/Setup.tsx
+msgid "Owner token"
+msgstr "Owner token"
+
+#: src/pages/Login.tsx
+msgid "password"
+msgstr "password"
+
+#: src/pages/Setup.tsx
+msgid "Password"
+msgstr "Password"
+
+#: src/pages/Setup.tsx
+msgid "passwords don't match"
+msgstr "passwords don't match"
+
+#: src/pages/Setup.tsx
+msgid "Payout address"
+msgstr "Payout address"
+
+#: src/pages/Setup.tsx
+msgid "Payout tracking"
+msgstr "Payout tracking"
+
+#: src/pages/Setup.tsx
+msgid "Pool destination (where Braiins delivers)"
+msgstr "Pool destination (where Braiins delivers)"
+
+#: src/pages/Setup.tsx
+#: src/pages/Setup.tsx
+msgid "Pool URL"
+msgstr "Pool URL"
+
+#: src/pages/Setup.tsx
+msgid "Port"
+msgstr "Port"
+
+#: src/pages/Setup.tsx
+msgid "Re-setup"
+msgstr "Re-setup"
+
+#: src/pages/Setup.tsx
+#: src/pages/Setup.tsx
+msgid "Read-only token"
+msgstr "Read-only token"
+
+#: src/pages/Login.tsx
+msgid "Remember me on this device"
+msgstr "Remember me on this device"
+
+#: src/pages/Setup.tsx
+#: src/pages/Setup.tsx
+msgid "Review"
+msgstr "Review"
+
+#: src/pages/Setup.tsx
+msgid "RPC password"
+msgstr "RPC password"
+
+#: src/pages/Setup.tsx
+msgid "RPC URL"
+msgstr "RPC URL"
+
+#: src/pages/Setup.tsx
+msgid "RPC user"
+msgstr "RPC user"
+
+#: src/components/Layout.tsx
+msgid "sats"
+msgstr "sats"
+
+#: src/pages/Setup.tsx
+msgid "Setting up…"
+msgstr "Setting up…"
+
+#: src/pages/Setup.tsx
+msgid "Show"
+msgstr "Show"
+
+#: src/pages/Setup.tsx
+msgid "Show value"
+msgstr "Show value"
+
+#: src/pages/Login.tsx
+msgid "sign in"
+msgstr "sign in"
 
 #: src/components/Layout.tsx
 msgid "sign out"
 msgstr "sign out"
+
+#: src/pages/Login.tsx
+msgid "signing in…"
+msgstr "signing in…"
+
+#: src/components/Layout.tsx
+msgid "Status"
+msgstr "Status"
+
+#: src/pages/Setup.tsx
+msgid "Stratum URL for your Datum gateway or pool."
+msgstr "Stratum URL for your Datum gateway or pool."
+
+#: src/pages/Setup.tsx
+msgid "Target (PH/s)"
+msgstr "Target (PH/s)"
+
+#: src/pages/Setup.tsx
+msgid "Target hashrate"
+msgstr "Target hashrate"
+
+#: src/pages/Setup.tsx
+msgid "The daemon may not be in setup mode. Reload the page or check the daemon logs."
+msgstr "The daemon may not be in setup mode. Reload the page or check the daemon logs."
+
+#: src/pages/Setup.tsx
+msgid "What the controller aims for."
+msgstr "What the controller aims for."
+
+#: src/pages/Setup.tsx
+#: src/pages/Setup.tsx
+msgid "Worker identity"
+msgstr "Worker identity"
+
+#: src/pages/Setup.tsx
+msgid "Writing config + secrets and bringing the controller online. Usually a few seconds."
+msgstr "Writing config + secrets and bringing the controller online. Usually a few seconds."
+
+#: src/pages/Setup.tsx
+msgid "You'll use this to sign in to the dashboard after setup. At least 8 characters."
+msgstr "You'll use this to sign in to the dashboard after setup. At least 8 characters."
+
+#: src/pages/Setup.tsx
+msgid "Your address that receives Ocean TIDES payouts. The worker identity below is auto-derived from this."
+msgstr "Your address that receives Ocean TIDES payouts. The worker identity below is auto-derived from this."

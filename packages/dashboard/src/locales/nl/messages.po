@@ -6,7 +6,341 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: @lingui/cli\n"
 "Language: nl\n"
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Plural-Forms: \n"
+
+#. placeholder {0}: n.toLocaleString()
+#: src/pages/Setup.tsx
+msgid "{0} sat/PH/day (default — tunable later)"
+msgstr "{0} sat/PH/dag (standaard - later aan te passen)"
+
+#: src/pages/Setup.tsx
+#: src/pages/Setup.tsx
+msgid "← Back"
+msgstr "← Terug"
+
+#: src/pages/Setup.tsx
+msgid "<0>Detected from environment:</0> Umbrel/Start9-style <1>BITCOIN_RPC_*</1> env vars are set. The fields below are pre-filled — check them and override if needed."
+msgstr "<0>Gedetecteerd uit omgeving:</0> Umbrel/Start9-stijl <1>BITCOIN_RPC_*</1> env-variabelen zijn ingesteld. De velden hieronder zijn vooringevuld - controleer ze en pas aan indien nodig."
+
+#: src/pages/Setup.tsx
+msgid "<0>Mismatch:</0> the worker identity must start with <1>{addr}.</1> — otherwise Ocean credits shares to a different address (or nobody). Edit the address above first; this field follows it automatically."
+msgstr "<0>Komt niet overeen:</0> de worker-identiteit moet beginnen met <1>{addr}.</1> - anders schrijft Ocean shares toe aan een ander adres (of niemand). Pas eerst het adres hierboven aan; dit veld volgt automatisch."
+
+#: src/pages/Setup.tsx
+msgid "A few questions to get the daemon operational. Defaults work for typical home miners; tune later from the Config page."
+msgstr "Een paar vragen om de daemon werkend te krijgen. De standaardwaarden werken voor typische thuisminers; pas later aan via de Config-pagina."
+
+#: src/pages/Setup.tsx
+msgid "Access"
+msgstr "Toegang"
+
+#: src/pages/Setup.tsx
+msgid "After submit, the daemon writes everything to <0>state.db</0> and brings the controller online in-place. Boots in <1>DRY-RUN</1> mode; the dashboard signs you in automatically. Promote to LIVE from the Status page when you're ready."
+msgstr "Na indienen schrijft de daemon alles naar <0>state.db</0> en zet de controller direct online. Start in <1>DRY-RUN</1> modus; het dashboard logt je automatisch in. Schakel naar LIVE op de Status-pagina wanneer je klaar bent."
+
+#: src/pages/Setup.tsx
+msgid "Backend"
+msgstr "Backend"
+
+#: src/pages/Setup.tsx
+msgid "Below this triggers an alert. ≤ target."
+msgstr "Hieronder triggert een melding. ≤ doel."
+
+#: src/pages/Setup.tsx
+msgid "Bitcoin Core (bitcoind RPC)"
+msgstr "Bitcoin Core (bitcoind RPC)"
+
+#. placeholder {0}: form.bitcoind_rpc_url
+#: src/pages/Setup.tsx
+msgid "Bitcoin Core RPC ({0})"
+msgstr "Bitcoin Core RPC ({0})"
+
+#: src/pages/Setup.tsx
+msgid "Bitcoin payout address"
+msgstr "Bitcoin uitbetaaladres"
+
+#: src/pages/Setup.tsx
+msgid "Braiins API access"
+msgstr "Braiins API-toegang"
+
+#: src/components/Layout.tsx
+msgid "BTC/USD: ${priceStr} - click to toggle denomination"
+msgstr "BTC/USD: ${priceStr} - klik om eenheid te wisselen"
+
+#: src/components/Layout.tsx
+msgid "changelog"
+msgstr "wijzigingslog"
+
+#: src/pages/Setup.tsx
+msgid "Complete setup"
+msgstr "Setup voltooien"
+
+#: src/components/Layout.tsx
+msgid "Config"
+msgstr "Config"
+
+#: src/pages/Setup.tsx
+msgid "Confirm password"
+msgstr "Wachtwoord bevestigen"
+
+#: src/pages/Setup.tsx
+msgid "Daemon did not return to OPERATIONAL within 90 seconds."
+msgstr "Daemon kwam niet terug op OPERATIONAL binnen 90 seconden."
+
+#: src/pages/Setup.tsx
+#: src/pages/Setup.tsx
+msgid "Dashboard password"
+msgstr "Dashboard-wachtwoord"
+
+#: src/pages/Login.tsx
+msgid "dashboard sign-in"
+msgstr "dashboard aanmelden"
+
+#: src/pages/Setup.tsx
+msgid "Default Electrs port is 50001 (TCP). On Umbrel the in-cluster hostname is typically<0> 10.21.21.10</0> or similar — check the Electrs app's connection details."
+msgstr "Standaard Electrs-poort is 50001 (TCP). Op Umbrel is de hostnaam binnen het cluster meestal<0> 10.21.21.10</0> of vergelijkbaar - controleer de verbindingsgegevens van de Electrs-app."
+
+#. placeholder {0}: form.electrs_host
+#. placeholder {1}: form.electrs_port
+#: src/pages/Setup.tsx
+msgid "Electrs ({0}:{1})"
+msgstr "Electrs ({0}:{1})"
+
+#: src/pages/Setup.tsx
+msgid "Electrs (Electrum-style indexed lookup, faster)"
+msgstr "Electrs (Electrum-achtige geïndexeerde lookup, sneller)"
+
+#: src/pages/Setup.tsx
+msgid "Existing config detected — fields are pre-filled. Update what changed and click through."
+msgstr "Bestaande config gedetecteerd - velden zijn vooringevuld. Pas aan wat veranderd is en ga verder."
+
+#: src/pages/Setup.tsx
+msgid "Failed to load setup data: {loadErr}"
+msgstr "Kon setup-gegevens niet laden: {loadErr}"
+
+#: src/pages/Setup.tsx
+msgid "First-run setup"
+msgstr "Eerste-keer setup"
+
+#: src/pages/Setup.tsx
+msgid "Floor (PH/s)"
+msgstr "Ondergrens (PH/s)"
+
+#: src/pages/Setup.tsx
+msgid "Floor hashrate"
+msgstr "Ondergrens hashrate"
+
+#: src/pages/Setup.tsx
+msgid "Format: <btc-address>.<label>. Ocean TIDES credits shares by the address prefix — anything else routes shares to nobody."
+msgstr "Formaat: <btc-adres>.<label>. Ocean TIDES schrijft shares toe op basis van het adres-voorvoegsel - alles anders stuurt shares naar niemand."
+
+#: src/pages/Setup.tsx
+msgid "From hashpower.braiins.com → API tokens. Required."
+msgstr "Van hashpower.braiins.com → API tokens. Verplicht."
+
+#: src/pages/Setup.tsx
+msgid "Hashrate targets"
+msgstr "Hashrate-doelen"
+
+#: src/pages/Setup.tsx
+msgid "Hide"
+msgstr "Verberg"
+
+#: src/pages/Setup.tsx
+msgid "Hide value"
+msgstr "Verberg waarde"
+
+#: src/pages/Setup.tsx
+msgid "Host"
+msgstr "Host"
+
+#: src/pages/Login.tsx
+msgid "incorrect password"
+msgstr "onjuist wachtwoord"
+
+#: src/components/LanguagePicker.tsx
+msgid "Language"
+msgstr "Taal"
+
+#: src/pages/Setup.tsx
+msgid "Lets the dashboard show Ocean TIDES payouts as they arrive. Pick a backend that can read your wallet's on-chain balance."
+msgstr "Laat het dashboard Ocean TIDES-uitbetalingen tonen zodra ze binnenkomen. Kies een backend die de on-chain saldo van je wallet kan lezen."
+
+#: src/pages/Setup.tsx
+msgid "Loading…"
+msgstr "Laden…"
+
+#: src/pages/Setup.tsx
+msgid "Max bid"
+msgstr "Max bod"
+
+#: src/pages/Setup.tsx
+msgid "Mining"
+msgstr "Mining"
+
+#: src/pages/Setup.tsx
+msgid "must contain a period — without it shares are uncredited on Ocean"
+msgstr "moet een punt bevatten - zonder dat worden shares niet bijgeschreven op Ocean"
+
+#: src/pages/Setup.tsx
+#: src/pages/Setup.tsx
+msgid "Next →"
+msgstr "Volgende →"
+
+#: src/pages/Setup.tsx
+msgid "None"
+msgstr "Geen"
+
+#: src/pages/Setup.tsx
+msgid "None — skip payout tracking"
+msgstr "Geen - sla uitbetaalmonitoring over"
+
+#: src/pages/Setup.tsx
+msgid "On-chain payout tracking (optional)"
+msgstr "On-chain uitbetaalmonitoring (optioneel)"
+
+#: src/pages/Setup.tsx
+msgid "Optional. Useful if you'd like a second token only for read paths."
+msgstr "Optioneel. Handig als je een tweede token alleen voor lezen wilt."
+
+#: src/pages/Setup.tsx
+msgid "Overpay above fillable"
+msgstr "Toeslag boven vulbare prijs"
+
+#: src/pages/Setup.tsx
+#: src/pages/Setup.tsx
+msgid "Owner token"
+msgstr "Eigenaars-token"
+
+#: src/pages/Login.tsx
+msgid "password"
+msgstr "wachtwoord"
+
+#: src/pages/Setup.tsx
+msgid "Password"
+msgstr "Wachtwoord"
+
+#: src/pages/Setup.tsx
+msgid "passwords don't match"
+msgstr "wachtwoorden komen niet overeen"
+
+#: src/pages/Setup.tsx
+msgid "Payout address"
+msgstr "Uitbetaaladres"
+
+#: src/pages/Setup.tsx
+msgid "Payout tracking"
+msgstr "Uitbetaalmonitoring"
+
+#: src/pages/Setup.tsx
+msgid "Pool destination (where Braiins delivers)"
+msgstr "Pool-bestemming (waar Braiins aflevert)"
+
+#: src/pages/Setup.tsx
+#: src/pages/Setup.tsx
+msgid "Pool URL"
+msgstr "Pool-URL"
+
+#: src/pages/Setup.tsx
+msgid "Port"
+msgstr "Poort"
+
+#: src/pages/Setup.tsx
+msgid "Re-setup"
+msgstr "Opnieuw instellen"
+
+#: src/pages/Setup.tsx
+#: src/pages/Setup.tsx
+msgid "Read-only token"
+msgstr "Alleen-lezen token"
+
+#: src/pages/Login.tsx
+msgid "Remember me on this device"
+msgstr "Onthoud mij op dit apparaat"
+
+#: src/pages/Setup.tsx
+#: src/pages/Setup.tsx
+msgid "Review"
+msgstr "Controleren"
+
+#: src/pages/Setup.tsx
+msgid "RPC password"
+msgstr "RPC-wachtwoord"
+
+#: src/pages/Setup.tsx
+msgid "RPC URL"
+msgstr "RPC-URL"
+
+#: src/pages/Setup.tsx
+msgid "RPC user"
+msgstr "RPC-gebruiker"
+
+#: src/components/Layout.tsx
+msgid "sats"
+msgstr "sats"
+
+#: src/pages/Setup.tsx
+msgid "Setting up…"
+msgstr "Bezig met instellen…"
+
+#: src/pages/Setup.tsx
+msgid "Show"
+msgstr "Toon"
+
+#: src/pages/Setup.tsx
+msgid "Show value"
+msgstr "Toon waarde"
+
+#: src/pages/Login.tsx
+msgid "sign in"
+msgstr "aanmelden"
 
 #: src/components/Layout.tsx
 msgid "sign out"
 msgstr "afmelden"
+
+#: src/pages/Login.tsx
+msgid "signing in…"
+msgstr "bezig met aanmelden…"
+
+#: src/components/Layout.tsx
+msgid "Status"
+msgstr "Status"
+
+#: src/pages/Setup.tsx
+msgid "Stratum URL for your Datum gateway or pool."
+msgstr "Stratum-URL voor je Datum-gateway of pool."
+
+#: src/pages/Setup.tsx
+msgid "Target (PH/s)"
+msgstr "Doel (PH/s)"
+
+#: src/pages/Setup.tsx
+msgid "Target hashrate"
+msgstr "Doel-hashrate"
+
+#: src/pages/Setup.tsx
+msgid "The daemon may not be in setup mode. Reload the page or check the daemon logs."
+msgstr "De daemon staat misschien niet in setup-modus. Herlaad de pagina of controleer de daemon-logs."
+
+#: src/pages/Setup.tsx
+msgid "What the controller aims for."
+msgstr "Waar de controller op richt."
+
+#: src/pages/Setup.tsx
+#: src/pages/Setup.tsx
+msgid "Worker identity"
+msgstr "Worker-identiteit"
+
+#: src/pages/Setup.tsx
+msgid "Writing config + secrets and bringing the controller online. Usually a few seconds."
+msgstr "Config + geheimen worden weggeschreven en de controller wordt online gebracht. Gewoonlijk een paar seconden."
+
+#: src/pages/Setup.tsx
+msgid "You'll use this to sign in to the dashboard after setup. At least 8 characters."
+msgstr "Hiermee log je na de setup in op het dashboard. Minimaal 8 tekens."

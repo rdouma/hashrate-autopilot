@@ -1,3 +1,5 @@
+import { Trans, t } from '@lingui/macro';
+import { useLingui } from '@lingui/react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -6,6 +8,8 @@ import { clearPassword, setPassword } from '../lib/auth';
 
 export function Login() {
   const navigate = useNavigate();
+  const { i18n } = useLingui();
+  void i18n;
   const [password, setLocal] = useState('');
   const [remember, setRemember] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -46,7 +50,7 @@ export function Login() {
       navigate('/');
     } catch (cause) {
       if (cause instanceof UnauthorizedError) {
-        setErr('incorrect password');
+        setErr(t`incorrect password`);
       } else {
         setErr((cause as Error).message);
       }
@@ -63,10 +67,10 @@ export function Login() {
       >
         <div>
           <h1 className="text-xl text-amber-400 font-semibold">Braiins Autopilot</h1>
-          <p className="text-sm text-slate-400">dashboard sign-in</p>
+          <p className="text-sm text-slate-400"><Trans>dashboard sign-in</Trans></p>
         </div>
         <label className="block text-sm">
-          <span className="block text-slate-300 mb-1">password</span>
+          <span className="block text-slate-300 mb-1"><Trans>password</Trans></span>
           <input
             type="password"
             value={password}
@@ -82,7 +86,7 @@ export function Login() {
             onChange={(e) => setRemember(e.target.checked)}
             className="accent-amber-400"
           />
-          <span>Remember me on this device</span>
+          <span><Trans>Remember me on this device</Trans></span>
         </label>
         {err && <div className="text-sm text-red-400">{err}</div>}
         <button
@@ -90,7 +94,7 @@ export function Login() {
           disabled={submitting || password.length === 0}
           className="w-full bg-amber-400 text-slate-900 font-medium py-2 rounded hover:bg-amber-300 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {submitting ? 'signing in…' : 'sign in'}
+          {submitting ? <Trans>signing in…</Trans> : <Trans>sign in</Trans>}
         </button>
       </form>
     </div>
