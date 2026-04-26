@@ -534,7 +534,7 @@ function OperationsCard({
               </div>
               <div className="text-xs text-slate-400 mt-1">
                 {denomination.mode === 'usd' ? '$' : <><SatSymbol /></>}
-                {'/PH/day '}
+                {t`/PH/day`}{' '}
                 {activeOwned.length > 1 ? (
                   <Trans>current bid · primary of {activeOwned.length}</Trans>
                 ) : (
@@ -1586,7 +1586,7 @@ function OceanPanel() {
             v={denomination.formatSat(o.user.daily_estimate_sat, intlLocale)}
           />
           {o.user.time_to_payout_text && (
-            <Row k={t`next payout`} v={formatNextPayout(o.user.time_to_payout_text)} />
+            <Row k={t`next payout`} v={formatNextPayout(o.user.time_to_payout_text, intlLocale)} />
           )}
         </div>
       )}
@@ -1773,7 +1773,7 @@ function FinancePanel({
   // Range label shown next to the headline numbers so the operator
   // can glance-check what window the avg is over. Matches the chart
   // range dropdown labels from CHART_RANGE_SPECS.
-  const rangeLabel = CHART_RANGE_SPECS[chartRange].label;
+  const rangeLabel = localizedRangeLabel(chartRange, i18n.locale);
 
   // P&L refreshes hourly server-side. Dashboard countdown is derived
   // from checked_at_ms + 1h so the operator sees how long until fresh
@@ -1885,7 +1885,7 @@ function FinancePanel({
               tooltip={t`Projection: avg hashprice × avg delivered (rows above), both averaged over the selected chart range. Range-aware counterpart to Ocean's own 3h estimate.`}
             />
             <FinanceFootnote
-              label={rangeFallback ? t`spend/day (3h)` : t`spend/day (${rangeLabel})`}
+              label={rangeFallback ? t`spend/day (${localizedRangeLabel('3h', i18n.locale)})` : t`spend/day (${rangeLabel})`}
               value={denomination.formatSat(Math.round(dailySpendSat), intlLocale)}
               tooltip={
                 rangeFallback
@@ -1894,7 +1894,7 @@ function FinancePanel({
               }
             />
             <FinanceFootnote
-              label={rangeFallback ? t`net/day (3h)` : t`net/day (${rangeLabel})`}
+              label={rangeFallback ? t`net/day (${localizedRangeLabel('3h', i18n.locale)})` : t`net/day (${rangeLabel})`}
               value={
                 dailyNetSat !== null
                   ? denomination.mode === 'usd' && denomination.btcPrice !== null
@@ -1911,7 +1911,7 @@ function FinancePanel({
                 derive from. */}
             <div className="pt-2 mt-2 border-t border-slate-800 space-y-1.5">
               <FinanceFootnote
-                label={t`ocean est. income/day (3h)`}
+                label={t`ocean est. income/day (${localizedRangeLabel('3h', i18n.locale)})`}
                 value={
                   oceanDailyIncomeSat !== null
                     ? denomination.formatSat(oceanDailyIncomeSat, intlLocale)
@@ -2164,15 +2164,61 @@ function FinanceFootnote({
  * threshold" when the rate is so low Ocean refuses to estimate, or
  * any future format we haven't seen yet).
  */
-function formatNextPayout(raw: string): string {
+/**
+ * Localize the chart-range label CHART_RANGE_SPECS hands us. Source
+ * format is English-conventional (`3 h`, `1 w`, `All`). Dutch swaps
+ * `h` for `u` (uur) on hour ranges and translates `All`. Spanish
+ * shares the same single-letter abbreviations as English so only
+ * `All` translates there. Returns the source label unchanged for any
+ * other locale.
+ */
+function localizedRangeLabel(range: ChartRange, locale: string): string {
+  const base = CHART_RANGE_SPECS[range].label;
+  if (locale === 'nl') {
+    if (base === 'All') return 'Alle';
+    return base.replace(/\bh\b/, 'u');
+  }
+  if (locale === 'es') {
+    if (base === 'All') return 'Todo';
+    return base;
+  }
+  return base;
+}
+
+function formatNextPayout(raw: string, intlLocale: string | undefined): string {
   const ms = parseDurationMs(raw);
-  if (ms === null || ms <= 0) return raw;
+  if (ms === null || ms <= 0) return localizeDurationRaw(raw);
   const eta = new Date(Date.now() + ms);
-  const date = new Intl.DateTimeFormat(undefined, {
+  const date = new Intl.DateTimeFormat(intlLocale, {
     day: '2-digit',
     month: 'short',
   }).format(eta);
-  return `${raw} · ~${date}`;
+  return `${localizeDurationRaw(raw)} · ~${date}`;
+}
+
+// Ocean's API hands us short English duration strings like "11 days",
+// "5 hours", "30 minutes". Translate each unit while preserving the
+// number; preserves any unrecognised raw form unchanged so a future
+// API surprise doesn't render blank.
+function localizeDurationRaw(raw: string): string {
+  const m = raw.match(/^\s*(\d+)\s+(minute|hour|day|week|month)s?\s*$/i);
+  if (!m || !m[1] || !m[2]) return raw;
+  const n = Number.parseInt(m[1], 10);
+  const unit = m[2].toLowerCase();
+  const plural = n !== 1;
+  switch (unit) {
+    case 'minute':
+      return plural ? t`${n} minutes` : t`${n} minute`;
+    case 'hour':
+      return plural ? t`${n} hours` : t`${n} hour`;
+    case 'day':
+      return plural ? t`${n} days` : t`${n} day`;
+    case 'week':
+      return plural ? t`${n} weeks` : t`${n} week`;
+    case 'month':
+      return plural ? t`${n} months` : t`${n} month`;
+  }
+  return raw;
 }
 
 const DURATION_UNIT_MS: Record<string, number> = {
@@ -2404,15 +2450,23 @@ function FormattedValue({ v, className = '' }: { v: string; className?: string }
  * "$4.75/PH/day" don't match splitUnit so they render as plain text.
  */
 function SatUnit({ unit }: { unit: string }) {
-  if (unit.startsWith('sat')) {
+  const { i18n } = useLingui();
+  void i18n;
+  // Replace the `/PH/day` slug with the localized form before
+  // rendering. Done as a string substitution rather than a wholesale
+  // <Trans> because `unit` may also carry trailing parenthetical hints
+  // (e.g. "(in this range)") that we don't want to lose.
+  const phDayLabel = t`/PH/day`;
+  const localized = unit.replace('/PH/day', phDayLabel);
+  if (localized.startsWith('sat')) {
     return (
       <>
         <SatSymbol className="opacity-70" />
-        {unit.slice(3)}
+        {localized.slice(3)}
       </>
     );
   }
-  return <>{unit}</>;
+  return <>{localized}</>;
 }
 
 /**
@@ -2509,6 +2563,18 @@ function RunModeToggle({
   onChange: (m: (typeof RUN_MODES)[number]) => void;
   disabled: boolean;
 }) {
+  const { i18n } = useLingui();
+  void i18n;
+  const labelFor = (m: (typeof RUN_MODES)[number]) => {
+    switch (m) {
+      case 'DRY_RUN':
+        return t`DRY RUN`;
+      case 'LIVE':
+        return t`LIVE`;
+      case 'PAUSED':
+        return t`PAUSED`;
+    }
+  };
   return (
     <div className="inline-flex gap-1.5 bg-slate-950/70 border border-slate-800 rounded-xl p-1.5 mt-5">
       {RUN_MODES.map((m) => {
@@ -2525,7 +2591,7 @@ function RunModeToggle({
                 : 'text-slate-300 hover:bg-slate-800 disabled:opacity-50')
             }
           >
-            {m.replace('_', ' ')}
+            {labelFor(m)}
           </button>
         );
       })}

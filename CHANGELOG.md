@@ -2,6 +2,17 @@
 
 ## 2026-04-26
 
+### `[Fix]` i18n: unit suffixes, mode badges, range labels, time-relative strings (#1 followup)
+
+Sweep of every unit/abbreviation that should follow the active language but didn't:
+
+- `/PH/day` rendered everywhere (Braiins panel rows, Ocean panel rows, P&L rows, hero card, bid table) was a literal English suffix. Now translates to `/PH/dag` in NL and `/PH/día` in ES via the central `SatUnit` renderer.
+- Range picker labels (`3 h`, `6 h`, `12 h`, `24 h`, `1 w`, `1 m`, `1 y`, `All`) localized through a small `localizedRangeLabel()` helper - hour labels become `u` in NL (uur), `All` becomes `Alle` / `Todo`. Stats card labels referencing the active range pick up the localized form.
+- Run-mode toggle and `ModeBadge` (DRY RUN / LIVE / PAUSED) now translate. NL: `GEPAUZEERD`, ES: `PAUSADO`. `LIVE` stays `LIVE` everywhere by intent (universal).
+- Ocean payout countdown date (`~May 04`) now formats via the operator's `intlLocale` instead of browser locale.
+- `formatNextPayout` translates the upstream Ocean unit text ("11 days", "5 hours", etc.) per locale.
+- NL `formatAge` strings now use `u` for hour ("2d 4u geleden") instead of the English `h` the prior translation pass left in.
+
 ### `[Fix]` i18n: next-action panel + price-chart Y-axis now translate (#1 followup)
 
 Two leftover English strings on a translated dashboard. The "next action" panel kept rendering English (`Will edit bid to 47,733 sat/PH/day on the next tick.` / `Current 47,772 sat/PH/day - tracking fillable + overpay.`) because the daemon was returning pre-formatted English summary/detail strings on the wire and the dashboard rendered them verbatim. The price-chart Y-axis displayed the literal `sat/PH/day` regardless of locale.

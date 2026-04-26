@@ -64,7 +64,7 @@ msgstr "{daysCount} dagen · ~{dateLabel}"
 
 #: src/lib/format.ts
 msgid "{hours}h ago"
-msgstr "{hours}h geleden"
+msgstr "{hours}u geleden"
 
 #: src/pages/Status.tsx
 msgid "{label} DOWN"
@@ -74,6 +74,46 @@ msgstr "{label} OFFLINE"
 msgid "{minutes}m ago"
 msgstr "{minutes}m geleden"
 
+#: src/pages/Status.tsx
+msgid "{n} day"
+msgstr "{n} dag"
+
+#: src/pages/Status.tsx
+msgid "{n} days"
+msgstr "{n} dagen"
+
+#: src/pages/Status.tsx
+msgid "{n} hour"
+msgstr "{n} uur"
+
+#: src/pages/Status.tsx
+msgid "{n} hours"
+msgstr "{n} uur"
+
+#: src/pages/Status.tsx
+msgid "{n} minute"
+msgstr "{n} minuut"
+
+#: src/pages/Status.tsx
+msgid "{n} minutes"
+msgstr "{n} minuten"
+
+#: src/pages/Status.tsx
+msgid "{n} month"
+msgstr "{n} maand"
+
+#: src/pages/Status.tsx
+msgid "{n} months"
+msgstr "{n} maanden"
+
+#: src/pages/Status.tsx
+msgid "{n} week"
+msgstr "{n} week"
+
+#: src/pages/Status.tsx
+msgid "{n} weeks"
+msgstr "{n} weken"
+
 #: src/lib/format.ts
 msgid "{seconds}s ago"
 msgstr "{seconds}s geleden"
@@ -81,12 +121,12 @@ msgstr "{seconds}s geleden"
 #: src/lib/format.ts
 #: src/lib/format.ts
 msgid "{totalDay}d {h}h ago"
-msgstr "{totalDay}d {h}h geleden"
+msgstr "{totalDay}d {h}u geleden"
 
 #: src/lib/format.ts
 #: src/lib/format.ts
 msgid "{totalHr}h {m}m ago"
-msgstr "{totalHr}h {m}m geleden"
+msgstr "{totalHr}u {m}m geleden"
 
 #: src/lib/format.ts
 msgid "{totalMin}m {s}s ago"
@@ -99,6 +139,11 @@ msgstr "{totalMin}m geleden"
 #: src/lib/format.ts
 msgid "{totalSec}s ago"
 msgstr "{totalSec}s geleden"
+
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+msgid "/PH/day"
+msgstr "/PH/dag"
 
 #: src/pages/Setup.tsx
 #: src/pages/Setup.tsx
@@ -681,6 +726,14 @@ msgstr "Weergave"
 msgid "Do not scan"
 msgstr "Niet scannen"
 
+#: src/components/ModeBadge.tsx
+msgid "Dry Run"
+msgstr "Dry Run"
+
+#: src/pages/Status.tsx
+msgid "DRY RUN"
+msgstr "DRY RUN"
+
 #: src/pages/Status.tsx
 msgid "Duration-weighted % of time with delivered hashrate > 0. Each tick is weighted by its actual duration (time until the next tick) so gaps after restarts count proportionally."
 msgstr "Duur-gewogen % van de tijd waarbij geleverde hashrate > 0. Elke tick wordt gewogen op zijn werkelijke duur (tijd tot de volgende tick) zodat gaten na herstarts proportioneel meetellen."
@@ -1019,6 +1072,14 @@ msgstr "Laat het dashboard Ocean TIDES-uitbetalingen tonen zodra ze binnenkomen.
 msgid "Lifetime sum of (amount_sat − amount_remaining_sat) across every bid the autopilot has tagged. Excludes any bids placed before the autopilot was switched on. Switch to \"whole account\" via Config → Money panel."
 msgstr "Levenslange som van (amount_sat − amount_remaining_sat) over elk bod dat de autopilot heeft getagd. Exclusief biedingen die geplaatst werden voordat de autopilot werd aangezet. Schakel via Config → Money-paneel naar \"hele account\"."
 
+#: src/components/ModeBadge.tsx
+msgid "Live"
+msgstr "Live"
+
+#: src/pages/Status.tsx
+msgid "LIVE"
+msgstr "LIVE"
+
 #: src/components/PriceChart.tsx
 msgid "loading decision…"
 msgstr "beslissing laden…"
@@ -1099,13 +1160,14 @@ msgstr "moet een punt bevatten - zonder dat worden shares niet bijgeschreven op 
 msgid "net"
 msgstr "netto"
 
+#. placeholder {0}: localizedRangeLabel('3h', i18n.locale)
+#: src/pages/Status.tsx
+msgid "net/day ({0})"
+msgstr "netto/dag ({0})"
+
 #: src/pages/Status.tsx
 msgid "net/day ({rangeLabel})"
 msgstr "netto/dag ({rangeLabel})"
-
-#: src/pages/Status.tsx
-msgid "net/day (3h)"
-msgstr "netto/dag (3h)"
 
 #: src/components/PriceChart.tsx
 msgid "new speed"
@@ -1201,9 +1263,10 @@ msgstr "Uitbetalingen naar <0>(geen adres ingesteld)</0> worden gevolgd. Pas dit
 msgid "Observing payouts to <0>{payoutAddr}</0>. Edit this in the <1>Pool destination</1> section above — the worker identity is auto-derived from it."
 msgstr "Uitbetalingen naar <0>{payoutAddr}</0> worden gevolgd. Pas dit hierboven aan in de sectie <1>Pool-bestemming</1> - de worker-identiteit wordt hier automatisch uit afgeleid."
 
+#. placeholder {0}: localizedRangeLabel('3h', i18n.locale)
 #: src/pages/Status.tsx
-msgid "ocean est. income/day (3h)"
-msgstr "Ocean schatting inkomen/dag (3h)"
+msgid "ocean est. income/day ({0})"
+msgstr "Ocean schatting inkomen/dag ({0})"
 
 #: src/pages/Status.tsx
 msgid "Ocean hashprice is required to evaluate the dynamic cap you configured. If this persists, check Ocean's reachability in the Ocean panel."
@@ -1336,9 +1399,14 @@ msgstr "Pauzeren"
 msgid "paused"
 msgstr "gepauzeerd"
 
+#: src/components/ModeBadge.tsx
 #: src/lib/labels.ts
 msgid "Paused"
 msgstr "Gepauzeerd"
+
+#: src/pages/Status.tsx
+msgid "PAUSED"
+msgstr "GEPAUZEERD"
 
 #: src/pages/Status.tsx
 msgid "Paused - no bids will be placed or edited until run mode changes."
@@ -1641,13 +1709,14 @@ msgstr "snelheid"
 msgid "Spend scope"
 msgstr "Uitgaven-scope"
 
+#. placeholder {0}: localizedRangeLabel('3h', i18n.locale)
+#: src/pages/Status.tsx
+msgid "spend/day ({0})"
+msgstr "uitgave/dag ({0})"
+
 #: src/pages/Status.tsx
 msgid "spend/day ({rangeLabel})"
 msgstr "uitgave/dag ({rangeLabel})"
-
-#: src/pages/Status.tsx
-msgid "spend/day (3h)"
-msgstr "uitgave/dag (3h)"
 
 #: src/pages/Status.tsx
 msgid "spent (autopilot)"
