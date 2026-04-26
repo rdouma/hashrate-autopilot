@@ -7,7 +7,7 @@ manifestVersion: 1
 id: rdouma-hashrate-autopilot
 category: bitcoin
 name: Hashrate Autopilot
-version: "1.3.1"
+version: "1.3.2"
 tagline: Autopilot for renting hashrate to a non-custodial pool
 icon: https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/assets/icon-512.png
 description: >-
@@ -41,6 +41,7 @@ developer: Remco Douma
 website: https://github.com/rdouma/hashrate-autopilot
 dependencies:
   - bitcoin
+  - datum
 repo: https://github.com/rdouma/hashrate-autopilot
 support: https://github.com/rdouma/hashrate-autopilot/issues
 port: 3010
