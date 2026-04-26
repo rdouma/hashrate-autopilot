@@ -1224,7 +1224,7 @@ function Field({
           step="integer"
           locale={locale}
           min={0}
-          suffix="sat/PH/day"
+          suffix={t`sat/PH/day`}
         />
         {spec.help && <span className="block text-xs text-slate-500 mt-1">{spec.help}</span>}
       </label>

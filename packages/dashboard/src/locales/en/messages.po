@@ -140,6 +140,7 @@ msgstr "{totalMin}m ago"
 msgid "{totalSec}s ago"
 msgstr "{totalSec}s ago"
 
+#: src/components/PriceChart.tsx
 #: src/pages/Status.tsx
 #: src/pages/Status.tsx
 msgid "/PH/day"
@@ -238,10 +239,6 @@ msgstr "Actual sat consumed over the last 3 h, scaled to a 24h rate. Uses Braiin
 #: src/pages/Setup.tsx
 msgid "After submit, the daemon writes everything to <0>state.db</0> and brings the controller online in-place. Boots in <1>DRY-RUN</1> mode; the dashboard signs you in automatically. Promote to LIVE from the Status page when you're ready."
 msgstr "After submit, the daemon writes everything to <0>state.db</0> and brings the controller online in-place. Boots in <1>DRY-RUN</1> mode; the dashboard signs you in automatically. Promote to LIVE from the Status page when you're ready."
-
-#: src/pages/Status.tsx
-msgid "All"
-msgstr "All"
 
 #: src/pages/Config.tsx
 msgid "All values live-editable. Save to apply."
@@ -460,6 +457,10 @@ msgstr "budget"
 #: src/pages/Config.tsx
 msgid "Budget"
 msgstr "Budget"
+
+#: src/pages/Setup.tsx
+msgid "build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
+msgstr "build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
 
 #: src/pages/Status.tsx
 #: src/pages/Status.tsx
@@ -1658,6 +1659,7 @@ msgid "runway"
 msgstr "runway"
 
 #: src/components/PriceChart.tsx
+#: src/pages/Config.tsx
 msgid "sat/PH/day"
 msgstr "sat/PH/day"
 
