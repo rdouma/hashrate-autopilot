@@ -44,15 +44,16 @@ dependencies:
 repo: https://github.com/rdouma/hashrate-autopilot
 support: https://github.com/rdouma/hashrate-autopilot/issues
 port: 3010
-# Order: status-page-hero -> status-page-charts -> wizard-step-1
-# -> wizard-step-2. First image is the card hero (operator browsing
-# the store sees this on the tile); the others appear on the app
-# detail view as a horizontal carousel.
+# Gallery uses absolute GitHub-raw URLs (same pattern as the icon)
+# because Umbrel resolves bare filenames against the store root,
+# not the app subdir. Order is the operator-eye story arc:
+# status-page-hero -> status-page-charts -> wizard-step-1
+# -> wizard-step-2. First image is the card hero.
 gallery:
-  - 1.jpg
-  - 2.jpg
-  - 3.jpg
-  - 4.jpg
+  - https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/rdouma-hashrate-autopilot/1.jpg
+  - https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/rdouma-hashrate-autopilot/2.jpg
+  - https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/rdouma-hashrate-autopilot/3.jpg
+  - https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/rdouma-hashrate-autopilot/4.jpg
 path: ""
 defaultUsername: ""
 defaultPassword: ""
