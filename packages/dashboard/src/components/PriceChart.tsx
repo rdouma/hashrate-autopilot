@@ -887,7 +887,7 @@ export const PriceChart = memo(function PriceChart({
             fontFamily="monospace"
             transform={`rotate(-90 14 ${PADDING.top + (chartHeight - PADDING.top - PADDING.bottom) / 2})`}
           >
-            {denomination.mode === 'usd' ? '$/PH/day' : 'sat/PH/day'}
+            {denomination.mode === 'usd' ? t`$/PH/day` : t`sat/PH/day`}
           </text>
         )}
       </svg>

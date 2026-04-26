@@ -2,6 +2,14 @@
 
 ## 2026-04-26
 
+### `[Fix]` i18n: next-action panel + price-chart Y-axis now translate (#1 followup)
+
+Two leftover English strings on a translated dashboard. The "next action" panel kept rendering English (`Will edit bid to 47,733 sat/PH/day on the next tick.` / `Current 47,772 sat/PH/day - tracking fillable + overpay.`) because the daemon was returning pre-formatted English summary/detail strings on the wire and the dashboard rendered them verbatim. The price-chart Y-axis displayed the literal `sat/PH/day` regardless of locale.
+
+Daemon now emits a structured `descriptor` (a discriminated union of `paused`, `unknown_bids`, `braiins_unreachable`, `awaiting_hashprice`, `no_market_supply`, `will_create_bid`, `bid_pending`, `cooldown_active`, `will_edit_bid`, `on_target`) on every `next_action` response, alongside the existing English `summary` / `detail` strings (which stay for backward compatibility). Dashboard switches on the descriptor and renders through Lingui catalogs, so all the next-action prose follows the operator's language. Falls back to the legacy summary/detail when descriptor is `null` (older daemon, newer client).
+
+Y-axis label now uses `t\`sat/PH/day\`` (and `t\`$/PH/day\`` for USD mode), translated to `sat/PH/dag` in NL and `sat/PH/día` in ES.
+
 ### `[Feature]` i18n: dashboard now translatable into Dutch and Spanish (#1)
 
 The dashboard UI is fully translatable. A language picker sits in the header next to "sign out"; the choice persists to `localStorage` and the page boots in the operator's stored language (or browser language as fallback). Three launch locales: `en` (source), `nl`, `es`. Czech is deferred until a CZ reviewer is available. The format-locale picker (number/date display) on the Config page is unchanged and remains independent: it governs how 1,234.56 looks, not which language the surrounding chrome speaks.

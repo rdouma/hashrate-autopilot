@@ -6,6 +6,7 @@ import type { HttpServerDeps } from '../server.js';
 import type {
   BalanceView,
   BidView,
+  NextActionDescriptor,
   NextActionView,
   ProposalView,
   StatusResponse,
@@ -75,6 +76,7 @@ export async function registerStatusRoute(
         next_tick_at: nextTickAt,
         tick_interval_ms: tickIntervalMs,
         next_action: {
+          descriptor: null,
           summary: 'Waiting for first tick…',
           detail: null,
           eta_ms: null,
@@ -308,6 +310,7 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
 
   if (runMode === 'PAUSED') {
     return {
+      descriptor: { kind: 'paused' },
       summary: 'Paused — no bids will be placed or edited until run mode changes.',
       detail: null,
       ...noEvent,
@@ -315,15 +318,18 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
   }
 
   if (state.unknown_bids.length > 0) {
+    const ids = state.unknown_bids.map((b) => b.braiins_order_id.slice(0, 8) + '…');
     return {
+      descriptor: { kind: 'unknown_bids', ids },
       summary: 'Unknown bid(s) detected — next tick will PAUSE the autopilot.',
-      detail: `IDs: ${state.unknown_bids.map((b) => b.braiins_order_id.slice(0, 8) + '…').join(', ')}`,
+      detail: `IDs: ${ids.join(', ')}`,
       ...noEvent,
     };
   }
 
   if (!state.market) {
     return {
+      descriptor: { kind: 'braiins_unreachable' },
       summary: 'Braiins API unreachable — waiting for connectivity.',
       detail: null,
       ...noEvent,
@@ -339,6 +345,7 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
     state.hashprice_sat_per_ph_day === null
   ) {
     return {
+      descriptor: { kind: 'awaiting_hashprice' },
       summary: 'Waiting for Ocean hashprice — trading is paused until the break-even reference is available.',
       detail: "Ocean hashprice is required to evaluate the dynamic cap you configured. If this persists, check Ocean's reachability in the Ocean panel.",
       ...noEvent,
@@ -351,6 +358,7 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
   const cheapestAsk = fillable.price_sat;
   if (cheapestAsk === null) {
     return {
+      descriptor: { kind: 'no_market_supply' },
       summary: 'No hashrate available on the market right now.',
       detail: 'Next tick will re-check supply.',
       ...noEvent,
@@ -379,17 +387,32 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
   if (state.owned_bids.length === 0) {
     const verb = runMode === 'LIVE' ? 'place' : 'log (dry-run)';
     let budgetText: string;
+    type CreateBidBudget = Extract<NextActionDescriptor, { kind: 'will_create_bid' }>['budget'];
+    let budgetDescriptor: CreateBidBudget;
     if (state.config.bid_budget_sat === 0) {
       const availableSat =
         state.balance?.accounts?.[0]?.available_balance_sat ?? null;
-      budgetText =
-        availableSat !== null && availableSat > 0
-          ? `${Math.min(availableSat, 100_000_000).toLocaleString('en-US')} sat budget (full wallet)`
-          : 'full wallet balance (awaiting balance)';
+      if (availableSat !== null && availableSat > 0) {
+        budgetText = `${Math.min(availableSat, 100_000_000).toLocaleString('en-US')} sat budget (full wallet)`;
+        budgetDescriptor = { kind: 'full_wallet', available_sat: Math.min(availableSat, 100_000_000) };
+      } else {
+        budgetText = 'full wallet balance (awaiting balance)';
+        budgetDescriptor = { kind: 'awaiting_balance' };
+      }
     } else {
       budgetText = `${state.config.bid_budget_sat.toLocaleString('en-US')} sat budget`;
+      budgetDescriptor = { kind: 'configured', sat: state.config.bid_budget_sat };
     }
     return {
+      descriptor: {
+        kind: 'will_create_bid',
+        run_mode: runMode === 'LIVE' ? 'LIVE' : 'DRY_RUN',
+        target_ph: targetPH,
+        capped: cappedByCeiling,
+        target_ph_label: targetPH,
+        target_hashrate_ph: ph,
+        budget: budgetDescriptor,
+      },
       summary: `Will ${verb} a CREATE_BID at ${targetLabel} on the next tick.`,
       detail: `${ph} PH/s target, ${budgetText}.`,
       ...noEvent,
@@ -400,8 +423,11 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
   const currentPricePH = Math.round(primary.price_sat / EH_PER_PH);
 
   if (primary.status !== 'BID_STATUS_ACTIVE') {
+    const idShort = primary.braiins_order_id.slice(0, 8) + '…';
+    const statusLower = primary.status.replace('BID_STATUS_', '').toLowerCase();
     return {
-      summary: `Bid ${primary.braiins_order_id.slice(0, 8)}… is ${primary.status.replace('BID_STATUS_', '').toLowerCase()} — waiting for it to become active.`,
+      descriptor: { kind: 'bid_pending', id_short: idShort, status: statusLower },
+      summary: `Bid ${idShort} is ${statusLower} — waiting for it to become active.`,
       detail:
         primary.status === 'BID_STATUS_CREATED'
           ? 'Confirm in Telegram (@BraiinsBotOfficial) to activate.'
@@ -427,6 +453,13 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
     if (cooldownRemainsMs > 0 && cooldownEndsMs !== null && lastDecrease !== null) {
       const minsLeft = Math.max(1, Math.ceil(cooldownRemainsMs / 60_000));
       return {
+        descriptor: {
+          kind: 'cooldown_active',
+          target_ph: targetPH,
+          current_ph: currentPricePH,
+          mins_left: minsLeft,
+          direction,
+        },
         summary: `Bid above target — Braiins price-decrease cooldown active.`,
         detail: `Will ${direction} to ${targetPH.toLocaleString('en-US')} sat/PH/day in ~${minsLeft} min (current ${currentPricePH.toLocaleString('en-US')}).`,
         eta_ms: cooldownEndsMs,
@@ -435,6 +468,13 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
       };
     }
     return {
+      descriptor: {
+        kind: 'will_edit_bid',
+        run_mode: runMode === 'LIVE' ? 'LIVE' : 'DRY_RUN',
+        target_ph: targetPH,
+        current_ph: currentPricePH,
+        clamped: cappedByCeiling,
+      },
       summary: `Will ${verb} bid to ${targetPH.toLocaleString('en-US')} sat/PH/day on the next tick.`,
       detail: `Current ${currentPricePH.toLocaleString('en-US')} sat/PH/day — tracking fillable + overpay${cappedByCeiling ? ' (clamped)' : ''}.`,
       ...noEvent,
@@ -442,6 +482,7 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
   }
 
   return {
+    descriptor: { kind: 'on_target', capped: cappedByCeiling, avg_speed_ph: primary.avg_speed_ph },
     summary: cappedByCeiling
       ? 'At effective cap — desired fillable + overpay exceeds the ceiling.'
       : 'On target — bid at fillable + overpay.',

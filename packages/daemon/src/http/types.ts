@@ -34,7 +34,55 @@ export interface BalanceView {
   readonly blocked_balance_sat: number;
 }
 
+/**
+ * Discriminated next-action descriptor. Mirrors the cases that
+ * `describeNextAction()` in the status route handles. The dashboard
+ * renders this through Lingui catalogs so the message localizes; the
+ * `summary` / `detail` strings on `NextActionView` below remain in
+ * English as a fallback for older clients that don't know the kind.
+ */
+export type NextActionDescriptor =
+  | { kind: 'paused' }
+  | { kind: 'unknown_bids'; ids: readonly string[] }
+  | { kind: 'braiins_unreachable' }
+  | { kind: 'awaiting_hashprice' }
+  | { kind: 'no_market_supply' }
+  | {
+      kind: 'will_create_bid';
+      run_mode: 'LIVE' | 'DRY_RUN';
+      target_ph: number;
+      capped: boolean;
+      target_ph_label: number;
+      target_hashrate_ph: number;
+      budget:
+        | { kind: 'configured'; sat: number }
+        | { kind: 'full_wallet'; available_sat: number }
+        | { kind: 'awaiting_balance' };
+    }
+  | {
+      kind: 'bid_pending';
+      id_short: string;
+      status: string; // e.g. 'created', 'paused', 'frozen'
+    }
+  | {
+      kind: 'cooldown_active';
+      target_ph: number;
+      current_ph: number;
+      mins_left: number;
+      direction: 'lower' | 'raise';
+    }
+  | {
+      kind: 'will_edit_bid';
+      run_mode: 'LIVE' | 'DRY_RUN';
+      target_ph: number;
+      current_ph: number;
+      clamped: boolean;
+    }
+  | { kind: 'on_target'; capped: boolean; avg_speed_ph: number };
+
 export interface NextActionView {
+  /** Discriminated descriptor for client-side translation. May be null on legacy responses. */
+  readonly descriptor: NextActionDescriptor | null;
   readonly summary: string;
   readonly detail: string | null;
   /**

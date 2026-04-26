@@ -13,6 +13,11 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
+#. js-lingui-explicit-id
+#: src/lib/i18n.test.ts
+msgid "this-is-not-a-real-id-9876"
+msgstr ""
+
 #: src/components/PriceChart.tsx
 msgid "— (not recorded this tick)"
 msgstr "- (no registrado este tick)"
@@ -28,6 +33,21 @@ msgstr "\"predeterminado del sistema\" sigue tu navegador. Las otras opciones fi
 #: src/pages/Status.tsx
 msgid "(cheap mode)"
 msgstr "(modo barato)"
+
+#. placeholder {0}: d.target_hashrate_ph
+#: src/pages/Status.tsx
+msgid "{0} PH/s target, {sat} sat budget (full wallet)."
+msgstr "{0} PH/s objetivo, {sat} sat de presupuesto (wallet completa)."
+
+#. placeholder {0}: d.target_hashrate_ph
+#: src/pages/Status.tsx
+msgid "{0} PH/s target, {sat} sat budget."
+msgstr "{0} PH/s objetivo, {sat} sat de presupuesto."
+
+#. placeholder {0}: d.target_hashrate_ph
+#: src/pages/Status.tsx
+msgid "{0} PH/s target, full wallet balance (awaiting balance)."
+msgstr "{0} PH/s objetivo, saldo completo de wallet (esperando saldo)."
 
 #. placeholder {0}: n.toLocaleString()
 #: src/pages/Setup.tsx
@@ -100,6 +120,10 @@ msgstr "<0>Discordancia:</0> la identidad del worker debe empezar con <1>{addr}.
 #: src/pages/Config.tsx
 msgid "⚠ No period found. Ocean TIDES requires \"<BTC address>.<label>\". Without the address prefix, shares go uncredited."
 msgstr "⚠ No se encontró ningún punto. Ocean TIDES requiere \"<dirección BTC>.<etiqueta>\". Sin el prefijo de la dirección, las shares no se acreditan."
+
+#: src/components/PriceChart.tsx
+msgid "$/PH/day"
+msgstr "$/PH/día"
 
 #: src/pages/Config.tsx
 msgid "0 = disabled. Example: 95 = activate cheap mode when the best ask on the orderbook is below 95% of the break-even hashprice from Ocean. Under CLOB you pay the matched ask, so this is the price we can actually reach."
@@ -197,6 +221,10 @@ msgstr "API accesible"
 msgid "API unreachable ({0})"
 msgstr "API inaccesible ({0})"
 
+#: src/pages/Status.tsx
+msgid "At effective cap - desired fillable + overpay exceeds the ceiling."
+msgstr "En el límite efectivo - el rellenable + sobrepago deseado supera el techo."
+
 #: src/components/PriceChart.tsx
 msgid "automatic"
 msgstr "automático"
@@ -283,6 +311,20 @@ msgstr "mejor precio de venta"
 msgid "best bid"
 msgstr "mejor oferta"
 
+#. placeholder {0}: d.id_short
+#. placeholder {1}: d.status
+#: src/pages/Status.tsx
+msgid "Bid {0} is {1} - waiting for it to become active."
+msgstr "La oferta {0} está {1} - esperando a que se active."
+
+#: src/pages/Status.tsx
+msgid "Bid above target - Braiins price-decrease cooldown active."
+msgstr "Oferta por encima del objetivo - cooldown de bajada de precio de Braiins activo."
+
+#: src/pages/Status.tsx
+msgid "Bid filling at {speed} PH/s."
+msgstr "Oferta rellenándose a {speed} PH/s."
+
 #: src/pages/Status.tsx
 msgid "Bids"
 msgstr "Ofertas"
@@ -339,6 +381,10 @@ msgstr "Cooldown de 10 min de Braiins"
 #: src/pages/Setup.tsx
 msgid "Braiins API access"
 msgstr "Acceso a la API de Braiins"
+
+#: src/pages/Status.tsx
+msgid "Braiins API unreachable - waiting for connectivity."
+msgstr "API de Braiins inaccesible - esperando conectividad."
 
 #: src/pages/Status.tsx
 msgid "Braiins marketplace API — reachable when the last observe() read market/orderbook/balance without error."
@@ -519,6 +565,14 @@ msgstr "creada"
 #: src/pages/Status.tsx
 msgid "Current (spot) market break-even. Revenue per PH/s per day from mining at the current network difficulty + block reward. The avg-hashprice row above is what the projection uses; this one is the spot value right now for quick market-drift comparison."
 msgstr "Equilibrio de mercado actual (spot). Ingreso por PH/s por día minando con la dificultad de red actual + recompensa por bloque. La fila de hashprice promedio de arriba es la que usa la proyección; esta es el valor spot ahora mismo para comparar rápidamente la deriva del mercado."
+
+#: src/pages/Status.tsx
+msgid "Current {current} sat/PH/day - tracking fillable + overpay (clamped)."
+msgstr "Actual {current} sat/PH/día - siguiendo rellenable + sobrepago (limitado)."
+
+#: src/pages/Status.tsx
+msgid "Current {current} sat/PH/day - tracking fillable + overpay."
+msgstr "Actual {current} sat/PH/día - siguiendo rellenable + sobrepago."
 
 #: src/pages/Status.tsx
 msgid "current bid"
@@ -911,6 +965,11 @@ msgstr "id"
 msgid "id {0}"
 msgstr "id {0}"
 
+#. placeholder {0}: d.ids.join(', ')
+#: src/pages/Status.tsx
+msgid "IDs: {0}"
+msgstr "IDs: {0}"
+
 #: src/pages/Status.tsx
 msgid "income/day est."
 msgstr "ingreso/día est."
@@ -1089,6 +1148,10 @@ msgstr "sin ofertas activas"
 msgid "no bids on this account"
 msgstr "sin ofertas en esta cuenta"
 
+#: src/pages/Status.tsx
+msgid "No hashrate available on the market right now."
+msgstr "No hay hashrate disponible en el mercado en este momento."
+
 #: src/pages/Config.tsx
 msgid "No on-chain balance tracking. The Profit & Loss panel won't show collected BTC."
 msgstr "Sin seguimiento de saldo on-chain. El panel de Profit & Loss no mostrará el BTC cobrado."
@@ -1143,6 +1206,10 @@ msgid "ocean est. income/day (3h)"
 msgstr "ingreso/día est. ocean (3h)"
 
 #: src/pages/Status.tsx
+msgid "Ocean hashprice is required to evaluate the dynamic cap you configured. If this persists, check Ocean's reachability in the Ocean panel."
+msgstr "Se necesita el hashprice de Ocean para evaluar el límite dinámico que configuraste. Si esto persiste, revisa la accesibilidad de Ocean en el panel de Ocean."
+
+#: src/pages/Status.tsx
 msgid "ocean hashrate"
 msgstr "hashrate ocean"
 
@@ -1170,6 +1237,10 @@ msgstr "Ganancias no pagadas de Ocean - lo que llegará on-chain en el próximo 
 #: src/pages/Config.tsx
 msgid "Off by default. The emerald effective-rate line (what Braiins actually charged, from counter deltas) is dramatically more volatile than bid / fillable / hashprice — when enabled it auto-scales the Y-axis and visibly squashes the finer bot movements into a thin band. The hero PRICE card and the AVG COST / PH DELIVERED stat already show the same number without hijacking the chart. Flip on when you want to eyeball settlement behaviour directly, accept the loss of flatter-line detail in exchange."
 msgstr "Desactivado por defecto. La línea esmeralda de tasa efectiva (lo que Braiins realmente cobró, calculado desde deltas del contador) es mucho más volátil que oferta / rellenable / hashprice - al habilitarla, autoescala el eje Y y aplasta visiblemente los movimientos más finos del bot en una banda estrecha. La tarjeta principal PRICE y la estadística AVG COST / PH DELIVERED ya muestran el mismo número sin secuestrar el gráfico. Actívala cuando quieras ver directamente el comportamiento de liquidación, aceptando la pérdida de detalle en las líneas más planas a cambio."
+
+#: src/pages/Status.tsx
+msgid "On target - bid at fillable + overpay."
+msgstr "En el objetivo - oferta igual a rellenable + sobrepago."
 
 #: src/pages/Setup.tsx
 msgid "On-chain payout tracking (optional)"
@@ -1268,6 +1339,10 @@ msgstr "pausado"
 #: src/lib/labels.ts
 msgid "Paused"
 msgstr "Pausada"
+
+#: src/pages/Status.tsx
+msgid "Paused - no bids will be placed or edited until run mode changes."
+msgstr "Pausado - no se colocarán ni editarán ofertas hasta que cambie el modo de ejecución."
 
 #: src/pages/Setup.tsx
 msgid "Payout address"
@@ -1505,6 +1580,10 @@ msgstr "Ejecuta la decisión pendiente inmediatamente - libera el bloqueo post-e
 msgid "runway"
 msgstr "autonomía"
 
+#: src/components/PriceChart.tsx
+msgid "sat/PH/day"
+msgstr "sat/PH/día"
+
 #: src/components/Layout.tsx
 msgid "sats"
 msgstr "sats"
@@ -1682,6 +1761,10 @@ msgid "Unknown"
 msgstr "Desconocido"
 
 #: src/pages/Status.tsx
+msgid "Unknown bid(s) detected - next tick will PAUSE the autopilot."
+msgstr "Oferta(s) desconocida(s) detectada(s) - el próximo tick PAUSARÁ el autopilot."
+
+#: src/pages/Status.tsx
 msgid "unpaid"
 msgstr "no pagado"
 
@@ -1719,6 +1802,10 @@ msgstr "Usa scantxoutset - intensivo en CPU, 30+ segundos por escaneo. Consultad
 msgid "UTXOs at the configured payout address. Read via Electrs (preferred, instant) or bitcoind RPC (slower)."
 msgstr "UTXOs en la dirección de pago configurada. Se leen vía Electrs (preferido, instantáneo) o bitcoind RPC (más lento)."
 
+#: src/pages/Status.tsx
+msgid "Waiting for Ocean hashprice - trading is paused until the break-even reference is available."
+msgstr "Esperando el hashprice de Ocean - el trading está en pausa hasta que la referencia break-even esté disponible."
+
 #: src/pages/Setup.tsx
 msgid "What the controller aims for."
 msgstr "A lo que apunta el controlador."
@@ -1738,6 +1825,32 @@ msgstr "Hacia dónde apunta el autopilot, y el mínimo por debajo del cual empie
 #: src/pages/Config.tsx
 msgid "Whole account (all settled bids ever)"
 msgstr "Cuenta completa (todas las ofertas liquidadas)"
+
+#: src/pages/Status.tsx
+msgid "Will edit bid to {target} sat/PH/day on the next tick."
+msgstr "Editará la oferta a {target} sat/PH/día en el próximo tick."
+
+#: src/pages/Status.tsx
+msgid "Will log (dry-run) a CREATE_BID at {target} sat/PH/day on the next tick."
+msgstr "Registrará (dry-run) un CREATE_BID a {target} sat/PH/día en el próximo tick."
+
+#: src/pages/Status.tsx
+msgid "Will log edit (dry-run) bid to {target} sat/PH/day on the next tick."
+msgstr "Registrará (dry-run) la edición de la oferta a {target} sat/PH/día en el próximo tick."
+
+#. placeholder {0}: d.mins_left
+#: src/pages/Status.tsx
+msgid "Will lower to {target} sat/PH/day in ~{0} min (current {current})."
+msgstr "Bajará a {target} sat/PH/día en ~{0} min (actual {current})."
+
+#: src/pages/Status.tsx
+msgid "Will place a CREATE_BID at {target} sat/PH/day on the next tick."
+msgstr "Colocará un CREATE_BID a {target} sat/PH/día en el próximo tick."
+
+#. placeholder {0}: d.mins_left
+#: src/pages/Status.tsx
+msgid "Will raise to {target} sat/PH/day in ~{0} min (current {current})."
+msgstr "Subirá a {target} sat/PH/día en ~{0} min (actual {current})."
 
 #: src/pages/Status.tsx
 msgid "Wipe the local terminal-bid cache and re-paginate every bid from Braiins on the next refresh? This is safe but slower than a normal refresh."

@@ -30,7 +30,43 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+export type NextActionDescriptor =
+  | { kind: 'paused' }
+  | { kind: 'unknown_bids'; ids: readonly string[] }
+  | { kind: 'braiins_unreachable' }
+  | { kind: 'awaiting_hashprice' }
+  | { kind: 'no_market_supply' }
+  | {
+      kind: 'will_create_bid';
+      run_mode: 'LIVE' | 'DRY_RUN';
+      target_ph: number;
+      capped: boolean;
+      target_ph_label: number;
+      target_hashrate_ph: number;
+      budget:
+        | { kind: 'configured'; sat: number }
+        | { kind: 'full_wallet'; available_sat: number }
+        | { kind: 'awaiting_balance' };
+    }
+  | { kind: 'bid_pending'; id_short: string; status: string }
+  | {
+      kind: 'cooldown_active';
+      target_ph: number;
+      current_ph: number;
+      mins_left: number;
+      direction: 'lower' | 'raise';
+    }
+  | {
+      kind: 'will_edit_bid';
+      run_mode: 'LIVE' | 'DRY_RUN';
+      target_ph: number;
+      current_ph: number;
+      clamped: boolean;
+    }
+  | { kind: 'on_target'; capped: boolean; avg_speed_ph: number };
+
 export interface NextActionView {
+  descriptor: NextActionDescriptor | null;
   summary: string;
   detail: string | null;
   eta_ms: number | null;

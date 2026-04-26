@@ -631,10 +631,7 @@ function NextActionCard({
       <div>
         <h3 className="text-xs uppercase tracking-wider text-slate-100 mb-1"><Trans>Next action</Trans></h3>
         <JustExecutedBanner last={s.next_action.last_executed} />
-        <div className="text-slate-100">{s.next_action.summary}</div>
-        {s.next_action.detail && (
-          <div className="text-xs text-slate-400 mt-1">{s.next_action.detail}</div>
-        )}
+        <NextActionMessage next={s.next_action} />
         <NextActionProgress next={s.next_action} />
       </div>
 
@@ -826,6 +823,146 @@ const JUST_EXECUTED_VISIBLE_MS = 90_000;
  * silently jumping from "Will lower …" to "On target". Auto-fades
  * after ~90s. Re-renders every 5s so the relative-age text refreshes.
  */
+/**
+ * Translates the next-action message via the operator's active locale
+ * by switching on the structured `descriptor` the daemon emits. Falls
+ * back to the daemon's English `summary` / `detail` strings when the
+ * descriptor is null (older client/server pair or one of the rare
+ * paths that hasn't been classified yet).
+ */
+function NextActionMessage({ next }: { next: NextActionView }) {
+  const { i18n } = useLingui();
+  void i18n;
+  const d = next.descriptor;
+  if (!d) {
+    return (
+      <>
+        <div className="text-slate-100">{next.summary}</div>
+        {next.detail && <div className="text-xs text-slate-400 mt-1">{next.detail}</div>}
+      </>
+    );
+  }
+  const summary = renderNextActionSummary(d);
+  const detail = renderNextActionDetail(d);
+  return (
+    <>
+      <div className="text-slate-100">{summary}</div>
+      {detail && <div className="text-xs text-slate-400 mt-1">{detail}</div>}
+    </>
+  );
+}
+
+function renderNextActionSummary(d: NonNullable<NextActionView['descriptor']>): React.ReactNode {
+  switch (d.kind) {
+    case 'paused':
+      return <Trans>Paused - no bids will be placed or edited until run mode changes.</Trans>;
+    case 'unknown_bids':
+      return <Trans>Unknown bid(s) detected - next tick will PAUSE the autopilot.</Trans>;
+    case 'braiins_unreachable':
+      return <Trans>Braiins API unreachable - waiting for connectivity.</Trans>;
+    case 'awaiting_hashprice':
+      return <Trans>Waiting for Ocean hashprice - trading is paused until the break-even reference is available.</Trans>;
+    case 'no_market_supply':
+      return <Trans>No hashrate available on the market right now.</Trans>;
+    case 'will_create_bid': {
+      const target = d.target_ph.toLocaleString('en-US');
+      return d.run_mode === 'LIVE' ? (
+        <Trans>Will place a CREATE_BID at {target} sat/PH/day on the next tick.</Trans>
+      ) : (
+        <Trans>Will log (dry-run) a CREATE_BID at {target} sat/PH/day on the next tick.</Trans>
+      );
+    }
+    case 'bid_pending':
+      return (
+        <Trans>
+          Bid {d.id_short} is {d.status} - waiting for it to become active.
+        </Trans>
+      );
+    case 'cooldown_active':
+      return <Trans>Bid above target - Braiins price-decrease cooldown active.</Trans>;
+    case 'will_edit_bid': {
+      const target = d.target_ph.toLocaleString('en-US');
+      return d.run_mode === 'LIVE' ? (
+        <Trans>Will edit bid to {target} sat/PH/day on the next tick.</Trans>
+      ) : (
+        <Trans>Will log edit (dry-run) bid to {target} sat/PH/day on the next tick.</Trans>
+      );
+    }
+    case 'on_target':
+      return d.capped ? (
+        <Trans>At effective cap - desired fillable + overpay exceeds the ceiling.</Trans>
+      ) : (
+        <Trans>On target - bid at fillable + overpay.</Trans>
+      );
+  }
+}
+
+function renderNextActionDetail(d: NonNullable<NextActionView['descriptor']>): React.ReactNode | null {
+  switch (d.kind) {
+    case 'paused':
+    case 'braiins_unreachable':
+    case 'no_market_supply':
+      return null;
+    case 'unknown_bids':
+      return <Trans>IDs: {d.ids.join(', ')}</Trans>;
+    case 'awaiting_hashprice':
+      return (
+        <Trans>
+          Ocean hashprice is required to evaluate the dynamic cap you configured. If this persists,
+          check Ocean's reachability in the Ocean panel.
+        </Trans>
+      );
+    case 'will_create_bid': {
+      if (d.budget.kind === 'configured') {
+        const sat = d.budget.sat.toLocaleString('en-US');
+        return <Trans>{d.target_hashrate_ph} PH/s target, {sat} sat budget.</Trans>;
+      }
+      if (d.budget.kind === 'full_wallet') {
+        const sat = d.budget.available_sat.toLocaleString('en-US');
+        return (
+          <Trans>
+            {d.target_hashrate_ph} PH/s target, {sat} sat budget (full wallet).
+          </Trans>
+        );
+      }
+      return (
+        <Trans>{d.target_hashrate_ph} PH/s target, full wallet balance (awaiting balance).</Trans>
+      );
+    }
+    case 'bid_pending':
+      // Telegram confirmation hint kept English-only on purpose: the
+      // bot itself only speaks English. (Daemon-side `detail` is
+      // non-null only when status is BID_STATUS_CREATED; in any other
+      // pending state the detail line is absent.)
+      return null;
+    case 'cooldown_active': {
+      const target = d.target_ph.toLocaleString('en-US');
+      const current = d.current_ph.toLocaleString('en-US');
+      return d.direction === 'lower' ? (
+        <Trans>
+          Will lower to {target} sat/PH/day in ~{d.mins_left} min (current {current}).
+        </Trans>
+      ) : (
+        <Trans>
+          Will raise to {target} sat/PH/day in ~{d.mins_left} min (current {current}).
+        </Trans>
+      );
+    }
+    case 'will_edit_bid': {
+      const current = d.current_ph.toLocaleString('en-US');
+      return d.clamped ? (
+        <Trans>Current {current} sat/PH/day - tracking fillable + overpay (clamped).</Trans>
+      ) : (
+        <Trans>Current {current} sat/PH/day - tracking fillable + overpay.</Trans>
+      );
+    }
+    case 'on_target': {
+      const speed = d.avg_speed_ph.toFixed(2);
+      return <Trans>Bid filling at {speed} PH/s.</Trans>;
+    }
+  }
+}
+
 function JustExecutedBanner({ last }: { last: NextActionView['last_executed'] }) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
