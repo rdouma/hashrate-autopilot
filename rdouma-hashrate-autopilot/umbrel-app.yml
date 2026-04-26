@@ -44,11 +44,15 @@ dependencies:
 repo: https://github.com/rdouma/hashrate-autopilot
 support: https://github.com/rdouma/hashrate-autopilot/issues
 port: 3010
-# Gallery is empty until proper landscape screenshots land.
-# Spec for each: 1280x800 or 1920x1200 (16:10 landscape), JPG or PNG,
-# under ~500 KB, named 1.jpg, 2.jpg, 3.jpg in the app dir, then list
-# them here in order of importance.
-gallery: []
+# Order: status-page-hero -> status-page-charts -> wizard-step-1
+# -> wizard-step-2. First image is the card hero (operator browsing
+# the store sees this on the tile); the others appear on the app
+# detail view as a horizontal carousel.
+gallery:
+  - 1.jpg
+  - 2.jpg
+  - 3.jpg
+  - 4.jpg
 path: ""
 defaultUsername: ""
 defaultPassword: ""
