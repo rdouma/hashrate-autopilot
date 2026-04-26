@@ -1,0 +1,47 @@
+# Umbrel docker-compose for Hashrate Autopilot.
+#
+# Two services:
+#
+# - `app_proxy` is Umbrel's auth + reverse-proxy sidecar. It terminates
+#   Tor / LAN traffic in front of our app. PROXY_AUTH_ADD=false because
+#   the daemon already runs its own Basic Auth (the password the wizard
+#   creates) — we don't want a double login.
+#
+# - `web` is the daemon + dashboard, pulled from GHCR. It listens on
+#   port 3010 and reads/writes its single state directory at /app/data,
+#   which is bind-mounted to Umbrel's per-app persistent storage.
+#
+# bitcoind credentials come in via the standard `BITCOIN_RPC_*` env
+# vars — Umbrel injects `APP_BITCOIN_*` because we declared `bitcoin`
+# as a dependency in umbrel-app.yml; we just rename them so the daemon's
+# auto-detect picks them up. See packages/daemon/src/setup-mode.ts →
+# detectBitcoindEnv() for the lookup logic.
+
+version: "3.7"
+
+services:
+  app_proxy:
+    environment:
+      APP_HOST: hashrate-autopilot_web_1
+      APP_PORT: 3010
+      PROXY_AUTH_ADD: "false"
+
+  web:
+    image: ghcr.io/rdouma/hashrate-autopilot:latest
+    restart: on-failure
+    stop_grace_period: 1m
+    volumes:
+      - ${APP_DATA_DIR}/data:/app/data
+    environment:
+      HTTP_PORT: 3010
+      HTTP_HOST: 0.0.0.0
+      DB_PATH: /app/data/state.db
+      DASHBOARD_STATIC: packages/dashboard/dist
+      # Auto-detect inputs for the wizard. The daemon's
+      # detectBitcoindEnv() reads these and pre-fills the bitcoind RPC
+      # section of the wizard so the operator doesn't have to copy
+      # Umbrel's bitcoind creds out manually.
+      BITCOIN_RPC_HOST: "${APP_BITCOIN_NODE_IP}"
+      BITCOIN_RPC_PORT: "${APP_BITCOIN_RPC_PORT}"
+      BITCOIN_RPC_USER: "${APP_BITCOIN_RPC_USER}"
+      BITCOIN_RPC_PASS: "${APP_BITCOIN_RPC_PASS}"
