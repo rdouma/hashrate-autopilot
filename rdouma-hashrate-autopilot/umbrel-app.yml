@@ -9,21 +9,33 @@ category: bitcoin
 name: Hashrate Autopilot
 version: "1.3.1"
 tagline: Autopilot for renting hashrate to a non-custodial pool
+icon: https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/assets/icon-512.png
 description: >-
   Rent hashrate on the Braiins Hashpower marketplace and route it to
-  your own Ocean+Datum non-custodial mining pool — automatically, with
-  the spam-filtered template selection that comes with that setup. A
-  small contribution to keeping Bitcoin mining decentralized.
+  your own Ocean non-custodial mining pool, automatically. Each tick
+  the autopilot finds the cheapest available price for your target
+  hashrate, adds a small operator-chosen cushion, and bids exactly
+  that price. You set a maximum you are willing to pay, and the
+  controller never goes above it.
 
-  The controller sets a single bid each tick to `min(fillable_ask +
-  overpay, effective_cap)`. Braiins matches pay-your-bid, so the bid
-  price *is* the price paid; the autopilot tracks the cheapest fillable
-  ask + a small operator-chosen cushion, never higher than the
-  configured ceiling. A React dashboard on port 3010 shows live
-  decisions and charts, and exposes the DRY-RUN / LIVE / PAUSED switch.
 
-  First-run is a three-step web wizard. Bitcoin Core RPC credentials
-  auto-detect from this Umbrel's bitcoind dependency — no copy/paste.
+  Why this matters: Ocean is a non-custodial pool, meaning rewards
+  land directly in your own wallet (no custodian holding your bitcoin)
+  and Ocean's Datum templates filter non-financial spam transactions.
+  Renting hashrate to that kind of pool is a small contribution to
+  keeping Bitcoin mining decentralized.
+
+
+  Solo mining via Ocean's solo template should also work, though so
+  far the autopilot has only been tested against the regular
+  Ocean+Datum pool setup.
+
+
+  Setup is a three-step web wizard accessible at port 3010. Bitcoin
+  Core RPC credentials auto-fill from this Umbrel's bitcoind, so no
+  copy/paste. After setup you get a dashboard with live decisions,
+  charts, the DRY-RUN / LIVE / PAUSED switch, and a P&L panel that
+  reads spend from Braiins and earnings from your on-chain wallet.
 
 developer: Remco Douma
 website: https://github.com/rdouma/hashrate-autopilot
@@ -32,13 +44,16 @@ dependencies:
 repo: https://github.com/rdouma/hashrate-autopilot
 support: https://github.com/rdouma/hashrate-autopilot/issues
 port: 3010
-gallery:
-  - 1.jpg
+# Gallery is empty until proper landscape screenshots land.
+# Spec for each: 1280x800 or 1920x1200 (16:10 landscape), JPG or PNG,
+# under ~500 KB, named 1.jpg, 2.jpg, 3.jpg in the app dir, then list
+# them here in order of importance.
+gallery: []
 path: ""
 defaultUsername: ""
 defaultPassword: ""
 submitter: Remco Douma
 submission: https://github.com/rdouma/hashrate-autopilot
 releaseNotes: >-
-  Initial Community App Store release. The app's first-run wizard handles
+  Initial Community App Store release. The first-run web wizard handles
   setup; Bitcoin Core RPC auto-detects from Umbrel's injected env vars.
