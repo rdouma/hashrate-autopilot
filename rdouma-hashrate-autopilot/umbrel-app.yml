@@ -75,5 +75,15 @@ defaultPassword: ""
 submitter: Remco Douma
 submission: https://github.com/rdouma/hashrate-autopilot
 releaseNotes: >-
-  Initial Community App Store release. The first-run web wizard handles
-  setup; Bitcoin Core RPC auto-detects from Umbrel's injected env vars.
+  v1.4.0 - the dashboard now speaks Dutch and Spanish (full UI + chart
+  + tooltip translation; language picker in the header next to "sign
+  out"; Czech deferred until a CZ reviewer is available). New opt-in
+  "% of Ocean" overlay on the Hashrate chart shows your share of
+  Ocean's TIDES window over time. Branding cleanup: dropped the
+  "Braiins" prefix from app chrome (now just "Hashrate Autopilot").
+  Plus a full run of polish - hero PRICE card now shows the live
+  current bid (was a noisy effective-rate measurement), the next-
+  action panel translates fully on locale change, the price-chart
+  Y-axis follows the active language, and assorted Umbrel install
+  fixes (bind-mount permissions, app_proxy hostname, Datum API
+  auto-config). See the GitHub release notes for the full list.
