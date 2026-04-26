@@ -64,28 +64,32 @@ RUN pnpm build
 FROM node:${NODE_VERSION}-slim AS runtime
 WORKDIR /app
 
-# Run as the official `node` image's pre-baked non-root user (uid 1000,
-# gid 1000) — already exists in node:22-slim, so we just chown the
-# copied files and switch to it. Avoids a useradd that would conflict
-# with the pre-existing UID.
-
 # Pull the runnable bits from the builder. We need:
 #   - node_modules (production deps + workspace symlinks)
 #   - packages/<each>/dist (compiled output)
 #   - packages/<each>/package.json (so the workspace symlinks resolve)
 #   - root pnpm-workspace.yaml + package.json (workspace roots)
 #   - migrations (copied into dist by the daemon's build script)
-COPY --from=builder --chown=node:node /app/node_modules /app/node_modules
-COPY --from=builder --chown=node:node /app/packages /app/packages
-COPY --from=builder --chown=node:node /app/package.json /app/pnpm-workspace.yaml ./
+COPY --from=builder /app/node_modules /app/node_modules
+COPY --from=builder /app/packages /app/packages
+COPY --from=builder /app/package.json /app/pnpm-workspace.yaml ./
 
 # Persistent state directory. Operators should mount a volume here
 # (Umbrel/Start9 do this declaratively in their app manifests; for
 # `docker run` use `-v hashrate-data:/app/data`).
-RUN mkdir -p /app/data && chown node:node /app/data
+RUN mkdir -p /app/data
 VOLUME /app/data
 
-USER node
+# Run as root inside the container. Rationale: Umbrel/Start9 bind-mount
+# the host's per-app data directory at /app/data, and that host
+# directory is created on first boot with whatever ownership the
+# orchestrator's docker daemon uses (typically root). A non-root
+# in-container user (uid 1000) then cannot write to the mount, and
+# the daemon crashes with `unable to open database file`. Running as
+# root keeps the bind-mount writable on every host. Network exposure
+# is mediated by the app_proxy sidecar in docker-compose.yml, which
+# is the actual security boundary; the daemon itself only listens on
+# 3010 and serves its own Basic Auth.
 EXPOSE 3010
 
 # Health probe — the daemon's /api/health is the canonical liveness

@@ -2,6 +2,10 @@
 
 ## 2026-04-25 (later)
 
+### `[Fix]` Umbrel install: app_proxy hostname + container DB write permissions
+
+Two bugs that surfaced on the operator's first Umbrel install. (1) `app_proxy` was pointing at `hashrate-autopilot_web_1`, but Umbrel uses the app dir as the docker-compose project name and we renamed that dir to `rdouma-hashrate-autopilot/` to satisfy the community-store prefix convention. The proxy retried forever and the dashboard surfaced "There was a problem connecting to Hashrate Autopilot." (2) The daemon crash-looped with `unable to open database file` because Umbrel bind-mounts `${APP_DATA_DIR}/data` over `/app/data`, and the host directory is created with ownership the in-container `node` user (uid 1000) cannot write to. Switched the runtime user to root so the daemon can always open the bind-mounted state dir; security boundary is the app_proxy sidecar, which is untouched.
+
 ### `[Fix]` Docker image: drop `pnpm prune --prod` so workspace symlinks survive
 
 The v1.3.0 image built and pushed cleanly but crash-looped on every container start with `ERR_MODULE_NOT_FOUND: Cannot find package '@braiins-hashrate/bitcoind-client' imported from /app/packages/daemon/dist/main.js`. Operator caught it on first `docker run` against `:latest`. Cause: `pnpm prune --prod` deletes `node_modules` and reinstalls without the workspace-link wiring that the daemon needs to resolve sibling packages at runtime. Removed the prune step; image is ~100 MB larger but actually runs. v1.3.1 republishes with the fix.

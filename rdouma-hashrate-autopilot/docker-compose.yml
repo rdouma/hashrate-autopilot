@@ -22,7 +22,11 @@ version: "3.7"
 services:
   app_proxy:
     environment:
-      APP_HOST: hashrate-autopilot_web_1
+      # Hostname must match the docker-compose project's web service.
+      # Umbrel uses the app dir name (`rdouma-hashrate-autopilot`) as
+      # the project prefix, so the web container resolves to
+      # `rdouma-hashrate-autopilot_web_1`.
+      APP_HOST: rdouma-hashrate-autopilot_web_1
       APP_PORT: 3010
       PROXY_AUTH_ADD: "false"
 
