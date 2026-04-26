@@ -180,7 +180,7 @@ export function Status() {
         <div className="lg:col-span-2 h-full">
           <OperationsCard
             s={s}
-            effectivePricePH={s.live_effective_sat_per_ph_day}
+            currentBidPH={primaryBidPricePH(s)}
             hashpricePH={financeQuery.data?.ocean?.hashprice_sat_per_ph_day ?? null}
             onRunMode={(m) => runModeMutation.mutate(m)}
             runModePending={runModeMutation.isPending}
@@ -433,26 +433,47 @@ const heroColors: Record<StatusResponse['run_mode'], string> = {
   PAUSED: 'from-amber-900/60 to-amber-950/40 border-amber-700/40',
 };
 
+/**
+ * Pick the price (sat/PH/day) to display in the hero card from a
+ * StatusResponse. We want the *current bid*, not the realised
+ * effective rate (#69) - the latter is a per-tick measurement
+ * artefact that swings with delivery and metering noise even after
+ * the 30-min smoothing+cap layer. The bid is what we asked Braiins
+ * to charge; under pay-your-bid that's the price actually paid.
+ *
+ * Returns null when no owned active bid exists yet (fresh install,
+ * mid-CREATE, daemon paused). Caller renders an em-dash placeholder.
+ */
+function primaryBidPricePH(s: StatusResponse): number | null {
+  const active = s.bids.find((b) => b.is_owned && b.status === 'BID_STATUS_ACTIVE');
+  if (active) return active.price_sat_per_ph_day;
+  // Fall back to any owned bid (e.g. BID_STATUS_CREATED while waiting
+  // for Telegram confirmation in legacy installs) so the operator
+  // still sees what they're about to pay.
+  const anyOwned = s.bids.find((b) => b.is_owned);
+  return anyOwned ? anyOwned.price_sat_per_ph_day : null;
+}
+
 function OperationsCard({
   s,
-  effectivePricePH,
+  currentBidPH,
   hashpricePH,
   onRunMode,
   runModePending,
 }: {
   s: StatusResponse;
   /**
-   * Live effective rate (sat/PH/day) — duration-weighted average of
-   * inter-tick `primary_bid_consumed_sat` deltas over a 30-min
-   * trailing window, capped at the duration-weighted average bid
-   * (under pay-your-bid the bid is a hard ceiling). Distinct from the
-   * range-averaged `avg cost / PH delivered` in the stats row, which
-   * uses the same formula over the chart-selected range.
+   * Current owned-bid price in sat/PH/day. Under pay-your-bid this is
+   * exactly the price Braiins charges per delivered EH-day, which is
+   * what an operator wants to read at a glance. Distinct from the
+   * window-averaged `AVG COST / PH DELIVERED` in the stats row (a
+   * post-hoc realised rate where measurement noise washes out over
+   * the chart range).
    */
-  effectivePricePH: number | null;
+  currentBidPH: number | null;
   /**
    * Current spot hashprice from Ocean, sat/PH/day. The delta next to
-   * the price value is computed against this — positive = paying
+   * the price value is computed against this: positive = paying
    * above break-even, negative = paying below.
    */
   hashpricePH: number | null;
@@ -467,7 +488,7 @@ function OperationsCard({
   const activeOwned = s.bids.filter(
     (b) => b.is_owned && b.status === 'BID_STATUS_ACTIVE',
   );
-  const currentPricePH = effectivePricePH;
+  const currentPricePH = currentBidPH;
 
   const deliveredColor =
     s.actual_hashrate_ph < s.config_summary.minimum_floor_hashrate_ph
@@ -482,7 +503,7 @@ function OperationsCard({
     >
       {currentPricePH !== null ? (
         <div className="grid grid-cols-2 gap-6 w-full">
-          <Tooltip text="Live effective rate — what Braiins charged us, duration-weighted over the last 30 minutes (Σ Δprimary_bid_consumed_sat ÷ Σ delivered_ph × Δt), capped at the average bid since under pay-your-bid the bid is a hard ceiling. Same formula as the AVG COST / PH DELIVERED stats card, just over a shorter window so the hero stays live. For the current bid ceiling see NEXT ACTION.">
+          <Tooltip text="Current owned-bid price (sat/PH/day). Under pay-your-bid this is exactly what Braiins charges per delivered EH-day - the live price you're paying. The plus/minus next to it is the spread vs Ocean's spot hashprice (positive = paying above break-even, negative = below). For the realised effective rate (post-hoc, range-averaged across actual delivery and metering noise), see the AVG COST / PH DELIVERED stats card.">
             <div className="flex flex-col items-center cursor-help">
               <div className="text-[11px] uppercase tracking-wider text-slate-100 mb-1">price</div>
               {/* relative wrapper so the ±delta can be position:absolute
@@ -506,8 +527,8 @@ function OperationsCard({
                 </span>
               </div>
               <div className="text-xs text-slate-400 mt-1">
-                {denomination.mode === 'usd' ? '$' : <><SatSymbol /></>}/PH/day effective
-                {activeOwned.length > 1 ? ` · across ${activeOwned.length} bids` : ''}
+                {denomination.mode === 'usd' ? '$' : <><SatSymbol /></>}/PH/day current bid
+                {activeOwned.length > 1 ? ` · primary of ${activeOwned.length}` : ''}
               </div>
             </div>
           </Tooltip>
