@@ -2,6 +2,7 @@ import { execSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
+import { lingui } from '@lingui/vite-plugin';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
@@ -32,7 +33,18 @@ function getBuildInfo(): { build: number; hash: string } {
 const info = getBuildInfo();
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react({
+      // Enable babel-plugin-macros so @lingui/macro's <Trans> + `t`
+      // template tag transform at compile time. Without this the
+      // macros stay as-is in the output and Lingui throws at runtime.
+      babel: {
+        plugins: ['macros'],
+      },
+    }),
+    lingui(),
+    tailwindcss(),
+  ],
   define: {
     __BUILD_NUMBER__: JSON.stringify(info.build),
     __BUILD_HASH__: JSON.stringify(info.hash),

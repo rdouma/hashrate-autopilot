@@ -2,6 +2,10 @@
 
 ## 2026-04-26
 
+### `[Feature]` i18n infrastructure: Lingui + EN/NL/ES (#1, in progress)
+
+Wired @lingui/react v5 into the dashboard. New `lib/i18n.ts` holds the singleton i18n instance, `getInitialLocale()` resolves the operator's stored choice → browser language → English, and `loadAndActivate(locale)` dynamically imports the compiled catalog (one chunk per locale). `vite.config.ts` enables babel-macros so `<Trans>` and the `t` template tag transform at compile time. The `pnpm build` script now runs `lingui:compile` first so catalogs are always in sync. New `LanguagePicker` component sits in the header next to "sign out" and persists selection to localStorage. Three locales scaffolded: `en` (source), `nl`, `es`. Czech (Braiins-culture) deferred until a CZ reviewer is available. The string-sweep across Status/Config/Setup pages is in progress; this commit ships the infrastructure plus one proof string ("sign out"). The format-locale picker on the Config page (number/date display) is unchanged; that mechanism is independent of this language switch.
+
 ### `[Fix]` Dashboard footer: bake real git SHA into the Docker image
 
 The footer line `build N - <hash>` was reading "dev" instead of the actual short SHA on every Umbrel/Docker install. Cause: `vite.config.ts`'s `getBuildInfo()` ran `git rev-parse --short HEAD` at build time, but `.dockerignore` strips `.git/` from the build context so the git command always failed inside the image build, falling back to the literal string "dev". Fix: thread `GIT_SHA` in as a Docker build-arg from the publish workflow (`${{ github.sha }}`), surface it as an env var in the builder stage, and have `vite.config.ts` prefer it over the git CLI. Bare-metal builds keep working via the existing git fallback.

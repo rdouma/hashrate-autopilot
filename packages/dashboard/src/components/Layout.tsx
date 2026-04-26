@@ -1,3 +1,4 @@
+import { Trans } from '@lingui/macro';
 import { useQuery } from '@tanstack/react-query';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 
@@ -6,6 +7,7 @@ import { clearPassword } from '../lib/auth';
 import { useDenomination } from '../lib/denomination';
 import { formatNumber } from '../lib/format';
 import { useLocale } from '../lib/locale';
+import { LanguagePicker } from './LanguagePicker';
 import { ModeBadge } from './ModeBadge';
 import { SatSymbol } from './SatSymbol';
 
@@ -77,16 +79,13 @@ export function Layout() {
           <div className="flex items-center gap-3 ml-auto text-xs">
             <DenominationToggle />
 
-            {/* Number/date format picker moved to Config → Display
-                so it's a one-time preference, not a piece of permanent
-                header chrome. The "Nederlands" label dropping out of
-                an English UI was misleading anyway — i18n proper is
-                #1, not done yet. */}
+            <LanguagePicker />
+
             <button
               onClick={logout}
               className="px-2 py-1 text-[11px] text-slate-300 border border-slate-700 rounded hover:bg-slate-800"
             >
-              sign out
+              <Trans>sign out</Trans>
             </button>
           </div>
         </div>
