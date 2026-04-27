@@ -112,7 +112,7 @@ export function Layout() {
         </div>
       </main>
       <footer className="text-center text-[10px] text-slate-600 py-1">
-        build {__BUILD_NUMBER__} · {__BUILD_HASH__} ·{' '}
+        v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__} ·{' '}
         <a
           href="https://github.com/rdouma/hashrate-autopilot/blob/main/CHANGELOG.md"
           target="_blank"

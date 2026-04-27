@@ -2,6 +2,10 @@
 
 ## 2026-04-27
 
+### `[UI]` App version in dashboard footer (#74)
+
+Footer now leads with the app version (e.g. `v1.4.3 · build 158 · abc1234 · changelog`) so users reporting issues from Umbrel / Docker installs can cite the release without having to read the build number off the manifest. Sourced from `rdouma-hashrate-autopilot/umbrel-app.yml` `version:` at vite-build time, so it cannot drift from what the Umbrel community store publishes - they read the same canonical file.
+
 ### `[Fix]` AVG COST stats no longer undercount due to lagged delivered_ph (#73)
 
 The `AVG COST / PH DELIVERED` and `AVG COST VS HASHPRICE` cards were reading ~3-5% lower than the actual bid during periods of patchy delivery. Numerator was correct (Δconsumed_sat = exactly what Braiins charged under pay-your-bid). Denominator used Braiins's reported `avg_speed_ph` - a 5-minute lagged rolling average that stays elevated for minutes after delivery actually drops to zero. Result: delivery dips contributed 0 to numerator but >0 to denominator, dragging the ratio below the bid and confusing operators ("Braiins is pay-your-bid - how can my realised cost be lower than what I bid?"). Fix switches both formulas to counter-derived hashrate (the same `Δsat ÷ bid ÷ Δt` signal driving the chart's amber line). The math simplifies to `SUM(Δsat) ÷ SUM(Δsat ÷ bid)` - the delta-weighted harmonic mean of the bid - which equals the bid exactly when the bid is constant across the window, and the spend-weighted average when the bid varies. Tooltips on both cards rewritten to be honest about what's actually computed.

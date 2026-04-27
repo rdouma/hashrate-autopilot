@@ -7,7 +7,7 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
-function getBuildInfo(): { build: number; hash: string } {
+function getBuildInfo(): { build: number; hash: string; version: string } {
   const buildFile = resolve(__dirname, '../../BUILD_NUMBER');
   let build = 0;
   try {
@@ -27,7 +27,19 @@ function getBuildInfo(): { build: number; hash: string } {
       hash = execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim();
     } catch { /* not a git repo */ }
   }
-  return { build, hash: hash ? hash.slice(0, 7) : 'dev' };
+  // App version: pulled out of umbrel-app.yml's `version:` line. Same
+  // source the Umbrel community store reads, so the footer cannot
+  // drift from the published release - they share one canonical
+  // file. Falls back to "unknown" if the manifest is missing or
+  // unparseable; footer chrome must never break the build (#74).
+  let version = 'unknown';
+  try {
+    const manifestPath = resolve(__dirname, '../../rdouma-hashrate-autopilot/umbrel-app.yml');
+    const manifest = readFileSync(manifestPath, 'utf8');
+    const match = manifest.match(/^version:\s*"?([^"\s]+)"?\s*$/m);
+    if (match?.[1]) version = match[1];
+  } catch { /* manifest unavailable */ }
+  return { build, hash: hash ? hash.slice(0, 7) : 'dev', version };
 }
 
 const info = getBuildInfo();
@@ -53,6 +65,7 @@ export default defineConfig({
   define: {
     __BUILD_NUMBER__: JSON.stringify(info.build),
     __BUILD_HASH__: JSON.stringify(info.hash),
+    __APP_VERSION__: JSON.stringify(info.version),
   },
   server: {
     port: 5173,

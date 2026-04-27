@@ -707,7 +707,7 @@ function CenteredCard({ children, wide = false }: { children: React.ReactNode; w
         {children}
       </div>
       <div className="text-center text-[10px] text-slate-600 mt-3">
-        <Trans>build {__BUILD_NUMBER__} · {__BUILD_HASH__}</Trans>
+        <Trans>v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__}</Trans>
       </div>
     </div>
   );

@@ -99,25 +99,37 @@ jobs:
           echo "OK: manifest=$VER == compose=$TAG"
 
       - name: Image exists on GHCR
+        # Polls for up to ~10 min so a release-bump push lands cleanly
+        # even though the v-tagged publish run is in flight in parallel
+        # (multi-arch build is ~8 min). If the image never appears, the
+        # gate fails - either the tag was bumped without the matching
+        # `git tag -a vX.Y.Z` push, or the publish workflow itself
+        # failed. Both cases are a true positive worth blocking on.
         run: |
           set -euo pipefail
           REPO='${{ steps.compose.outputs.repo }}'
           TAG='${{ steps.compose.outputs.tag }}'
           # ghcr.io/<owner>/<image> -> path = <owner>/<image>
           PATH_PART="${REPO#ghcr.io/}"
-          TOKEN=$(curl -s "https://ghcr.io/token?scope=repository:${PATH_PART}:pull" \
-                  | python3 -c "import sys,json;print(json.load(sys.stdin)['token'])")
-          if [[ -z "$TOKEN" ]]; then
-            echo "::error::could not obtain anonymous-pull token for $PATH_PART"
-            exit 1
-          fi
-          CODE=$(curl -s -o /dev/null -w '%{http_code}' \
-                   -H "Authorization: Bearer $TOKEN" \
-                   -H "Accept: application/vnd.oci.image.index.v1+json" \
-                   "https://ghcr.io/v2/${PATH_PART}/manifests/${TAG}")
-          if [[ "$CODE" == "200" ]]; then
-            echo "OK: $REPO:$TAG resolves on GHCR (HTTP $CODE)"
-          else
-            echo "::error::$REPO:$TAG does not exist on GHCR (HTTP $CODE). Either the publish run hasn't finished, or the tag was bumped before the publish was triggered. See CLAUDE.md 'Umbrel image pin convention'."
-            exit 1
-          fi
+          MAX_ATTEMPTS=60
+          SLEEP_SECONDS=10
+          for attempt in $(seq 1 $MAX_ATTEMPTS); do
+            TOKEN=$(curl -s "https://ghcr.io/token?scope=repository:${PATH_PART}:pull" \
+                    | python3 -c "import sys,json;print(json.load(sys.stdin)['token'])")
+            if [[ -z "$TOKEN" ]]; then
+              echo "::error::could not obtain anonymous-pull token for $PATH_PART"
+              exit 1
+            fi
+            CODE=$(curl -s -o /dev/null -w '%{http_code}' \
+                     -H "Authorization: Bearer $TOKEN" \
+                     -H "Accept: application/vnd.oci.image.index.v1+json" \
+                     "https://ghcr.io/v2/${PATH_PART}/manifests/${TAG}")
+            if [[ "$CODE" == "200" ]]; then
+              echo "OK: $REPO:$TAG resolves on GHCR (HTTP $CODE) after $attempt attempt(s)"
+              exit 0
+            fi
+            echo "attempt $attempt/$MAX_ATTEMPTS: $REPO:$TAG -> HTTP $CODE; retrying in ${SLEEP_SECONDS}s"
+            sleep "$SLEEP_SECONDS"
+          done
+          echo "::error::$REPO:$TAG never appeared on GHCR after $((MAX_ATTEMPTS * SLEEP_SECONDS))s. Publish workflow may have failed, or the tag was bumped without a matching git tag push. See CLAUDE.md 'Umbrel image pin convention'."
+          exit 1

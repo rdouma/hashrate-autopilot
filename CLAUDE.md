@@ -136,6 +136,21 @@ not exist on GHCR, every Umbrel install hangs on "Updating" forever
    `HTTP/2 200` = good. `404` = the publish failed or the tag pattern
    produced something else; investigate before promoting the manifest.
 
+**Standard release sequence** (use this every time, the CI gate
+expects it):
+
+1. Bump `BUILD_NUMBER`, `umbrel-app.yml` `version:`,
+   `docker-compose.yml` `image:` tag, and add a CHANGELOG entry,
+   all in one commit.
+2. `git tag -a vX.Y.Z -m "<title>"` on that commit.
+3. `git push --atomic origin main vX.Y.Z` - main and the tag
+   together so the publish workflow (tag-triggered) runs in
+   parallel with the gate check (main-triggered). The gate polls
+   GHCR for ~10 min, comfortably outliving the ~8 min publish.
+
+If you push main first and forget the tag, the gate will retry for
+10 min and then fail loudly - that's the safety net. Push the tag.
+
 If a user reports the app stuck on "Updating": their docker-compose
 pin is pulling a 404'ing image. UI-only recovery for them is
 **Settings → Restart Umbrel** (drops the in-flight install job and

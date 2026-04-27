@@ -7,7 +7,7 @@ manifestVersion: 1
 id: rdouma-hashrate-autopilot
 category: bitcoin
 name: Hashrate Autopilot
-version: "1.4.2"
+version: "1.4.3"
 tagline: Autopilot for renting hashrate to a non-custodial pool
 icon: https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/assets/icon-512.png
 description: >-
@@ -75,10 +75,14 @@ defaultPassword: ""
 submitter: Remco Douma
 submission: https://github.com/rdouma/hashrate-autopilot
 releaseNotes: >-
-  v1.4.2 - install fix. The v1.4.1 docker-compose.yml pinned the image
-  to a tag that did not exist on GHCR (`v1.4.1`, with a leading v),
-  so every Umbrel install/update of v1.4.1 hung forever pulling a
-  404. The pin now matches the published bare-semver tag (`1.4.2`),
-  and the publish workflow also produces v-prefixed mirrors so this
-  cannot recur. App content is otherwise identical to v1.4.1 - the
-  NEXT ACTION deadband fix from v1.4.1 ships in this image.
+  v1.4.3 - AVG COST stats accuracy + version in footer. The
+  AVG COST / PH DELIVERED card and the paired AVG COST VS HASHPRICE
+  card were reading 3-5% lower than the actual bid during patchy-
+  delivery windows because the denominator used Braiins's lagged
+  avg_speed_ph metric. Switched to counter-derived hashrate (same
+  signal driving the chart's amber line), so the cards now equal
+  the bid exactly when the bid is constant across the window and
+  the spend-weighted average when it varies - honest math under
+  pay-your-bid. Plus: dashboard footer now leads with the app
+  version (e.g. `v1.4.3 . build 158 . abc1234`) so users reporting
+  issues can cite a release.
