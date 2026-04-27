@@ -37,9 +37,11 @@ packages/dashboard/src/locales/*/messages.ts
 # IDE / local tool state
 .idea/
 
-# Keep .claude/commands/ (project slash-commands) but ignore everything else
-# at any nesting depth (scripts/.claude/, packages/*/.claude/, ...).
-**/.claude/*
-!**/.claude/commands/
+# `.claude/` and the permissions log are operator-private working
+# artefacts (slash-command tweaks, agent permission audit trails) -
+# not interesting to anyone reading the repo. Ignore at any nesting
+# depth.
+**/.claude/
+docs/permissions-log.md
 
 braiins_hashrate_control.iml
