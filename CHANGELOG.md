@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-04-27
+
+### `[Fix]` Umbrel install hangs forever on v1.4.1
+
+`rdouma-hashrate-autopilot/docker-compose.yml` pinned the image to `ghcr.io/rdouma/hashrate-autopilot:v1.4.1`, but the publish workflow's `docker/metadata-action` strips the `v` prefix from semver tags by convention - the actual published GHCR tags are `1.4.1` / `1.4` / `1` / `latest`, never `v1.4.1`. Every Umbrel install or update of v1.4.1 was pulling a 404'ing image and hanging in "updating". The pin now matches the bare-semver tag, and the publish workflow also produces `v`-prefixed mirrors so a future copy/paste of `:vX.Y.Z` can't 404 either. App content is unchanged from v1.4.1 - this release is purely the install fix; the v1.4.1 NEXT ACTION deadband fix ships in this image too.
+
 ## 2026-04-26
 
 ### `[Fix]` NEXT ACTION panel: mirror the deadband decide() actually applies (#71)

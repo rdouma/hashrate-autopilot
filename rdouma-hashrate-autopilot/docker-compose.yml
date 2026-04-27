@@ -52,7 +52,14 @@ services:
     # silently. Pinning here means Umbrel users get exactly what each
     # release tag's notes promise. Bump in lockstep with the
     # `umbrel-app.yml` `version:` field on every release.
-    image: ghcr.io/rdouma/hashrate-autopilot:v1.4.1
+    #
+    # IMPORTANT: image tag has NO leading `v`. The publish workflow's
+    # docker/metadata-action strips the `v` from the git tag by
+    # convention - GHCR carries `1.4.2`, `1.4`, `1`, `latest`. We also
+    # publish `v`-prefixed mirrors (`v1.4.2`, `v1.4`, `v1`) for safety,
+    # but the canonical pin stays bare-semver to match what GHCR shows
+    # in its UI.
+    image: ghcr.io/rdouma/hashrate-autopilot:1.4.2
     restart: on-failure
     stop_grace_period: 1m
     volumes:
