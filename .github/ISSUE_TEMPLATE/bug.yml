@@ -1,0 +1,90 @@
+name: Bug report
+description: Something isn't working the way it should
+title: "[bug] "
+labels: ["bug", "backlog"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing! Before you do: please don't include API
+        tokens, dashboard passwords, payout addresses you'd rather
+        keep private, or any other secret. Daemon logs at the
+        appropriate verbosity should already redact tokens, but
+        screenshots of the dashboard can leak balance / address
+        details - have a look before posting.
+
+        If this is a security issue, **don't post here.** See
+        [SECURITY.md](https://github.com/rdouma/hashrate-autopilot/blob/main/SECURITY.md).
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: |
+        From the dashboard footer (`build N · sha`). If you can't
+        reach the dashboard, the docker image tag or git commit hash
+        you're running is fine.
+      placeholder: "build 156 · 7fcc123"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install
+    attributes:
+      label: Install path
+      description: How are you running the autopilot?
+      options:
+        - Umbrel (Community App Store)
+        - Docker (manual `docker run` / docker-compose)
+        - Bare-metal Node + pnpm
+        - Other (please describe in the bug body)
+    validations:
+      required: true
+
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      description: |
+        OS + arch + Node version if relevant. e.g. "Umbrel Home (arm64)",
+        "Ubuntu 24.04 amd64, Node 22.5", "Raspberry Pi 5 / Umbrel 1.4".
+      placeholder: "Umbrel Home arm64"
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: A clear description of what went wrong.
+      placeholder: "When I clicked X, the panel showed Y instead of Z..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Numbered steps so I can hit the same case on my end.
+      placeholder: |
+        1. Run mode set to LIVE
+        2. ...
+        3. ...
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant daemon log lines, if any
+      description: |
+        For Umbrel: `docker logs --tail 200 rdouma-hashrate-autopilot_web_1`
+        For Docker: `docker logs --tail 200 hashrate-autopilot`
+        Bare-metal: from the terminal you ran `pnpm daemon` in.
+        Tokens are redacted automatically; double-check before posting.
+      render: shell

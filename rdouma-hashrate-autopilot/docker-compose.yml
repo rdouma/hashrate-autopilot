@@ -47,7 +47,12 @@ services:
       PROXY_AUTH_ADD: "false"
 
   web:
-    image: ghcr.io/rdouma/hashrate-autopilot:latest
+    # Pin to the exact released version - never `:latest`. If `:latest`
+    # ever points at a broken image, every Umbrel auto-update breaks
+    # silently. Pinning here means Umbrel users get exactly what each
+    # release tag's notes promise. Bump in lockstep with the
+    # `umbrel-app.yml` `version:` field on every release.
+    image: ghcr.io/rdouma/hashrate-autopilot:v1.4.1
     restart: on-failure
     stop_grace_period: 1m
     volumes:

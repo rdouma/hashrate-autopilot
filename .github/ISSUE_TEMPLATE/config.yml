@@ -1,0 +1,13 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question / discussion
+    url: https://github.com/rdouma/hashrate-autopilot/discussions
+    about: |
+      Open-ended questions, integration help, fork coordination,
+      or anything that isn't a concrete bug or feature request.
+  - name: Security vulnerability
+    url: https://github.com/rdouma/hashrate-autopilot/security/advisories/new
+    about: |
+      Don't file public issues for vulnerabilities. Use GitHub's
+      private vulnerability reporting (linked) or email - see
+      SECURITY.md.
