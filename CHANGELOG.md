@@ -2,6 +2,10 @@
 
 ## 2026-04-27
 
+### `[Infra]` CI gate prevents broken Umbrel image pins from reaching users
+
+Post-mortem follow-on to today's v1.4.1 hang. Adds `.github/workflows/umbrel-image-pin-check.yml` and a CLAUDE.md "Umbrel image pin convention" section. The workflow runs on every push to `main` and PR touching `rdouma-hashrate-autopilot/**`, and asserts four invariants: (1) `umbrel-app.yml` `version:` == `docker-compose.yml` image tag; (2) the image tag is bare-semver, not `v`-prefixed; (3) the image tag is not `:latest`; (4) the tag actually resolves on GHCR (anonymous-pull manifest probe). Any failure turns the merge red. Catches the f396098-class mistake before users hit it.
+
 ### `[Fix]` Umbrel install hangs forever on v1.4.1
 
 `rdouma-hashrate-autopilot/docker-compose.yml` pinned the image to `ghcr.io/rdouma/hashrate-autopilot:v1.4.1`, but the publish workflow's `docker/metadata-action` strips the `v` prefix from semver tags by convention - the actual published GHCR tags are `1.4.1` / `1.4` / `1` / `latest`, never `v1.4.1`. Every Umbrel install or update of v1.4.1 was pulling a 404'ing image and hanging in "updating". The pin now matches the bare-semver tag, and the publish workflow also produces `v`-prefixed mirrors so a future copy/paste of `:vX.Y.Z` can't 404 either. App content is unchanged from v1.4.1 - this release is purely the install fix; the v1.4.1 NEXT ACTION deadband fix ships in this image too.

@@ -1,0 +1,123 @@
+# Catch the v1.4.1 incident class before it reaches users (CLAUDE.md
+# "Umbrel image pin convention"). Validates three invariants on every
+# push to main and on PRs touching the Umbrel app dir:
+#
+#   1. `umbrel-app.yml` `version:` matches `docker-compose.yml`
+#      `image:` tag (modulo the bare-semver vs v-prefix rule below).
+#   2. The image tag uses bare semver, not `v`-prefixed (the publish
+#      workflow's docker/metadata-action publishes `1.4.2`, not
+#      `v1.4.2`, by default).
+#   3. The image tag actually exists on GHCR. (Skipped on PRs from
+#      forks where the publish workflow has not yet had a chance to
+#      run; the in-repo push to main always re-runs the check after
+#      the tag-publish workflow has had time to complete.)
+#
+# If any check fails, this workflow blocks the merge / fails the
+# build, surfacing the broken pin before Umbrel users hit it.
+
+name: Umbrel image pin check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'rdouma-hashrate-autopilot/**'
+      - '.github/workflows/umbrel-image-pin-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'rdouma-hashrate-autopilot/**'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Parse version from umbrel-app.yml
+        id: manifest
+        run: |
+          set -euo pipefail
+          VER=$(grep -E '^version:' rdouma-hashrate-autopilot/umbrel-app.yml \
+                | head -1 \
+                | sed -E 's/^version:[[:space:]]*"?([^"[:space:]]+)"?.*/\1/')
+          if [[ -z "$VER" ]]; then
+            echo "::error::could not parse version: from umbrel-app.yml"
+            exit 1
+          fi
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+          echo "Manifest version: $VER"
+
+      - name: Parse image tag from docker-compose.yml
+        id: compose
+        run: |
+          set -euo pipefail
+          IMG=$(grep -E '^[[:space:]]*image:[[:space:]]*ghcr\.io/' \
+                  rdouma-hashrate-autopilot/docker-compose.yml \
+                | head -1 \
+                | sed -E 's/.*image:[[:space:]]*//')
+          if [[ -z "$IMG" ]]; then
+            echo "::error::could not find a ghcr.io image: line in docker-compose.yml"
+            exit 1
+          fi
+          TAG="${IMG##*:}"
+          REPO="${IMG%:*}"
+          echo "image=$IMG" >> "$GITHUB_OUTPUT"
+          echo "repo=$REPO" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Compose image: $IMG"
+          echo "  repo: $REPO"
+          echo "  tag:  $TAG"
+
+      - name: Reject :latest pin
+        run: |
+          set -euo pipefail
+          TAG='${{ steps.compose.outputs.tag }}'
+          if [[ "$TAG" == "latest" ]]; then
+            echo "::error::docker-compose pins ':latest' — release manifests must pin a specific version. See CLAUDE.md 'Umbrel image pin convention'."
+            exit 1
+          fi
+
+      - name: Reject v-prefixed pin
+        run: |
+          set -euo pipefail
+          TAG='${{ steps.compose.outputs.tag }}'
+          if [[ "$TAG" =~ ^v[0-9] ]]; then
+            echo "::error::docker-compose pins '$TAG' — pin bare semver (no leading 'v'). docker/metadata-action publishes '${TAG#v}' on GHCR by default; ':v...' tags 404. See CLAUDE.md 'Umbrel image pin convention'."
+            exit 1
+          fi
+
+      - name: Manifest version matches compose tag
+        run: |
+          set -euo pipefail
+          VER='${{ steps.manifest.outputs.version }}'
+          TAG='${{ steps.compose.outputs.tag }}'
+          if [[ "$VER" != "$TAG" ]]; then
+            echo "::error::umbrel-app.yml version=$VER but docker-compose.yml image tag=$TAG. Bump them in lockstep."
+            exit 1
+          fi
+          echo "OK: manifest=$VER == compose=$TAG"
+
+      - name: Image exists on GHCR
+        run: |
+          set -euo pipefail
+          REPO='${{ steps.compose.outputs.repo }}'
+          TAG='${{ steps.compose.outputs.tag }}'
+          # ghcr.io/<owner>/<image> -> path = <owner>/<image>
+          PATH_PART="${REPO#ghcr.io/}"
+          TOKEN=$(curl -s "https://ghcr.io/token?scope=repository:${PATH_PART}:pull" \
+                  | python3 -c "import sys,json;print(json.load(sys.stdin)['token'])")
+          if [[ -z "$TOKEN" ]]; then
+            echo "::error::could not obtain anonymous-pull token for $PATH_PART"
+            exit 1
+          fi
+          CODE=$(curl -s -o /dev/null -w '%{http_code}' \
+                   -H "Authorization: Bearer $TOKEN" \
+                   -H "Accept: application/vnd.oci.image.index.v1+json" \
+                   "https://ghcr.io/v2/${PATH_PART}/manifests/${TAG}")
+          if [[ "$CODE" == "200" ]]; then
+            echo "OK: $REPO:$TAG resolves on GHCR (HTTP $CODE)"
+          else
+            echo "::error::$REPO:$TAG does not exist on GHCR (HTTP $CODE). Either the publish run hasn't finished, or the tag was bumped before the publish was triggered. See CLAUDE.md 'Umbrel image pin convention'."
+            exit 1
+          fi

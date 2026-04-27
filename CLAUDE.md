@@ -100,3 +100,44 @@ the operator must restart it for new code to take effect. When an
 operator reports a bug still present after a fix was committed,
 sanity-check: did the daemon restart since the commit? Restart scripts
 live in `scripts/restart.sh` / `scripts/start.sh` / `scripts/stop.sh`.
+
+## Umbrel image pin convention (load-bearing — do not get this wrong)
+
+`rdouma-hashrate-autopilot/docker-compose.yml` pins
+`image: ghcr.io/rdouma/hashrate-autopilot:<tag>`. Umbrel reads this
+file straight from `main` to install/update the app. If the tag does
+not exist on GHCR, every Umbrel install hangs on "Updating" forever
+(empirical incident: v1.4.1, see CHANGELOG 2026-04-27).
+
+**Rules:**
+
+1. **Never pin `:latest`** in a release manifest. `:latest` can
+   silently regress; pin a specific version.
+2. **Pin bare semver, not v-prefixed.** Use `:1.4.2`, not `:v1.4.2`.
+   The publish workflow's `docker/metadata-action` strips the `v`
+   from semver tags by convention — GHCR carries `1.4.2` / `1.4` /
+   `1` / `latest`. We *also* publish `v`-prefixed mirrors as a safety
+   net, but the canonical pin is bare-semver to match what GHCR's UI
+   shows.
+3. **Bump three things in lockstep on every release:** the git tag
+   (`vX.Y.Z`), the `umbrel-app.yml` `version:` field (`X.Y.Z`), and
+   the `docker-compose.yml` `image:` tag (`:X.Y.Z`). All three must
+   refer to the same release. The CI workflow
+   `.github/workflows/umbrel-image-pin-check.yml` enforces the
+   manifest-version-vs-compose-image consistency on every push to
+   `main` — if it fails, the release is broken before users see it.
+4. **Verify the image exists on GHCR before announcing the
+   release.** After tagging, wait for the publish run to finish
+   (~7-8 min, multi-arch build) and `curl` the manifest:
+   ```
+   TOKEN=$(curl -s "https://ghcr.io/token?scope=repository:rdouma/hashrate-autopilot:pull" | python3 -c "import sys,json;print(json.load(sys.stdin)['token'])")
+   curl -sI -H "Authorization: Bearer $TOKEN" "https://ghcr.io/v2/rdouma/hashrate-autopilot/manifests/<tag>" | head -1
+   ```
+   `HTTP/2 200` = good. `404` = the publish failed or the tag pattern
+   produced something else; investigate before promoting the manifest.
+
+If a user reports the app stuck on "Updating": their docker-compose
+pin is pulling a 404'ing image. UI-only recovery for them is
+**Settings → Restart Umbrel** (drops the in-flight install job and
+re-syncs the community store on boot). Uninstall + reinstall also
+works but wipes `app-data/`.
