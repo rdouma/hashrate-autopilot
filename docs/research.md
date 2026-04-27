@@ -174,6 +174,25 @@ Response `PlaceOrderResponse`: `{id: "B<int>", cl_order_id}`.
 
 None found that are not in the published OpenAPI. The Swagger UI at `/api/` is the exact spec; the live spec's `servers:` entry is the only known discrepancy (points at `/api/v1`, actual route is `/v1`). No unofficial wrappers or internal endpoints were observed in the HTML/JS of `hashpower.braiins.com/` inspected via curl.
 
+### 1.8 Matching engine: pay-your-bid, not CLOB (load-bearing empirical finding)
+
+**The Braiins Hashpower marketplace matches every bid at the bidder's own bid price (pay-your-bid / first-price), not at a uniform clearing price (the central-limit-order-book / second-price model where every winning bid pays the same matched ask).** This is the single most important pricing fact in the whole system - everything from the autopilot's overpay strategy to the dashboard's cost projections depends on it - and **it is not stated explicitly anywhere in Braiins' published documentation.** The OpenAPI spec, the trading UI doc, and the FAQ all use the language of an order book without committing to a matching rule. We had to derive it empirically.
+
+**How we got here**:
+
+1. **First reading (CLOB assumption).** The orderbook endpoint exposes both bid and ask sides with `price_sat` + `hr_*_ph`, the trading UI describes "matching" against the order book, and the OpenAPI uses the term `bid` / `ask` consistently. We initially built the autopilot for a CLOB-style matching engine: place bids at the cheapest-fillable price level, expect to be matched at that level's ask price, and accept that the bid price ≥ ask price was a "ceiling" rather than the actual price paid. The whole control-loop refactor on the `dev` branch from late March through mid April assumed this model.
+2. **Empirical contradiction.** Observed live on the operator's account: a bid placed at `47,800 sat/PH/day` against a fillable ask at `46,500 sat/PH/day` consumed budget at exactly `47,800 sat/PH/day` (within rounding) - not `46,500`. The `counters_committed.amount_consumed_sat` deltas tracked the bid price, not the ask price. Cross-checked across multiple bid edits over several hours: every one of them charged at the bid level, never at the ask level. **There is no clearing price; bidders pay what they bid.**
+3. **Strategic implication.** Under pay-your-bid, the autopilot's bid is *exactly* the price paid per delivered EH-day. Any `bid - ask` overpay is a real transfer to Braiins, not a CLOB-style "we never actually pay this" headroom. The control loop therefore must minimise that overpay while still landing above the cheapest-fillable ask with enough depth for the target hashrate. The v2 redesign (issue #53, "pay-your-bid controller") rebuilt the bidder around this insight: bid = `fillable_ask + small overpay (default 300 sat/PH/day)`, with two hard ceilings above (the operator's `max_bid` and a dynamic cap relative to Ocean's hashprice). The resulting bid price is the live, real price paid - which is also what the dashboard's hero PRICE card now displays (issue #69).
+
+**Confidence**: high. This has been validated across hundreds of observed edit-and-deliver cycles since the v2 controller shipped (the AVG COST / PH DELIVERED stats card on the Status page is exactly this comparison: `Δamount_consumed_sat ÷ (delivered_ph × Δt)`, and it tracks the bid price within metering noise on every range we've checked).
+
+**Why this matters going forward**: the entire pricing model in §2 below assumes pay-your-bid. If Braiins ever changes the matching engine to clearing-price-CLOB, **every line of the autopilot's bid-strategy code is wrong**. We should not assume this is a stable invariant; the empirical observation should be re-checked at a few representative bids any time:
+- a major Braiins API revision is announced;
+- the autopilot's measured cost diverges meaningfully from its bid price after a deploy;
+- a new market region or product launches under the same domain.
+
+A regression test for this would be valuable: a daily background check that compares `Δconsumed_sat / (delivered_ph × Δt)` to the bid price for the previous day, and alarms (in the future, see issue #18 / #41 status) if they diverge by more than a few sat/PH/day.
+
 ---
 
 ## 2. Cost & fee structure
@@ -673,3 +692,4 @@ Sources that were blocked / gaps:
 | 1.1     | 2026-04-16 | Empirical correction: owner-token API bids bypass Telegram 2FA; documented in §0.9. |
 | 1.2     | 2026-04-16 | Empirical gotcha: Ocean TIDES worker identity must be `<btc-address>.<label>`. A bare label (no period) runs hashrate but credits zero shares to any payout address. Validated in Config page + first-run CLI. |
 | 1.3     | 2026-04-16 | Empirical gotcha: Braiins orderbook `AskItem.hr_available_ph` is **aggregated capacity at that price level**, not unmatched supply. Existing matched orders at the same level still consume `hr_matched_ph` of it. A new bid can only claim `hr_available_ph − hr_matched_ph`. Observed live: four consecutive top-of-book ask levels each had `available == matched`, so apparent "cheapest available" was a wall of fully-booked supply. Depth-aware autopilot targeting now uses `unmatched = available − matched` (see `packages/daemon/src/controller/orderbook.ts`). |
+| 1.4     | 2026-04-26 | **Major** empirical finding documented in §1.8: the Braiins matching engine is **pay-your-bid, not CLOB** - bidders pay what they bid, never a uniform clearing price matched against the cheapest ask. Discovered after a multi-week refactor on the `dev` branch built around the wrong CLOB assumption; the v2 controller (issue #53) rebuilt around the empirical model. This had not been documented anywhere in Braiins' own materials and was load-bearing for every cost figure in §2 onward. |
