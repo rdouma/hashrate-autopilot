@@ -14,8 +14,8 @@ Use one of these instead:
   repo's Security tab, click "Report a vulnerability." That opens a
   private channel between you and me with the same workflow as a
   normal issue but invisible to anyone else. Preferred.
-- **Email**: `cygno.y85b1@passmail.net`. Encrypt if you'd like; I
-  can share a PGP key on request.
+- **Email**: `rdouma@cygno.com`. Encrypt if you'd like; I can share
+  a PGP key on request.
 
 I'll confirm I've read your report within a few days. If your report
 is reproducible and I agree it's a real vulnerability, I'll work on a

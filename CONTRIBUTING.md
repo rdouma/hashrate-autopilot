@@ -56,9 +56,14 @@ clearly-wrong unit, a missing translation) just open the PR.
   "an experienced operator will eventually want this different from
   the default," not "this could be configurable."
 - Features that drift from the project's stated scope: non-custodial
-  mining via Datum-compatible pools, market-agnostic in name (the
-  brand was deliberately not "Braiins-specific" anymore as of v1.4)
-  but Braiins is currently the only marketplace.
+  mining via Datum-compatible pools, with a hashrate marketplace as
+  the buying side. Hashrate Autopilot has always been intended to be
+  marketplace-agnostic - Braiins Hashpower is the only such market I
+  know of today, so it's the only one currently integrated, but I'd
+  welcome adding others if/when they appear. (Some Braiins-specific
+  language is still embedded in older variable names and the
+  database schema; that's historical accident, not statement of
+  scope.)
 
 ## Dev setup
 
