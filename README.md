@@ -6,19 +6,21 @@ landing at your own Datum-connected pool without manual babysitting.
 
 ![Dashboard in real-time mode](docs/images/dashboard.jpg)
 
-The Status page is a single scroll: a hero card with the **effective rate** (the window-averaged price
-actually paid, derived from the per-tick delta of Braiins's `amount_consumed_sat` counter divided by
-delivered hashrate × elapsed time — this is an average over the selected chart range, not the live bid;
-hover the number for a tooltip that says so) and its delta versus hashprice, the delivered-hashrate number,
-and the DRY-RUN / LIVE / PAUSED switch on the left; the Next Action panel on the right explaining what the
-autopilot is about to do and when. Below that sit range-selectable hashrate and price charts overlayed with
-bid events and block markers. The price chart draws your bid (amber), the fillable ask the controller
-tracks (cyan), hashprice (violet), and the safety ceiling (pink); the per-tick effective rate is a separate
-emerald line, off by default behind a config toggle because it's dramatically more volatile than the
-tracking lines and hijacks the Y-axis when enabled. Then a stats strip (uptime, avg hashrate per source —
-Braiins / Datum / Ocean side-by-side, cost per PH delivered, effective rate vs hashprice), service panels
-for Braiins / Datum Gateway / Ocean, the active bids table, and per-day and lifetime P&L measured from
-actual account-ledger spend and on-chain receipts.
+The Status page is a single scroll: a hero card with the **live current bid** (the price Braiins charges
+per delivered EH·day under pay-your-bid, so the bid *is* the truthful real-time number to anchor the
+dashboard on) and its delta versus hashprice, the delivered-hashrate number, and the DRY-RUN / LIVE /
+PAUSED switch on the left; the Next Action panel on the right explaining what the autopilot is about to
+do and when. The window-averaged effective rate (derived per-tick from the delta of Braiins's
+`amount_consumed_sat` counter divided by delivered hashrate × elapsed time) lives on the stats bar below
+as **avg cost / PH delivered**, where the post-hoc range-averaged framing makes more sense. Below the
+hero sit range-selectable hashrate and price charts overlayed with bid events and block markers. The
+price chart draws your bid (amber), the fillable ask the controller tracks (cyan), hashprice (violet),
+and the safety ceiling (pink); the per-tick effective rate is a separate emerald line, off by default
+behind a config toggle because it's dramatically more volatile than the tracking lines and hijacks the
+Y-axis when enabled. Then a stats strip (uptime, avg hashrate per source — Braiins / Datum / Ocean
+side-by-side, cost per PH delivered, effective rate vs hashprice), service panels for Braiins / Datum
+Gateway / Ocean, the active bids table, and per-day and lifetime P&L measured from actual account-ledger
+spend and on-chain receipts.
 
 ## Why this exists
 
