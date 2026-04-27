@@ -2257,7 +2257,7 @@ function DatumPanel({
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
       <div className="flex items-baseline justify-between mb-2">
-        <div className="text-xs uppercase tracking-wider text-slate-100"><Trans>Datum Gateway</Trans></div>
+        <div className="text-xs uppercase tracking-wider text-slate-100">Datum Gateway</div>
         <div className="text-[11px] text-slate-500 font-mono">
           <RefreshCountdown nextAtMs={nextTickAt} refetchQueryKey={STATUS_QUERY_KEY} />
         </div>

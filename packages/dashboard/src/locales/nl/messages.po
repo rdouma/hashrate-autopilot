@@ -140,6 +140,7 @@ msgstr "{totalMin}m geleden"
 msgid "{totalSec}s ago"
 msgstr "{totalSec}s geleden"
 
+#: src/components/PriceChart.tsx
 #: src/pages/Status.tsx
 #: src/pages/Status.tsx
 msgid "/PH/day"
@@ -238,10 +239,6 @@ msgstr "Werkelijk verbruikte sat over de laatste 3 u, geschaald naar een 24u-tem
 #: src/pages/Setup.tsx
 msgid "After submit, the daemon writes everything to <0>state.db</0> and brings the controller online in-place. Boots in <1>DRY-RUN</1> mode; the dashboard signs you in automatically. Promote to LIVE from the Status page when you're ready."
 msgstr "Na indienen schrijft de daemon alles naar <0>state.db</0> en zet de controller direct online. Start in <1>DRY-RUN</1> modus; het dashboard logt je automatisch in. Schakel naar LIVE op de Status-pagina wanneer je klaar bent."
-
-#: src/pages/Status.tsx
-msgid "All"
-msgstr "Alles"
 
 #: src/pages/Config.tsx
 msgid "All values live-editable. Save to apply."
@@ -461,6 +458,10 @@ msgstr "budget"
 msgid "Budget"
 msgstr "Budget"
 
+#: src/pages/Setup.tsx
+msgid "build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
+msgstr ""
+
 #: src/pages/Status.tsx
 #: src/pages/Status.tsx
 #: src/pages/Status.tsx
@@ -665,10 +666,6 @@ msgstr "Datum (ontvangen)"
 #: src/pages/Status.tsx
 msgid "Datum /umbrel-api HTTP poll."
 msgstr "Datum /umbrel-api HTTP-poll."
-
-#: src/pages/Status.tsx
-msgid "Datum Gateway"
-msgstr "Datum Gateway"
 
 #: src/pages/Status.tsx
 msgid "datum hashrate"
@@ -1658,6 +1655,7 @@ msgid "runway"
 msgstr "runway"
 
 #: src/components/PriceChart.tsx
+#: src/pages/Config.tsx
 msgid "sat/PH/day"
 msgstr "sat/PH/dag"
 

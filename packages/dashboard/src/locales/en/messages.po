@@ -668,10 +668,6 @@ msgid "Datum /umbrel-api HTTP poll."
 msgstr "Datum /umbrel-api HTTP poll."
 
 #: src/pages/Status.tsx
-msgid "Datum Gateway"
-msgstr "Datum Gateway"
-
-#: src/pages/Status.tsx
 msgid "datum hashrate"
 msgstr "datum hashrate"
 
