@@ -102,10 +102,12 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
   ceiling is the opt-out price, not the normal bid.
 - **Effective rate as a first-class metric** — the price actually paid is measured per-tick from the
   delta of Braiins' `primary_bid_consumed_sat` counter divided by delivered hashrate × elapsed time.
-  Surfaced as the hero PRICE number (window-averaged over the selected chart range) and as a stats
-  card ("avg cost / PH delivered"). An emerald per-tick effective line on the price chart is available
-  via a Config toggle, off by default — its counter-settlement volatility would crush the flatter
-  lines' detail.
+  Surfaced as a stats card ("avg cost / PH delivered") and, optionally, as an emerald per-tick
+  effective line on the price chart (Config toggle, off by default — its counter-settlement
+  volatility would crush the flatter lines' detail). The hero PRICE card shows the **live current bid**
+  instead of the effective rate, because under pay-your-bid Braiins charges the bid price exactly,
+  so the bid is the truthful real-time number to anchor the dashboard on (the post-hoc range-averaged
+  effective rate stays available on the stats card alongside).
 - **Cheap-mode opportunistic scaling** — when the market price (best ask) drops below a configurable
   percentage of the break-even hashprice, the autopilot scales the target up to
   `cheap_target_hashrate_ph` to capture cheap capacity. Reverts when the market recovers. A
@@ -113,12 +115,15 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
   average over that window is below threshold, avoiding flap on single-tick spikes.
 - **Ocean pool integration** — reads hashprice, pool earnings, time-to-payout, Ocean-credited hashrate, and
   recent pool blocks from the Ocean API. Hashprice is plotted historically on the price chart. Ocean-credited
-  hashrate is a first-class line on the Hashrate chart alongside Braiins-delivered and Datum-received. Every
-  TIDES-credited pool block appears on the hashrate chart as an isometric cube marker — **blue** for the common
-  case (pool block credited via TIDES) and **gold** for the rare solo-lottery case where our own worker found
-  the block. Clicking a cube opens it in your configured block explorer (mempool.space by default; blockstream /
-  blockchair / your own local explorer are preset pills on the Config page). Tooltips show block height, reward /
-  subsidy / fees, and an estimated our-share for the block based on the current share_log.
+  hashrate is a first-class line on the Hashrate chart alongside Braiins-delivered and Datum-received. An
+  optional **`% of Ocean`** overlay (Config toggle, off by default) plots Ocean's `share_log` percentage as a
+  violet line on a right-side Y-axis, so you can watch how your slice of the pool drifts over time as Ocean's
+  total hashrate grows or your delivered PH/s fluctuates. Every TIDES-credited pool block appears on the
+  hashrate chart as an isometric cube marker — **blue** for the common case (pool block credited via TIDES) and
+  **gold** for the rare solo-lottery case where our own worker found the block. Clicking a cube opens it in
+  your configured block explorer (mempool.space by default; blockstream / blockchair / your own local explorer
+  are preset pills on the Config page). Tooltips show block height, reward / subsidy / fees, and an estimated
+  our-share for the block based on the current share_log.
 - **Datum Gateway integration (optional)** — when `datum_api_url` is configured, the daemon polls Datum's
   `/umbrel-api` each tick and records the gateway-measured hashrate alongside the Braiins-reported number. A
   sustained gap means Braiins is billing for hashrate the gateway never saw. See
@@ -138,6 +143,13 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
   IDs, and a full config editor with live reload.
 - **BTC/USD denomination toggle** — all prices and balances can be viewed in sats or USD using a live BTC price
   oracle (CoinGecko, Coinbase, Bitstamp, or Kraken).
+- **Multilingual UI** — every page (Status, Config, Setup wizard, Login, charts, tooltips, time-relative
+  strings, range selectors) translates between English, Dutch, and Spanish. Language picker sits in the
+  header next to "sign out"; the choice persists to localStorage and the page boots in the operator's stored
+  language (browser language as fallback). Units (`PH/s`, `sat/PH/day`, `BTC`) and proper nouns (Datum, Ocean,
+  Braiins, Bitcoin Core, Electrs, TIDES) deliberately stay English in every locale because that is how the
+  Bitcoin community writes them. Czech is a likely next addition (Braiins / Trezor / Prague culture); other
+  locales are easy to add - one entry in `SUPPORTED_LOCALES` plus a translation pass.
 - **Operator overrides** — pause/resume, switch between dry-run and live, or trigger an immediate decision tick
   from the dashboard.
 
