@@ -201,53 +201,50 @@ async function computeMetrics(
             ELSE 0 END) AS REAL)
       ELSE NULL END AS total_ph_hours,
 
-      -- Average effective cost per PH/day, from per-tick
-      -- primary_bid_consumed_sat deltas (what Braiins actually
-      -- charged us). The "valid" condition below is shared by
-      -- numerator and denominator to avoid filter-mismatch inflation.
+      -- Average effective cost per PH/day, counter-derived (#73).
       --
-      -- Both endpoints of each delta must be > 0 — a zero mid-sequence
-      -- is a transient "no primary bid" snapshot (brief window during
-      -- a CREATE/EDIT where Braiins reports amount_sat=0), not a real
-      -- counter. If we didn't filter these out, LAG across a zero-dip
-      -- treats the full counter value on the recovery side as "new
-      -- spend", inflating the aggregate by orders of magnitude
-      -- (empirically: one such tick at 01:17 turned a 41k rate into
-      -- 800k). Also caps dur at 5 min to ignore restart gaps and
-      -- requires positive delivery (0.05 PH/s floor).
+      -- Earlier versions divided SUM(delta) by SUM(delivered_ph × dur)
+      -- where delivered_ph was the lagged Braiins-reported avg_speed_ph
+      -- field. During delivery dips, delta correctly drops to zero
+      -- but delivered_ph stays elevated (5-min rolling lag on Braiins'
+      -- side). Those mismatched ticks contributed 0 to the numerator
+      -- and >0 to the denominator, dragging the apparent cost ~3-5%
+      -- below the actual bid - confusing under pay-your-bid where the
+      -- bid IS what was charged.
       --
-      -- Rate returned clamped to our own bid — under CLOB the bid is
-      -- a hard ceiling, so any delta/phDays ratio above that is a
-      -- computation artifact.
+      -- New formula: SUM(delta) / SUM(delta / our_bid). This is the
+      -- delta-weighted harmonic mean of our_bid - mathematically
+      -- equivalent to time-weighting by COUNTER-DERIVED hashrate
+      -- (delta × 86.4e9 / (our_bid × dur), the same signal driving
+      -- the chart's amber line). When our_bid is constant across the
+      -- window the result equals our_bid exactly; when our_bid
+      -- varies (mid-window EDIT_PRICE) it's the delta-weighted
+      -- harmonic mean. Either way it cannot exceed max(our_bid)
+      -- across the window, so the old MIN-clamp-to-bid is redundant
+      -- and removed.
       --
-      -- result unit: sat/EH/day (sat × 1000 / PH / day). Caller
-      -- divides by EH_PER_PH = 1000 → sat/PH/day.
-      CASE WHEN SUM(CASE WHEN valid THEN delivered_ph * dur ELSE 0 END) > 0 THEN
-        MIN(
-          CAST(SUM(CASE WHEN valid THEN delta ELSE 0 END) AS REAL)
-            * 86400000000.0
-            / SUM(CASE WHEN valid THEN delivered_ph * dur ELSE 0 END),
-          COALESCE(
-            CAST(SUM(CASE WHEN valid THEN our_bid * delivered_ph * dur ELSE 0 END) AS REAL)
-              / SUM(CASE WHEN valid THEN delivered_ph * dur ELSE 0 END),
-            1e18
-          )
-        )
+      -- valid filter is unchanged. Zero-delta ticks contribute
+      -- 0/our_bid = 0 to denominator AND numerator, so they don't
+      -- skew anything either way; explicit our_bid > 0 guard avoids
+      -- div-by-zero on null/zero-bid ticks.
+      --
+      -- result unit: sat/EH/day. Caller divides by EH_PER_PH = 1000
+      -- → sat/PH/day.
+      CASE WHEN SUM(CASE WHEN valid AND our_bid > 0 THEN CAST(delta AS REAL) / our_bid ELSE 0 END) > 0 THEN
+        CAST(SUM(CASE WHEN valid AND our_bid > 0 THEN delta ELSE 0 END) AS REAL)
+          / SUM(CASE WHEN valid AND our_bid > 0 THEN CAST(delta AS REAL) / our_bid ELSE 0 END)
       ELSE NULL END AS avg_cost,
 
-      CASE WHEN SUM(CASE WHEN valid AND hashprice IS NOT NULL THEN delivered_ph * dur ELSE 0 END) > 0 THEN
-        MIN(
-          CAST(SUM(CASE WHEN valid AND hashprice IS NOT NULL THEN delta ELSE 0 END) AS REAL)
-            * 86400000000.0
-            / SUM(CASE WHEN valid AND hashprice IS NOT NULL THEN delivered_ph * dur ELSE 0 END),
-          COALESCE(
-            CAST(SUM(CASE WHEN valid AND hashprice IS NOT NULL THEN our_bid * delivered_ph * dur ELSE 0 END) AS REAL)
-              / SUM(CASE WHEN valid AND hashprice IS NOT NULL THEN delivered_ph * dur ELSE 0 END),
-            1e18
-          )
-        )
-        - (CAST(SUM(CASE WHEN valid AND hashprice IS NOT NULL THEN hashprice * delivered_ph * dur ELSE 0 END) AS REAL)
-          / SUM(CASE WHEN valid AND hashprice IS NOT NULL THEN delivered_ph * dur ELSE 0 END))
+      -- Same counter-PH weighting (#73) for hashprice spread:
+      -- delta-weighted average of (effective_rate - hashprice), where
+      -- effective_rate per tick is our_bid by construction under
+      -- pay-your-bid. Result = avg_cost (above) - delta-weighted
+      -- average hashprice during periods we were actually billed.
+      CASE WHEN SUM(CASE WHEN valid AND our_bid > 0 AND hashprice IS NOT NULL THEN CAST(delta AS REAL) / our_bid ELSE 0 END) > 0 THEN
+        CAST(SUM(CASE WHEN valid AND our_bid > 0 AND hashprice IS NOT NULL THEN delta ELSE 0 END) AS REAL)
+          / SUM(CASE WHEN valid AND our_bid > 0 AND hashprice IS NOT NULL THEN CAST(delta AS REAL) / our_bid ELSE 0 END)
+        - (CAST(SUM(CASE WHEN valid AND our_bid > 0 AND hashprice IS NOT NULL THEN hashprice * CAST(delta AS REAL) / our_bid ELSE 0 END) AS REAL)
+          / SUM(CASE WHEN valid AND our_bid > 0 AND hashprice IS NOT NULL THEN CAST(delta AS REAL) / our_bid ELSE 0 END))
       ELSE NULL END AS avg_overpay_vs_hashprice
     FROM (
       SELECT

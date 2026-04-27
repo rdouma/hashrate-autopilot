@@ -511,7 +511,7 @@ function OperationsCard({
     >
       {currentPricePH !== null ? (
         <div className="grid grid-cols-2 gap-6 w-full">
-          <Tooltip text={t`Current owned-bid price (sat/PH/day). Under pay-your-bid this is exactly what Braiins charges per delivered EH-day - the live price you're paying. The plus/minus next to it is the spread vs Ocean's spot hashprice (positive = paying above break-even, negative = below). For the realised effective rate (post-hoc, range-averaged across actual delivery and metering noise), see the AVG COST / PH DELIVERED stats card.`}>
+          <Tooltip text={t`Current owned-bid price (sat/PH/day). Under pay-your-bid this is exactly what Braiins charges per delivered EH-day - the live price you're paying. The plus/minus next to it is the spread vs Ocean's spot hashprice (positive = paying above break-even, negative = below). For the spend-weighted average paid across the selected chart range (handy when the bid moved during the window), see the AVG COST / PH DELIVERED stats card.`}>
             <div className="flex flex-col items-center cursor-help">
               <div className="text-[11px] uppercase tracking-wider text-slate-100 mb-1"><Trans>price</Trans></div>
               {/* relative wrapper so the ±delta can be position:absolute
@@ -1178,12 +1178,12 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
       <StatCard
         label={t`avg cost / PH delivered`}
         value={avg_cost_per_ph_sat_per_ph_day !== null ? denomination.formatSatPerPhDay(Math.round(avg_cost_per_ph_sat_per_ph_day), intlLocale) : '\u2014'}
-        tooltip={t`Average effective rate over the selected chart range (default 3h) — what Braiins actually charged per PH/day delivered, from per-tick Δconsumed_sat ÷ (delivered_ph × Δt). Same metric the hero PRICE card shows; this pair is duplicated so each panel stands on its own. For the current bid price see the NEXT ACTION panel.`}
+        tooltip={t`Average effective rate over the selected chart range - what Braiins actually charged per PH/day delivered. Computed as the delta-weighted harmonic mean of the bid: SUM(Δconsumed_sat) ÷ SUM(Δconsumed_sat ÷ bid). Under pay-your-bid the bid IS the price, so when the bid is constant across the window this equals the bid exactly; when the bid varies (mid-window edits) it's the spend-weighted average. Periods of zero delivery contribute zero to both sides and don't skew the result. For the current bid price see the NEXT ACTION panel.`}
       />
       <StatCard
         label={t`avg cost vs hashprice`}
         value={avg_overpay_vs_hashprice_sat_per_ph_day !== null ? denomination.formatSatPerPhDay(Math.round(avg_overpay_vs_hashprice_sat_per_ph_day), intlLocale) : '\u2014'}
-        tooltip={t`Duration-weighted average of (effective price − hashprice). Negative means matched asks averaged below the break-even hashprice (good — cheaper than mining at current difficulty). Positive means above break-even.`}
+        tooltip={t`(avg cost / PH delivered) minus the delta-weighted average hashprice during periods we were actually billed. Negative means we paid below break-even (good - cheaper than mining at current difficulty), positive means above. Same delta weighting as the avg cost card so the two stay consistent.`}
         color={
           avg_overpay_vs_hashprice_sat_per_ph_day === null
             ? 'text-slate-100'

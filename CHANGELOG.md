@@ -2,6 +2,10 @@
 
 ## 2026-04-27
 
+### `[Fix]` AVG COST stats no longer undercount due to lagged delivered_ph (#73)
+
+The `AVG COST / PH DELIVERED` and `AVG COST VS HASHPRICE` cards were reading ~3-5% lower than the actual bid during periods of patchy delivery. Numerator was correct (Δconsumed_sat = exactly what Braiins charged under pay-your-bid). Denominator used Braiins's reported `avg_speed_ph` - a 5-minute lagged rolling average that stays elevated for minutes after delivery actually drops to zero. Result: delivery dips contributed 0 to numerator but >0 to denominator, dragging the ratio below the bid and confusing operators ("Braiins is pay-your-bid - how can my realised cost be lower than what I bid?"). Fix switches both formulas to counter-derived hashrate (the same `Δsat ÷ bid ÷ Δt` signal driving the chart's amber line). The math simplifies to `SUM(Δsat) ÷ SUM(Δsat ÷ bid)` - the delta-weighted harmonic mean of the bid - which equals the bid exactly when the bid is constant across the window, and the spend-weighted average when the bid varies. Tooltips on both cards rewritten to be honest about what's actually computed.
+
 ### `[Infra]` CI gate prevents broken Umbrel image pins from reaching users
 
 Post-mortem follow-on to today's v1.4.1 hang. Adds `.github/workflows/umbrel-image-pin-check.yml` and a CLAUDE.md "Umbrel image pin convention" section. The workflow runs on every push to `main` and PR touching `rdouma-hashrate-autopilot/**`, and asserts four invariants: (1) `umbrel-app.yml` `version:` == `docker-compose.yml` image tag; (2) the image tag is bare-semver, not `v`-prefixed; (3) the image tag is not `:latest`; (4) the tag actually resolves on GHCR (anonymous-pull manifest probe). Any failure turns the merge red. Catches the f396098-class mistake before users hit it.
