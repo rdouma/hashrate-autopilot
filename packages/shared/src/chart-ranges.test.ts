@@ -24,15 +24,28 @@ describe('CHART_RANGE_SPECS', () => {
     expect(CHART_RANGES).toContain(DEFAULT_CHART_RANGE);
   });
 
-  it('events are visible for short ranges and hidden for ≥ 1 month', () => {
-    expect(CHART_RANGE_SPECS['3h'].showEvents).toBe(true);
-    expect(CHART_RANGE_SPECS['6h'].showEvents).toBe(true);
-    expect(CHART_RANGE_SPECS['12h'].showEvents).toBe(true);
-    expect(CHART_RANGE_SPECS['24h'].showEvents).toBe(true);
-    expect(CHART_RANGE_SPECS['1w'].showEvents).toBe(true);
-    expect(CHART_RANGE_SPECS['1m'].showEvents).toBe(false);
-    expect(CHART_RANGE_SPECS['1y'].showEvents).toBe(false);
-    expect(CHART_RANGE_SPECS.all.showEvents).toBe(false);
+  it('all four event kinds shown at sub-day ranges', () => {
+    for (const r of ['3h', '6h', '12h', '24h'] as const) {
+      const kinds = CHART_RANGE_SPECS[r].showEventKinds;
+      expect(kinds).toContain('CREATE_BID');
+      expect(kinds).toContain('EDIT_PRICE');
+      expect(kinds).toContain('EDIT_SPEED');
+      expect(kinds).toContain('CANCEL_BID');
+    }
+  });
+
+  it('1w drops EDIT_PRICE but keeps the rare kinds (#75)', () => {
+    const kinds = CHART_RANGE_SPECS['1w'].showEventKinds;
+    expect(kinds).not.toContain('EDIT_PRICE');
+    expect(kinds).toContain('CREATE_BID');
+    expect(kinds).toContain('EDIT_SPEED');
+    expect(kinds).toContain('CANCEL_BID');
+  });
+
+  it('1m / 1y / all show no event markers', () => {
+    expect(CHART_RANGE_SPECS['1m'].showEventKinds).toEqual([]);
+    expect(CHART_RANGE_SPECS['1y'].showEventKinds).toEqual([]);
+    expect(CHART_RANGE_SPECS.all.showEventKinds).toEqual([]);
   });
 });
 

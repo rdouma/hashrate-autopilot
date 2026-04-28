@@ -16,6 +16,7 @@ import {
   localAlignedTimeTicks,
   niceYTicks,
   pickTimeTickInterval,
+  type BidEventKind,
 } from '@braiins-hashrate/shared';
 
 import { api, type BidEventView, type DecisionDetail, type DecisionSummary, type MetricPoint } from '../lib/api';
@@ -98,7 +99,7 @@ const COLOR_EFFECTIVE = '#34d399';
 export const PriceChart = memo(function PriceChart({
   points,
   events = [],
-  showEvents,
+  showEventKinds,
   maxOverpayVsHashpriceSatPerPhDay = null,
   overpaySatPerPhDay = null,
   priceSmoothingMinutes = 1,
@@ -106,7 +107,14 @@ export const PriceChart = memo(function PriceChart({
 }: {
   points: readonly MetricPoint[];
   events?: readonly BidEventView[];
-  showEvents: boolean;
+  /**
+   * Which event kinds to render as markers on this chart at the
+   * current range. Empty array = no markers (1m/1y/all). At 1w the
+   * caller passes the "rare" kinds only (CREATE_BID, EDIT_SPEED,
+   * CANCEL_BID) because EDIT_PRICE fires too often to be useful at
+   * that zoom (#75). The legend is filtered to match.
+   */
+  showEventKinds: readonly BidEventKind[];
   /**
    * Current config's dynamic-cap allowance. When set, the cap line is
    * computed per-tick as `min(max_bid, hashprice + this)` rather than
@@ -554,12 +562,15 @@ export const PriceChart = memo(function PriceChart({
     const xTickInterval = pickTimeTickInterval(maxX - minX);
     const xTicks = localAlignedTimeTicks(minX, maxX, xTickInterval);
 
-    const visibleEvents = showEvents
-      ? events.filter((e) => e.occurred_at >= minX && e.occurred_at <= maxX)
-      : [];
+    const allowedKinds = new Set(showEventKinds);
+    const visibleEvents = allowedKinds.size === 0
+      ? []
+      : events.filter(
+          (e) => allowedKinds.has(e.kind) && e.occurred_at >= minX && e.occurred_at <= maxX,
+        );
 
     return { pricePoints, minX, maxX, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, hashpricePath, fillablePath, fillableHasData: fillablePoints.length > 0, effectivePath, effectiveHasData: effectivePoints.length > 0, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents };
-  }, [points, events, showEvents, priceSmoothingMinutes, maxOverpayVsHashpriceSatPerPhDay, chartHeight, showEffectiveRate]);
+  }, [points, events, showEventKinds, priceSmoothingMinutes, maxOverpayVsHashpriceSatPerPhDay, chartHeight, showEffectiveRate]);
 
   const eventPriceAt = useCallback((e: BidEventView): number | null => {
     const pricePoints = chartData?.pricePoints ?? [];
@@ -664,7 +675,7 @@ export const PriceChart = memo(function PriceChart({
           {showEffectiveRate && effectiveHasData && <Legend color={COLOR_EFFECTIVE} label={t`effective`} />}
           <Legend color={COLOR_HASHPRICE} label={t`hashprice`} dashed />
           <Legend color={COLOR_MAXBID} label={t`max bid`} />
-          {showEvents && <EventLegend />}
+          {showEventKinds.length > 0 && <EventLegend kinds={showEventKinds} />}
         </div>
       </div>
       <svg
@@ -1350,40 +1361,49 @@ function Legend({ color, label, dashed }: { color: string; label: string; dashed
   );
 }
 
-function EventLegend() {
+function EventLegend({ kinds }: { kinds: readonly BidEventKind[] }) {
+  const has = (k: BidEventKind) => kinds.includes(k);
   return (
     <span className="flex items-center gap-2 text-slate-400 pl-2 border-l border-slate-700">
-      <span className="flex items-center gap-1">
-        <svg width="10" height="10">
-          <line x1="1" y1="5" x2="9" y2="5" stroke={COLOR_CREATE} strokeWidth="2" />
-          <line x1="5" y1="1" x2="5" y2="9" stroke={COLOR_CREATE} strokeWidth="2" />
-        </svg>
-        <Trans>create</Trans>
-      </span>
-      <span className="flex items-center gap-1">
-        <svg width="10" height="10">
-          <circle cx="5" cy="5" r="3.5" fill={COLOR_EDIT} />
-        </svg>
-        <Trans>edit price</Trans>
-      </span>
-      <span className="flex items-center gap-1">
-        <svg width="10" height="10">
-          <polygon
-            points="5,1 9,5 5,9 1,5"
-            fill="none"
-            stroke={COLOR_EDIT_SPEED}
-            strokeWidth="1.4"
-          />
-        </svg>
-        <Trans>edit speed</Trans>
-      </span>
-      <span className="flex items-center gap-1">
-        <svg width="10" height="10">
-          <line x1="1" y1="1" x2="9" y2="9" stroke={COLOR_CANCEL} strokeWidth="2" />
-          <line x1="9" y1="1" x2="1" y2="9" stroke={COLOR_CANCEL} strokeWidth="2" />
-        </svg>
-        <Trans>cancel</Trans>
-      </span>
+      {has('CREATE_BID') && (
+        <span className="flex items-center gap-1">
+          <svg width="10" height="10">
+            <line x1="1" y1="5" x2="9" y2="5" stroke={COLOR_CREATE} strokeWidth="2" />
+            <line x1="5" y1="1" x2="5" y2="9" stroke={COLOR_CREATE} strokeWidth="2" />
+          </svg>
+          <Trans>create</Trans>
+        </span>
+      )}
+      {has('EDIT_PRICE') && (
+        <span className="flex items-center gap-1">
+          <svg width="10" height="10">
+            <circle cx="5" cy="5" r="3.5" fill={COLOR_EDIT} />
+          </svg>
+          <Trans>edit price</Trans>
+        </span>
+      )}
+      {has('EDIT_SPEED') && (
+        <span className="flex items-center gap-1">
+          <svg width="10" height="10">
+            <polygon
+              points="5,1 9,5 5,9 1,5"
+              fill="none"
+              stroke={COLOR_EDIT_SPEED}
+              strokeWidth="1.4"
+            />
+          </svg>
+          <Trans>edit speed</Trans>
+        </span>
+      )}
+      {has('CANCEL_BID') && (
+        <span className="flex items-center gap-1">
+          <svg width="10" height="10">
+            <line x1="1" y1="1" x2="9" y2="9" stroke={COLOR_CANCEL} strokeWidth="2" />
+            <line x1="9" y1="1" x2="1" y2="9" stroke={COLOR_CANCEL} strokeWidth="2" />
+          </svg>
+          <Trans>cancel</Trans>
+        </span>
+      )}
     </span>
   );
 }

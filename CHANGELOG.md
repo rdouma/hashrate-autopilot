@@ -2,6 +2,10 @@
 
 ## 2026-04-27
 
+### `[UI]` Price chart: hide EDIT_PRICE markers from 1w on (#75)
+
+The 1w view of the Price chart was unreadable - hundreds of yellow EDIT_PRICE dots clustered into a band that hid the bid / fillable / hashprice lines underneath. The `showEvents: boolean` per-range flag is replaced with a finer-grained `showEventKinds: readonly BidEventKind[]` allowlist: 3h-24h shows all four kinds; 1w drops EDIT_PRICE but keeps the rare CREATE_BID / EDIT_SPEED / CANCEL_BID; 1m / 1y / all show no markers (unchanged). The legend chip now only renders kinds that are actually shown at the current range.
+
 ### `[UI]` App version in dashboard footer (#74)
 
 Footer now leads with the app version (e.g. `v1.4.3 · build 158 · abc1234 · changelog`) so users reporting issues from Umbrel / Docker installs can cite the release without having to read the build number off the manifest. Sourced from `rdouma-hashrate-autopilot/umbrel-app.yml` `version:` at vite-build time, so it cannot drift from what the Umbrel community store publishes - they read the same canonical file.

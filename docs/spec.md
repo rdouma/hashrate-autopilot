@@ -466,7 +466,9 @@ perimeter; the dashboard has a shared-password second gate, not full auth.
   the Y-axis and crushes the flatter-line detail when enabled. Bid-event dots (yellow / cyan / red) on
   the amber line mark CREATE / EDIT_PRICE / EDIT_SPEED / CANCEL events; clicking pins a detail panel
   with `fillable`, `overpay`, `hashprice`, cap inputs, effective cap at that tick, and a JSON export
-  button.
+  button. Per-range filtering: 3h-24h shows all four kinds; 1w drops EDIT_PRICE (it fires on most
+  ticks during normal operation and would drown the chart at that zoom); 1m / 1y / all show none.
+  See `CHART_RANGE_SPECS[r].showEventKinds` in `packages/shared/src/chart-ranges.ts`.
 - **Service panels (three-column).** BRAIINS (API reachability, delivered vs target, wallet balance,
   runway at current spend rate), DATUM GATEWAY (stratum reachability, gateway-measured hashrate,
   connected workers — if `datum_api_url` is configured), OCEAN (API reachability, Ocean-credited

@@ -222,7 +222,7 @@ export function Status() {
       <PriceChart
         points={metricsQuery.data?.points ?? []}
         events={bidEventsQuery.data?.events ?? []}
-        showEvents={CHART_RANGE_SPECS[chartRange].showEvents}
+        showEventKinds={CHART_RANGE_SPECS[chartRange].showEventKinds}
         maxOverpayVsHashpriceSatPerPhDay={s.config_summary.max_overpay_vs_hashprice_sat_per_ph_day}
         overpaySatPerPhDay={
           configQuery.data?.config?.overpay_sat_per_eh_day != null

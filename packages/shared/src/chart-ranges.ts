@@ -23,6 +23,21 @@ export const CHART_RANGES: readonly ChartRange[] = [
 
 export const DEFAULT_CHART_RANGE: ChartRange = '24h';
 
+/**
+ * The four mutation kinds emitted by the controller and mirrored on
+ * the Price chart. Source of truth for the per-range filter below
+ * and for any caller that needs to reason about event types without
+ * importing the dashboard's API view types.
+ */
+export type BidEventKind = 'CREATE_BID' | 'EDIT_PRICE' | 'EDIT_SPEED' | 'CANCEL_BID';
+
+export const ALL_BID_EVENT_KINDS: readonly BidEventKind[] = [
+  'CREATE_BID',
+  'EDIT_PRICE',
+  'EDIT_SPEED',
+  'CANCEL_BID',
+];
+
 export interface ChartRangeSpec {
   readonly range: ChartRange;
   readonly label: string;
@@ -36,15 +51,24 @@ export interface ChartRangeSpec {
    */
   readonly bucketMs: number;
   /**
-   * Whether the events overlay is rendered at this range. Past ~a week
-   * the individual markers lose signal.
+   * Which event kinds are rendered as markers on the Price chart at
+   * this range. Empty array = no markers. EDIT_PRICE is the noisy one
+   * - it fires on most ticks during normal operation - so it's
+   * dropped from 1w on, leaving the rare-and-interesting
+   * CREATE_BID / EDIT_SPEED / CANCEL_BID still visible (#75). At 1m+
+   * even the rare ones are too small to read on the X-axis, so the
+   * overlay is empty entirely.
    */
-  readonly showEvents: boolean;
+  readonly showEventKinds: readonly BidEventKind[];
 }
 
 const MINUTE = 60 * 1000;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
+
+// The "rare" kinds shown alongside EDIT_PRICE at short ranges and on
+// their own at 1w, where EDIT_PRICE would otherwise drown the chart.
+const RARE_KINDS: readonly BidEventKind[] = ['CREATE_BID', 'EDIT_SPEED', 'CANCEL_BID'];
 
 export const CHART_RANGE_SPECS: Record<ChartRange, ChartRangeSpec> = {
   '3h': {
@@ -52,56 +76,56 @@ export const CHART_RANGE_SPECS: Record<ChartRange, ChartRangeSpec> = {
     label: '3h',
     windowMs: 3 * HOUR,
     bucketMs: 0,
-    showEvents: true,
+    showEventKinds: ALL_BID_EVENT_KINDS,
   },
   '6h': {
     range: '6h',
     label: '6h',
     windowMs: 6 * HOUR,
     bucketMs: 0,
-    showEvents: true,
+    showEventKinds: ALL_BID_EVENT_KINDS,
   },
   '12h': {
     range: '12h',
     label: '12h',
     windowMs: 12 * HOUR,
     bucketMs: 0,
-    showEvents: true,
+    showEventKinds: ALL_BID_EVENT_KINDS,
   },
   '24h': {
     range: '24h',
     label: '24h',
     windowMs: 24 * HOUR,
     bucketMs: 0,
-    showEvents: true,
+    showEventKinds: ALL_BID_EVENT_KINDS,
   },
   '1w': {
     range: '1w',
     label: '1w',
     windowMs: 7 * DAY,
     bucketMs: 5 * MINUTE,
-    showEvents: true,
+    showEventKinds: RARE_KINDS,
   },
   '1m': {
     range: '1m',
     label: '1m',
     windowMs: 30 * DAY,
     bucketMs: HOUR,
-    showEvents: false,
+    showEventKinds: [],
   },
   '1y': {
     range: '1y',
     label: '1y',
     windowMs: 365 * DAY,
     bucketMs: DAY,
-    showEvents: false,
+    showEventKinds: [],
   },
   all: {
     range: 'all',
     label: 'All',
     windowMs: null,
     bucketMs: DAY,
-    showEvents: false,
+    showEventKinds: [],
   },
 };
 
