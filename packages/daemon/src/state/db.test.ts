@@ -77,6 +77,7 @@ describe('openDatabase — migrations', () => {
       '0047_secrets_table.sql',
       '0048_tick_metrics_share_log_pct.sql',
       '0049_show_share_log_on_hashrate_chart.sql',
+      '0050_btc_price_default_coingecko.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });

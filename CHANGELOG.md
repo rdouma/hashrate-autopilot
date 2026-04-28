@@ -2,6 +2,10 @@
 
 ## 2026-04-27
 
+### `[Fix]` Sats/USD toggle now visible on fresh installs (#77)
+
+The denomination toggle was hidden by default because `btc_price_source` defaulted to `'none'`, which makes `btcPrice` resolve to null and the dashboard suppresses the toggle. Default flipped to `'coingecko'` (free public API, no auth, no Bitcoin RPC dependency, one HTTPS call every 5 min). Existing installs running on the old default get a one-shot SQL migration that bumps `'none'` → `'coingecko'`; operators who deliberately picked any other value (including `'none'`) keep their choice. Not released as a standalone version - rides along with the next feature.
+
 ### `[Release]` v1.4.5
 
 Bundles today's Price-chart fixes (#76, #75) with the v1.4.4 footer fix

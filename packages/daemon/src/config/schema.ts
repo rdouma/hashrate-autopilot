@@ -135,7 +135,7 @@ export const AppConfigSchema = z.object({
   // BTC/USD price oracle. 'none' disables the price fetcher; other
   // values name the exchange API to poll. Feeds the dashboard's
   // denomination toggle (sats <-> USD).
-  btc_price_source: z.enum(['none', 'coingecko', 'coinbase', 'bitstamp', 'kraken']).default('none'),
+  btc_price_source: z.enum(['none', 'coingecko', 'coinbase', 'bitstamp', 'kraken']).default('coingecko'),
 
   // Opportunistic hashrate scaling (issue #13).
   // When the market price is cheap vs the break-even hashprice, scale
@@ -299,7 +299,7 @@ export const APP_CONFIG_DEFAULTS: Omit<
 
   boot_mode: 'ALWAYS_DRY_RUN',
   spent_scope: 'account',
-  btc_price_source: 'none',
+  btc_price_source: 'coingecko',
 
   cheap_target_hashrate_ph: 0,
   cheap_threshold_pct: 0,
