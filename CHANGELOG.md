@@ -2,6 +2,13 @@
 
 ## 2026-04-27
 
+### `[Release]` v1.4.5
+
+Bundles today's Price-chart fixes (#76, #75) with the v1.4.4 footer fix
+that was reverted after a publish failure. Skips v1.4.4 because that
+tag's image is broken on GHCR and may have hit a few users; v1.4.5 is
+the canonical successor to v1.4.3.
+
 ### `[Fix]` 1w Price chart: data series rendered as vertical sticks (#76)
 
 Removing the EDIT_PRICE markers at 1w (#75) exposed an underlying bucketing problem: the 1w preset was bucketing at 5 minutes, producing 2,016 points across ~784px of usable chart width (2.6 points per pixel). Adjacent points squashed into single columns, and the line series zigzagged within each column - rendering as a forest of vertical sticks once the dense markers no longer hid them. Bucket bumped to 30 minutes (336 points, ~0.43 per pixel) so lines render continuously. PriceChart's `MAX_BRIDGE_MS` is now adaptive (3× the median data spacing, floor 5 min) so a single missing bucket doesn't break the line at long ranges while real multi-bucket outages still show as visible breaks.

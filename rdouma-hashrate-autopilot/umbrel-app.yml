@@ -7,7 +7,7 @@ manifestVersion: 1
 id: rdouma-hashrate-autopilot
 category: bitcoin
 name: Hashrate Autopilot
-version: "1.4.3"
+version: "1.4.5"
 tagline: Autopilot for renting hashrate to a non-custodial pool
 icon: https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/assets/icon-512.png
 description: >-
@@ -75,14 +75,17 @@ defaultPassword: ""
 submitter: Remco Douma
 submission: https://github.com/rdouma/hashrate-autopilot
 releaseNotes: >-
-  v1.4.3 - AVG COST stats accuracy + version in footer. The
-  AVG COST / PH DELIVERED card and the paired AVG COST VS HASHPRICE
-  card were reading 3-5% lower than the actual bid during patchy-
-  delivery windows because the denominator used Braiins's lagged
-  avg_speed_ph metric. Switched to counter-derived hashrate (same
-  signal driving the chart's amber line), so the cards now equal
-  the bid exactly when the bid is constant across the window and
-  the spend-weighted average when it varies - honest math under
-  pay-your-bid. Plus: dashboard footer now leads with the app
-  version (e.g. `v1.4.3 . build 158 . abc1234`) so users reporting
-  issues can cite a release.
+  v1.4.5 - 1w Price chart fixes + Docker footer version.
+  The 1w view of the Price chart was rendering as a forest of
+  vertical sticks because the bucket size (5 min) packed 2,016
+  points into ~784px of chart width. Bucket bumped to 30 min,
+  and the per-line gap-bridge threshold is now adaptive, so the
+  bid / fillable / hashprice / max-bid lines render continuously
+  and real outages still show as visible breaks. Plus: dense
+  EDIT_PRICE markers are now hidden at 1w and longer (the rare
+  CREATE / EDIT_SPEED / CANCEL still show). Plus: fixes the
+  `vunknown` footer label that v1.4.3 left on Docker and Umbrel
+  installs - APP_VERSION is now threaded through as a Docker
+  build-arg, so the in-image footer always matches the released
+  manifest version. (Skipping v1.4.4 - that publish failed and
+  was reverted.)
