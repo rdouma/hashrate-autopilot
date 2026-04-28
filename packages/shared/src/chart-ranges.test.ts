@@ -72,10 +72,10 @@ describe('pickBucketForSpan', () => {
     expect(pickBucketForSpan(7 * DAY)).toBe(0);
   });
 
-  it('switches to 5 min between 1 week and 1 month', () => {
-    expect(pickBucketForSpan(7 * DAY + 1)).toBe(5 * MINUTE);
-    expect(pickBucketForSpan(14 * DAY)).toBe(5 * MINUTE);
-    expect(pickBucketForSpan(30 * DAY)).toBe(5 * MINUTE);
+  it('switches to 30 min between 1 week and 1 month', () => {
+    expect(pickBucketForSpan(7 * DAY + 1)).toBe(30 * MINUTE);
+    expect(pickBucketForSpan(14 * DAY)).toBe(30 * MINUTE);
+    expect(pickBucketForSpan(30 * DAY)).toBe(30 * MINUTE);
   });
 
   it('switches to 1 h between 1 month and 1 year', () => {
