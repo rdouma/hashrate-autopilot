@@ -31,6 +31,10 @@ msgid "\"system default\" follows your browser. The other entries lock to a spec
 msgstr "\"predeterminado del sistema\" sigue tu navegador. Las otras opciones fijan un formato específico sin importar el idioma del navegador."
 
 #: src/pages/Status.tsx
+msgid "(avg cost / PH delivered) minus the delta-weighted average hashprice during periods we were actually billed. Negative means we paid below break-even (good - cheaper than mining at current difficulty), positive means above. Same delta weighting as the avg cost card so the two stay consistent."
+msgstr ""
+
+#: src/pages/Status.tsx
 msgid "(cheap mode)"
 msgstr "(modo barato)"
 
@@ -297,8 +301,8 @@ msgid "Average delivered hashrate over the selected chart range. Multiplied by a
 msgstr "Hashrate entregado promedio en el rango del gráfico seleccionado. Multiplicado por el hashprice promedio para obtener el ingreso proyectado. El gasto se mide directamente (deltas de primary_bid_consumed_sat), así que esto no es un factor en el lado del gasto."
 
 #: src/pages/Status.tsx
-msgid "Average effective rate over the selected chart range (default 3h) — what Braiins actually charged per PH/day delivered, from per-tick Δconsumed_sat ÷ (delivered_ph × Δt). Same metric the hero PRICE card shows; this pair is duplicated so each panel stands on its own. For the current bid price see the NEXT ACTION panel."
-msgstr "Tasa efectiva promedio en el rango del gráfico seleccionado (predeterminado 3h) - lo que Braiins realmente cobró por PH/día entregado, calculado como Δconsumed_sat por tick ÷ (delivered_ph × Δt). Misma métrica que muestra la tarjeta principal PRICE; este par está duplicado para que cada panel sea autónomo. Para el precio actual de la oferta ver el panel NEXT ACTION."
+msgid "Average effective rate over the selected chart range - what Braiins actually charged per PH/day delivered. Computed as the delta-weighted harmonic mean of the bid: SUM(Δconsumed_sat) ÷ SUM(Δconsumed_sat ÷ bid). Under pay-your-bid the bid IS the price, so when the bid is constant across the window this equals the bid exactly; when the bid varies (mid-window edits) it's the spend-weighted average. Periods of zero delivery contribute zero to both sides and don't skew the result. For the current bid price see the NEXT ACTION panel."
+msgstr ""
 
 #: src/pages/Status.tsx
 #: src/pages/Status.tsx
@@ -458,10 +462,6 @@ msgstr "presupuesto"
 msgid "Budget"
 msgstr "Presupuesto"
 
-#: src/pages/Setup.tsx
-msgid "build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
-msgstr ""
-
 #: src/pages/Status.tsx
 #: src/pages/Status.tsx
 #: src/pages/Status.tsx
@@ -538,6 +538,10 @@ msgstr "cobrado (on-chain)"
 #: src/pages/Status.tsx
 msgid "Collected on-chain + Ocean's unpaid earnings − spent on bids. Missing collected is treated as 0 (the on-chain row still shows — so the operator sees the gap). Negative = still recouping the initial deposit."
 msgstr "Cobrado on-chain + ganancias no pagadas de Ocean - gastado en ofertas. Si falta el cobrado se trata como 0 (la fila on-chain sigue apareciendo - así el operador ve el hueco). Negativo = aún recuperando el depósito inicial."
+
+#: src/pages/Config.tsx
+msgid "Compact numeric time series — one row per tick (~1,440/day) with hashrate, prices, share-log %, spend. This is what backs the Hashrate / Price / Overpay charts, so set it to the longest range you want to be able to chart. Cheap on disk: a year is ~525k small rows."
+msgstr "Serie temporal numérica compacta — una fila por tick (~1.440/día) con hashrate, precios, share-log %, gasto. Esto alimenta los gráficos de Hashrate / Precio / Sobrepago, así que ajústalo al rango más largo que quieras poder graficar. Barato en disco: un año son ~525k filas pequeñas."
 
 #: src/pages/Setup.tsx
 msgid "Complete setup"
@@ -635,8 +639,8 @@ msgid "current bid · primary of {0}"
 msgstr "oferta actual · principal de {0}"
 
 #: src/pages/Status.tsx
-msgid "Current owned-bid price (sat/PH/day). Under pay-your-bid this is exactly what Braiins charges per delivered EH-day - the live price you're paying. The plus/minus next to it is the spread vs Ocean's spot hashprice (positive = paying above break-even, negative = below). For the realised effective rate (post-hoc, range-averaged across actual delivery and metering noise), see the AVG COST / PH DELIVERED stats card."
-msgstr "Precio actual de tu oferta (sat/PH/día). Bajo pay-your-bid esto es exactamente lo que Braiins cobra por EH-día entregado - el precio en vivo que estás pagando. El más/menos al lado es el spread vs el hashprice spot de Ocean (positivo = pagando sobre el equilibrio, negativo = por debajo). Para la tasa efectiva realizada (a posteriori, promediada sobre el rango con la entrega real y ruido de medición), ver la tarjeta AVG COST / PH DELIVERED."
+msgid "Current owned-bid price (sat/PH/day). Under pay-your-bid this is exactly what Braiins charges per delivered EH-day - the live price you're paying. The plus/minus next to it is the spread vs Ocean's spot hashprice (positive = paying above break-even, negative = below). For the spend-weighted average paid across the selected chart range (handy when the bid moved during the window), see the AVG COST / PH DELIVERED stats card."
+msgstr ""
 
 #: src/pages/Config.tsx
 msgid "custom"
@@ -680,12 +684,20 @@ msgid "Datum stats not configured — set <0>datum_api_url</0> in Config to disp
 msgstr "Estadísticas de Datum no configuradas - ajusta <0>datum_api_url</0> en Config para mostrar workers conectados y hashrate reportado. Ver <1>docs/setup-datum-api.md</1>."
 
 #: src/pages/Config.tsx
-msgid "decisions rows that proposed at least one action. Forensic records for figuring out why the autopilot did something weeks later."
-msgstr "filas de decisiones que propusieron al menos una acción. Registros forenses para entender por qué el autopilot hizo algo semanas después."
+msgid "Decision-log rows where the autopilot proposed at least one bid action. Rare (~10% of ticks) and high-value: this is the forensic record for \"why did the autopilot create / edit / cancel that bid?\" Cheap to keep long."
+msgstr "Filas del registro de decisiones donde el autopilot propuso al menos una acción de puja. Raras (~10% de los ticks) y de alto valor: este es el registro forense de \"¿por qué el autopilot creó / editó / canceló esa puja?\" Barato de mantener mucho tiempo."
 
 #: src/pages/Config.tsx
-msgid "decisions rows with empty proposed_json — ticks where the controller had nothing to do. These are the vast majority; prune aggressively."
-msgstr "filas de decisiones con proposed_json vacío - ticks donde el controller no tenía nada que hacer. Son la gran mayoría; poda con agresividad."
+msgid "Decision-log rows where the autopilot proposed no action this tick (the vast majority). Heavy JSON state snapshots — the main disk-bloat lever, prune aggressively. The per-tick measurements (price, hashrate, share log) are still kept in tick_metrics regardless of this setting."
+msgstr "Filas del registro de decisiones donde el autopilot no propuso ninguna acción en este tick (la gran mayoría). Capturas pesadas del estado en JSON — la principal palanca de uso de disco, poda agresivamente. Las mediciones por tick (precio, hashrate, share log) se mantienen en tick_metrics independientemente de esta configuración."
+
+#: src/pages/Config.tsx
+msgid "Decisions log — eventful"
+msgstr "Registro de decisiones — con eventos"
+
+#: src/pages/Config.tsx
+msgid "Decisions log — uneventful"
+msgstr "Registro de decisiones — sin eventos"
 
 #: src/pages/Config.tsx
 msgid "decrease"
@@ -739,10 +751,6 @@ msgstr "DRY RUN"
 #: src/pages/Status.tsx
 msgid "Duration-weighted % of time with delivered hashrate > 0. Each tick is weighted by its actual duration (time until the next tick) so gaps after restarts count proportionally."
 msgstr "% de tiempo ponderado por duración con hashrate entregado > 0. Cada tick se pondera por su duración real (tiempo hasta el siguiente tick) para que los huecos tras reinicios cuenten proporcionalmente."
-
-#: src/pages/Status.tsx
-msgid "Duration-weighted average of (effective price − hashprice). Negative means matched asks averaged below the break-even hashprice (good — cheaper than mining at current difficulty). Positive means above break-even."
-msgstr "Promedio ponderado por duración de (precio efectivo - hashprice). Negativo significa que los precios de venta matcheados promediaron por debajo del hashprice de equilibrio (bueno - más barato que minar con la dificultad actual). Positivo significa por encima del equilibrio."
 
 #: src/pages/Status.tsx
 msgid "Duration-weighted average of the hashrate Braiins reports delivering. Includes downtime (where delivered = 0) so a bad stretch shows up in the average, not just the live card."
@@ -838,10 +846,6 @@ msgstr "Puerto de Electrs"
 #: src/pages/Status.tsx
 msgid "Escalation in"
 msgstr "Escalada en"
-
-#: src/pages/Config.tsx
-msgid "Eventful decisions"
-msgstr "Decisiones con eventos"
 
 #: src/pages/Config.tsx
 msgid "Every restart resets to DRY_RUN. You explicitly flip to LIVE from the dashboard."
@@ -994,10 +998,6 @@ msgstr "Host"
 #: src/pages/Config.tsx
 msgid "How big a single bid is. Set to 0 to use the full available wallet balance on each create — simpler mental model, no manual slicing."
 msgstr "Tamaño de una oferta. Pon 0 para usar todo el saldo disponible del wallet en cada creación - modelo mental más simple, sin trocear manualmente."
-
-#: src/pages/Config.tsx
-msgid "How long the daemon keeps append-only log rows. Tick records are pruned hourly once older than the cutoff. 0 = keep forever."
-msgstr "Cuánto tiempo guarda el daemon las filas de log en modo append-only. Los registros de tick se podan cada hora una vez superado el corte. 0 = guardar para siempre."
 
 #: src/pages/Config.tsx
 msgid "How numbers and dates render in this browser. Doesn't change the UI language. Saved locally — every operator can pick their own."
@@ -1812,10 +1812,6 @@ msgstr "tick fallido: {0}"
 msgid "Tick metrics"
 msgstr "Métricas de tick"
 
-#: src/pages/Config.tsx
-msgid "tick_metrics rows drive the hashrate / price / overpay charts. One row per tick (~1,440/day). Default 7 covers every standard chart range."
-msgstr "las filas de tick_metrics alimentan los gráficos de hashrate / precio / sobrepago. Una fila por tick (~1.440/día). El predeterminado 7 cubre todos los rangos estándar del gráfico."
-
 #: src/pages/Status.tsx
 msgid "ticking…"
 msgstr "ejecutando tick…"
@@ -1829,8 +1825,8 @@ msgid "Total earned at this address since first share, per Ocean."
 msgstr "Total ganado en esta dirección desde la primera share, según Ocean."
 
 #: src/pages/Config.tsx
-msgid "Uneventful decisions"
-msgstr "Decisiones sin eventos"
+msgid "Two append-only logs back the dashboard. tick_metrics powers every chart; decisions is a per-tick forensic log split by whether the autopilot proposed any action. Pruning runs hourly and on daemon boot. 0 on any field = keep forever."
+msgstr "Dos registros append-only respaldan el panel. tick_metrics alimenta cada gráfico; decisions es un registro forense por tick, dividido según si el autopilot propuso alguna acción. La poda se ejecuta cada hora y al arrancar el daemon. 0 en cualquier campo = guardar para siempre."
 
 #: src/pages/Status.tsx
 msgid "unknown"
@@ -1881,6 +1877,10 @@ msgstr "Usa scantxoutset - intensivo en CPU, 30+ segundos por escaneo. Consultad
 #: src/pages/Status.tsx
 msgid "UTXOs at the configured payout address. Read via Electrs (preferred, instant) or bitcoind RPC (slower)."
 msgstr "UTXOs en la dirección de pago configurada. Se leen vía Electrs (preferido, instantáneo) o bitcoind RPC (más lento)."
+
+#: src/pages/Setup.tsx
+msgid "v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
+msgstr ""
 
 #: src/pages/Status.tsx
 msgid "Waiting for Ocean hashprice - trading is paused until the break-even reference is available."

@@ -31,6 +31,10 @@ msgid "\"system default\" follows your browser. The other entries lock to a spec
 msgstr "\"system default\" follows your browser. The other entries lock to a specific format regardless of browser language."
 
 #: src/pages/Status.tsx
+msgid "(avg cost / PH delivered) minus the delta-weighted average hashprice during periods we were actually billed. Negative means we paid below break-even (good - cheaper than mining at current difficulty), positive means above. Same delta weighting as the avg cost card so the two stay consistent."
+msgstr "(avg cost / PH delivered) minus the delta-weighted average hashprice during periods we were actually billed. Negative means we paid below break-even (good - cheaper than mining at current difficulty), positive means above. Same delta weighting as the avg cost card so the two stay consistent."
+
+#: src/pages/Status.tsx
 msgid "(cheap mode)"
 msgstr "(cheap mode)"
 
@@ -297,8 +301,8 @@ msgid "Average delivered hashrate over the selected chart range. Multiplied by a
 msgstr "Average delivered hashrate over the selected chart range. Multiplied by avg hashprice to get projected income. Spend is measured directly (primary_bid_consumed_sat deltas), so this is not a factor on the spend side."
 
 #: src/pages/Status.tsx
-msgid "Average effective rate over the selected chart range (default 3h) — what Braiins actually charged per PH/day delivered, from per-tick Δconsumed_sat ÷ (delivered_ph × Δt). Same metric the hero PRICE card shows; this pair is duplicated so each panel stands on its own. For the current bid price see the NEXT ACTION panel."
-msgstr "Average effective rate over the selected chart range (default 3h) — what Braiins actually charged per PH/day delivered, from per-tick Δconsumed_sat ÷ (delivered_ph × Δt). Same metric the hero PRICE card shows; this pair is duplicated so each panel stands on its own. For the current bid price see the NEXT ACTION panel."
+msgid "Average effective rate over the selected chart range - what Braiins actually charged per PH/day delivered. Computed as the delta-weighted harmonic mean of the bid: SUM(Δconsumed_sat) ÷ SUM(Δconsumed_sat ÷ bid). Under pay-your-bid the bid IS the price, so when the bid is constant across the window this equals the bid exactly; when the bid varies (mid-window edits) it's the spend-weighted average. Periods of zero delivery contribute zero to both sides and don't skew the result. For the current bid price see the NEXT ACTION panel."
+msgstr "Average effective rate over the selected chart range - what Braiins actually charged per PH/day delivered. Computed as the delta-weighted harmonic mean of the bid: SUM(Δconsumed_sat) ÷ SUM(Δconsumed_sat ÷ bid). Under pay-your-bid the bid IS the price, so when the bid is constant across the window this equals the bid exactly; when the bid varies (mid-window edits) it's the spend-weighted average. Periods of zero delivery contribute zero to both sides and don't skew the result. For the current bid price see the NEXT ACTION panel."
 
 #: src/pages/Status.tsx
 #: src/pages/Status.tsx
@@ -458,10 +462,6 @@ msgstr "budget"
 msgid "Budget"
 msgstr "Budget"
 
-#: src/pages/Setup.tsx
-msgid "build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
-msgstr "build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
-
 #: src/pages/Status.tsx
 #: src/pages/Status.tsx
 #: src/pages/Status.tsx
@@ -538,6 +538,10 @@ msgstr "collected (on-chain)"
 #: src/pages/Status.tsx
 msgid "Collected on-chain + Ocean's unpaid earnings − spent on bids. Missing collected is treated as 0 (the on-chain row still shows — so the operator sees the gap). Negative = still recouping the initial deposit."
 msgstr "Collected on-chain + Ocean's unpaid earnings − spent on bids. Missing collected is treated as 0 (the on-chain row still shows — so the operator sees the gap). Negative = still recouping the initial deposit."
+
+#: src/pages/Config.tsx
+msgid "Compact numeric time series — one row per tick (~1,440/day) with hashrate, prices, share-log %, spend. This is what backs the Hashrate / Price / Overpay charts, so set it to the longest range you want to be able to chart. Cheap on disk: a year is ~525k small rows."
+msgstr "Compact numeric time series — one row per tick (~1,440/day) with hashrate, prices, share-log %, spend. This is what backs the Hashrate / Price / Overpay charts, so set it to the longest range you want to be able to chart. Cheap on disk: a year is ~525k small rows."
 
 #: src/pages/Setup.tsx
 msgid "Complete setup"
@@ -635,8 +639,8 @@ msgid "current bid · primary of {0}"
 msgstr "current bid · primary of {0}"
 
 #: src/pages/Status.tsx
-msgid "Current owned-bid price (sat/PH/day). Under pay-your-bid this is exactly what Braiins charges per delivered EH-day - the live price you're paying. The plus/minus next to it is the spread vs Ocean's spot hashprice (positive = paying above break-even, negative = below). For the realised effective rate (post-hoc, range-averaged across actual delivery and metering noise), see the AVG COST / PH DELIVERED stats card."
-msgstr "Current owned-bid price (sat/PH/day). Under pay-your-bid this is exactly what Braiins charges per delivered EH-day - the live price you're paying. The plus/minus next to it is the spread vs Ocean's spot hashprice (positive = paying above break-even, negative = below). For the realised effective rate (post-hoc, range-averaged across actual delivery and metering noise), see the AVG COST / PH DELIVERED stats card."
+msgid "Current owned-bid price (sat/PH/day). Under pay-your-bid this is exactly what Braiins charges per delivered EH-day - the live price you're paying. The plus/minus next to it is the spread vs Ocean's spot hashprice (positive = paying above break-even, negative = below). For the spend-weighted average paid across the selected chart range (handy when the bid moved during the window), see the AVG COST / PH DELIVERED stats card."
+msgstr "Current owned-bid price (sat/PH/day). Under pay-your-bid this is exactly what Braiins charges per delivered EH-day - the live price you're paying. The plus/minus next to it is the spread vs Ocean's spot hashprice (positive = paying above break-even, negative = below). For the spend-weighted average paid across the selected chart range (handy when the bid moved during the window), see the AVG COST / PH DELIVERED stats card."
 
 #: src/pages/Config.tsx
 msgid "custom"
@@ -680,12 +684,20 @@ msgid "Datum stats not configured — set <0>datum_api_url</0> in Config to disp
 msgstr "Datum stats not configured — set <0>datum_api_url</0> in Config to display connected workers and reported hashrate. See <1>docs/setup-datum-api.md</1>."
 
 #: src/pages/Config.tsx
-msgid "decisions rows that proposed at least one action. Forensic records for figuring out why the autopilot did something weeks later."
-msgstr "decisions rows that proposed at least one action. Forensic records for figuring out why the autopilot did something weeks later."
+msgid "Decision-log rows where the autopilot proposed at least one bid action. Rare (~10% of ticks) and high-value: this is the forensic record for \"why did the autopilot create / edit / cancel that bid?\" Cheap to keep long."
+msgstr "Decision-log rows where the autopilot proposed at least one bid action. Rare (~10% of ticks) and high-value: this is the forensic record for \"why did the autopilot create / edit / cancel that bid?\" Cheap to keep long."
 
 #: src/pages/Config.tsx
-msgid "decisions rows with empty proposed_json — ticks where the controller had nothing to do. These are the vast majority; prune aggressively."
-msgstr "decisions rows with empty proposed_json — ticks where the controller had nothing to do. These are the vast majority; prune aggressively."
+msgid "Decision-log rows where the autopilot proposed no action this tick (the vast majority). Heavy JSON state snapshots — the main disk-bloat lever, prune aggressively. The per-tick measurements (price, hashrate, share log) are still kept in tick_metrics regardless of this setting."
+msgstr "Decision-log rows where the autopilot proposed no action this tick (the vast majority). Heavy JSON state snapshots — the main disk-bloat lever, prune aggressively. The per-tick measurements (price, hashrate, share log) are still kept in tick_metrics regardless of this setting."
+
+#: src/pages/Config.tsx
+msgid "Decisions log — eventful"
+msgstr "Decisions log — eventful"
+
+#: src/pages/Config.tsx
+msgid "Decisions log — uneventful"
+msgstr "Decisions log — uneventful"
 
 #: src/pages/Config.tsx
 msgid "decrease"
@@ -739,10 +751,6 @@ msgstr "DRY RUN"
 #: src/pages/Status.tsx
 msgid "Duration-weighted % of time with delivered hashrate > 0. Each tick is weighted by its actual duration (time until the next tick) so gaps after restarts count proportionally."
 msgstr "Duration-weighted % of time with delivered hashrate > 0. Each tick is weighted by its actual duration (time until the next tick) so gaps after restarts count proportionally."
-
-#: src/pages/Status.tsx
-msgid "Duration-weighted average of (effective price − hashprice). Negative means matched asks averaged below the break-even hashprice (good — cheaper than mining at current difficulty). Positive means above break-even."
-msgstr "Duration-weighted average of (effective price − hashprice). Negative means matched asks averaged below the break-even hashprice (good — cheaper than mining at current difficulty). Positive means above break-even."
 
 #: src/pages/Status.tsx
 msgid "Duration-weighted average of the hashrate Braiins reports delivering. Includes downtime (where delivered = 0) so a bad stretch shows up in the average, not just the live card."
@@ -838,10 +846,6 @@ msgstr "Electrs port"
 #: src/pages/Status.tsx
 msgid "Escalation in"
 msgstr "Escalation in"
-
-#: src/pages/Config.tsx
-msgid "Eventful decisions"
-msgstr "Eventful decisions"
 
 #: src/pages/Config.tsx
 msgid "Every restart resets to DRY_RUN. You explicitly flip to LIVE from the dashboard."
@@ -994,10 +998,6 @@ msgstr "Host"
 #: src/pages/Config.tsx
 msgid "How big a single bid is. Set to 0 to use the full available wallet balance on each create — simpler mental model, no manual slicing."
 msgstr "How big a single bid is. Set to 0 to use the full available wallet balance on each create — simpler mental model, no manual slicing."
-
-#: src/pages/Config.tsx
-msgid "How long the daemon keeps append-only log rows. Tick records are pruned hourly once older than the cutoff. 0 = keep forever."
-msgstr "How long the daemon keeps append-only log rows. Tick records are pruned hourly once older than the cutoff. 0 = keep forever."
 
 #: src/pages/Config.tsx
 msgid "How numbers and dates render in this browser. Doesn't change the UI language. Saved locally — every operator can pick their own."
@@ -1812,10 +1812,6 @@ msgstr "tick failed: {0}"
 msgid "Tick metrics"
 msgstr "Tick metrics"
 
-#: src/pages/Config.tsx
-msgid "tick_metrics rows drive the hashrate / price / overpay charts. One row per tick (~1,440/day). Default 7 covers every standard chart range."
-msgstr "tick_metrics rows drive the hashrate / price / overpay charts. One row per tick (~1,440/day). Default 7 covers every standard chart range."
-
 #: src/pages/Status.tsx
 msgid "ticking…"
 msgstr "ticking…"
@@ -1829,8 +1825,8 @@ msgid "Total earned at this address since first share, per Ocean."
 msgstr "Total earned at this address since first share, per Ocean."
 
 #: src/pages/Config.tsx
-msgid "Uneventful decisions"
-msgstr "Uneventful decisions"
+msgid "Two append-only logs back the dashboard. tick_metrics powers every chart; decisions is a per-tick forensic log split by whether the autopilot proposed any action. Pruning runs hourly and on daemon boot. 0 on any field = keep forever."
+msgstr "Two append-only logs back the dashboard. tick_metrics powers every chart; decisions is a per-tick forensic log split by whether the autopilot proposed any action. Pruning runs hourly and on daemon boot. 0 on any field = keep forever."
 
 #: src/pages/Status.tsx
 msgid "unknown"
@@ -1881,6 +1877,10 @@ msgstr "Uses scantxoutset -- CPU-heavy, 30+ seconds per scan. Polled hourly. Use
 #: src/pages/Status.tsx
 msgid "UTXOs at the configured payout address. Read via Electrs (preferred, instant) or bitcoind RPC (slower)."
 msgstr "UTXOs at the configured payout address. Read via Electrs (preferred, instant) or bitcoind RPC (slower)."
+
+#: src/pages/Setup.tsx
+msgid "v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
+msgstr "v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
 
 #: src/pages/Status.tsx
 msgid "Waiting for Ocean hashprice - trading is paused until the break-even reference is available."
