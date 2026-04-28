@@ -60,17 +60,20 @@ export async function registerBidEventsRoute(
       const range = parseChartRange(req.query.range) ?? DEFAULT_CHART_RANGE;
       const spec = CHART_RANGE_SPECS[range];
 
-      if (!spec.showEvents) {
+      if (spec.showEventKinds.length === 0) {
         return { events: [] };
       }
 
+      const allowedKinds = new Set(spec.showEventKinds);
       const sinceMs =
         spec.windowMs === null
           ? 0
           : Date.now() - spec.windowMs;
-      const rows = await deps.bidEventsRepo.listSince(
-        sinceMs === 0 ? 0 : Math.max(0, sinceMs),
-      );
+      const rows = (
+        await deps.bidEventsRepo.listSince(
+          sinceMs === 0 ? 0 : Math.max(0, sinceMs),
+        )
+      ).filter((r) => allowedKinds.has(r.kind));
 
       // Legacy default window (24 h) if someone calls /api/bid-events
       // with no params at all — unchanged behaviour.
