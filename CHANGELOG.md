@@ -2,6 +2,10 @@
 
 ## 2026-04-28
 
+### `[Release]` v1.4.6
+
+Bundles today's chart-fidelity fixes (#82, #81, #79), the retention-defaults bump (#80), and the sats/USD toggle default (#77) into one release. Long-range charts now stay readable on fresh installs (no more 1m / 1y collapsing to a handful of points), the effective-rate line renders on every preset, pool-block tooltips use the historical share_log when we have it, and tick-metrics retention defaults to 365 days for installs that haven't been touched.
+
 ### `[Fix]` Charts no longer flatten when actual data span is shorter than the preset window (#82)
 
 Picking 1m or 1y on a database with only a few days of recorded ticks (fresh install, recent retention prune) was over-collapsing the chart: 1y on 6 days of data rendered as ~6 daily points; 1m as ~144 hourly points. Each preset's bucket was sized for a *full* preset window, not the available span. The bucket-resize logic that already existed for the `all` preset now applies to every bounded preset using `pickBucketForSpan(min(windowMs, actualSpan))`. `pickBucketForSpan` boundaries also re-tuned to match the preset bucket scale exactly: ≤24h → raw, ≤30d → 30 min, ≤365d → 1h, else 1d (the old "≤7d → raw" boundary contradicted the 1w preset's explicit 30-min bucket). Long-history installs see no change at full-window ranges because `actualSpan` saturates the window; short-history installs now get readable charts across all presets.

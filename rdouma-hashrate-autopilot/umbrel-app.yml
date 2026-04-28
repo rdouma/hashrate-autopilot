@@ -7,7 +7,7 @@ manifestVersion: 1
 id: rdouma-hashrate-autopilot
 category: bitcoin
 name: Hashrate Autopilot
-version: "1.4.5"
+version: "1.4.6"
 tagline: Autopilot for renting hashrate to a non-custodial pool
 icon: https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/assets/icon-512.png
 description: >-
@@ -75,17 +75,18 @@ defaultPassword: ""
 submitter: Remco Douma
 submission: https://github.com/rdouma/hashrate-autopilot
 releaseNotes: >-
-  v1.4.5 - 1w Price chart fixes + Docker footer version.
-  The 1w view of the Price chart was rendering as a forest of
-  vertical sticks because the bucket size (5 min) packed 2,016
-  points into ~784px of chart width. Bucket bumped to 30 min,
-  and the per-line gap-bridge threshold is now adaptive, so the
-  bid / fillable / hashprice / max-bid lines render continuously
-  and real outages still show as visible breaks. Plus: dense
-  EDIT_PRICE markers are now hidden at 1w and longer (the rare
-  CREATE / EDIT_SPEED / CANCEL still show). Plus: fixes the
-  `vunknown` footer label that v1.4.3 left on Docker and Umbrel
-  installs - APP_VERSION is now threaded through as a Docker
-  build-arg, so the in-image footer always matches the released
-  manifest version. (Skipping v1.4.4 - that publish failed and
-  was reverted.)
+  v1.4.6 - chart fidelity + dashboard polish.
+  Long-range charts now stay readable on fresh installs: 1m and
+  1y were collapsing to a handful of points when the database
+  held only a few days of history; bucket sizing now scales to
+  the actual recorded span instead of always assuming a full
+  preset window. The optional "effective rate" line on the Price
+  chart now renders on 1w / 1m / 1y / All as well (its 5-minute
+  gap cap was clipping every bucketed pair). Pool-block tooltips
+  on the Hashrate chart prefer the share_log recorded at the
+  block's moment instead of the live share_log, so older blocks
+  no longer show a misleading "approximation" caveat when we
+  have the actual value. Default tick-metrics retention bumped
+  to 365 days (it's a tiny numeric series); eventful decisions
+  retention also 365 days. Sats/USD toggle is now visible on
+  fresh installs (BTC price source defaults to Coingecko).
