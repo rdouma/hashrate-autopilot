@@ -433,6 +433,35 @@ export class TickMetricsRepo {
   }
 
   /**
+   * `share_log_pct` from the tick_metrics row whose `tick_at` is closest
+   * to `targetMs`, within a tolerance window. Returns `null` if no row
+   * within the window has a non-null `share_log_pct`.
+   *
+   * Used by the Ocean route to attach a per-block historical share_log
+   * to each pool block, so the chart tooltip can show the actual share
+   * at the block's moment instead of falling back to the live share_log
+   * (which drifts as pool hashrate moves). Blocks that fall outside our
+   * recorded tick history return null and the UI falls back to live.
+   */
+  async nearestShareLogPct(
+    targetMs: number,
+    toleranceMs: number,
+  ): Promise<number | null> {
+    const lo = targetMs - toleranceMs;
+    const hi = targetMs + toleranceMs;
+    const row = await this.db
+      .selectFrom('tick_metrics')
+      .select(['tick_at', 'share_log_pct'])
+      .where('tick_at', '>=', lo)
+      .where('tick_at', '<=', hi)
+      .where('share_log_pct', 'is not', null)
+      .orderBy(sql`ABS(tick_at - ${sql.lit(targetMs)})`, 'asc')
+      .limit(1)
+      .executeTakeFirst();
+    return row?.share_log_pct ?? null;
+  }
+
+  /**
    * Timestamp of the earliest recorded tick, or `null` if the table is
    * empty. Used by the `all` preset to size its aggregation bucket to
    * whatever history actually exists.

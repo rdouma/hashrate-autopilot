@@ -9,7 +9,15 @@
 import type { FastifyInstance } from 'fastify';
 
 import type { ConfigRepo } from '../../state/repos/config.js';
+import type { TickMetricsRepo } from '../../state/repos/tick_metrics.js';
 import type { OceanClient, OceanBlock, OceanPoolInfo } from '../../services/ocean.js';
+
+// Tolerance for joining a pool block to its nearest tick_metrics row.
+// Ticks fire every 30s and pool blocks land ~every 10 min, so any block
+// inside our recorded history will have a tick within 30s. 5 min is
+// generous and absorbs daemon-restart gaps without grabbing a stale
+// share_log from the wrong epoch.
+const SHARE_LOG_AT_BLOCK_TOLERANCE_MS = 5 * 60 * 1000;
 
 export interface OurBlock {
   height: number;
@@ -25,6 +33,16 @@ export interface OurBlock {
    * TIDES shares in the reward window (the common case while mining).
    */
   found_by_us: boolean;
+  /**
+   * `share_log_pct` recorded by the closest tick to this block's
+   * timestamp (within a few minutes). Null when the block predates our
+   * tick-level history or no tick within the tolerance window had a
+   * recorded share_log. The chart tooltip prefers this over the live
+   * share_log so older blocks aren't misrepresented as the current
+   * value, and only falls back to "current share_log + drift caveat"
+   * when this is null.
+   */
+  share_log_pct_at_block: number | null;
 }
 
 export interface OceanResponse {
@@ -75,6 +93,7 @@ export async function registerOceanRoute(
   deps: {
     oceanClient: OceanClient | null;
     configRepo: ConfigRepo;
+    tickMetricsRepo: TickMetricsRepo;
   },
 ): Promise<void> {
   app.get('/api/ocean', async (): Promise<OceanResponse> => {
@@ -133,7 +152,17 @@ export async function registerOceanRoute(
     const blocks_7d = stats.recent_blocks.filter(
       (b) => b.timestamp_ms > 0 && now - b.timestamp_ms < 7 * DAY_MS,
     ).length;
-    const our_recent_blocks: OurBlock[] = stats.recent_blocks.map((b) => ({
+    const shareLogAtBlock = await Promise.all(
+      stats.recent_blocks.map((b) =>
+        b.timestamp_ms > 0
+          ? deps.tickMetricsRepo.nearestShareLogPct(
+              b.timestamp_ms,
+              SHARE_LOG_AT_BLOCK_TOLERANCE_MS,
+            )
+          : Promise.resolve(null),
+      ),
+    );
+    const our_recent_blocks: OurBlock[] = stats.recent_blocks.map((b, i) => ({
       height: b.height,
       timestamp_ms: b.timestamp_ms,
       total_reward_sat: b.total_reward_sat,
@@ -142,6 +171,7 @@ export async function registerOceanRoute(
       block_hash: b.block_hash,
       worker: b.worker,
       found_by_us: b.username === address,
+      share_log_pct_at_block: shareLogAtBlock[i] ?? null,
     }));
 
     return {

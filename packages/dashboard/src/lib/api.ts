@@ -501,6 +501,14 @@ export interface OurBlockMarker {
   block_hash: string;
   worker: string;
   found_by_us: boolean;
+  /**
+   * `share_log_pct` recorded by the closest tick to this block, when
+   * available. Null for blocks older than our tick history (predates
+   * migration 0048 or pruned). Tooltip prefers this for the "our share"
+   * estimate so the value reflects the share_log at the block's moment;
+   * only falls back to the live share_log + drift caveat when null.
+   */
+  share_log_pct_at_block: number | null;
 }
 
 export interface OceanResponse {

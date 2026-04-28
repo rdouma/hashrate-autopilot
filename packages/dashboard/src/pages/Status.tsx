@@ -1607,24 +1607,36 @@ function OceanPanel() {
               })}
             />
             <Row k={t`found`} v={o.last_block.ago_text} />
-            {/* Our estimated share of this block — same math as the
-                chart tooltip: total_reward × current share_log. An
-                approximation for older blocks since share_log drifts,
-                but operator-relevant rather than the total block
-                reward (which tells you nothing about our cut). */}
-            <Row
-              k={t`our earnings (est.)`}
-              v={
-                o.user?.share_log_pct != null
-                  ? denomination.formatSat(
-                      Math.round(
-                        (o.last_block.total_reward_sat * o.user.share_log_pct) / 100,
-                      ),
-                      intlLocale,
-                    )
-                  : '\u2014'
-              }
-            />
+            {/* Our estimated share of this block. Prefers the share_log
+                recorded by the closest tick to the block's moment
+                (share_log_pct_at_block); falls back to the live
+                share_log only when the block predates our tick history.
+                our_recent_blocks[0] is the same block as last_block
+                (every recent_block maps 1:1 to our_recent_blocks). */}
+            {(() => {
+              const blockShareLog =
+                o.our_recent_blocks[0]?.share_log_pct_at_block ?? null;
+              const liveShareLog = o.user?.share_log_pct ?? null;
+              const effective =
+                blockShareLog !== null && blockShareLog > 0
+                  ? blockShareLog
+                  : liveShareLog;
+              return (
+                <Row
+                  k={t`our earnings (est.)`}
+                  v={
+                    effective !== null
+                      ? denomination.formatSat(
+                          Math.round(
+                            (o.last_block.total_reward_sat * effective) / 100,
+                          ),
+                          intlLocale,
+                        )
+                      : '\u2014'
+                  }
+                />
+              );
+            })()}
           </>
         ) : (
           <Row k={t`last pool block`} v={'\u2014'} />

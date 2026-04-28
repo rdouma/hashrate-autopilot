@@ -123,6 +123,7 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<HttpServer
   await registerOceanRoute(app, {
     oceanClient: deps.oceanClient,
     configRepo: deps.configRepo,
+    tickMetricsRepo: deps.tickMetricsRepo,
   });
   await registerFinanceRoute(app, {
     ownedBidsRepo: deps.ownedBidsRepo,

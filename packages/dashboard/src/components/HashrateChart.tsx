@@ -757,28 +757,44 @@ function BlockTooltip({
         <BtcRow label={t`fees`} btc={feesBtc} locale={locale} muted />
       </div>
 
-      {shareLogPct !== null && shareLogPct > 0 && (
-        <div className="mt-2 pt-2 border-t border-slate-800 space-y-0.5 text-slate-300">
-          <div className="text-[10px] uppercase tracking-wider text-slate-500 mb-0.5">
-            <Trans>our share (est.)</Trans>
+      {(() => {
+        // Prefer the per-block historical share_log captured at the
+        // block's moment; only fall back to the live share_log (with
+        // the drift caveat) when we have no tick within tolerance —
+        // i.e. the block predates our tick history.
+        const historical = block.share_log_pct_at_block;
+        const usingHistorical = historical !== null && historical > 0;
+        const effective = usingHistorical
+          ? historical
+          : shareLogPct !== null && shareLogPct > 0
+            ? shareLogPct
+            : null;
+        if (effective === null) return null;
+        return (
+          <div className="mt-2 pt-2 border-t border-slate-800 space-y-0.5 text-slate-300">
+            <div className="text-[10px] uppercase tracking-wider text-slate-500 mb-0.5">
+              <Trans>our share (est.)</Trans>
+            </div>
+            <div className="flex justify-between gap-3">
+              <span className="text-slate-500"><Trans>share log</Trans></span>
+              <span className="font-mono tabular-nums">{effective.toFixed(4)}%</span>
+            </div>
+            <BtcRow
+              label={t`our earnings`}
+              btc={(rewardBtc * effective) / 100}
+              locale={locale}
+            />
+            {!usingHistorical && (
+              <div className="text-[10px] text-slate-500 italic mt-0.5 whitespace-normal max-w-[18rem]">
+                <Trans>
+                  uses current share_log — an approximation for older blocks,
+                  since share_log drifts as pool hashrate moves.
+                </Trans>
+              </div>
+            )}
           </div>
-          <div className="flex justify-between gap-3">
-            <span className="text-slate-500"><Trans>share log</Trans></span>
-            <span className="font-mono tabular-nums">{shareLogPct.toFixed(4)}%</span>
-          </div>
-          <BtcRow
-            label={t`our earnings`}
-            btc={(rewardBtc * shareLogPct) / 100}
-            locale={locale}
-          />
-          <div className="text-[10px] text-slate-500 italic mt-0.5 whitespace-normal max-w-[18rem]">
-            <Trans>
-              uses current share_log — an approximation for older blocks,
-              since share_log drifts as pool hashrate moves.
-            </Trans>
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       <div className="mt-3 pt-2 border-t border-slate-800">
         <a

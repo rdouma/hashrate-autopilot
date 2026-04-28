@@ -370,3 +370,59 @@ describe('TickMetricsRepo.effectiveSatPerEhDayWindow', () => {
     expect(r).toBeCloseTo(36_000_000, -3);
   });
 });
+
+describe('TickMetricsRepo.nearestShareLogPct', () => {
+  let handle: DatabaseHandle;
+  let repo: TickMetricsRepo;
+  const baseMs = 1_700_000_000_000;
+
+  beforeEach(async () => {
+    handle = await openDatabase({ path: ':memory:' });
+    repo = new TickMetricsRepo(handle.db);
+  });
+
+  afterEach(async () => {
+    await closeDatabase(handle);
+  });
+
+  it('returns null when no rows exist', async () => {
+    const r = await repo.nearestShareLogPct(baseMs, 5 * MINUTE);
+    expect(r).toBeNull();
+  });
+
+  it('returns null when no row falls inside the tolerance window', async () => {
+    await repo.insert(
+      sampleRow({ tick_at: baseMs - 10 * MINUTE, share_log_pct: 0.0123 }),
+    );
+    const r = await repo.nearestShareLogPct(baseMs, 5 * MINUTE);
+    expect(r).toBeNull();
+  });
+
+  it('returns the share_log of the closest tick within the window', async () => {
+    // 3 ticks: 4 min before, 1 min before, 6 min after target.
+    // Closest within ±5 min = the 1-min-before tick.
+    await repo.insert(
+      sampleRow({ tick_at: baseMs - 4 * MINUTE, share_log_pct: 0.011 }),
+    );
+    await repo.insert(
+      sampleRow({ tick_at: baseMs - 1 * MINUTE, share_log_pct: 0.017 }),
+    );
+    await repo.insert(
+      sampleRow({ tick_at: baseMs + 6 * MINUTE, share_log_pct: 0.023 }),
+    );
+    const r = await repo.nearestShareLogPct(baseMs, 5 * MINUTE);
+    expect(r).toBe(0.017);
+  });
+
+  it('skips rows with null share_log_pct and picks the next-closest with a value', async () => {
+    // Closest tick has null; next-closest has a value within tolerance.
+    await repo.insert(
+      sampleRow({ tick_at: baseMs - 30_000, share_log_pct: null }),
+    );
+    await repo.insert(
+      sampleRow({ tick_at: baseMs + 2 * MINUTE, share_log_pct: 0.0205 }),
+    );
+    const r = await repo.nearestShareLogPct(baseMs, 5 * MINUTE);
+    expect(r).toBe(0.0205);
+  });
+});

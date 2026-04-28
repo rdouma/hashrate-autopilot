@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-04-28
+
+### `[Fix]` Block tooltip uses historical share_log for blocks within tick history (#79)
+
+The pool-block tooltip on the Hashrate chart was applying the *live* share_log_pct to every block plus an unconditional "approximation for older blocks, since share_log drifts as pool hashrate moves" caveat - even for blocks mined 10 minutes ago, where we already had the actual share_log recorded by the closest tick. New behavior: the Ocean route joins each pool block to the nearest tick_metrics row within ±5 minutes and surfaces that historical share_log on the block. The chart tooltip prefers the per-block value (no caveat) and only falls back to the live share_log + drift caveat when no tick within tolerance has a value (i.e. the block predates our tick-level history). The Ocean panel's "last pool block / our earnings (est.)" row uses the same preference. No new collected data - just a join + UI change against the existing migration 0048 column.
+
 ## 2026-04-27
 
 ### `[Fix]` Sats/USD toggle now visible on fresh installs (#77)
