@@ -2,6 +2,14 @@
 
 ## 2026-04-28
 
+### `[Fix]` Effective-rate line now renders on long Price chart ranges (#81)
+
+The "Show effective rate on price chart" toggle worked on 3h / 6h / 12h / 24h but the emerald line (and its legend entry) silently disappeared on 1w / 1m / 1y / all. Root cause: PriceChart computed effective rate from per-tick `primary_bid_consumed_sat` deltas with a fixed 5-minute `MAX_EFFECTIVE_DT_MS` cap on per-pair gaps. The longer ranges pre-aggregate at the API into 30-min / 1-h / 1-day buckets, so every pair exceeded the cap and the inner accumulation loop bailed before emitting anything. The cap, the aggregation window, the minimum-span gate, and the minimum-nonzero-pair gate now all scale with the median dt of the points stream, so bucketed data flows through naturally while raw-tick guards (real daemon-restart gaps in 1-min data) still trip on the short ranges.
+
+### `[UI]` Log retention defaults bumped, panel reflowed (#80)
+
+`tick_metrics_retention_days` 7 → 365 and `decisions_eventful_retention_days` 90 → 365: tick_metrics is a compact numeric series that backs every chart, and eventful decisions are rare (~10% of ticks) and high-value forensic records — both are cheap to keep long. `decisions_uneventful_retention_days` stays at 7 because uneventful rows carry the heavy JSON state snapshots that drive disk bloat. Existing installs on the old defaults get lifted by migration 0051; deliberately-set values are left alone. Config panel layout reworked: tick_metrics gets its own row, the two `decisions_*` knobs sit side-by-side on a second row with a shared `Decisions log —` label prefix, and the help text now explicitly clarifies that the per-tick measurements (price, hashrate, share log) live in tick_metrics regardless of how aggressively the decisions log is pruned — fixing a real "am I losing my pricing history?" confusion.
+
 ### `[Fix]` Block tooltip uses historical share_log for blocks within tick history (#79)
 
 The pool-block tooltip on the Hashrate chart was applying the *live* share_log_pct to every block plus an unconditional "approximation for older blocks, since share_log drifts as pool hashrate moves" caveat - even for blocks mined 10 minutes ago, where we already had the actual share_log recorded by the closest tick. New behavior: the Ocean route joins each pool block to the nearest tick_metrics row within ±5 minutes and surfaces that historical share_log on the block. The chart tooltip prefers the per-block value (no caveat) and only falls back to the live share_log + drift caveat when no tick within tolerance has a value (i.e. the block predates our tick-level history). The Ocean panel's "last pool block / our earnings (est.)" row uses the same preference. No new collected data - just a join + UI change against the existing migration 0048 column.

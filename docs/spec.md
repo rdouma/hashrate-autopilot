@@ -250,9 +250,9 @@ pricing formula is unchanged.
 
 **Retention (append-only tables):**
 
-- `tick_metrics_retention_days` — default 7. 0 disables pruning.
-- `decisions_uneventful_retention_days` — default 7 (rows with no proposals).
-- `decisions_eventful_retention_days` — default 90 (rows with at least one proposal — forensic value).
+- `tick_metrics_retention_days` — default 365 (cheap numeric series; backs every chart). 0 disables pruning.
+- `decisions_uneventful_retention_days` — default 7 (rows with no proposals; heavy JSON state snapshots — main bloat lever).
+- `decisions_eventful_retention_days` — default 365 (rows with at least one proposal — rare and high-value forensic records).
 
 The daemon runs a pruning pass once per hour; the controller is untouched by retention.
 

@@ -199,15 +199,36 @@ export const PriceChart = memo(function PriceChart({
     //
     // Per-interval validity filters: skip when either consumed endpoint
     // is null (pre-migration or no primary bid), counter reset
-    // (Δ < 0), tick gap > MAX_EFFECTIVE_DT_MS (daemon restart),
-    // near-zero delivery. Final outlier rejection: if aggregated rate
-    // exceeds 1.5× bid at the anchor tick, drop — the bid is a hard
-    // upper bound by definition, anything above is a computation
-    // artifact.
-    const MAX_EFFECTIVE_DT_MS = 5 * 60_000;
+    // (Δ < 0), tick gap > MAX_EFFECTIVE_DT_MS (daemon restart or
+    // legitimate bucket boundary on long ranges), near-zero delivery.
+    // Final outlier rejection: if aggregated rate exceeds 1.5× bid at
+    // the anchor tick, drop — the bid is a hard upper bound by
+    // definition, anything above is a computation artifact.
+    //
+    // Long-range scaling (#81): on 1w / 1m / 1y / all the API
+    // pre-aggregates ticks into 30-min / 1-h / 1-day buckets via
+    // CHART_RANGE_SPECS. The aggregated rows preserve
+    // primary_bid_consumed_sat as MAX over the bucket, so per-bucket
+    // deltas are still meaningful — but the previous fixed
+    // 5-minute MAX_EFFECTIVE_DT_MS rejected every pair on long ranges
+    // and the line vanished. Scale all the per-tick-rate cadence
+    // gates to the median dt of the points stream so bucketed data
+    // flows through naturally.
+    const medianDtMs = (() => {
+      if (points.length < 2) return 60_000;
+      const dts: number[] = [];
+      for (let k = 1; k < points.length; k += 1) {
+        dts.push(points[k]!.tick_at - points[k - 1]!.tick_at);
+      }
+      dts.sort((a, b) => a - b);
+      return dts[Math.floor(dts.length / 2)] ?? 60_000;
+    })();
+    const MAX_EFFECTIVE_DT_MS = Math.max(5 * 60_000, 3 * medianDtMs);
     const OUTLIER_MULTIPLE = 1.5;
-    const effectiveWindowMs =
-      Math.max(3, priceSmoothingMinutes) * 60_000;
+    const effectiveWindowMs = Math.max(
+      Math.max(3, priceSmoothingMinutes) * 60_000,
+      2 * medianDtMs,
+    );
     // Minimum wall-clock span the aggregation must cover before we
     // emit a point. Without this, the first 1-2 ticks after a
     // migration backfill or daemon restart produce legitimate-but-
@@ -218,9 +239,11 @@ export const PriceChart = memo(function PriceChart({
     // the computed rate transiently. Requiring ≥ half the window
     // means the series doesn't draw until the aggregation has
     // enough history to be meaningful (~1.5 min for "off", 5 min
-    // for a 10-min smoothing setting).
+    // for a 10-min smoothing setting). On bucketed long ranges one
+    // bucket already covers minutes-to-days, so the floor is the
+    // bucket itself rather than 90s.
     const MIN_SPAN_MS = Math.max(
-      90_000,
+      Math.min(90_000, medianDtMs),
       Math.floor(effectiveWindowMs / 2),
     );
     const effectivePoints: PricePoint[] = [];
@@ -236,8 +259,11 @@ export const PriceChart = memo(function PriceChart({
     //   2. Require at least MIN_NONZERO_PAIRS real settlements inside
     //      the window before trusting the average. Settlement lulls
     //      become gaps in the line (truthful) rather than dips toward
-    //      zero (misleading).
-    const MIN_NONZERO_PAIRS = 3;
+    //      zero (misleading). On bucketed long ranges one pair already
+    //      represents many real settlements (a 1-h bucket aggregates
+    //      ~60 individual settlements; a 1-d bucket many more), so
+    //      drop the floor to 1 once medianDtMs is large.
+    const MIN_NONZERO_PAIRS = medianDtMs > 5 * 60_000 ? 1 : 3;
     for (let i = 1; i < points.length; i += 1) {
       let deltaSum = 0;
       let phDaySum = 0;

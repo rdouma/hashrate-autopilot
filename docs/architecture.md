@@ -235,9 +235,9 @@ CREATE TABLE config (
   braiins_price_smoothing_minutes INTEGER NOT NULL DEFAULT 1,
   show_effective_rate_on_price_chart INTEGER NOT NULL DEFAULT 0,  -- bool (0 | 1)
   -- Retention
-  tick_metrics_retention_days INTEGER NOT NULL DEFAULT 7,
+  tick_metrics_retention_days INTEGER NOT NULL DEFAULT 365,
   decisions_uneventful_retention_days INTEGER NOT NULL DEFAULT 7,
-  decisions_eventful_retention_days INTEGER NOT NULL DEFAULT 90,
+  decisions_eventful_retention_days INTEGER NOT NULL DEFAULT 365,
   -- Accounting
   spent_scope TEXT NOT NULL DEFAULT 'account',      -- 'autopilot' | 'account'
   -- Legacy columns still in the table (kept for NOT NULL + historical

@@ -164,19 +164,21 @@ export const AppConfigSchema = z.object({
   // Electrum-style indexed lookup; 'bitcoind' falls back to scantxoutset.
   payout_source: z.enum(['none', 'electrs', 'bitcoind']).default('none'),
 
-  // Retention windows for the append-only tables (issue #21).
+  // Retention windows for the append-only tables (issues #21, #80).
   //
-  // `tick_metrics` grows at 1 row/tick/day (~1,440/day). Chart data is
-  // the only consumer; a week of history already covers every default
-  // range on the dashboard. `decisions` similarly grows 1 row/tick/day
-  // but with heavy JSON payloads; we retain "uneventful" (no-proposal)
-  // rows for only a few days and keep decision-bearing rows longer
-  // because those are the actionable forensic records.
+  // `tick_metrics` is a compact numeric time series (~1,440 rows/day)
+  // that backs every dashboard chart. Cheap on disk, high value as
+  // history — default 365 days so the 1y chart range works out of
+  // the box. `decisions` is a forensic decision log split into:
+  //   - uneventful (no-proposal ticks): heavy JSON state snapshots
+  //     that are the main bloat lever; default 7 days.
+  //   - eventful (≥1 proposal): rare (~10% of ticks) and high value
+  //     for "why did the autopilot do that?" questions; default 365.
   //
   // Set to 0 to disable pruning for that table (keep forever).
-  tick_metrics_retention_days: nonNegativeInt.default(7),
+  tick_metrics_retention_days: nonNegativeInt.default(365),
   decisions_uneventful_retention_days: nonNegativeInt.default(7),
-  decisions_eventful_retention_days: nonNegativeInt.default(90),
+  decisions_eventful_retention_days: nonNegativeInt.default(365),
 
   // Optional Datum Gateway stats API (issue #19). When set, the daemon
   // polls {datum_api_url}/umbrel-api each tick to record Datum's view
@@ -311,9 +313,9 @@ export const APP_CONFIG_DEFAULTS: Omit<
 
   payout_source: 'none',
 
-  tick_metrics_retention_days: 7,
+  tick_metrics_retention_days: 365,
   decisions_uneventful_retention_days: 7,
-  decisions_eventful_retention_days: 90,
+  decisions_eventful_retention_days: 365,
 
   datum_api_url: null,
 
