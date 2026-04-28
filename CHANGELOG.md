@@ -2,6 +2,10 @@
 
 ## 2026-04-28
 
+### `[Fix]` Charts no longer flatten when actual data span is shorter than the preset window (#82)
+
+Picking 1m or 1y on a database with only a few days of recorded ticks (fresh install, recent retention prune) was over-collapsing the chart: 1y on 6 days of data rendered as ~6 daily points; 1m as ~144 hourly points. Each preset's bucket was sized for a *full* preset window, not the available span. The bucket-resize logic that already existed for the `all` preset now applies to every bounded preset using `pickBucketForSpan(min(windowMs, actualSpan))`. `pickBucketForSpan` boundaries also re-tuned to match the preset bucket scale exactly: ≤24h → raw, ≤30d → 30 min, ≤365d → 1h, else 1d (the old "≤7d → raw" boundary contradicted the 1w preset's explicit 30-min bucket). Long-history installs see no change at full-window ranges because `actualSpan` saturates the window; short-history installs now get readable charts across all presets.
+
 ### `[Fix]` Effective-rate line now renders on long Price chart ranges (#81)
 
 The "Show effective rate on price chart" toggle worked on 3h / 6h / 12h / 24h but the emerald line (and its legend entry) silently disappeared on 1w / 1m / 1y / all. Root cause: PriceChart computed effective rate from per-tick `primary_bid_consumed_sat` deltas with a fixed 5-minute `MAX_EFFECTIVE_DT_MS` cap on per-pair gaps. The longer ranges pre-aggregate at the API into 30-min / 1-h / 1-day buckets, so every pair exceeded the cap and the inner accumulation loop bailed before emitting anything. The cap, the aggregation window, the minimum-span gate, and the minimum-nonzero-pair gate now all scale with the median dt of the points stream, so bucketed data flows through naturally while raw-tick guards (real daemon-restart gaps in 1-min data) still trip on the short ranges.

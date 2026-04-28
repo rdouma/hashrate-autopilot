@@ -141,14 +141,23 @@ export function parseChartRange(input: unknown): ChartRange | null {
 }
 
 /**
- * Pick a reasonable bucket size for an arbitrary data span — used by the
- * `all` preset so it adapts to however much history actually exists
- * instead of always bucketing at 1 day (which collapses a day of data
- * into a single point).
+ * Pick a reasonable bucket size for an arbitrary data span. The metrics
+ * route applies this to every bounded preset using the lesser of the
+ * preset window and the actual data span, so charts don't over-collapse
+ * when history is shorter than the preset window (e.g. picking `1y` on
+ * 6 days of data should not flatten the chart to ~6 daily points; see
+ * #82).
+ *
+ * Boundaries are tuned to match the preset bucket scale exactly:
+ *
+ *   ≤ 24h  →  raw  (matches 24h preset, ~2880 raw points)
+ *   ≤ 30d  →  30 min  (matches 1w preset on 7d, ~288-1440 points)
+ *   ≤ 365d →  1 h  (matches 1y preset on 365d, ~720-8760 points)
+ *   else   →  1 d  (matches `all` on multi-year history)
  */
 export function pickBucketForSpan(spanMs: number): number {
-  if (spanMs > 365 * DAY) return DAY;
-  if (spanMs > 30 * DAY) return HOUR;
-  if (spanMs > 7 * DAY) return 30 * MINUTE;
-  return 0; // raw
+  if (spanMs <= 24 * HOUR) return 0; // raw
+  if (spanMs <= 30 * DAY) return 30 * MINUTE;
+  if (spanMs <= 365 * DAY) return HOUR;
+  return DAY;
 }

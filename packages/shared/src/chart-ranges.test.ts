@@ -65,26 +65,27 @@ describe('parseChartRange', () => {
 });
 
 describe('pickBucketForSpan', () => {
-  it('returns raw (0) for spans up to a week', () => {
+  it('returns raw (0) for spans up to 24 h', () => {
     expect(pickBucketForSpan(0)).toBe(0);
     expect(pickBucketForSpan(HOUR)).toBe(0);
-    expect(pickBucketForSpan(DAY)).toBe(0);
-    expect(pickBucketForSpan(7 * DAY)).toBe(0);
+    expect(pickBucketForSpan(12 * HOUR)).toBe(0);
+    expect(pickBucketForSpan(24 * HOUR)).toBe(0);
   });
 
-  it('switches to 30 min between 1 week and 1 month', () => {
-    expect(pickBucketForSpan(7 * DAY + 1)).toBe(30 * MINUTE);
+  it('returns 30 min between 24 h and 30 d (matches the 1w preset bucket)', () => {
+    expect(pickBucketForSpan(24 * HOUR + 1)).toBe(30 * MINUTE);
+    expect(pickBucketForSpan(7 * DAY)).toBe(30 * MINUTE);
     expect(pickBucketForSpan(14 * DAY)).toBe(30 * MINUTE);
     expect(pickBucketForSpan(30 * DAY)).toBe(30 * MINUTE);
   });
 
-  it('switches to 1 h between 1 month and 1 year', () => {
+  it('returns 1 h between 30 d and 365 d', () => {
     expect(pickBucketForSpan(30 * DAY + 1)).toBe(HOUR);
     expect(pickBucketForSpan(180 * DAY)).toBe(HOUR);
     expect(pickBucketForSpan(365 * DAY)).toBe(HOUR);
   });
 
-  it('switches to 1 d past 1 year', () => {
+  it('returns 1 d past 1 year', () => {
     expect(pickBucketForSpan(365 * DAY + 1)).toBe(DAY);
     expect(pickBucketForSpan(5 * 365 * DAY)).toBe(DAY);
   });

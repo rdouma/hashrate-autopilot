@@ -101,15 +101,21 @@ export async function registerMetricsRoute(
       const sinceMs = spec.windowMs === null ? 0 : nowMs - spec.windowMs;
       const limit = clamp(Number.parseInt(req.query.limit ?? '', 10) || 5000, 10, 10_000);
 
-      // `all` is unique: it means "show everything regardless of how much
-      // we have". Its fixed 1-day bucket collapses a young DB (e.g. 24 h
-      // of history) into a single point. Resize the bucket to the actual
-      // data span so "All" still reads usefully on day-one deployments.
+      // Bucket sizing applies to every bounded preset, not just `all`
+      // (#82). The preset spec.bucketMs is calibrated for a *full* window
+      // worth of data; picking 1m or 1y on a database with only a few
+      // days of history would otherwise over-collapse the chart (1y on
+      // 6 days = ~6 daily points; 1m on 6 days = ~144 hourly points).
+      // Resize to whichever is shorter: the preset window or the actual
+      // recorded span.
       let bucketMs = spec.bucketMs;
-      if (range === 'all') {
-        const firstTick = await deps.tickMetricsRepo.firstTickAt();
-        if (firstTick !== null) {
-          bucketMs = pickBucketForSpan(nowMs - firstTick);
+      const firstTick = await deps.tickMetricsRepo.firstTickAt();
+      if (firstTick !== null) {
+        const actualSpan = nowMs - firstTick;
+        const effectiveSpan =
+          spec.windowMs === null ? actualSpan : Math.min(spec.windowMs, actualSpan);
+        if (effectiveSpan > 0) {
+          bucketMs = pickBucketForSpan(effectiveSpan);
         }
       }
 
