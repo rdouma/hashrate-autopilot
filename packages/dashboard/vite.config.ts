@@ -27,19 +27,26 @@ function getBuildInfo(): { build: number; hash: string; version: string } {
       hash = execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim();
     } catch { /* not a git repo */ }
   }
-  // App version: pulled out of umbrel-app.yml's `version:` line. Same
-  // source the Umbrel community store reads, so the footer cannot
-  // drift from the published release - they share one canonical
-  // file. Falls back to "unknown" if the manifest is missing or
-  // unparseable; footer chrome must never break the build (#74).
-  let version = 'unknown';
-  try {
-    const manifestPath = resolve(__dirname, '../../rdouma-hashrate-autopilot/umbrel-app.yml');
-    const manifest = readFileSync(manifestPath, 'utf8');
-    const match = manifest.match(/^version:\s*"?([^"\s]+)"?\s*$/m);
-    if (match?.[1]) version = match[1];
-  } catch { /* manifest unavailable */ }
-  return { build, hash: hash ? hash.slice(0, 7) : 'dev', version };
+  // App version: prefer an explicit APP_VERSION env var (set by the
+  // Docker build-arg in CI) over reading umbrel-app.yml off disk,
+  // because .dockerignore excludes rdouma-hashrate-autopilot/ from
+  // the build context - without the env override every Docker-baked
+  // dashboard would footer "vunknown" (the Umbrel install symptom
+  // observed 2026-04-27). Bare-metal builds run with the manifest
+  // present in the source tree, so the file fallback handles them.
+  // Both paths share one canonical source-of-truth: umbrel-app.yml.
+  // Final fallback "unknown" so footer chrome never breaks the
+  // build.
+  let version = process.env.APP_VERSION?.trim() || '';
+  if (!version) {
+    try {
+      const manifestPath = resolve(__dirname, '../../rdouma-hashrate-autopilot/umbrel-app.yml');
+      const manifest = readFileSync(manifestPath, 'utf8');
+      const match = manifest.match(/^version:\s*"?([^"\s]+)"?\s*$/m);
+      if (match?.[1]) version = match[1];
+    } catch { /* manifest unavailable */ }
+  }
+  return { build, hash: hash ? hash.slice(0, 7) : 'dev', version: version || 'unknown' };
 }
 
 const info = getBuildInfo();

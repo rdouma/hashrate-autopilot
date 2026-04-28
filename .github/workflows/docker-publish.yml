@@ -62,6 +62,20 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Read app version from umbrel-app.yml
+        id: app_version
+        run: |
+          set -euo pipefail
+          VER=$(grep -E '^version:' rdouma-hashrate-autopilot/umbrel-app.yml \
+                | head -1 \
+                | sed -E 's/^version:[[:space:]]*"?([^"[:space:]]+)"?.*/\1/')
+          if [[ -z "$VER" ]]; then
+            echo "::warning::could not parse version: from umbrel-app.yml; footer will read 'vunknown'"
+            VER="unknown"
+          fi
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+          echo "App version: $VER"
+
       - name: Compute image metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -92,13 +106,19 @@ jobs:
           push: ${{ steps.mode.outputs.publish }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          # Bake the short git SHA into the image so the dashboard
-          # footer reads `build N - <sha>` instead of `build N - dev`.
-          # `.dockerignore` strips `.git/` from the build context, so
-          # without this build-arg vite.config.ts has no way to learn
-          # the SHA.
+          # Bake the short git SHA + app version into the image so
+          # the dashboard footer reads `vX.Y.Z - build N - <sha>`
+          # instead of `vunknown - build N - dev`. `.dockerignore`
+          # strips `.git/` AND the umbrel-app.yml manifest dir from
+          # the build context, so without these build-args
+          # vite.config.ts has no way to learn either value.
+          # APP_VERSION is parsed from rdouma-hashrate-autopilot/
+          # umbrel-app.yml at workflow time - same canonical source
+          # the Umbrel community store reads, so the in-image footer
+          # cannot drift from the published release.
           build-args: |
             GIT_SHA=${{ github.sha }}
+            APP_VERSION=${{ steps.app_version.outputs.version }}
           # Cache layers in the GHA cache for faster subsequent
           # builds. Important for the ARM64 leg, which would
           # otherwise compile better-sqlite3 from source on every

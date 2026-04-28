@@ -7,7 +7,7 @@ manifestVersion: 1
 id: rdouma-hashrate-autopilot
 category: bitcoin
 name: Hashrate Autopilot
-version: "1.4.3"
+version: "1.4.4"
 tagline: Autopilot for renting hashrate to a non-custodial pool
 icon: https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/assets/icon-512.png
 description: >-
@@ -75,14 +75,13 @@ defaultPassword: ""
 submitter: Remco Douma
 submission: https://github.com/rdouma/hashrate-autopilot
 releaseNotes: >-
-  v1.4.3 - AVG COST stats accuracy + version in footer. The
-  AVG COST / PH DELIVERED card and the paired AVG COST VS HASHPRICE
-  card were reading 3-5% lower than the actual bid during patchy-
-  delivery windows because the denominator used Braiins's lagged
-  avg_speed_ph metric. Switched to counter-derived hashrate (same
-  signal driving the chart's amber line), so the cards now equal
-  the bid exactly when the bid is constant across the window and
-  the spend-weighted average when it varies - honest math under
-  pay-your-bid. Plus: dashboard footer now leads with the app
-  version (e.g. `v1.4.3 . build 158 . abc1234`) so users reporting
-  issues can cite a release.
+  v1.4.4 - footer version fix on Docker / Umbrel installs. The v1.4.3
+  footer correctly reads the version on bare-metal builds, but the
+  Docker image excludes umbrel-app.yml from its build context, so
+  the in-container vite build had no way to learn the version and
+  fell back to `vunknown`. The publish workflow now passes
+  APP_VERSION as a Docker build-arg sourced from umbrel-app.yml at
+  build time, so Umbrel installs read `v1.4.4` correctly. Also
+  includes the 1w Price chart fix: EDIT_PRICE markers are no
+  longer rendered at the 1-week zoom (they drowned out the lines
+  underneath); CREATE / EDIT_SPEED / CANCEL still shown.

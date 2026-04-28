@@ -23,6 +23,16 @@ ARG NODE_VERSION=22
 # arg every Docker-baked dashboard footer would say "dev".
 ARG GIT_SHA=dev
 
+# App semver version threaded in the same way. .dockerignore also
+# excludes rdouma-hashrate-autopilot/ (the Umbrel app dir where the
+# canonical umbrel-app.yml lives), so vite.config.ts cannot read the
+# manifest off disk during a Docker build - without this arg the
+# footer would say "vunknown" (incident 2026-04-27). Bare-metal
+# builds skip this and fall through to the file read in
+# vite.config.ts. Default "unknown" is the same fallback string the
+# vite path uses, so a missing arg surfaces visibly in the footer.
+ARG APP_VERSION=unknown
+
 # ---------------------------------------------------------------------------
 # Builder
 # ---------------------------------------------------------------------------
@@ -30,9 +40,12 @@ FROM node:${NODE_VERSION}-slim AS builder
 WORKDIR /app
 
 # Re-declare in the builder stage scope and export to environment
-# so vite.config.ts's `process.env.GIT_SHA` lookup picks it up.
+# so vite.config.ts's `process.env.GIT_SHA` / `process.env.APP_VERSION`
+# lookups pick them up.
 ARG GIT_SHA
 ENV GIT_SHA=${GIT_SHA}
+ARG APP_VERSION
+ENV APP_VERSION=${APP_VERSION}
 
 # better-sqlite3 needs python3 + a C++ toolchain to compile its
 # native binding when prebuilt binaries aren't available for the
