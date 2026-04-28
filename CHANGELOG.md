@@ -2,6 +2,10 @@
 
 ## 2026-04-27
 
+### `[Fix]` 1w Price chart: data series rendered as vertical sticks (#76)
+
+Removing the EDIT_PRICE markers at 1w (#75) exposed an underlying bucketing problem: the 1w preset was bucketing at 5 minutes, producing 2,016 points across ~784px of usable chart width (2.6 points per pixel). Adjacent points squashed into single columns, and the line series zigzagged within each column - rendering as a forest of vertical sticks once the dense markers no longer hid them. Bucket bumped to 30 minutes (336 points, ~0.43 per pixel) so lines render continuously. PriceChart's `MAX_BRIDGE_MS` is now adaptive (3× the median data spacing, floor 5 min) so a single missing bucket doesn't break the line at long ranges while real multi-bucket outages still show as visible breaks.
+
 ### `[Fix]` Footer reads `vunknown` on Docker/Umbrel installs
 
 The version-in-footer feature shipped in v1.4.3 worked on bare-metal builds (vite read umbrel-app.yml off disk during the build) but rendered `vunknown` on Docker-built images, because `.dockerignore` deliberately excludes `rdouma-hashrate-autopilot/` from the build context. Fixed by threading `APP_VERSION` as a Docker build-arg (same pattern as the existing `GIT_SHA` arg): the publish workflow parses `version:` out of `umbrel-app.yml` and passes it through, the Dockerfile re-declares it in the builder stage, and `vite.config.ts` prefers the env var, falling back to the file read for bare-metal builds. Both paths share one canonical source of truth.

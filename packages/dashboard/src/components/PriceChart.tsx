@@ -394,12 +394,25 @@ export const PriceChart = memo(function PriceChart({
     // for many minutes) renders as a visible break (#44), while a
     // one-tick restart blip or a transient /spot/bid hiccup just
     // bridges the valid samples on either side instead of painting
-    // a visible gap for a 60-second noise event (#47). Threshold is
-    // 5 minutes — covers a full deploy/restart cycle (pnpm install +
-    // build + restart can run 2–3 min cold) plus a follow-up observe
-    // miss. Real market outages run many minutes to hours, so a 5-min
-    // bridge doesn't meaningfully blur that signal.
-    const MAX_BRIDGE_MS = 5 * 60 * 1000;
+    // a visible gap for a 60-second noise event (#47).
+    //
+    // Adaptive bridge: scale to data spacing. Raw 60s ticks → 5-min
+    // bridge (5× tick). 30-min buckets at 1w → 90-min bridge (3×
+    // bucket). 1-hour buckets at 1m → 3-hour bridge. This keeps a
+    // single missing bucket from breaking the line at long ranges
+    // (#76) while still surfacing real multi-bucket outages. Median
+    // gap is robust to a single anomalous gap dragging the threshold.
+    const gaps: number[] = [];
+    for (let i = 1; i < points.length; i += 1) {
+      const dt = points[i]!.tick_at - points[i - 1]!.tick_at;
+      if (dt > 0) gaps.push(dt);
+    }
+    let medianGap = 60_000;
+    if (gaps.length > 0) {
+      gaps.sort((a, b) => a - b);
+      medianGap = gaps[Math.floor(gaps.length / 2)] ?? 60_000;
+    }
+    const MAX_BRIDGE_MS = Math.max(5 * 60 * 1000, 3 * medianGap);
     const pathWithNullGaps = (
       getValue: (p: MetricPoint) => number | null | undefined,
     ): string => {

@@ -103,7 +103,12 @@ export const CHART_RANGE_SPECS: Record<ChartRange, ChartRangeSpec> = {
     range: '1w',
     label: '1w',
     windowMs: 7 * DAY,
-    bucketMs: 5 * MINUTE,
+    // 30-min buckets: 7d / 30min = 336 points across ~784px usable chart
+    // width (~0.43 buckets per pixel). 5-min buckets gave 2,016 points
+    // (2.6 buckets per pixel), which crushed the line series into a
+    // forest of vertical sticks once the EDIT_PRICE markers that had
+    // been masking the issue were removed at this range (#76).
+    bucketMs: 30 * MINUTE,
     showEventKinds: RARE_KINDS,
   },
   '1m': {
@@ -144,6 +149,6 @@ export function parseChartRange(input: unknown): ChartRange | null {
 export function pickBucketForSpan(spanMs: number): number {
   if (spanMs > 365 * DAY) return DAY;
   if (spanMs > 30 * DAY) return HOUR;
-  if (spanMs > 7 * DAY) return 5 * MINUTE;
+  if (spanMs > 7 * DAY) return 30 * MINUTE;
   return 0; // raw
 }
