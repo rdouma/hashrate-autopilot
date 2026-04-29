@@ -1,7 +1,10 @@
 /**
- * Price chart: our primary bid (amber solid) vs the market-wide hashprice (dashed purple)
- * and the effective paid rate (emerald) under CLOB matching.
- * ask (orange dashed). Bid events are rendered as markers anchored to the
+ * Price chart: our primary bid (amber solid) vs the market-wide hashprice
+ * (dashed purple), the cheapest fillable ask (cyan), the effective cap, and
+ * — opt-in — the effective paid rate (emerald) reconstructed from per-tick
+ * primary_bid_consumed_sat deltas. Under pay-your-bid (#53) the bid IS the
+ * price paid, so the effective line should track the bid closely modulo
+ * settlement smoothing. Bid events render as markers anchored to the
  * primary-price line. Sized and padded to match `HashrateChart` so the
  * X-axis aligns visually when stacked.
  */
@@ -295,10 +298,12 @@ export const PriceChart = memo(function PriceChart({
         // `our_bid × delivered_ph × dt` predicts, it's a Braiins outage
         // tick where the counter has nearly stopped while delivered_ph
         // still carries its lagged rolling value. Folding those pairs
-        // into the rate drags it implausibly low (incident pairs have
-        // delta < 10% of expected vs the usual ~80% CLOB discount).
-        // Threshold 30% is well below normal matching and well above
-        // outage noise.
+        // into the rate drags it implausibly low. Under pay-your-bid
+        // (#53) a healthy pair settles at ~100% of expected; the 30%
+        // floor catches outage pairs (typically <10% of expected)
+        // while leaving normal settlement variance untouched. Possible
+        // re-tune once we have more data on day-to-day settlement
+        // jitter.
         const bid = cur.our_primary_price_sat_per_ph_day;
         if (bid !== null && Number.isFinite(bid) && bid > 0) {
           const expected = (bid * cur.delivered_ph * dt) / 86_400_000;
@@ -315,10 +320,11 @@ export const PriceChart = memo(function PriceChart({
       if (span < MIN_SPAN_MS) continue;
       const rate = deltaSum / phDaySum;
       if (!Number.isFinite(rate) || rate <= 0) continue;
-      // Hard ceiling: CLOB physics says effective ≤ our bid. Clamp
-      // rather than filter so the series stays continuous; anything
-      // still above that after the zero-dip filter is a residual
-      // numerical artifact.
+      // Hard ceiling: under pay-your-bid the bid IS the per-EH-day
+      // price, so the realised effective rate cannot legitimately
+      // exceed our bid. Clamp rather than filter so the series stays
+      // continuous; anything still above that after the zero-dip
+      // filter is a residual numerical artifact.
       const bid = points[i]!.our_primary_price_sat_per_ph_day;
       const clamped =
         bid !== null && Number.isFinite(bid) && rate > bid ? bid : rate;
@@ -812,9 +818,10 @@ export const PriceChart = memo(function PriceChart({
         )}
         {/* Effective rate — what Braiins actually charged us, from
             the per-tick primary_bid_consumed_sat delta. Drawn on top
-            of the bid (amber) line so the operator sees at a glance
-            whether the two line up (pay-your-bid) or the effective
-            sits systematically below (CLOB / pay-at-ask). #49. */}
+            of the bid (amber) line; under pay-your-bid (#53) the two
+            should track tightly modulo settlement smoothing. Visible
+            divergence is the prompt to investigate (e.g. settlement
+            outage, bid changing mid-window). */}
         {showEffectiveRate && effectivePath && (
           <path
             d={effectivePath}

@@ -181,8 +181,8 @@ msgid "$/PH/day"
 msgstr "$/PH/day"
 
 #: src/pages/Config.tsx
-msgid "0 = disabled. Example: 95 = activate cheap mode when the best ask on the orderbook is below 95% of the break-even hashprice from Ocean. Under CLOB you pay the matched ask, so this is the price we can actually reach."
-msgstr "0 = disabled. Example: 95 = activate cheap mode when the best ask on the orderbook is below 95% of the break-even hashprice from Ocean. Under CLOB you pay the matched ask, so this is the price we can actually reach."
+msgid "0 = disabled. Example: 95 = activate cheap mode when the best ask on the orderbook is below 95% of the break-even hashprice from Ocean. Braiins matches pay-your-bid (the bid IS the price we pay), and the autopilot tracks the fillable ask plus a small overpay — so a cheap best ask reliably translates into a cheap bid."
+msgstr "0 = disabled. Example: 95 = activate cheap mode when the best ask on the orderbook is below 95% of the break-even hashprice from Ocean. Braiins matches pay-your-bid (the bid IS the price we pay), and the autopilot tracks the fillable ask plus a small overpay — so a cheap best ask reliably translates into a cheap bid."
 
 #: src/pages/Config.tsx
 msgid "0 = use the full available wallet balance each CREATE (clamped to 1 BTC — the Braiins per-bid hard cap). Any positive value pins every new bid to that exact amount regardless of balance."

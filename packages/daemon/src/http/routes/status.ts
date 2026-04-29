@@ -49,8 +49,11 @@ export async function registerStatusRoute(
     const avgDeliveredPh3h = await deps.tickMetricsRepo.avgDeliveredPhSince(sinceMs3h);
     // Actual spend/day, derived from the last 3h of primary_bid_consumed_sat
     // deltas (same zero-dip filter as /api/stats and /api/finance/range).
-    // Runway uses this; the legacy bid × delivered model was lying under
-    // CLOB where the bid is a ceiling, not what we pay.
+    // Runway uses this rather than `bid × delivered` because the consumed
+    // counter is the authoritative settlement number from Braiins —
+    // independent of our model and resilient to mid-window bid changes
+    // and delivered-hashrate lag. Under pay-your-bid (#53) the two
+    // should agree closely, but the counter is the source of truth.
     const spend3hSat = await deps.tickMetricsRepo.actualSpendSatSince(sinceMs3h);
     const actualSpendPerDay3h =
       spend3hSat !== null && spend3hSat > 0

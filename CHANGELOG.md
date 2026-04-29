@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-04-29
+
+### `[Fix]` Stale CLOB references contradict pay-your-bid (#83)
+
+The dashboard's Cheap-threshold help text claimed *"Under CLOB you pay the matched ask, so this is the price we can actually reach"* — operator-facing copy that directly contradicts the pay-your-bid model verified in #53 (and which every other piece of pricing copy on the dashboard already reflects). Audited every CLOB mention in the codebase: 1 operator-facing string in Config.tsx and 6 internal comments / JSDoc blocks (4 in PriceChart.tsx, 1 in routes/status.ts, 1 in routes/stats.ts) that framed the current behaviour as CLOB. All seven rewritten to reflect the verified pay-your-bid reality (bid IS the per-EH-day price; the consumed counter is the source of truth for settlement, not because "bid is just a ceiling" but because it's the authoritative number from Braiins independent of our model). Historical references in migrations, version-history changelogs, research.md §1.8, and architecture.md were left intact — those correctly describe the v2.0 → v2.1 transition. NL + ES translations updated for the operator-facing string. No behavioural changes; pure copy / comment correctness pass.
+
 ## 2026-04-28
 
 ### `[Release]` v1.4.6

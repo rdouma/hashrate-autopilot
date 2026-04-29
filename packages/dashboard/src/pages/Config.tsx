@@ -94,7 +94,7 @@ function useSections(): Section[] {
             label: t`Cheap threshold`,
             kind: 'integer',
             unit: '%',
-            help: t`0 = disabled. Example: 95 = activate cheap mode when the best ask on the orderbook is below 95% of the break-even hashprice from Ocean. Under CLOB you pay the matched ask, so this is the price we can actually reach.`,
+            help: t`0 = disabled. Example: 95 = activate cheap mode when the best ask on the orderbook is below 95% of the break-even hashprice from Ocean. Braiins matches pay-your-bid (the bid IS the price we pay), and the autopilot tracks the fillable ask plus a small overpay — so a cheap best ask reliably translates into a cheap bid.`,
           },
           {
             key: 'cheap_sustained_window_minutes',

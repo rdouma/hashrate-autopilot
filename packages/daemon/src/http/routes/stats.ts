@@ -52,9 +52,12 @@ export interface StatsResponse {
   /**
    * Average effective rate MINUS average hashprice, weighted by
    * delivery. Positive = paying above break-even, negative = paying
-   * below. Computed from `primary_bid_consumed_sat` deltas (actual
-   * spend from Braiins), not our bid price — CLOB matching means the
-   * bid is a ceiling and the realised price is what we actually pay.
+   * below. Computed from `primary_bid_consumed_sat` deltas (the
+   * authoritative settlement counter from Braiins) rather than from
+   * our bid price, because the counter is independent of our model
+   * and resilient to mid-window bid changes. Under pay-your-bid (#53)
+   * the bid IS the per-EH-day price and the two should agree closely,
+   * but the counter is the source of truth.
    * Null for ranges without usable tick coverage.
    */
   readonly avg_overpay_vs_hashprice_sat_per_ph_day: number | null;
