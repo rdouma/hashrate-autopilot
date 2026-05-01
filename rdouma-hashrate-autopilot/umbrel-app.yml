@@ -7,7 +7,7 @@ manifestVersion: 1
 id: rdouma-hashrate-autopilot
 category: bitcoin
 name: Hashrate Autopilot
-version: "1.4.7"
+version: "1.4.8"
 tagline: Autopilot for renting hashrate to a non-custodial pool
 icon: https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/assets/icon-512.png
 description: >-
@@ -75,10 +75,13 @@ defaultPassword: ""
 submitter: Remco Douma
 submission: https://github.com/rdouma/hashrate-autopilot
 releaseNotes: >-
-  v1.4.7 - copy-correctness pass.
-  The Cheap-threshold help text on Config no longer claims CLOB
-  pricing; it now correctly reflects pay-your-bid (you pay your
-  bid price, not a matched ask). NL + ES translations updated.
-  Six internal comments / JSDoc blocks that still framed current
-  behaviour as CLOB were scrubbed at the same time. No
-  behavioural changes - pure operator-facing copy correctness.
+  v1.4.8 - UPTIME stat-card now stays accurate when target
+  hashrate changes. The previous absolute-threshold formula
+  marked legitimate delivery at lower targets (e.g. 1 PH/s) as
+  downtime, because expected per-tick accrual fell under a
+  fixed sat/sec floor. The threshold is now relative to
+  expected accrual implied by the bid and the reported
+  delivered_ph, so good delivery reads ~100% uptime regardless
+  of target, while genuine counter freezes still register as
+  downtime. Restart Umbrel app or `scripts/deploy.sh` for the
+  new SQL to take effect.

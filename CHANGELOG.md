@@ -2,6 +2,10 @@
 
 ## 2026-05-01
 
+### `[Release]` v1.4.8
+
+Ships the #84 UPTIME fix.
+
 ### `[Fix]` UPTIME under-reads after lowering target hashrate (#84)
 
 The UPTIME stat-card was calibrated to an absolute counter-rate threshold (`delta > 1 sat/sec`) that only made sense at higher target hashrates. After the operator lowered target from 3 PH/s to 1 PH/s, expected per-tick accrual dropped from ~100 sat to ~33 sat - well under the 60-sat absolute floor for a 60s tick - and legitimate delivery started getting marked as downtime (76.7% on a window where actual uptime was ~100%). The threshold is now relative: a tick counts as uptime when `delta >= 50% of expected_sat`, where `expected_sat = our_bid * delivered_ph * dur / 86_400_000_000`. Normal ops sit near 100% (Braiins computes delta and delivered_ph consistently); the original 2026-04-23 freeze incident still registers as downtime (~3%, well below the 50% line). Operator restart required.
