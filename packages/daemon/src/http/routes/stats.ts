@@ -153,17 +153,36 @@ async function computeMetrics(
     SELECT
       COUNT(*) AS tick_count,
 
-      -- Uptime: fraction of time when the Braiins counter was actually
-      -- incrementing at a non-trivial rate, NOT when the Braiins-side
-      -- lagged \`delivered_ph\` reported > 0. The lagged avg stays
-      -- elevated for minutes after shares stop flowing; only the
-      -- counter tells the truth about real matching. Threshold: Δ >
-      -- dur_ms / 1000, i.e. more than 1 sat per second of span. During
-      -- the 2026-04-23 12:56-12:59 incident the counter dropped to
-      -- ~4 sat/min while delivered_ph held at 3.67 PH/s — that now
-      -- correctly registers as downtime. See #52.
+      -- Uptime: fraction of time when the Braiins counter was
+      -- incrementing close to the rate implied by \`delivered_ph\` and
+      -- \`our_bid\`, NOT when the lagged \`delivered_ph\` reported > 0.
+      -- The lagged avg stays elevated for minutes after shares stop
+      -- flowing; only the counter tells the truth about real
+      -- matching. (#52)
+      --
+      -- The threshold is RELATIVE because target hashrate varies.
+      -- Expected per-tick accrual:
+      --   expected_sat = our_bid * delivered_ph * dur / 86_400_000_000
+      -- (our_bid in sat/EH/day, delivered_ph in PH/s, dur in ms; the
+      -- 86.4e9 = 86_400_000 ms/day * 1000 EH/PH).
+      --
+      -- A tick counts as uptime when delta >= 50% of expected, i.e.:
+      --   delta * 172_800_000_000 > our_bid * delivered_ph * dur
+      -- Normal ops sit near 100% (Braiins computes both signals
+      -- consistently); the 2026-04-23 12:56-12:59 incident sat near
+      -- 3% (counter ~4 sat/min vs ~122 sat/min expected from 3.67
+      -- PH/s * bid).
+      --
+      -- Earlier code used an absolute threshold (delta > 1 sat/sec).
+      -- That worked at ~3 PH/s targets but broke when target dropped
+      -- to ~1 PH/s: legitimate delivery there only accrues ~33 sat
+      -- per 60s tick, well under the 60-sat absolute floor, so good
+      -- ticks were marked as downtime. (#84)
       CASE WHEN SUM(CASE WHEN valid THEN dur ELSE 0 END) > 0 THEN
-        SUM(CASE WHEN valid AND delta * 1000.0 > dur THEN dur ELSE 0 END) * 100.0
+        SUM(CASE WHEN valid
+                  AND our_bid > 0
+                  AND delta * 172800000000.0 > our_bid * delivered_ph * dur
+             THEN dur ELSE 0 END) * 100.0
           / SUM(CASE WHEN valid THEN dur ELSE 0 END)
       ELSE NULL END AS uptime_pct,
 
