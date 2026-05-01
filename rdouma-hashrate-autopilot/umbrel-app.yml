@@ -7,7 +7,7 @@ manifestVersion: 1
 id: rdouma-hashrate-autopilot
 category: bitcoin
 name: Hashrate Autopilot
-version: "1.4.6"
+version: "1.4.7"
 tagline: Autopilot for renting hashrate to a non-custodial pool
 icon: https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/assets/icon-512.png
 description: >-
@@ -75,18 +75,10 @@ defaultPassword: ""
 submitter: Remco Douma
 submission: https://github.com/rdouma/hashrate-autopilot
 releaseNotes: >-
-  v1.4.6 - chart fidelity + dashboard polish.
-  Long-range charts now stay readable on fresh installs: 1m and
-  1y were collapsing to a handful of points when the database
-  held only a few days of history; bucket sizing now scales to
-  the actual recorded span instead of always assuming a full
-  preset window. The optional "effective rate" line on the Price
-  chart now renders on 1w / 1m / 1y / All as well (its 5-minute
-  gap cap was clipping every bucketed pair). Pool-block tooltips
-  on the Hashrate chart prefer the share_log recorded at the
-  block's moment instead of the live share_log, so older blocks
-  no longer show a misleading "approximation" caveat when we
-  have the actual value. Default tick-metrics retention bumped
-  to 365 days (it's a tiny numeric series); eventful decisions
-  retention also 365 days. Sats/USD toggle is now visible on
-  fresh installs (BTC price source defaults to Coingecko).
+  v1.4.7 - copy-correctness pass.
+  The Cheap-threshold help text on Config no longer claims CLOB
+  pricing; it now correctly reflects pay-your-bid (you pay your
+  bid price, not a matched ask). NL + ES translations updated.
+  Six internal comments / JSDoc blocks that still framed current
+  behaviour as CLOB were scrubbed at the same time. No
+  behavioural changes - pure operator-facing copy correctness.

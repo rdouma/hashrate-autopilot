@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-05-01
+
+### `[Release]` v1.4.7
+
+Ships the #83 copy-correctness pass. The Cheap-threshold help text on Config no longer claims CLOB pricing; it now correctly reflects pay-your-bid (you pay your bid price, not a matched ask). NL + ES translations updated. Six internal comments / JSDoc blocks that still framed current behaviour as CLOB were scrubbed at the same time. No behavioural changes - pure operator-facing copy correctness.
+
 ## 2026-04-29
 
 ### `[Fix]` Stale CLOB references contradict pay-your-bid (#83)
