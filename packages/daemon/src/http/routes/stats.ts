@@ -153,37 +153,50 @@ async function computeMetrics(
     SELECT
       COUNT(*) AS tick_count,
 
-      -- Uptime: fraction of time when the Braiins counter was
-      -- incrementing close to the rate implied by \`delivered_ph\` and
-      -- \`our_bid\`, NOT when the lagged \`delivered_ph\` reported > 0.
-      -- The lagged avg stays elevated for minutes after shares stop
-      -- flowing; only the counter tells the truth about real
-      -- matching. (#52)
+      -- Uptime: duration-weighted fraction of clock time when the
+      -- counter-derived delivered hashrate was meaningful (>= 0.05
+      -- PH/s). Matches the operator-facing tooltip "% of time with
+      -- delivered hashrate > 0".
       --
-      -- The threshold is RELATIVE because target hashrate varies.
-      -- Expected per-tick accrual:
-      --   expected_sat = our_bid * delivered_ph * dur / 86_400_000_000
-      -- (our_bid in sat/EH/day, delivered_ph in PH/s, dur in ms; the
-      -- 86.4e9 = 86_400_000 ms/day * 1000 EH/PH).
+      -- DENOMINATOR is total clock time over the window (every tick
+      -- with reasonable \`dur\`). Zero-delivery time MUST count toward
+      -- the denominator or "uptime" reads as a tautology - earlier
+      -- versions filtered both sides on \`delivered_ph > 0.05\`, which
+      -- excluded zero-delivery ticks entirely and let the metric
+      -- read 87.5% on a window with ~50% true delivery. (#86)
       --
-      -- A tick counts as uptime when delta >= 50% of expected, i.e.:
-      --   delta * 172_800_000_000 > our_bid * delivered_ph * dur
-      -- Normal ops sit near 100% (Braiins computes both signals
-      -- consistently); the 2026-04-23 12:56-12:59 incident sat near
-      -- 3% (counter ~4 sat/min vs ~122 sat/min expected from 3.67
-      -- PH/s * bid).
+      -- NUMERATOR uses the COUNTER (\`primary_bid_consumed_sat\`
+      -- delta), not the Braiins-reported \`delivered_ph\` field.
+      -- delivered_ph is a 5-min lagged rolling average that stays
+      -- elevated for minutes after real delivery drops, so basing
+      -- uptime on it would say "uptime" during the very freezes
+      -- operators care about. (#52)
       --
-      -- Earlier code used an absolute threshold (delta > 1 sat/sec).
-      -- That worked at ~3 PH/s targets but broke when target dropped
-      -- to ~1 PH/s: legitimate delivery there only accrues ~33 sat
-      -- per 60s tick, well under the 60-sat absolute floor, so good
-      -- ticks were marked as downtime. (#84)
-      CASE WHEN SUM(CASE WHEN valid THEN dur ELSE 0 END) > 0 THEN
-        SUM(CASE WHEN valid
+      -- Counter-derived PH per tick = delta * 86_400_000_000 /
+      -- (our_bid * dur). The threshold check >= 0.05 PH/s, multiplied
+      -- through to keep all integer arithmetic, is:
+      --   delta * 86_400_000_000 >= 0.05 * our_bid * dur
+      -- Ticks with no owned bid (our_bid IS NULL or 0) cannot deliver
+      -- and count as downtime - 0 in numerator, full \`dur\` in
+      -- denominator. Same applies to ticks where the counter went
+      -- backwards (delta < 0, e.g. a bid replaced with a fresh one
+      -- whose counter starts at 0).
+      --
+      -- Earlier #84 fix made the threshold relative ("delta >= 50%
+      -- of expected accrual"), which fixed the target-change
+      -- regression but left the denominator-excludes-downtime bug
+      -- intact. The relative-threshold framing is gone here: the
+      -- absolute "PH/s above noise floor" check naturally handles
+      -- both the target-change case (low target -> low expected ->
+      -- low actual, all consistent above 0.05) and the
+      -- zero-delivery case (delta -> 0 -> below 0.05 -> downtime).
+      CASE WHEN SUM(CASE WHEN dur BETWEEN 1 AND 300000 THEN dur ELSE 0 END) > 0 THEN
+        SUM(CASE WHEN dur BETWEEN 1 AND 300000
                   AND our_bid > 0
-                  AND delta * 172800000000.0 > our_bid * delivered_ph * dur
+                  AND delta IS NOT NULL AND delta >= 0
+                  AND delta * 86400000000.0 >= 0.05 * our_bid * dur
              THEN dur ELSE 0 END) * 100.0
-          / SUM(CASE WHEN valid THEN dur ELSE 0 END)
+          / SUM(CASE WHEN dur BETWEEN 1 AND 300000 THEN dur ELSE 0 END)
       ELSE NULL END AS uptime_pct,
 
       -- Avg Braiins delivered: computed from counter deltas, not the
