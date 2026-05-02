@@ -415,6 +415,7 @@ export const api = {
     }),
   stats: (range: ChartRange) =>
     request<StatsResponse>(`/api/stats?range=${encodeURIComponent(range)}`),
+  storageEstimate: () => request<StorageEstimateResponse>('/api/storage-estimate'),
   ocean: () => request<OceanResponse>('/api/ocean'),
   // Test-auth call: hits /api/status to validate credentials.
   checkAuth: () => request<StatusResponse>('/api/status'),
@@ -432,6 +433,21 @@ export interface StatsResponse {
   mutation_count: number;
   range: ChartRange;
   tick_count: number;
+}
+
+export interface StorageEstimateBucket {
+  rows_per_day: number;
+  bytes_per_row: number;
+  current_rows: number;
+}
+
+export interface StorageEstimateResponse {
+  tick_metrics: StorageEstimateBucket;
+  decisions_uneventful: StorageEstimateBucket;
+  decisions_eventful: StorageEstimateBucket;
+  db_file_bytes: number | null;
+  sample_days: number;
+  computed_at: number;
 }
 
 export interface BtcPriceResponse {

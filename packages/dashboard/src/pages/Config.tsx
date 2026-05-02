@@ -5,7 +5,13 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { NumberField } from '../components/NumberField';
-import { api, UnauthorizedError, type AppConfig } from '../lib/api';
+import {
+  api,
+  UnauthorizedError,
+  type AppConfig,
+  type StorageEstimateBucket,
+  type StorageEstimateResponse,
+} from '../lib/api';
 import { LOCALE_PRESETS, useLocale } from '../lib/locale';
 
 const EH_PER_PH = 1000;
@@ -691,6 +697,9 @@ function SectionCard({
         {section.description && (
           <p className="text-xs text-slate-500 mt-1">{section.description}</p>
         )}
+        {section.id === 'log-retention' && (
+          <LogRetentionTotalHint draft={draft} locale={locale} />
+        )}
       </header>
       <div className={gridCls}>
         {section.fields.map((f) => (
@@ -704,6 +713,165 @@ function SectionCard({
       </div>
     </section>
   );
+}
+
+/**
+ * Estimated cap on disk usage from current retention settings,
+ * rendered under the section description. Reads
+ * `/api/storage-estimate` (rows-per-day + bytes-per-row, sampled
+ * server-side from recent rows). Excludes index overhead and SQLite
+ * page padding, so it's a planning aid, not a guarantee.
+ */
+function LogRetentionTotalHint({
+  draft,
+  locale,
+}: {
+  draft: AppConfig;
+  locale: string | undefined;
+}) {
+  const { i18n } = useLingui();
+  void i18n;
+  const query = useQuery({
+    queryKey: ['storage-estimate'],
+    queryFn: api.storageEstimate,
+    staleTime: 60_000,
+  });
+  if (!query.data) return null;
+  const total = retentionTotalBytes(draft, query.data);
+  const dailyTotal = retentionDailyBytes(query.data);
+  const totalStr = formatBytes(total, locale);
+  const dailyStr = formatBytes(dailyTotal, locale);
+  const dbStr =
+    query.data.db_file_bytes !== null ? formatBytes(query.data.db_file_bytes, locale) : null;
+  return (
+    <p className="text-xs text-amber-300/80 mt-1">
+      {dbStr !== null ? (
+        <Trans>
+          Estimated cap at current settings: ~ {totalStr} (logs only, indexes
+          excluded). Logs grow ~ {dailyStr}/day. Database file is currently
+          {' '}
+          {dbStr}.
+        </Trans>
+      ) : (
+        <Trans>
+          Estimated cap at current settings: ~ {totalStr} (logs only, indexes
+          excluded). Logs grow ~ {dailyStr}/day.
+        </Trans>
+      )}
+    </p>
+  );
+}
+
+function retentionTotalBytes(draft: AppConfig, est: StorageEstimateResponse): number {
+  // 0 days = "keep forever", which we render as the daily growth rate
+  // rather than a finite cap; it contributes 0 to the cap projection.
+  return (
+    bucketProjection(draft.tick_metrics_retention_days, est.tick_metrics) +
+    bucketProjection(
+      draft.decisions_uneventful_retention_days,
+      est.decisions_uneventful,
+    ) +
+    bucketProjection(draft.decisions_eventful_retention_days, est.decisions_eventful)
+  );
+}
+
+function retentionDailyBytes(est: StorageEstimateResponse): number {
+  return (
+    est.tick_metrics.rows_per_day * est.tick_metrics.bytes_per_row +
+    est.decisions_uneventful.rows_per_day * est.decisions_uneventful.bytes_per_row +
+    est.decisions_eventful.rows_per_day * est.decisions_eventful.bytes_per_row
+  );
+}
+
+function bucketProjection(days: number, bucket: StorageEstimateBucket): number {
+  if (days <= 0) return 0;
+  return days * bucket.rows_per_day * bucket.bytes_per_row;
+}
+
+function formatBytes(n: number, locale: string | undefined): string {
+  if (!Number.isFinite(n) || n <= 0) {
+    return (0).toLocaleString(locale) + ' B';
+  }
+  const KB = 1024;
+  const MB = KB * 1024;
+  const GB = MB * 1024;
+  if (n < KB) return `${Math.round(n).toLocaleString(locale)} B`;
+  if (n < MB)
+    return `${(n / KB).toLocaleString(locale, { maximumFractionDigits: 1 })} KB`;
+  if (n < GB)
+    return `${(n / MB).toLocaleString(locale, { maximumFractionDigits: 1 })} MB`;
+  return `${(n / GB).toLocaleString(locale, { maximumFractionDigits: 2 })} GB`;
+}
+
+/**
+ * Per-knob retention input with a dynamic "~ X/day · ~ Y at N days"
+ * hint sourced from `/api/storage-estimate`. When days = 0 (keep
+ * forever), shows daily growth without a finite cap.
+ */
+function RetentionField({
+  spec,
+  value,
+  locale,
+  onChange,
+}: {
+  spec: Extract<FieldSpec, { kind: 'integer' }>;
+  value: number;
+  locale: string | undefined;
+  onChange: <K extends keyof AppConfig>(k: K, v: AppConfig[K]) => void;
+}) {
+  const { i18n } = useLingui();
+  void i18n;
+
+  const query = useQuery({
+    queryKey: ['storage-estimate'],
+    queryFn: api.storageEstimate,
+    staleTime: 60_000,
+  });
+
+  const bucket = pickBucketForKey(spec.key, query.data);
+  const days = value ?? 0;
+  const dailyBytes = bucket ? bucket.rows_per_day * bucket.bytes_per_row : null;
+  const totalBytes = dailyBytes !== null && days > 0 ? dailyBytes * days : null;
+
+  const dailyStr = dailyBytes !== null ? formatBytes(dailyBytes, locale) : null;
+  const totalStr = totalBytes !== null ? formatBytes(totalBytes, locale) : null;
+  const daysStr = days.toLocaleString(locale);
+
+  return (
+    <label className="block">
+      <span className="block text-sm text-slate-300 mb-1">{spec.label}</span>
+      <div className="max-w-[200px]">
+        <NumberField
+          value={value ?? 0}
+          onChange={(n) => onChange(spec.key, n as never)}
+          step="integer"
+          locale={locale}
+          suffix={spec.unit}
+        />
+      </div>
+      {dailyStr !== null && (
+        <span className="block text-xs text-amber-300/80 mt-1">
+          {days === 0 ? (
+            <Trans>No auto-prune; growing ~ {dailyStr}/day</Trans>
+          ) : (
+            <Trans>~ {dailyStr}/day · ~ {totalStr} at {daysStr} days</Trans>
+          )}
+        </span>
+      )}
+      {spec.help && <span className="block text-xs text-slate-500 mt-1">{spec.help}</span>}
+    </label>
+  );
+}
+
+function pickBucketForKey(
+  key: keyof AppConfig,
+  data: StorageEstimateResponse | undefined,
+): StorageEstimateBucket | undefined {
+  if (!data) return undefined;
+  if (key === 'tick_metrics_retention_days') return data.tick_metrics;
+  if (key === 'decisions_uneventful_retention_days') return data.decisions_uneventful;
+  if (key === 'decisions_eventful_retention_days') return data.decisions_eventful;
+  return undefined;
 }
 
 /**
@@ -969,6 +1137,15 @@ function Field({
 
   if (spec.key === 'bid_budget_sat' && spec.kind === 'integer') {
     return <BidBudgetField spec={spec} value={value as number} locale={locale} onChange={onChange} />;
+  }
+
+  if (
+    spec.kind === 'integer' &&
+    (spec.key === 'tick_metrics_retention_days' ||
+      spec.key === 'decisions_uneventful_retention_days' ||
+      spec.key === 'decisions_eventful_retention_days')
+  ) {
+    return <RetentionField spec={spec} value={value as number} locale={locale} onChange={onChange} />;
   }
 
   if (spec.kind === 'radio') {

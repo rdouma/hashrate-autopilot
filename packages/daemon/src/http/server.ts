@@ -45,6 +45,7 @@ import { registerPayoutsRoute } from './routes/payouts.js';
 import { registerRunModeRoute } from './routes/run-mode.js';
 import { registerStatsRoute } from './routes/stats.js';
 import { registerStatusRoute } from './routes/status.js';
+import { registerStorageEstimateRoute } from './routes/storage-estimate.js';
 
 export interface HttpServerDeps {
   readonly controller: Controller;
@@ -120,6 +121,7 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<HttpServer
   await registerBidEventsRoute(app, deps);
   await registerPayoutsRoute(app, { payoutObserver: deps.payoutObserver });
   await registerStatsRoute(app, { db: deps.db, bidEventsDb: deps.db });
+  await registerStorageEstimateRoute(app, { db: deps.db });
   await registerOceanRoute(app, {
     oceanClient: deps.oceanClient,
     configRepo: deps.configRepo,

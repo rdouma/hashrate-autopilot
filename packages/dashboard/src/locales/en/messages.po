@@ -173,6 +173,10 @@ msgid "<0>Mismatch:</0> the worker identity must start with <1>{addr}.</1> — o
 msgstr "<0>Mismatch:</0> the worker identity must start with <1>{addr}.</1> — otherwise Ocean credits shares to a different address (or nobody). Edit the BTC payout address above; this field follows it automatically."
 
 #: src/pages/Config.tsx
+msgid "~ {dailyStr}/day · ~ {totalStr} at {daysStr} days"
+msgstr "~ {dailyStr}/day · ~ {totalStr} at {daysStr} days"
+
+#: src/pages/Config.tsx
 msgid "⚠ No period found. Ocean TIDES requires \"<BTC address>.<label>\". Without the address prefix, shares go uncredited."
 msgstr "⚠ No period found. Ocean TIDES requires \"<BTC address>.<label>\". Without the address prefix, shares go uncredited."
 
@@ -848,6 +852,14 @@ msgid "Escalation in"
 msgstr "Escalation in"
 
 #: src/pages/Config.tsx
+msgid "Estimated cap at current settings: ~ {totalStr} (logs only, indexes excluded). Logs grow ~ {dailyStr}/day."
+msgstr "Estimated cap at current settings: ~ {totalStr} (logs only, indexes excluded). Logs grow ~ {dailyStr}/day."
+
+#: src/pages/Config.tsx
+msgid "Estimated cap at current settings: ~ {totalStr} (logs only, indexes excluded). Logs grow ~ {dailyStr}/day. Database file is currently {dbStr}."
+msgstr "Estimated cap at current settings: ~ {totalStr} (logs only, indexes excluded). Logs grow ~ {dailyStr}/day. Database file is currently {dbStr}."
+
+#: src/pages/Config.tsx
 msgid "Every restart resets to DRY_RUN. You explicitly flip to LIVE from the dashboard."
 msgstr "Every restart resets to DRY_RUN. You explicitly flip to LIVE from the dashboard."
 
@@ -1207,6 +1219,10 @@ msgstr "no active bid"
 #: src/pages/Status.tsx
 msgid "no active bids"
 msgstr "no active bids"
+
+#: src/pages/Config.tsx
+msgid "No auto-prune; growing ~ {dailyStr}/day"
+msgstr "No auto-prune; growing ~ {dailyStr}/day"
 
 #: src/pages/Status.tsx
 msgid "no bids on this account"

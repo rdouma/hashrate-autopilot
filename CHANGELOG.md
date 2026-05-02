@@ -2,6 +2,10 @@
 
 ## 2026-05-01
 
+### `[Feature]` Storage-estimate hints in Log retention panel (#85)
+
+The three retention knobs (tick metrics / decisions uneventful / decisions eventful) used to be qualitative ("compact numeric series", "main bloat lever") with no quantitative anchor for how much disk a given setting actually translates to. Each knob now shows a daily-growth + at-current-setting cap underneath the input ("~ 230 KB/day · ~ 80 MB at 365 days"), and the section header surfaces the combined cap across all three plus the current size of the SQLite file. Numbers come from a new `/api/storage-estimate` endpoint that samples rows-per-day and bytes-per-row from the last 7 days of recorded data, so they reflect this autopilot's actual behaviour rather than a hardcoded guess. Knobs at 0 ("keep forever") show the daily growth without a finite cap. Indexes and SQLite page padding are excluded from the projection - it's a planning aid, not a guarantee. NL + ES translations updated.
+
 ### `[Release]` v1.4.8
 
 Ships the #84 UPTIME fix.

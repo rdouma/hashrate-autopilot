@@ -173,6 +173,10 @@ msgid "<0>Mismatch:</0> the worker identity must start with <1>{addr}.</1> — o
 msgstr "<0>Komt niet overeen:</0> de worker-identiteit moet beginnen met <1>{addr}.</1> - anders schrijft Ocean shares toe aan een ander adres (of niemand). Pas hierboven het BTC-uitbetaaladres aan; dit veld volgt automatisch."
 
 #: src/pages/Config.tsx
+msgid "~ {dailyStr}/day · ~ {totalStr} at {daysStr} days"
+msgstr "~ {dailyStr}/dag · ~ {totalStr} bij {daysStr} dagen"
+
+#: src/pages/Config.tsx
 msgid "⚠ No period found. Ocean TIDES requires \"<BTC address>.<label>\". Without the address prefix, shares go uncredited."
 msgstr "⚠ Geen punt gevonden. Ocean TIDES vereist \"<BTC-adres>.<label>\". Zonder het adres-voorvoegsel worden shares niet bijgeschreven."
 
@@ -848,6 +852,14 @@ msgid "Escalation in"
 msgstr "Escalatie over"
 
 #: src/pages/Config.tsx
+msgid "Estimated cap at current settings: ~ {totalStr} (logs only, indexes excluded). Logs grow ~ {dailyStr}/day."
+msgstr "Geschat maximum bij huidige instellingen: ~ {totalStr} (alleen logs, exclusief indexen). Logs groeien ~ {dailyStr}/dag."
+
+#: src/pages/Config.tsx
+msgid "Estimated cap at current settings: ~ {totalStr} (logs only, indexes excluded). Logs grow ~ {dailyStr}/day. Database file is currently {dbStr}."
+msgstr "Geschat maximum bij huidige instellingen: ~ {totalStr} (alleen logs, exclusief indexen). Logs groeien ~ {dailyStr}/dag. Databasebestand is momenteel {dbStr}."
+
+#: src/pages/Config.tsx
 msgid "Every restart resets to DRY_RUN. You explicitly flip to LIVE from the dashboard."
 msgstr "Elke herstart reset naar DRY_RUN. Je schakelt expliciet over naar LIVE vanuit het dashboard."
 
@@ -1207,6 +1219,10 @@ msgstr "geen actief bod"
 #: src/pages/Status.tsx
 msgid "no active bids"
 msgstr "geen actieve biedingen"
+
+#: src/pages/Config.tsx
+msgid "No auto-prune; growing ~ {dailyStr}/day"
+msgstr "Geen automatische opruiming; groeit ~ {dailyStr}/dag"
 
 #: src/pages/Status.tsx
 msgid "no bids on this account"
