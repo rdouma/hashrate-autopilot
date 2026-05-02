@@ -1,4 +1,4 @@
-# Hashrate Autopilot — Architecture (v1.5)
+# Hashrate Autopilot — Architecture (v1.6)
 
 > Concretion of `docs/spec.md` into module boundaries, data flow, deployment shape, and a
 > milestone-ordered build plan.
@@ -6,10 +6,14 @@
 > v1.0 was built around a 2FA gate on mutations that, on empirical verification, turns out not to
 > apply to the owner-token API path. v1.1 removed the confirmation bot, quiet-hours buffering,
 > pending-confirmation / confirmation-timeout action modes, and operator-availability flag. v1.2 added
-> the simulator and the depth-aware pricing machinery. v1.3 was a spec-consistency sweep. **v1.4**
-> (this revision, 2026-04-24) aligns the architecture doc with spec v2.1: the simulator has been
-> retired, `overpay_sat_per_eh_day` is back as the single pricing knob, and the config / routes / DB
-> schema sections now reflect the code through migration 0046.
+> the simulator and the depth-aware pricing machinery. v1.3 was a spec-consistency sweep. v1.4
+> (2026-04-24) aligned the architecture doc with spec v2.1: the simulator has been retired,
+> `overpay_sat_per_eh_day` is back as the single pricing knob. v1.5 (2026-04-25) covered the
+> appliance-packaging release. **v1.6** (this revision, 2026-05-02) catches up on schema additions
+> through migration 0051 (share_log column + chart toggle, BTC-price default flip, retention bumps),
+> fixes the legacy-`spend_sat` self-contradiction, drops the never-shipped `Decisions` page from the
+> repo layout, replaces stale `/healthz` + `/metrics` mentions with the actual `/api/health`
+> endpoint, and adds the `storage-estimate` route to the route list.
 
 ## 1. High-level shape
 
@@ -102,11 +106,11 @@ hashrate-autopilot/
 │   │   └── src/http/               (Fastify; dashboard API)
 │   │       ├── server.ts
 │   │       └── routes/             (status, config, decisions, actions, operator, metrics, run-mode,
-│   │                                finance, stats, bid-events, ocean, payouts, btc-price)
+│   │                                finance, stats, storage-estimate, bid-events, ocean, payouts, btc-price)
 │   │
 │   └── dashboard/                  React SPA
 │       ├── src/main.tsx
-│       ├── src/pages/              (Status, Decisions, Config, Login)
+│       ├── src/pages/              (Status, Config, Setup, Login)
 │       ├── src/components/
 │       ├── src/lib/                (api, auth, format, labels, locale)
 │       └── vite.config.ts
@@ -227,14 +231,15 @@ CREATE TABLE config (
   bitcoind_rpc_user TEXT,
   bitcoind_rpc_password TEXT,
   payout_source TEXT NOT NULL DEFAULT 'none',       -- 'none' | 'electrs' | 'bitcoind'
-  btc_price_source TEXT NOT NULL DEFAULT 'none',    -- 'none' | 'coingecko' | 'coinbase' | 'bitstamp' | 'kraken'
+  btc_price_source TEXT NOT NULL DEFAULT 'coingecko', -- 'none' | 'coingecko' | 'coinbase' | 'bitstamp' | 'kraken' (#77, migration 0050)
   datum_api_url TEXT,                               -- optional Datum Gateway /umbrel-api URL
   -- Chart smoothing (display-only, not read by control loop)
   braiins_hashrate_smoothing_minutes INTEGER NOT NULL DEFAULT 1,
   datum_hashrate_smoothing_minutes INTEGER NOT NULL DEFAULT 1,
   braiins_price_smoothing_minutes INTEGER NOT NULL DEFAULT 1,
   show_effective_rate_on_price_chart INTEGER NOT NULL DEFAULT 0,  -- bool (0 | 1)
-  -- Retention
+  show_share_log_on_hashrate_chart INTEGER NOT NULL DEFAULT 0,    -- bool (0 | 1); migration 0049
+  -- Retention (defaults bumped in migration 0051)
   tick_metrics_retention_days INTEGER NOT NULL DEFAULT 365,
   decisions_uneventful_retention_days INTEGER NOT NULL DEFAULT 7,
   decisions_eventful_retention_days INTEGER NOT NULL DEFAULT 365,
@@ -313,9 +318,13 @@ CREATE TABLE tick_metrics (
   available_balance_sat INTEGER,
   datum_hashrate_ph REAL,                 -- gateway-measured hashrate (null if not configured)
   ocean_hashrate_ph REAL,                 -- Ocean's credited 5-min hashrate for our payout address
+  share_log_pct REAL,                     -- our slice of Ocean's TIDES window (e.g. 0.0182 for 0.0182%);
+                                          -- migration 0048; null pre-0048 / when Ocean off
   spend_sat REAL,                         -- LEGACY column (bid × delivered model); no longer written
   primary_bid_consumed_sat INTEGER,       -- per-tick snapshot of the primary bid's consumed counter;
-                                          -- deltas are the authoritative actual spend series
+                                          -- deltas are the authoritative actual spend series that
+                                          -- drives the per-day P&L panel, the effective-rate line,
+                                          -- the UPTIME stat, and counter-derived delivered hashrate
   run_mode TEXT NOT NULL,
   action_mode TEXT NOT NULL
 );
@@ -409,9 +418,14 @@ concern (not by order; the file names are authoritative):
   v2.0 was reversed by v2.1, that specific drop was removed from 0043 and 0045 became a no-op, so
   upgrading operators keep their configured overpay value. Other v1.x knobs stay retired because
   v2.1's direct fillable tracking replaces them with a single formula.
-- **P&L per-day spend (0040):** `tick_metrics.spend_sat` precomputed per tick as
-  `price_sat_per_eh_day × delivered_ph / 1_440_000`. Feeds the range-aware `/api/finance/range` aggregates
-  that drive the per-day P&L panel.
+- **P&L per-day spend (0040 → superseded by 0041):** 0040 added
+  `tick_metrics.spend_sat`, originally precomputed per tick as
+  `price_sat_per_eh_day × delivered_ph / 1_440_000`. 0041 added
+  `primary_bid_consumed_sat` (per-tick snapshot of the Braiins counter); the
+  range-aware `/api/finance/range` aggregates and the per-day P&L panel were
+  switched to per-tick deltas of that counter (settled cost from Braiins under
+  pay-your-bid), and `spend_sat` is no longer written. The column is retained
+  for schema continuity. See spec §11.1.
 
 ## 6. External integrations
 
@@ -465,9 +479,9 @@ set `HTTP_HOST=127.0.0.1`. To change the port, set `HTTP_PORT=nnnn`.
 - **Structured logs** via pino, stdout + rotated file under `data/logs/`. Fields: `level`, `ts`, `tick_id`,
   `run_mode`, `request_id` (on API-bound events).
 - **Secret redaction** via pino's built-in redaction paths.
-- **Metrics** (optional): `/metrics` via `prom-client` with basic counters (`ticks_total`,
-  `api_calls_total{endpoint,status}`, `rewards_detected_sat_total`, `spend_sat_total`).
-- **Health**: `/healthz` returns 200 + compact JSON of current run mode, last successful API/RPC timestamps.
+- **Health**: `/api/health` (unauthenticated) returns `{ status, mode }` for both NEEDS_SETUP and
+  operational boots; doubles as the appliance liveness probe and the dashboard's setup-mode probe.
+- **Prometheus `/metrics`** is not exposed; deferred until a scraper exists to consume it (see §13).
 
 ## 10. Development and testing
 
@@ -525,3 +539,5 @@ Remaining work is tracked in GitHub issues.
 | 1.3     | 2026-04-23 | Spec consistency sweep: updated §5 config/runtime_state/tick_metrics schemas to current state (all migrations through 0040+), marked CLOB-retired pricing columns as DEPRECATED, fixed port/bind to 3010/0.0.0.0, replaced Docker Compose deployment with bare-process scripts, removed stale "In flight" milestone tracker, fixed "collapsible" panel reference. |
 | 1.4     | 2026-04-24 | Aligned architecture with spec v2.1 (pay-your-bid controller). Removed `simulate` from the HTTP route list (retired in v2.0). Fixed §5 `config` schema — removed the duplicate/stray `overpay_sat_per_eh_day` line that was listed both as active and as DEPRECATED; added `braiins_price_smoothing_minutes`, `show_effective_rate_on_price_chart`. Fixed `runtime_state` block — added `action_mode` / `operator_available` (legacy-but-present) and `above_floor_ticks` (the debounce counter) which the code has but the doc omitted. Rewrote `tick_metrics` table to match the actual columns (was significantly wrong — old doc listed `actual_hashrate_ph`, `wallet_balance_sat`, etc. which the code doesn't use). Migration summary extended through 0046 with an explicit note on the 0043/0045 pay-your-bid preservation fix. |
 | 1.5     | 2026-04-25 | Aligned with spec v2.2 (appliance packaging, v1.3.0 release, umbrella #56). Documented three-layer secrets resolution (env > sops > db) and the new `secrets` table (migration 0047). Added the NEEDS_SETUP boot path: when secrets or config are absent, daemon stands up only the wizard's three endpoints and transitions in-place to operational on submit. Added `/api/health` as a public probe shared by both boot phases. Noted setup.ts as the power-user CLI path; the dashboard wizard is the appliance default. Touched §3.3 and §10 (operator-facing helpers) only — no schema or control-loop shape changes. |
+
+| 1.6     | 2026-05-02 | Catch-up sweep with spec v2.3. §5 config schema gains `show_share_log_on_hashrate_chart` (migration 0049) and flips `btc_price_source` default to `coingecko` (migration 0050, #77). §5 tick_metrics gains `share_log_pct` (migration 0048). Rewrote the `spend_sat` migration-summary entry (was self-contradicting: §5 marked it LEGACY/no-longer-written while the migration summary still said it fed the per-day P&L panel; per-day P&L is actually driven by `primary_bid_consumed_sat` deltas added in 0041). §2 repo-layout block: dropped the never-shipped `Decisions` page (spec §12.3 confirms it was not built) and added `storage-estimate` to the `routes/` listing (#85 shipped 2026-05-01). §9 observability: removed stale `/healthz` and Prometheus `/metrics` references (neither shipped) in favour of the actual `/api/health` endpoint, with a forward-looking note that `/metrics` is deferred. No schema or control-loop shape changes. |
