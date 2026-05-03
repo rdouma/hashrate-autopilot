@@ -6,6 +6,12 @@
 
 The Status page tracked the TH/PH/EH and sats/BTC/USD header toggles, but Config inputs stayed in canonical units regardless. Now the hashrate-target inputs (target / floor / cheap-target) display + accept values in the selected hashrate unit (3 PH/s reads as 0.003 EH/s when EH is selected; flipping to TH gives 3,000 TH/s), and the price inputs (overpay, max bid, max-overpay-vs-hashprice) follow currency × hashrate-unit (300 sat/PH/day reads as 0.0000003 ₿/PH/day in BTC mode, or 300,000 sat/EH/day in EH mode). Bid budget input follows the currency toggle too. Storage stays canonical (sat/EH/day for prices, PH/s for hashrates, sat for budgets) - the toggles are presentation-only on the input side. USD is intentionally not a price-input mode (the operator's mental model is "I want 300 sats overpay", not "$0.0000003"); when USD is the active currency, price + budget inputs fall back to sat for editability while every read-only display elsewhere still respects USD.
 
+### `[Fix]` pool_hashrate_ph populated + BTC oracle source per tick (#89)
+
+Two follow-ups on yesterday's #89 wiring:
+1. `pool_hashrate_ph` was hardcoded null in `services/ocean.ts` because Ocean's `/pool_stat` doesn't expose pool hashrate directly. Approximated from our own slice instead: `user_hashrate_5m_ph / (share_log_pct / 100)`. Right order of magnitude, tracks pool growth, null when either input is missing.
+2. New nullable column `btc_usd_price_source TEXT` (migration 0054) locks the oracle ('coingecko' / 'coinbase' / etc) per tick alongside the price reading, so retroactive USD valuations stay attributable when the operator switches sources.
+
 ### `[Feature]` Observer wiring for extended per-tick capture (#89)
 
 The schema columns shipped earlier today now actually get populated. observe() pulls each value from sources we already poll: Ocean's `pool_stat` (network_difficulty + estimated_block_reward + pool_hashrate + active_workers), Braiins's `/account/balance` (total_deposited + total_spent), Ocean's `/statsnap` (unpaid_sat), the BTC oracle (usd_per_btc), and the primary owned bid's `last_pause_reason` + `fee_rate_pct` from the bids list. tick.ts forwards the State fields straight into the insert. Zero extra HTTP calls (every source was already on the tick path). `primary_bid_fee_paid_sat` stays null - that field lives on the per-bid `/spot/bid/detail` counters which #90 will introduce.

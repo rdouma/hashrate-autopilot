@@ -163,6 +163,7 @@ export class Controller {
         braiins_total_spent_sat: state.braiins_total_spent_sat,
         ocean_unpaid_sat: state.ocean_unpaid_sat,
         btc_usd_price: state.btc_usd_price,
+        btc_usd_price_source: state.btc_usd_price_source,
         primary_bid_last_pause_reason: primary?.last_pause_reason ?? null,
         primary_bid_fee_paid_sat: null,
         primary_bid_fee_rate_pct: primary?.fee_rate_pct ?? null,

@@ -70,7 +70,9 @@ export interface ObserveDeps {
    * Optional - tick proceeds with btc_usd_price = null when the
    * oracle is off ('none' source) or hasn't published a value yet.
    */
-  readonly btcPriceService?: { getLatest(): { usd_per_btc: number } | null };
+  readonly btcPriceService?: {
+    getLatest(): { usd_per_btc: number; source: string } | null;
+  };
   readonly now: () => number;
 }
 
@@ -171,7 +173,9 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
     typeof balanceAccount?.total_spot_spent_sat === 'number'
       ? balanceAccount.total_spot_spent_sat
       : null;
-  const btc_usd_price = deps.btcPriceService?.getLatest()?.usd_per_btc ?? null;
+  const btcSnapshot = deps.btcPriceService?.getLatest() ?? null;
+  const btc_usd_price = btcSnapshot?.usd_per_btc ?? null;
+  const btc_usd_price_source = btcSnapshot?.source ?? null;
 
   const apiBids = extractBids(bidsResponse);
   const owned_bids: OwnedBidSnapshot[] = [];
@@ -330,6 +334,7 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
     braiins_total_spent_sat,
     ocean_unpaid_sat,
     btc_usd_price,
+    btc_usd_price_source,
     last_api_ok_at: deps.braiins.getLastApiOkAt(),
     hashprice_sat_per_ph_day: inputs.hashpriceSatPerPhDay,
     fillable_ask_sat_per_eh_day,

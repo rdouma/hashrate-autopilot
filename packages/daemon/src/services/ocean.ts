@@ -223,14 +223,28 @@ export function createOceanClient(opts: OceanClientOptions = {}): OceanClient {
         const userHash5mRaw = Number(hr.hashrate_300s ?? 0);
         const user_hashrate_5m_ph = userHash5mRaw > 0 ? userHash5mRaw / 1e15 : null;
 
-        // Pool hashrate estimate: difficulty × 2^32 / 600 gives
-        // network H/s. Pool hashrate isn't directly exposed; we'd
-        // need the pool's share of blocks. For now expose network stats.
+        // Pool hashrate isn't a directly-exposed field on /pool_stat
+        // (the response is just difficulty + tides shares + reward
+        // estimate). Approximate it from our own slice: if our 5-min
+        // hashrate is X PH/s and our share_log is p% of the TIDES
+        // window, the pool is ~ X / (p/100) PH/s. Approximation
+        // because share_log is a weighted-shares fraction, not an
+        // instantaneous hashrate fraction, but it's the right order
+        // of magnitude and tracks pool growth correctly. Null when
+        // either input is missing or share_log is zero.
+        let pool_hashrate_ph: number | null = null;
+        if (
+          user_hashrate_5m_ph !== null &&
+          share_log_pct !== null &&
+          share_log_pct > 0
+        ) {
+          pool_hashrate_ph = Math.round(user_hashrate_5m_ph / (share_log_pct / 100));
+        }
         const poolInfo: OceanPoolInfo = {
           active_users: Number.isFinite(activeUsers) ? activeUsers : null,
           active_workers: Number.isFinite(activeWorkers) ? activeWorkers : null,
           network_difficulty: networkDifficulty > 0 ? networkDifficulty : null,
-          pool_hashrate_ph: null,
+          pool_hashrate_ph,
           estimated_block_reward_sat: Number.isFinite(estimatedRewardBtc)
             ? Math.round(estimatedRewardBtc * SAT_PER_BTC)
             : null,

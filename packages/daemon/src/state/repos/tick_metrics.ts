@@ -45,6 +45,7 @@ export interface InsertTickMetricArgs {
   readonly braiins_total_spent_sat: number | null;
   readonly ocean_unpaid_sat: number | null;
   readonly btc_usd_price: number | null;
+  readonly btc_usd_price_source: string | null;
   readonly primary_bid_last_pause_reason: string | null;
   readonly primary_bid_fee_paid_sat: number | null;
   readonly primary_bid_fee_rate_pct: number | null;

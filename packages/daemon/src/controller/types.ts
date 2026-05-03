@@ -168,6 +168,8 @@ export interface State {
   readonly braiins_total_spent_sat: number | null;
   readonly ocean_unpaid_sat: number | null;
   readonly btc_usd_price: number | null;
+  /** Which oracle the BTC price came from (locked per tick so retroactive USD values stay attributable). */
+  readonly btc_usd_price_source: string | null;
 
   /** Last successful API read timestamp (ms). */
   readonly last_api_ok_at: number | null;

@@ -296,6 +296,8 @@ export interface TickMetricsTable {
   ocean_unpaid_sat: number | null;
   /** BTC/USD oracle reading at tick, $. */
   btc_usd_price: number | null;
+  /** Which oracle the reading came from ('coingecko' / 'coinbase' / etc), null when no reading. */
+  btc_usd_price_source: string | null;
   /** Primary owned bid's last_pause_reason (Braiins). */
   primary_bid_last_pause_reason: string | null;
   /** Primary owned bid's cumulative fees paid, sat. */

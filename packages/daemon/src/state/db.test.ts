@@ -81,6 +81,7 @@ describe('openDatabase — migrations', () => {
       '0051_bump_retention_defaults.sql',
       '0052_block_found_sound.sql',
       '0053_tick_metrics_extended_capture.sql',
+      '0054_btc_price_source_per_tick.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });
