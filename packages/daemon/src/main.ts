@@ -349,16 +349,46 @@ async function bootOperational(
   // something to return - otherwise the first row after every restart
   // writes btc_usd_price = null until the dashboard's polling thread
   // (or the operator hitting /api/btc-price) lands its first fetch
-  // ~60s in. Best-effort: a failed fetch leaves cache null and the
-  // first tick still writes null, which is correct degradation.
+  // ~60s in.
+  //
+  // Strategy: try the live oracle first (fresh data is always
+  // preferable). If that fails AND the most recent persisted price
+  // in tick_metrics is fresh (within BOOT_FALLBACK_MAX_AGE_MS),
+  // seed the cache with it - covers the case where the daemon
+  // restarts during a transient oracle outage. Crucially, the age
+  // gate means a long downtime (oracle was reachable at last shutdown
+  // but daemon stayed off for hours/days/years) does NOT seed a
+  // stale price - we'd rather write a null tick than paint an
+  // outlier on the chart.
+  const BOOT_FALLBACK_MAX_AGE_MS = 15 * 60_000; // 15 minutes
   void (async () => {
     const cfg = await configRepo.get();
     const source = cfg?.btc_price_source ?? 'none';
     if (source === 'none') return;
     try {
-      await btcPriceService.fetchPrice(source);
+      const fresh = await btcPriceService.fetchPrice(source);
+      if (fresh) return; // live fetch succeeded; cache is warm
     } catch {
-      /* swallow - boot must not fail on the oracle */
+      /* fall through to DB fallback */
+    }
+    // Live fetch failed - try the most recent persisted price as a
+    // fallback, but only if it's fresh enough that using it as
+    // "current" is operationally indistinguishable from the live
+    // value.
+    try {
+      const latest = await tickMetricsRepo.latestBtcPrice();
+      if (latest && Date.now() - latest.tick_at <= BOOT_FALLBACK_MAX_AGE_MS) {
+        btcPriceService.seedFromPersisted(latest.usd_per_btc, latest.source, latest.tick_at);
+        log(
+          `[btc-price] live fetch failed at boot; seeded from persisted snapshot ${Math.round((Date.now() - latest.tick_at) / 1000)}s old (source=${latest.source})`,
+        );
+      } else if (latest) {
+        log(
+          `[btc-price] live fetch failed at boot; persisted snapshot is ${Math.round((Date.now() - latest.tick_at) / 60_000)}m old, too stale to seed (threshold ${BOOT_FALLBACK_MAX_AGE_MS / 60_000}m). First tick will write null until next live fetch succeeds.`,
+        );
+      }
+    } catch {
+      /* DB query failed; nothing more we can do at boot */
     }
   })();
 

@@ -41,6 +41,22 @@ export class BtcPriceService {
     return this.cache;
   }
 
+  /**
+   * Seed the in-memory cache from a previously persisted price.
+   * Used at boot when the live fetch fails - lets the first tick
+   * after restart write a non-null price even when the oracle is
+   * temporarily unreachable. Caller is responsible for the freshness
+   * gate (see main.ts BOOT_FALLBACK_MAX_AGE_MS); this method does
+   * not validate age, it just writes the snapshot.
+   */
+  seedFromPersisted(usdPerBtc: number, source: string, fetchedAtMs: number): void {
+    this.cache = {
+      usd_per_btc: usdPerBtc,
+      source,
+      fetched_at_ms: fetchedAtMs,
+    };
+  }
+
   /** Fetch (or return from cache) the current BTC/USD price for the given source. */
   async fetchPrice(source: string): Promise<BtcPriceSnapshot | null> {
     if (source === 'none') return null;

@@ -525,6 +525,36 @@ export class TickMetricsRepo {
     return row?.min_tick_at ?? null;
   }
 
+  /**
+   * Most recent tick that has a non-null `btc_usd_price`. Used at
+   * boot as a fallback when the live oracle fetch fails. Caller is
+   * responsible for the freshness check (we return whatever's there;
+   * the boot-fallback path in main.ts gates on a 15-min staleness
+   * threshold so a long-downtime restart doesn't seed an outlier).
+   */
+  async latestBtcPrice(): Promise<{
+    tick_at: number;
+    usd_per_btc: number;
+    source: string;
+  } | null> {
+    const row = await this.db
+      .selectFrom('tick_metrics')
+      .select(['tick_at', 'btc_usd_price', 'btc_usd_price_source'])
+      .where('btc_usd_price', 'is not', null)
+      .orderBy('tick_at', 'desc')
+      .limit(1)
+      .executeTakeFirst();
+    if (!row || row.btc_usd_price === null) return null;
+    return {
+      tick_at: row.tick_at,
+      usd_per_btc: row.btc_usd_price,
+      // Source could be null on rows from before migration 0054 -
+      // fall back to the configured source name (the value is what
+      // matters; source is only metadata).
+      source: row.btc_usd_price_source ?? 'unknown',
+    };
+  }
+
   async pruneOlderThan(cutoffMs: number): Promise<void> {
     await this.db.deleteFrom('tick_metrics').where('tick_at', '<', cutoffMs).execute();
   }
