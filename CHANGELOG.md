@@ -6,6 +6,12 @@
 
 The Status page tracked the TH/PH/EH and sats/BTC/USD header toggles, but Config inputs stayed in canonical units regardless. Now the hashrate-target inputs (target / floor / cheap-target) display + accept values in the selected hashrate unit (3 PH/s reads as 0.003 EH/s when EH is selected; flipping to TH gives 3,000 TH/s), and the price inputs (overpay, max bid, max-overpay-vs-hashprice) follow currency × hashrate-unit (300 sat/PH/day reads as 0.0000003 ₿/PH/day in BTC mode, or 300,000 sat/EH/day in EH mode). Bid budget input follows the currency toggle too. Storage stays canonical (sat/EH/day for prices, PH/s for hashrates, sat for budgets) - the toggles are presentation-only on the input side. USD is intentionally not a price-input mode (the operator's mental model is "I want 300 sats overpay", not "$0.0000003"); when USD is the active currency, price + budget inputs fall back to sat for editability while every read-only display elsewhere still respects USD.
 
+### `[Fix]` BTC/USD gap on first tick after restart + right-axis legend entry (#89 / #93)
+
+The btc_usd_price column had a single null tick every time the daemon restarted - visible as small flat horizontal segments on the BTC/USD secondary axis line where the chart bridged across the gap. Root cause: `BtcPriceService.getLatest()` returns null until the first `fetchPrice()` call; that call only happens when the dashboard hits `/api/btc-price`, which lands ~60s after restart. So the very first tick after every restart wrote a null price row. Fixed by kicking off a fetch at daemon boot - cache is warm before the first tick. Best-effort: a failed boot fetch leaves the column null for that tick (correct degradation).
+
+Also: PriceChart now adds the right-axis series to its legend (matches HashrateChart's existing behaviour). The operator picks "BTC/USD" on the dropdown, the legend gets a `BTC/USD ($)` entry next to "our bid / fillable / hashprice / max bid".
+
 ### `[UI]` Stable decimals across all magnitudes + Ocean panel tooltips (#92 / #93)
 
 The compact-tick formatter now forces a stable decimal count at every magnitude tier - not just the k/M/B suffixed ones. So a left-axis hashrate column at EH magnitude reads "0,002 / 0,004 / 0,006 / 0,008 / 0,010" (3 decimals throughout) instead of mixing "0,002 / 0,004 / 0,006 / 0,008 / 0,01"; pool-hashrate at EH on the right axis reads "30,0 / 28,0 / 26,0" (1 decimal at >=10) instead of bare integers. Each tier picks the natural decimal count for its magnitude; within the tier, every tick uses exactly that count.

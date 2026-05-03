@@ -915,6 +915,9 @@ export const PriceChart = memo(function PriceChart({
           {showEffectiveRate && effectiveHasData && <Legend color={COLOR_EFFECTIVE} label={t`effective`} />}
           <Legend color={COLOR_HASHPRICE} label={t`hashprice`} dashed />
           <Legend color={COLOR_MAXBID} label={t`max bid`} />
+          {hasRightAxis && rightAxis && (
+            <Legend color={rightAxis.stroke} label={rightAxis.axisLabel} />
+          )}
           {showEventKinds.length > 0 && <EventLegend kinds={showEventKinds} />}
         </div>
       </div>

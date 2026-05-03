@@ -345,6 +345,22 @@ async function bootOperational(
   // the latest reading per tick into tick_metrics (#89). The HTTP
   // server reuses the same instance below.
   const btcPriceService = new BtcPriceService();
+  // Warm the cache at boot so the very first tick's getLatest() has
+  // something to return - otherwise the first row after every restart
+  // writes btc_usd_price = null until the dashboard's polling thread
+  // (or the operator hitting /api/btc-price) lands its first fetch
+  // ~60s in. Best-effort: a failed fetch leaves cache null and the
+  // first tick still writes null, which is correct degradation.
+  void (async () => {
+    const cfg = await configRepo.get();
+    const source = cfg?.btc_price_source ?? 'none';
+    if (source === 'none') return;
+    try {
+      await btcPriceService.fetchPrice(source);
+    } catch {
+      /* swallow - boot must not fail on the oracle */
+    }
+  })();
 
   const controller = new Controller({
     braiins,
