@@ -26,6 +26,7 @@ import {
 
 import type { MetricPoint, OurBlockMarker } from '../lib/api';
 import { formatAgeMinutes, formatNumber, formatTimestamp, formatTimestampUtc } from '../lib/format';
+import { useDenomination } from '../lib/denomination';
 import { useLocale } from '../lib/locale';
 import { applyExplorerTemplate } from '../lib/blockExplorer';
 import { localizedRangeLabel } from '../lib/range-label';
@@ -167,6 +168,7 @@ export const HashrateChart = memo(function HashrateChart({
   const { i18n } = useLingui();
   void i18n;
   const { intlLocale } = useLocale();
+  const denomination = useDenomination();
   const [blockTip, setBlockTip] = useState<BlockTooltipState | null>(null);
 
   const onBlockEnter = useCallback(
@@ -488,7 +490,12 @@ export const HashrateChart = memo(function HashrateChart({
               fill="#64748b"
               fontFamily="monospace"
             >
-              {formatNumber(v, { minimumFractionDigits: 1, maximumFractionDigits: 1 }, intlLocale)}
+              {(() => {
+                // Strip the suffix; the unit is shown once on the axis label.
+                const s = denomination.formatHashrate(v, intlLocale);
+                const idx = s.lastIndexOf(' ');
+                return idx > 0 ? s.slice(0, idx) : s;
+              })()}
             </text>
           </g>
         ))}
@@ -650,7 +657,7 @@ export const HashrateChart = memo(function HashrateChart({
           fontFamily="monospace"
           transform={`rotate(-90 14 ${PADDING.top + (HEIGHT - PADDING.top - PADDING.bottom) / 2})`}
         >
-          PH/s
+          {denomination.hashrateSuffix}
         </text>
         {hasShareLog && (
           <text

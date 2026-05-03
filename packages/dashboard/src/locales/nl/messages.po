@@ -180,10 +180,6 @@ msgstr "~ {dailyStr}/dag · ~ {totalStr} bij {daysStr} dagen"
 msgid "⚠ No period found. Ocean TIDES requires \"<BTC address>.<label>\". Without the address prefix, shares go uncredited."
 msgstr "⚠ Geen punt gevonden. Ocean TIDES vereist \"<BTC-adres>.<label>\". Zonder het adres-voorvoegsel worden shares niet bijgeschreven."
 
-#: src/components/PriceChart.tsx
-msgid "$/PH/day"
-msgstr "$/PH/dag"
-
 #: src/pages/Config.tsx
 msgid "0 = disabled. Example: 95 = activate cheap mode when the best ask on the orderbook is below 95% of the break-even hashprice from Ocean. Braiins matches pay-your-bid (the bid IS the price we pay), and the autopilot tracks the fillable ask plus a small overpay — so a cheap best ask reliably translates into a cheap bid."
 msgstr "0 = uitgeschakeld. Voorbeeld: 95 = schakel goedkope modus in wanneer de beste ask in het orderboek onder 95% van de break-even hashprice van Ocean ligt. Braiins matcht pay-your-bid (het bod IS de prijs die we betalen), en de autopilot volgt de fillable ask plus een kleine overpay — dus een goedkope beste ask vertaalt zich betrouwbaar in een goedkoop bod."
@@ -454,8 +450,8 @@ msgid "BTC price oracle"
 msgstr "BTC-prijs orakel"
 
 #: src/components/Layout.tsx
-msgid "BTC/USD: ${priceStr} - click to toggle denomination"
-msgstr "BTC/USD: ${priceStr} - klik om eenheid te wisselen"
+msgid "BTC/USD: ${priceStr} - select display currency"
+msgstr "BTC/USD: ${priceStr} - kies weergavevaluta"
 
 #: src/components/PriceChart.tsx
 #: src/pages/Status.tsx
@@ -1670,7 +1666,6 @@ msgstr "Voer de wachtende beslissing onmiddellijk uit - heft de post-edit-lock o
 msgid "runway"
 msgstr "runway"
 
-#: src/components/PriceChart.tsx
 #: src/pages/Config.tsx
 msgid "sat/PH/day"
 msgstr "sat/PH/dag"
@@ -1690,6 +1685,14 @@ msgstr "opgeslagen."
 #: src/pages/Config.tsx
 msgid "saving…"
 msgstr "opslaan…"
+
+#: src/components/Layout.tsx
+msgid "Select display currency"
+msgstr "Kies weergavevaluta"
+
+#: src/components/Layout.tsx
+msgid "Select hashrate unit (1 EH = 1,000 PH = 1,000,000 TH)"
+msgstr "Kies hashratemaat (1 EH = 1.000 PH = 1.000.000 TH)"
 
 #: src/pages/Setup.tsx
 msgid "Setting up…"

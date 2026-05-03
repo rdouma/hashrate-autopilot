@@ -2,6 +2,10 @@
 
 ## 2026-05-02
 
+### `[UI]` BTC currency option + TH/PH/EH hashrate-unit toggle (#87)
+
+The header had a two-way `sats | USD` denomination toggle. To make cross-marketplace comparisons easier (NiceHash quotes BTC/TH/day, Braiins sat/PH/day), the dashboard now has two independent three-way header toggles: `sats | BTC | USD` for currency and `TH | PH | EH` for hashrate unit. Both choices persist per-browser to localStorage and affect every value rendered on the dashboard immediately - hero PRICE / DELIVERED card, stats bar (UPTIME / AVG cards), service panels, hashrate + price chart Y-axis labels and tick numbers, active bids table. Internal storage stays sat / PH/s (canonical schema units); the toggles are presentation-only. USD slot hides itself when no BTC-price oracle is configured (existing behaviour); BTC stays available regardless because the conversion is a static 100,000,000 multiplier independent of the oracle. NL + ES translations updated.
+
 ### `[Fix]` UPTIME ignores zero-delivery time (#86)
 
 The UPTIME stat-card read 87.5% on a 3h window where ~70 of 180 minutes (≈ 39%) had zero delivered hashrate - reality was ~61%. Both the numerator and denominator of the SQL filtered on `delivered_ph > 0.05`, so zero-delivery ticks were dropped from BOTH sides instead of counting as downtime in the denominator. The metric was effectively reading "% of the time when there was already meaningful delivery, the counter was incrementing close to expected" - a tautology that contradicted the tooltip ("Duration-weighted % of time with delivered hashrate > 0"). Denominator is now total clock time over the window (every tick with reasonable `dur`); numerator counts ticks where the COUNTER-derived hashrate (`delta * 86_400_000_000 / (our_bid * dur)`) is >= 0.05 PH/s. Counter-derived rather than `delivered_ph` so the #52 freeze (where Braiins's lagged field stays elevated after delivery dies) still reads as downtime. Same window now reads 61.11%, matching the chart's red boxes. Operator restart required.

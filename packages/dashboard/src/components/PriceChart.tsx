@@ -687,17 +687,20 @@ export const PriceChart = memo(function PriceChart({
 
   const { pricePoints, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, hashpricePath, fillablePath, fillableHasData, effectivePath, effectiveHasData, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents } = chartData;
 
-  // Format Y-axis tick values: in USD mode convert sat/PH/day to $/PH/day
+  // Format Y-axis tick values via the denomination context so the
+  // numbers track the currency + hashrate-unit toggle. The full
+  // formatter returns "{value} {unit}"; strip the unit (it's drawn
+  // once on the rotated axis label) so each tick is just the number.
   const priceFmt = (v: number): string => {
-    if (denomination.mode === 'usd' && denomination.btcPrice !== null) {
-      const usd = (v / 100_000_000) * denomination.btcPrice;
-      const n = new Intl.NumberFormat(intlLocale, {
-        minimumFractionDigits: usd >= 1 ? 2 : 4,
-        maximumFractionDigits: usd >= 1 ? 2 : 4,
-      }).format(usd);
-      return `$${n}`;
-    }
-    return formatNumber(Math.round(v), {}, intlLocale);
+    const s = denomination.formatSatPerPhDay(v, intlLocale);
+    // Match either " <unit>" trailing (sat/BTC variants) or
+    // "/<unit>/day" trailing (USD-prefixed). The full format
+    // ends with /day in every mode, so cut at the last space if
+    // present, otherwise at "/<TH|PH|EH>/day".
+    const sp = s.lastIndexOf(' ');
+    if (sp > 0) return s.slice(0, sp);
+    const m = s.match(/^(.+?)\/(?:TH|PH|EH)\/day$/);
+    return m?.[1] ?? s;
   };
 
   return (
@@ -944,7 +947,7 @@ export const PriceChart = memo(function PriceChart({
             fontFamily="monospace"
             transform={`rotate(-90 14 ${PADDING.top + (chartHeight - PADDING.top - PADDING.bottom) / 2})`}
           >
-            {denomination.mode === 'usd' ? t`$/PH/day` : t`sat/PH/day`}
+            {denomination.rateSuffix}
           </text>
         )}
       </svg>

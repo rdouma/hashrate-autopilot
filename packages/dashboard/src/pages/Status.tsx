@@ -35,7 +35,6 @@ import {
   formatAge,
   formatAgePrecise,
   formatCountdownPrecise,
-  formatHashratePH,
   formatNumber,
   formatSatPerPH,
   formatSats,
@@ -255,16 +254,16 @@ export function Status() {
             />
           }
         >
-          <Row k={t`delivered`} v={formatHashratePH(s.actual_hashrate_ph)} />
+          <Row k={t`delivered`} v={denomination.formatHashrate(s.actual_hashrate_ph)} />
           <Row
             k={t`target`}
             v={
               s.config_summary.cheap_mode_active
-                ? `${formatHashratePH(s.config_summary.effective_target_hashrate_ph)} ${t`(cheap mode)`}`
-                : formatHashratePH(s.config_summary.target_hashrate_ph)
+                ? `${denomination.formatHashrate(s.config_summary.effective_target_hashrate_ph)} ${t`(cheap mode)`}`
+                : denomination.formatHashrate(s.config_summary.target_hashrate_ph)
             }
           />
-          <Row k={t`floor`} v={formatHashratePH(s.config_summary.minimum_floor_hashrate_ph)} />
+          <Row k={t`floor`} v={denomination.formatHashrate(s.config_summary.minimum_floor_hashrate_ph)} />
           {s.below_floor_since && (
             <div className="text-xs text-amber-400 mt-1">
               <Trans>below floor since {formatAge(s.below_floor_since)}</Trans>
@@ -376,10 +375,10 @@ export function Status() {
                       <FormattedValue v={denomination.formatSatPerPhDay(b.price_sat_per_ph_day, intlLocale)} />
                     </td>
                     <td className="py-2 px-3 text-right">
-                      {formatHashratePH(b.avg_speed_ph)}
+                      {denomination.formatHashrate(b.avg_speed_ph)}
                       <span className="text-xs text-slate-500">
                         {' '}
-                        / {b.speed_limit_ph ? formatHashratePH(b.speed_limit_ph) : '∞'}
+                        / {b.speed_limit_ph ? denomination.formatHashrate(b.speed_limit_ph) : '∞'}
                       </span>
                     </td>
                     <td className="py-2 px-3 text-right font-mono">
@@ -548,12 +547,13 @@ function OperationsCard({
           <div className="flex flex-col items-center">
             <div className="text-[11px] uppercase tracking-wider text-slate-100 mb-1"><Trans>delivered</Trans></div>
             <div className={`text-4xl font-mono font-semibold tabular-nums leading-none ${deliveredColor}`}>
-              {formatNumber(s.actual_hashrate_ph, {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              }, intlLocale)}
+              {(() => {
+                const hr = denomination.formatHashrate(s.actual_hashrate_ph, intlLocale);
+                const split = splitUnit(hr);
+                return split ? split.num : hr;
+              })()}
             </div>
-            <div className="text-xs text-slate-400 mt-1">PH/s</div>
+            <div className="text-xs text-slate-400 mt-1">{denomination.hashrateSuffix}</div>
           </div>
         </div>
       ) : (
@@ -1162,17 +1162,17 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
       />
       <StatCard
         label={t`avg braiins`}
-        value={formatHashratePH(avg_hashrate_ph, intlLocale)}
+        value={denomination.formatHashrate(avg_hashrate_ph, intlLocale)}
         tooltip={t`Duration-weighted average of the hashrate Braiins reports delivering. Includes downtime (where delivered = 0) so a bad stretch shows up in the average, not just the live card.`}
       />
       <StatCard
         label={t`avg datum`}
-        value={formatHashratePH(avg_datum_hashrate_ph, intlLocale)}
+        value={denomination.formatHashrate(avg_datum_hashrate_ph, intlLocale)}
         tooltip={t`Duration-weighted average of the hashrate Datum measures at the gateway. A sustained gap below Avg Braiins means Braiins is billing for hashrate Datum never saw arrive.`}
       />
       <StatCard
         label={t`avg ocean`}
-        value={formatHashratePH(avg_ocean_hashrate_ph, intlLocale)}
+        value={denomination.formatHashrate(avg_ocean_hashrate_ph, intlLocale)}
         tooltip={t`Duration-weighted average of the hashrate Ocean credits to our payout address. Each tick (every 60 s) the daemon calls Ocean's /v1/user_hashrate endpoint and reads the \`hashrate_300s\` field — Ocean's own 5-minute sliding-window estimate for this wallet. So: sampled every minute, each sample is a 5-minute smoothed value. A sustained gap below Avg Braiins / Avg Datum means the pool isn't crediting work we think we delivered.`}
       />
       <StatCard
@@ -1557,7 +1557,7 @@ function OceanPanel() {
           wallet right now. */}
       {o.user && (
         <>
-          <Row k={t`ocean hashrate`} v={formatHashratePH(o.user.hashrate_5m_ph, intlLocale)} />
+          <Row k={t`ocean hashrate`} v={denomination.formatHashrate(o.user.hashrate_5m_ph, intlLocale)} />
           {o.user.hashprice_sat_per_ph_day != null && (
             <Row
               k={t`hashprice (break-even)`}
@@ -1860,7 +1860,7 @@ function FinancePanel({
                   label={t`avg delivered (${rangeLabel})`}
                   value={
                     rangeData.avg_delivered_ph !== null
-                      ? formatHashratePH(rangeData.avg_delivered_ph, intlLocale)
+                      ? denomination.formatHashrate(rangeData.avg_delivered_ph, intlLocale)
                       : t`calculating…`
                   }
                   tooltip={t`Average delivered hashrate over the selected chart range. Multiplied by avg hashprice to get projected income. Spend is measured directly (primary_bid_consumed_sat deltas), so this is not a factor on the spend side.`}
@@ -2249,6 +2249,7 @@ function DatumPanel({
   const [copied, setCopied] = useState(false);
   const { i18n } = useLingui();
   void i18n;
+  const denomination = useDenomination();
 
   // Split the pool URL into scheme / host / port so the card doesn't
   // wrap an unreadable 60-character string. Pool URLs on Ocean look
@@ -2294,7 +2295,7 @@ function DatumPanel({
         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
           <div className="text-slate-400"><Trans>datum hashrate</Trans></div>
           <div className="text-right font-mono text-slate-200">
-            {datum.hashrate_ph !== null ? formatHashratePH(datum.hashrate_ph) : '—'}
+            {datum.hashrate_ph !== null ? denomination.formatHashrate(datum.hashrate_ph) : '—'}
           </div>
           <div className="text-slate-400"><Trans>workers connected</Trans></div>
           <div className="text-right font-mono text-slate-200">
@@ -2511,19 +2512,25 @@ function LinkRow({ k, v, href }: { k: string; v: string; href: string }) {
 /**
  * Split a pre-formatted display value like "45,662 sat/PH/day" into
  * `{ num: "45,662", unit: "sat/PH/day" }` so the caller can render
- * the unit in a muted style. Also handles USD-denominated strings
- * like "$4.75/PH/day" (splits at the /PH/day suffix) and "$1.28 sat"
- * equivalents. Returns null for values without a recognised unit suffix.
+ * the unit in a muted style. Handles the full matrix of units the
+ * dashboard now produces:
+ *   - hashrate: "X TH/s" | "X PH/s" | "X EH/s" | "X PH·h"
+ *   - bare currency: "X sat" | "X BTC" | "$X"
+ *   - rates with space separator: "X sat/{TH|PH|EH}/day" |
+ *     "X BTC/{TH|PH|EH}/day"
+ *   - rates with no space (USD-prefix): "$X/{TH|PH|EH}/day"
+ * Returns null for values without a recognised unit suffix.
  */
 function splitUnit(v: string): { num: string; unit: string } | null {
-  // Order matters: longest match first so "sat/PH/day" isn't
-  // partially matched as "sat".
-  // Also match USD-denominated /PH/day suffix (e.g. "$4.75/PH/day").
-  const m = v.match(/^(.+?)\s+(sat\/PH\/day|PH\/s|PH·h|sat)(\s*(?:\(.*\))?)$/);
-  if (m?.[1] && m[2]) return { num: m[1], unit: m[2] + (m[3] ?? '') };
-  // USD with /PH/day suffix: "$4.75/PH/day" → { num: "$4.75", unit: "/PH/day" }
-  const usdPhDay = v.match(/^(.+?)(\/PH\/day)$/);
-  if (usdPhDay?.[1] && usdPhDay[2]) return { num: usdPhDay[1], unit: usdPhDay[2] };
+  // Whitespace-separated unit tail (rates and hashrate).
+  // Order: match the longer rate suffix before the shorter "sat"/"BTC"/"PH/s".
+  const spaced = v.match(
+    /^(.+?)\s+((?:sat|BTC)\/(?:TH|PH|EH)\/day|(?:TH|PH|EH)\/s|PH·h|sat|BTC)(\s*(?:\(.*\))?)$/,
+  );
+  if (spaced?.[1] && spaced[2]) return { num: spaced[1], unit: spaced[2] + (spaced[3] ?? '') };
+  // USD-prefixed rate: "$4.75/PH/day" -> { num: "$4.75", unit: "/PH/day" }
+  const usdRate = v.match(/^(.+?)(\/(?:TH|PH|EH)\/day)$/);
+  if (usdRate?.[1] && usdRate[2]) return { num: usdRate[1], unit: usdRate[2] };
   return null;
 }
 

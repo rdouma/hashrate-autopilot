@@ -88,6 +88,8 @@ export function Layout() {
           </nav>
 
           <div className="flex items-center gap-3 ml-auto text-xs">
+            <HashrateUnitToggle />
+
             <DenominationToggle />
 
             <LanguagePicker />
@@ -127,26 +129,30 @@ export function Layout() {
 }
 
 /**
- * Segmented "sats | USD" toggle. Hidden when btcPrice is null (source
- * is 'none' or API down) — when there's no price, the toggle makes no
- * sense and showing it would be misleading.
+ * Segmented "sats | BTC | USD" toggle. USD slot is hidden when
+ * btcPrice is null (source is 'none' or API down) - showing it
+ * without an oracle would be misleading. BTC <-> sat is a static
+ * conversion so it stays available regardless.
  */
 function DenominationToggle() {
-  const { mode, toggle, btcPrice } = useDenomination();
+  const { mode, setMode, btcPrice } = useDenomination();
   const { i18n } = useLingui();
   void i18n;
-  if (btcPrice === null) return null;
 
-  const priceStr = btcPrice.toLocaleString('en-US', { maximumFractionDigits: 0 });
-  const titleText = t`BTC/USD: $${priceStr} - click to toggle denomination`;
+  const priceStr = btcPrice
+    ? btcPrice.toLocaleString('en-US', { maximumFractionDigits: 0 })
+    : null;
+  const titleText = priceStr
+    ? t`BTC/USD: $${priceStr} - select display currency`
+    : t`Select display currency`;
 
   return (
-    <button
-      onClick={toggle}
+    <div
       className="inline-flex items-center border border-slate-700 rounded-md overflow-hidden text-[11px] leading-none"
       title={titleText}
     >
-      <span
+      <button
+        onClick={() => setMode('sats')}
         className={
           'px-2 py-1 transition ' +
           (mode === 'sats'
@@ -155,17 +161,67 @@ function DenominationToggle() {
         }
       >
         <SatSymbol /> <Trans>sats</Trans>
-      </span>
-      <span
+      </button>
+      <button
+        onClick={() => setMode('btc')}
         className={
-          'px-2 py-1 transition ' +
-          (mode === 'usd'
+          'px-2 py-1 transition border-l border-slate-700 ' +
+          (mode === 'btc'
             ? 'bg-amber-400 text-slate-900 font-medium'
             : 'text-slate-400 hover:bg-slate-800')
         }
       >
-        USD
-      </span>
-    </button>
+        BTC
+      </button>
+      {btcPrice !== null && (
+        <button
+          onClick={() => setMode('usd')}
+          className={
+            'px-2 py-1 transition border-l border-slate-700 ' +
+            (mode === 'usd'
+              ? 'bg-amber-400 text-slate-900 font-medium'
+              : 'text-slate-400 hover:bg-slate-800')
+          }
+        >
+          USD
+        </button>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Segmented "TH | PH | EH" toggle for the hashrate unit. Affects every
+ * hashrate display and per-hashrate-per-day rate across the dashboard.
+ * Internal storage stays in PH/s (canonical schema unit); this toggle
+ * is presentation-only.
+ */
+function HashrateUnitToggle() {
+  const { hashrateUnit, setHashrateUnit } = useDenomination();
+  const { i18n } = useLingui();
+  void i18n;
+  const titleText = t`Select hashrate unit (1 EH = 1,000 PH = 1,000,000 TH)`;
+  const options: Array<'TH' | 'PH' | 'EH'> = ['TH', 'PH', 'EH'];
+  return (
+    <div
+      className="inline-flex items-center border border-slate-700 rounded-md overflow-hidden text-[11px] leading-none"
+      title={titleText}
+    >
+      {options.map((u, i) => (
+        <button
+          key={u}
+          onClick={() => setHashrateUnit(u)}
+          className={
+            'px-2 py-1 transition ' +
+            (i > 0 ? 'border-l border-slate-700 ' : '') +
+            (hashrateUnit === u
+              ? 'bg-amber-400 text-slate-900 font-medium'
+              : 'text-slate-400 hover:bg-slate-800')
+          }
+        >
+          {u}
+        </button>
+      ))}
+    </div>
   );
 }

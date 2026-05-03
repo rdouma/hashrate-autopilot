@@ -180,10 +180,6 @@ msgstr "~ {dailyStr}/día · ~ {totalStr} a {daysStr} días"
 msgid "⚠ No period found. Ocean TIDES requires \"<BTC address>.<label>\". Without the address prefix, shares go uncredited."
 msgstr "⚠ No se encontró ningún punto. Ocean TIDES requiere \"<dirección BTC>.<etiqueta>\". Sin el prefijo de la dirección, las shares no se acreditan."
 
-#: src/components/PriceChart.tsx
-msgid "$/PH/day"
-msgstr "$/PH/día"
-
 #: src/pages/Config.tsx
 msgid "0 = disabled. Example: 95 = activate cheap mode when the best ask on the orderbook is below 95% of the break-even hashprice from Ocean. Braiins matches pay-your-bid (the bid IS the price we pay), and the autopilot tracks the fillable ask plus a small overpay — so a cheap best ask reliably translates into a cheap bid."
 msgstr "0 = desactivado. Ejemplo: 95 = activar el modo barato cuando la mejor ask del libro está por debajo del 95% del hashprice de equilibrio de Ocean. Braiins hace matching pay-your-bid (la puja ES el precio que pagamos), y el autopilot sigue la fillable ask más un pequeño overpay — así que una mejor ask barata se traduce de forma fiable en una puja barata."
@@ -454,8 +450,8 @@ msgid "BTC price oracle"
 msgstr "Oráculo de precio BTC"
 
 #: src/components/Layout.tsx
-msgid "BTC/USD: ${priceStr} - click to toggle denomination"
-msgstr "BTC/USD: ${priceStr} - haz clic para cambiar la denominación"
+msgid "BTC/USD: ${priceStr} - select display currency"
+msgstr "BTC/USD: ${priceStr} - elige moneda de visualización"
 
 #: src/components/PriceChart.tsx
 #: src/pages/Status.tsx
@@ -1670,7 +1666,6 @@ msgstr "Ejecuta la decisión pendiente inmediatamente - libera el bloqueo post-e
 msgid "runway"
 msgstr "autonomía"
 
-#: src/components/PriceChart.tsx
 #: src/pages/Config.tsx
 msgid "sat/PH/day"
 msgstr "sat/PH/día"
@@ -1690,6 +1685,14 @@ msgstr "guardado."
 #: src/pages/Config.tsx
 msgid "saving…"
 msgstr "guardando…"
+
+#: src/components/Layout.tsx
+msgid "Select display currency"
+msgstr "Elige moneda de visualización"
+
+#: src/components/Layout.tsx
+msgid "Select hashrate unit (1 EH = 1,000 PH = 1,000,000 TH)"
+msgstr "Elige unidad de hashrate (1 EH = 1.000 PH = 1.000.000 TH)"
 
 #: src/pages/Setup.tsx
 msgid "Setting up…"
