@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-05-03
+
+### `[Fix]` Locale-aware decimal separator inside denomination formatters (#87)
+
+Cooldown / NEXT ACTION sentences like "Will lower to 0.48137000 BTC/EH/day in ~1 min (current 0.48387000 BTC/EH/day)." rendered with US-style period decimals even on a Dutch (nl-NL) locale where the same line should read "0,48137000 BTC/EH/day". Root cause: most callers of `denomination.formatSatPerPhDay()` / `formatHashrate()` / `formatSat()` skipped the optional `locale` argument, so `Intl.NumberFormat(undefined, ...)` fell back to the browser default (en-US) instead of the operator's chosen display locale. `useDenomination` now consumes `useLocale()` internally and uses `intlLocale` as the default for every formatter, so every call site is locale-correct without threading. Explicit `locale` overrides still win when callers want to force a different one (e.g. JSON exports). All other dashboard surfaces that already passed `intlLocale` explicitly are unchanged in behaviour.
+
 ## 2026-05-02
 
 ### `[Feature]` Audible notification when a block is found (#88)

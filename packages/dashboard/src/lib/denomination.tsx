@@ -27,6 +27,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 
 import { api, type BtcPriceResponse } from './api';
+import { useLocale } from './locale';
 
 const DENOMINATION_STORAGE_KEY = 'braiins.denomination';
 const HASHRATE_UNIT_STORAGE_KEY = 'braiins.hashrateUnit';
@@ -162,6 +163,13 @@ export function useDenomination(): DenominationContextValue {
 }
 
 export function DenominationProvider({ children }: { children: ReactNode }) {
+  // Reads the operator's display-locale preference from the
+  // LocaleProvider so every formatter inside this context defaults
+  // to the right number-formatting locale (commas vs periods,
+  // grouping, etc) without callers having to thread `intlLocale`
+  // explicitly. An undefined intlLocale means "browser default" -
+  // identical fallback behaviour to before this hookup.
+  const { intlLocale: defaultLocale } = useLocale();
   const [mode, setModeState] = useState<DenominationMode>(() => getStoredDenomination());
   const [hashrateUnit, setHashrateUnitState] = useState<HashrateUnit>(
     () => getStoredHashrateUnit(),
@@ -214,7 +222,12 @@ export function DenominationProvider({ children }: { children: ReactNode }) {
       hashrateUnit === 'TH' ? PH_PER_TH : hashrateUnit === 'EH' ? PH_PER_EH : 1;
     const hashrateSuffix = `${hashrateUnit}/s`;
 
-    const formatSat = (sat: number | null, locale?: string): string => {
+    // Each formatter's `locale` parameter overrides the contextual
+    // default; pass it when you specifically want a different locale
+    // (e.g. forcing en-US in a copy-to-clipboard JSON payload).
+    // Otherwise the operator's chosen display locale wins via
+    // `defaultLocale`.
+    const formatSat = (sat: number | null, locale: string | undefined = defaultLocale): string => {
       if (sat === null) return '—';
       if (effectiveMode === 'usd' && btcPrice !== null) {
         return formatUsd(satToUsd(sat, btcPrice), locale);
@@ -223,7 +236,10 @@ export function DenominationProvider({ children }: { children: ReactNode }) {
       return `${formatSatNumber(sat, locale)} sat`;
     };
 
-    const formatSatPerPhDay = (satPerPhDay: number | null, locale?: string): string => {
+    const formatSatPerPhDay = (
+      satPerPhDay: number | null,
+      locale: string | undefined = defaultLocale,
+    ): string => {
       if (satPerPhDay === null) return '—';
       const scaled = satPerPhDay * rateMultiplier;
       if (effectiveMode === 'usd' && btcPrice !== null) {
@@ -251,7 +267,10 @@ export function DenominationProvider({ children }: { children: ReactNode }) {
       }).format(scaled)} sat/${hashrateUnit}/day`;
     };
 
-    const formatHashrate = (ph: number | null, locale?: string): string => {
+    const formatHashrate = (
+      ph: number | null,
+      locale: string | undefined = defaultLocale,
+    ): string => {
       if (ph === null) return '—';
       const scaled = ph * hashrateMultiplier;
       // TH wants integer-or-1-decimal (~1000x bigger than PH);
@@ -284,7 +303,7 @@ export function DenominationProvider({ children }: { children: ReactNode }) {
       hashrateSuffix,
       rateSuffix,
     };
-  }, [mode, btcPrice, toggle, setMode, hashrateUnit, setHashrateUnit]);
+  }, [mode, btcPrice, toggle, setMode, hashrateUnit, setHashrateUnit, defaultLocale]);
 
   return (
     <DenominationContext.Provider value={value}>
