@@ -68,11 +68,13 @@ export function formatCompactNumber(
   if (abs >= 1e9) return `${fmt(n / 1e9, 1, 1)}B`;
   if (abs >= 1e6) return `${fmt(n / 1e6, 1, 1)}M`;
   if (abs >= 1e3) return `${fmt(n / 1e3, 1, 1)}k`;
-  // Below the suffix range, use adaptive precision - small magnitudes
-  // need more decimals to be informative.
-  if (abs >= 10) return fmt(n, 0, 1);
-  if (abs >= 1) return fmt(n, 0, 2);
-  if (abs >= 0.001) return fmt(n, 0, 3);
+  // Below the suffix range, force a stable decimal count so a column
+  // of ticks doesn't shuffle widths. The min and max are the same
+  // value at each magnitude tier - the tier itself adapts to the
+  // magnitude so very small numbers still get the precision they need.
+  if (abs >= 10) return fmt(n, 1, 1);
+  if (abs >= 1) return fmt(n, 2, 2);
+  if (abs >= 0.001) return fmt(n, 3, 3);
   if (abs === 0) return '0';
   // Sub-0.001: scientific. toExponential is locale-dumb but the
   // exponent is universally readable.

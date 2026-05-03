@@ -6,6 +6,12 @@
 
 The Status page tracked the TH/PH/EH and sats/BTC/USD header toggles, but Config inputs stayed in canonical units regardless. Now the hashrate-target inputs (target / floor / cheap-target) display + accept values in the selected hashrate unit (3 PH/s reads as 0.003 EH/s when EH is selected; flipping to TH gives 3,000 TH/s), and the price inputs (overpay, max bid, max-overpay-vs-hashprice) follow currency × hashrate-unit (300 sat/PH/day reads as 0.0000003 ₿/PH/day in BTC mode, or 300,000 sat/EH/day in EH mode). Bid budget input follows the currency toggle too. Storage stays canonical (sat/EH/day for prices, PH/s for hashrates, sat for budgets) - the toggles are presentation-only on the input side. USD is intentionally not a price-input mode (the operator's mental model is "I want 300 sats overpay", not "$0.0000003"); when USD is the active currency, price + budget inputs fall back to sat for editability while every read-only display elsewhere still respects USD.
 
+### `[UI]` Stable decimals across all magnitudes + Ocean panel tooltips (#92 / #93)
+
+The compact-tick formatter now forces a stable decimal count at every magnitude tier - not just the k/M/B suffixed ones. So a left-axis hashrate column at EH magnitude reads "0,002 / 0,004 / 0,006 / 0,008 / 0,010" (3 decimals throughout) instead of mixing "0,002 / 0,004 / 0,006 / 0,008 / 0,01"; pool-hashrate at EH on the right axis reads "30,0 / 28,0 / 26,0" (1 decimal at >=10) instead of bare integers. Each tier picks the natural decimal count for its magnitude; within the tier, every tick uses exactly that count.
+
+Tooltips added to every meaningful row on the Ocean panel: ocean hashrate, hashprice (break-even), share log, unpaid, next block est., income/day est., next payout, found, our earnings, pool blocks 24h, pool blocks 7d, pool users, pool workers. The 24h/7d block tooltips explicitly explain the luck multiplier ("1,18× lucky" / "0,82× unlucky") - what 1.00× means, when wide variance is normal, when sustained drift is the actionable signal. NL + ES translations included for all 13 new tooltip strings.
+
 ### `[UI]` Stable 1-decimal in compact ticks + Ocean pool luck (#93 / #92)
 
 Compact ticks (`k`/`M`/`B` suffixes) now always render with exactly 1 decimal so adjacent values don't shuffle the suffix - "80,0k" and "79,5k" instead of "80k" and "79,5k". Same change applies to both axes of the Price chart and the right-axis pool-hashrate ticks of the Hashrate chart, so a column of ticks reads consistently.

@@ -408,6 +408,14 @@ msgstr "Notificación de bloque encontrado"
 msgid "blocked"
 msgstr "bloqueado"
 
+#: src/pages/Status.tsx
+msgid "Blocks Ocean found in the last 24h. The 'X.XX× lucky/unlucky' annotation compares observed vs Poisson-expected: 1.00× means exactly the expected count given Ocean's share of network; >1 = Ocean was lucky in the window; <1 = Ocean was unlucky. Wide variance is normal at 24h - 0.7-1.3× is well within noise. Sustained drift on the 7d row below is the actionable signal."
+msgstr "Bloques que Ocean encontró en las últimas 24h. La anotación 'X,XX× con suerte/sin suerte' compara observado vs esperado por Poisson: 1,00× significa exactamente el conteo esperado dada la porción de red de Ocean; >1 = Ocean tuvo suerte en la ventana; <1 = Ocean tuvo mala suerte. Una varianza amplia es normal a 24h - 0,7-1,3× está dentro del ruido. La deriva sostenida en la fila de 7d abajo es la señal accionable."
+
+#: src/pages/Status.tsx
+msgid "Blocks Ocean found in the last 7d, with the same observed-vs-expected luck multiplier. 7d smooths short-term Poisson variance; a sustained <0.7× over a week suggests something structural (lower hashrate share than expected, or upstream issue)."
+msgstr "Bloques que Ocean encontró en los últimos 7d, con el mismo multiplicador de suerte observado-vs-esperado. 7d suaviza la varianza Poisson de corto plazo; un <0,7× sostenido durante una semana sugiere algo estructural (menor porción de hashrate que la esperada, o un problema upstream)."
+
 #: src/pages/Config.tsx
 msgid "Boot directly into LIVE. Use only when the autopilot is proven and the box reboots should not interrupt bidding."
 msgstr "Arrancar directamente en LIVE. Usa solo cuando el autopilot esté probado y los reinicios de la máquina no deban interrumpir las ofertas."
@@ -751,6 +759,10 @@ msgstr "Desactivado (solo sats)"
 msgid "Display"
 msgstr "Visualización"
 
+#: src/pages/Status.tsx
+msgid "Distinct payout addresses currently mining on Ocean."
+msgstr "Direcciones de pago distintas que actualmente minan en Ocean."
+
 #: src/pages/Config.tsx
 msgid "Do not scan"
 msgstr "No escanear"
@@ -1001,6 +1013,10 @@ msgstr "hashprice + sobrepago máximo"
 msgid "Hashrate"
 msgstr "Hashrate"
 
+#: src/pages/Status.tsx
+msgid "Hashrate Ocean credits to our payout address (5-min sliding window). Sourced per-tick from /v1/user_hashrate.hashrate_300s. Compare against AVG BRAIINS / AVG DATUM at the top of the page; sustained gaps mean shares are getting lost somewhere in the Braiins -> Datum -> Ocean pipeline."
+msgstr "Hashrate que Ocean acredita a nuestra dirección de pago (ventana deslizante de 5 min). Tomado por tick de /v1/user_hashrate.hashrate_300s. Compara con AVG BRAIINS / AVG DATUM arriba; brechas sostenidas significan que se pierden shares en algún punto de la tubería Braiins -> Datum -> Ocean."
+
 #: src/pages/Config.tsx
 #: src/pages/Setup.tsx
 msgid "Hashrate targets"
@@ -1025,6 +1041,10 @@ msgstr "Host"
 #: src/pages/Config.tsx
 msgid "How big a single bid is. Set to 0 to use the full available wallet balance on each create — simpler mental model, no manual slicing."
 msgstr "Tamaño de una oferta. Pon 0 para usar todo el saldo disponible del wallet en cada creación - modelo mental más simple, sin trocear manualmente."
+
+#: src/pages/Status.tsx
+msgid "How many sats we'd earn from the next block Ocean finds, assuming current share_log holds. Equals (next_block_reward * share_log_pct / 100). Sanity-check vs a typical Ocean block reward (~3.13 BTC)."
+msgstr "Cuántos sats ganaríamos del próximo bloque que encuentre Ocean, asumiendo que se mantiene el share_log actual. Igual a (next_block_reward * share_log_pct / 100). Verifica contra una recompensa típica de bloque de Ocean (~3,13 BTC)."
 
 #: src/pages/Config.tsx
 msgid "How numbers and dates render in this browser. Doesn't change the UI language. Saved locally — every operator can pick their own."
@@ -1215,6 +1235,10 @@ msgstr "neto/día ({rangeLabel})"
 msgid "network difficulty"
 msgstr "dificultad de red"
 
+#: src/pages/Status.tsx
+msgid "Network's break-even rate at current difficulty + block reward: (block_reward_sat * 144 blocks/day) / network_hashrate. If you're paying ABOVE this for hashrate you're losing money vs mining; below this you're winning. The autopilot's max-overpay-vs-hashprice cap clamps your bid relative to this number."
+msgstr "Tasa de equilibrio de la red a la dificultad y recompensa de bloque actuales: (block_reward_sat * 144 bloques/día) / network_hashrate. Si pagas POR ENCIMA de esto, pierdes dinero frente a minar; por debajo, ganas. El tope max-overpay-vs-hashprice del autopilot limita tu oferta respecto a este número."
+
 #: src/components/PriceChart.tsx
 msgid "new speed"
 msgstr "nueva velocidad"
@@ -1344,6 +1368,14 @@ msgid "Ocean stats unavailable."
 msgstr "Estadísticas de Ocean no disponibles."
 
 #: src/pages/Status.tsx
+msgid "Ocean's estimate of when our 'unpaid' balance will cross the payout threshold and trigger an on-chain transfer. Updates as our hashrate, the pool's block-find luck, and the threshold itself move."
+msgstr "Estimación de Ocean de cuándo nuestro saldo 'unpaid' cruzará el umbral de pago y activará una transferencia on-chain. Se actualiza a medida que cambian nuestro hashrate, la suerte de encontrar bloques del pool y el propio umbral."
+
+#: src/pages/Status.tsx
+msgid "Ocean's own 'daily_estimate' for our address - what they expect to credit us per day at our 3h hashrate. Derived from user_hashrate * hashprice. Always 3h-based regardless of the chart range above."
+msgstr "El propio 'daily_estimate' de Ocean para nuestra dirección - lo que esperan acreditarnos por día a nuestro hashrate de 3h. Derivado de user_hashrate * hashprice. Siempre basado en 3h, independientemente del rango del gráfico arriba."
+
+#: src/pages/Status.tsx
 msgid "Ocean's own estimate — the pool extrapolates from the address's last 3-hour hashrate and its share of pool output. Always 3h-based regardless of the chart range you've picked, so it may differ from projected income at other ranges."
 msgstr "La propia estimación de Ocean - el pool extrapola desde el hashrate de las últimas 3 horas de la dirección y su proporción del output del pool. Siempre basado en 3h sin importar el rango del gráfico que hayas elegido, así que puede diferir del ingreso proyectado en otros rangos."
 
@@ -1411,6 +1443,10 @@ msgstr "nuestras ganancias (est.)"
 #: src/components/HashrateChart.tsx
 msgid "our share (est.)"
 msgstr "nuestra parte (est.)"
+
+#: src/pages/Status.tsx
+msgid "Our slice of Ocean's TIDES window. Ocean's payout system rewards us proportionally to this fraction every block the pool finds. As Ocean's total hashrate grows or our delivered PH/s shrinks, this drifts down; as we deliver more or pool shrinks, it drifts up."
+msgstr "Nuestra porción de la ventana TIDES de Ocean. El sistema de pagos de Ocean nos recompensa proporcionalmente a esta fracción en cada bloque que encuentra el pool. Si el hashrate total de Ocean crece o nuestros PH/s entregados disminuyen, baja; si entregamos más o el pool encoge, sube."
 
 #: src/pages/Status.tsx
 msgid "overdue {overdueFormatted}"
@@ -1732,6 +1768,10 @@ msgstr "autonomía"
 msgid "sats"
 msgstr "sats"
 
+#: src/pages/Status.tsx
+msgid "Sats accrued to our wallet on Ocean since the last on-chain payout. Climbs continuously between payouts; drops to zero when a payout is sent (Ocean pays out when this passes the threshold, ~0.01 BTC by default)."
+msgstr "Sats acumulados en nuestra cartera en Ocean desde el último pago on-chain. Sube continuamente entre pagos; cae a cero cuando se envía un pago (Ocean paga cuando esto supera el umbral, ~0,01 BTC por defecto)."
+
 #: src/pages/Config.tsx
 msgid "save"
 msgstr "guardar"
@@ -1906,12 +1946,20 @@ msgid "ticking…"
 msgstr "ejecutando tick…"
 
 #: src/pages/Status.tsx
+msgid "Time since Ocean found its most recent block. Ocean's average block-find interval is the inverse of its share of network: at ~5% network share, ~5-6 hours between blocks on average. A 24h gap is unusual but well within Poisson variance; multi-day droughts suggest something structural."
+msgstr "Tiempo desde que Ocean encontró su bloque más reciente. El intervalo medio de Ocean para encontrar bloques es el inverso de su porción de red: con ~5% de la red, ~5-6 horas entre bloques en promedio. Un hueco de 24h es inusual pero dentro de la varianza de Poisson; sequías de varios días sugieren algo estructural."
+
+#: src/pages/Status.tsx
 msgid "total"
 msgstr "total"
 
 #: src/pages/Status.tsx
 msgid "Total earned at this address since first share, per Ocean."
 msgstr "Total ganado en esta dirección desde la primera share, según Ocean."
+
+#: src/pages/Status.tsx
+msgid "Total worker connections on Ocean (one address can have many workers)."
+msgstr "Total de conexiones de workers en Ocean (una dirección puede tener muchos workers)."
 
 #: src/pages/Config.tsx
 msgid "Two append-only logs back the dashboard. tick_metrics powers every chart; decisions is a per-tick forensic log split by whether the autopilot proposed any action. Pruning runs hourly and on daemon boot. 0 on any field = keep forever."
@@ -1999,6 +2047,10 @@ msgstr "Esperando el hashprice de Ocean - el trading está en pausa hasta que la
 #: src/pages/Setup.tsx
 msgid "What the controller aims for."
 msgstr "A lo que apunta el controlador."
+
+#: src/pages/Status.tsx
+msgid "What this last block earned us, estimated as block_reward * share_log_pct / 100. Uses the share_log recorded at the block's moment when our tick history covers it; falls back to the live share_log for older blocks."
+msgstr "Lo que nos ganó este último bloque, estimado como block_reward * share_log_pct / 100. Usa el share_log registrado en el momento del bloque cuando nuestro historial de ticks lo cubre; recurre al share_log en vivo para bloques más antiguos."
 
 #: src/pages/Config.tsx
 msgid "When the market is cheap (below the hashprice threshold), scale up to this target instead of the normal one. Set to 0 to disable."

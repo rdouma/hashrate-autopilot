@@ -1737,11 +1737,16 @@ function OceanPanel() {
           wallet right now. */}
       {o.user && (
         <>
-          <Row k={t`ocean hashrate`} v={denomination.formatHashrate(o.user.hashrate_5m_ph, intlLocale)} />
+          <Row
+            k={t`ocean hashrate`}
+            v={denomination.formatHashrate(o.user.hashrate_5m_ph, intlLocale)}
+            tooltip={t`Hashrate Ocean credits to our payout address (5-min sliding window). Sourced per-tick from /v1/user_hashrate.hashrate_300s. Compare against AVG BRAIINS / AVG DATUM at the top of the page; sustained gaps mean shares are getting lost somewhere in the Braiins -> Datum -> Ocean pipeline.`}
+          />
           {o.user.hashprice_sat_per_ph_day != null && (
             <Row
               k={t`hashprice (break-even)`}
               v={denomination.formatSatPerPhDay(o.user.hashprice_sat_per_ph_day, intlLocale)}
+              tooltip={t`Network's break-even rate at current difficulty + block reward: (block_reward_sat * 144 blocks/day) / network_hashrate. If you're paying ABOVE this for hashrate you're losing money vs mining; below this you're winning. The autopilot's max-overpay-vs-hashprice cap clamps your bid relative to this number.`}
             />
           )}
         </>
@@ -1757,18 +1762,29 @@ function OceanPanel() {
                 ? `${o.user.share_log_pct.toFixed(4)}%`
                 : '\u2014'
             }
+            tooltip={t`Our slice of Ocean's TIDES window. Ocean's payout system rewards us proportionally to this fraction every block the pool finds. As Ocean's total hashrate grows or our delivered PH/s shrinks, this drifts down; as we deliver more or pool shrinks, it drifts up.`}
           />
-          <Row k={t`unpaid`} v={denomination.formatSat(o.user.unpaid_sat, intlLocale)} />
+          <Row
+            k={t`unpaid`}
+            v={denomination.formatSat(o.user.unpaid_sat, intlLocale)}
+            tooltip={t`Sats accrued to our wallet on Ocean since the last on-chain payout. Climbs continuously between payouts; drops to zero when a payout is sent (Ocean pays out when this passes the threshold, ~0.01 BTC by default).`}
+          />
           <Row
             k={t`next block est.`}
             v={denomination.formatSat(o.user.next_block_sat, intlLocale)}
+            tooltip={t`How many sats we'd earn from the next block Ocean finds, assuming current share_log holds. Equals (next_block_reward * share_log_pct / 100). Sanity-check vs a typical Ocean block reward (~3.13 BTC).`}
           />
           <Row
             k={t`income/day est.`}
             v={denomination.formatSat(o.user.daily_estimate_sat, intlLocale)}
+            tooltip={t`Ocean's own 'daily_estimate' for our address - what they expect to credit us per day at our 3h hashrate. Derived from user_hashrate * hashprice. Always 3h-based regardless of the chart range above.`}
           />
           {o.user.time_to_payout_text && (
-            <Row k={t`next payout`} v={formatNextPayout(o.user.time_to_payout_text, intlLocale)} />
+            <Row
+              k={t`next payout`}
+              v={formatNextPayout(o.user.time_to_payout_text, intlLocale)}
+              tooltip={t`Ocean's estimate of when our 'unpaid' balance will cross the payout threshold and trigger an on-chain transfer. Updates as our hashrate, the pool's block-find luck, and the threshold itself move.`}
+            />
           )}
         </div>
       )}
@@ -1786,13 +1802,11 @@ function OceanPanel() {
                 height: o.last_block.height,
               })}
             />
-            <Row k={t`found`} v={o.last_block.ago_text} />
-            {/* Our estimated share of this block. Prefers the share_log
-                recorded by the closest tick to the block's moment
-                (share_log_pct_at_block); falls back to the live
-                share_log only when the block predates our tick history.
-                our_recent_blocks[0] is the same block as last_block
-                (every recent_block maps 1:1 to our_recent_blocks). */}
+            <Row
+              k={t`found`}
+              v={o.last_block.ago_text}
+              tooltip={t`Time since Ocean found its most recent block. Ocean's average block-find interval is the inverse of its share of network: at ~5% network share, ~5-6 hours between blocks on average. A 24h gap is unusual but well within Poisson variance; multi-day droughts suggest something structural.`}
+            />
             {(() => {
               const blockShareLog =
                 o.our_recent_blocks[0]?.share_log_pct_at_block ?? null;
@@ -1814,6 +1828,7 @@ function OceanPanel() {
                         )
                       : '\u2014'
                   }
+                  tooltip={t`What this last block earned us, estimated as block_reward * share_log_pct / 100. Uses the share_log recorded at the block's moment when our tick history covers it; falls back to the live share_log for older blocks.`}
                 />
               );
             })()}
@@ -1821,16 +1836,32 @@ function OceanPanel() {
         ) : (
           <Row k={t`last pool block`} v={'\u2014'} />
         )}
-        <Row k={t`pool blocks 24h`} v={renderPoolBlocksRow(o.blocks_24h, 1, o.pool, intlLocale)} />
-        <Row k={t`pool blocks 7d`} v={renderPoolBlocksRow(o.blocks_7d, 7, o.pool, intlLocale)} />
+        <Row
+          k={t`pool blocks 24h`}
+          v={renderPoolBlocksRow(o.blocks_24h, 1, o.pool, intlLocale)}
+          tooltip={t`Blocks Ocean found in the last 24h. The 'X.XX\u00d7 lucky/unlucky' annotation compares observed vs Poisson-expected: 1.00\u00d7 means exactly the expected count given Ocean's share of network; >1 = Ocean was lucky in the window; <1 = Ocean was unlucky. Wide variance is normal at 24h - 0.7-1.3\u00d7 is well within noise. Sustained drift on the 7d row below is the actionable signal.`}
+        />
+        <Row
+          k={t`pool blocks 7d`}
+          v={renderPoolBlocksRow(o.blocks_7d, 7, o.pool, intlLocale)}
+          tooltip={t`Blocks Ocean found in the last 7d, with the same observed-vs-expected luck multiplier. 7d smooths short-term Poisson variance; a sustained <0.7\u00d7 over a week suggests something structural (lower hashrate share than expected, or upstream issue).`}
+        />
       </div>
       {o.pool && (
         <div className="border-t border-slate-800 mt-2 pt-2">
           {o.pool.active_users !== null && (
-            <Row k={t`pool users`} v={o.pool.active_users.toLocaleString(intlLocale)} />
+            <Row
+              k={t`pool users`}
+              v={o.pool.active_users.toLocaleString(intlLocale)}
+              tooltip={t`Distinct payout addresses currently mining on Ocean.`}
+            />
           )}
           {o.pool.active_workers !== null && (
-            <Row k={t`pool workers`} v={o.pool.active_workers.toLocaleString(intlLocale)} />
+            <Row
+              k={t`pool workers`}
+              v={o.pool.active_workers.toLocaleString(intlLocale)}
+              tooltip={t`Total worker connections on Ocean (one address can have many workers).`}
+            />
           )}
         </div>
       )}
@@ -2649,11 +2680,11 @@ function SatUnit({ unit }: { unit: string }) {
  * smaller style so the number pops and the unit recedes — matching
  * the aesthetic the Money panel's FinanceRow already uses.
  */
-function Row({ k, v }: { k: string; v: string }) {
+function Row({ k, v, tooltip }: { k: string; v: string; tooltip?: string }) {
   const split = splitUnit(v);
-  return (
+  const body = (
     <div className="flex justify-between text-sm py-0.5">
-      <span className="text-slate-400">{k}</span>
+      <span className={'text-slate-400' + (tooltip ? ' cursor-help' : '')}>{k}</span>
       <span className="text-slate-100 font-mono">
         {split ? (
           <>
@@ -2666,6 +2697,7 @@ function Row({ k, v }: { k: string; v: string }) {
       </span>
     </div>
   );
+  return tooltip ? <Tooltip text={tooltip}>{body}</Tooltip> : body;
 }
 
 /**
