@@ -409,12 +409,12 @@ msgid "blocked"
 msgstr "bloqueado"
 
 #: src/pages/Status.tsx
-msgid "Blocks Ocean found in the last 24h. The 'X.XX× lucky/unlucky' annotation compares observed vs Poisson-expected: 1.00× means exactly the expected count given Ocean's share of network; >1 = Ocean was lucky in the window; <1 = Ocean was unlucky. Wide variance is normal at 24h - 0.7-1.3× is well within noise. Sustained drift on the 7d row below is the actionable signal."
-msgstr "Bloques que Ocean encontró en las últimas 24h. La anotación 'X,XX× con suerte/sin suerte' compara observado vs esperado por Poisson: 1,00× significa exactamente el conteo esperado dada la porción de red de Ocean; >1 = Ocean tuvo suerte en la ventana; <1 = Ocean tuvo mala suerte. Una varianza amplia es normal a 24h - 0,7-1,3× está dentro del ruido. La deriva sostenida en la fila de 7d abajo es la señal accionable."
+msgid "Blocks Ocean found in the last 24h. The 'X.XX× lucky/unlucky' annotation compares observed vs an empirical baseline: pool_blocks_7d / 7. So 1.00× means the last 24h matched the recent week-long pace; >1 = Ocean over-performed its recent average; <1 = under-performed. The baseline drifts with real pool growth so we don't false-flag every onboarding event as 'luck'. Wide variance is normal at 24h - 0.7-1.3× is well within Poisson noise."
+msgstr "Bloques que Ocean encontró en las últimas 24h. La anotación 'X,XX× con suerte/sin suerte' compara observado vs una línea base empírica: pool_blocks_7d / 7. Así 1,00× significa que las últimas 24h coincidieron con el ritmo de la semana reciente; >1 = Ocean superó su media reciente; <1 = quedó por debajo. La línea base se ajusta con el crecimiento real del pool para no marcar como 'suerte' cada evento de incorporación. Una varianza amplia es normal a 24h - 0,7-1,3× está dentro del ruido Poisson."
 
 #: src/pages/Status.tsx
-msgid "Blocks Ocean found in the last 7d, with the same observed-vs-expected luck multiplier. 7d smooths short-term Poisson variance; a sustained <0.7× over a week suggests something structural (lower hashrate share than expected, or upstream issue)."
-msgstr "Bloques que Ocean encontró en los últimos 7d, con el mismo multiplicador de suerte observado-vs-esperado. 7d suaviza la varianza Poisson de corto plazo; un <0,7× sostenido durante una semana sugiere algo estructural (menor porción de hashrate que la esperada, o un problema upstream)."
+msgid "Blocks Ocean found in the last 7d. The 7d luck multiplier reads 1.00× by definition because the baseline IS pool_blocks_7d / 7 - this row is mostly a sanity-check denominator for the 24h row above. Use the 24h luck as the actionable signal."
+msgstr "Bloques que Ocean encontró en los últimos 7d. El multiplicador de suerte 7d marca 1,00× por definición porque la línea base ES pool_blocks_7d / 7 - esta fila es sobre todo un denominador de verificación para la fila 24h de arriba. Usa la suerte 24h como la señal accionable."
 
 #: src/pages/Config.tsx
 msgid "Boot directly into LIVE. Use only when the autopilot is proven and the box reboots should not interrupt bidding."

@@ -1635,36 +1635,38 @@ function BraiinsBalances({
 }
 
 /**
- * #92: Ocean pool luck. Renders the observed blocks count next to a
- * Poisson-expected luck multiplier ("12 (1,18× expected)") so the
- * operator can eyeball whether the pool is having a good or bad
- * stretch. Pool hashrate from Ocean's pool_stat divided by the
- * derived network hashrate gives expected blocks/day; observed
- * count over 1d / 7d gives the actual.
+ * #92: Ocean pool luck. Compares observed blocks vs an empirical
+ * baseline derived from the 7-day pool block count itself. This
+ * sidesteps the noisy `pool_hashrate_ph` estimate (which is in turn
+ * derived from `user_hashrate / share_log`, both of which jitter on
+ * single-tick delivery dips and produced 10x luck spikes that
+ * weren't real - see issue thread).
  *
- * Variance caveat: a Poisson process with mean λ=8 blocks/day (a
- * pool at ~5% network share) has σ ≈ 2.8 blocks/day. A 24h luck of
- * 0.7×-1.3× is well within normal variance and not actionable; only
- * sustained drift (e.g. 7d luck < 0.7× for a week) suggests something
- * structural. The tooltip on the Ocean card already explains this in
- * full; here we render the number so the operator has the data
- * point to glance at.
+ * Math:
+ *   baseline_per_day = pool_blocks_7d / 7
+ *   luck_24h         = blocks_24h / baseline_per_day
+ *   luck_7d          = blocks_7d / (baseline_per_day * 7) = 1 by definition
+ *
+ * The 7d luck self-references its own denominator so it always reads
+ * 1.00x - useful as a sanity-check column. The 24h luck against the
+ * 7d-derived baseline is the actually-meaningful number: it tells
+ * the operator whether the last 24h was lucky or unlucky relative to
+ * the pool's recent week-long pace.
+ *
+ * Limitation: a real shift in pool size (operators leaving Ocean,
+ * mass-onboarding, etc.) drags the 7d baseline along, so the luck
+ * number normalises to the new reality within a week. That's
+ * intentional - we want to flag short-term variance, not flag every
+ * pool-growth event as "luck".
  */
 function poolLuckMultiplier(
   observedBlocks: number,
   windowDays: number,
-  pool: { network_difficulty: number | null; pool_hashrate_ph: number | null } | null,
+  poolBlocks7d: number | null,
 ): number | null {
-  if (!pool) return null;
-  if (pool.network_difficulty === null || pool.pool_hashrate_ph === null) return null;
-  if (pool.network_difficulty <= 0 || pool.pool_hashrate_ph <= 0) return null;
-  // Network hashrate from difficulty:
-  //   hashes/s = difficulty × 2^32 / 600
-  // Convert to PH/s by dividing by 1e15.
-  const networkHashratePh = (pool.network_difficulty * 2 ** 32) / 600 / 1e15;
-  if (networkHashratePh <= 0) return null;
-  // Expected blocks per window: pool's share × 144 blocks/day × windowDays.
-  const expected = (pool.pool_hashrate_ph / networkHashratePh) * 144 * windowDays;
+  if (poolBlocks7d === null || poolBlocks7d <= 0) return null;
+  const baselinePerDay = poolBlocks7d / 7;
+  const expected = baselinePerDay * windowDays;
   if (expected <= 0) return null;
   return observedBlocks / expected;
 }
@@ -1672,10 +1674,10 @@ function poolLuckMultiplier(
 function renderPoolBlocksRow(
   count: number,
   windowDays: number,
-  pool: { network_difficulty: number | null; pool_hashrate_ph: number | null } | null,
+  poolBlocks7d: number | null,
   locale: string | undefined,
 ): string {
-  const luck = poolLuckMultiplier(count, windowDays, pool);
+  const luck = poolLuckMultiplier(count, windowDays, poolBlocks7d);
   if (luck === null) return String(count);
   const luckStr = new Intl.NumberFormat(locale, {
     minimumFractionDigits: 2,
@@ -1842,13 +1844,13 @@ function OceanPanel() {
         )}
         <Row
           k={t`pool blocks 24h`}
-          v={renderPoolBlocksRow(o.blocks_24h, 1, o.pool, intlLocale)}
-          tooltip={t`Blocks Ocean found in the last 24h. The 'X.XX\u00d7 lucky/unlucky' annotation compares observed vs Poisson-expected: 1.00\u00d7 means exactly the expected count given Ocean's share of network; >1 = Ocean was lucky in the window; <1 = Ocean was unlucky. Wide variance is normal at 24h - 0.7-1.3\u00d7 is well within noise. Sustained drift on the 7d row below is the actionable signal.`}
+          v={renderPoolBlocksRow(o.blocks_24h, 1, o.blocks_7d, intlLocale)}
+          tooltip={t`Blocks Ocean found in the last 24h. The 'X.XX\u00d7 lucky/unlucky' annotation compares observed vs an empirical baseline: pool_blocks_7d / 7. So 1.00\u00d7 means the last 24h matched the recent week-long pace; >1 = Ocean over-performed its recent average; <1 = under-performed. The baseline drifts with real pool growth so we don't false-flag every onboarding event as 'luck'. Wide variance is normal at 24h - 0.7-1.3\u00d7 is well within Poisson noise.`}
         />
         <Row
           k={t`pool blocks 7d`}
-          v={renderPoolBlocksRow(o.blocks_7d, 7, o.pool, intlLocale)}
-          tooltip={t`Blocks Ocean found in the last 7d, with the same observed-vs-expected luck multiplier. 7d smooths short-term Poisson variance; a sustained <0.7\u00d7 over a week suggests something structural (lower hashrate share than expected, or upstream issue).`}
+          v={renderPoolBlocksRow(o.blocks_7d, 7, o.blocks_7d, intlLocale)}
+          tooltip={t`Blocks Ocean found in the last 7d. The 7d luck multiplier reads 1.00\u00d7 by definition because the baseline IS pool_blocks_7d / 7 - this row is mostly a sanity-check denominator for the 24h row above. Use the 24h luck as the actionable signal.`}
         />
       </div>
       {o.pool && (

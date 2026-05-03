@@ -321,23 +321,32 @@ export const HashrateChart = memo(function HashrateChart({
           };
         case 'pool_luck_24h':
         case 'pool_luck_7d': {
-          // #92: per-tick pool luck = observed_count / Poisson_expected.
-          // expected_blocks_per_window = (pool_hashrate / network_hashrate)
-          //                              x 144 blocks/day x window_days
-          // network_hashrate_ph = (difficulty x 2^32) / 600 / 1e15
-          // null when any input is missing on that tick.
+          // #92: per-tick pool luck against an empirical baseline.
+          // baseline_per_day = pool_blocks_7d / 7 (the pool's recent
+          // week-long pace). expected = baseline_per_day x window_days.
+          // luck = observed / expected.
+          //
+          // Why not the Poisson-from-pool_hashrate version? That
+          // approach used pool_hashrate_ph as the denominator, but
+          // pool_hashrate_ph is itself derived as
+          // user_hashrate_5m_ph / share_log_pct - both noisy. A
+          // single-tick delivery dip dragged the pool-hashrate
+          // estimate down by ~10x and the luck ratio spiked to ~10x
+          // even though no extra block was found. This baseline
+          // depends only on the count series, which is monotonic
+          // and resilient to single-tick noise. The pool's real
+          // hashrate share is implicit in the recent block rate.
+          //
+          // 7d luck against its own 7d baseline is 1.00x by
+          // definition - useful as a sanity-check column.
           const windowDays = rightAxisSeries === 'pool_luck_24h' ? 1 : 7;
           const values = points.map((p) => {
             const count =
               windowDays === 1 ? p.pool_blocks_24h_count : p.pool_blocks_7d_count;
             if (count === null) return null;
-            if (p.network_difficulty === null || p.pool_hashrate_ph === null) return null;
-            if (p.network_difficulty <= 0 || p.pool_hashrate_ph <= 0) return null;
-            const networkHashratePh =
-              (p.network_difficulty * 2 ** 32) / 600 / 1e15;
-            if (networkHashratePh <= 0) return null;
-            const expected =
-              (p.pool_hashrate_ph / networkHashratePh) * 144 * windowDays;
+            if (p.pool_blocks_7d_count === null || p.pool_blocks_7d_count <= 0) return null;
+            const baselinePerDay = p.pool_blocks_7d_count / 7;
+            const expected = baselinePerDay * windowDays;
             if (expected <= 0) return null;
             return count / expected;
           });
