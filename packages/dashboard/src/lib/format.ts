@@ -29,6 +29,50 @@ export function formatNumber(
   return new Intl.NumberFormat(locale, { maximumFractionDigits: 0, ...opts }).format(n);
 }
 
+/**
+ * Compact tick label for chart axes — auto-scales to the magnitude
+ * and adds a k / M / B suffix so big numbers don't eat half the
+ * chart's horizontal space. Targets readability at-a-glance, not
+ * full precision (use formatNumber elsewhere when every digit
+ * matters).
+ *
+ * Examples:
+ *   48,400,000  -> "48,4M"  (nl-NL) / "48.4M" (en-US)
+ *   1,234,567   -> "1,2M"
+ *   12,345      -> "12,3k"
+ *   123         -> "123"
+ *   30.5        -> "30,5"   (1 decimal max)
+ *   3.142       -> "3,14"   (2 decimals when below 10)
+ *   0.00318     -> "0,003"  (3 decimals when below 1)
+ *   0.0000182   -> "1,82e-5" (scientific when below 0.001)
+ *
+ * Suffix is always the literal "k" / "M" / "B" in every locale -
+ * the alternative `notation: 'compact'` returns localised forms
+ * like "48 mln." in nl-NL which read awkwardly on a tight axis.
+ */
+export function formatCompactNumber(
+  n: number,
+  locale: Locale = defaultLocale(),
+): string {
+  if (!Number.isFinite(n)) return '—';
+  const abs = Math.abs(n);
+  const fmt = (v: number, decimals: number): string =>
+    new Intl.NumberFormat(locale, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: decimals,
+    }).format(v);
+  if (abs >= 1e9) return `${fmt(n / 1e9, 1)}B`;
+  if (abs >= 1e6) return `${fmt(n / 1e6, 1)}M`;
+  if (abs >= 1e3) return `${fmt(n / 1e3, 1)}k`;
+  if (abs >= 10) return fmt(n, 1);
+  if (abs >= 1) return fmt(n, 2);
+  if (abs >= 0.001) return fmt(n, 3);
+  if (abs === 0) return '0';
+  // Sub-0.001: scientific. toExponential is locale-dumb but the
+  // exponent is universally readable.
+  return n.toExponential(2);
+}
+
 export function formatSatPerPH(
   n: number | null | undefined,
   locale: Locale = defaultLocale(),

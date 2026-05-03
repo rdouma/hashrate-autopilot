@@ -25,7 +25,14 @@ import {
 import { api, type BidEventView, type DecisionDetail, type DecisionSummary, type MetricPoint } from '../lib/api';
 import { copyToClipboard } from '../lib/clipboard';
 import { useDenomination } from '../lib/denomination';
-import { formatAgeMinutes, formatNumber, formatTimestamp, formatTimestampHuman, formatTimestampUtc } from '../lib/format';
+import {
+  formatAgeMinutes,
+  formatCompactNumber,
+  formatNumber,
+  formatTimestamp,
+  formatTimestampHuman,
+  formatTimestampUtc,
+} from '../lib/format';
 import { useLocale } from '../lib/locale';
 import { SatSymbol } from './SatSymbol';
 
@@ -99,6 +106,55 @@ const COLOR_FILLABLE = '#22d3ee'; // cyan-400
 // (orange/violet).
 const COLOR_EFFECTIVE = '#34d399';
 
+/**
+ * #93: which series to draw on the Price chart's right Y-axis.
+ * - 'none': hide the right axis entirely.
+ * - 'estimated_block_reward': sat - follows the currency toggle.
+ * - 'btc_usd_price': USD - always rendered as $ regardless of toggle.
+ * - 'ocean_unpaid_sat': sat - follows the currency toggle.
+ * - 'network_difficulty': raw integer, formatted in trillions.
+ */
+export type PriceRightAxis =
+  | 'none'
+  | 'estimated_block_reward'
+  | 'btc_usd_price'
+  | 'ocean_unpaid_sat'
+  | 'network_difficulty';
+
+const PRICE_RIGHT_AXIS_PADDING = 60;
+
+/**
+ * Sat-input compact tick formatter that respects the operator's
+ * currency toggle. Used for sat-denominated right-axis series
+ * (estimated_block_reward, ocean_unpaid). USD path needs the BTC
+ * oracle - falls back to sat when no oracle is configured. BTC path
+ * uses adaptive decimals so sub-1 values stay readable.
+ */
+function formatSatCompact(
+  sat: number,
+  denomination: ReturnType<typeof useDenomination>,
+  locale: string | undefined,
+): string {
+  if (denomination.mode === 'usd' && denomination.btcPrice !== null) {
+    return `$${formatCompactNumber((sat / 100_000_000) * denomination.btcPrice, locale)}`;
+  }
+  if (denomination.mode === 'btc') {
+    const btc = sat / 100_000_000;
+    const abs = Math.abs(btc);
+    const fmt = (decimals: number): string =>
+      new Intl.NumberFormat(locale, {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: decimals,
+      }).format(btc);
+    if (abs >= 1) return fmt(2);
+    if (abs >= 0.1) return fmt(4);
+    if (abs >= 0.001) return fmt(6);
+    if (abs === 0) return '0';
+    return btc.toExponential(2);
+  }
+  return formatCompactNumber(sat, locale);
+}
+
 export const PriceChart = memo(function PriceChart({
   points,
   events = [],
@@ -107,6 +163,7 @@ export const PriceChart = memo(function PriceChart({
   overpaySatPerPhDay = null,
   priceSmoothingMinutes = 1,
   showEffectiveRate = false,
+  rightAxisSeries = 'none',
 }: {
   points: readonly MetricPoint[];
   events?: readonly BidEventView[];
@@ -153,6 +210,8 @@ export const PriceChart = memo(function PriceChart({
    * they want to inspect settlement behaviour directly.
    */
   showEffectiveRate?: boolean;
+  /** #93: secondary Y-axis series. 'none' hides the right axis. */
+  rightAxisSeries?: PriceRightAxis;
 }) {
   const { i18n } = useLingui();
   void i18n;
@@ -408,8 +467,87 @@ export const PriceChart = memo(function PriceChart({
     const priceMin = yTicks[0] ?? 0;
     const priceMax = yTicks[yTicks.length - 1] ?? 1;
 
+    // #93: right-axis spec, derived from rightAxisSeries. Each branch
+    // pulls per-point values off MetricPoint and returns a tick
+    // formatter + axis label. 'none' bypasses the right axis
+    // entirely. The padded right-edge widens when an axis is shown
+    // so labels have breathing room.
+    const rightAxis: {
+      values: (number | null)[];
+      stroke: string;
+      axisLabel: string;
+      formatTick: (v: number) => string;
+    } | null = (() => {
+      switch (rightAxisSeries) {
+        case 'none':
+          return null;
+        case 'estimated_block_reward':
+          return {
+            values: points.map((p) => p.estimated_block_reward_sat),
+            stroke: '#fbbf24',
+            axisLabel: `block reward (${denomination.mode === 'usd' ? '$' : denomination.mode === 'btc' ? '₿' : 'sat'})`,
+            formatTick: (v) => formatSatCompact(v, denomination, intlLocale),
+          };
+        case 'btc_usd_price':
+          return {
+            values: points.map((p) => p.btc_usd_price),
+            stroke: '#60a5fa',
+            axisLabel: 'BTC/USD ($)',
+            formatTick: (v) => `$${formatCompactNumber(v, intlLocale)}`,
+          };
+        case 'ocean_unpaid_sat':
+          return {
+            values: points.map((p) => p.ocean_unpaid_sat),
+            stroke: '#34d399',
+            axisLabel: `unpaid (${denomination.mode === 'usd' ? '$' : denomination.mode === 'btc' ? '₿' : 'sat'})`,
+            formatTick: (v) => formatSatCompact(v, denomination, intlLocale),
+          };
+        case 'network_difficulty':
+          return {
+            values: points.map((p) => p.network_difficulty),
+            stroke: '#fb7185',
+            axisLabel: 'difficulty',
+            // Difficulty in trillions, compact - chain difficulty
+            // sits ~1.4e14, so /1e12 lands at ~140. formatCompactNumber
+            // then renders as "140".
+            formatTick: (v) =>
+              `${formatCompactNumber(v / 1e12, intlLocale)} T`,
+          };
+      }
+    })();
+    const hasRightAxis =
+      rightAxis !== null && rightAxis.values.some((v) => v !== null);
+    const padRight = hasRightAxis
+      ? PRICE_RIGHT_AXIS_PADDING
+      : PADDING.right;
+
+    let rightYTicks: number[] = [];
+    let rightYMin = 0;
+    let rightYMax = 1;
+    if (hasRightAxis && rightAxis) {
+      const valid = rightAxis.values.filter(
+        (v): v is number => v !== null && Number.isFinite(v),
+      );
+      const rmin = Math.min(...valid);
+      const rmax = Math.max(...valid);
+      const rspan = Math.max(rmax - rmin, Math.abs(rmax) * 0.1, 1e-6);
+      rightYTicks = niceYTicks(
+        Math.max(0, rmin - rspan * 0.1),
+        rmax + rspan * 0.1,
+        5,
+      );
+      rightYMin = rightYTicks[0] ?? 0;
+      rightYMax = rightYTicks[rightYTicks.length - 1] ?? 1;
+    }
+    const rightYScale = (v: number): number => {
+      const usable = chartHeight - PADDING.top - PADDING.bottom;
+      const span = rightYMax - rightYMin;
+      if (span <= 0) return chartHeight - PADDING.bottom;
+      return chartHeight - PADDING.bottom - ((v - rightYMin) / span) * usable;
+    };
+
     const xScale = (x: number): number => {
-      const usable = WIDTH - PADDING.left - PADDING.right;
+      const usable = WIDTH - PADDING.left - padRight;
       if (maxX === minX) return PADDING.left + usable / 2;
       return PADDING.left + ((x - minX) / (maxX - minX)) * usable;
     };
@@ -418,6 +556,29 @@ export const PriceChart = memo(function PriceChart({
       if (priceMax === priceMin) return chartHeight - PADDING.bottom - usable / 2;
       return chartHeight - PADDING.bottom - ((v - priceMin) / (priceMax - priceMin)) * usable;
     };
+
+    // Right-axis line path. Same null-gap logic as the left-axis
+    // series — null values become segment breaks.
+    const rightAxisPath = ((): string => {
+      if (!hasRightAxis || !rightAxis) return '';
+      const segments: string[] = [];
+      let current = '';
+      for (let i = 0; i < points.length; i += 1) {
+        const v = rightAxis.values[i];
+        if (v === null || v === undefined || !Number.isFinite(v)) {
+          if (current) {
+            segments.push(current);
+            current = '';
+          }
+          continue;
+        }
+        const x = xScale(points[i]!.tick_at).toFixed(1);
+        const y = rightYScale(v).toFixed(1);
+        current += `${current ? 'L' : 'M'}${x},${y} `;
+      }
+      if (current) segments.push(current);
+      return segments.join(' ');
+    })();
 
     // Null-gap path builder. Iterates the full `points` series and
     // emits a separate SVG subpath when the wall-clock distance
@@ -614,8 +775,8 @@ export const PriceChart = memo(function PriceChart({
           (e) => allowedKinds.has(e.kind) && e.occurred_at >= minX && e.occurred_at <= maxX,
         );
 
-    return { pricePoints, minX, maxX, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, hashpricePath, fillablePath, fillableHasData: fillablePoints.length > 0, effectivePath, effectiveHasData: effectivePoints.length > 0, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents };
-  }, [points, events, showEventKinds, priceSmoothingMinutes, maxOverpayVsHashpriceSatPerPhDay, chartHeight, showEffectiveRate]);
+    return { pricePoints, minX, maxX, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, hashpricePath, fillablePath, fillableHasData: fillablePoints.length > 0, effectivePath, effectiveHasData: effectivePoints.length > 0, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents, rightAxis, hasRightAxis, rightAxisPath, rightYTicks, rightYScale, padRight };
+  }, [points, events, showEventKinds, priceSmoothingMinutes, maxOverpayVsHashpriceSatPerPhDay, chartHeight, showEffectiveRate, rightAxisSeries, denomination, intlLocale]);
 
   const eventPriceAt = useCallback((e: BidEventView): number | null => {
     const pricePoints = chartData?.pricePoints ?? [];
@@ -685,22 +846,53 @@ export const PriceChart = memo(function PriceChart({
     );
   }
 
-  const { pricePoints, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, hashpricePath, fillablePath, fillableHasData, effectivePath, effectiveHasData, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents } = chartData;
+  const { pricePoints, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, hashpricePath, fillablePath, fillableHasData, effectivePath, effectiveHasData, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents, rightAxis, hasRightAxis, rightAxisPath, rightYTicks, rightYScale, padRight } = chartData;
 
   // Format Y-axis tick values via the denomination context so the
   // numbers track the currency + hashrate-unit toggle. The full
   // formatter returns "{value} {unit}"; strip the unit (it's drawn
   // once on the rotated axis label) so each tick is just the number.
+  // Compact axis-tick formatter that handles all 9 currency-x-unit
+  // combinations (3 currencies x 3 hashrate units). Input is the
+  // canonical sat/PH/day. Output is the on-axis-ready short form -
+  // unit suffix is shown once on the rotated axis label, not on
+  // each tick.
+  //
+  // - sat: scaled by hashrate-unit factor, then formatCompactNumber
+  //   gives k/M/B suffixes when needed (48,400,000 -> "48,4M";
+  //   48,400 -> "48,4k"; 48 -> "48,0").
+  // - BTC: scaled, divided by 100M, then adaptive decimals so
+  //   typical EH magnitudes (0.484 BTC/EH/day) read with 4 sig
+  //   figs and PH magnitudes (0.000484) get the precision they need.
+  // - USD: scaled, converted via btcPrice, formatCompactNumber for
+  //   $-prefixed compact output.
   const priceFmt = (v: number): string => {
-    const s = denomination.formatSatPerPhDay(v, intlLocale);
-    // Match either " <unit>" trailing (sat/BTC variants) or
-    // "/<unit>/day" trailing (USD-prefixed). The full format
-    // ends with /day in every mode, so cut at the last space if
-    // present, otherwise at "/<TH|PH|EH>/day".
-    const sp = s.lastIndexOf(' ');
-    if (sp > 0) return s.slice(0, sp);
-    const m = s.match(/^(.+?)\/(?:TH|PH|EH)\/day$/);
-    return m?.[1] ?? s;
+    const unit = denomination.hashrateUnit;
+    const rateMultiplier =
+      unit === 'TH' ? 0.001 : unit === 'EH' ? 1000 : 1;
+    const scaled = v * rateMultiplier;
+    if (denomination.mode === 'usd' && denomination.btcPrice !== null) {
+      const usd = (scaled / 100_000_000) * denomination.btcPrice;
+      return `$${formatCompactNumber(usd, intlLocale)}`;
+    }
+    if (denomination.mode === 'btc') {
+      const btc = scaled / 100_000_000;
+      const abs = Math.abs(btc);
+      // Adaptive decimals - keep tick labels narrow without losing
+      // legibility. Drop trailing zeros so "0,4840" reads as "0,484".
+      const fmt = (decimals: number): string =>
+        new Intl.NumberFormat(intlLocale, {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: decimals,
+        }).format(btc);
+      if (abs >= 1) return fmt(2);
+      if (abs >= 0.1) return fmt(3);
+      if (abs >= 0.001) return fmt(5);
+      if (abs === 0) return '0';
+      // Sub-millisat: scientific so the chart stays narrow.
+      return btc.toExponential(2);
+    }
+    return formatCompactNumber(scaled, intlLocale);
   };
 
   return (
@@ -735,7 +927,7 @@ export const PriceChart = memo(function PriceChart({
           <g key={`y-${i}`}>
             <line
               x1={PADDING.left}
-              x2={WIDTH - PADDING.right}
+              x2={WIDTH - padRight}
               y1={yScale(v)}
               y2={yScale(v)}
               stroke="#1e293b"
@@ -753,6 +945,25 @@ export const PriceChart = memo(function PriceChart({
             </text>
           </g>
         ))}
+
+        {/* #93: right-axis ticks + label + line. Mirrors the
+            HashrateChart's right-axis pattern. Rendered before the
+            data series so the data overlays the gridline rules. */}
+        {hasRightAxis && rightAxis &&
+          rightYTicks.map((v, i) => (
+            <g key={`y-right-${i}`}>
+              <text
+                x={WIDTH - padRight + 6}
+                y={rightYScale(v) + 4}
+                textAnchor="start"
+                fontSize="10"
+                fill={rightAxis.stroke}
+                fontFamily="monospace"
+              >
+                {rightAxis.formatTick(v)}
+              </text>
+            </g>
+          ))}
 
         {/* Fillable ask — the tracking anchor for the controller.
             bid = fillable + overpay (clamped to cap). Rendered below
@@ -949,6 +1160,32 @@ export const PriceChart = memo(function PriceChart({
           >
             {denomination.rateSuffix}
           </text>
+        )}
+
+        {/* #93: right-axis line + rotated label. Drawn last so it
+            sits on top of the left-axis grid + data series. */}
+        {hasRightAxis && rightAxis && (
+          <>
+            <path
+              d={rightAxisPath}
+              stroke={rightAxis.stroke}
+              strokeWidth="1.6"
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <text
+              x={WIDTH - 14}
+              y={PADDING.top + (chartHeight - PADDING.top - PADDING.bottom) / 2}
+              textAnchor="middle"
+              fontSize="10"
+              fill={rightAxis.stroke}
+              fontFamily="monospace"
+              transform={`rotate(90 ${WIDTH - 14} ${PADDING.top + (chartHeight - PADDING.top - PADDING.bottom) / 2})`}
+            >
+              {rightAxis.axisLabel}
+            </text>
+          </>
         )}
       </svg>
 

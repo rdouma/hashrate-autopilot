@@ -6,6 +6,16 @@
 
 The Status page tracked the TH/PH/EH and sats/BTC/USD header toggles, but Config inputs stayed in canonical units regardless. Now the hashrate-target inputs (target / floor / cheap-target) display + accept values in the selected hashrate unit (3 PH/s reads as 0.003 EH/s when EH is selected; flipping to TH gives 3,000 TH/s), and the price inputs (overpay, max bid, max-overpay-vs-hashprice) follow currency × hashrate-unit (300 sat/PH/day reads as 0.0000003 ₿/PH/day in BTC mode, or 300,000 sat/EH/day in EH mode). Bid budget input follows the currency toggle too. Storage stays canonical (sat/EH/day for prices, PH/s for hashrates, sat for budgets) - the toggles are presentation-only on the input side. USD is intentionally not a price-input mode (the operator's mental model is "I want 300 sats overpay", not "$0.0000003"); when USD is the active currency, price + budget inputs fall back to sat for editability while every read-only display elsewhere still respects USD.
 
+### `[Feature]` Price chart secondary Y-axis + compact tick formatting (#93, part 2)
+
+The Price chart now has its own `right axis` dropdown above it: `none | block reward | BTC/USD | unpaid earnings | network difficulty`. Same persistence pattern (per-browser localStorage), same data source (the new tick_metrics columns from #89), same render approach as the Hashrate chart from part 1.
+
+**Compact axis tick formatting** across both charts. The 5-decimal EH/s ticks ("30,50000 EH/s") and the 9-character sat-rate ticks ("48.400.000 sat/EH/day") were eating chart width. New `formatCompactNumber` helper auto-scales by magnitude and adds `k` / `M` / `B` suffixes - "48,4M sat/EH/day" instead of "48.400.000 sat/EH/day", "30,5 EH/s" instead of "30,50000 EH/s". Reasoned through every combination (3 currencies × 3 hashrate units): sat values get k/M/B suffixes; BTC values get adaptive decimals (drops trailing zeros, falls back to scientific when below millisat); USD values get $-prefixed compact. Locale-aware (commas in nl-NL, periods in en-US).
+
+NL + ES translations included for all 8 new operator-facing strings (`right axis`, `none`, `share_log %`, `network difficulty`, `pool hashrate`, `block reward`, `BTC/USD`, `unpaid earnings`).
+
+Also retroactively translates the part-1 strings that shipped untranslated yesterday - the operator was seeing Lingui hash IDs in the dropdown.
+
 ### `[Feature]` Hashrate chart secondary Y-axis dropdown (#93, part 1)
 
 A small `right axis` dropdown above the Hashrate chart picks one of: `none`, `share_log %` (the legacy violet line), `network difficulty`, or `pool hashrate`. Choice persists per-browser to localStorage. Internal storage stays canonical (PH/s, %, raw difficulty); the formatter on each tick label respects the global hashrate-unit toggle where applicable. The underlying `HashrateChart` component now takes a single `rightAxisSeries` prop replacing the binary `showShareLogOverlay`. `/api/metrics` now ships the new fields (`network_difficulty`, `pool_hashrate_ph`) per point. Price chart's equivalent dropdown lands in part 2.

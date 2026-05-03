@@ -13,6 +13,7 @@ import {
 } from '@braiins-hashrate/shared';
 
 import { HashrateChart, type HashrateRightAxis } from '../components/HashrateChart';
+import { type PriceRightAxis } from '../components/PriceChart';
 import { PriceChart } from '../components/PriceChart';
 import { ModeBadge } from '../components/ModeBadge';
 import { BtcSymbol } from '../components/BtcSymbol';
@@ -78,6 +79,21 @@ function readStoredHashrateRightAxis(
   return fallback;
 }
 
+function readStoredPriceRightAxis(fallback: PriceRightAxis): PriceRightAxis {
+  if (typeof window === 'undefined') return fallback;
+  const raw = window.localStorage.getItem(PRICE_RIGHT_AXIS_KEY);
+  if (
+    raw === 'none' ||
+    raw === 'estimated_block_reward' ||
+    raw === 'btc_usd_price' ||
+    raw === 'ocean_unpaid_sat' ||
+    raw === 'network_difficulty'
+  ) {
+    return raw;
+  }
+  return fallback;
+}
+
 export function Status() {
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -103,6 +119,13 @@ export function Status() {
   useEffect(() => {
     window.localStorage.setItem(HASHRATE_RIGHT_AXIS_KEY, hashrateRightAxis);
   }, [hashrateRightAxis]);
+
+  const [priceRightAxis, setPriceRightAxisState] = useState<PriceRightAxis>(
+    () => readStoredPriceRightAxis('none'),
+  );
+  useEffect(() => {
+    window.localStorage.setItem(PRICE_RIGHT_AXIS_KEY, priceRightAxis);
+  }, [priceRightAxis]);
 
   const query = useQuery({
     queryKey: ['status'],
@@ -268,19 +291,38 @@ export function Status() {
           rightAxisSeries={hashrateRightAxis}
         />
       </div>
-      <PriceChart
-        points={metricsQuery.data?.points ?? []}
-        events={bidEventsQuery.data?.events ?? []}
-        showEventKinds={CHART_RANGE_SPECS[chartRange].showEventKinds}
-        maxOverpayVsHashpriceSatPerPhDay={s.config_summary.max_overpay_vs_hashprice_sat_per_ph_day}
-        overpaySatPerPhDay={
-          configQuery.data?.config?.overpay_sat_per_eh_day != null
-            ? configQuery.data.config.overpay_sat_per_eh_day / EH_PER_PH
-            : null
-        }
-        priceSmoothingMinutes={configQuery.data?.config?.braiins_price_smoothing_minutes ?? 1}
-        showEffectiveRate={configQuery.data?.config?.show_effective_rate_on_price_chart ?? false}
-      />
+      <div className="space-y-1">
+        <div className="flex justify-end items-center gap-2 text-[11px] text-slate-400">
+          <Trans>right axis</Trans>
+          <select
+            value={priceRightAxis}
+            onChange={(e) =>
+              setPriceRightAxisState(e.target.value as PriceRightAxis)
+            }
+            className="bg-slate-800 border border-slate-700 rounded px-2 py-0.5 text-[11px]"
+          >
+            <option value="none">{t`none`}</option>
+            <option value="estimated_block_reward">{t`block reward`}</option>
+            <option value="btc_usd_price">{t`BTC/USD`}</option>
+            <option value="ocean_unpaid_sat">{t`unpaid earnings`}</option>
+            <option value="network_difficulty">{t`network difficulty`}</option>
+          </select>
+        </div>
+        <PriceChart
+          points={metricsQuery.data?.points ?? []}
+          events={bidEventsQuery.data?.events ?? []}
+          showEventKinds={CHART_RANGE_SPECS[chartRange].showEventKinds}
+          maxOverpayVsHashpriceSatPerPhDay={s.config_summary.max_overpay_vs_hashprice_sat_per_ph_day}
+          overpaySatPerPhDay={
+            configQuery.data?.config?.overpay_sat_per_eh_day != null
+              ? configQuery.data.config.overpay_sat_per_eh_day / EH_PER_PH
+              : null
+          }
+          priceSmoothingMinutes={configQuery.data?.config?.braiins_price_smoothing_minutes ?? 1}
+          showEffectiveRate={configQuery.data?.config?.show_effective_rate_on_price_chart ?? false}
+          rightAxisSeries={priceRightAxis}
+        />
+      </div>
 
       {/*
        * Pipeline order: Braiins → Datum → Ocean (a share travels

@@ -25,7 +25,13 @@ import {
 } from '@braiins-hashrate/shared';
 
 import type { MetricPoint, OurBlockMarker } from '../lib/api';
-import { formatAgeMinutes, formatNumber, formatTimestamp, formatTimestampUtc } from '../lib/format';
+import {
+  formatAgeMinutes,
+  formatCompactNumber,
+  formatNumber,
+  formatTimestamp,
+  formatTimestampUtc,
+} from '../lib/format';
 import { useDenomination } from '../lib/denomination';
 import { useLocale } from '../lib/locale';
 import { applyExplorerTemplate } from '../lib/blockExplorer';
@@ -299,8 +305,15 @@ export const HashrateChart = memo(function HashrateChart({
         case 'pool_hashrate':
           return {
             values: points.map((p) => p.pool_hashrate_ph),
-            // Honours the global hashrate-unit toggle.
-            formatTick: (v) => denomination.formatHashrate(v, intlLocale),
+            // Honours the global hashrate-unit toggle. Compact form
+            // because pool hashrate at typical Ocean magnitudes is
+            // ~30 EH/s and the operator wants 1-decimal readability,
+            // not 5-decimal noise.
+            formatTick: (v) => {
+              const unit = denomination.hashrateUnit;
+              const factor = unit === 'TH' ? 1000 : unit === 'EH' ? 0.001 : 1;
+              return formatCompactNumber(v * factor, intlLocale);
+            },
             axisLabel: `pool ${denomination.hashrateSuffix}`,
             stroke: '#34d399',
           };
@@ -560,10 +573,15 @@ export const HashrateChart = memo(function HashrateChart({
               fontFamily="monospace"
             >
               {(() => {
-                // Strip the suffix; the unit is shown once on the axis label.
-                const s = denomination.formatHashrate(v, intlLocale);
-                const idx = s.lastIndexOf(' ');
-                return idx > 0 ? s.slice(0, idx) : s;
+                // Compact tick labels - the chart already shows the
+                // unit on the rotated axis label, so the per-tick
+                // text just needs the scaled value. formatHashrate
+                // gives 5 decimals on EH which wastes axis width;
+                // formatCompactNumber drops trailing zeros and uses
+                // k/M/B suffixes when needed.
+                const unit = denomination.hashrateUnit;
+                const factor = unit === 'TH' ? 1000 : unit === 'EH' ? 0.001 : 1;
+                return formatCompactNumber(v * factor, intlLocale);
               })()}
             </text>
           </g>

@@ -146,11 +146,6 @@ msgstr "hace {totalSec}s"
 msgid "/PH/day"
 msgstr "/PH/día"
 
-#: src/components/HashrateChart.tsx
-#: src/components/HashrateChart.tsx
-msgid "% of Ocean"
-msgstr "% de Ocean"
-
 #: src/pages/Setup.tsx
 #: src/pages/Setup.tsx
 msgid "← Back"
@@ -401,6 +396,10 @@ msgstr "Dirección de pago Bitcoin"
 msgid "Block explorer"
 msgstr "Explorador de bloques"
 
+#: src/pages/Status.tsx
+msgid "block reward"
+msgstr "recompensa de bloque"
+
 #: src/pages/Config.tsx
 msgid "Block-found notification"
 msgstr "Notificación de bloque encontrado"
@@ -452,6 +451,10 @@ msgstr "Dirección de pago BTC"
 #: src/pages/Config.tsx
 msgid "BTC price oracle"
 msgstr "Oráculo de precio BTC"
+
+#: src/pages/Status.tsx
+msgid "BTC/USD"
+msgstr "BTC/USD"
 
 #: src/components/Layout.tsx
 msgid "BTC/USD: ${priceStr} - select display currency"
@@ -1203,6 +1206,11 @@ msgstr "neto/día ({0})"
 msgid "net/day ({rangeLabel})"
 msgstr "neto/día ({rangeLabel})"
 
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+msgid "network difficulty"
+msgstr "dificultad de red"
+
 #: src/components/PriceChart.tsx
 msgid "new speed"
 msgstr "nueva velocidad"
@@ -1255,6 +1263,11 @@ msgstr "No hay hashrate disponible en el mercado en este momento."
 #: src/pages/Config.tsx
 msgid "No on-chain balance tracking. The Profit & Loss panel won't show collected BTC."
 msgstr "Sin seguimiento de saldo on-chain. El panel de Profit & Loss no mostrará el BTC cobrado."
+
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+msgid "none"
+msgstr "ninguno"
 
 #: src/pages/Setup.tsx
 msgid "None"
@@ -1522,6 +1535,10 @@ msgstr "Destino del pool"
 msgid "Pool destination (where Braiins delivers)"
 msgstr "Destino del pool (a donde entrega Braiins)"
 
+#: src/pages/Status.tsx
+msgid "pool hashrate"
+msgstr "hashrate del pool"
+
 #: src/components/HashrateChart.tsx
 msgid "pool reward"
 msgstr "recompensa del pool"
@@ -1657,6 +1674,11 @@ msgstr "revertir"
 msgid "Review"
 msgstr "Revisar"
 
+#: src/pages/Status.tsx
+#: src/pages/Status.tsx
+msgid "right axis"
+msgstr "eje derecho"
+
 #: src/pages/Config.tsx
 msgid "Rolling-mean window applied to the hashrate chart. 1 = raw (no smoothing). Ocean is excluded — its /user_hashrate endpoint already returns a server-side 5-min average, so set these to 5 to line all three series up on the same cadence."
 msgstr "Ventana de media móvil aplicada al gráfico de hashrate. 1 = crudo (sin suavizado). Ocean queda excluido - su endpoint /user_hashrate ya devuelve un promedio de 5 min del lado servidor, así que ponlos en 5 para alinear las tres series con la misma cadencia."
@@ -1702,10 +1724,6 @@ msgstr "Ejecuta la decisión pendiente inmediatamente - libera el bloqueo post-e
 msgid "runway"
 msgstr "autonomía"
 
-#: src/pages/Config.tsx
-msgid "sat/PH/day"
-msgstr "sat/PH/día"
-
 #: src/components/Layout.tsx
 msgid "sats"
 msgstr "sats"
@@ -1738,6 +1756,10 @@ msgstr "Configurando…"
 #: src/pages/Status.tsx
 msgid "share log"
 msgstr "share log"
+
+#: src/pages/Status.tsx
+msgid "share_log %"
+msgstr "share_log %"
 
 #: src/pages/Setup.tsx
 msgid "Show"
@@ -1906,6 +1928,10 @@ msgstr "Oferta(s) desconocida(s) detectada(s) - el próximo tick PAUSARÁ el aut
 #: src/pages/Status.tsx
 msgid "unpaid"
 msgstr "no pagado"
+
+#: src/pages/Status.tsx
+msgid "unpaid earnings"
+msgstr "ganancias pendientes"
 
 #: src/pages/Status.tsx
 msgid "unpaid earnings (Ocean)"
