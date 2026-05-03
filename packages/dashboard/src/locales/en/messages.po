@@ -401,6 +401,10 @@ msgstr "Bitcoin payout address"
 msgid "Block explorer"
 msgstr "Block explorer"
 
+#: src/pages/Config.tsx
+msgid "Block-found notification"
+msgstr "Block-found notification"
+
 #: src/pages/Status.tsx
 msgid "blocked"
 msgstr "blocked"
@@ -436,6 +440,10 @@ msgstr "Braiins API unreachable - waiting for connectivity."
 #: src/pages/Status.tsx
 msgid "Braiins marketplace API — reachable when the last observe() read market/orderbook/balance without error."
 msgstr "Braiins marketplace API — reachable when the last observe() read market/orderbook/balance without error."
+
+#: src/pages/Config.tsx
+msgid "Browsers block audio until the page sees a user click; logging in counts. The first poll after a fresh page load establishes a silent baseline so you don't get a sound for every backlog row."
+msgstr "Browsers block audio until the page sees a user click; logging in counts. The first poll after a fresh page load establishes a silent baseline so you don't get a sound for every backlog row."
 
 #: src/pages/Config.tsx
 msgid "BTC payout address"
@@ -485,6 +493,10 @@ msgstr "Cancelled"
 #: src/lib/labels.ts
 msgid "Cancelling…"
 msgstr "Cancelling…"
+
+#: src/pages/Config.tsx
+msgid "Cartoon cowbell"
+msgstr "Cartoon cowbell"
 
 #: src/components/Layout.tsx
 msgid "changelog"
@@ -641,6 +653,10 @@ msgstr "Current owned-bid price (sat/PH/day). Under pay-your-bid this is exactly
 #: src/pages/Config.tsx
 msgid "custom"
 msgstr "custom"
+
+#: src/pages/Config.tsx
+msgid "Custom (uploaded)"
+msgstr "Custom (uploaded)"
 
 #: src/pages/Setup.tsx
 msgid "Daemon did not return to OPERATIONAL within 90 seconds."
@@ -952,6 +968,10 @@ msgid "Full wallet balance per bid. Currently ≈ {resolvedSatStr} sat."
 msgstr "Full wallet balance per bid. Currently ≈ {resolvedSatStr} sat."
 
 #: src/pages/Config.tsx
+msgid "Glass drop & roll"
+msgstr "Glass drop & roll"
+
+#: src/pages/Config.tsx
 msgid "Hard ceiling. If fillable + overpay would exceed this, the bid is clamped down to this value (and may not fill)."
 msgstr "Hard ceiling. If fillable + overpay would exceed this, the bid is clamped down to this value (and may not fill)."
 
@@ -1147,6 +1167,14 @@ msgid "Maximum"
 msgstr "Maximum"
 
 #: src/pages/Config.tsx
+msgid "Metallic clank 1"
+msgstr "Metallic clank 1"
+
+#: src/pages/Config.tsx
+msgid "Metallic clank 2"
+msgstr "Metallic clank 2"
+
+#: src/pages/Config.tsx
 msgid "Minimum floor"
 msgstr "Minimum floor"
 
@@ -1308,6 +1336,10 @@ msgid "Ocean's Unpaid Earnings — what will land on-chain at the next payout. T
 msgstr "Ocean's Unpaid Earnings — what will land on-chain at the next payout. Threshold: {0} sat (~0.01 BTC)."
 
 #: src/pages/Config.tsx
+msgid "Off"
+msgstr "Off"
+
+#: src/pages/Config.tsx
 msgid "Off by default. The emerald effective-rate line (what Braiins actually charged, from counter deltas) is dramatically more volatile than bid / fillable / hashprice — when enabled it auto-scales the Y-axis and visibly squashes the finer bot movements into a thin band. The hero PRICE card and the AVG COST / PH DELIVERED stat already show the same number without hijacking the chart. Flip on when you want to eyeball settlement behaviour directly, accept the loss of flatter-line detail in exchange."
 msgstr "Off by default. The emerald effective-rate line (what Braiins actually charged, from counter deltas) is dramatically more volatile than bid / fillable / hashprice — when enabled it auto-scales the Y-axis and visibly squashes the finer bot movements into a thin band. The hero PRICE card and the AVG COST / PH DELIVERED stat already show the same number without hijacking the chart. Flip on when you want to eyeball settlement behaviour directly, accept the loss of flatter-line detail in exchange."
 
@@ -1449,6 +1481,14 @@ msgstr "Per-tick bid = fillable_ask + this. Braiins matches pay-your-bid, so thi
 #: src/pages/Config.tsx
 msgid "Pick a preset or paste your own template — at least one placeholder ({hash} or {height}) is required. Example custom: http://umbrel.local:3006/block/{hash}."
 msgstr "Pick a preset or paste your own template — at least one placeholder ({hash} or {height}) is required. Example custom: http://umbrel.local:3006/block/{hash}."
+
+#: src/pages/Config.tsx
+msgid "Play a sound when a new pool block is detected paying our payout address. Off by default. Pick one of the bundled cues, upload your own, or leave it disabled. The cue fires once per new reward_events row; the dashboard tab needs to be open."
+msgstr "Play a sound when a new pool block is detected paying our payout address. Off by default. Pick one of the bundled cues, upload your own, or leave it disabled. The cue fires once per new reward_events row; the dashboard tab needs to be open."
+
+#: src/pages/Config.tsx
+msgid "Plays whatever's selected above (no save needed)."
+msgstr "Plays whatever's selected above (no save needed)."
 
 #: src/pages/Config.tsx
 msgid "Polled every 5 minutes. The daemon never makes decisions based on fiat price — this is purely a display convenience. Set to \"Disabled\" if you want a sats-only dashboard."
@@ -1727,6 +1767,10 @@ msgstr "sign out"
 msgid "signing in…"
 msgstr "signing in…"
 
+#: src/pages/Config.tsx
+msgid "Sound"
+msgstr "Sound"
+
 #: src/components/PriceChart.tsx
 msgid "speed"
 msgstr "speed"
@@ -1807,6 +1851,10 @@ msgid "TCP probe of the Datum gateway's stratum port."
 msgstr "TCP probe of the Datum gateway's stratum port."
 
 #: src/pages/Config.tsx
+msgid "Test sound"
+msgstr "Test sound"
+
+#: src/pages/Config.tsx
 msgid "The bid tracks the cheapest ask with enough depth for your target, plus a small premium. Two hard ceilings sit above that so the premium can never run away. Entered in sat/PH/day."
 msgstr "The bid tracks the cheapest ask with enough depth for your target, plus a small premium. Two hard ceilings sit above that so the premium can never run away. Entered in sat/PH/day."
 
@@ -1867,6 +1915,19 @@ msgstr "unpaid earnings (Ocean)"
 #: src/pages/Status.tsx
 msgid "updated {0}"
 msgstr "updated {0}"
+
+#: src/pages/Config.tsx
+msgid "Upload custom MP3 / OGG / WAV / WebM (max 200 KB)"
+msgstr "Upload custom MP3 / OGG / WAV / WebM (max 200 KB)"
+
+#. placeholder {0}: resp.bytes ?? '?'
+#: src/pages/Config.tsx
+msgid "Uploaded {0} bytes. Switch the dropdown to \"Custom (uploaded)\" and Save to use it."
+msgstr "Uploaded {0} bytes. Switch the dropdown to \"Custom (uploaded)\" and Save to use it."
+
+#: src/pages/Config.tsx
+msgid "Uploading…"
+msgstr "Uploading…"
 
 #: src/pages/Status.tsx
 #: src/pages/Status.tsx

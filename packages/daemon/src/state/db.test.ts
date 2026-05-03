@@ -79,6 +79,7 @@ describe('openDatabase — migrations', () => {
       '0049_show_share_log_on_hashrate_chart.sql',
       '0050_btc_price_default_coingecko.sql',
       '0051_bump_retention_defaults.sql',
+      '0052_block_found_sound.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });

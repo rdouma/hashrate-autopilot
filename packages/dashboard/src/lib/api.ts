@@ -295,6 +295,13 @@ export interface AppConfig {
   braiins_price_smoothing_minutes: number;
   show_effective_rate_on_price_chart: boolean;
   show_share_log_on_hashrate_chart: boolean;
+  block_found_sound:
+    | 'off'
+    | 'cartoon-cowbell'
+    | 'glass-drop-and-roll'
+    | 'metallic-clank-1'
+    | 'metallic-clank-2'
+    | 'custom';
 }
 
 export interface ConfigResponse {
@@ -403,6 +410,18 @@ export const api = {
     ),
   payouts: () => request<PayoutsResponse>('/api/payouts'),
   scanPayouts: () => request<{ ok: boolean; error?: string }>('/api/payouts/scan', { method: 'POST' }),
+  rewardEvents: (limit?: number) =>
+    request<RewardEventsResponse>(
+      `/api/reward-events${limit ? `?limit=${limit}` : ''}`,
+    ),
+  uploadBlockFoundSound: (dataBase64: string, mime: string) =>
+    request<{ ok: boolean; bytes?: number; mime?: string; error?: string }>(
+      '/api/config/block-found-sound',
+      {
+        method: 'POST',
+        body: JSON.stringify({ data_base64: dataBase64, mime }),
+      },
+    ),
   btcPrice: () => request<BtcPriceResponse>('/api/btc-price'),
   finance: () => request<FinanceResponse>('/api/finance'),
   financeRange: (range: ChartRange) =>
@@ -433,6 +452,20 @@ export interface StatsResponse {
   mutation_count: number;
   range: ChartRange;
   tick_count: number;
+}
+
+export interface RewardEventView {
+  id: number;
+  txid: string;
+  vout: number;
+  block_height: number;
+  value_sat: number;
+  detected_at: number;
+  reorged: boolean;
+}
+
+export interface RewardEventsResponse {
+  events: RewardEventView[];
 }
 
 export interface StorageEstimateBucket {

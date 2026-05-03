@@ -34,6 +34,7 @@ import type { OceanClient } from '../services/ocean.js';
 import type { PayoutObserver } from '../services/payout-observer.js';
 import { registerActionRoutes } from './routes/actions.js';
 import { registerBidEventsRoute } from './routes/bid-events.js';
+import { registerBlockFoundSoundRoute } from './routes/block-found-sound.js';
 import { registerBtcPriceRoute } from './routes/btc-price.js';
 import { registerConfigRoutes } from './routes/config.js';
 import { registerDecisionsRoutes } from './routes/decisions.js';
@@ -42,6 +43,7 @@ import { registerMetricsRoute } from './routes/metrics.js';
 import { registerOceanRoute } from './routes/ocean.js';
 import { registerOperatorRoutes } from './routes/operator.js';
 import { registerPayoutsRoute } from './routes/payouts.js';
+import { registerRewardEventsRoute } from './routes/reward-events.js';
 import { registerRunModeRoute } from './routes/run-mode.js';
 import { registerStatsRoute } from './routes/stats.js';
 import { registerStatusRoute } from './routes/status.js';
@@ -122,6 +124,8 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<HttpServer
   await registerPayoutsRoute(app, { payoutObserver: deps.payoutObserver });
   await registerStatsRoute(app, { db: deps.db, bidEventsDb: deps.db });
   await registerStorageEstimateRoute(app, { db: deps.db });
+  await registerRewardEventsRoute(app, { db: deps.db });
+  await registerBlockFoundSoundRoute(app, { db: deps.db });
   await registerOceanRoute(app, {
     oceanClient: deps.oceanClient,
     configRepo: deps.configRepo,

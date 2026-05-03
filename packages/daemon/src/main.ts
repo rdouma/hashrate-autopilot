@@ -314,6 +314,7 @@ async function bootOperational(
       electrsHost: cfg.payout_source === 'electrs' ? cfg.electrs_host : null,
       electrsPort: cfg.payout_source === 'electrs' ? cfg.electrs_port : null,
       log: (m) => log(m),
+      db: handle.db,
     });
     if (cfg.payout_source === 'electrs') {
       log(`payout: using Electrs at ${cfg.electrs_host}:${cfg.electrs_port}`);

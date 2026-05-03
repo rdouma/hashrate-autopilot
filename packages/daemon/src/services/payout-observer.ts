@@ -14,7 +14,9 @@
  */
 
 import type { BitcoindClient, ScanTxoutSetResult } from '@braiins-hashrate/bitcoind-client';
+import type { Kysely } from 'kysely';
 
+import type { Database } from '../state/types.js';
 import { createElectrsClient, type ElectrsClient } from './electrs-client.js';
 
 const ELECTRS_INTERVAL_MS = 60 * 1000;
@@ -39,6 +41,14 @@ export interface PayoutObserverOptions {
   readonly scanIntervalMs?: number;
   readonly now?: () => number;
   readonly log?: (msg: string) => void;
+  /**
+   * #88: when provided, each bitcoind scan inserts any newly-seen
+   * coinbase outputs into `reward_events` so the dashboard can ring
+   * an audible cue. Optional - the reward_events table predates this
+   * wiring and the observer's primary job is the balance snapshot,
+   * not bookkeeping individual UTXOs.
+   */
+  readonly db?: Kysely<Database>;
 }
 
 export class PayoutObserver {
@@ -129,6 +139,59 @@ export class PayoutObserver {
     this.lastError = null;
     this.options.log?.(
       `[payout] via bitcoind: ${address.slice(0, 12)}… unspent=${totalSat} sat in ${result.unspents.length} outs`,
+    );
+    // #88: record any newly-seen coinbase UTXOs into reward_events so
+    // the dashboard can ring the block-found cue. Best-effort: a DB
+    // hiccup must not block the snapshot update above.
+    if (this.options.db) {
+      try {
+        await this.recordNewRewardEvents(result, now());
+      } catch (err) {
+        this.options.log?.(`[payout] reward_events write failed: ${(err as Error).message}`);
+      }
+    }
+  }
+
+  /**
+   * Insert one row per coinbase UTXO not already in `reward_events`.
+   * Non-coinbase UTXOs at the payout address (e.g. the operator
+   * received a regular payment, or self-consolidated) are skipped -
+   * we only want to ring the cue for actual block finds.
+   */
+  private async recordNewRewardEvents(
+    result: ScanTxoutSetResult,
+    detectedAt: number,
+  ): Promise<void> {
+    const db = this.options.db;
+    if (!db) return;
+    const coinbaseOuts = result.unspents.filter((u) => u.coinbase === true);
+    if (coinbaseOuts.length === 0) return;
+    // Cheap one-shot query: pull existing (txid, vout) pairs we've
+    // already recorded so we only insert the deltas. The table is
+    // tiny in practice (one row per pool block paid to this address)
+    // so we don't need a per-row WHERE NOT EXISTS dance.
+    const existing = await db
+      .selectFrom('reward_events')
+      .select(['txid', 'vout'])
+      .execute();
+    const seen = new Set(existing.map((r) => `${r.txid}:${r.vout}`));
+    const newOnes = coinbaseOuts.filter((u) => !seen.has(`${u.txid}:${u.vout}`));
+    if (newOnes.length === 0) return;
+    await db
+      .insertInto('reward_events')
+      .values(
+        newOnes.map((u) => ({
+          txid: u.txid,
+          vout: u.vout,
+          block_height: u.height,
+          confirmations: Math.max(0, result.height - u.height + 1),
+          value_sat: Math.round(u.amount * SAT_PER_BTC),
+          detected_at: detectedAt,
+        })),
+      )
+      .execute();
+    this.options.log?.(
+      `[payout] recorded ${newOnes.length} new reward_event row(s)`,
     );
   }
 

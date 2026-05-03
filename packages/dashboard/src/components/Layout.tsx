@@ -5,6 +5,7 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 import { api } from '../lib/api';
 import { clearPassword } from '../lib/auth';
+import { useBlockFoundSound } from '../lib/block-found-sound';
 import { useDenomination } from '../lib/denomination';
 import { formatNumber } from '../lib/format';
 import { useLocale } from '../lib/locale';
@@ -42,6 +43,14 @@ export function Layout() {
     queryFn: api.status,
     refetchInterval: 30_000,
   });
+
+  // Audible block-found cue (#88). Reads the operator's choice from
+  // the live config; pollster lives inside the hook.
+  const config = useQuery({
+    queryKey: ['config'],
+    queryFn: api.config,
+  });
+  useBlockFoundSound(config.data?.config.block_found_sound);
 
   const logout = () => {
     clearPassword();

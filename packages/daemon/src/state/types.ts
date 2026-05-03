@@ -69,6 +69,12 @@ export interface ConfigTable {
   braiins_price_smoothing_minutes: number;
   show_effective_rate_on_price_chart: 0 | 1;
   show_share_log_on_hashrate_chart: 0 | 1;
+  /** #88: 'off' | one of four bundled MP3 names | 'custom'. */
+  block_found_sound: string;
+  /** Custom-uploaded MP3 bytes; written via POST /api/config/block-found-sound. Capped at ~200 KB. */
+  block_found_sound_custom_blob: Buffer | null;
+  /** MIME type of the custom blob (sniffed at upload). */
+  block_found_sound_custom_mime: string | null;
   updated_at: number;
 }
 

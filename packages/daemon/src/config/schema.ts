@@ -243,6 +243,27 @@ export const AppConfigSchema = z.object({
   // the pool drifts as Ocean's total hashrate grows or our delivered
   // PH/s fluctuates.
   show_share_log_on_hashrate_chart: z.boolean().default(false),
+
+  // Audible cue when a new pool block is detected (#88). 'off' is the
+  // default so existing installs don't suddenly start playing audio
+  // after upgrade. Values map to bundled MP3s under
+  // packages/dashboard/public/sounds/{name}.mp3 plus 'custom' which
+  // plays the operator-uploaded blob stored in the next two fields.
+  // The custom blob/mime are write-only via POST /api/config/block-found-sound
+  // and read-back via GET /api/config/block-found-sound (both serve the
+  // raw audio bytes, never the JSON config); they are intentionally
+  // omitted from this Zod schema so the dashboard's POST /api/config
+  // round-trip can't accidentally clobber a 200 KB blob with null.
+  block_found_sound: z
+    .enum([
+      'off',
+      'cartoon-cowbell',
+      'glass-drop-and-roll',
+      'metallic-clank-1',
+      'metallic-clank-2',
+      'custom',
+    ])
+    .default('off'),
 });
 
 export type AppConfig = z.infer<typeof AppConfigSchema>;
@@ -327,4 +348,5 @@ export const APP_CONFIG_DEFAULTS: Omit<
 
   show_effective_rate_on_price_chart: false,
   show_share_log_on_hashrate_chart: false,
+  block_found_sound: 'off',
 };

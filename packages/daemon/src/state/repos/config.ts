@@ -32,6 +32,10 @@ export class ConfigRepo {
       quiet_hours_timezone: _legacy6,
       confirmation_timeout_minutes: _legacy7,
       telegram_chat_id: _legacy8,
+      // #88: blob + mime are write-only via the dedicated multipart
+      // route; the JSON config endpoint never sees them.
+      block_found_sound_custom_blob: _audioBlob,
+      block_found_sound_custom_mime: _audioMime,
       ...rest
     } = row;
     return {
@@ -44,6 +48,9 @@ export class ConfigRepo {
         rest.show_effective_rate_on_price_chart === 1,
       show_share_log_on_hashrate_chart:
         rest.show_share_log_on_hashrate_chart === 1,
+      // Schema column is `TEXT NOT NULL DEFAULT 'off'`; the Zod enum
+      // narrows valid values, but the row type is the broad SQL string.
+      block_found_sound: rest.block_found_sound as AppConfig['block_found_sound'],
     };
   }
 

@@ -1,7 +1,7 @@
 import { Trans, t } from '@lingui/macro';
 import { useLingui } from '@lingui/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { NumberField } from '../components/NumberField';
@@ -12,6 +12,7 @@ import {
   type StorageEstimateBucket,
   type StorageEstimateResponse,
 } from '../lib/api';
+import { blockFoundSoundUrl } from '../lib/block-found-sound';
 import { LOCALE_PRESETS, useLocale } from '../lib/locale';
 
 const EH_PER_PH = 1000;
@@ -348,6 +349,28 @@ function useSections(): Section[] {
             kind: 'integer',
             unit: 'days',
             help: t`Decision-log rows where the autopilot proposed at least one bid action. Rare (~10% of ticks) and high-value: this is the forensic record for "why did the autopilot create / edit / cancel that bid?" Cheap to keep long.`,
+          },
+        ],
+      },
+      {
+        id: 'block-found-sound',
+        title: t`Block-found notification`,
+        description: t`Play a sound when a new pool block is detected paying our payout address. Off by default. Pick one of the bundled cues, upload your own, or leave it disabled. The cue fires once per new reward_events row; the dashboard tab needs to be open.`,
+        fields: [
+          {
+            key: 'block_found_sound',
+            label: t`Sound`,
+            kind: 'select',
+            fullWidth: true,
+            options: [
+              { value: 'off', label: t`Off` },
+              { value: 'cartoon-cowbell', label: t`Cartoon cowbell` },
+              { value: 'glass-drop-and-roll', label: t`Glass drop & roll` },
+              { value: 'metallic-clank-1', label: t`Metallic clank 1` },
+              { value: 'metallic-clank-2', label: t`Metallic clank 2` },
+              { value: 'custom', label: t`Custom (uploaded)` },
+            ],
+            help: t`Browsers block audio until the page sees a user click; logging in counts. The first poll after a fresh page load establishes a silent baseline so you don't get a sound for every backlog row.`,
           },
         ],
       },
@@ -711,7 +734,112 @@ function SectionCard({
           </div>
         ))}
       </div>
+      {section.id === 'block-found-sound' && (
+        <BlockFoundSoundExtras draft={draft} />
+      )}
     </section>
+  );
+}
+
+/**
+ * Test-button + custom-upload addendum for the block-found-sound
+ * section. Sits below the dropdown rendered by the standard `select`
+ * field. Test plays whatever the dropdown currently points at (no
+ * save required - audition before commit). Upload is JSON
+ * base64-encoded to avoid pulling in @fastify/multipart for one
+ * tiny one-shot upload.
+ */
+function BlockFoundSoundExtras({ draft }: { draft: AppConfig }) {
+  const { i18n } = useLingui();
+  void i18n;
+  const choice = draft.block_found_sound;
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement | null>(null);
+
+  const playPreview = () => {
+    const url = blockFoundSoundUrl(choice);
+    if (!url) return;
+    const a = new Audio(url);
+    // Preview cache-busts custom uploads so a fresh upload audits
+    // immediately - the daemon serves the new blob but the URL is
+    // identical, so the browser would otherwise serve a cached play.
+    if (choice === 'custom') {
+      a.src = `${url}?t=${Date.now()}`;
+    }
+    a.play().catch((err: Error) => {
+      setUploadStatus(null);
+      setUploadError(`Audio play failed: ${err.message}`);
+    });
+  };
+
+  const onUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadError(null);
+    setUploadStatus(t`Uploading…`);
+    try {
+      if (file.size > 200 * 1024) {
+        throw new Error(`File is ${(file.size / 1024).toFixed(0)} KB, max is 200 KB`);
+      }
+      const buf = await file.arrayBuffer();
+      // Browser btoa won't take a binary string of arbitrary bytes;
+      // walk the array in 8-bit chunks to build the base64 input.
+      const bytes = new Uint8Array(buf);
+      let bin = '';
+      for (let i = 0; i < bytes.length; i++) {
+        bin += String.fromCharCode(bytes[i] as number);
+      }
+      const b64 = btoa(bin);
+      const resp = await api.uploadBlockFoundSound(b64, file.type || 'audio/mpeg');
+      if (!resp.ok) {
+        throw new Error(resp.error ?? 'unknown upload error');
+      }
+      setUploadStatus(t`Uploaded ${resp.bytes ?? '?'} bytes. Switch the dropdown to "Custom (uploaded)" and Save to use it.`);
+      if (fileRef.current) fileRef.current.value = '';
+    } catch (err) {
+      setUploadStatus(null);
+      setUploadError((err as Error).message);
+    }
+  };
+
+  return (
+    <div className="mt-3 pt-3 border-t border-slate-800 space-y-3">
+      <div className="flex items-center gap-2 text-xs">
+        <button
+          type="button"
+          onClick={playPreview}
+          disabled={!choice || choice === 'off'}
+          className={
+            'px-3 py-1 rounded border ' +
+            (!choice || choice === 'off'
+              ? 'border-slate-700 text-slate-600 cursor-not-allowed'
+              : 'border-slate-700 text-slate-200 hover:bg-slate-800')
+          }
+        >
+          <Trans>Test sound</Trans>
+        </button>
+        <span className="text-slate-500"><Trans>Plays whatever's selected above (no save needed).</Trans></span>
+      </div>
+      <div>
+        <label className="block text-xs text-slate-400 mb-1">
+          <Trans>Upload custom MP3 / OGG / WAV / WebM (max 200 KB)</Trans>
+        </label>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="audio/mpeg,audio/mp3,audio/ogg,audio/wav,audio/x-wav,audio/webm"
+          onChange={onUpload}
+          className="text-xs text-slate-400 file:mr-2 file:px-2 file:py-1 file:bg-slate-800 file:border file:border-slate-700 file:rounded file:text-slate-200 file:cursor-pointer"
+        />
+        {uploadStatus && (
+          <p className="text-xs text-emerald-300 mt-1">{uploadStatus}</p>
+        )}
+        {uploadError && (
+          <p className="text-xs text-red-400 mt-1">{uploadError}</p>
+        )}
+      </div>
+    </div>
   );
 }
 

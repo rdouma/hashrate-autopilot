@@ -159,6 +159,10 @@ const APP_CONFIG_ENV: {
     varName: 'BHA_SHOW_SHARE_LOG_ON_HASHRATE_CHART',
     coerce: asBoolean,
   },
+  block_found_sound: {
+    varName: 'BHA_BLOCK_FOUND_SOUND',
+    coerce: asString,
+  },
 };
 
 // ---------------------------------------------------------------------------
