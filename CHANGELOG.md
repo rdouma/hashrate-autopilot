@@ -2,6 +2,10 @@
 
 ## 2026-05-02
 
+### `[Fix]` BTC + TH/PH/EH toggles - third sweep (#87)
+
+Two more spots were ignoring the toggles: the hero PRICE big number stayed in raw sat/PH/day regardless of the toggle (the muted subtitle below it switched correctly, so the visible 4xl number contradicted the unit shown immediately under it), and the green `JustExecutedBanner` line above NEXT ACTION ("Just lowered bid: 48,924 → 48,461 sat/PH/day") was rendering raw daemon text. Hero PRICE now routes through `formatSatPerPhDay` and strips the trailing unit. JustExecutedBanner runs through `relabelSummary`. The relabeller was also broadened to handle (a) `sat/EH/day` rates (Braiins's native unit; some daemon paths emit it), (b) hashrate arrow pairs (`4 → 5 PH/s`), and (c) consistent canonicalisation regardless of which unit the daemon used. No translations needed - all changes are formatter routing.
+
 ### `[UI]` BTC + TH/PH/EH toggles - second sweep (#87)
 
 Hero PRICE card subtitle now follows the rate suffix instead of hardcoding "/PH/day". NEXT ACTION sentences ("Bid filling at X PH/s.", "Will edit bid to Y sat/PH/day on the next tick.", "Will lower to..." etc.) now route through the formatters and respect the toggle. AVG COST stat-card label dropped the hardcoded "PH" - was contradictory ("AVG COST / PH DELIVERED" with a "sat/EH/day" sub-label below in EH mode); now reads "AVG COST / HASHRATE DELIVERED" and the unit follows the toggle. Last-tick proposal lines ("EDIT B... 48,189 -> 48,444 sat/PH/day") are post-processed client-side via a regex relabeller until the daemon emits structured fields - the operator now sees these in the selected unit too. NL + ES translations added for the renamed strings.

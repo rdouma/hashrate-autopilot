@@ -518,12 +518,22 @@ function OperationsCard({
                   regardless of how wide the badge gets (e.g. "+9" vs "+126"). */}
               <div className="relative leading-none">
                 <span className="text-4xl font-mono font-semibold text-slate-100 tabular-nums">
-                  {denomination.mode === 'usd' && denomination.btcPrice !== null
-                    ? `$${new Intl.NumberFormat(intlLocale, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      }).format((Math.round(currentPricePH) / 100_000_000) * denomination.btcPrice)}`
-                    : formatNumber(Math.round(currentPricePH), {}, intlLocale)}
+                  {(() => {
+                    // Route through the same formatter the muted subtitle
+                    // uses, then drop the unit. The full formatter returns
+                    // "{value} sat/EH/day" / "{value} BTC/PH/day" / "$X/TH/day"
+                    // depending on the toggles; the suffix is rendered just
+                    // below as <SatSymbol/> / "$" / "BTC" + the per-unit-day
+                    // tail, so the big number must show only the value.
+                    const full = denomination.formatSatPerPhDay(
+                      currentPricePH,
+                      intlLocale,
+                    );
+                    const sp = full.lastIndexOf(' ');
+                    if (sp > 0) return full.slice(0, sp);
+                    const m = full.match(/^(.+?)\/(?:TH|PH|EH)\/day$/);
+                    return m?.[1] ?? full;
+                  })()}
                 </span>
                 <span className="absolute left-full top-1/2 -translate-y-1/2 ml-1.5 whitespace-nowrap">
                   <PriceDeltaVsHashprice
@@ -993,6 +1003,7 @@ function renderNextActionDetail(
 
 function JustExecutedBanner({ last }: { last: NextActionView['last_executed'] }) {
   const [now, setNow] = useState(() => Date.now());
+  const denomination = useDenomination();
   useEffect(() => {
     if (!last) return;
     const id = setInterval(() => setNow(Date.now()), 5000);
@@ -1006,7 +1017,7 @@ function JustExecutedBanner({ last }: { last: NextActionView['last_executed'] })
   return (
     <div className="mb-2 flex items-baseline gap-2 text-xs">
       <span className="text-emerald-400">✓</span>
-      <span className="text-emerald-200">{last.summary}</span>
+      <span className="text-emerald-200">{relabelSummary(last.summary, denomination)}</span>
       <span className="text-slate-500 text-[11px]">({formatAge(last.executed_at_ms)})</span>
     </div>
   );
@@ -2549,50 +2560,87 @@ function LinkRow({ k, v, href }: { k: string; v: string; href: string }) {
  */
 /**
  * Rewrite a daemon-emitted summary string ("EDIT ... 48,189 -> 48,444
- * sat/PH/day", "Bid filling at 3.17 PH/s.", etc.) so any embedded
- * unit-bearing values follow the operator's currency + hashrate-unit
- * toggles. Daemon currently ships these as plain strings rather than
- * structured fields, so a regex sweep is the pragmatic shim until the
- * proposal payload grows typed price/hashrate fields.
+ * sat/PH/day", "Just lowered bid: 48,924 → 48,461 sat/PH/day", "Bid
+ * filling at 3.17 PH/s.", etc.) so embedded unit-bearing values follow
+ * the operator's currency + hashrate-unit toggles. Daemon currently
+ * ships these as plain strings rather than structured fields, so a
+ * regex sweep is the pragmatic shim until ProposalView /
+ * NextActionView grow typed price/hashrate fields.
  *
- * Recognised patterns:
- *   "12,345 sat/PH/day"         -> formatSatPerPhDay(12345)
- *   "12,345 -> 23,456 sat/PH/day"-> arrow joined formatted pair
- *   "3.17 PH/s"                 -> formatHashrate(3.17)
- *   "0.5 PH/s"                  -> formatHashrate(0.5)
+ * Numbers are parsed permissively (commas as thousands separators,
+ * dots or commas as decimal separators - daemon emits en-US so dots
+ * decimal/commas thousands; we strip commas and let parseFloat handle
+ * the rest).
  *
- * Anything that doesn't match is returned unchanged.
+ * Patterns covered:
+ *   - rate arrows: "X (->|→) Y sat/{PH|EH}/day" -> joined formatted pair
+ *   - bare rates: "X sat/{PH|EH}/day" -> formatSatPerPhDay
+ *   - hashrate arrows: "A (->|→) B {TH|PH|EH}/s" -> joined formatted pair
+ *   - bare hashrates: "X {TH|PH|EH}/s" -> formatHashrate
+ *
+ * Both rate and hashrate sides are normalised to a canonical
+ * sat/PH/day or PH/s value before passing to the formatter, so the
+ * daemon's choice of units doesn't matter.
+ *
+ * Order-sensitive: longer/specific patterns (arrows + sat/EH/day) run
+ * before shorter ones (bare + sat/PH/day) so we don't half-rewrite a
+ * pair.
  */
 function relabelSummary(
   s: string,
   denomination: ReturnType<typeof useDenomination>,
 ): string {
   if (!s) return s;
-  // Arrow form first - more specific.
-  const arrow = s.replace(
-    /(-?[\d,.]+)\s*(?:->|→|→)\s*(-?[\d,.]+)\s*sat\/PH\/day/g,
-    (_, a: string, b: string) => {
-      const aNum = Number.parseFloat(a.replace(/,/g, ''));
-      const bNum = Number.parseFloat(b.replace(/,/g, ''));
-      if (!Number.isFinite(aNum) || !Number.isFinite(bNum)) return _;
-      return `${denomination.formatSatPerPhDay(aNum)} → ${denomination.formatSatPerPhDay(bNum)}`;
+  const parseNum = (raw: string): number =>
+    Number.parseFloat(raw.replace(/,/g, ''));
+  const toSatPerPhDay = (raw: string, unit: 'PH' | 'EH'): number => {
+    const n = parseNum(raw);
+    if (!Number.isFinite(n)) return NaN;
+    return unit === 'EH' ? n / 1000 : n;
+  };
+  const toPh = (raw: string, unit: 'TH' | 'PH' | 'EH'): number => {
+    const n = parseNum(raw);
+    if (!Number.isFinite(n)) return NaN;
+    return unit === 'TH' ? n / 1000 : unit === 'EH' ? n * 1000 : n;
+  };
+
+  // 1. Rate arrow pair: "X (->|→) Y sat/{PH|EH}/day"
+  let out = s.replace(
+    /(-?[\d,.]+)\s*(?:->|→|→)\s*(-?[\d,.]+)\s*sat\/(PH|EH)\/day/g,
+    (m, a: string, b: string, unit: 'PH' | 'EH') => {
+      const aPh = toSatPerPhDay(a, unit);
+      const bPh = toSatPerPhDay(b, unit);
+      if (!Number.isFinite(aPh) || !Number.isFinite(bPh)) return m;
+      return `${denomination.formatSatPerPhDay(aPh)} → ${denomination.formatSatPerPhDay(bPh)}`;
     },
   );
-  const ratesRewritten = arrow.replace(
-    /(-?[\d,.]+)\s*sat\/PH\/day/g,
-    (m, num: string) => {
-      const n = Number.parseFloat(num.replace(/,/g, ''));
-      return Number.isFinite(n) ? denomination.formatSatPerPhDay(n) : m;
+  // 2. Hashrate arrow pair: "A (->|→) B {TH|PH|EH}/s"
+  out = out.replace(
+    /(-?[\d,.]+)\s*(?:->|→|→)\s*(-?[\d,.]+)\s*(TH|PH|EH)\/s/g,
+    (m, a: string, b: string, unit: 'TH' | 'PH' | 'EH') => {
+      const aPh = toPh(a, unit);
+      const bPh = toPh(b, unit);
+      if (!Number.isFinite(aPh) || !Number.isFinite(bPh)) return m;
+      return `${denomination.formatHashrate(aPh)} → ${denomination.formatHashrate(bPh)}`;
     },
   );
-  const hashrateRewritten = ratesRewritten.replace(
-    /(-?[\d,.]+)\s*PH\/s/g,
-    (m, num: string) => {
-      const n = Number.parseFloat(num.replace(/,/g, ''));
-      return Number.isFinite(n) ? denomination.formatHashrate(n) : m;
+  // 3. Bare rate: "X sat/{PH|EH}/day"
+  out = out.replace(
+    /(-?[\d,.]+)\s*sat\/(PH|EH)\/day/g,
+    (m, num: string, unit: 'PH' | 'EH') => {
+      const ph = toSatPerPhDay(num, unit);
+      return Number.isFinite(ph) ? denomination.formatSatPerPhDay(ph) : m;
     },
   );
-  return hashrateRewritten;
+  // 4. Bare hashrate: "X {TH|PH|EH}/s"
+  out = out.replace(
+    /(-?[\d,.]+)\s*(TH|PH|EH)\/s/g,
+    (m, num: string, unit: 'TH' | 'PH' | 'EH') => {
+      const ph = toPh(num, unit);
+      return Number.isFinite(ph) ? denomination.formatHashrate(ph) : m;
+    },
+  );
+  return out;
 }
 
 function splitUnit(v: string): { num: string; unit: string } | null {
