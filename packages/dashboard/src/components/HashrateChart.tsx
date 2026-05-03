@@ -126,6 +126,30 @@ interface BlockTooltipState {
   pinned: boolean;
 }
 
+/**
+ * #93: which series to draw on the chart's right Y-axis.
+ * - 'none': hide the right axis entirely.
+ * - 'share_log': legacy violet `% of Ocean` line.
+ * - 'network_difficulty' / 'pool_hashrate': new options sourced
+ *   from tick_metrics columns added in #89.
+ */
+export type HashrateRightAxis =
+  | 'none'
+  | 'share_log'
+  | 'network_difficulty'
+  | 'pool_hashrate';
+
+interface RightAxisSpec {
+  /** Per-point values pulled off MetricPoint. */
+  values: (number | null)[];
+  /** Y-tick label formatter. Receives the raw value. */
+  formatTick: (v: number) => string;
+  /** Axis label drawn vertically on the right edge. */
+  axisLabel: string;
+  /** Stroke colour for the line. */
+  stroke: string;
+}
+
 export const HashrateChart = memo(function HashrateChart({
   points,
   range,
@@ -135,7 +159,7 @@ export const HashrateChart = memo(function HashrateChart({
   shareLogPct = null,
   braiinsSmoothingMinutes = 1,
   datumSmoothingMinutes = 1,
-  showShareLogOverlay = false,
+  rightAxisSeries = 'none',
 }: {
   points: readonly MetricPoint[];
   range: ChartRange;
@@ -159,11 +183,12 @@ export const HashrateChart = memo(function HashrateChart({
    *  already returns a server-side 5-min average. */
   braiinsSmoothingMinutes?: number;
   datumSmoothingMinutes?: number;
-  /** When true AND at least one non-null `share_log_pct` exists in
-   *  the visible range, render the violet `% of Ocean` line on a
-   *  second (right-side) Y-axis. Bound to the
-   *  `show_share_log_on_hashrate_chart` config toggle. */
-  showShareLogOverlay?: boolean;
+  /** #93: which series to render on the right Y-axis. 'none' hides
+   *  the axis entirely. 'share_log' is the legacy violet line. The
+   *  other options pull from new tick_metrics columns added in #89.
+   *  When the chosen series has no non-null values in the visible
+   *  range the axis silently hides itself. */
+  rightAxisSeries?: HashrateRightAxis;
 }) {
   const { i18n } = useLingui();
   void i18n;
@@ -244,12 +269,48 @@ export const HashrateChart = memo(function HashrateChart({
     const rawDatumYs = points.map((p) => p.datum_hashrate_ph);
     const hasDatum = rawDatumYs.some((v) => v !== null);
     const oceanYs = points.map((p) => p.ocean_hashrate_ph);
-    const shareLogYs = points.map((p) => p.share_log_pct);
-    const hasShareLog =
-      showShareLogOverlay && shareLogYs.some((v) => v !== null);
+    // #93: pick the right-axis series spec from rightAxisSeries.
+    // Each spec defines the per-point values, the tick formatter, the
+    // axis label, and the line stroke colour. 'none' produces null.
+    const rightAxis: RightAxisSpec | null = (() => {
+      switch (rightAxisSeries) {
+        case 'none':
+          return null;
+        case 'share_log':
+          return {
+            values: points.map((p) => p.share_log_pct),
+            formatTick: (v) => `${v.toFixed(4)}%`,
+            axisLabel: '% of Ocean',
+            stroke: '#a78bfa',
+          };
+        case 'network_difficulty':
+          return {
+            values: points.map((p) => p.network_difficulty),
+            // Difficulty is a huge integer; render in trillions for a
+            // legible 2-decimal axis.
+            formatTick: (v) =>
+              `${(v / 1e12).toLocaleString(intlLocale, {
+                minimumFractionDigits: 1,
+                maximumFractionDigits: 2,
+              })} T`,
+            axisLabel: 'difficulty',
+            stroke: '#fb7185',
+          };
+        case 'pool_hashrate':
+          return {
+            values: points.map((p) => p.pool_hashrate_ph),
+            // Honours the global hashrate-unit toggle.
+            formatTick: (v) => denomination.formatHashrate(v, intlLocale),
+            axisLabel: `pool ${denomination.hashrateSuffix}`,
+            stroke: '#34d399',
+          };
+      }
+    })();
+    const shareLogYs = rightAxis?.values ?? points.map(() => null);
+    const hasShareLog = rightAxis !== null && shareLogYs.some((v) => v !== null);
     // Mirror the left-axis padding when the overlay is on so the
-    // violet `% of Ocean` axis labels have breathing room equal to
-    // PH/s on the left. Off → unchanged from today (no layout shift).
+    // right-axis labels have breathing room equal to PH/s on the left.
+    // Off → unchanged from today (no layout shift).
     const padRight = hasShareLog ? PADDING_RIGHT_WITH_SHARE_LOG : PADDING.right;
     // Apply operator-configured rolling-mean smoothing to the raw
     // per-tick signals. Ocean is left alone — /user_hashrate is
@@ -414,8 +475,16 @@ export const HashrateChart = memo(function HashrateChart({
       shareLogYTicks,
       shareLogYScale,
       padRight,
+      rightAxis,
     };
-  }, [points, braiinsSmoothingMinutes, datumSmoothingMinutes, showShareLogOverlay]);
+  }, [
+    points,
+    braiinsSmoothingMinutes,
+    datumSmoothingMinutes,
+    rightAxisSeries,
+    denomination,
+    intlLocale,
+  ]);
 
   if (!chartData) {
     return (
@@ -432,7 +501,7 @@ export const HashrateChart = memo(function HashrateChart({
     );
   }
 
-  const { minX, maxX, xScale, yScale, deliveredPath, datumPath, hasDatum, oceanPath, hasOcean, targetPath, floorPath, yTicks, xTickInterval, xTicks, hasShareLog, shareLogPath, shareLogYTicks, shareLogYScale, padRight } = chartData;
+  const { minX, maxX, xScale, yScale, deliveredPath, datumPath, hasDatum, oceanPath, hasOcean, targetPath, floorPath, yTicks, xTickInterval, xTicks, hasShareLog, shareLogPath, shareLogYTicks, shareLogYScale, padRight, rightAxis } = chartData;
 
   return (
     <div className="bg-slate-900 border rounded-lg p-4 border-slate-800">
@@ -448,8 +517,8 @@ export const HashrateChart = memo(function HashrateChart({
           {hasOcean && (
             <Legend color={COLOR_OCEAN} label={t`received (Ocean)`} />
           )}
-          {hasShareLog && (
-            <Legend color={COLOR_SHARE_LOG} label={t`% of Ocean`} />
+          {hasShareLog && rightAxis && (
+            <Legend color={rightAxis.stroke} label={rightAxis.axisLabel} />
           )}
           <Legend color={COLOR_TARGET} label={t`target`} dashed />
           <Legend color={COLOR_FLOOR} label={t`floor`} dashed />
@@ -500,7 +569,7 @@ export const HashrateChart = memo(function HashrateChart({
           </g>
         ))}
 
-        {hasShareLog &&
+        {hasShareLog && rightAxis &&
           shareLogYTicks.map((v, i) => (
             <g key={`y-share-${i}`}>
               <text
@@ -508,10 +577,10 @@ export const HashrateChart = memo(function HashrateChart({
                 y={shareLogYScale(v) + 4}
                 textAnchor="start"
                 fontSize="10"
-                fill="#a78bfa"
+                fill={rightAxis.stroke}
                 fontFamily="monospace"
               >
-                {`${formatNumber(v, { minimumFractionDigits: 4, maximumFractionDigits: 4 }, intlLocale)}%`}
+                {rightAxis.formatTick(v)}
               </text>
             </g>
           ))}
@@ -545,10 +614,10 @@ export const HashrateChart = memo(function HashrateChart({
             strokeLinejoin="round"
           />
         )}
-        {hasShareLog && (
+        {hasShareLog && rightAxis && (
           <path
             d={shareLogPath}
-            stroke={COLOR_SHARE_LOG}
+            stroke={rightAxis.stroke}
             strokeWidth="1.6"
             fill="none"
             strokeLinecap="round"
@@ -659,17 +728,17 @@ export const HashrateChart = memo(function HashrateChart({
         >
           {denomination.hashrateSuffix}
         </text>
-        {hasShareLog && (
+        {hasShareLog && rightAxis && (
           <text
             x={WIDTH - 14}
             y={PADDING.top + (HEIGHT - PADDING.top - PADDING.bottom) / 2}
             textAnchor="middle"
             fontSize="10"
-            fill="#a78bfa"
+            fill={rightAxis.stroke}
             fontFamily="monospace"
             transform={`rotate(90 ${WIDTH - 14} ${PADDING.top + (HEIGHT - PADDING.top - PADDING.bottom) / 2})`}
           >
-            {t`% of Ocean`}
+            {rightAxis.axisLabel}
           </text>
         )}
       </svg>

@@ -140,6 +140,12 @@ export interface MetricPoint {
    * pre-migration ticks and ticks with no primary owned bid.
    */
   primary_bid_consumed_sat: number | null;
+  // #93: extended series for the per-chart secondary Y-axis dropdown.
+  network_difficulty: number | null;
+  pool_hashrate_ph: number | null;
+  estimated_block_reward_sat: number | null;
+  btc_usd_price: number | null;
+  ocean_unpaid_sat: number | null;
 }
 
 export interface BidEventView {

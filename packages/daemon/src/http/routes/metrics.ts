@@ -73,6 +73,14 @@ export interface MetricPoint {
    * migration 0041.
    */
   readonly primary_bid_consumed_sat: number | null;
+  // #93: secondary-axis series exposed via /api/metrics so the chart
+  // dropdown has data to plot. Each is nullable - aggregation buckets
+  // average over rows where the field is present.
+  readonly network_difficulty: number | null;
+  readonly pool_hashrate_ph: number | null;
+  readonly estimated_block_reward_sat: number | null;
+  readonly btc_usd_price: number | null;
+  readonly ocean_unpaid_sat: number | null;
 }
 
 export async function registerMetricsRoute(
@@ -141,6 +149,11 @@ function toMetricPoint(r: {
   ocean_hashrate_ph: number | null;
   share_log_pct: number | null;
   primary_bid_consumed_sat: number | null;
+  network_difficulty: number | null;
+  pool_hashrate_ph: number | null;
+  estimated_block_reward_sat: number | null;
+  btc_usd_price: number | null;
+  ocean_unpaid_sat: number | null;
 }): MetricPoint {
   return {
     tick_at: r.tick_at,
@@ -172,6 +185,11 @@ function toMetricPoint(r: {
     ocean_hashrate_ph: r.ocean_hashrate_ph,
     share_log_pct: r.share_log_pct,
     primary_bid_consumed_sat: r.primary_bid_consumed_sat,
+    network_difficulty: r.network_difficulty,
+    pool_hashrate_ph: r.pool_hashrate_ph,
+    estimated_block_reward_sat: r.estimated_block_reward_sat,
+    btc_usd_price: r.btc_usd_price,
+    ocean_unpaid_sat: r.ocean_unpaid_sat,
   };
 }
 

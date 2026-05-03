@@ -76,6 +76,12 @@ export interface AggregatedTickMetricRow {
   ocean_hashrate_ph: number | null;
   share_log_pct: number | null;
   primary_bid_consumed_sat: number | null;
+  // #93: secondary-axis series on the chart dropdown.
+  network_difficulty: number | null;
+  pool_hashrate_ph: number | null;
+  estimated_block_reward_sat: number | null;
+  btc_usd_price: number | null;
+  ocean_unpaid_sat: number | null;
 }
 
 export class TickMetricsRepo {
@@ -132,6 +138,11 @@ export class TickMetricsRepo {
         ocean_hashrate_ph: r.ocean_hashrate_ph,
         share_log_pct: r.share_log_pct,
         primary_bid_consumed_sat: r.primary_bid_consumed_sat,
+        network_difficulty: r.network_difficulty,
+        pool_hashrate_ph: r.pool_hashrate_ph,
+        estimated_block_reward_sat: r.estimated_block_reward_sat,
+        btc_usd_price: r.btc_usd_price,
+        ocean_unpaid_sat: r.ocean_unpaid_sat,
       }));
     }
 
@@ -164,6 +175,18 @@ export class TickMetricsRepo {
         // bucket-to-bucket deltas yield the actual-spend per bucket.
         // AVG would smear the ramp and break the derived rate.
         sql<number | null>`MAX(primary_bid_consumed_sat)`.as('primary_bid_consumed_sat'),
+        // #93 secondary-axis series: simple AVG over the bucket. None
+        // of these are derivative or cumulative, so the average reads
+        // cleanly. ocean_unpaid_sat IS cumulative-then-resets-on-payout,
+        // but a plain AVG within a bucket still tracks the climb; the
+        // sharp drop on payout shows up at bucket boundaries.
+        sql<number | null>`AVG(network_difficulty)`.as('network_difficulty'),
+        sql<number | null>`AVG(pool_hashrate_ph)`.as('pool_hashrate_ph'),
+        sql<number | null>`AVG(estimated_block_reward_sat)`.as(
+          'estimated_block_reward_sat',
+        ),
+        sql<number | null>`AVG(btc_usd_price)`.as('btc_usd_price'),
+        sql<number | null>`AVG(ocean_unpaid_sat)`.as('ocean_unpaid_sat'),
       ])
       .where('tick_at', '>=', sinceMs)
       .groupBy(sql`tick_at / ${sql.lit(bucketMs)}`)

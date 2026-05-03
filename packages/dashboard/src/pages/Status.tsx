@@ -12,7 +12,7 @@ import {
   type ChartRange,
 } from '@braiins-hashrate/shared';
 
-import { HashrateChart } from '../components/HashrateChart';
+import { HashrateChart, type HashrateRightAxis } from '../components/HashrateChart';
 import { PriceChart } from '../components/PriceChart';
 import { ModeBadge } from '../components/ModeBadge';
 import { BtcSymbol } from '../components/BtcSymbol';
@@ -58,6 +58,26 @@ function readStoredChartRange(): ChartRange {
   return parseChartRange(window.localStorage.getItem(CHART_RANGE_STORAGE_KEY)) ?? DEFAULT_CHART_RANGE;
 }
 
+// #93: per-chart secondary Y-axis selection, persisted per-browser.
+const HASHRATE_RIGHT_AXIS_KEY = 'braiins.hashrateRightAxis';
+const PRICE_RIGHT_AXIS_KEY = 'braiins.priceRightAxis';
+
+function readStoredHashrateRightAxis(
+  fallback: HashrateRightAxis,
+): HashrateRightAxis {
+  if (typeof window === 'undefined') return fallback;
+  const raw = window.localStorage.getItem(HASHRATE_RIGHT_AXIS_KEY);
+  if (
+    raw === 'none' ||
+    raw === 'share_log' ||
+    raw === 'network_difficulty' ||
+    raw === 'pool_hashrate'
+  ) {
+    return raw;
+  }
+  return fallback;
+}
+
 export function Status() {
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -71,6 +91,18 @@ export function Status() {
     window.localStorage.setItem(CHART_RANGE_STORAGE_KEY, chartRange);
   }, [chartRange]);
   const setChartRange = (r: ChartRange) => setChartRangeState(r);
+
+  // #93: secondary Y-axis selection per chart. Default for the
+  // hashrate chart picks up the legacy show_share_log_on_hashrate_chart
+  // config toggle so existing operators don't lose their share_log
+  // line on first load. After that, dropdown wins.
+  const hashrateRightAxisDefault: HashrateRightAxis = 'none';
+  const [hashrateRightAxis, setHashrateRightAxisState] = useState<HashrateRightAxis>(
+    () => readStoredHashrateRightAxis(hashrateRightAxisDefault),
+  );
+  useEffect(() => {
+    window.localStorage.setItem(HASHRATE_RIGHT_AXIS_KEY, hashrateRightAxis);
+  }, [hashrateRightAxis]);
 
   const query = useQuery({
     queryKey: ['status'],
@@ -208,17 +240,34 @@ export function Status() {
 
       <StatsBar statsData={statsQuery.data} />
 
-      <HashrateChart
-        points={metricsQuery.data?.points ?? []}
-        range={chartRange}
-        onRangeChange={setChartRange}
-        ourBlocks={oceanQuery.data?.our_recent_blocks ?? []}
-        blockExplorerTemplate={configQuery.data?.config?.block_explorer_url_template}
-        shareLogPct={oceanQuery.data?.user?.share_log_pct ?? null}
-        braiinsSmoothingMinutes={configQuery.data?.config?.braiins_hashrate_smoothing_minutes ?? 1}
-        datumSmoothingMinutes={configQuery.data?.config?.datum_hashrate_smoothing_minutes ?? 1}
-        showShareLogOverlay={configQuery.data?.config?.show_share_log_on_hashrate_chart ?? false}
-      />
+      <div className="space-y-1">
+        <div className="flex justify-end items-center gap-2 text-[11px] text-slate-400">
+          <Trans>right axis</Trans>
+          <select
+            value={hashrateRightAxis}
+            onChange={(e) =>
+              setHashrateRightAxisState(e.target.value as HashrateRightAxis)
+            }
+            className="bg-slate-800 border border-slate-700 rounded px-2 py-0.5 text-[11px]"
+          >
+            <option value="none">{t`none`}</option>
+            <option value="share_log">{t`share_log %`}</option>
+            <option value="network_difficulty">{t`network difficulty`}</option>
+            <option value="pool_hashrate">{t`pool hashrate`}</option>
+          </select>
+        </div>
+        <HashrateChart
+          points={metricsQuery.data?.points ?? []}
+          range={chartRange}
+          onRangeChange={setChartRange}
+          ourBlocks={oceanQuery.data?.our_recent_blocks ?? []}
+          blockExplorerTemplate={configQuery.data?.config?.block_explorer_url_template}
+          shareLogPct={oceanQuery.data?.user?.share_log_pct ?? null}
+          braiinsSmoothingMinutes={configQuery.data?.config?.braiins_hashrate_smoothing_minutes ?? 1}
+          datumSmoothingMinutes={configQuery.data?.config?.datum_hashrate_smoothing_minutes ?? 1}
+          rightAxisSeries={hashrateRightAxis}
+        />
+      </div>
       <PriceChart
         points={metricsQuery.data?.points ?? []}
         events={bidEventsQuery.data?.events ?? []}

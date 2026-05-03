@@ -6,6 +6,10 @@
 
 The Status page tracked the TH/PH/EH and sats/BTC/USD header toggles, but Config inputs stayed in canonical units regardless. Now the hashrate-target inputs (target / floor / cheap-target) display + accept values in the selected hashrate unit (3 PH/s reads as 0.003 EH/s when EH is selected; flipping to TH gives 3,000 TH/s), and the price inputs (overpay, max bid, max-overpay-vs-hashprice) follow currency × hashrate-unit (300 sat/PH/day reads as 0.0000003 ₿/PH/day in BTC mode, or 300,000 sat/EH/day in EH mode). Bid budget input follows the currency toggle too. Storage stays canonical (sat/EH/day for prices, PH/s for hashrates, sat for budgets) - the toggles are presentation-only on the input side. USD is intentionally not a price-input mode (the operator's mental model is "I want 300 sats overpay", not "$0.0000003"); when USD is the active currency, price + budget inputs fall back to sat for editability while every read-only display elsewhere still respects USD.
 
+### `[Feature]` Hashrate chart secondary Y-axis dropdown (#93, part 1)
+
+A small `right axis` dropdown above the Hashrate chart picks one of: `none`, `share_log %` (the legacy violet line), `network difficulty`, or `pool hashrate`. Choice persists per-browser to localStorage. Internal storage stays canonical (PH/s, %, raw difficulty); the formatter on each tick label respects the global hashrate-unit toggle where applicable. The underlying `HashrateChart` component now takes a single `rightAxisSeries` prop replacing the binary `showShareLogOverlay`. `/api/metrics` now ships the new fields (`network_difficulty`, `pool_hashrate_ph`) per point. Price chart's equivalent dropdown lands in part 2.
+
 ### `[Fix]` pool_hashrate_ph populated + BTC oracle source per tick (#89)
 
 Two follow-ups on yesterday's #89 wiring:
