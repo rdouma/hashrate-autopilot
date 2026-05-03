@@ -2770,55 +2770,86 @@ function relabelSummary(
   denomination: ReturnType<typeof useDenomination>,
 ): string {
   if (!s) return s;
-  const parseNum = (raw: string): number =>
+  // The daemon emits numbers via .toLocaleString('en-US') so the
+  // input invariably uses comma as thousand-separator and period as
+  // decimal separator - regardless of the operator's display
+  // locale. We must NOT re-process our own output: formatSatPerPhDay
+  // renders in nl-NL ("48.500" with period thousand-sep) which a
+  // naive bare-rate pass would re-parse as 48.5 and re-emit as "49"
+  // - the bug the operator hit on the just-raised banner.
+  //
+  // Solution: combine the arrow-pair and bare patterns into ONE
+  // regex per dimension (rate / hashrate) and run each as a single
+  // .replace pass. The regex engine does not re-scan the output of
+  // a replace callback within the same pass, so the arrow case
+  // gobbles "X → Y unit" wholesale and the bare alternative cannot
+  // re-match the formatted result.
+  const parseEnUsNum = (raw: string): number =>
     Number.parseFloat(raw.replace(/,/g, ''));
   const toSatPerPhDay = (raw: string, unit: 'PH' | 'EH'): number => {
-    const n = parseNum(raw);
+    const n = parseEnUsNum(raw);
     if (!Number.isFinite(n)) return NaN;
     return unit === 'EH' ? n / 1000 : n;
   };
   const toPh = (raw: string, unit: 'TH' | 'PH' | 'EH'): number => {
-    const n = parseNum(raw);
+    const n = parseEnUsNum(raw);
     if (!Number.isFinite(n)) return NaN;
     return unit === 'TH' ? n / 1000 : unit === 'EH' ? n * 1000 : n;
   };
 
-  // 1. Rate arrow pair: "X (->|→) Y sat/{PH|EH}/day"
+  // Rate pass: arrow OR bare, single combined regex. The arrow
+  // alternative is listed first so the regex engine prefers it
+  // when both could match (the engine is left-to-right + greedy
+  // within the first alternative).
   let out = s.replace(
-    /(-?[\d,.]+)\s*(?:->|→|→)\s*(-?[\d,.]+)\s*sat\/(PH|EH)\/day/g,
-    (m, a: string, b: string, unit: 'PH' | 'EH') => {
-      const aPh = toSatPerPhDay(a, unit);
-      const bPh = toSatPerPhDay(b, unit);
-      if (!Number.isFinite(aPh) || !Number.isFinite(bPh)) return m;
-      return `${denomination.formatSatPerPhDay(aPh)} → ${denomination.formatSatPerPhDay(bPh)}`;
+    /(-?[\d,.]+)\s*(?:->|→|→)\s*(-?[\d,.]+)\s*sat\/(PH|EH)\/day|(-?[\d,.]+)\s*sat\/(PH|EH)\/day/g,
+    (
+      _m,
+      arrowA: string | undefined,
+      arrowB: string | undefined,
+      arrowUnit: 'PH' | 'EH' | undefined,
+      bareN: string | undefined,
+      bareUnit: 'PH' | 'EH' | undefined,
+    ) => {
+      if (arrowA !== undefined && arrowB !== undefined && arrowUnit) {
+        const aPh = toSatPerPhDay(arrowA, arrowUnit);
+        const bPh = toSatPerPhDay(arrowB, arrowUnit);
+        if (!Number.isFinite(aPh) || !Number.isFinite(bPh)) return _m;
+        return `${denomination.formatSatPerPhDay(aPh)} → ${denomination.formatSatPerPhDay(bPh)}`;
+      }
+      if (bareN !== undefined && bareUnit) {
+        const ph = toSatPerPhDay(bareN, bareUnit);
+        return Number.isFinite(ph) ? denomination.formatSatPerPhDay(ph) : _m;
+      }
+      return _m;
     },
   );
-  // 2. Hashrate arrow pair: "A (->|→) B {TH|PH|EH}/s"
+
+  // Hashrate pass: same idea.
   out = out.replace(
-    /(-?[\d,.]+)\s*(?:->|→|→)\s*(-?[\d,.]+)\s*(TH|PH|EH)\/s/g,
-    (m, a: string, b: string, unit: 'TH' | 'PH' | 'EH') => {
-      const aPh = toPh(a, unit);
-      const bPh = toPh(b, unit);
-      if (!Number.isFinite(aPh) || !Number.isFinite(bPh)) return m;
-      return `${denomination.formatHashrate(aPh)} → ${denomination.formatHashrate(bPh)}`;
+    /(-?[\d,.]+)\s*(?:->|→|→)\s*(-?[\d,.]+)\s*(TH|PH|EH)\/s|(-?[\d,.]+)\s*(TH|PH|EH)\/s/g,
+    (
+      _m,
+      arrowA: string | undefined,
+      arrowB: string | undefined,
+      arrowUnit: 'TH' | 'PH' | 'EH' | undefined,
+      bareN: string | undefined,
+      bareUnit: 'TH' | 'PH' | 'EH' | undefined,
+    ) => {
+      if (arrowA !== undefined && arrowB !== undefined && arrowUnit) {
+        const aPh = toPh(arrowA, arrowUnit);
+        const bPh = toPh(arrowB, arrowUnit);
+        if (!Number.isFinite(aPh) || !Number.isFinite(bPh)) return _m;
+        return `${denomination.formatHashrate(aPh)} → ${denomination.formatHashrate(bPh)}`;
+      }
+      if (bareN !== undefined && bareUnit) {
+        const ph = toPh(bareN, bareUnit);
+        return Number.isFinite(ph) ? denomination.formatHashrate(ph) : _m;
+      }
+      return _m;
     },
   );
-  // 3. Bare rate: "X sat/{PH|EH}/day"
-  out = out.replace(
-    /(-?[\d,.]+)\s*sat\/(PH|EH)\/day/g,
-    (m, num: string, unit: 'PH' | 'EH') => {
-      const ph = toSatPerPhDay(num, unit);
-      return Number.isFinite(ph) ? denomination.formatSatPerPhDay(ph) : m;
-    },
-  );
-  // 4. Bare hashrate: "X {TH|PH|EH}/s"
-  out = out.replace(
-    /(-?[\d,.]+)\s*(TH|PH|EH)\/s/g,
-    (m, num: string, unit: 'TH' | 'PH' | 'EH') => {
-      const ph = toPh(num, unit);
-      return Number.isFinite(ph) ? denomination.formatHashrate(ph) : m;
-    },
-  );
+
   return out;
 }
 
