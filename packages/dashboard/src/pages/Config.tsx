@@ -13,6 +13,7 @@ import {
   type StorageEstimateResponse,
 } from '../lib/api';
 import { blockFoundSoundUrl } from '../lib/block-found-sound';
+import { useDenomination } from '../lib/denomination';
 import { LOCALE_PRESETS, useLocale } from '../lib/locale';
 
 const EH_PER_PH = 1000;
@@ -595,6 +596,7 @@ function BidBudgetField({
   locale: string | undefined;
   onChange: <K extends keyof AppConfig>(k: K, v: AppConfig[K]) => void;
 }) {
+  const denomination = useDenomination();
   // Shares the cache key with Layout's 30s-interval status query, so
   // this is a dedupe, not an extra network call.
   const statusQuery = useQuery({ queryKey: ['status'], queryFn: api.status });
@@ -625,6 +627,14 @@ function BidBudgetField({
   const resolvedSatStr = resolvedSat !== null ? resolvedSat.toLocaleString(locale) : '';
   const isCapped = availableSat !== null && availableSat > BRAIINS_MAX_AMOUNT_SAT;
 
+  // Budget is sat-canonical in storage. The currency toggle changes
+  // input scale: sats -> integer sat, BTC -> 8-decimal BTC. USD is
+  // not a useful input mode (the operator's mental model is "I want
+  // a 0.001 BTC budget", not "$104.50"), so we fall back to sat for
+  // input when USD is the active toggle.
+  const useBtc = denomination.mode === 'btc';
+  const displayValue = useBtc ? (value ?? 0) / 100_000_000 : (value ?? 0);
+  const suffix = useBtc ? '₿' : spec.unit;
   return (
     <label className="block">
       <span className="block text-sm text-slate-300 mb-1">{spec.label}</span>
@@ -632,11 +642,14 @@ function BidBudgetField({
           the field spec makes the <label> a col-span-2 grid cell). */}
       <div className="max-w-[200px]">
         <NumberField
-          value={value ?? 0}
-          onChange={(n) => onChange(spec.key, n as never)}
-          step="integer"
+          value={displayValue}
+          onChange={(n) => {
+            const sat = useBtc ? Math.round(n * 100_000_000) : Math.round(n);
+            onChange(spec.key, sat as never);
+          }}
+          step={useBtc ? 'any' : 'integer'}
           locale={locale}
-          suffix={spec.unit}
+          suffix={suffix}
         />
       </div>
       {isFullWallet && (
@@ -1262,6 +1275,7 @@ function Field({
   const value = draft[spec.key];
   const { i18n } = useLingui();
   void i18n;
+  const denomination = useDenomination();
 
   if (spec.key === 'bid_budget_sat' && spec.kind === 'integer') {
     return <BidBudgetField spec={spec} value={value as number} locale={locale} onChange={onChange} />;
@@ -1513,24 +1527,77 @@ function Field({
   }
 
   if (spec.kind === 'price_sat_per_eh_day') {
-    // Display + edit in sat/PH/day; store as sat/EH/day. Nullable
-    // fields (e.g. max_overpay_vs_hashprice) surface as 0 in the
-    // input; the daemon coerces 0 back to null on the save round-trip
-    // via the config Zod schema so "0" reads as "disabled".
+    // Storage stays sat/EH/day (canonical schema unit). Display +
+    // edit follow the operator's toggles: sat|BTC currency × TH|PH|EH
+    // hashrate unit. USD is intentionally not a price-input mode -
+    // the operator's mental model is "I want overpay 300 sat", not
+    // "$0.0000003"; if USD is selected we fall back to sat for the
+    // input so the field stays usable. Nullable fields (e.g.
+    // max_overpay_vs_hashprice) surface as 0; the daemon coerces 0
+    // back to null on the save round-trip via the Zod schema so "0"
+    // reads as "disabled".
     const raw = value as number | null;
-    const displayValue = raw === null ? 0 : raw / EH_PER_PH;
+    const useBtc = denomination.mode === 'btc';
+    const unit = denomination.hashrateUnit;
+    const unitFactor = unit === 'TH' ? 0.001 : unit === 'EH' ? 1000 : 1;
+    // sat/EH/day -> sat/<unit>/day: scale-by-PH then by unitFactor.
+    // sat/EH/day = 1000 × sat/PH/day, so divide by 1000 first.
+    const satPerUnitDay = raw === null ? 0 : (raw / EH_PER_PH) * unitFactor;
+    const displayValue = useBtc ? satPerUnitDay / 100_000_000 : satPerUnitDay;
+    const suffix = useBtc ? `₿/${unit}/day` : `sat/${unit}/day`;
+    // BTC needs many decimals to be usable for typical 47k sat/PH/day
+    // values (~ 0.00047 ₿/PH/day); sat at TH needs 3 decimals to keep
+    // single-tick spreads visible. Otherwise integer.
+    const stepKind: 'integer' | 'any' =
+      useBtc || unit === 'TH' ? 'any' : 'integer';
     return (
       <label className="block">
         <span className="block text-sm text-slate-300 mb-1">{spec.label}</span>
         <NumberField
           value={displayValue}
-          onChange={(n) =>
-            onChange(spec.key, (n > 0 ? Math.round(n * EH_PER_PH) : 0) as never)
-          }
-          step="integer"
+          onChange={(n) => {
+            // Reverse the scaling chain to land back in sat/EH/day
+            // for storage. n=0 means "disabled" -> store 0 (Zod
+            // collapses to null where the schema permits).
+            if (n <= 0) {
+              onChange(spec.key, 0 as never);
+              return;
+            }
+            const sat = useBtc ? n * 100_000_000 : n;
+            const satPerPhDay = sat / unitFactor;
+            const satPerEhDay = Math.round(satPerPhDay * EH_PER_PH);
+            onChange(spec.key, satPerEhDay as never);
+          }}
+          step={stepKind}
           locale={locale}
           min={0}
-          suffix={t`sat/PH/day`}
+          suffix={suffix}
+        />
+        {spec.help && <span className="block text-xs text-slate-500 mt-1">{spec.help}</span>}
+      </label>
+    );
+  }
+
+  // Hashrate fields (target / floor / cheap-target) — declared with
+  // unit: 'PH/s'; scale display by the toggle but keep storage in PH/s.
+  if (
+    (spec.kind === 'decimal' || spec.kind === 'integer') &&
+    spec.unit === 'PH/s'
+  ) {
+    const raw = (value as number | null) ?? 0;
+    const unit = denomination.hashrateUnit;
+    const factor = unit === 'TH' ? 1000 : unit === 'EH' ? 0.001 : 1;
+    const displayValue = raw * factor;
+    const suffix = `${unit}/s`;
+    return (
+      <label className="block">
+        <span className="block text-sm text-slate-300 mb-1">{spec.label}</span>
+        <NumberField
+          value={displayValue}
+          onChange={(n) => onChange(spec.key, (n / factor) as never)}
+          step="any"
+          locale={locale}
+          suffix={suffix}
         />
         {spec.help && <span className="block text-xs text-slate-500 mt-1">{spec.help}</span>}
       </label>

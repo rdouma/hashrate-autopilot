@@ -2,6 +2,10 @@
 
 ## 2026-05-03
 
+### `[UI]` Config page inputs follow header unit toggles (#87)
+
+The Status page tracked the TH/PH/EH and sats/BTC/USD header toggles, but Config inputs stayed in canonical units regardless. Now the hashrate-target inputs (target / floor / cheap-target) display + accept values in the selected hashrate unit (3 PH/s reads as 0.003 EH/s when EH is selected; flipping to TH gives 3,000 TH/s), and the price inputs (overpay, max bid, max-overpay-vs-hashprice) follow currency × hashrate-unit (300 sat/PH/day reads as 0.0000003 ₿/PH/day in BTC mode, or 300,000 sat/EH/day in EH mode). Bid budget input follows the currency toggle too. Storage stays canonical (sat/EH/day for prices, PH/s for hashrates, sat for budgets) - the toggles are presentation-only on the input side. USD is intentionally not a price-input mode (the operator's mental model is "I want 300 sats overpay", not "$0.0000003"); when USD is the active currency, price + budget inputs fall back to sat for editability while every read-only display elsewhere still respects USD.
+
 ### `[Infra]` Schema migration 0053 - extended per-tick capture (#89)
 
 11 new nullable columns on `tick_metrics` for data sources we already poll: Ocean network difficulty + estimated block reward + pool hashrate + active workers, Braiins lifetime deposit + spent totals, Ocean unpaid earnings, BTC/USD oracle reading, primary bid's last_pause_reason + fee_paid_sat + fee_rate_pct. Observer-side wiring (filling in actual values vs the current null-passthrough) lands in a follow-up commit on the same issue. Schema is shipped + types/repo updated so downstream work isn't blocked. Storage cost: ~50 bytes/row × ~525k rows/year = ~26 MB/year at the 365-day default retention; rows pre-migration back-fill cleanly with NULL.
