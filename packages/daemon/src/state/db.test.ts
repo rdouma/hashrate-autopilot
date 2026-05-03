@@ -80,6 +80,7 @@ describe('openDatabase — migrations', () => {
       '0050_btc_price_default_coingecko.sql',
       '0051_bump_retention_defaults.sql',
       '0052_block_found_sound.sql',
+      '0053_tick_metrics_extended_capture.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });

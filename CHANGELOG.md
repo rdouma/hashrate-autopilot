@@ -2,6 +2,10 @@
 
 ## 2026-05-03
 
+### `[Infra]` Schema migration 0053 - extended per-tick capture (#89)
+
+11 new nullable columns on `tick_metrics` for data sources we already poll: Ocean network difficulty + estimated block reward + pool hashrate + active workers, Braiins lifetime deposit + spent totals, Ocean unpaid earnings, BTC/USD oracle reading, primary bid's last_pause_reason + fee_paid_sat + fee_rate_pct. Observer-side wiring (filling in actual values vs the current null-passthrough) lands in a follow-up commit on the same issue. Schema is shipped + types/repo updated so downstream work isn't blocked. Storage cost: ~50 bytes/row × ~525k rows/year = ~26 MB/year at the 365-day default retention; rows pre-migration back-fill cleanly with NULL.
+
 ### `[UI]` Bitcoin sign (₿) replaces "BTC" in value labels (#87)
 
 The dashboard had a `<SatSymbol/>` glyph for sats but rendered the literal string "BTC" wherever Bitcoin denomination appeared (header toggle, hero PRICE subtitle, formatter output). New `BtcSymbol` component renders the Bitcoin sign U+20BF (₿) - supported by every modern OS font, no extra glyph file. Formatters now emit `0,00012345 ₿` and `0,00012345 ₿/EH/day`. The header toggle button shows `₿ BTC` (symbol + abbreviation) to mirror the existing `<SatSymbol/> sats` convention. `splitUnit` and the relabeller updated to recognise the new symbol where they used to recognise "BTC".

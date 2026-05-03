@@ -34,6 +34,20 @@ export interface InsertTickMetricArgs {
   readonly share_log_pct: number | null;
   readonly spend_sat: number | null;
   readonly primary_bid_consumed_sat: number | null;
+  // #89: extended capture - all nullable so observers that don't have
+  // the source available (Ocean down, no owned bid, no oracle) can
+  // still write a row with a snapshot of what they did manage to read.
+  readonly network_difficulty: number | null;
+  readonly estimated_block_reward_sat: number | null;
+  readonly pool_hashrate_ph: number | null;
+  readonly pool_active_workers: number | null;
+  readonly braiins_total_deposited_sat: number | null;
+  readonly braiins_total_spent_sat: number | null;
+  readonly ocean_unpaid_sat: number | null;
+  readonly btc_usd_price: number | null;
+  readonly primary_bid_last_pause_reason: string | null;
+  readonly primary_bid_fee_paid_sat: number | null;
+  readonly primary_bid_fee_rate_pct: number | null;
   readonly run_mode: TickMetricsTable['run_mode'];
   readonly action_mode: TickMetricsTable['action_mode'];
 }

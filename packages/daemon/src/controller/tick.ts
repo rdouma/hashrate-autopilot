@@ -148,6 +148,22 @@ export class Controller {
         share_log_pct: state.share_log_pct,
         spend_sat: spendSat,
         primary_bid_consumed_sat: primary ? primary.amount_consumed_sat : null,
+        // #89: schema columns shipped; observer-side wiring lands in a
+        // follow-up commit. Until then the writer passes null so the
+        // column exists and old tooling keeps working; new tooling can
+        // detect the back-fill window with `WHERE network_difficulty
+        // IS NULL`.
+        network_difficulty: null,
+        estimated_block_reward_sat: null,
+        pool_hashrate_ph: null,
+        pool_active_workers: null,
+        braiins_total_deposited_sat: null,
+        braiins_total_spent_sat: null,
+        ocean_unpaid_sat: null,
+        btc_usd_price: null,
+        primary_bid_last_pause_reason: null,
+        primary_bid_fee_paid_sat: null,
+        primary_bid_fee_rate_pct: null,
         run_mode: state.run_mode,
         action_mode: 'NORMAL' as const,
       });

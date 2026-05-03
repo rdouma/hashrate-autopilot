@@ -279,6 +279,29 @@ export interface TickMetricsTable {
    * tick, or for pre-0041 rows.
    */
   primary_bid_consumed_sat: number | null;
+  // #89: extended capture from existing data sources.
+  /** Network difficulty at tick (Ocean /pool_stat). */
+  network_difficulty: number | null;
+  /** Current block reward incl. fees, sat (Ocean /pool_stat). */
+  estimated_block_reward_sat: number | null;
+  /** Ocean's total pool hashrate in PH/s at tick. */
+  pool_hashrate_ph: number | null;
+  /** Ocean's active worker count at tick. */
+  pool_active_workers: number | null;
+  /** Braiins lifetime deposits, sat. Spike marks a top-up. */
+  braiins_total_deposited_sat: number | null;
+  /** Braiins lifetime settled spend, sat. */
+  braiins_total_spent_sat: number | null;
+  /** Ocean unpaid earnings at tick, sat. Sharp drop = TIDES payout. */
+  ocean_unpaid_sat: number | null;
+  /** BTC/USD oracle reading at tick, $. */
+  btc_usd_price: number | null;
+  /** Primary owned bid's last_pause_reason (Braiins). */
+  primary_bid_last_pause_reason: string | null;
+  /** Primary owned bid's cumulative fees paid, sat. */
+  primary_bid_fee_paid_sat: number | null;
+  /** Primary owned bid's fee rate at creation, percent. */
+  primary_bid_fee_rate_pct: number | null;
   run_mode: RunMode;
   action_mode: ActionMode;
 }
