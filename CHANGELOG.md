@@ -2,6 +2,10 @@
 
 ## 2026-05-02
 
+### `[UI]` BTC + TH/PH/EH toggles - second sweep (#87)
+
+Hero PRICE card subtitle now follows the rate suffix instead of hardcoding "/PH/day". NEXT ACTION sentences ("Bid filling at X PH/s.", "Will edit bid to Y sat/PH/day on the next tick.", "Will lower to..." etc.) now route through the formatters and respect the toggle. AVG COST stat-card label dropped the hardcoded "PH" - was contradictory ("AVG COST / PH DELIVERED" with a "sat/EH/day" sub-label below in EH mode); now reads "AVG COST / HASHRATE DELIVERED" and the unit follows the toggle. Last-tick proposal lines ("EDIT B... 48,189 -> 48,444 sat/PH/day") are post-processed client-side via a regex relabeller until the daemon emits structured fields - the operator now sees these in the selected unit too. NL + ES translations added for the renamed strings.
+
 ### `[UI]` BTC currency option + TH/PH/EH hashrate-unit toggle (#87)
 
 The header had a two-way `sats | USD` denomination toggle. To make cross-marketplace comparisons easier (NiceHash quotes BTC/TH/day, Braiins sat/PH/day), the dashboard now has two independent three-way header toggles: `sats | BTC | USD` for currency and `TH | PH | EH` for hashrate unit. Both choices persist per-browser to localStorage and affect every value rendered on the dashboard immediately - hero PRICE / DELIVERED card, stats bar (UPTIME / AVG cards), service panels, hashrate + price chart Y-axis labels and tick numbers, active bids table. Internal storage stays sat / PH/s (canonical schema units); the toggles are presentation-only. USD slot hides itself when no BTC-price oracle is configured (existing behaviour); BTC stays available regardless because the conversion is a static 100,000,000 multiplier independent of the oracle. NL + ES translations updated.

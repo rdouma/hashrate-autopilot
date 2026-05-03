@@ -31,27 +31,12 @@ msgid "\"system default\" follows your browser. The other entries lock to a spec
 msgstr "\"predeterminado del sistema\" sigue tu navegador. Las otras opciones fijan un formato específico sin importar el idioma del navegador."
 
 #: src/pages/Status.tsx
-msgid "(avg cost / PH delivered) minus the delta-weighted average hashprice during periods we were actually billed. Negative means we paid below break-even (good - cheaper than mining at current difficulty), positive means above. Same delta weighting as the avg cost card so the two stay consistent."
+msgid "(avg cost / hashrate delivered) minus the delta-weighted average hashprice during periods we were actually billed. Negative means we paid below break-even (good - cheaper than mining at current difficulty), positive means above. Same delta weighting as the avg cost card so the two stay consistent."
 msgstr ""
 
 #: src/pages/Status.tsx
 msgid "(cheap mode)"
 msgstr "(modo barato)"
-
-#. placeholder {0}: d.target_hashrate_ph
-#: src/pages/Status.tsx
-msgid "{0} PH/s target, {sat} sat budget (full wallet)."
-msgstr "{0} PH/s objetivo, {sat} sat de presupuesto (wallet completa)."
-
-#. placeholder {0}: d.target_hashrate_ph
-#: src/pages/Status.tsx
-msgid "{0} PH/s target, {sat} sat budget."
-msgstr "{0} PH/s objetivo, {sat} sat de presupuesto."
-
-#. placeholder {0}: d.target_hashrate_ph
-#: src/pages/Status.tsx
-msgid "{0} PH/s target, full wallet balance (awaiting balance)."
-msgstr "{0} PH/s objetivo, saldo completo de wallet (esperando saldo)."
 
 #. placeholder {0}: n.toLocaleString()
 #: src/pages/Setup.tsx
@@ -122,6 +107,18 @@ msgstr "{n} semanas"
 msgid "{seconds}s ago"
 msgstr "hace {seconds}s"
 
+#: src/pages/Status.tsx
+msgid "{targetHr} target, {sat} budget (full wallet)."
+msgstr "{targetHr} objetivo, {sat} presupuesto (cartera completa)."
+
+#: src/pages/Status.tsx
+msgid "{targetHr} target, {sat} budget."
+msgstr "{targetHr} objetivo, {sat} presupuesto."
+
+#: src/pages/Status.tsx
+msgid "{targetHr} target, full wallet balance (awaiting balance)."
+msgstr "{targetHr} objetivo, cartera completa (esperando saldo)."
+
 #: src/lib/format.ts
 #: src/lib/format.ts
 msgid "{totalDay}d {h}h ago"
@@ -145,7 +142,6 @@ msgid "{totalSec}s ago"
 msgstr "hace {totalSec}s"
 
 #: src/components/PriceChart.tsx
-#: src/pages/Status.tsx
 #: src/pages/Status.tsx
 msgid "/PH/day"
 msgstr "/PH/día"
@@ -311,8 +307,8 @@ msgstr "promedio braiins"
 
 #: src/pages/Status.tsx
 #: src/pages/Status.tsx
-msgid "avg cost / PH delivered"
-msgstr "costo promedio / PH entregado"
+msgid "avg cost / hashrate delivered"
+msgstr "coste medio / hashrate entregado"
 
 #: src/pages/Status.tsx
 #: src/pages/Status.tsx
@@ -373,8 +369,8 @@ msgid "Bid above target - Braiins price-decrease cooldown active."
 msgstr "Oferta por encima del objetivo - cooldown de bajada de precio de Braiins activo."
 
 #: src/pages/Status.tsx
-msgid "Bid filling at {speed} PH/s."
-msgstr "Oferta rellenándose a {speed} PH/s."
+msgid "Bid filling at {speed}."
+msgstr "Oferta llenando a {speed}."
 
 #: src/pages/Status.tsx
 msgid "Bids"
@@ -622,12 +618,12 @@ msgid "Current (spot) market break-even. Revenue per PH/s per day from mining at
 msgstr "Equilibrio de mercado actual (spot). Ingreso por PH/s por día minando con la dificultad de red actual + recompensa por bloque. La fila de hashprice promedio de arriba es la que usa la proyección; esta es el valor spot ahora mismo para comparar rápidamente la deriva del mercado."
 
 #: src/pages/Status.tsx
-msgid "Current {current} sat/PH/day - tracking fillable + overpay (clamped)."
-msgstr "Actual {current} sat/PH/día - siguiendo rellenable + sobrepago (limitado)."
+msgid "Current {current} - tracking fillable + overpay (clamped)."
+msgstr "Actual {current} - siguiendo llenable + sobrepago (limitado)."
 
 #: src/pages/Status.tsx
-msgid "Current {current} sat/PH/day - tracking fillable + overpay."
-msgstr "Actual {current} sat/PH/día - siguiendo rellenable + sobrepago."
+msgid "Current {current} - tracking fillable + overpay."
+msgstr "Actual {current} - siguiendo llenable + sobrepago."
 
 #: src/pages/Status.tsx
 msgid "current bid"
@@ -1926,30 +1922,30 @@ msgid "Whole account (all settled bids ever)"
 msgstr "Cuenta completa (todas las ofertas liquidadas)"
 
 #: src/pages/Status.tsx
-msgid "Will edit bid to {target} sat/PH/day on the next tick."
-msgstr "Editará la oferta a {target} sat/PH/día en el próximo tick."
+msgid "Will edit bid to {target} on the next tick."
+msgstr "Editará la oferta a {target} en el próximo tick."
 
 #: src/pages/Status.tsx
-msgid "Will log (dry-run) a CREATE_BID at {target} sat/PH/day on the next tick."
-msgstr "Registrará (dry-run) un CREATE_BID a {target} sat/PH/día en el próximo tick."
+msgid "Will log (dry-run) a CREATE_BID at {target} on the next tick."
+msgstr "Registrará (dry-run) un CREATE_BID a {target} en el próximo tick."
 
 #: src/pages/Status.tsx
-msgid "Will log edit (dry-run) bid to {target} sat/PH/day on the next tick."
-msgstr "Registrará (dry-run) la edición de la oferta a {target} sat/PH/día en el próximo tick."
-
-#. placeholder {0}: d.mins_left
-#: src/pages/Status.tsx
-msgid "Will lower to {target} sat/PH/day in ~{0} min (current {current})."
-msgstr "Bajará a {target} sat/PH/día en ~{0} min (actual {current})."
-
-#: src/pages/Status.tsx
-msgid "Will place a CREATE_BID at {target} sat/PH/day on the next tick."
-msgstr "Colocará un CREATE_BID a {target} sat/PH/día en el próximo tick."
+msgid "Will log edit (dry-run) bid to {target} on the next tick."
+msgstr "Registrará edición (dry-run) de la oferta a {target} en el próximo tick."
 
 #. placeholder {0}: d.mins_left
 #: src/pages/Status.tsx
-msgid "Will raise to {target} sat/PH/day in ~{0} min (current {current})."
-msgstr "Subirá a {target} sat/PH/día en ~{0} min (actual {current})."
+msgid "Will lower to {target} in ~{0} min (current {current})."
+msgstr "Bajará a {target} en ~{0} min (actual {current})."
+
+#: src/pages/Status.tsx
+msgid "Will place a CREATE_BID at {target} on the next tick."
+msgstr "Colocará un CREATE_BID a {target} en el próximo tick."
+
+#. placeholder {0}: d.mins_left
+#: src/pages/Status.tsx
+msgid "Will raise to {target} in ~{0} min (current {current})."
+msgstr "Subirá a {target} en ~{0} min (actual {current})."
 
 #: src/pages/Status.tsx
 msgid "Wipe the local terminal-bid cache and re-paginate every bid from Braiins on the next refresh? This is safe but slower than a normal refresh."

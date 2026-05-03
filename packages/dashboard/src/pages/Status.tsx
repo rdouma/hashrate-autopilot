@@ -534,8 +534,24 @@ function OperationsCard({
                 </span>
               </div>
               <div className="text-xs text-slate-400 mt-1">
-                {denomination.mode === 'usd' ? '$' : <><SatSymbol /></>}
-                {t`/PH/day`}{' '}
+                {(() => {
+                  // Strip the leading currency token (we render <SatSymbol/> /
+                  // "$" / "BTC" inline so the typography matches the hero
+                  // number above). What's left is the per-unit-per-day tail
+                  // ("/PH/day", "/EH/day", etc).
+                  const r = denomination.rateSuffix;
+                  const tail = r.replace(/^(sat|BTC|\$)/, '');
+                  return (
+                    <>
+                      {denomination.mode === 'usd'
+                        ? '$'
+                        : denomination.mode === 'btc'
+                          ? 'BTC'
+                          : <SatSymbol />}
+                      {tail}
+                    </>
+                  );
+                })()}{' '}
                 {activeOwned.length > 1 ? (
                   <Trans>current bid · primary of {activeOwned.length}</Trans>
                 ) : (
@@ -835,17 +851,20 @@ const JUST_EXECUTED_VISIBLE_MS = 90_000;
 function NextActionMessage({ next }: { next: NextActionView }) {
   const { i18n } = useLingui();
   void i18n;
+  const denomination = useDenomination();
   const d = next.descriptor;
   if (!d) {
     return (
       <>
-        <div className="text-slate-100">{next.summary}</div>
-        {next.detail && <div className="text-xs text-slate-400 mt-1">{next.detail}</div>}
+        <div className="text-slate-100">{relabelSummary(next.summary, denomination)}</div>
+        {next.detail && (
+          <div className="text-xs text-slate-400 mt-1">{relabelSummary(next.detail, denomination)}</div>
+        )}
       </>
     );
   }
-  const summary = renderNextActionSummary(d);
-  const detail = renderNextActionDetail(d);
+  const summary = renderNextActionSummary(d, denomination);
+  const detail = renderNextActionDetail(d, denomination);
   return (
     <>
       <div className="text-slate-100">{summary}</div>
@@ -854,7 +873,10 @@ function NextActionMessage({ next }: { next: NextActionView }) {
   );
 }
 
-function renderNextActionSummary(d: NonNullable<NextActionView['descriptor']>): React.ReactNode {
+function renderNextActionSummary(
+  d: NonNullable<NextActionView['descriptor']>,
+  denomination: ReturnType<typeof useDenomination>,
+): React.ReactNode {
   switch (d.kind) {
     case 'paused':
       return <Trans>Paused - no bids will be placed or edited until run mode changes.</Trans>;
@@ -867,11 +889,11 @@ function renderNextActionSummary(d: NonNullable<NextActionView['descriptor']>): 
     case 'no_market_supply':
       return <Trans>No hashrate available on the market right now.</Trans>;
     case 'will_create_bid': {
-      const target = d.target_ph.toLocaleString('en-US');
+      const target = denomination.formatSatPerPhDay(d.target_ph);
       return d.run_mode === 'LIVE' ? (
-        <Trans>Will place a CREATE_BID at {target} sat/PH/day on the next tick.</Trans>
+        <Trans>Will place a CREATE_BID at {target} on the next tick.</Trans>
       ) : (
-        <Trans>Will log (dry-run) a CREATE_BID at {target} sat/PH/day on the next tick.</Trans>
+        <Trans>Will log (dry-run) a CREATE_BID at {target} on the next tick.</Trans>
       );
     }
     case 'bid_pending':
@@ -883,11 +905,11 @@ function renderNextActionSummary(d: NonNullable<NextActionView['descriptor']>): 
     case 'cooldown_active':
       return <Trans>Bid above target - Braiins price-decrease cooldown active.</Trans>;
     case 'will_edit_bid': {
-      const target = d.target_ph.toLocaleString('en-US');
+      const target = denomination.formatSatPerPhDay(d.target_ph);
       return d.run_mode === 'LIVE' ? (
-        <Trans>Will edit bid to {target} sat/PH/day on the next tick.</Trans>
+        <Trans>Will edit bid to {target} on the next tick.</Trans>
       ) : (
-        <Trans>Will log edit (dry-run) bid to {target} sat/PH/day on the next tick.</Trans>
+        <Trans>Will log edit (dry-run) bid to {target} on the next tick.</Trans>
       );
     }
     case 'on_target':
@@ -899,7 +921,10 @@ function renderNextActionSummary(d: NonNullable<NextActionView['descriptor']>): 
   }
 }
 
-function renderNextActionDetail(d: NonNullable<NextActionView['descriptor']>): React.ReactNode | null {
+function renderNextActionDetail(
+  d: NonNullable<NextActionView['descriptor']>,
+  denomination: ReturnType<typeof useDenomination>,
+): React.ReactNode | null {
   switch (d.kind) {
     case 'paused':
     case 'braiins_unreachable':
@@ -915,20 +940,21 @@ function renderNextActionDetail(d: NonNullable<NextActionView['descriptor']>): R
         </Trans>
       );
     case 'will_create_bid': {
+      const targetHr = denomination.formatHashrate(d.target_hashrate_ph);
       if (d.budget.kind === 'configured') {
-        const sat = d.budget.sat.toLocaleString('en-US');
-        return <Trans>{d.target_hashrate_ph} PH/s target, {sat} sat budget.</Trans>;
+        const sat = denomination.formatSat(d.budget.sat);
+        return <Trans>{targetHr} target, {sat} budget.</Trans>;
       }
       if (d.budget.kind === 'full_wallet') {
-        const sat = d.budget.available_sat.toLocaleString('en-US');
+        const sat = denomination.formatSat(d.budget.available_sat);
         return (
           <Trans>
-            {d.target_hashrate_ph} PH/s target, {sat} sat budget (full wallet).
+            {targetHr} target, {sat} budget (full wallet).
           </Trans>
         );
       }
       return (
-        <Trans>{d.target_hashrate_ph} PH/s target, full wallet balance (awaiting balance).</Trans>
+        <Trans>{targetHr} target, full wallet balance (awaiting balance).</Trans>
       );
     }
     case 'bid_pending':
@@ -938,29 +964,29 @@ function renderNextActionDetail(d: NonNullable<NextActionView['descriptor']>): R
       // pending state the detail line is absent.)
       return null;
     case 'cooldown_active': {
-      const target = d.target_ph.toLocaleString('en-US');
-      const current = d.current_ph.toLocaleString('en-US');
+      const target = denomination.formatSatPerPhDay(d.target_ph);
+      const current = denomination.formatSatPerPhDay(d.current_ph);
       return d.direction === 'lower' ? (
         <Trans>
-          Will lower to {target} sat/PH/day in ~{d.mins_left} min (current {current}).
+          Will lower to {target} in ~{d.mins_left} min (current {current}).
         </Trans>
       ) : (
         <Trans>
-          Will raise to {target} sat/PH/day in ~{d.mins_left} min (current {current}).
+          Will raise to {target} in ~{d.mins_left} min (current {current}).
         </Trans>
       );
     }
     case 'will_edit_bid': {
-      const current = d.current_ph.toLocaleString('en-US');
+      const current = denomination.formatSatPerPhDay(d.current_ph);
       return d.clamped ? (
-        <Trans>Current {current} sat/PH/day - tracking fillable + overpay (clamped).</Trans>
+        <Trans>Current {current} - tracking fillable + overpay (clamped).</Trans>
       ) : (
-        <Trans>Current {current} sat/PH/day - tracking fillable + overpay.</Trans>
+        <Trans>Current {current} - tracking fillable + overpay.</Trans>
       );
     }
     case 'on_target': {
-      const speed = d.avg_speed_ph.toFixed(2);
-      return <Trans>Bid filling at {speed} PH/s.</Trans>;
+      const speed = denomination.formatHashrate(d.avg_speed_ph);
+      return <Trans>Bid filling at {speed}.</Trans>;
     }
   }
 }
@@ -1122,7 +1148,7 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
       t`avg braiins`,
       t`avg datum`,
       t`avg ocean`,
-      t`avg cost / PH delivered`,
+      t`avg cost / hashrate delivered`,
       t`avg cost vs hashprice`,
     ];
     return (
@@ -1176,14 +1202,14 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
         tooltip={t`Duration-weighted average of the hashrate Ocean credits to our payout address. Each tick (every 60 s) the daemon calls Ocean's /v1/user_hashrate endpoint and reads the \`hashrate_300s\` field — Ocean's own 5-minute sliding-window estimate for this wallet. So: sampled every minute, each sample is a 5-minute smoothed value. A sustained gap below Avg Braiins / Avg Datum means the pool isn't crediting work we think we delivered.`}
       />
       <StatCard
-        label={t`avg cost / PH delivered`}
+        label={t`avg cost / hashrate delivered`}
         value={avg_cost_per_ph_sat_per_ph_day !== null ? denomination.formatSatPerPhDay(Math.round(avg_cost_per_ph_sat_per_ph_day), intlLocale) : '\u2014'}
         tooltip={t`Average effective rate over the selected chart range - what Braiins actually charged per PH/day delivered. Computed as the delta-weighted harmonic mean of the bid: SUM(Δconsumed_sat) ÷ SUM(Δconsumed_sat ÷ bid). Under pay-your-bid the bid IS the price, so when the bid is constant across the window this equals the bid exactly; when the bid varies (mid-window edits) it's the spend-weighted average. Periods of zero delivery contribute zero to both sides and don't skew the result. For the current bid price see the NEXT ACTION panel.`}
       />
       <StatCard
         label={t`avg cost vs hashprice`}
         value={avg_overpay_vs_hashprice_sat_per_ph_day !== null ? denomination.formatSatPerPhDay(Math.round(avg_overpay_vs_hashprice_sat_per_ph_day), intlLocale) : '\u2014'}
-        tooltip={t`(avg cost / PH delivered) minus the delta-weighted average hashprice during periods we were actually billed. Negative means we paid below break-even (good - cheaper than mining at current difficulty), positive means above. Same delta weighting as the avg cost card so the two stay consistent.`}
+        tooltip={t`(avg cost / hashrate delivered) minus the delta-weighted average hashprice during periods we were actually billed. Negative means we paid below break-even (good - cheaper than mining at current difficulty), positive means above. Same delta weighting as the avg cost card so the two stay consistent.`}
         color={
           avg_overpay_vs_hashprice_sat_per_ph_day === null
             ? 'text-slate-100'
@@ -2521,6 +2547,54 @@ function LinkRow({ k, v, href }: { k: string; v: string; href: string }) {
  *   - rates with no space (USD-prefix): "$X/{TH|PH|EH}/day"
  * Returns null for values without a recognised unit suffix.
  */
+/**
+ * Rewrite a daemon-emitted summary string ("EDIT ... 48,189 -> 48,444
+ * sat/PH/day", "Bid filling at 3.17 PH/s.", etc.) so any embedded
+ * unit-bearing values follow the operator's currency + hashrate-unit
+ * toggles. Daemon currently ships these as plain strings rather than
+ * structured fields, so a regex sweep is the pragmatic shim until the
+ * proposal payload grows typed price/hashrate fields.
+ *
+ * Recognised patterns:
+ *   "12,345 sat/PH/day"         -> formatSatPerPhDay(12345)
+ *   "12,345 -> 23,456 sat/PH/day"-> arrow joined formatted pair
+ *   "3.17 PH/s"                 -> formatHashrate(3.17)
+ *   "0.5 PH/s"                  -> formatHashrate(0.5)
+ *
+ * Anything that doesn't match is returned unchanged.
+ */
+function relabelSummary(
+  s: string,
+  denomination: ReturnType<typeof useDenomination>,
+): string {
+  if (!s) return s;
+  // Arrow form first - more specific.
+  const arrow = s.replace(
+    /(-?[\d,.]+)\s*(?:->|→|→)\s*(-?[\d,.]+)\s*sat\/PH\/day/g,
+    (_, a: string, b: string) => {
+      const aNum = Number.parseFloat(a.replace(/,/g, ''));
+      const bNum = Number.parseFloat(b.replace(/,/g, ''));
+      if (!Number.isFinite(aNum) || !Number.isFinite(bNum)) return _;
+      return `${denomination.formatSatPerPhDay(aNum)} → ${denomination.formatSatPerPhDay(bNum)}`;
+    },
+  );
+  const ratesRewritten = arrow.replace(
+    /(-?[\d,.]+)\s*sat\/PH\/day/g,
+    (m, num: string) => {
+      const n = Number.parseFloat(num.replace(/,/g, ''));
+      return Number.isFinite(n) ? denomination.formatSatPerPhDay(n) : m;
+    },
+  );
+  const hashrateRewritten = ratesRewritten.replace(
+    /(-?[\d,.]+)\s*PH\/s/g,
+    (m, num: string) => {
+      const n = Number.parseFloat(num.replace(/,/g, ''));
+      return Number.isFinite(n) ? denomination.formatHashrate(n) : m;
+    },
+  );
+  return hashrateRewritten;
+}
+
 function splitUnit(v: string): { num: string; unit: string } | null {
   // Whitespace-separated unit tail (rates and hashrate).
   // Order: match the longer rate suffix before the shorter "sat"/"BTC"/"PH/s".
@@ -2535,6 +2609,7 @@ function splitUnit(v: string): { num: string; unit: string } | null {
 }
 
 function ProposalLine({ p }: { p: ProposalView }) {
+  const denomination = useDenomination();
   const badge =
     p.executed === 'EXECUTED'
       ? 'bg-emerald-900/40 text-emerald-300 border-emerald-800'
@@ -2548,7 +2623,7 @@ function ProposalLine({ p }: { p: ProposalView }) {
       <span className={`inline-block font-mono text-xs uppercase mr-2 border rounded px-1.5 ${badge}`}>
         {p.executed.toLowerCase().replace('_', ' ')}
       </span>
-      <span className="text-slate-100">{p.summary}</span>
+      <span className="text-slate-100">{relabelSummary(p.summary, denomination)}</span>
       {p.gate_reason && <span className="text-xs text-red-400 ml-2">({p.gate_reason})</span>}
     </div>
   );
