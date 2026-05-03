@@ -1131,6 +1131,10 @@ msgstr "Cargando…"
 msgid "Log retention"
 msgstr "Retención de logs"
 
+#: src/pages/Status.tsx
+msgid "lucky"
+msgstr "con suerte"
+
 #: src/components/PriceChart.tsx
 msgid "manual"
 msgstr "manual"
@@ -1924,6 +1928,10 @@ msgstr "Desconocido"
 #: src/pages/Status.tsx
 msgid "Unknown bid(s) detected - next tick will PAUSE the autopilot."
 msgstr "Oferta(s) desconocida(s) detectada(s) - el próximo tick PAUSARÁ el autopilot."
+
+#: src/pages/Status.tsx
+msgid "unlucky"
+msgstr "sin suerte"
 
 #: src/pages/Status.tsx
 msgid "unpaid"

@@ -1630,6 +1630,57 @@ function BraiinsBalances({
   );
 }
 
+/**
+ * #92: Ocean pool luck. Renders the observed blocks count next to a
+ * Poisson-expected luck multiplier ("12 (1,18× expected)") so the
+ * operator can eyeball whether the pool is having a good or bad
+ * stretch. Pool hashrate from Ocean's pool_stat divided by the
+ * derived network hashrate gives expected blocks/day; observed
+ * count over 1d / 7d gives the actual.
+ *
+ * Variance caveat: a Poisson process with mean λ=8 blocks/day (a
+ * pool at ~5% network share) has σ ≈ 2.8 blocks/day. A 24h luck of
+ * 0.7×-1.3× is well within normal variance and not actionable; only
+ * sustained drift (e.g. 7d luck < 0.7× for a week) suggests something
+ * structural. The tooltip on the Ocean card already explains this in
+ * full; here we render the number so the operator has the data
+ * point to glance at.
+ */
+function poolLuckMultiplier(
+  observedBlocks: number,
+  windowDays: number,
+  pool: { network_difficulty: number | null; pool_hashrate_ph: number | null } | null,
+): number | null {
+  if (!pool) return null;
+  if (pool.network_difficulty === null || pool.pool_hashrate_ph === null) return null;
+  if (pool.network_difficulty <= 0 || pool.pool_hashrate_ph <= 0) return null;
+  // Network hashrate from difficulty:
+  //   hashes/s = difficulty × 2^32 / 600
+  // Convert to PH/s by dividing by 1e15.
+  const networkHashratePh = (pool.network_difficulty * 2 ** 32) / 600 / 1e15;
+  if (networkHashratePh <= 0) return null;
+  // Expected blocks per window: pool's share × 144 blocks/day × windowDays.
+  const expected = (pool.pool_hashrate_ph / networkHashratePh) * 144 * windowDays;
+  if (expected <= 0) return null;
+  return observedBlocks / expected;
+}
+
+function renderPoolBlocksRow(
+  count: number,
+  windowDays: number,
+  pool: { network_difficulty: number | null; pool_hashrate_ph: number | null } | null,
+  locale: string | undefined,
+): string {
+  const luck = poolLuckMultiplier(count, windowDays, pool);
+  if (luck === null) return String(count);
+  const luckStr = new Intl.NumberFormat(locale, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(luck);
+  const verdict = luck >= 1 ? t`lucky` : t`unlucky`;
+  return `${count} (${luckStr}× ${verdict})`;
+}
+
 function OceanPanel() {
   const { intlLocale } = useLocale();
   const denomination = useDenomination();
@@ -1770,8 +1821,8 @@ function OceanPanel() {
         ) : (
           <Row k={t`last pool block`} v={'\u2014'} />
         )}
-        <Row k={t`pool blocks 24h`} v={String(o.blocks_24h)} />
-        <Row k={t`pool blocks 7d`} v={String(o.blocks_7d)} />
+        <Row k={t`pool blocks 24h`} v={renderPoolBlocksRow(o.blocks_24h, 1, o.pool, intlLocale)} />
+        <Row k={t`pool blocks 7d`} v={renderPoolBlocksRow(o.blocks_7d, 7, o.pool, intlLocale)} />
       </div>
       {o.pool && (
         <div className="border-t border-slate-800 mt-2 pt-2">
