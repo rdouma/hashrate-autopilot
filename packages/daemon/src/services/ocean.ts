@@ -109,16 +109,22 @@ export function createOceanClient(opts: OceanClientOptions = {}): OceanClient {
       if (cached && now() - cached.fetched_at_ms < ttl) return cached;
 
       try {
-        const [statsnap, hashrate, poolStat, blocksResp] = await Promise.all([
+        const [statsnap, hashrate, poolStat, blocksResp, poolHashrateResp] = await Promise.all([
           getJson(fetchImpl, `${OCEAN_API_BASE}/statsnap/${address}`),
           getJson(fetchImpl, `${OCEAN_API_BASE}/user_hashrate/${address}`),
           getJson(fetchImpl, `${OCEAN_API_BASE}/pool_stat`),
           getJson(fetchImpl, `${OCEAN_API_BASE}/blocks`).catch(() => null),
+          // Direct pool hashrate from Ocean - server-side 5-min
+          // smoothed value, far more reliable than our previous
+          // user_hashrate / share_log estimate (which spiked when
+          // either input jittered single-tick).
+          getJson(fetchImpl, `${OCEAN_API_BASE}/pool_hashrate`).catch(() => null),
         ]);
 
         const snap = (statsnap?.result ?? {}) as Record<string, string>;
         const hr = (hashrate?.result ?? {}) as Record<string, string>;
         const pool = (poolStat?.result ?? {}) as Record<string, string>;
+        const poolHr = (poolHashrateResp?.result ?? {}) as Record<string, string>;
 
         const unpaidBtc = parseFloat(snap.unpaid ?? '');
         const unpaid_sat = Number.isFinite(unpaidBtc)
@@ -223,21 +229,23 @@ export function createOceanClient(opts: OceanClientOptions = {}): OceanClient {
         const userHash5mRaw = Number(hr.hashrate_300s ?? 0);
         const user_hashrate_5m_ph = userHash5mRaw > 0 ? userHash5mRaw / 1e15 : null;
 
-        // Pool hashrate isn't a directly-exposed field on /pool_stat
-        // (the response is just difficulty + tides shares + reward
-        // estimate). Approximate it from our own slice: if our 5-min
-        // hashrate is X PH/s and our share_log is p% of the TIDES
-        // window, the pool is ~ X / (p/100) PH/s. Approximation
-        // because share_log is a weighted-shares fraction, not an
-        // instantaneous hashrate fraction, but it's the right order
-        // of magnitude and tracks pool growth correctly. Null when
-        // either input is missing or share_log is zero.
+        // Pool hashrate from Ocean's dedicated /v1/pool_hashrate
+        // endpoint - server-side 5-min smoothed value (`pool_300s`,
+        // in H/s). Convert to PH/s by dividing by 1e15.
+        // Falls back to the legacy user_hashrate / share_log
+        // estimate when the dedicated endpoint is unreachable so
+        // historical readings still populate.
         let pool_hashrate_ph: number | null = null;
-        if (
+        const poolHashrate300s = Number(poolHr.pool_300s ?? 0);
+        if (Number.isFinite(poolHashrate300s) && poolHashrate300s > 0) {
+          pool_hashrate_ph = Math.round(poolHashrate300s / 1e15);
+        } else if (
           user_hashrate_5m_ph !== null &&
           share_log_pct !== null &&
           share_log_pct > 0
         ) {
+          // Legacy fallback - noisy estimator. Kept for resilience
+          // when the dedicated endpoint is unreachable.
           pool_hashrate_ph = Math.round(user_hashrate_5m_ph / (share_log_pct / 100));
         }
         const poolInfo: OceanPoolInfo = {

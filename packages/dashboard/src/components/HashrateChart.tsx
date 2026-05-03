@@ -325,16 +325,16 @@ export const HashrateChart = memo(function HashrateChart({
           // expectation. expected_blocks = (pool_share_of_network) ×
           // 144 × window_days. luck = observed / expected.
           //
-          // pool_hashrate_ph is noisy at single-tick resolution
-          // (estimated from user_hashrate / share_log, both jitter),
-          // so we smooth it over a trailing window of ticks before
-          // using it as the denominator. The smoothed value is also
-          // rejected if it's implausibly small (< 1 EH/s = 1000 PH/s)
-          // - real Ocean magnitudes are ~25-30 EH/s, anything that
-          // collapses to under 1 EH/s is a data error and a luck
-          // calc on it would explode. Reject -> null -> line gap.
+          // pool_hashrate_ph is now sourced directly from Ocean's
+          // /v1/pool_hashrate endpoint (pool_300s, server-side
+          // 5-min smoothed). A small trailing-window mean here
+          // absorbs the residual minute-to-minute jitter Ocean's
+          // own smoothing leaves behind. Sanity floor still
+          // rejects implausibly small values (< 1 EH/s vs typical
+          // ~25-30 EH/s) so a one-off API hiccup doesn't paint a
+          // luck spike.
           const windowDays = rightAxisSeries === 'pool_luck_24h' ? 1 : 7;
-          const SMOOTH_TICKS = 30; // ~30 minutes at the 60s tick cadence
+          const SMOOTH_TICKS = 10; // ~10 minutes; Ocean already pre-smooths
           const MIN_PLAUSIBLE_POOL_PH = 1000; // 1 EH/s
           const values = points.map((p, i) => {
             const count =
