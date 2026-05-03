@@ -2,6 +2,10 @@
 
 ## 2026-05-03
 
+### `[UI]` Bitcoin sign (₿) replaces "BTC" in value labels (#87)
+
+The dashboard had a `<SatSymbol/>` glyph for sats but rendered the literal string "BTC" wherever Bitcoin denomination appeared (header toggle, hero PRICE subtitle, formatter output). New `BtcSymbol` component renders the Bitcoin sign U+20BF (₿) - supported by every modern OS font, no extra glyph file. Formatters now emit `0,00012345 ₿` and `0,00012345 ₿/EH/day`. The header toggle button shows `₿ BTC` (symbol + abbreviation) to mirror the existing `<SatSymbol/> sats` convention. `splitUnit` and the relabeller updated to recognise the new symbol where they used to recognise "BTC".
+
 ### `[Fix]` Locale-aware decimal separator inside denomination formatters (#87)
 
 Cooldown / NEXT ACTION sentences like "Will lower to 0.48137000 BTC/EH/day in ~1 min (current 0.48387000 BTC/EH/day)." rendered with US-style period decimals even on a Dutch (nl-NL) locale where the same line should read "0,48137000 BTC/EH/day". Root cause: most callers of `denomination.formatSatPerPhDay()` / `formatHashrate()` / `formatSat()` skipped the optional `locale` argument, so `Intl.NumberFormat(undefined, ...)` fell back to the browser default (en-US) instead of the operator's chosen display locale. `useDenomination` now consumes `useLocale()` internally and uses `intlLocale` as the default for every formatter, so every call site is locale-correct without threading. Explicit `locale` overrides still win when callers want to force a different one (e.g. JSON exports). All other dashboard surfaces that already passed `intlLocale` explicitly are unchanged in behaviour.

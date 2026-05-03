@@ -135,7 +135,7 @@ function formatBtc(sat: number, locale?: string): string {
   return `${new Intl.NumberFormat(locale, {
     minimumFractionDigits: fractionDigits,
     maximumFractionDigits: fractionDigits,
-  }).format(btc)} BTC`;
+  }).format(btc)} ₿`;
 }
 
 function formatSatNumber(sat: number, locale?: string): string {
@@ -254,7 +254,7 @@ export function DenominationProvider({ children }: { children: ReactNode }) {
         return `${new Intl.NumberFormat(locale, {
           minimumFractionDigits: 8,
           maximumFractionDigits: 8,
-        }).format(btcRate)} BTC/${hashrateUnit}/day`;
+        }).format(btcRate)} ₿/${hashrateUnit}/day`;
       }
       // sats: integer for PH/EH (whole-sat precision); for TH (1/1000
       // of PH) three decimals keep adjacent ticks distinguishable on
@@ -287,7 +287,7 @@ export function DenominationProvider({ children }: { children: ReactNode }) {
       effectiveMode === 'usd' && btcPrice !== null
         ? `$/${hashrateUnit}/day`
         : effectiveMode === 'btc'
-          ? `BTC/${hashrateUnit}/day`
+          ? `₿/${hashrateUnit}/day`
           : `sat/${hashrateUnit}/day`;
 
     return {

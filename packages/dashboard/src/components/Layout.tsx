@@ -10,6 +10,7 @@ import { useDenomination } from '../lib/denomination';
 import { formatNumber } from '../lib/format';
 import { useLocale } from '../lib/locale';
 import { LanguagePicker } from './LanguagePicker';
+import { BtcSymbol } from './BtcSymbol';
 import { ModeBadge } from './ModeBadge';
 import { SatSymbol } from './SatSymbol';
 
@@ -180,7 +181,7 @@ function DenominationToggle() {
             : 'text-slate-400 hover:bg-slate-800')
         }
       >
-        BTC
+        <BtcSymbol /> BTC
       </button>
       {btcPrice !== null && (
         <button

@@ -15,6 +15,7 @@ import {
 import { HashrateChart } from '../components/HashrateChart';
 import { PriceChart } from '../components/PriceChart';
 import { ModeBadge } from '../components/ModeBadge';
+import { BtcSymbol } from '../components/BtcSymbol';
 import { SatSymbol } from '../components/SatSymbol';
 import { Tooltip } from '../components/Tooltip';
 import {
@@ -546,17 +547,17 @@ function OperationsCard({
               <div className="text-xs text-slate-400 mt-1">
                 {(() => {
                   // Strip the leading currency token (we render <SatSymbol/> /
-                  // "$" / "BTC" inline so the typography matches the hero
-                  // number above). What's left is the per-unit-per-day tail
-                  // ("/PH/day", "/EH/day", etc).
+                  // "$" / <BtcSymbol/> inline so the typography matches the
+                  // hero number above). What's left is the per-unit-per-day
+                  // tail ("/PH/day", "/EH/day", etc).
                   const r = denomination.rateSuffix;
-                  const tail = r.replace(/^(sat|BTC|\$)/, '');
+                  const tail = r.replace(/^(sat|₿|\$)/, '');
                   return (
                     <>
                       {denomination.mode === 'usd'
                         ? '$'
                         : denomination.mode === 'btc'
-                          ? 'BTC'
+                          ? <BtcSymbol />
                           : <SatSymbol />}
                       {tail}
                     </>
@@ -2645,9 +2646,9 @@ function relabelSummary(
 
 function splitUnit(v: string): { num: string; unit: string } | null {
   // Whitespace-separated unit tail (rates and hashrate).
-  // Order: match the longer rate suffix before the shorter "sat"/"BTC"/"PH/s".
+  // Order: match the longer rate suffix before the shorter "sat"/"₿"/"PH/s".
   const spaced = v.match(
-    /^(.+?)\s+((?:sat|BTC)\/(?:TH|PH|EH)\/day|(?:TH|PH|EH)\/s|PH·h|sat|BTC)(\s*(?:\(.*\))?)$/,
+    /^(.+?)\s+((?:sat|₿)\/(?:TH|PH|EH)\/day|(?:TH|PH|EH)\/s|PH·h|sat|₿)(\s*(?:\(.*\))?)$/,
   );
   if (spaced?.[1] && spaced[2]) return { num: spaced[1], unit: spaced[2] + (spaced[3] ?? '') };
   // USD-prefixed rate: "$4.75/PH/day" -> { num: "$4.75", unit: "/PH/day" }
