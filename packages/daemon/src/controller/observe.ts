@@ -64,6 +64,13 @@ export interface ObserveDeps {
    * endpoint.
    */
   readonly oceanClient?: OceanClient;
+  /**
+   * #89: BTC/USD oracle. When present, the latest snapshot is
+   * captured on every tick and persisted to `tick_metrics.btc_usd_price`.
+   * Optional - tick proceeds with btc_usd_price = null when the
+   * oracle is off ('none' source) or hasn't published a value yet.
+   */
+  readonly btcPriceService?: { getLatest(): { usd_per_btc: number } | null };
   readonly now: () => number;
 }
 
@@ -101,6 +108,9 @@ interface ApiBid {
   progress_pct: number;
   amount_remaining_sat: number;
   status: string;
+  /** #89: persisted per tick on the primary owned bid only. */
+  last_pause_reason: string | null;
+  fee_rate_pct: number | null;
 }
 
 export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise<State> {
@@ -144,6 +154,24 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
   ]);
   const ocean_hashrate_ph = oceanStats?.user_hashrate_5m_ph ?? null;
   const share_log_pct = oceanStats?.share_log_pct ?? null;
+  // #89: extended capture from data sources we already poll. All
+  // nullable - each source independently degrades to null on a
+  // failed poll without aborting the tick.
+  const network_difficulty = oceanStats?.pool.network_difficulty ?? null;
+  const estimated_block_reward_sat = oceanStats?.pool.estimated_block_reward_sat ?? null;
+  const pool_hashrate_ph = oceanStats?.pool.pool_hashrate_ph ?? null;
+  const pool_active_workers = oceanStats?.pool.active_workers ?? null;
+  const ocean_unpaid_sat = oceanStats?.unpaid_sat ?? null;
+  const balanceAccount = balance?.accounts?.[0];
+  const braiins_total_deposited_sat =
+    typeof balanceAccount?.total_deposited_sat === 'number'
+      ? balanceAccount.total_deposited_sat
+      : null;
+  const braiins_total_spent_sat =
+    typeof balanceAccount?.total_spot_spent_sat === 'number'
+      ? balanceAccount.total_spot_spent_sat
+      : null;
+  const btc_usd_price = deps.btcPriceService?.getLatest()?.usd_per_btc ?? null;
 
   const apiBids = extractBids(bidsResponse);
   const owned_bids: OwnedBidSnapshot[] = [];
@@ -164,6 +192,8 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
         amount_consumed_sat: Math.max(0, b.amount_sat - b.amount_remaining_sat),
         status: b.status,
         last_price_decrease_at: lastPriceDecreaseByOrder.get(b.braiins_order_id) ?? null,
+        last_pause_reason: b.last_pause_reason,
+        fee_rate_pct: b.fee_rate_pct,
       });
       reconcilable.push({
         braiins_order_id: b.braiins_order_id,
@@ -292,6 +322,14 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
     datum,
     ocean_hashrate_ph,
     share_log_pct,
+    network_difficulty,
+    estimated_block_reward_sat,
+    pool_hashrate_ph,
+    pool_active_workers,
+    braiins_total_deposited_sat,
+    braiins_total_spent_sat,
+    ocean_unpaid_sat,
+    btc_usd_price,
     last_api_ok_at: deps.braiins.getLastApiOkAt(),
     hashprice_sat_per_ph_day: inputs.hashpriceSatPerPhDay,
     fillable_ask_sat_per_eh_day,
@@ -327,6 +365,8 @@ function extractBids(bidsResponse: { items?: unknown[] } | null): ApiBid[] {
         amount_sat?: number;
         speed_limit_ph?: number | null;
         status?: string;
+        last_pause_reason?: string;
+        fee_rate_pct?: number;
       };
       state_estimate?: {
         avg_speed_ph?: number;
@@ -352,6 +392,11 @@ function extractBids(bidsResponse: { items?: unknown[] } | null): ApiBid[] {
       progress_pct: item.state_estimate?.progress_pct ?? 0,
       amount_remaining_sat: item.state_estimate?.amount_remaining_sat ?? bid.amount_sat ?? 0,
       status,
+      last_pause_reason:
+        bid.last_pause_reason && bid.last_pause_reason.length > 0
+          ? bid.last_pause_reason
+          : null,
+      fee_rate_pct: typeof bid.fee_rate_pct === 'number' ? bid.fee_rate_pct : null,
     });
   }
   return out;

@@ -341,12 +341,18 @@ async function bootOperational(
   // underlying HTTP round-trip per tick instead of firing two.
   const oceanClient = createOceanClient();
 
+  // BTC/USD oracle is constructed early so observe() can capture
+  // the latest reading per tick into tick_metrics (#89). The HTTP
+  // server reuses the same instance below.
+  const btcPriceService = new BtcPriceService();
+
   const controller = new Controller({
     braiins,
     braiinsClient,
     poolTracker,
     datumPoller,
     oceanClient,
+    btcPriceService,
     configRepo,
     runtimeRepo,
     ownedBidsRepo,
@@ -409,9 +415,7 @@ async function bootOperational(
   // persisted in closed_bids_cache so steady-state refreshes only
   // paginate the tail, not every bid the account has ever owned.
   const accountSpend = new AccountSpendService(braiinsClient, closedBidsCacheRepo);
-
-  // BTC/USD price oracle — purely a dashboard display convenience.
-  const btcPriceService = new BtcPriceService();
+  // (btcPriceService constructed earlier so the controller can use it.)
 
   // Append-only log retention. Periodically prunes tick_metrics +
   // decisions rows older than the configured cutoffs. Runs once on

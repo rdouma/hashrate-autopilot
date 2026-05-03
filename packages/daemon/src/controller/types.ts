@@ -70,6 +70,9 @@ export interface OwnedBidSnapshot {
   readonly amount_consumed_sat: number;
   readonly status: string;
   readonly last_price_decrease_at: number | null;
+  /** #89: persisted on tick_metrics for the primary owned bid only. */
+  readonly last_pause_reason: string | null;
+  readonly fee_rate_pct: number | null;
 }
 
 /**
@@ -150,6 +153,21 @@ export interface State {
    * tides shares were zero.
    */
   readonly share_log_pct: number | null;
+
+  /**
+   * #89: extended per-tick capture - data sources we already poll,
+   * surfaced into State so tick.ts can persist them into tick_metrics.
+   * All nullable: each source independently degrades to null on a
+   * failed poll without aborting the tick.
+   */
+  readonly network_difficulty: number | null;
+  readonly estimated_block_reward_sat: number | null;
+  readonly pool_hashrate_ph: number | null;
+  readonly pool_active_workers: number | null;
+  readonly braiins_total_deposited_sat: number | null;
+  readonly braiins_total_spent_sat: number | null;
+  readonly ocean_unpaid_sat: number | null;
+  readonly btc_usd_price: number | null;
 
   /** Last successful API read timestamp (ms). */
   readonly last_api_ok_at: number | null;

@@ -148,22 +148,24 @@ export class Controller {
         share_log_pct: state.share_log_pct,
         spend_sat: spendSat,
         primary_bid_consumed_sat: primary ? primary.amount_consumed_sat : null,
-        // #89: schema columns shipped; observer-side wiring lands in a
-        // follow-up commit. Until then the writer passes null so the
-        // column exists and old tooling keeps working; new tooling can
-        // detect the back-fill window with `WHERE network_difficulty
-        // IS NULL`.
-        network_difficulty: null,
-        estimated_block_reward_sat: null,
-        pool_hashrate_ph: null,
-        pool_active_workers: null,
-        braiins_total_deposited_sat: null,
-        braiins_total_spent_sat: null,
-        ocean_unpaid_sat: null,
-        btc_usd_price: null,
-        primary_bid_last_pause_reason: null,
+        // #89: extended capture from sources we already poll.
+        // observe() collects them onto State; tick.ts forwards.
+        // primary_bid_fee_paid_sat is left null here - that field
+        // lives on the per-bid detail counters, not the bids list,
+        // and adding the per-bid /spot/bid/detail call is in scope
+        // for #90 (bid acceptance ratio capture). Until then it
+        // remains null.
+        network_difficulty: state.network_difficulty,
+        estimated_block_reward_sat: state.estimated_block_reward_sat,
+        pool_hashrate_ph: state.pool_hashrate_ph,
+        pool_active_workers: state.pool_active_workers,
+        braiins_total_deposited_sat: state.braiins_total_deposited_sat,
+        braiins_total_spent_sat: state.braiins_total_spent_sat,
+        ocean_unpaid_sat: state.ocean_unpaid_sat,
+        btc_usd_price: state.btc_usd_price,
+        primary_bid_last_pause_reason: primary?.last_pause_reason ?? null,
         primary_bid_fee_paid_sat: null,
-        primary_bid_fee_rate_pct: null,
+        primary_bid_fee_rate_pct: primary?.fee_rate_pct ?? null,
         run_mode: state.run_mode,
         action_mode: 'NORMAL' as const,
       });
