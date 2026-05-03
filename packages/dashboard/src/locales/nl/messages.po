@@ -1579,6 +1579,14 @@ msgstr "Pool-bestemming (waar Braiins aflevert)"
 msgid "pool hashrate"
 msgstr "pool-hashrate"
 
+#: src/pages/Status.tsx
+msgid "pool luck (24h)"
+msgstr "pool-geluk (24u)"
+
+#: src/pages/Status.tsx
+msgid "pool luck (7d)"
+msgstr "pool-geluk (7d)"
+
 #: src/components/HashrateChart.tsx
 msgid "pool reward"
 msgstr "pool-beloning"

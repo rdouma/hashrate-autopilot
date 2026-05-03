@@ -6,6 +6,14 @@
 
 The Status page tracked the TH/PH/EH and sats/BTC/USD header toggles, but Config inputs stayed in canonical units regardless. Now the hashrate-target inputs (target / floor / cheap-target) display + accept values in the selected hashrate unit (3 PH/s reads as 0.003 EH/s when EH is selected; flipping to TH gives 3,000 TH/s), and the price inputs (overpay, max bid, max-overpay-vs-hashprice) follow currency × hashrate-unit (300 sat/PH/day reads as 0.0000003 ₿/PH/day in BTC mode, or 300,000 sat/EH/day in EH mode). Bid budget input follows the currency toggle too. Storage stays canonical (sat/EH/day for prices, PH/s for hashrates, sat for budgets) - the toggles are presentation-only on the input side. USD is intentionally not a price-input mode (the operator's mental model is "I want 300 sats overpay", not "$0.0000003"); when USD is the active currency, price + budget inputs fall back to sat for editability while every read-only display elsewhere still respects USD.
 
+### `[Feature]` Historical pool luck plot on the Hashrate chart (#92)
+
+The Ocean panel's `pool blocks 24h / 7d` rows showed luck multipliers as a single live number, but luck moves enough between ticks that a single number doesn't tell the operator whether they're looking at a transient swing or a sustained drift. Now plottable historically: pick `pool luck (24h)` or `pool luck (7d)` from the Hashrate chart's right-axis dropdown.
+
+Migration 0055 adds two nullable INTEGER columns (`pool_blocks_24h_count`, `pool_blocks_7d_count`) to `tick_metrics`. Counts are computed in observe.ts using the same window logic the `/api/ocean` route uses (filter `recent_blocks` by tick-time minus 1d / 7d). Stored as raw counts so the luck formula stays at chart-render time and can be retuned without backfill. The chart computes per-tick `count / Poisson_expected` using the existing `network_difficulty` + `pool_hashrate_ph` series; null when any input is missing on that tick.
+
+NL + ES translations included for the two new dropdown options.
+
 ### `[Fix]` BTC/USD gap on first tick after restart + right-axis legend entry (#89 / #93)
 
 The btc_usd_price column had a single null tick every time the daemon restarted - visible as small flat horizontal segments on the BTC/USD secondary axis line where the chart bridged across the gap. Root cause: `BtcPriceService.getLatest()` returns null until the first `fetchPrice()` call; that call only happens when the dashboard hits `/api/btc-price`, which lands ~60s after restart. So the very first tick after every restart wrote a null price row. Fixed by kicking off a fetch at daemon boot - cache is warm before the first tick. Best-effort: a failed boot fetch leaves the column null for that tick (correct degradation).

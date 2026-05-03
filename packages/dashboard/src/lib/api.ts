@@ -146,6 +146,8 @@ export interface MetricPoint {
   estimated_block_reward_sat: number | null;
   btc_usd_price: number | null;
   ocean_unpaid_sat: number | null;
+  pool_blocks_24h_count: number | null;
+  pool_blocks_7d_count: number | null;
 }
 
 export interface BidEventView {

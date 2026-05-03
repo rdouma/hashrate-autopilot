@@ -304,6 +304,10 @@ export interface TickMetricsTable {
   primary_bid_fee_paid_sat: number | null;
   /** Primary owned bid's fee rate at creation, percent. */
   primary_bid_fee_rate_pct: number | null;
+  /** #92: pool blocks observed in the last 24h at tick time. */
+  pool_blocks_24h_count: number | null;
+  /** #92: pool blocks observed in the last 7d at tick time. */
+  pool_blocks_7d_count: number | null;
   run_mode: RunMode;
   action_mode: ActionMode;
 }

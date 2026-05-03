@@ -143,7 +143,9 @@ export type HashrateRightAxis =
   | 'none'
   | 'share_log'
   | 'network_difficulty'
-  | 'pool_hashrate';
+  | 'pool_hashrate'
+  | 'pool_luck_24h'
+  | 'pool_luck_7d';
 
 interface RightAxisSpec {
   /** Per-point values pulled off MetricPoint. */
@@ -317,6 +319,40 @@ export const HashrateChart = memo(function HashrateChart({
             axisLabel: `pool ${denomination.hashrateSuffix}`,
             stroke: '#34d399',
           };
+        case 'pool_luck_24h':
+        case 'pool_luck_7d': {
+          // #92: per-tick pool luck = observed_count / Poisson_expected.
+          // expected_blocks_per_window = (pool_hashrate / network_hashrate)
+          //                              x 144 blocks/day x window_days
+          // network_hashrate_ph = (difficulty x 2^32) / 600 / 1e15
+          // null when any input is missing on that tick.
+          const windowDays = rightAxisSeries === 'pool_luck_24h' ? 1 : 7;
+          const values = points.map((p) => {
+            const count =
+              windowDays === 1 ? p.pool_blocks_24h_count : p.pool_blocks_7d_count;
+            if (count === null) return null;
+            if (p.network_difficulty === null || p.pool_hashrate_ph === null) return null;
+            if (p.network_difficulty <= 0 || p.pool_hashrate_ph <= 0) return null;
+            const networkHashratePh =
+              (p.network_difficulty * 2 ** 32) / 600 / 1e15;
+            if (networkHashratePh <= 0) return null;
+            const expected =
+              (p.pool_hashrate_ph / networkHashratePh) * 144 * windowDays;
+            if (expected <= 0) return null;
+            return count / expected;
+          });
+          return {
+            values,
+            formatTick: (v) =>
+              `${new Intl.NumberFormat(intlLocale, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              }).format(v)}×`,
+            axisLabel:
+              windowDays === 1 ? 'pool luck (24h)' : 'pool luck (7d)',
+            stroke: '#fbbf24',
+          };
+        }
       }
     })();
     const shareLogYs = rightAxis?.values ?? points.map(() => null);

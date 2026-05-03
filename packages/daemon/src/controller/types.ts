@@ -170,6 +170,9 @@ export interface State {
   readonly btc_usd_price: number | null;
   /** Which oracle the BTC price came from (locked per tick so retroactive USD values stay attributable). */
   readonly btc_usd_price_source: string | null;
+  /** #92: pool block counts at this tick - input to the chart's pool-luck plot. Null when Ocean is unreachable. */
+  readonly pool_blocks_24h_count: number | null;
+  readonly pool_blocks_7d_count: number | null;
 
   /** Last successful API read timestamp (ms). */
   readonly last_api_ok_at: number | null;

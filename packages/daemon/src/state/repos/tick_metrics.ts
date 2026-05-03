@@ -49,6 +49,9 @@ export interface InsertTickMetricArgs {
   readonly primary_bid_last_pause_reason: string | null;
   readonly primary_bid_fee_paid_sat: number | null;
   readonly primary_bid_fee_rate_pct: number | null;
+  /** #92: pool block counts per tick (input to historical luck plot). */
+  readonly pool_blocks_24h_count: number | null;
+  readonly pool_blocks_7d_count: number | null;
   readonly run_mode: TickMetricsTable['run_mode'];
   readonly action_mode: TickMetricsTable['action_mode'];
 }
@@ -82,6 +85,8 @@ export interface AggregatedTickMetricRow {
   estimated_block_reward_sat: number | null;
   btc_usd_price: number | null;
   ocean_unpaid_sat: number | null;
+  pool_blocks_24h_count: number | null;
+  pool_blocks_7d_count: number | null;
 }
 
 export class TickMetricsRepo {
@@ -143,6 +148,8 @@ export class TickMetricsRepo {
         estimated_block_reward_sat: r.estimated_block_reward_sat,
         btc_usd_price: r.btc_usd_price,
         ocean_unpaid_sat: r.ocean_unpaid_sat,
+        pool_blocks_24h_count: r.pool_blocks_24h_count,
+        pool_blocks_7d_count: r.pool_blocks_7d_count,
       }));
     }
 
@@ -187,6 +194,12 @@ export class TickMetricsRepo {
         ),
         sql<number | null>`AVG(btc_usd_price)`.as('btc_usd_price'),
         sql<number | null>`AVG(ocean_unpaid_sat)`.as('ocean_unpaid_sat'),
+        // #92: pool block counts. AVG within a bucket gives the
+        // mean rolling-window count over the bucket - sensible for
+        // chart smoothing because the count itself is a 24h/7d
+        // sliding sum that doesn't change much within a 5-min bucket.
+        sql<number | null>`AVG(pool_blocks_24h_count)`.as('pool_blocks_24h_count'),
+        sql<number | null>`AVG(pool_blocks_7d_count)`.as('pool_blocks_7d_count'),
       ])
       .where('tick_at', '>=', sinceMs)
       .groupBy(sql`tick_at / ${sql.lit(bucketMs)}`)

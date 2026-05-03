@@ -167,6 +167,8 @@ export class Controller {
         primary_bid_last_pause_reason: primary?.last_pause_reason ?? null,
         primary_bid_fee_paid_sat: null,
         primary_bid_fee_rate_pct: primary?.fee_rate_pct ?? null,
+        pool_blocks_24h_count: state.pool_blocks_24h_count,
+        pool_blocks_7d_count: state.pool_blocks_7d_count,
         run_mode: state.run_mode,
         action_mode: 'NORMAL' as const,
       });

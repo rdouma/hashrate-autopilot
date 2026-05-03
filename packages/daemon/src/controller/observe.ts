@@ -164,6 +164,18 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
   const pool_hashrate_ph = oceanStats?.pool.pool_hashrate_ph ?? null;
   const pool_active_workers = oceanStats?.pool.active_workers ?? null;
   const ocean_unpaid_sat = oceanStats?.unpaid_sat ?? null;
+  // #92 (follow-up): pool block counts per tick. Same windowing
+  // logic the /api/ocean route uses to render `blocks_24h` /
+  // `blocks_7d` - moved here so the value gets snapshotted into
+  // tick_metrics and the chart can plot historical luck.
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const recent = oceanStats?.recent_blocks ?? [];
+  const pool_blocks_24h_count = oceanStats
+    ? recent.filter((b) => b.timestamp_ms > 0 && tickAt - b.timestamp_ms < DAY_MS).length
+    : null;
+  const pool_blocks_7d_count = oceanStats
+    ? recent.filter((b) => b.timestamp_ms > 0 && tickAt - b.timestamp_ms < 7 * DAY_MS).length
+    : null;
   const balanceAccount = balance?.accounts?.[0];
   const braiins_total_deposited_sat =
     typeof balanceAccount?.total_deposited_sat === 'number'
@@ -335,6 +347,8 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
     ocean_unpaid_sat,
     btc_usd_price,
     btc_usd_price_source,
+    pool_blocks_24h_count,
+    pool_blocks_7d_count,
     last_api_ok_at: deps.braiins.getLastApiOkAt(),
     hashprice_sat_per_ph_day: inputs.hashpriceSatPerPhDay,
     fillable_ask_sat_per_eh_day,

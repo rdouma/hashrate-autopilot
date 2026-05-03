@@ -1579,6 +1579,14 @@ msgstr "Destino del pool (a donde entrega Braiins)"
 msgid "pool hashrate"
 msgstr "hashrate del pool"
 
+#: src/pages/Status.tsx
+msgid "pool luck (24h)"
+msgstr "suerte del pool (24h)"
+
+#: src/pages/Status.tsx
+msgid "pool luck (7d)"
+msgstr "suerte del pool (7d)"
+
 #: src/components/HashrateChart.tsx
 msgid "pool reward"
 msgstr "recompensa del pool"

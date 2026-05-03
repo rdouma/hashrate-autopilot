@@ -72,7 +72,9 @@ function readStoredHashrateRightAxis(
     raw === 'none' ||
     raw === 'share_log' ||
     raw === 'network_difficulty' ||
-    raw === 'pool_hashrate'
+    raw === 'pool_hashrate' ||
+    raw === 'pool_luck_24h' ||
+    raw === 'pool_luck_7d'
   ) {
     return raw;
   }
@@ -277,6 +279,8 @@ export function Status() {
             <option value="share_log">{t`share_log %`}</option>
             <option value="network_difficulty">{t`network difficulty`}</option>
             <option value="pool_hashrate">{t`pool hashrate`}</option>
+            <option value="pool_luck_24h">{t`pool luck (24h)`}</option>
+            <option value="pool_luck_7d">{t`pool luck (7d)`}</option>
           </select>
         </div>
         <HashrateChart
