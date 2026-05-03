@@ -409,12 +409,12 @@ msgid "blocked"
 msgstr "geblokkeerd"
 
 #: src/pages/Status.tsx
-msgid "Blocks Ocean found in the last 24h. The 'X.XX× lucky/unlucky' annotation compares observed vs an empirical baseline: pool_blocks_7d / 7. So 1.00× means the last 24h matched the recent week-long pace; >1 = Ocean over-performed its recent average; <1 = under-performed. The baseline drifts with real pool growth so we don't false-flag every onboarding event as 'luck'. Wide variance is normal at 24h - 0.7-1.3× is well within Poisson noise."
-msgstr "Blokken die Ocean in de laatste 24u vond. De 'X,XX× geluk/pech'-annotatie vergelijkt waargenomen met een empirische baseline: pool_blocks_7d / 7. Dus 1,00× betekent dat de laatste 24u overeenkwam met het tempo van de afgelopen week; >1 = Ocean presteerde boven haar recente gemiddelde; <1 = eronder. De baseline schuift mee met echte poolgroei zodat we niet elke onboarding-gebeurtenis als 'geluk' aanmerken. Brede variantie is normaal bij 24u - 0,7-1,3× zit ruim binnen Poisson-ruis."
+msgid "Blocks Ocean found in the last 24h. The 'X.XX× lucky/unlucky' annotation compares observed vs the network-share expectation: at Ocean's ~5% share of network hashrate and ~144 blocks/day on the network, the expected count is ~7 blocks/24h. 1.00× = exactly that; >1 = lucky; <1 = unlucky. Wide variance is normal at 24h (Poisson σ is large at this window); the 7d row below is where sustained drift becomes meaningful."
+msgstr "Blokken die Ocean in de laatste 24u vond. De 'X,XX× geluk/pech'-annotatie vergelijkt waargenomen met de netwerk-aandeel-verwachting: bij Ocean's ~5% aandeel in de netwerk-hashrate en ~144 blokken/dag op het netwerk is de verwachte telling ~7 blokken/24u. 1,00× = precies dat; >1 = geluk; <1 = pech. Brede variantie is normaal bij 24u (Poisson-σ is groot in dit venster); de 7d-rij hieronder is waar aanhoudende afwijking betekenisvol wordt."
 
 #: src/pages/Status.tsx
-msgid "Blocks Ocean found in the last 7d. The 7d luck multiplier reads 1.00× by definition because the baseline IS pool_blocks_7d / 7 - this row is mostly a sanity-check denominator for the 24h row above. Use the 24h luck as the actionable signal."
-msgstr "Blokken die Ocean in de laatste 7d vond. De 7d-luck-multiplier leest per definitie 1,00× omdat de baseline ZELF pool_blocks_7d / 7 is - deze rij is vooral een sanity-check-noemer voor de 24u-rij hierboven. Gebruik de 24u-luck als het actionabel signaal."
+msgid "Blocks Ocean found in the last 7d, with the same network-share luck multiplier. 7d smooths the short-term Poisson variance: a sustained <0.7× over a week suggests something structural (lower hashrate share than the estimator implies, or a real upstream issue at Ocean)."
+msgstr "Blokken die Ocean in de laatste 7d vond, met dezelfde netwerk-aandeel-luck-multiplier. 7d strijkt de korte-termijn Poisson-variantie glad: aanhoudend <0,7× over een week suggereert iets structureels (lager hashrate-aandeel dan de schatter impliceert, of een echt upstream-probleem bij Ocean)."
 
 #: src/pages/Config.tsx
 msgid "Boot directly into LIVE. Use only when the autopilot is proven and the box reboots should not interrupt bidding."
