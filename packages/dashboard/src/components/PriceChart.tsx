@@ -484,28 +484,28 @@ export const PriceChart = memo(function PriceChart({
         case 'estimated_block_reward':
           return {
             values: points.map((p) => p.estimated_block_reward_sat),
-            stroke: '#fbbf24',
+            stroke: '#ec4899',
             axisLabel: `block reward (${denomination.mode === 'usd' ? '$' : denomination.mode === 'btc' ? '₿' : 'sat'})`,
             formatTick: (v) => formatSatCompact(v, denomination, intlLocale),
           };
         case 'btc_usd_price':
           return {
             values: points.map((p) => p.btc_usd_price),
-            stroke: '#60a5fa',
+            stroke: '#ec4899',
             axisLabel: 'BTC/USD ($)',
             formatTick: (v) => `$${formatCompactNumber(v, intlLocale)}`,
           };
         case 'ocean_unpaid_sat':
           return {
             values: points.map((p) => p.ocean_unpaid_sat),
-            stroke: '#34d399',
+            stroke: '#ec4899',
             axisLabel: `unpaid (${denomination.mode === 'usd' ? '$' : denomination.mode === 'btc' ? '₿' : 'sat'})`,
             formatTick: (v) => formatSatCompact(v, denomination, intlLocale),
           };
         case 'network_difficulty':
           return {
             values: points.map((p) => p.network_difficulty),
-            stroke: '#fb7185',
+            stroke: '#ec4899',
             axisLabel: 'difficulty',
             // Difficulty in trillions, compact - chain difficulty
             // sits ~1.4e14, so /1e12 lands at ~140. formatCompactNumber

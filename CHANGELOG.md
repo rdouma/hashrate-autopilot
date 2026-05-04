@@ -6,6 +6,12 @@
 
 The Status page tracked the TH/PH/EH and sats/BTC/USD header toggles, but Config inputs stayed in canonical units regardless. Now the hashrate-target inputs (target / floor / cheap-target) display + accept values in the selected hashrate unit (3 PH/s reads as 0.003 EH/s when EH is selected; flipping to TH gives 3,000 TH/s), and the price inputs (overpay, max bid, max-overpay-vs-hashprice) follow currency × hashrate-unit (300 sat/PH/day reads as 0.0000003 ₿/PH/day in BTC mode, or 300,000 sat/EH/day in EH mode). Bid budget input follows the currency toggle too. Storage stays canonical (sat/EH/day for prices, PH/s for hashrates, sat for budgets) - the toggles are presentation-only on the input side. USD is intentionally not a price-input mode (the operator's mental model is "I want 300 sats overpay", not "$0.0000003"); when USD is the active currency, price + budget inputs fall back to sat for editability while every read-only display elsewhere still respects USD.
 
+### `[UI]` Right-axis colour unified to pink + thousand grouping under 1M (#93)
+
+Right-axis lines on both charts often collided visually with left-axis series ("pool luck" yellow vs "delivered (Braiins)" amber, "btc/usd" blue vs "received (Ocean)" blue, etc.). Single distinctive saturated pink (`#ec4899`) for every right-axis series across both charts - never collides with the existing palette.
+
+Compact tick formatter no longer uses the `k` suffix below 1M. "25,000 PH/s" reads better than "25,0k PH/s" at the magnitudes pool hashrate sits at, and there's space for the grouped form. M and B suffixes still kick in for genuinely big numbers.
+
 ### `[Fix]` Pool hashrate now from Ocean's dedicated endpoint (#92)
 
 The luck multiplier still wobbled by ~5% in 10 minutes even after the previous smoothing pass, because the underlying `pool_hashrate_ph` was estimated as `user_hashrate / share_log_pct` - both noisy. Probed Ocean's API and found `/v1/pool_hashrate` exposes a server-side 5-min-smoothed `pool_300s` value directly (~20-30 EH/s for typical Ocean magnitudes). Switched the daemon's pool_hashrate_ph to this canonical source; legacy estimator kept as a fallback when the endpoint is unreachable. Chart-side trailing smoothing relaxed from 30 to 10 ticks since Ocean already pre-smooths.

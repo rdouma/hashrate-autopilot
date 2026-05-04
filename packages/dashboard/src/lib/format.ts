@@ -67,11 +67,15 @@ export function formatCompactNumber(
   // showing 1 decimal ("80,0k" / "79,5k") keeps the column stable.
   if (abs >= 1e9) return `${fmt(n / 1e9, 1, 1)}B`;
   if (abs >= 1e6) return `${fmt(n / 1e6, 1, 1)}M`;
-  if (abs >= 1e3) return `${fmt(n / 1e3, 1, 1)}k`;
-  // Below the suffix range, force a stable decimal count so a column
-  // of ticks doesn't shuffle widths. The min and max are the same
-  // value at each magnitude tier - the tier itself adapts to the
-  // magnitude so very small numbers still get the precision they need.
+  // Below 1M we render with full thousands grouping rather than the
+  // `k` suffix - "25,000" reads better than "25,0k" at the typical
+  // pool-hashrate magnitudes where we have room for it. The k
+  // suffix only saves a couple of characters in this range and the
+  // grouped form is easier to scan.
+  if (abs >= 1000) return fmt(n, 0, 0);
+  // Below 1000, force a stable decimal count so a column of ticks
+  // doesn't shuffle widths. Each tier picks the natural decimal
+  // count for its magnitude.
   if (abs >= 10) return fmt(n, 1, 1);
   if (abs >= 1) return fmt(n, 2, 2);
   if (abs >= 0.001) return fmt(n, 3, 3);

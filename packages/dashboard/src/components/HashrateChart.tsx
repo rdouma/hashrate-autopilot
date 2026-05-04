@@ -289,7 +289,7 @@ export const HashrateChart = memo(function HashrateChart({
             values: points.map((p) => p.share_log_pct),
             formatTick: (v) => `${v.toFixed(4)}%`,
             axisLabel: '% of Ocean',
-            stroke: '#a78bfa',
+            stroke: '#ec4899',
           };
         case 'network_difficulty':
           return {
@@ -302,7 +302,7 @@ export const HashrateChart = memo(function HashrateChart({
                 maximumFractionDigits: 2,
               })} T`,
             axisLabel: 'difficulty',
-            stroke: '#fb7185',
+            stroke: '#ec4899',
           };
         case 'pool_hashrate':
           return {
@@ -317,7 +317,7 @@ export const HashrateChart = memo(function HashrateChart({
               return formatCompactNumber(v * factor, intlLocale);
             },
             axisLabel: `pool ${denomination.hashrateSuffix}`,
-            stroke: '#34d399',
+            stroke: '#ec4899',
           };
         case 'pool_luck_24h':
         case 'pool_luck_7d': {
@@ -374,7 +374,7 @@ export const HashrateChart = memo(function HashrateChart({
               }).format(v)}×`,
             axisLabel:
               windowDays === 1 ? 'pool luck (24h)' : 'pool luck (7d)',
-            stroke: '#fbbf24',
+            stroke: '#ec4899',
           };
         }
       }
