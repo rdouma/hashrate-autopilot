@@ -83,6 +83,7 @@ describe('openDatabase — migrations', () => {
       '0053_tick_metrics_extended_capture.sql',
       '0054_btc_price_source_per_tick.sql',
       '0055_tick_metrics_pool_blocks.sql',
+      '0056_tick_metrics_pool_hashrate_avg.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });
