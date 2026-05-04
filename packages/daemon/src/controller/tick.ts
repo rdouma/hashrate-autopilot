@@ -171,6 +171,8 @@ export class Controller {
         pool_blocks_7d_count: state.pool_blocks_7d_count,
         pool_hashrate_ph_avg_24h: state.pool_hashrate_ph_avg_24h,
         pool_hashrate_ph_avg_7d: state.pool_hashrate_ph_avg_7d,
+        pool_luck_24h: state.pool_luck_24h,
+        pool_luck_7d: state.pool_luck_7d,
         run_mode: state.run_mode,
         action_mode: 'NORMAL' as const,
       });

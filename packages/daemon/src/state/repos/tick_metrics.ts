@@ -59,6 +59,13 @@ export interface InsertTickMetricArgs {
    */
   readonly pool_hashrate_ph_avg_24h: number | null;
   readonly pool_hashrate_ph_avg_7d: number | null;
+  /**
+   * Per-tick gap-based pool luck. Computed in observe() from the gap
+   * between the tick time and the most recent pool block within the
+   * 24h / 7d window.
+   */
+  readonly pool_luck_24h: number | null;
+  readonly pool_luck_7d: number | null;
   readonly run_mode: TickMetricsTable['run_mode'];
   readonly action_mode: TickMetricsTable['action_mode'];
 }
@@ -96,6 +103,8 @@ export interface AggregatedTickMetricRow {
   pool_blocks_7d_count: number | null;
   pool_hashrate_ph_avg_24h: number | null;
   pool_hashrate_ph_avg_7d: number | null;
+  pool_luck_24h: number | null;
+  pool_luck_7d: number | null;
 }
 
 export class TickMetricsRepo {
@@ -161,6 +170,8 @@ export class TickMetricsRepo {
         pool_blocks_7d_count: r.pool_blocks_7d_count,
         pool_hashrate_ph_avg_24h: r.pool_hashrate_ph_avg_24h,
         pool_hashrate_ph_avg_7d: r.pool_hashrate_ph_avg_7d,
+        pool_luck_24h: r.pool_luck_24h,
+        pool_luck_7d: r.pool_luck_7d,
       }));
     }
 
@@ -216,6 +227,11 @@ export class TickMetricsRepo {
         // mean that doesn't shift much across a 5-min bucket window.
         sql<number | null>`AVG(pool_hashrate_ph_avg_24h)`.as('pool_hashrate_ph_avg_24h'),
         sql<number | null>`AVG(pool_hashrate_ph_avg_7d)`.as('pool_hashrate_ph_avg_7d'),
+        // Pool luck: averaging the per-tick value within a bucket is
+        // a sensible smoothing - the 1/t shape is well-behaved and
+        // a bucket's mean luck reads cleanly.
+        sql<number | null>`AVG(pool_luck_24h)`.as('pool_luck_24h'),
+        sql<number | null>`AVG(pool_luck_7d)`.as('pool_luck_7d'),
       ])
       .where('tick_at', '>=', sinceMs)
       .groupBy(sql`tick_at / ${sql.lit(bucketMs)}`)

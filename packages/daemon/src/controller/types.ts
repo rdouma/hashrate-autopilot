@@ -183,6 +183,13 @@ export interface State {
    */
   readonly pool_hashrate_ph_avg_24h: number | null;
   readonly pool_hashrate_ph_avg_7d: number | null;
+  /**
+   * Per-tick gap-based pool luck (24h / 7d). luck = expected_gap /
+   * time_since_last_block. Decays continuously between finds, jumps
+   * on each find. Null when any input is missing.
+   */
+  readonly pool_luck_24h: number | null;
+  readonly pool_luck_7d: number | null;
 
   /** Last successful API read timestamp (ms). */
   readonly last_api_ok_at: number | null;

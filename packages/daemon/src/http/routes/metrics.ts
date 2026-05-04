@@ -94,6 +94,14 @@ export interface MetricPoint {
    */
   readonly pool_hashrate_ph_avg_24h: number | null;
   readonly pool_hashrate_ph_avg_7d: number | null;
+  /**
+   * Gap-based pool luck (24h / 7d) computed per tick on the daemon
+   * side. `luck = (600 / pool_share) / time_since_last_pool_block`.
+   * Decays continuously between finds, jumps on each find. Replaces
+   * the prior client-side "count_in_window / poisson_expected" calc.
+   */
+  readonly pool_luck_24h: number | null;
+  readonly pool_luck_7d: number | null;
 }
 
 export async function registerMetricsRoute(
@@ -171,6 +179,8 @@ function toMetricPoint(r: {
   pool_blocks_7d_count: number | null;
   pool_hashrate_ph_avg_24h: number | null;
   pool_hashrate_ph_avg_7d: number | null;
+  pool_luck_24h: number | null;
+  pool_luck_7d: number | null;
 }): MetricPoint {
   return {
     tick_at: r.tick_at,
@@ -211,6 +221,8 @@ function toMetricPoint(r: {
     pool_blocks_7d_count: r.pool_blocks_7d_count,
     pool_hashrate_ph_avg_24h: r.pool_hashrate_ph_avg_24h,
     pool_hashrate_ph_avg_7d: r.pool_hashrate_ph_avg_7d,
+    pool_luck_24h: r.pool_luck_24h,
+    pool_luck_7d: r.pool_luck_7d,
   };
 }
 

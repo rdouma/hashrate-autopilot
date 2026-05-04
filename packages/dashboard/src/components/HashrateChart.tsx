@@ -321,56 +321,26 @@ export const HashrateChart = memo(function HashrateChart({
           };
         case 'pool_luck_24h':
         case 'pool_luck_7d': {
-          // Per-tick pool luck against the network-share expectation.
-          // expected_blocks = (pool_share_of_network) × 144 × window_days
-          // luck = observed / expected.
+          // Gap-based pool luck, computed per tick on the daemon side
+          // (migration 0057). Read directly from the persisted column:
+          //   luck = (600 / pool_share) / time_since_last_pool_block
+          // Decays continuously between finds (1/t), jumps on each
+          // find. At elapsed = expected_gap, reads exactly 1.0×.
           //
-          // The denominator's pool_hashrate is now read from the
-          // matching trailing-Nd average column (`pool_hashrate_ph_avg_24h`
-          // / `_avg_7d`, persisted by observe.ts → migration 0056).
-          // Without this the denominator was a single-tick snapshot
-          // while the numerator was a trailing-Nd block count - a
-          // window mismatch that made luck swing 15-20% over a few
-          // hours when Ocean's pool hashrate drifted (farms cycling).
-          //
-          // Falls back to the per-tick `pool_hashrate_ph` for rows
-          // older than migration 0056 (so historical luck still
-          // renders, just with the old jitter on those rows).
-          //
-          // Sanity floor still rejects implausibly small values
-          // (< 1 EH/s vs typical ~25-30 EH/s) so a transient API
-          // hiccup doesn't paint a luck spike.
-          const windowDays = rightAxisSeries === 'pool_luck_24h' ? 1 : 7;
-          const MIN_PLAUSIBLE_POOL_PH = 1000; // 1 EH/s
-          const values = points.map((p) => {
-            const count =
-              windowDays === 1 ? p.pool_blocks_24h_count : p.pool_blocks_7d_count;
-            if (count === null) return null;
-            if (p.network_difficulty === null || p.network_difficulty <= 0) return null;
-            const trailingAvg =
-              windowDays === 1
-                ? p.pool_hashrate_ph_avg_24h
-                : p.pool_hashrate_ph_avg_7d;
-            const poolPh = trailingAvg ?? p.pool_hashrate_ph;
-            if (poolPh === null || !Number.isFinite(poolPh) || poolPh <= 0) return null;
-            if (poolPh < MIN_PLAUSIBLE_POOL_PH) return null;
-            const networkHashratePh =
-              (p.network_difficulty * 2 ** 32) / 600 / 1e15;
-            if (networkHashratePh <= 0) return null;
-            const expected =
-              (poolPh / networkHashratePh) * 144 * windowDays;
-            if (expected <= 0) return null;
-            return count / expected;
-          });
+          // Replaced the prior client-side "count_in_window /
+          // poisson_expected" formula, whose integer numerator made
+          // the line move only in discrete +/-1 steps regardless of
+          // elapsed time. Pre-0057 rows write null to the new columns
+          // and the chart shows a gap there.
+          const isDay = rightAxisSeries === 'pool_luck_24h';
           return {
-            values,
+            values: points.map((p) => (isDay ? p.pool_luck_24h : p.pool_luck_7d)),
             formatTick: (v) =>
               `${new Intl.NumberFormat(intlLocale, {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
               }).format(v)}×`,
-            axisLabel:
-              windowDays === 1 ? 'pool luck (24h)' : 'pool luck (7d)',
+            axisLabel: isDay ? 'pool luck (24h)' : 'pool luck (7d)',
             stroke: '#cbd5e1',
           };
         }

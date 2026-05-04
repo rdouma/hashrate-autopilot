@@ -156,6 +156,14 @@ export interface MetricPoint {
    */
   pool_hashrate_ph_avg_24h: number | null;
   pool_hashrate_ph_avg_7d: number | null;
+  /**
+   * Gap-based pool luck values (24h / 7d) computed daemon-side.
+   * `luck = (600 / pool_share) / time_since_last_pool_block`. Read
+   * directly by the chart's right-axis pool-luck series; no
+   * client-side calc needed.
+   */
+  pool_luck_24h: number | null;
+  pool_luck_7d: number | null;
 }
 
 export interface BidEventView {

@@ -321,6 +321,16 @@ export interface TickMetricsTable {
    * Same role as the 24h average but for the 7d luck multiplier.
    */
   pool_hashrate_ph_avg_7d: number | null;
+  /**
+   * Per-tick pool luck values (gap-based).
+   * `luck = (600 / pool_share) / (tick_at - last_pool_block_time_in_window)`
+   * where `pool_share = pool_hashrate_avg / network_hashrate`. Decays
+   * continuously between finds, jumps on each find. 24h variant uses
+   * the 24h trailing window for "most recent block"; 7d variant looks
+   * back 7d. Null when any input is unavailable.
+   */
+  pool_luck_24h: number | null;
+  pool_luck_7d: number | null;
   run_mode: RunMode;
   action_mode: ActionMode;
 }
