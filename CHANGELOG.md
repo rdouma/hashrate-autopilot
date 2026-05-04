@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-05-04
+
+### `[Fix]` BTC/USD price no longer goes flat when nobody's watching the dashboard (#89)
+
+The operator noticed a suspiciously flat 2h BTC/USD line on the price chart that lined up exactly with their sleeping hours. Root cause was structural: the daemon's `BtcPriceService` cache was driven entirely by dashboard activity - the only path that called `fetchPrice()` was the `/api/btc-price` HTTP route, which the dashboard polls. When the laptop suspended / browser tab went idle, the dashboard polling halted, the daemon's tick loop kept calling `getLatest()`, and the same stale price got written into `tick_metrics.btc_usd_price` for every tick until someone opened the dashboard again. New `BtcPriceRefresher` runs inside the daemon every 4 minutes (well below the 5-min cache TTL) so the cache stays warm regardless of whether anyone is looking at the dashboard. As a defensive backstop, `getLatest()` now returns null when the cached value is older than 2× cache TTL (10 minutes) - if the refresher ever fails, observe.ts writes null instead of pretending the old price is current, and the chart shows a gap rather than a flat line.
+
 ## 2026-05-03
 
 ### `[Fix]` Pool luck denominator window now matches numerator window (#92)

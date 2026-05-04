@@ -25,6 +25,7 @@ import { createHttpServer } from './http/server.js';
 import { AccountSpendService } from './services/account-spend.js';
 import { RetentionService } from './services/retention.js';
 import { BtcPriceService } from './services/btc-price.js';
+import { BtcPriceRefresher } from './services/btc-price-refresher.js';
 import { BraiinsService } from './services/braiins-service.js';
 import { DatumPoller } from './services/datum.js';
 import { HashpriceCache } from './services/hashprice-cache.js';
@@ -456,6 +457,21 @@ async function bootOperational(
   );
   hashpriceRefresher.start();
 
+  // Same shape as the hashprice refresher above, for the BTC/USD
+  // oracle. Without it, the BtcPriceService cache was driven entirely
+  // by dashboard activity (the `/api/btc-price` route was the only
+  // path that called fetchPrice). When the dashboard wasn't being
+  // polled - operator's laptop suspended, browser tab idle - the
+  // cache went stale and observe.ts wrote the same stale value
+  // every tick, producing a 2h flat BTC/USD line that lined up
+  // exactly with the operator's sleep schedule.
+  const btcPriceRefresher = new BtcPriceRefresher(
+    configRepo,
+    btcPriceService,
+    { log: (m) => log(m) },
+  );
+  btcPriceRefresher.start();
+
   // Account-lifetime spend tracker — sums counters_committed.amount_consumed_sat
   // across every Braiins bid (active + historical). Terminal bids are
   // persisted in closed_bids_cache so steady-state refreshes only
@@ -516,6 +532,7 @@ async function bootOperational(
     payoutObserver?.stop();
     retentionService.stop();
     hashpriceRefresher.stop();
+    btcPriceRefresher.stop();
     await loop.stop();
     try {
       await httpServer.stop();

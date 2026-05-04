@@ -36,8 +36,23 @@ export class BtcPriceService {
     this.now = opts.now ?? (() => Date.now());
   }
 
-  /** Return the latest cached snapshot, or null if never fetched / source is 'none'. */
+  /**
+   * Return the latest cached snapshot, or null if it's stale or
+   * never fetched. "Stale" = older than 2× cacheTtlMs - one missed
+   * refresh cycle is fine, but two consecutive misses (or a sustained
+   * oracle outage) mean we'd rather write null into tick_metrics than
+   * pretend the old price is still live. Without this gate observers
+   * silently keep reading the last successful fetch indefinitely,
+   * which produced a 2h flat line on the chart when the dashboard
+   * (which used to be the sole driver of `fetchPrice` cadence) wasn't
+   * being polled. The daemon-side BtcPriceRefresher now keeps the
+   * cache warm independently, but this defensive gate stays so a
+   * future regression in the refresher doesn't silently corrupt
+   * tick_metrics again.
+   */
   getLatest(): BtcPriceSnapshot | null {
+    if (!this.cache) return null;
+    if (this.now() - this.cache.fetched_at_ms > this.cacheTtlMs * 2) return null;
     return this.cache;
   }
 
