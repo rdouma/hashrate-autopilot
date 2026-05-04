@@ -121,7 +121,11 @@ export type PriceRightAxis =
   | 'ocean_unpaid_sat'
   | 'network_difficulty';
 
-const PRICE_RIGHT_AXIS_PADDING = 60;
+// Matches HashrateChart's PADDING_RIGHT_WITH_SHARE_LOG (80) so the
+// right-axis tick column lines up vertically across both stacked
+// charts. Also widens the gap between tick text and the rotated
+// axis label - 60px was tight, especially for "$" + 5-digit values.
+const PRICE_RIGHT_AXIS_PADDING = 80;
 
 /**
  * Sat-input compact tick formatter that respects the operator's

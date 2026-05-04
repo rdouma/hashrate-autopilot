@@ -2,6 +2,10 @@
 
 ## 2026-05-03
 
+### `[UI]` Right-axis tick column aligned across stacked charts (#93)
+
+The Hashrate chart's right-axis ticks sat at `WIDTH - 74`px (80px padding) but the Price chart's were at `WIDTH - 54`px (60px padding) - the columns didn't line up vertically when the two charts are stacked, and the narrower padding put `$79,5k` right up against the rotated "BTC/USD ($)" axis label. Bumped Price chart's right-axis padding to 80 to match the Hashrate chart, so both right-tick columns share the same X coordinate and the rotated label gets breathing room.
+
 ### `[UI]` BTC/USD right-axis ticks keep the `k` suffix (#93)
 
 Dropping the `k` suffix below 1M (previous commit) overflowed the right-axis padding for BTC/USD specifically: `$80.500` is 7 characters once you add the `$` prefix and the locale thousands-separator dot, and the rotated axis label collided with it. The other right-axis series (sat-denominated) fit cleanly without the suffix, so this is a USD-only quirk. Inline tick formatter for the `btc_usd_price` series now keeps `k` / `M` suffixes (`$80,5k`, 6 chars, fits) while every other right-axis series continues to use the relaxed full-thousands grouping.
