@@ -493,7 +493,21 @@ export const PriceChart = memo(function PriceChart({
             values: points.map((p) => p.btc_usd_price),
             stroke: '#ec4899',
             axisLabel: 'BTC/USD ($)',
-            formatTick: (v) => `$${formatCompactNumber(v, intlLocale)}`,
+            // The $ prefix + thousand-sep dot makes "$80.500" 7
+            // chars, which overruns the right-axis padding. Keep
+            // the k suffix for USD prefix specifically - "$80,5k"
+            // is 6 chars and fits cleanly.
+            formatTick: (v) => {
+              const abs = Math.abs(v);
+              const fmt = (x: number, d: number): string =>
+                new Intl.NumberFormat(intlLocale, {
+                  minimumFractionDigits: d,
+                  maximumFractionDigits: d,
+                }).format(x);
+              if (abs >= 1e6) return `$${fmt(v / 1e6, 1)}M`;
+              if (abs >= 1000) return `$${fmt(v / 1000, 1)}k`;
+              return `$${fmt(v, 0)}`;
+            },
           };
         case 'ocean_unpaid_sat':
           return {

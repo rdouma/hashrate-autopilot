@@ -2,6 +2,10 @@
 
 ## 2026-05-03
 
+### `[UI]` BTC/USD right-axis ticks keep the `k` suffix (#93)
+
+Dropping the `k` suffix below 1M (previous commit) overflowed the right-axis padding for BTC/USD specifically: `$80.500` is 7 characters once you add the `$` prefix and the locale thousands-separator dot, and the rotated axis label collided with it. The other right-axis series (sat-denominated) fit cleanly without the suffix, so this is a USD-only quirk. Inline tick formatter for the `btc_usd_price` series now keeps `k` / `M` suffixes (`$80,5k`, 6 chars, fits) while every other right-axis series continues to use the relaxed full-thousands grouping.
+
 ### `[UI]` Config page inputs follow header unit toggles (#87)
 
 The Status page tracked the TH/PH/EH and sats/BTC/USD header toggles, but Config inputs stayed in canonical units regardless. Now the hashrate-target inputs (target / floor / cheap-target) display + accept values in the selected hashrate unit (3 PH/s reads as 0.003 EH/s when EH is selected; flipping to TH gives 3,000 TH/s), and the price inputs (overpay, max bid, max-overpay-vs-hashprice) follow currency × hashrate-unit (300 sat/PH/day reads as 0.0000003 ₿/PH/day in BTC mode, or 300,000 sat/EH/day in EH mode). Bid budget input follows the currency toggle too. Storage stays canonical (sat/EH/day for prices, PH/s for hashrates, sat for budgets) - the toggles are presentation-only on the input side. USD is intentionally not a price-input mode (the operator's mental model is "I want 300 sats overpay", not "$0.0000003"); when USD is the active currency, price + budget inputs fall back to sat for editability while every read-only display elsewhere still respects USD.
