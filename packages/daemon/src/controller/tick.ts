@@ -169,6 +169,8 @@ export class Controller {
         primary_bid_fee_rate_pct: primary?.fee_rate_pct ?? null,
         pool_blocks_24h_count: state.pool_blocks_24h_count,
         pool_blocks_7d_count: state.pool_blocks_7d_count,
+        pool_hashrate_ph_avg_24h: state.pool_hashrate_ph_avg_24h,
+        pool_hashrate_ph_avg_7d: state.pool_hashrate_ph_avg_7d,
         run_mode: state.run_mode,
         action_mode: 'NORMAL' as const,
       });

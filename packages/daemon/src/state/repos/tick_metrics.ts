@@ -52,6 +52,13 @@ export interface InsertTickMetricArgs {
   /** #92: pool block counts per tick (input to historical luck plot). */
   readonly pool_blocks_24h_count: number | null;
   readonly pool_blocks_7d_count: number | null;
+  /**
+   * Trailing 24h / 7d mean of pool_hashrate_ph ending at this tick.
+   * Computed in observe() against the prior tick_metrics rows so the
+   * luck calc's denominator window matches its numerator window.
+   */
+  readonly pool_hashrate_ph_avg_24h: number | null;
+  readonly pool_hashrate_ph_avg_7d: number | null;
   readonly run_mode: TickMetricsTable['run_mode'];
   readonly action_mode: TickMetricsTable['action_mode'];
 }
@@ -87,6 +94,8 @@ export interface AggregatedTickMetricRow {
   ocean_unpaid_sat: number | null;
   pool_blocks_24h_count: number | null;
   pool_blocks_7d_count: number | null;
+  pool_hashrate_ph_avg_24h: number | null;
+  pool_hashrate_ph_avg_7d: number | null;
 }
 
 export class TickMetricsRepo {
@@ -150,6 +159,8 @@ export class TickMetricsRepo {
         ocean_unpaid_sat: r.ocean_unpaid_sat,
         pool_blocks_24h_count: r.pool_blocks_24h_count,
         pool_blocks_7d_count: r.pool_blocks_7d_count,
+        pool_hashrate_ph_avg_24h: r.pool_hashrate_ph_avg_24h,
+        pool_hashrate_ph_avg_7d: r.pool_hashrate_ph_avg_7d,
       }));
     }
 
@@ -200,6 +211,11 @@ export class TickMetricsRepo {
         // sliding sum that doesn't change much within a 5-min bucket.
         sql<number | null>`AVG(pool_blocks_24h_count)`.as('pool_blocks_24h_count'),
         sql<number | null>`AVG(pool_blocks_7d_count)`.as('pool_blocks_7d_count'),
+        // Pool-hashrate trailing averages: AVG within a chart bucket
+        // is fine - the underlying value is already a 24h/7d trailing
+        // mean that doesn't shift much across a 5-min bucket window.
+        sql<number | null>`AVG(pool_hashrate_ph_avg_24h)`.as('pool_hashrate_ph_avg_24h'),
+        sql<number | null>`AVG(pool_hashrate_ph_avg_7d)`.as('pool_hashrate_ph_avg_7d'),
       ])
       .where('tick_at', '>=', sinceMs)
       .groupBy(sql`tick_at / ${sql.lit(bucketMs)}`)
@@ -553,6 +569,29 @@ export class TickMetricsRepo {
       // matters; source is only metadata).
       source: row.btc_usd_price_source ?? 'unknown',
     };
+  }
+
+  /**
+   * Trailing simple-mean of `pool_hashrate_ph` over the window
+   * `(sinceMs, nowMs]`. Returns `null` if no row in the window has
+   * a non-null `pool_hashrate_ph` (fresh install, persistent Ocean
+   * outage, etc).
+   *
+   * Used by observe() to snapshot the 24h / 7d averages onto each
+   * tick row so the chart's pool-luck calc can use a denominator
+   * window that matches its numerator window. AVG over the
+   * raw column rather than a window function: SQLite handles a
+   * filtered AVG efficiently (the table is indexed on tick_at) and
+   * we don't need per-row precision - just the window aggregate.
+   */
+  async avgPoolHashratePhSince(sinceMs: number): Promise<number | null> {
+    const row = await this.db
+      .selectFrom('tick_metrics')
+      .select(sql<number | null>`AVG(pool_hashrate_ph)`.as('avg'))
+      .where('tick_at', '>=', sinceMs)
+      .where('pool_hashrate_ph', 'is not', null)
+      .executeTakeFirst();
+    return row?.avg ?? null;
   }
 
   async pruneOlderThan(cutoffMs: number): Promise<void> {

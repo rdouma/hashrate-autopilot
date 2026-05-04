@@ -289,7 +289,7 @@ export const HashrateChart = memo(function HashrateChart({
             values: points.map((p) => p.share_log_pct),
             formatTick: (v) => `${v.toFixed(4)}%`,
             axisLabel: '% of Ocean',
-            stroke: '#ec4899',
+            stroke: '#cbd5e1',
           };
         case 'network_difficulty':
           return {
@@ -302,7 +302,7 @@ export const HashrateChart = memo(function HashrateChart({
                 maximumFractionDigits: 2,
               })} T`,
             axisLabel: 'difficulty',
-            stroke: '#ec4899',
+            stroke: '#cbd5e1',
           };
         case 'pool_hashrate':
           return {
@@ -317,51 +317,48 @@ export const HashrateChart = memo(function HashrateChart({
               return formatCompactNumber(v * factor, intlLocale);
             },
             axisLabel: `pool ${denomination.hashrateSuffix}`,
-            stroke: '#ec4899',
+            stroke: '#cbd5e1',
           };
         case 'pool_luck_24h':
         case 'pool_luck_7d': {
-          // #92: per-tick pool luck against the network-share
-          // expectation. expected_blocks = (pool_share_of_network) ×
-          // 144 × window_days. luck = observed / expected.
+          // Per-tick pool luck against the network-share expectation.
+          // expected_blocks = (pool_share_of_network) × 144 × window_days
+          // luck = observed / expected.
           //
-          // pool_hashrate_ph is now sourced directly from Ocean's
-          // /v1/pool_hashrate endpoint (pool_300s, server-side
-          // 5-min smoothed). A small trailing-window mean here
-          // absorbs the residual minute-to-minute jitter Ocean's
-          // own smoothing leaves behind. Sanity floor still
-          // rejects implausibly small values (< 1 EH/s vs typical
-          // ~25-30 EH/s) so a one-off API hiccup doesn't paint a
-          // luck spike.
+          // The denominator's pool_hashrate is now read from the
+          // matching trailing-Nd average column (`pool_hashrate_ph_avg_24h`
+          // / `_avg_7d`, persisted by observe.ts → migration 0056).
+          // Without this the denominator was a single-tick snapshot
+          // while the numerator was a trailing-Nd block count - a
+          // window mismatch that made luck swing 15-20% over a few
+          // hours when Ocean's pool hashrate drifted (farms cycling).
+          //
+          // Falls back to the per-tick `pool_hashrate_ph` for rows
+          // older than migration 0056 (so historical luck still
+          // renders, just with the old jitter on those rows).
+          //
+          // Sanity floor still rejects implausibly small values
+          // (< 1 EH/s vs typical ~25-30 EH/s) so a transient API
+          // hiccup doesn't paint a luck spike.
           const windowDays = rightAxisSeries === 'pool_luck_24h' ? 1 : 7;
-          const SMOOTH_TICKS = 10; // ~10 minutes; Ocean already pre-smooths
           const MIN_PLAUSIBLE_POOL_PH = 1000; // 1 EH/s
-          const values = points.map((p, i) => {
+          const values = points.map((p) => {
             const count =
               windowDays === 1 ? p.pool_blocks_24h_count : p.pool_blocks_7d_count;
             if (count === null) return null;
             if (p.network_difficulty === null || p.network_difficulty <= 0) return null;
-            // Trailing-window mean of pool_hashrate_ph. Cancels the
-            // single-tick jitter that triggered the original 10x
-            // luck spikes. Skips null entries within the window.
-            const start = Math.max(0, i - SMOOTH_TICKS + 1);
-            let sum = 0;
-            let n = 0;
-            for (let j = start; j <= i; j++) {
-              const v = points[j]?.pool_hashrate_ph;
-              if (v !== null && v !== undefined && Number.isFinite(v) && v > 0) {
-                sum += v;
-                n++;
-              }
-            }
-            if (n === 0) return null;
-            const smoothedPoolPh = sum / n;
-            if (smoothedPoolPh < MIN_PLAUSIBLE_POOL_PH) return null;
+            const trailingAvg =
+              windowDays === 1
+                ? p.pool_hashrate_ph_avg_24h
+                : p.pool_hashrate_ph_avg_7d;
+            const poolPh = trailingAvg ?? p.pool_hashrate_ph;
+            if (poolPh === null || !Number.isFinite(poolPh) || poolPh <= 0) return null;
+            if (poolPh < MIN_PLAUSIBLE_POOL_PH) return null;
             const networkHashratePh =
               (p.network_difficulty * 2 ** 32) / 600 / 1e15;
             if (networkHashratePh <= 0) return null;
             const expected =
-              (smoothedPoolPh / networkHashratePh) * 144 * windowDays;
+              (poolPh / networkHashratePh) * 144 * windowDays;
             if (expected <= 0) return null;
             return count / expected;
           });
@@ -374,7 +371,7 @@ export const HashrateChart = memo(function HashrateChart({
               }).format(v)}×`,
             axisLabel:
               windowDays === 1 ? 'pool luck (24h)' : 'pool luck (7d)',
-            stroke: '#ec4899',
+            stroke: '#cbd5e1',
           };
         }
       }

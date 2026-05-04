@@ -84,6 +84,16 @@ export interface MetricPoint {
   // #92: pool block counts - input to the chart's pool-luck plot.
   readonly pool_blocks_24h_count: number | null;
   readonly pool_blocks_7d_count: number | null;
+  /**
+   * Trailing 24h / 7d mean of pool_hashrate_ph ending at this tick.
+   * Used as the denominator of the chart's matching luck window so
+   * the numerator's window (block count over the same N days) and
+   * the denominator's window line up. Null on rows older than
+   * migration 0056 - the chart falls back to its prior client-side
+   * smoothing on those rows.
+   */
+  readonly pool_hashrate_ph_avg_24h: number | null;
+  readonly pool_hashrate_ph_avg_7d: number | null;
 }
 
 export async function registerMetricsRoute(
@@ -159,6 +169,8 @@ function toMetricPoint(r: {
   ocean_unpaid_sat: number | null;
   pool_blocks_24h_count: number | null;
   pool_blocks_7d_count: number | null;
+  pool_hashrate_ph_avg_24h: number | null;
+  pool_hashrate_ph_avg_7d: number | null;
 }): MetricPoint {
   return {
     tick_at: r.tick_at,
@@ -197,6 +209,8 @@ function toMetricPoint(r: {
     ocean_unpaid_sat: r.ocean_unpaid_sat,
     pool_blocks_24h_count: r.pool_blocks_24h_count,
     pool_blocks_7d_count: r.pool_blocks_7d_count,
+    pool_hashrate_ph_avg_24h: r.pool_hashrate_ph_avg_24h,
+    pool_hashrate_ph_avg_7d: r.pool_hashrate_ph_avg_7d,
   };
 }
 

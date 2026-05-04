@@ -2,6 +2,14 @@
 
 ## 2026-05-03
 
+### `[Fix]` Pool luck denominator window now matches numerator window (#92)
+
+The luck multiplier was wobbling 15-20% over a few hours on a 7d window - far more than a true 7d trailing metric should move. Root cause: window mismatch. The numerator was a trailing-Nd block count (proper 24h or 7d window), but the denominator was the *current tick's* `pool_hashrate_ph` snapshot. When Ocean's pool hashrate drifted (farms cycling, shift changes - normal 10-15% movement over a day) the Poisson expectation moved inversely, contaminating the luck line with noise that had nothing to do with luck. Migration 0056 adds two new persisted columns (`pool_hashrate_ph_avg_24h`, `pool_hashrate_ph_avg_7d`) computed per tick from a windowed `AVG(pool_hashrate_ph)` over the matching trailing period, and the chart's luck calc now uses those instead of the per-tick snapshot. Block-count discreteness (one block aging in/out of the window = ~3% step) remains as the only legitimate motion. Pre-0056 rows fall back to the prior per-tick snapshot so historical luck still renders.
+
+### `[UI]` Right-axis colour switched from pink to slate-300 (#93)
+
+Right-axis pink (#ec4899) sat too close to the Price chart's `max bid` line (red-400, #f87171) - both reading as a similar warm pink/red on the dark slate background. Switched every right-axis series across both charts to a neutral slate-300 (#cbd5e1) - distinct from every existing palette entry, reads naturally as "secondary axis", and doesn't compete for attention with the primary lines.
+
 ### `[UI]` Right-axis tick column aligned across stacked charts (#93)
 
 The Hashrate chart's right-axis ticks sat at `WIDTH - 74`px (80px padding) but the Price chart's were at `WIDTH - 54`px (60px padding) - the columns didn't line up vertically when the two charts are stacked, and the narrower padding put `$79,5k` right up against the rotated "BTC/USD ($)" axis label. Bumped Price chart's right-axis padding to 80 to match the Hashrate chart, so both right-tick columns share the same X coordinate and the rotated label gets breathing room.

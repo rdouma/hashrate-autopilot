@@ -308,6 +308,19 @@ export interface TickMetricsTable {
   pool_blocks_24h_count: number | null;
   /** #92: pool blocks observed in the last 7d at tick time. */
   pool_blocks_7d_count: number | null;
+  /**
+   * Trailing 24h mean of `pool_hashrate_ph` ending at this tick.
+   * Used as the denominator of the 24h luck multiplier so the
+   * window of the numerator (block count over 24h) matches the
+   * window of the denominator. Null on rows older than migration
+   * 0056 and on ticks where the trailing window has no samples.
+   */
+  pool_hashrate_ph_avg_24h: number | null;
+  /**
+   * Trailing 7d mean of `pool_hashrate_ph` ending at this tick.
+   * Same role as the 24h average but for the 7d luck multiplier.
+   */
+  pool_hashrate_ph_avg_7d: number | null;
   run_mode: RunMode;
   action_mode: ActionMode;
 }

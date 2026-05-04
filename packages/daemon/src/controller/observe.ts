@@ -176,6 +176,29 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
   const pool_blocks_7d_count = oceanStats
     ? recent.filter((b) => b.timestamp_ms > 0 && tickAt - b.timestamp_ms < 7 * DAY_MS).length
     : null;
+  // Trailing pool-hashrate averages over the same windows as the
+  // block counts above. Stored on the tick row so the chart's luck
+  // calc has a denominator with matching window semantics; without
+  // this the denominator was a single-tick snapshot of a value that
+  // routinely drifts 10-15% over the day, contaminating the luck
+  // line with noise that has nothing to do with actual luck. The
+  // queries hit the same `tick_metrics` rows being written to, so
+  // they're cheap (indexed on tick_at) and degrade to null on a
+  // brand-new install before any history exists.
+  const [pool_hashrate_ph_avg_24h, pool_hashrate_ph_avg_7d] = await Promise.all([
+    deps.tickMetricsRepo
+      .avgPoolHashratePhSince(tickAt - DAY_MS)
+      .catch((err) => {
+        logAndReturnNull('pool_hashrate_ph_avg_24h', err);
+        return null;
+      }),
+    deps.tickMetricsRepo
+      .avgPoolHashratePhSince(tickAt - 7 * DAY_MS)
+      .catch((err) => {
+        logAndReturnNull('pool_hashrate_ph_avg_7d', err);
+        return null;
+      }),
+  ]);
   const balanceAccount = balance?.accounts?.[0];
   const braiins_total_deposited_sat =
     typeof balanceAccount?.total_deposited_sat === 'number'
@@ -349,6 +372,8 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
     btc_usd_price_source,
     pool_blocks_24h_count,
     pool_blocks_7d_count,
+    pool_hashrate_ph_avg_24h,
+    pool_hashrate_ph_avg_7d,
     last_api_ok_at: deps.braiins.getLastApiOkAt(),
     hashprice_sat_per_ph_day: inputs.hashpriceSatPerPhDay,
     fillable_ask_sat_per_eh_day,

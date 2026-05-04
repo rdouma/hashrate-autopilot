@@ -173,6 +173,16 @@ export interface State {
   /** #92: pool block counts at this tick - input to the chart's pool-luck plot. Null when Ocean is unreachable. */
   readonly pool_blocks_24h_count: number | null;
   readonly pool_blocks_7d_count: number | null;
+  /**
+   * Trailing 24h / 7d mean of `pool_hashrate_ph` ending at this
+   * tick. Denominator for the matching pool-luck window so the
+   * numerator's trailing-Nd block count and the denominator's
+   * trailing-Nd hashrate average have the same window semantics.
+   * Null on fresh installs (no history) or when no row in the
+   * window has a non-null pool_hashrate_ph.
+   */
+  readonly pool_hashrate_ph_avg_24h: number | null;
+  readonly pool_hashrate_ph_avg_7d: number | null;
 
   /** Last successful API read timestamp (ms). */
   readonly last_api_ok_at: number | null;

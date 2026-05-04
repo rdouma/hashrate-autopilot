@@ -148,6 +148,14 @@ export interface MetricPoint {
   ocean_unpaid_sat: number | null;
   pool_blocks_24h_count: number | null;
   pool_blocks_7d_count: number | null;
+  /**
+   * Trailing 24h / 7d mean of `pool_hashrate_ph` ending at this
+   * tick. Used by the chart's pool-luck calc as a window-matched
+   * denominator (numerator is the matching trailing-Nd block count).
+   * Null on rows older than migration 0056.
+   */
+  pool_hashrate_ph_avg_24h: number | null;
+  pool_hashrate_ph_avg_7d: number | null;
 }
 
 export interface BidEventView {
