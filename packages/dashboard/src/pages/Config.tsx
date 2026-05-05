@@ -1209,55 +1209,129 @@ function PayoutSourceSection({
           </div>
         )}
 
-        {/* Bitcoin Core RPC fields */}
-        {source === 'bitcoind' && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 pt-1">
-            <label className="block sm:col-span-2">
-              <span className="block text-sm text-slate-300 mb-1">
-                <Trans>Bitcoin Core RPC URL</Trans>
-              </span>
-              <input
-                type="text"
-                value={draft.bitcoind_rpc_url ?? ''}
-                onChange={(e) => onChange('bitcoind_rpc_url', e.target.value as never)}
-                className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm font-mono"
-              />
-              <span className="block text-xs text-slate-500 mt-1">
-                <Trans>e.g. http://192.168.1.121:8332 — your Bitcoin Core RPC endpoint.</Trans>
-              </span>
-            </label>
-            <label className="block">
-              <span className="block text-sm text-slate-300 mb-1">
-                <Trans>RPC username</Trans>
-              </span>
-              <input
-                type="text"
-                value={draft.bitcoind_rpc_user ?? ''}
-                onChange={(e) => onChange('bitcoind_rpc_user', e.target.value as never)}
-                className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm font-mono"
-              />
-              <span className="block text-xs text-slate-500 mt-1">
-                <Trans>RPC username from your bitcoin.conf.</Trans>
-              </span>
-            </label>
-            <label className="block">
-              <span className="block text-sm text-slate-300 mb-1">
-                <Trans>RPC password</Trans>
-              </span>
-              <input
-                type="password"
-                value={draft.bitcoind_rpc_password ?? ''}
-                onChange={(e) => onChange('bitcoind_rpc_password', e.target.value as never)}
-                className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm font-mono"
-              />
-              <span className="block text-xs text-slate-500 mt-1">
-                <Trans>RPC password — stored in the config database, not in logs.</Trans>
-              </span>
-            </label>
-          </div>
-        )}
+        {/* Bitcoin Core RPC fields — always shown, not gated on the
+            balance-check radio. These creds drive THREE features and
+            only one of them is on-chain payouts: the BIP 110 crown
+            marker on the Hashrate chart (#94) and the BIP 110 scan
+            card on Status (#95) both call bitcoind even when Electrs
+            is the selected payout backend. Hiding the fields when
+            payout != bitcoind made the operator think BIP 110 was
+            broken because the values that the scanner used were the
+            saved (potentially stale) ones, with no UI to type fresh
+            values into. */}
+        <BitcoindRpcFields draft={draft} onChange={onChange} />
       </div>
     </section>
+  );
+}
+
+function BitcoindRpcFields({
+  draft,
+  onChange,
+}: {
+  draft: AppConfig;
+  onChange: <K extends keyof AppConfig>(k: K, v: AppConfig[K]) => void;
+}) {
+  const { i18n } = useLingui();
+  void i18n;
+
+  const test = useMutation({
+    mutationFn: () =>
+      api.bitcoindTest({
+        url: draft.bitcoind_rpc_url ?? '',
+        user: draft.bitcoind_rpc_user ?? '',
+        password: draft.bitcoind_rpc_password ?? '',
+      }),
+  });
+
+  return (
+    <div className="pt-3 border-t border-slate-800 space-y-3">
+      <header>
+        <h4 className="text-xs uppercase tracking-wider text-slate-400">
+          <Trans>Bitcoin Core RPC connection</Trans>
+        </h4>
+        <p className="text-xs text-slate-500 mt-1">
+          <Trans>
+            Used by the on-chain payout balance check (when "Bitcoin Core RPC" is
+            selected as the backend above), AND by the BIP 110 crown marker on the
+            Hashrate chart and the BIP 110 scan card on Status — those last two
+            call bitcoind regardless of which payout backend is selected. The Test
+            button below validates the values currently in the form, before saving.
+          </Trans>
+        </p>
+      </header>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+        <label className="block sm:col-span-2">
+          <span className="block text-sm text-slate-300 mb-1">
+            <Trans>Bitcoin Core RPC URL</Trans>
+          </span>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={draft.bitcoind_rpc_url ?? ''}
+              onChange={(e) => onChange('bitcoind_rpc_url', e.target.value as never)}
+              className="flex-1 bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm font-mono"
+            />
+            <button
+              type="button"
+              onClick={() => test.mutate()}
+              disabled={test.isPending}
+              className="px-3 py-1.5 text-sm rounded bg-amber-400 text-slate-900 font-medium hover:bg-amber-300 disabled:opacity-50 whitespace-nowrap"
+            >
+              {test.isPending ? <Trans>Testing…</Trans> : <Trans>Test connection</Trans>}
+            </button>
+          </div>
+          <span className="block text-xs text-slate-500 mt-1">
+            <Trans>e.g. http://192.168.1.121:8332 — your Bitcoin Core RPC endpoint.</Trans>
+          </span>
+          {test.data && test.data.ok && (
+            <div className="mt-2 text-xs text-emerald-300 font-mono">
+              <Trans>OK</Trans> · {test.data.chain ?? '?'} ·{' '}
+              <Trans>blocks</Trans> {test.data.blocks?.toLocaleString() ?? '-'} ·{' '}
+              <Trans>headers</Trans> {test.data.headers?.toLocaleString() ?? '-'}
+            </div>
+          )}
+          {test.data && !test.data.ok && (
+            <div className="mt-2 text-xs text-red-400 font-mono break-words">
+              {test.data.error}
+            </div>
+          )}
+          {test.isError && (
+            <div className="mt-2 text-xs text-red-400 font-mono break-words">
+              {(test.error as Error).message}
+            </div>
+          )}
+        </label>
+        <label className="block">
+          <span className="block text-sm text-slate-300 mb-1">
+            <Trans>RPC username</Trans>
+          </span>
+          <input
+            type="text"
+            value={draft.bitcoind_rpc_user ?? ''}
+            onChange={(e) => onChange('bitcoind_rpc_user', e.target.value as never)}
+            className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm font-mono"
+          />
+          <span className="block text-xs text-slate-500 mt-1">
+            <Trans>RPC username from your bitcoin.conf.</Trans>
+          </span>
+        </label>
+        <label className="block">
+          <span className="block text-sm text-slate-300 mb-1">
+            <Trans>RPC password</Trans>
+          </span>
+          <input
+            type="password"
+            value={draft.bitcoind_rpc_password ?? ''}
+            onChange={(e) => onChange('bitcoind_rpc_password', e.target.value as never)}
+            className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm font-mono"
+          />
+          <span className="block text-xs text-slate-500 mt-1">
+            <Trans>RPC password — stored in the config database, not in logs.</Trans>
+          </span>
+        </label>
+      </div>
+    </div>
   );
 }
 

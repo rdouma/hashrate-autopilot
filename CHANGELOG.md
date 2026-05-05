@@ -2,6 +2,10 @@
 
 ## 2026-05-05
 
+### `[Feature]` Bitcoin Core RPC test button + always-visible RPC fields on Config
+
+The "Bitcoin Core RPC URL / username / password" fields used to live behind the `payout_source = 'bitcoind'` radio, hidden when the operator picked Electrs as the balance-check backend. But those same creds also drive the BIP 110 crown marker (#94) and BIP 110 scan card (#95), which call bitcoind regardless of which payout backend is selected. Hiding the fields made the BIP 110 scanner look broken — the scanner used the saved (potentially stale) values while the operator was typing fresh ones into a form they couldn't see. The fields now always render in their own "Bitcoin Core RPC connection" subsection with help text explaining the multi-feature use, and a new **Test connection** button next to the URL field validates whatever values are currently in the form (before saving) by calling `getblockchaininfo` against them. Returns chain/blocks/headers on success, or the same `ENOTFOUND` / `ECONNREFUSED` / target-URL diagnostic the BIP 110 scanner uses on failure. en/nl/es catalogs updated.
+
 ### `[Fix]` BIP 110 scan now reports concrete network errors, not "fetch failed"
 
 The scanner card was surfacing Node's umbrella `fetch failed` message when the daemon couldn't reach bitcoind RPC, which gives the operator no way to tell whether it's DNS, connection refused, timeout, or wrong port. The bitcoind client now extracts `.cause.code` (e.g. `ENOTFOUND`, `ECONNREFUSED`, `ETIMEDOUT`) and includes the target URL (with userinfo stripped) in the error string, so the dashboard message reads `bitcoind RPC getblockchaininfo: fetch failed (ENOTFOUND) - target http://alkimia.mynetgear.com:8332/`. Same diagnostic also flows into the payout-observer logs and any other bitcoind RPC error path.

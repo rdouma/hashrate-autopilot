@@ -393,6 +393,10 @@ msgid "Bitcoin Core RPC ({0})"
 msgstr "Bitcoin Core RPC ({0})"
 
 #: src/pages/Config.tsx
+msgid "Bitcoin Core RPC connection"
+msgstr "Conexión RPC de Bitcoin Core"
+
+#: src/pages/Config.tsx
 msgid "Bitcoin Core RPC URL"
 msgstr "URL del RPC de Bitcoin Core"
 
@@ -425,6 +429,7 @@ msgid "blocked"
 msgstr "bloqueado"
 
 #: src/components/Bip110ScanCard.tsx
+#: src/pages/Config.tsx
 msgid "blocks"
 msgstr "bloques"
 
@@ -1064,6 +1069,10 @@ msgstr "Hashrate que Ocean acredita a nuestra dirección de pago (ventana desliz
 msgid "Hashrate targets"
 msgstr "Objetivos de hashrate"
 
+#: src/pages/Config.tsx
+msgid "headers"
+msgstr "encabezados"
+
 #: src/components/Bip110ScanCard.tsx
 msgid "height"
 msgstr "altura"
@@ -1445,6 +1454,10 @@ msgstr "Desactivado por defecto. La línea esmeralda de tasa efectiva (lo que Br
 #: src/pages/Config.tsx
 msgid "Off by default. When enabled, the Hashrate chart renders our share of Ocean's TIDES window (share_log %) as a violet line on a right-side Y-axis labelled \"% of Ocean\", formatted to 4 decimals. Useful for tracking how our slice of the pool drifts as Ocean's total hashrate grows or our delivered PH/s fluctuates. The controller does not read this signal — display only."
 msgstr "Desactivado por defecto. Cuando está activo, el gráfico de hashrate muestra nuestra parte de la ventana TIDES de Ocean (share_log %) como una línea violeta en un eje Y derecho etiquetado \"% de Ocean\", con 4 decimales. Útil para seguir cómo nuestra porción del pool varía a medida que el hashrate total de Ocean crece o nuestra PH/s entregada fluctúa. El controlador no lee esta señal - solo visualización."
+
+#: src/pages/Config.tsx
+msgid "OK"
+msgstr "OK"
 
 #: src/pages/Status.tsx
 msgid "On target - bid at fillable + overpay."
@@ -2007,8 +2020,16 @@ msgid "TCP probe of the Datum gateway's stratum port."
 msgstr "Sondeo TCP al puerto stratum del gateway Datum."
 
 #: src/pages/Config.tsx
+msgid "Test connection"
+msgstr "Probar conexión"
+
+#: src/pages/Config.tsx
 msgid "Test sound"
 msgstr "Probar sonido"
+
+#: src/pages/Config.tsx
+msgid "Testing…"
+msgstr "Probando…"
 
 #: src/pages/Config.tsx
 msgid "The bid tracks the cheapest ask with enough depth for your target, plus a small premium. Two hard ceilings sit above that so the premium can never run away. Entered in sat/PH/day."
@@ -2113,6 +2134,10 @@ msgstr "uptime"
 #: src/pages/Config.tsx
 msgid "URL template"
 msgstr "Plantilla de URL"
+
+#: src/pages/Config.tsx
+msgid "Used by the on-chain payout balance check (when \"Bitcoin Core RPC\" is selected as the backend above), AND by the BIP 110 crown marker on the Hashrate chart and the BIP 110 scan card on Status — those last two call bitcoind regardless of which payout backend is selected. The Test button below validates the values currently in the form, before saving."
+msgstr "Se usa para la comprobación on-chain del saldo de pagos (cuando se selecciona arriba \"Bitcoin Core RPC\" como backend) Y para el marcador de corona BIP 110 en el gráfico de hashrate y la tarjeta de escaneo BIP 110 en Status — esos dos últimos llaman a bitcoind independientemente del backend de pagos seleccionado. El botón Probar de abajo valida los valores actualmente en el formulario, antes de guardar."
 
 #: src/pages/Config.tsx
 msgid "Used for click-through from the Ocean panel's \"last pool block\" row and the block-marker tooltips on the Hashrate chart. `{hash}` and `{height}` placeholders are substituted."

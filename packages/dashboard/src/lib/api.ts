@@ -449,6 +449,11 @@ export const api = {
   btcPrice: () => request<BtcPriceResponse>('/api/btc-price'),
   bip110Scan: (blocks: number) =>
     request<Bip110ScanResponse>(`/api/bip110/scan?blocks=${encodeURIComponent(String(blocks))}`),
+  bitcoindTest: (creds: { url: string; user: string; password: string }) =>
+    request<BitcoindTestResponse>('/api/bitcoind/test', {
+      method: 'POST',
+      body: JSON.stringify(creds),
+    }),
   finance: () => request<FinanceResponse>('/api/finance'),
   financeRange: (range: ChartRange) =>
     request<FinanceRangeResponse>(
@@ -544,6 +549,15 @@ export interface Bip110ScanResponse {
   deployment: Bip110ScanDeployment | null;
   signaling_blocks: Bip110ScanSignalingBlock[];
   error: string | null;
+}
+
+export interface BitcoindTestResponse {
+  ok: boolean;
+  chain?: string | null;
+  blocks?: number | null;
+  headers?: number | null;
+  best_block_hash?: string | null;
+  error?: string | null;
 }
 
 export interface FinanceRangeResponse {
