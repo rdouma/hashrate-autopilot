@@ -216,4 +216,21 @@ export class PayoutObserver {
   getLastError(): string | null {
     return this.lastError;
   }
+
+  /**
+   * State machine for the dashboard's `collected (on-chain)` row (#97):
+   * - 'computing' — observer is enabled but the first scan has not yet
+   *   produced a snapshot. Either the very first scan is in flight, or
+   *   the previous attempt errored before any snapshot existed. Renders
+   *   as a spinner instead of the em-dash that confused the operator
+   *   into thinking the integration was broken.
+   * - 'ready'     — at least one scan has produced a snapshot. The
+   *   `collected_sat` value the route returns reflects that snapshot.
+   *
+   * `idle` (observer disabled / not configured) is detected by the
+   * route from `payoutObserver === null`, not from this method.
+   */
+  getCollectedStatus(): 'computing' | 'ready' {
+    return this.lastSnapshot ? 'ready' : 'computing';
+  }
 }

@@ -2,6 +2,10 @@
 
 ## 2026-05-05
 
+### `[Fix]` 'collected (on-chain)' shows a spinner while the first scan is in flight (#97)
+
+Right after a daemon restart the Lifetime P&L panel's `collected (on-chain)` row used to flicker as an em-dash before the payout observer's first scan settled, which the operator (correctly) read as "this integration looks broken." The route now distinguishes three states — `computing` (observer enabled, no snapshot yet), `ready` (snapshot exists), `idle` (observer disabled / not configured) — and the dashboard renders a small inline spinner during `computing` instead of the em-dash. The em-dash stays for `idle` (with the existing "not configured" tooltip) so misconfiguration is still obvious. en/nl/es catalogs updated.
+
 ### `[Fix]` Sweep stale `.toFixed()` and `.toLocaleString()` calls so every display number respects the configured locale
 
 Operator caught the inconsistency: hero `UPTIME 98.6%` rendered with `.` while `AVG BRAIINS 2,88` rendered with `,` — first one was `uptime_pct.toFixed(1)` (locale-blind, always dot decimal), the second was the locale-aware path. Same shape in five other places: runway-days fractional part, share_log percent on the OCEAN panel, BidProgress percent, share_log right-axis tick formatter on the Hashrate chart, the share_log row in block tooltips, and the Setup wizard's `n.toLocaleString()` PH/sat labels (defaults to browser locale rather than the dashboard's display-locale setting). All seven now go through `formatNumber(...intlLocale)` or `new Intl.NumberFormat(intlLocale, ...)` and respect the locale picker on Config. SVG path coordinates and CSS percent widths still use `.toFixed()` — those have to be locale-blind by spec.

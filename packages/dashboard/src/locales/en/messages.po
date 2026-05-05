@@ -38,7 +38,7 @@ msgstr "(avg cost / hashrate delivered) minus the delta-weighted average hashpri
 msgid "(cheap mode)"
 msgstr "(cheap mode)"
 
-#. placeholder {0}: n.toLocaleString()
+#. placeholder {0}: formatNumber(n, {}, intlLocale)
 #: src/pages/Setup.tsx
 msgid "{0} sat/PH/day (default — tunable later)"
 msgstr "{0} sat/PH/day (default — tunable later)"
@@ -600,6 +600,10 @@ msgstr "Compact numeric time series — one row per tick (~1,440/day) with hashr
 #: src/pages/Setup.tsx
 msgid "Complete setup"
 msgstr "Complete setup"
+
+#: src/pages/Status.tsx
+msgid "computing…"
+msgstr "computing…"
 
 #: src/components/Layout.tsx
 msgid "Config"
@@ -1575,6 +1579,10 @@ msgstr "Paused - no bids will be placed or edited until run mode changes."
 #: src/pages/Setup.tsx
 msgid "Payout address"
 msgstr "Payout address"
+
+#: src/pages/Status.tsx
+msgid "Payout observer is starting up. Waiting for the first balance scan to complete — usually a few seconds with Electrs, up to a minute with bitcoind scantxoutset."
+msgstr "Payout observer is starting up. Waiting for the first balance scan to complete — usually a few seconds with Electrs, up to a minute with bitcoind scantxoutset."
 
 #: src/pages/Setup.tsx
 msgid "Payout tracking"

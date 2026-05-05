@@ -2234,10 +2234,13 @@ function FinancePanel({
           sign="plus"
           label={t`collected (on-chain)`}
           value={data.collected_sat}
+          status={data.collected_status}
           tooltip={
-            data.collected_sat !== null
-              ? t`UTXOs at the configured payout address. Read via Electrs (preferred, instant) or bitcoind RPC (slower).`
-              : t`Not configured. Go to Config → On-chain payouts and select Electrs or Bitcoin Core RPC to track your on-chain balance. The net line treats missing collected as 0 so the arithmetic still reads — a blank row here is the hint that a piece of the income side isn't wired up.`
+            data.collected_status === 'computing'
+              ? t`Payout observer is starting up. Waiting for the first balance scan to complete — usually a few seconds with Electrs, up to a minute with bitcoind scantxoutset.`
+              : data.collected_sat !== null
+                ? t`UTXOs at the configured payout address. Read via Electrs (preferred, instant) or bitcoind RPC (slower).`
+                : t`Not configured. Go to Config → On-chain payouts and select Electrs or Bitcoin Core RPC to track your on-chain balance. The net line treats missing collected as 0 so the arithmetic still reads — a blank row here is the hint that a piece of the income side isn't wired up.`
           }
         />
 
@@ -2270,6 +2273,7 @@ function FinanceRow({
   tooltip,
   valueClass = 'text-slate-100',
   sign,
+  status,
 }: {
   label: string;
   value: number | null;
@@ -2278,6 +2282,13 @@ function FinanceRow({
   /** Leading arithmetic sign. Turns the panel into a readable sum
    *  rather than a dictionary of unrelated figures. */
   sign?: 'plus' | 'minus' | 'equals';
+  /**
+   * #97 — when 'computing', renders a small inline spinner instead of
+   * the standard em-dash so the operator does not mistake "first scan
+   * still in flight after a daemon restart" for "this integration is
+   * broken". Only the collected (on-chain) row currently passes this.
+   */
+  status?: 'computing' | 'ready' | 'idle';
 }) {
   const { intlLocale } = useLocale();
   const denomination = useDenomination();
@@ -2308,7 +2319,15 @@ function FinanceRow({
         <span className="text-slate-400 flex-1">{label}</span>
         <span className={`font-mono ${valueClass}`}>
           {value === null ? (
-            '\u2014'
+            status === 'computing' ? (
+              <span
+                className="inline-block w-3 h-3 align-middle rounded-full border-2 border-slate-600 border-t-slate-300 animate-spin"
+                aria-label={t`computing\u2026`}
+                role="status"
+              />
+            ) : (
+              '\u2014'
+            )
           ) : split ? (
             <>
               {split.num}

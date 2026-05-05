@@ -592,6 +592,8 @@ export interface FinanceResponse {
   spent_closed_sat: number | null;
   spent_active_sat: number | null;
   collected_sat: number | null;
+  /** #97 — distinguishes "first scan still running" (computing) from "0 sat collected" (ready) from "observer disabled" (idle). */
+  collected_status: 'computing' | 'ready' | 'idle';
   expected_sat: number | null;
   net_sat: number | null;
   ocean: {

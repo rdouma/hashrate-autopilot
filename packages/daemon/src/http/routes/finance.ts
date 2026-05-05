@@ -65,6 +65,19 @@ export interface FinanceResponse {
   readonly spent_closed_sat: number | null;
   readonly spent_active_sat: number | null;
   readonly collected_sat: number | null;
+  /**
+   * #97 — disambiguates the three states `collected_sat: null` collapses
+   * into for the dashboard:
+   * - 'computing' — payout observer is enabled but the first scan has
+   *   not yet produced a snapshot. Dashboard renders a spinner so the
+   *   operator does not see a blank em-dash mid-startup.
+   * - 'ready'     — observer has produced a snapshot; `collected_sat`
+   *   reflects it.
+   * - 'idle'      — observer is disabled (`payout_source = 'none'` or
+   *   missing creds). Dashboard renders the existing "not configured"
+   *   tooltip on the em-dash.
+   */
+  readonly collected_status: 'computing' | 'ready' | 'idle';
   readonly expected_sat: number | null;
   readonly net_sat: number | null;
   readonly ocean: {
@@ -229,6 +242,9 @@ export async function registerFinanceRoute(
     }
 
     const collected_sat = deps.payoutObserver?.getLastSnapshot()?.total_unspent_sat ?? null;
+    const collected_status: 'computing' | 'ready' | 'idle' = !deps.payoutObserver
+      ? 'idle'
+      : deps.payoutObserver.getCollectedStatus();
 
     let oceanStats: Awaited<ReturnType<OceanClient['fetchStats']>> | null = null;
     if (deps.oceanClient && config?.btc_payout_address) {
@@ -260,6 +276,7 @@ export async function registerFinanceRoute(
       spent_closed_sat,
       spent_active_sat,
       collected_sat,
+      collected_status,
       expected_sat,
       net_sat,
       ocean: oceanStats

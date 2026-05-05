@@ -38,7 +38,7 @@ msgstr ""
 msgid "(cheap mode)"
 msgstr "(modo barato)"
 
-#. placeholder {0}: n.toLocaleString()
+#. placeholder {0}: formatNumber(n, {}, intlLocale)
 #: src/pages/Setup.tsx
 msgid "{0} sat/PH/day (default — tunable later)"
 msgstr "{0} sat/PH/día (predeterminado - ajustable después)"
@@ -600,6 +600,10 @@ msgstr "Serie temporal numérica compacta — una fila por tick (~1.440/día) co
 #: src/pages/Setup.tsx
 msgid "Complete setup"
 msgstr "Completar configuración"
+
+#: src/pages/Status.tsx
+msgid "computing…"
+msgstr "calculando…"
 
 #: src/components/Layout.tsx
 msgid "Config"
@@ -1575,6 +1579,10 @@ msgstr "Pausado - no se colocarán ni editarán ofertas hasta que cambie el modo
 #: src/pages/Setup.tsx
 msgid "Payout address"
 msgstr "Dirección de pago"
+
+#: src/pages/Status.tsx
+msgid "Payout observer is starting up. Waiting for the first balance scan to complete — usually a few seconds with Electrs, up to a minute with bitcoind scantxoutset."
+msgstr "El observador de pagos está iniciando. Esperando a que finalice el primer escaneo de saldo — normalmente unos segundos con Electrs, hasta un minuto con bitcoind scantxoutset."
 
 #: src/pages/Setup.tsx
 msgid "Payout tracking"
