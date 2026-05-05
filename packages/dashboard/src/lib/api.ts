@@ -595,6 +595,14 @@ export interface OceanResponse {
   } | null;
   blocks_24h: number;
   blocks_7d: number;
+  /**
+   * Pool luck multipliers (24h / 7d) computed daemon-side using the
+   * same formula as the chart's right axis. Reading is consistent
+   * across panel and chart at the moment of every find. Null when
+   * any input is unavailable.
+   */
+  pool_luck_24h: number | null;
+  pool_luck_7d: number | null;
   recent_blocks: OceanBlockView[];
   our_recent_blocks: OurBlockMarker[];
   pool: {

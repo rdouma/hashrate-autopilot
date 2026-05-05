@@ -2,6 +2,10 @@
 
 ## 2026-05-04
 
+### `[Feature]` Pool luck unified across chart and OCEAN panel (#92)
+
+The chart's pool-luck line and the OCEAN panel's "pool blocks 24h/7d" annotation were computing two different "luck" definitions, producing readings that disagreed by ~10× at the same moment. Replaced both with a single shared formula: `luck = count_in_window / (pool_share × (window + elapsed_since_last_block) / 600)`. Properties: at the moment of every find (elapsed=0) the formula reduces to count/expected_for_window, so the panel and chart show the exact same number; between finds the denominator extends with elapsed time, so the chart line decays continuously (capturing the "we were supposed to find something but didn't" pressure); on a find, count jumps +1 and elapsed resets to 0, producing a visible step up. Computed daemon-side once and exposed via both `/api/metrics` (chart history) and `/api/ocean` (panel live value), so there's a single source of truth in `services/pool-luck.ts`.
+
 ### `[Feature]` Pool luck switched to gap-based formula (#92)
 
 The previous "blocks_in_window / poisson_expected" luck formula moved only in discrete +/-1 steps regardless of elapsed time, because the numerator was an integer block count over a fixed 24h/7d window. The operator's intuition was that luck should decay continuously between finds and jump on each find ("just after a block: very lucky; long time without a block: getting unluckier"). Now matches that intuition exactly: `luck = (600 / pool_share) / time_since_last_pool_block`. Decays as 1/t between finds, jumps on each find, reads exactly 1.0× when elapsed equals the expected block gap (~4h for ~6 blocks/day Ocean), drops below 1× when we go longer than expected without a find. "Two blocks 20 min apart" reads as ~12× lucky in the gap before the 2nd find. Capped at 10× to keep the chart readable. Computed daemon-side per tick (migration 0057 adds `pool_luck_24h` / `pool_luck_7d` columns) so chart and OCEAN panel can read the same value. The 24h/7d distinction kicks in only when no pool block has landed in the shorter window.

@@ -19,6 +19,7 @@ import { cheapestAskForDepth } from './orderbook.js';
 import type { BraiinsService } from '../services/braiins-service.js';
 import type { DatumPoller } from '../services/datum.js';
 import type { OceanClient } from '../services/ocean.js';
+import { computePoolLuck } from '../services/pool-luck.js';
 import {
   PoolHealthTracker,
   parsePoolUrl,
@@ -199,54 +200,32 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
         return null;
       }),
   ]);
-  // Gap-based pool luck. For each window (24h / 7d) we take the gap
-  // between the tick time and the most recent pool block within that
-  // window, and divide the expected pool-block gap by it:
-  //
-  //   luck = expected_gap / time_since_last_block
-  //   expected_gap = 600 / pool_share          (600 = 10 min/block)
-  //   pool_share = pool_hashrate_avg / network_hashrate
-  //
-  // - Just after a find: very high (capped via 60s elapsed floor).
-  // - At elapsed == expected_gap: exactly 1.0×.
-  // - Beyond: drops below 1, decays as 1/t.
-  //
-  // Capped at 10× both because beyond that the chart just clips and
-  // because elapsed values under 1 minute have meaningless precision
-  // at our tick cadence. Decoupled from the per-tick `pool_hashrate_ph`
-  // snapshot - the trailing average computed above provides a stable
-  // pool_share so an Ocean hashrate dip doesn't spike luck.
-  const ELAPSED_MIN_MS = 60_000; // 1 minute; bounds luck at 10× given a 4h expected_gap
-  const LUCK_CAP = 10;
-  const computeLuck = (
-    poolHashrateAvgPh: number | null,
-    windowMs: number,
-  ): number | null => {
-    if (!oceanStats || network_difficulty === null || network_difficulty <= 0) return null;
-    if (poolHashrateAvgPh === null || !Number.isFinite(poolHashrateAvgPh) || poolHashrateAvgPh <= 0) return null;
-    const networkHashratePh = (network_difficulty * 2 ** 32) / 600 / 1e15;
-    if (networkHashratePh <= 0) return null;
-    const poolShare = poolHashrateAvgPh / networkHashratePh;
-    if (poolShare <= 0) return null;
-    const expectedGapSec = 600 / poolShare;
-    const windowStart = tickAt - windowMs;
-    let lastBlockMs: number | null = null;
-    for (const b of recent) {
-      if (b.timestamp_ms > 0 && b.timestamp_ms >= windowStart && b.timestamp_ms <= tickAt) {
-        if (lastBlockMs === null || b.timestamp_ms > lastBlockMs) {
-          lastBlockMs = b.timestamp_ms;
-        }
-      }
-    }
-    // No block in window: clamp elapsed at the window length so the
-    // luck reads as catastrophically unlucky but doesn't blow up.
-    const elapsedMs = lastBlockMs === null ? windowMs : Math.max(tickAt - lastBlockMs, ELAPSED_MIN_MS);
-    const elapsedSec = elapsedMs / 1000;
-    if (elapsedSec <= 0) return null;
-    return Math.min(expectedGapSec / elapsedSec, LUCK_CAP);
-  };
-  const pool_luck_24h = computeLuck(pool_hashrate_ph_avg_24h, DAY_MS);
-  const pool_luck_7d = computeLuck(pool_hashrate_ph_avg_7d, 7 * DAY_MS);
+  // Pool luck (24h / 7d). Reads count_in_window / expected, but the
+  // expected denominator extends with elapsed-since-last-block so
+  // the line decays continuously between finds and matches the
+  // OCEAN panel's count-vs-expected reading at the moment of each
+  // find. See `services/pool-luck.ts` for the full derivation.
+  const blockTimestamps = recent.map((b) => b.timestamp_ms);
+  const pool_luck_24h = oceanStats
+    ? computePoolLuck({
+        tickAt,
+        countInWindow: pool_blocks_24h_count,
+        poolHashrateAvgPh: pool_hashrate_ph_avg_24h,
+        networkDifficulty: network_difficulty,
+        windowMs: DAY_MS,
+        recentBlockTimestampsMs: blockTimestamps,
+      })
+    : null;
+  const pool_luck_7d = oceanStats
+    ? computePoolLuck({
+        tickAt,
+        countInWindow: pool_blocks_7d_count,
+        poolHashrateAvgPh: pool_hashrate_ph_avg_7d,
+        networkDifficulty: network_difficulty,
+        windowMs: 7 * DAY_MS,
+        recentBlockTimestampsMs: blockTimestamps,
+      })
+    : null;
   const balanceAccount = balance?.accounts?.[0];
   const braiins_total_deposited_sat =
     typeof balanceAccount?.total_deposited_sat === 'number'

@@ -11,6 +11,7 @@ import type { FastifyInstance } from 'fastify';
 import type { ConfigRepo } from '../../state/repos/config.js';
 import type { TickMetricsRepo } from '../../state/repos/tick_metrics.js';
 import type { OceanClient, OceanBlock, OceanPoolInfo } from '../../services/ocean.js';
+import { computePoolLuck } from '../../services/pool-luck.js';
 
 // Tolerance for joining a pool block to its nearest tick_metrics row.
 // Ticks fire every 30s and pool blocks land ~every 10 min, so any block
@@ -56,6 +57,19 @@ export interface OceanResponse {
   } | null;
   blocks_24h: number;
   blocks_7d: number;
+  /**
+   * Pool luck multipliers (24h / 7d) computed from the same formula
+   * the chart's right-axis pool-luck series uses, so the OCEAN
+   * panel and chart agree at the moment of each pool block. Reads
+   * count_in_window divided by an expected denominator that grows
+   * with elapsed-since-last-block, which:
+   *   - At the moment of a find: equals count / expected_for_window
+   *     (matches the operator's mental model exactly).
+   *   - Between finds: decays continuously as the gap grows.
+   * Null when any input is unavailable. See `services/pool-luck.ts`.
+   */
+  pool_luck_24h: number | null;
+  pool_luck_7d: number | null;
   recent_blocks: readonly OceanBlock[];
   /**
    * Pool blocks to overlay as markers on the Hashrate chart. Under
@@ -103,6 +117,8 @@ export async function registerOceanRoute(
         last_block: null,
         blocks_24h: 0,
         blocks_7d: 0,
+        pool_luck_24h: null,
+        pool_luck_7d: null,
         recent_blocks: [],
         our_recent_blocks: [],
         pool: null,
@@ -119,6 +135,8 @@ export async function registerOceanRoute(
         last_block: null,
         blocks_24h: 0,
         blocks_7d: 0,
+        pool_luck_24h: null,
+        pool_luck_7d: null,
         recent_blocks: [],
         our_recent_blocks: [],
         pool: null,
@@ -134,6 +152,8 @@ export async function registerOceanRoute(
         last_block: null,
         blocks_24h: 0,
         blocks_7d: 0,
+        pool_luck_24h: null,
+        pool_luck_7d: null,
         recent_blocks: [],
         our_recent_blocks: [],
         pool: null,
@@ -152,6 +172,32 @@ export async function registerOceanRoute(
     const blocks_7d = stats.recent_blocks.filter(
       (b) => b.timestamp_ms > 0 && now - b.timestamp_ms < 7 * DAY_MS,
     ).length;
+    // Pool luck readings - same formula the chart's right axis uses,
+    // so panel and chart agree at the moment of every find. Pulls
+    // pool_hashrate from the trailing daemon-side averages stored in
+    // tick_metrics; without those we can fall back to the live pool
+    // hashrate snapshot but it'll wobble a few percent (#92).
+    const blockTimestamps = stats.recent_blocks.map((b) => b.timestamp_ms);
+    const [poolHashrate24h, poolHashrate7d] = await Promise.all([
+      deps.tickMetricsRepo.avgPoolHashratePhSince(now - DAY_MS).catch(() => null),
+      deps.tickMetricsRepo.avgPoolHashratePhSince(now - 7 * DAY_MS).catch(() => null),
+    ]);
+    const pool_luck_24h = computePoolLuck({
+      tickAt: now,
+      countInWindow: blocks_24h,
+      poolHashrateAvgPh: poolHashrate24h ?? stats.pool.pool_hashrate_ph,
+      networkDifficulty: stats.pool.network_difficulty,
+      windowMs: DAY_MS,
+      recentBlockTimestampsMs: blockTimestamps,
+    });
+    const pool_luck_7d = computePoolLuck({
+      tickAt: now,
+      countInWindow: blocks_7d,
+      poolHashrateAvgPh: poolHashrate7d ?? stats.pool.pool_hashrate_ph,
+      networkDifficulty: stats.pool.network_difficulty,
+      windowMs: 7 * DAY_MS,
+      recentBlockTimestampsMs: blockTimestamps,
+    });
     const shareLogAtBlock = await Promise.all(
       stats.recent_blocks.map((b) =>
         b.timestamp_ms > 0
@@ -187,6 +233,8 @@ export async function registerOceanRoute(
         : null,
       blocks_24h,
       blocks_7d,
+      pool_luck_24h,
+      pool_luck_7d,
       recent_blocks: stats.recent_blocks,
       our_recent_blocks,
       pool: stats.pool,

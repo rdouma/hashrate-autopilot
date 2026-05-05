@@ -1635,45 +1635,17 @@ function BraiinsBalances({
 }
 
 /**
- * #92: Ocean pool luck. Compares observed blocks vs the
- * network-share-derived expectation:
- *
- *   network_hashrate_ph = (difficulty × 2^32) / 600 / 1e15
- *   expected_blocks     = (pool_hashrate_ph / network_hashrate_ph)
- *                          × 144 × window_days
- *   luck                = observed / expected
- *
- * Sanity floor on pool_hashrate_ph (< 1 EH/s = data error) so a
- * collapsed estimator doesn't paint a 10x luck spike. The Hashrate
- * chart's pool-luck line uses the same formula with an additional
- * 30-tick trailing average over pool_hashrate_ph for noise
- * tolerance; here on the panel we have just the live snapshot,
- * so we rely on the floor + Ocean's own server-side smoothing.
+ * Render the panel's "pool blocks Nh" row from the daemon-side luck
+ * value (computed in services/pool-luck.ts and surfaced via the
+ * /api/ocean route). Same number the chart's right-axis pool-luck
+ * series plots, so panel and chart agree at the moment of every
+ * find.
  */
-function poolLuckMultiplier(
-  observedBlocks: number,
-  windowDays: number,
-  pool: { network_difficulty: number | null; pool_hashrate_ph: number | null } | null,
-): number | null {
-  if (!pool) return null;
-  if (pool.network_difficulty === null || pool.pool_hashrate_ph === null) return null;
-  if (pool.network_difficulty <= 0 || pool.pool_hashrate_ph <= 0) return null;
-  const MIN_PLAUSIBLE_POOL_PH = 1000; // 1 EH/s
-  if (pool.pool_hashrate_ph < MIN_PLAUSIBLE_POOL_PH) return null;
-  const networkHashratePh = (pool.network_difficulty * 2 ** 32) / 600 / 1e15;
-  if (networkHashratePh <= 0) return null;
-  const expected = (pool.pool_hashrate_ph / networkHashratePh) * 144 * windowDays;
-  if (expected <= 0) return null;
-  return observedBlocks / expected;
-}
-
 function renderPoolBlocksRow(
   count: number,
-  windowDays: number,
-  pool: { network_difficulty: number | null; pool_hashrate_ph: number | null } | null,
+  luck: number | null,
   locale: string | undefined,
 ): string {
-  const luck = poolLuckMultiplier(count, windowDays, pool);
   if (luck === null) return String(count);
   const luckStr = new Intl.NumberFormat(locale, {
     minimumFractionDigits: 2,
@@ -1840,13 +1812,13 @@ function OceanPanel() {
         )}
         <Row
           k={t`pool blocks 24h`}
-          v={renderPoolBlocksRow(o.blocks_24h, 1, o.pool, intlLocale)}
-          tooltip={t`Blocks Ocean found in the last 24h. The 'X.XX\u00d7 lucky/unlucky' annotation compares observed vs the network-share expectation: at Ocean's ~5% share of network hashrate and ~144 blocks/day on the network, the expected count is ~7 blocks/24h. 1.00\u00d7 = exactly that; >1 = lucky; <1 = unlucky. Wide variance is normal at 24h (Poisson \u03c3 is large at this window); the 7d row below is where sustained drift becomes meaningful.`}
+          v={renderPoolBlocksRow(o.blocks_24h, o.pool_luck_24h, intlLocale)}
+          tooltip={t`Blocks Ocean found in the last 24h, with a luck multiplier comparing observed vs expected. Reads exactly count/expected at the moment of every find (e.g. 2 found vs 3.45 expected = 0.58\u00d7); decays continuously between finds (the longer we go without a block, the unluckier we look). At Ocean's ~5% share of network hashrate the expected count is ~7 blocks/24h. Same number the chart's right-axis pool-luck line plots. Wide variance is normal at 24h.`}
         />
         <Row
           k={t`pool blocks 7d`}
-          v={renderPoolBlocksRow(o.blocks_7d, 7, o.pool, intlLocale)}
-          tooltip={t`Blocks Ocean found in the last 7d, with the same network-share luck multiplier. 7d smooths the short-term Poisson variance: a sustained <0.7\u00d7 over a week suggests something structural (lower hashrate share than the estimator implies, or a real upstream issue at Ocean).`}
+          v={renderPoolBlocksRow(o.blocks_7d, o.pool_luck_7d, intlLocale)}
+          tooltip={t`Blocks Ocean found in the last 7d, same formula as the 24h row. 7d smooths the short-term variance: a sustained <0.7\u00d7 over a week suggests something structural (lower hashrate share than the estimator implies, or a real upstream issue at Ocean).`}
         />
       </div>
       {o.pool && (

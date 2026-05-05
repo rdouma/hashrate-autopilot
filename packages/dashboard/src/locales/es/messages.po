@@ -409,12 +409,20 @@ msgid "blocked"
 msgstr "bloqueado"
 
 #: src/pages/Status.tsx
-msgid "Blocks Ocean found in the last 24h. The 'X.XX× lucky/unlucky' annotation compares observed vs the network-share expectation: at Ocean's ~5% share of network hashrate and ~144 blocks/day on the network, the expected count is ~7 blocks/24h. 1.00× = exactly that; >1 = lucky; <1 = unlucky. Wide variance is normal at 24h (Poisson σ is large at this window); the 7d row below is where sustained drift becomes meaningful."
-msgstr "Bloques que Ocean encontró en las últimas 24h. La anotación 'X,XX× con suerte/sin suerte' compara observado vs la expectativa basada en participación de red: con la ~5% de participación de Ocean en el hashrate de la red y ~144 bloques/día en la red, el conteo esperado es ~7 bloques/24h. 1,00× = exactamente eso; >1 = con suerte; <1 = sin suerte. Una varianza amplia es normal a 24h (la σ de Poisson es grande en esta ventana); la fila de 7d abajo es donde la deriva sostenida se vuelve significativa."
+msgid "Blocks Ocean found in the last 24h, with a luck multiplier comparing observed vs expected. Reads exactly count/expected at the moment of every find (e.g. 2 found vs 3.45 expected = 0.58×); decays continuously between finds (the longer we go without a block, the unluckier we look). At Ocean's ~5% share of network hashrate the expected count is ~7 blocks/24h. Same number the chart's right-axis pool-luck line plots. Wide variance is normal at 24h."
+msgstr "Bloques que Ocean encontró en las últimas 24h, con un multiplicador de suerte que compara observado vs esperado. Lee exactamente cuenta/esperado en el momento de cada hallazgo (p. ej. 2 encontrados vs 3,45 esperados = 0,58×); decae continuamente entre hallazgos (cuanto más tiempo pasa sin un bloque, peor suerte parece). Con la cuota ~5% de Ocean del hashrate de red, la cuenta esperada es ~7 bloques/24h. Mismo número que la línea pool-luck del eje derecho del gráfico. Variación amplia es normal a 24h."
 
 #: src/pages/Status.tsx
-msgid "Blocks Ocean found in the last 7d, with the same network-share luck multiplier. 7d smooths the short-term Poisson variance: a sustained <0.7× over a week suggests something structural (lower hashrate share than the estimator implies, or a real upstream issue at Ocean)."
-msgstr "Bloques que Ocean encontró en los últimos 7d, con el mismo multiplicador de suerte basado en participación de red. 7d suaviza la varianza Poisson de corto plazo: un <0,7× sostenido durante una semana sugiere algo estructural (menor porción de hashrate que la implícita por el estimador, o un problema upstream real en Ocean)."
+#~ msgid "Blocks Ocean found in the last 24h. The 'X.XX× lucky/unlucky' annotation compares observed vs the network-share expectation: at Ocean's ~5% share of network hashrate and ~144 blocks/day on the network, the expected count is ~7 blocks/24h. 1.00× = exactly that; >1 = lucky; <1 = unlucky. Wide variance is normal at 24h (Poisson σ is large at this window); the 7d row below is where sustained drift becomes meaningful."
+#~ msgstr "Bloques que Ocean encontró en las últimas 24h. La anotación 'X,XX× con suerte/sin suerte' compara observado vs la expectativa basada en participación de red: con la ~5% de participación de Ocean en el hashrate de la red y ~144 bloques/día en la red, el conteo esperado es ~7 bloques/24h. 1,00× = exactamente eso; >1 = con suerte; <1 = sin suerte. Una varianza amplia es normal a 24h (la σ de Poisson es grande en esta ventana); la fila de 7d abajo es donde la deriva sostenida se vuelve significativa."
+
+#: src/pages/Status.tsx
+msgid "Blocks Ocean found in the last 7d, same formula as the 24h row. 7d smooths the short-term variance: a sustained <0.7× over a week suggests something structural (lower hashrate share than the estimator implies, or a real upstream issue at Ocean)."
+msgstr "Bloques que Ocean encontró en los últimos 7d, misma fórmula que la fila de 24h. 7d suaviza la variación de corto plazo: un sostenido <0,7× durante una semana sugiere algo estructural (menor cuota de hashrate de la que implica el estimador, o un problema real upstream en Ocean)."
+
+#: src/pages/Status.tsx
+#~ msgid "Blocks Ocean found in the last 7d, with the same network-share luck multiplier. 7d smooths the short-term Poisson variance: a sustained <0.7× over a week suggests something structural (lower hashrate share than the estimator implies, or a real upstream issue at Ocean)."
+#~ msgstr "Bloques que Ocean encontró en los últimos 7d, con el mismo multiplicador de suerte basado en participación de red. 7d suaviza la varianza Poisson de corto plazo: un <0,7× sostenido durante una semana sugiere algo estructural (menor porción de hashrate que la implícita por el estimador, o un problema upstream real en Ocean)."
 
 #: src/pages/Config.tsx
 msgid "Boot directly into LIVE. Use only when the autopilot is proven and the box reboots should not interrupt bidding."
