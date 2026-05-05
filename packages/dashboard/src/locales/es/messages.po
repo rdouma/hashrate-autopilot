@@ -993,6 +993,7 @@ msgstr "Hashrate mínimo"
 msgid "Format: <btc-address>.<label>. Ocean TIDES credits shares by the address prefix — anything else routes shares to nobody."
 msgstr "Formato: <dirección-btc>.<etiqueta>. Ocean TIDES acredita shares por el prefijo de la dirección - cualquier otra cosa envía las shares a nadie."
 
+#: src/components/Bip110ScanCard.tsx
 #: src/pages/Status.tsx
 msgid "found"
 msgstr "encontrados"
@@ -1868,8 +1869,8 @@ msgid "Scan failed:"
 msgstr "Escaneo fallido:"
 
 #: src/components/Bip110ScanCard.tsx
-msgid "Scan recent blocks for BIP 110 (Reduced Data Temporary Softfork) signaling. Useful for verifying the crown marker on the hashrate chart against a known list of signaling blocks. Block-level signaling is rare in early adoption (well under 1%), so a 0-result run may simply mean no signaling blocks landed in the window."
-msgstr "Escanea bloques recientes en busca de señalización BIP 110 (Reduced Data Temporary Softfork). Útil para verificar el marcador de corona en el gráfico de hashrate contra una lista conocida de bloques que señalizan. La señalización a nivel de bloque es rara en la adopción temprana (muy por debajo del 1%), así que un resultado vacío puede significar simplemente que no llegó ningún bloque que señalice en la ventana."
+msgid "Scan recent blocks for <0>BIP 110</0> (Reduced Data Temporary Softfork) signaling. Useful for verifying the crown marker on the hashrate chart against a known list of signaling blocks. Block-level signaling is rare in early adoption (well under 1%), so a 0-result run may simply mean no signaling blocks landed in the window."
+msgstr "Escanea bloques recientes en busca de señalización <0>BIP 110</0> (Reduced Data Temporary Softfork). Útil para verificar el marcador de corona en el gráfico de hashrate contra una lista conocida de bloques que señalizan. La señalización a nivel de bloque es rara en la adopción temprana (muy por debajo del 1%), así que un resultado vacío puede significar simplemente que no llegó ningún bloque que señalice en la ventana."
 
 #: src/components/Bip110ScanCard.tsx
 msgid "scanned"
@@ -2056,10 +2057,6 @@ msgstr "Métricas de tick"
 msgid "ticking…"
 msgstr "ejecutando tick…"
 
-#: src/components/Bip110ScanCard.tsx
-msgid "time (UTC)"
-msgstr "hora (UTC)"
-
 #: src/pages/Status.tsx
 msgid "Time since Ocean found its most recent block. Ocean's average block-find interval is the inverse of its share of network: at ~5% network share, ~5-6 hours between blocks on average. A 24h gap is unusual but well within Poisson variance; multi-day droughts suggest something structural."
 msgstr "Tiempo desde que Ocean encontró su bloque más reciente. El intervalo medio de Ocean para encontrar bloques es el inverso de su porción de red: con ~5% de la red, ~5-6 horas entre bloques en promedio. Un hueco de 24h es inusual pero dentro de la varianza de Poisson; sequías de varios días sugieren algo estructural."
@@ -2136,8 +2133,8 @@ msgid "URL template"
 msgstr "Plantilla de URL"
 
 #: src/pages/Config.tsx
-msgid "Used by the on-chain payout balance check (when \"Bitcoin Core RPC\" is selected as the backend above), AND by the BIP 110 crown marker on the Hashrate chart and the BIP 110 scan card on Status — those last two call bitcoind regardless of which payout backend is selected. The Test button below validates the values currently in the form, before saving."
-msgstr "Se usa para la comprobación on-chain del saldo de pagos (cuando se selecciona arriba \"Bitcoin Core RPC\" como backend) Y para el marcador de corona BIP 110 en el gráfico de hashrate y la tarjeta de escaneo BIP 110 en Status — esos dos últimos llaman a bitcoind independientemente del backend de pagos seleccionado. El botón Probar de abajo valida los valores actualmente en el formulario, antes de guardar."
+msgid "Used by the on-chain payout balance check (when \"Bitcoin Core RPC\" is selected as the backend above), AND by the <0>BIP 110</0> crown marker on the Hashrate chart and the BIP 110 scan card on Status — those last two call bitcoind regardless of which payout backend is selected. The Test button below validates the values currently in the form, before saving."
+msgstr "Se usa para la comprobación on-chain del saldo de pagos (cuando se selecciona arriba \"Bitcoin Core RPC\" como backend) Y para el marcador de corona <0>BIP 110</0> en el gráfico de hashrate y la tarjeta de escaneo BIP 110 en Status — esos dos últimos llaman a bitcoind independientemente del backend de pagos seleccionado. El botón Probar de abajo valida los valores actualmente en el formulario, antes de guardar."
 
 #: src/pages/Config.tsx
 msgid "Used for click-through from the Ocean panel's \"last pool block\" row and the block-marker tooltips on the Hashrate chart. `{hash}` and `{height}` placeholders are substituted."

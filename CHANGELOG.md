@@ -2,6 +2,10 @@
 
 ## 2026-05-05
 
+### `[UI]` BIP 110 scan polish — newest-first sort, relative time, configured block-explorer link, bip110.org reference
+
+Three small things on the scan results table: signaling blocks now sort newest-first (was random / insertion order — most useful entries are the recent ones); the time column shows a human-readable relative age (`2d ago`, `27m ago`) with the absolute UTC timestamp on hover, instead of always-UTC; and block-hash links now route through `config.block_explorer_url_template` instead of the hardcoded `mempool.space` (so privacy-conscious operators with their own explorer get used). Also added a link to [bip110.org](https://bip110.org/) in the card description AND in the Config page's Bitcoin Core RPC subsection help text, since that's the canonical spec reference.
+
 ### `[Fix]` BIP 110 scanner now picks up Config edits without a daemon restart
 
 The scanner was using a `BitcoindClient` instance built once at daemon boot from whatever creds were saved at that moment. Saving fresh creds in the form persisted them to SQLite but the in-memory client kept hitting the old URL — operator empirically saved a new working URL, hit Scan, and still got "fetch failed" against the old host. The route now reads the live `config` row at request time (with sops/env secrets as fallback for empty fields) and builds an ephemeral client per scan, so saved Config edits take effect immediately. Same restart-free behavior the Test button already has.

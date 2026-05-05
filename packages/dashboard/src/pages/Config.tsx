@@ -1253,10 +1253,19 @@ function BitcoindRpcFields({
         <p className="text-xs text-slate-500 mt-1">
           <Trans>
             Used by the on-chain payout balance check (when "Bitcoin Core RPC" is
-            selected as the backend above), AND by the BIP 110 crown marker on the
-            Hashrate chart and the BIP 110 scan card on Status — those last two
-            call bitcoind regardless of which payout backend is selected. The Test
-            button below validates the values currently in the form, before saving.
+            selected as the backend above), AND by the{' '}
+            <a
+              href="https://bip110.org/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-amber-400 hover:underline"
+            >
+              BIP 110
+            </a>{' '}
+            crown marker on the Hashrate chart and the BIP 110 scan card on Status
+            — those last two call bitcoind regardless of which payout backend is
+            selected. The Test button below validates the values currently in the
+            form, before saving.
           </Trans>
         </p>
       </header>

@@ -14,16 +14,20 @@
 
 import { Trans, t } from '@lingui/macro';
 import { useLingui } from '@lingui/react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 
 import { api } from '../lib/api';
 import type { Bip110ScanResponse } from '../lib/api';
+import { applyExplorerTemplate } from '../lib/blockExplorer';
+import { formatAge } from '../lib/format';
 
 const WINDOWS = [2016, 4032, 8064] as const;
 type ScanWindow = (typeof WINDOWS)[number];
 
-function formatTime(ms: number): string {
+const BIP110_REFERENCE_URL = 'https://bip110.org/';
+
+function formatTimeUtc(ms: number): string {
   const d = new Date(ms);
   return d.toISOString().replace('T', ' ').slice(0, 16) + 'Z';
 }
@@ -39,11 +43,27 @@ export function Bip110ScanCard(): JSX.Element {
 
   const [window, setWindow] = useState<ScanWindow>(2016);
 
+  // Shares the cached value with the rest of Status — same queryKey used
+  // by Layout / OceanCard / etc — so adding this hook adds zero network
+  // traffic.
+  const configQuery = useQuery({
+    queryKey: ['config'],
+    queryFn: () => api.config(),
+  });
+  const explorerTemplate =
+    configQuery.data?.config?.block_explorer_url_template ??
+    'https://mempool.space/block/{hash}';
+
   const scan = useMutation({
     mutationFn: (blocks: number) => api.bip110Scan(blocks),
   });
 
   const data: Bip110ScanResponse | undefined = scan.data;
+  // Newest blocks first - the tip-most signal is the most relevant for
+  // verifying the crown marker behaviour against current network state.
+  const sortedBlocks = data
+    ? [...data.signaling_blocks].sort((a, b) => b.height - a.height)
+    : [];
 
   return (
     <section className="bg-slate-900 border border-slate-800 rounded-xl p-5 mt-6">
@@ -54,11 +74,19 @@ export function Bip110ScanCard(): JSX.Element {
           </h2>
           <p className="text-xs text-slate-500 mt-1 max-w-2xl">
             <Trans>
-              Scan recent blocks for BIP 110 (Reduced Data Temporary Softfork) signaling.
-              Useful for verifying the crown marker on the hashrate chart against a known
-              list of signaling blocks. Block-level signaling is rare in early adoption
-              (well under 1%), so a 0-result run may simply mean no signaling blocks
-              landed in the window.
+              Scan recent blocks for{' '}
+              <a
+                href={BIP110_REFERENCE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-amber-400 hover:underline"
+              >
+                BIP 110
+              </a>{' '}
+              (Reduced Data Temporary Softfork) signaling. Useful for verifying the crown
+              marker on the hashrate chart against a known list of signaling blocks.
+              Block-level signaling is rare in early adoption (well under 1%), so a
+              0-result run may simply mean no signaling blocks landed in the window.
             </Trans>
           </p>
         </div>
@@ -137,7 +165,7 @@ export function Bip110ScanCard(): JSX.Element {
             </div>
           )}
 
-          {data.signaling_blocks.length === 0 ? (
+          {sortedBlocks.length === 0 ? (
             <p className="mt-4 text-sm text-slate-500">
               <Trans>No signaling blocks in this window.</Trans>
             </p>
@@ -147,20 +175,25 @@ export function Bip110ScanCard(): JSX.Element {
                 <thead>
                   <tr className="text-slate-500 text-left">
                     <th className="pb-2 pr-4 font-normal">{t`height`}</th>
-                    <th className="pb-2 pr-4 font-normal">{t`time (UTC)`}</th>
+                    <th className="pb-2 pr-4 font-normal">{t`found`}</th>
                     <th className="pb-2 pr-4 font-normal">{t`version`}</th>
                     <th className="pb-2 font-normal">{t`block`}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {data.signaling_blocks.map((b) => (
+                  {sortedBlocks.map((b) => (
                     <tr key={b.hash} className="text-slate-300 border-t border-slate-800">
                       <td className="py-1.5 pr-4">{b.height.toLocaleString()}</td>
-                      <td className="py-1.5 pr-4">{formatTime(b.time_ms)}</td>
+                      <td className="py-1.5 pr-4" title={formatTimeUtc(b.time_ms)}>
+                        {formatAge(b.time_ms)}
+                      </td>
                       <td className="py-1.5 pr-4">{b.version_hex}</td>
                       <td className="py-1.5">
                         <a
-                          href={`https://mempool.space/block/${b.hash}`}
+                          href={applyExplorerTemplate(explorerTemplate, {
+                            block_hash: b.hash,
+                            height: b.height,
+                          })}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-amber-400 hover:underline"
