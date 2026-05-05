@@ -397,5 +397,18 @@ export interface Database {
   bid_events: BidEventsTable;
   closed_bids_cache: ClosedBidsCacheTable;
   secrets: SecretsTable;
+  block_version_cache: BlockVersionCacheTable;
   _migrations: MigrationsTable;
+}
+
+/**
+ * #94: persistent cache of block-header version values keyed by
+ * block hash. Read by `/api/ocean` to mark BIP-110-signaling blocks
+ * with a crown on the chart. Block headers are immutable so the
+ * cache never needs invalidation; old rows just sit harmlessly.
+ */
+export interface BlockVersionCacheTable {
+  block_hash: string;
+  block_version: number;
+  fetched_at: number;
 }

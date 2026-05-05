@@ -28,6 +28,7 @@ import type { RuntimeStateRepo } from '../state/repos/runtime_state.js';
 import type { TickMetricsRepo } from '../state/repos/tick_metrics.js';
 import type { Database } from '../state/types.js';
 import type { AccountSpendService } from '../services/account-spend.js';
+import type { BlockVersionService } from '../services/block-version.js';
 import type { BtcPriceService } from '../services/btc-price.js';
 import type { HashpriceCache } from '../services/hashprice-cache.js';
 import type { OceanClient } from '../services/ocean.js';
@@ -62,6 +63,8 @@ export interface HttpServerDeps {
   readonly accountSpend: AccountSpendService | null;
   readonly btcPriceService: BtcPriceService;
   readonly hashpriceCache: HashpriceCache;
+  /** #94: block-header version lookup for the BIP-110 crown marker. Optional - chart degrades to standard markers when absent. */
+  readonly blockVersionService: BlockVersionService | null;
   readonly db: Kysely<Database>;
   readonly password: string;
   readonly tickIntervalMs: number;
@@ -130,6 +133,7 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<HttpServer
     oceanClient: deps.oceanClient,
     configRepo: deps.configRepo,
     tickMetricsRepo: deps.tickMetricsRepo,
+    blockVersionService: deps.blockVersionService,
   });
   await registerFinanceRoute(app, {
     ownedBidsRepo: deps.ownedBidsRepo,

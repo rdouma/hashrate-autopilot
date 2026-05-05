@@ -1845,6 +1845,10 @@ msgstr "iniciar sesión"
 msgid "sign out"
 msgstr "cerrar sesión"
 
+#: src/components/HashrateChart.tsx
+msgid "Signaling BIP 110 (Reduced Data soft fork)"
+msgstr "Señaliza BIP 110 (soft fork de Reduced Data)"
+
 #: src/pages/Login.tsx
 msgid "signing in…"
 msgstr "iniciando sesión…"

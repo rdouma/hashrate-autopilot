@@ -1845,6 +1845,10 @@ msgstr "sign in"
 msgid "sign out"
 msgstr "sign out"
 
+#: src/components/HashrateChart.tsx
+msgid "Signaling BIP 110 (Reduced Data soft fork)"
+msgstr "Signaling BIP 110 (Reduced Data soft fork)"
+
 #: src/pages/Login.tsx
 msgid "signing in…"
 msgstr "signing in…"

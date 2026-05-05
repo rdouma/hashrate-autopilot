@@ -11,6 +11,8 @@ import type { FastifyInstance } from 'fastify';
 import type { ConfigRepo } from '../../state/repos/config.js';
 import type { TickMetricsRepo } from '../../state/repos/tick_metrics.js';
 import type { OceanClient, OceanBlock, OceanPoolInfo } from '../../services/ocean.js';
+import type { BlockVersionService } from '../../services/block-version.js';
+import { signalsBip110 } from '../../services/block-version.js';
 import { computePoolLuck } from '../../services/pool-luck.js';
 
 // Tolerance for joining a pool block to its nearest tick_metrics row.
@@ -44,6 +46,14 @@ export interface OurBlock {
    * when this is null.
    */
   share_log_pct_at_block: number | null;
+  /**
+   * #94: true when the block's header version field signals BIP-110
+   * support (top-3-bits == 0b001 AND bit-4 set). Null when we couldn't
+   * look up the version (no bitcoind/electrs configured, or the
+   * lookup failed and is in the negative cache). False = not signaling.
+   * Drives the crown marker on the chart.
+   */
+  signals_bip110: boolean | null;
 }
 
 export interface OceanResponse {
@@ -108,6 +118,7 @@ export async function registerOceanRoute(
     oceanClient: OceanClient | null;
     configRepo: ConfigRepo;
     tickMetricsRepo: TickMetricsRepo;
+    blockVersionService: BlockVersionService | null;
   },
 ): Promise<void> {
   app.get('/api/ocean', async (): Promise<OceanResponse> => {
@@ -208,6 +219,19 @@ export async function registerOceanRoute(
           : Promise.resolve(null),
       ),
     );
+    // #94: per-block BIP-110 signal lookup. Cached + persistent, so
+    // steady-state polls hit only the in-memory map. Failures are
+    // negatively cached (5 min) so a single bitcoind hiccup doesn't
+    // trigger N retries on every dashboard refresh.
+    const signalsBip110ByBlock = await Promise.all(
+      stats.recent_blocks.map(async (b) => {
+        if (!deps.blockVersionService || !b.block_hash) return null;
+        const version = await deps.blockVersionService
+          .getVersion(b.block_hash, b.height ?? null)
+          .catch(() => null);
+        return signalsBip110(version);
+      }),
+    );
     const our_recent_blocks: OurBlock[] = stats.recent_blocks.map((b, i) => ({
       height: b.height,
       timestamp_ms: b.timestamp_ms,
@@ -218,6 +242,7 @@ export async function registerOceanRoute(
       worker: b.worker,
       found_by_us: b.username === address,
       share_log_pct_at_block: shareLogAtBlock[i] ?? null,
+      signals_bip110: signalsBip110ByBlock[i] ?? null,
     }));
 
     return {

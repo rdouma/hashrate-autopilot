@@ -30,6 +30,14 @@ export interface ElectrsBalance {
 
 export interface ElectrsClient {
   getBalance(address: string): Promise<ElectrsBalance>;
+  /**
+   * Fetch the 4-byte version field from the block header at the
+   * given height. Returns the parsed signed-int. Used to detect
+   * BIP-110 signaling for the chart's crown marker (#94). Electrs's
+   * `blockchain.block.header(height)` returns the raw 80-byte header
+   * as hex; the version sits in the first 4 bytes, little-endian.
+   */
+  getBlockVersionByHeight(height: number): Promise<number>;
   close(): void;
 }
 
@@ -111,6 +119,16 @@ export async function createElectrsClient(config: ElectrsConfig): Promise<Electr
         [scripthash],
       );
       return { confirmed: result.confirmed, unconfirmed: result.unconfirmed };
+    },
+    async getBlockVersionByHeight(height: number): Promise<number> {
+      const headerHex = await call<string>('blockchain.block.header', [height]);
+      // The header is at least 80 bytes (160 hex chars). First 4
+      // bytes are the version field, little-endian.
+      if (typeof headerHex !== 'string' || headerHex.length < 8) {
+        throw new Error(`Electrs RPC blockchain.block.header(${height}): malformed header`);
+      }
+      const buf = Buffer.from(headerHex.slice(0, 8), 'hex');
+      return buf.readInt32LE(0);
     },
     close() {
       socket.destroy();

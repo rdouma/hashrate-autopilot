@@ -582,6 +582,13 @@ export interface OurBlockMarker {
    * only falls back to the live share_log + drift caveat when null.
    */
   share_log_pct_at_block: number | null;
+  /**
+   * #94: true when the block's header version field signals BIP-110
+   * support. Null when the version couldn't be looked up (no
+   * bitcoind/electrs configured, or the lookup failed). Drives the
+   * crown chart marker; null/false fall back to the standard cube.
+   */
+  signals_bip110: boolean | null;
 }
 
 export interface OceanResponse {

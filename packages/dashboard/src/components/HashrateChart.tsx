@@ -702,20 +702,35 @@ export const HashrateChart = memo(function HashrateChart({
                     height={HEIGHT - PADDING.bottom - PADDING.top + 9}
                     fill="transparent"
                   />
-                  {/* Small isometric cube, matching Ocean's block icon.
-                      Three rhombus faces — top, front, right — stroked
-                      in the marker colour. Centered on the line. */}
-                  <g
-                    transform={`translate(${x - 5}, ${PADDING.top - 9})`}
-                    fill="none"
-                    stroke={color}
-                    strokeWidth="1.1"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M5 0 L10 2.5 L5 5 L0 2.5 Z" fill={color} fillOpacity="0.25" />
-                    <path d="M0 2.5 L0 7.5 L5 10 L5 5 Z" fill={color} fillOpacity="0.15" />
-                    <path d="M5 5 L5 10 L10 7.5 L10 2.5 Z" fill={color} fillOpacity="0.35" />
-                  </g>
+                  {/* Marker icon: crown for BIP-110-signaling blocks
+                      (#94), small isometric cube otherwise. Same
+                      colour/position rules either way - the crown is
+                      a meaning swap, not a styling change. */}
+                  {b.signals_bip110 === true ? (
+                    <g
+                      transform={`translate(${x - 5}, ${PADDING.top - 9})`}
+                      fill={color}
+                      fillOpacity="0.45"
+                      stroke={color}
+                      strokeWidth="1.1"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M0 8 L1.5 3 L4 5.5 L5 1 L6 5.5 L8.5 3 L10 8 Z" />
+                      <line x1="0" y1="9.5" x2="10" y2="9.5" stroke={color} strokeWidth="1.4" />
+                    </g>
+                  ) : (
+                    <g
+                      transform={`translate(${x - 5}, ${PADDING.top - 9})`}
+                      fill="none"
+                      stroke={color}
+                      strokeWidth="1.1"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M5 0 L10 2.5 L5 5 L0 2.5 Z" fill={color} fillOpacity="0.25" />
+                      <path d="M0 2.5 L0 7.5 L5 10 L5 5 Z" fill={color} fillOpacity="0.15" />
+                      <path d="M5 5 L5 10 L10 7.5 L10 2.5 Z" fill={color} fillOpacity="0.35" />
+                    </g>
+                  )}
                 </g>
               );
             })}
@@ -877,6 +892,12 @@ function BlockTooltip({
         <BtcRow label={t`subsidy`} btc={subsidyBtc} locale={locale} muted />
         <BtcRow label={t`fees`} btc={feesBtc} locale={locale} muted />
       </div>
+
+      {block.signals_bip110 === true && (
+        <div className="mt-2 pt-2 border-t border-slate-800 text-amber-300 text-[11px]">
+          <Trans>Signaling BIP 110 (Reduced Data soft fork)</Trans>
+        </div>
+      )}
 
       {(() => {
         // Prefer the per-block historical share_log captured at the

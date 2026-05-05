@@ -384,6 +384,21 @@ Recommended design: rely on `bitcoind` RPC on the LAN. ZMQ `hashblock` → trigg
 
 ---
 
+### 5.4 BIP 110 signaling detection (#94)
+
+Block headers carry a 32-bit `version` field. Under BIP 9 deployments the top 3 bits are `0b001` and bits 0-28 are signaling bits for in-flight soft forks. **BIP 110** ("Reduced Data Temporary Softfork") — 1-year sunset, 55% lock-in threshold, max activation height around September 2026 — uses **bit 4**.
+
+Detection: `((version >> 29) & 0b111) === 0b001 && (version & (1 << 4)) !== 0`.
+
+Ocean's `/v1/blocks` response gives us `block_hash` and `height` per block but **not** the header `version` field. Two viable lookups for the version:
+
+1. **bitcoind RPC** — `getblockheader <hash> true` returns the full decoded header (including `version`) in one call. Preferred whenever bitcoind RPC creds are available.
+2. **Electrs** — `blockchain.block.header <height>` returns the raw 80-byte header as hex. First 4 bytes (little-endian) are the version field. Used as fallback when bitcoind isn't configured but electrs is.
+
+**Storage**: `block_version_cache (block_hash PK, block_version INTEGER, fetched_at)`. Persistent because headers are immutable — once cached, never re-fetched. Negative-cache TTL (5 min) prevents hammering the node when a single lookup fails.
+
+**Why a hash-keyed cache rather than `reward_events.block_version`**: the chart's block markers come from Ocean's `our_recent_blocks` (keyed by hash), not from `reward_events`. Hash-keyed storage matches the actual consumer's primary key. If a future feature needs a per-`reward_events` view, it can join to this cache.
+
 ## 6. Prior art
 
 ### 6.1 Braiins-specific automation (open source)

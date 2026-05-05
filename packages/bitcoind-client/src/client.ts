@@ -67,9 +67,21 @@ export interface ScanTxoutSetResult {
   }>;
 }
 
+export interface BlockHeader {
+  /** 32-bit version field from the block header (signed-int range). */
+  readonly version: number;
+  readonly hash: string;
+  readonly height: number;
+  readonly time: number;
+  readonly previousblockhash: string | null;
+}
+
 export interface BitcoindClient {
   getBlockchainInfo(): Promise<BlockchainInfo>;
   scanTxoutSet(descriptors: readonly string[]): Promise<ScanTxoutSetResult>;
+  /** Fetch the block header for a given block hash. Used to read
+   *  the `version` field for soft-fork signaling detection (#94). */
+  getBlockHeader(hash: string): Promise<BlockHeader>;
 }
 
 export function createBitcoindClient(config: BitcoindClientConfig): BitcoindClient {
@@ -137,5 +149,6 @@ export function createBitcoindClient(config: BitcoindClientConfig): BitcoindClie
       const result = await call<ScanTxoutSetResult>('scantxoutset', ['start', descriptors]);
       return result;
     },
+    getBlockHeader: (hash) => call<BlockHeader>('getblockheader', [hash, true]),
   };
 }

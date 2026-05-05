@@ -5,4 +5,5 @@ export {
   type BitcoindClientConfig,
   type BlockchainInfo,
   type ScanTxoutSetResult,
+  type BlockHeader,
 } from './client.js';

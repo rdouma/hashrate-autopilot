@@ -14,6 +14,7 @@ import { homedir } from 'node:os';
 import { resolve } from 'node:path';
 
 import { createBitcoindClient } from '@braiins-hashrate/bitcoind-client';
+import { BlockVersionService } from './services/block-version.js';
 import { createBraiinsClient } from '@braiins-hashrate/braiins-client';
 
 import { applyEnvOverridesToConfig } from './config/env-overrides.js';
@@ -299,16 +300,21 @@ async function bootOperational(
     log('datum:    disabled (datum_api_url empty)');
   }
 
+  // Bitcoind client is needed for both the payout observer AND the
+  // block-header version lookup that powers the BIP-110 crown
+  // marker on the chart (#94). Construct once if RPC creds are
+  // present, even when payout_source != 'bitcoind' - electrs-only
+  // operators with bitcoind RPC creds still get the crown.
+  const bitcoindRpcUrl = cfg.bitcoind_rpc_url || secrets.bitcoind_rpc_url || '';
+  const bitcoindRpcUser = cfg.bitcoind_rpc_user || secrets.bitcoind_rpc_user || '';
+  const bitcoindRpcPass = cfg.bitcoind_rpc_password || secrets.bitcoind_rpc_password || '';
+  const bitcoindClient =
+    bitcoindRpcUrl && bitcoindRpcUser && bitcoindRpcPass
+      ? createBitcoindClient({ url: bitcoindRpcUrl, username: bitcoindRpcUser, password: bitcoindRpcPass })
+      : null;
+
   let payoutObserver: PayoutObserver | null = null;
-  if (cfg.payout_source !== 'none' && cfg.btc_payout_address) {
-    const rpcUrl = cfg.bitcoind_rpc_url || secrets.bitcoind_rpc_url || '';
-    const rpcUser = cfg.bitcoind_rpc_user || secrets.bitcoind_rpc_user || '';
-    const rpcPass = cfg.bitcoind_rpc_password || secrets.bitcoind_rpc_password || '';
-    const bitcoindClient = createBitcoindClient({
-      url: rpcUrl,
-      username: rpcUser,
-      password: rpcPass,
-    });
+  if (cfg.payout_source !== 'none' && cfg.btc_payout_address && bitcoindClient) {
     payoutObserver = new PayoutObserver({
       client: bitcoindClient,
       getAddress: () => cfg.btc_payout_address,
@@ -323,8 +329,19 @@ async function bootOperational(
       log('payout: using bitcoind scantxoutset (CPU-heavy, polled hourly)');
     }
   } else {
-    log('payout: disabled (payout_source=none)');
+    log('payout: disabled (payout_source=none or RPC creds missing)');
   }
+
+  // BIP-110 crown marker (#94): block-header version lookup with a
+  // persistent cache. bitcoind preferred; falls back to electrs by
+  // height when bitcoind isn't available. Returns null when neither
+  // is configured and the chart degrades to the standard marker.
+  const blockVersionService = new BlockVersionService({
+    db: handle.db,
+    bitcoind: bitcoindClient,
+    electrs: null, // electrs lookup added later if needed; bitcoind covers Umbrel
+    log: (m) => log(m),
+  });
 
   // Hashprice cache — read by the controller for the dynamic cap and
   // cheap-hashrate scaling. Warm path is the dashboard's finance poll;
@@ -504,6 +521,7 @@ async function bootOperational(
     accountSpend,
     btcPriceService,
     hashpriceCache,
+    blockVersionService,
     db: handle.db,
     password: secrets.dashboard_password,
     tickIntervalMs: DEFAULT_TICK_INTERVAL_MS,
