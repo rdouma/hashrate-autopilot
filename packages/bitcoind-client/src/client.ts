@@ -104,6 +104,33 @@ export interface BitcoindClient {
   batch<T>(requests: readonly BatchRequest[]): Promise<T[]>;
 }
 
+/**
+ * Render a fetch failure as something the operator can act on.
+ *
+ * Node's `fetch` collapses every network-layer failure into a single
+ * "fetch failed" message and stuffs the real diagnosis on `.cause`
+ * (e.g. `ENOTFOUND alkimia.mynetgear.com`, `ECONNREFUSED 127.0.0.1:8332`,
+ * `ETIMEDOUT`). Without surfacing that, the dashboard error UI just
+ * shows "fetch failed" which is unhelpful. Also strips userinfo from
+ * the URL so the password never lands in a log line or the dashboard.
+ */
+function describeFetchFailure(err: unknown, url: string): string {
+  const e = err as Error & { cause?: { code?: string; message?: string } };
+  const safeUrl = (() => {
+    try {
+      const u = new URL(url);
+      u.username = '';
+      u.password = '';
+      return u.toString();
+    } catch {
+      return url;
+    }
+  })();
+  const causeMsg = e.cause?.code ?? e.cause?.message ?? null;
+  const base = e.message || 'fetch failed';
+  return causeMsg ? `${base} (${causeMsg}) — target ${safeUrl}` : `${base} — target ${safeUrl}`;
+}
+
 export function createBitcoindClient(config: BitcoindClientConfig): BitcoindClient {
   const fetchImpl = config.fetch ?? fetch;
   const timeoutMs = config.timeoutMs ?? 300_000;
@@ -125,7 +152,7 @@ export function createBitcoindClient(config: BitcoindClientConfig): BitcoindClie
         signal: controller.signal,
       });
     } catch (err) {
-      throw new BitcoindError(`bitcoind RPC ${method}: ${(err as Error).message}`);
+      throw new BitcoindError(`bitcoind RPC ${method}: ${describeFetchFailure(err, config.url)}`);
     } finally {
       clearTimeout(timeout);
     }
@@ -178,7 +205,7 @@ export function createBitcoindClient(config: BitcoindClientConfig): BitcoindClie
         signal: controller.signal,
       });
     } catch (err) {
-      throw new BitcoindError(`bitcoind RPC batch: ${(err as Error).message}`);
+      throw new BitcoindError(`bitcoind RPC batch: ${describeFetchFailure(err, config.url)}`);
     } finally {
       clearTimeout(timeout);
     }

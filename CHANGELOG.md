@@ -2,6 +2,10 @@
 
 ## 2026-05-05
 
+### `[Fix]` BIP 110 scan now reports concrete network errors, not "fetch failed"
+
+The scanner card was surfacing Node's umbrella `fetch failed` message when the daemon couldn't reach bitcoind RPC, which gives the operator no way to tell whether it's DNS, connection refused, timeout, or wrong port. The bitcoind client now extracts `.cause.code` (e.g. `ENOTFOUND`, `ECONNREFUSED`, `ETIMEDOUT`) and includes the target URL (with userinfo stripped) in the error string, so the dashboard message reads `bitcoind RPC getblockchaininfo: fetch failed (ENOTFOUND) - target http://alkimia.mynetgear.com:8332/`. Same diagnostic also flows into the payout-observer logs and any other bitcoind RPC error path.
+
 ### `[Fix]` Max-bid exclusion gradient renders above the cap line again
 
 The red gradient that marks the off-limits region above the `max bid` line on the Price chart was rendering on the wrong side: the cap is excluded from the chart's Y-axis auto-scaling on purpose (so the slow-moving ceiling doesn't squash detail in the live data band), but when `max_bid > priceMax` the polygon's "close" edge at `PADDING.top` ended up *below* the cap line in SVG-y space and inverted the fill. Closing the polygon to `y = 0` (top of viewport) instead — always above any cap-line y value — fixes both cases: when the cap sits inside the chart, and when it floats above the auto-ranged top tick.
