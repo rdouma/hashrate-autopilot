@@ -326,31 +326,48 @@ export const HashrateChart = memo(function HashrateChart({
             stroke: '#cbd5e1',
           };
         case 'acceptance': {
-          // #90: per-bucket acceptance ratio computed from forward
-          // deltas of the cumulative shares_purchased / shares_accepted
-          // counters. The aggregated tick rows take MAX-end-of-bucket
-          // for these counters, so bucket-to-bucket pair-wise deltas
-          // give the per-bucket purchased + accepted volume; the ratio
-          // (accepted / purchased) reads as a clean per-tick percentage.
-          // Pairs where either side is null OR the counter went
-          // backwards (bid replacement resets to zero) emit null —
-          // the chart shows a gap on the line for those ticks.
-          const values: (number | null)[] = points.map((p, i) => {
+          // #90 — per-tick rolling acceptance ratio. Earlier per-bucket
+          // forward delta yielded values >100% (impossible) due to
+          // acknowledgment-lag noise: the pool sometimes acks shares in
+          // batches (accepted_m jumps after purchased_m already counted
+          // them), so within a single small bucket the accepted-delta
+          // can transiently exceed the purchased-delta. Rolling the
+          // acceptance over a window the size of the panel's 1h figure
+          // smooths that noise out and matches the panel's semantics —
+          // each chart point reads as "acceptance over the trailing
+          // window ending here".
+          //
+          // ROLLING_BUCKETS = 60 covers ~1h at the dashboard's
+          // canonical 1-min bucketing for the 3h range; for longer
+          // ranges where buckets are wider the window is wider too,
+          // which is the right behaviour (less zoom = more smoothing).
+          //
+          // Defensive .min(100) caps any residual noise: cumulative
+          // accepted ≤ cumulative purchased always holds in the
+          // long-run, so anything above 100% is artifact.
+          const ROLLING_BUCKETS = 60;
+          const values: (number | null)[] = points.map((_p, i) => {
             if (i === 0) return null;
-            const prev = points[i - 1]!;
-            const curP = p.primary_bid_shares_purchased_m;
-            const curA = p.primary_bid_shares_accepted_m;
-            const prevP = prev.primary_bid_shares_purchased_m;
-            const prevA = prev.primary_bid_shares_accepted_m;
-            if (
-              curP === null || curA === null ||
-              prevP === null || prevA === null ||
-              curP < prevP || curA < prevA
-            ) return null;
-            const dp = curP - prevP;
-            if (dp <= 0) return null;
-            const da = curA - prevA;
-            return (da / dp) * 100;
+            const start = Math.max(0, i - ROLLING_BUCKETS);
+            let sumP = 0;
+            let sumA = 0;
+            for (let j = start; j < i; j += 1) {
+              const prev = points[j]!;
+              const cur = points[j + 1]!;
+              const curP = cur.primary_bid_shares_purchased_m;
+              const curA = cur.primary_bid_shares_accepted_m;
+              const prevP = prev.primary_bid_shares_purchased_m;
+              const prevA = prev.primary_bid_shares_accepted_m;
+              if (
+                curP === null || curA === null ||
+                prevP === null || prevA === null ||
+                curP < prevP || curA < prevA
+              ) continue;
+              sumP += curP - prevP;
+              sumA += curA - prevA;
+            }
+            if (sumP <= 0) return null;
+            return Math.min(100, (sumA / sumP) * 100);
           });
           return {
             values,

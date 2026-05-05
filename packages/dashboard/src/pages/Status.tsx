@@ -407,41 +407,6 @@ export function Status() {
             <Row k={t`best bid`} v={denomination.formatSatPerPhDay(s.market?.best_bid_sat_per_ph_day ?? null, intlLocale)} />
             <Row k={t`best ask`} v={denomination.formatSatPerPhDay(s.market?.best_ask_sat_per_ph_day ?? null, intlLocale)} />
           </div>
-          {(() => {
-            // #90 — 1h-rolling pool acceptance ratio belongs on the
-            // BRAIINS panel because the numerator + denominator are
-            // both Braiins-reported (`shares_purchased_m` is what
-            // Braiins validated; `shares_accepted_m` is what the pool
-            // confirmed back to Braiins). Hidden until we have at
-            // least one usable counter pair in the trailing hour.
-            const acc = statsQuery.data?.acceptance_pct_1h;
-            if (acc === null || acc === undefined) return null;
-            const colorClass =
-              acc >= 99.5
-                ? 'text-emerald-300'
-                : acc >= 98
-                  ? 'text-amber-300'
-                  : 'text-red-300';
-            return (
-              <div className="border-t border-slate-800 mt-2 pt-2">
-                <Tooltip
-                  text={t`Pool-side share acceptance over the trailing hour: (shares accepted by the target / shares purchased from Braiins) × 100. Healthy baseline ≈ 99.95%; baseline rejection of ~0.05% is normal noise. Sustained drops below ~99% point at Datum stale work, worker-identity misconfiguration, or pool difficulty too low — see docs/research.md §7.5.`}
-                >
-                  <div className="flex justify-between text-sm py-0.5 cursor-help">
-                    <span className="text-slate-400"><Trans>acceptance (1h)</Trans></span>
-                    <span className={`font-mono ${colorClass}`}>
-                      {formatNumber(
-                        acc,
-                        { minimumFractionDigits: 2, maximumFractionDigits: 2 },
-                        intlLocale,
-                      )}
-                      %
-                    </span>
-                  </div>
-                </Tooltip>
-              </div>
-            );
-          })()}
           <div className="border-t border-slate-800 mt-2 pt-2">
             <BraiinsBalances
               balances={s.balances}
@@ -456,6 +421,7 @@ export function Status() {
           reachable={s.pool.reachable}
           consecutiveFailures={s.pool.consecutive_failures}
           datum={s.datum}
+          acceptancePct1h={statsQuery.data?.acceptance_pct_1h ?? null}
           rejects1h={statsQuery.data?.datum_rejects_1h ?? null}
           braiinsRejects1h={statsQuery.data?.braiins_rejects_count_1h ?? null}
           nextTickAt={s.next_tick_at}
@@ -2524,6 +2490,7 @@ function DatumPanel({
   reachable,
   consecutiveFailures,
   datum,
+  acceptancePct1h,
   rejects1h,
   braiinsRejects1h,
   nextTickAt,
@@ -2532,9 +2499,11 @@ function DatumPanel({
   reachable: boolean;
   consecutiveFailures: number;
   datum: StatusResponse['datum'];
+  /** #90 — 1h-rolling acceptance ratio. Belongs in this panel because the seller's rig submits shares to *our* Datum gateway over stratum and the accept/reject response Braiins relays back is whatever Datum decided. The number is Datum-side regardless of being sourced via the Braiins API. */
+  acceptancePct1h: number | null;
   /** #91 — DATUM gateway-side reject delta over the trailing hour. */
   rejects1h: number | null;
-  /** Braiins-reported reject count over the same trailing hour, for direct comparison. */
+  /** Braiins-reported reject count over the same trailing hour. Only rendered when `rejects1h` is also non-null so the two appear as a comparison pair. */
   braiinsRejects1h: number | null;
   nextTickAt: number | null;
 }) {
@@ -2594,32 +2563,60 @@ function DatumPanel({
           <div className="text-right font-mono text-slate-200">
             {datum.connections ?? '—'}
           </div>
-          {datum.rejected_shares_total !== null && (
+          {acceptancePct1h !== null && (
             <>
-              <div className="text-slate-400"><Trans>rejected shares</Trans></div>
-              <div className="text-right font-mono text-slate-200">
-                {formatNumber(datum.rejected_shares_total, {}, intlLocale)}
+              <Tooltip
+                text={t`Share acceptance over the trailing hour: (shares accepted / shares submitted) × 100. The seller's rig submits shares over stratum to YOUR Datum gateway, Datum responds accept/reject, and the result is what Braiins relays back as the counter — so this is a Datum-side number even though it's sourced via the Braiins API. Healthy baseline ≈ 99.95%; baseline ~0.05% rejection is normal. Sustained drops below ~99% point at Datum serving stale work, worker-identity misconfiguration, or pool difficulty too low — see docs/research.md §7.5.`}
+              >
+                <div className="text-slate-400 cursor-help"><Trans>acceptance (1h)</Trans></div>
+              </Tooltip>
+              <div
+                className={
+                  'text-right font-mono ' +
+                  (acceptancePct1h >= 99.5
+                    ? 'text-emerald-300'
+                    : acceptancePct1h >= 98
+                      ? 'text-amber-300'
+                      : 'text-red-300')
+                }
+              >
+                {formatNumber(
+                  acceptancePct1h,
+                  { minimumFractionDigits: 2, maximumFractionDigits: 2 },
+                  intlLocale,
+                )}
+                %
               </div>
             </>
           )}
+          {/* #91 — only render the side-by-side reject pair when DATUM
+              actually exposes its own reject counter. Without that
+              counter the absolute Braiins-reported reject count is
+              just confusing noise (raw share count at validation
+              difficulty looks alarming even at the 0.05% baseline that
+              the acceptance % already signals cleanly). */}
           {rejects1h !== null && (
             <>
-              <Tooltip text={t`Datum-side rejects over the trailing hour: forward delta of the cumulative gateway reject counter, with bid resets / poll failures skipped. Compare with the next row to see which leg is dropping shares — Datum > Braiins means the gateway filtered work that never reached the pool (good); Braiins > Datum means the pool rejected work Datum thought was fine (stale-work signature, see research.md §4.5).`}>
-                <div className="text-slate-400 cursor-help"><Trans>datum rejects (1h)</Trans></div>
+              <Tooltip
+                text={t`Datum gateway-side rejects over the trailing hour: forward delta of the cumulative gateway reject counter, with bid resets / poll failures skipped. Compare with the next row — gateway > pool means Datum filtered work that never reached the pool (good); pool > gateway means the pool rejected work Datum thought was fine (stale-work signature, see research.md §4.5).`}
+              >
+                <div className="text-slate-400 cursor-help"><Trans>gateway rejects (1h)</Trans></div>
               </Tooltip>
               <div className="text-right font-mono text-slate-200">
                 {formatNumber(rejects1h, {}, intlLocale)}
               </div>
-            </>
-          )}
-          {braiinsRejects1h !== null && (
-            <>
-              <Tooltip text={t`Pool-rejected shares Braiins counted over the same trailing hour. Compare with the row above: a sustained gap with Braiins > Datum is the signal Knots → Datum → Ocean is delivering stale work that the pool rejects.`}>
-                <div className="text-slate-400 cursor-help"><Trans>braiins rejects (1h)</Trans></div>
-              </Tooltip>
-              <div className="text-right font-mono text-slate-200">
-                {formatNumber(braiinsRejects1h, {}, intlLocale)}
-              </div>
+              {braiinsRejects1h !== null && (
+                <>
+                  <Tooltip
+                    text={t`Pool-rejected shares the seller's rig reported over the same trailing hour, relayed via Braiins. Compare with the row above: a sustained gap with pool > gateway is the signal Knots → Datum → Ocean is delivering stale work the pool rejects.`}
+                  >
+                    <div className="text-slate-400 cursor-help"><Trans>pool rejects (1h)</Trans></div>
+                  </Tooltip>
+                  <div className="text-right font-mono text-slate-200">
+                    {formatNumber(braiinsRejects1h, {}, intlLocale)}
+                  </div>
+                </>
+              )}
             </>
           )}
         </div>

@@ -2,6 +2,14 @@
 
 ## 2026-05-05
 
+### `[Fix]` Acceptance ratio belongs in the Datum panel; chart series rolls 1h to dampen ack-lag noise
+
+Operator review caught two issues with the previous shape:
+1. Acceptance was on the BRAIINS panel and the raw `pool rejects (1h)` raw count was on the DATUM panel — backwards from how the data should be read. The seller's rig submits shares over stratum to *your* Datum gateway; Datum responds accept/reject; that response is what Braiins relays back as the counter. Both numbers are Datum-side regardless of being sourced via the Braiins API. Acceptance moves to the DATUM panel.
+2. The chart's `acceptance %` series went above 100% on spikes — impossible in cumulative-ratio terms but possible per-bucket because the pool sometimes acks shares in batches (`accepted_m` jumps after `purchased_m` already counted them). Switched the chart series from per-bucket forward-deltas to a per-tick rolling 60-bucket window with a defensive `min(100)` cap, matching the panel's 1h-rolling semantics. Smooth, never artifactually >100%, no more sparse gaps from buckets that happened to have zero counter advance.
+
+Plus: `pool rejects (1h)` (the raw count from Braiins) only renders alongside `gateway rejects (1h)` (Datum's own counter) when both are present — without a side-by-side comparison the absolute count alone is just noise (raw share count at Braiins's validation difficulty looks alarming even at the 0.05% baseline that the acceptance % already signals cleanly). Cumulative `rejected shares` row dropped (duplicative with the 1h delta). Row labels renamed `gateway rejects` / `pool rejects` to underline the comparison semantic. en/nl/es catalogs updated.
+
 ### `[Feature]` 1h Datum-vs-Braiins reject comparison on the Datum panel (#91)
 
 The original #91 spec called for "a 'datum rejects (1h)' row on the Datum panel + a delta vs Braiins-reported rejects so the operator can tell which leg is dropping shares" — the per-tick capture shipped earlier but the 1h-rolling row + the side-by-side Braiins comparison did not. Filling that gap. New `/api/stats` fields `datum_rejects_1h` (forward delta of the gateway's cumulative reject counter over the trailing hour) and `braiins_rejects_count_1h` (forward delta of `primary_bid_shares_rejected_m × 1_000_000`, converted to raw count for direct comparison). Datum panel now renders both as side-by-side rows so the operator can read the asymmetry directly: Datum > Braiins means the gateway filtered work that never reached the pool (good — Datum saved cost); Braiins > Datum means the pool rejected work Datum thought was fine (stale-work signature per research.md §4.5). Both rows hidden when their sources are null. en/nl/es catalogs updated.

@@ -499,10 +499,6 @@ msgstr "Braiins API onbereikbaar - wacht op verbinding."
 msgid "Braiins marketplace API — reachable when the last observe() read market/orderbook/balance without error."
 msgstr "Braiins marketplace API - bereikbaar wanneer de laatste observe() market/orderbook/balance zonder fout heeft gelezen."
 
-#: src/pages/Status.tsx
-msgid "braiins rejects (1h)"
-msgstr "braiins afwijzingen (1u)"
-
 #: src/pages/Config.tsx
 msgid "Browsers block audio until the page sees a user click; logging in counts. The first poll after a fresh page load establishes a silent baseline so you don't get a sound for every backlog row."
 msgstr "Browsers blokkeren audio totdat de pagina een muisklik zag; inloggen telt. De eerste poll na een verse paginalaad legt een stille basislijn vast, zodat je geen geluid krijgt voor elke achterstand."
@@ -754,16 +750,16 @@ msgid "Datum /umbrel-api HTTP poll."
 msgstr "Datum /umbrel-api HTTP-poll."
 
 #: src/pages/Status.tsx
+msgid "Datum gateway-side rejects over the trailing hour: forward delta of the cumulative gateway reject counter, with bid resets / poll failures skipped. Compare with the next row — gateway > pool means Datum filtered work that never reached the pool (good); pool > gateway means the pool rejected work Datum thought was fine (stale-work signature, see research.md §4.5)."
+msgstr "Datum gateway-zijde afwijzingen over het afgelopen uur: voorwaarts verschil van de cumulatieve gateway-afwijzingsteller, met bid-resets en gefaalde polls overgeslagen. Vergelijk met de regel hieronder — gateway > pool betekent dat Datum werk filterde dat nooit de pool bereikte (goed); pool > gateway betekent dat de pool werk afwees dat Datum prima vond (verouderd-werk signaal, zie research.md §4.5)."
+
+#: src/pages/Status.tsx
 msgid "datum hashrate"
 msgstr "datum hashrate"
 
 #: src/pages/Status.tsx
 msgid "datum rejects"
 msgstr "datum afwijzingen"
-
-#: src/pages/Status.tsx
-msgid "datum rejects (1h)"
-msgstr "datum afwijzingen (1u)"
 
 #: src/pages/Config.tsx
 msgid "Datum stats API (optional)"
@@ -772,10 +768,6 @@ msgstr "Datum stats-API (optioneel)"
 #: src/pages/Status.tsx
 msgid "Datum stats not configured — set <0>datum_api_url</0> in Config to display connected workers and reported hashrate. See <1>docs/setup-datum-api.md</1>."
 msgstr "Datum stats niet geconfigureerd - stel <0>datum_api_url</0> in via Config om verbonden workers en gerapporteerde hashrate te tonen. Zie <1>docs/setup-datum-api.md</1>."
-
-#: src/pages/Status.tsx
-msgid "Datum-side rejects over the trailing hour: forward delta of the cumulative gateway reject counter, with bid resets / poll failures skipped. Compare with the next row to see which leg is dropping shares — Datum > Braiins means the gateway filtered work that never reached the pool (good); Braiins > Datum means the pool rejected work Datum thought was fine (stale-work signature, see research.md §4.5)."
-msgstr "Datum-zijde afwijzingen over het afgelopen uur: voorwaarts verschil van de cumulatieve gateway-afwijzingsteller, met bid-resets en gefaalde polls overgeslagen. Vergelijk met de regel hieronder om te zien welk been shares laat vallen — Datum > Braiins betekent dat de gateway werk filterde dat nooit de pool bereikte (goed); Braiins > Datum betekent dat de pool werk afwees dat Datum prima vond (verouderd-werk signaal, zie research.md §4.5)."
 
 #: src/pages/Config.tsx
 msgid "Decision-log rows where the autopilot proposed at least one bid action. Rare (~10% of ticks) and high-value: this is the forensic record for \"why did the autopilot create / edit / cancel that bid?\" Cheap to keep long."
@@ -1065,6 +1057,10 @@ msgstr "Volledig wallet-saldo per bod. Momenteel ≈ {resolvedSatStr} sat (afgek
 #: src/pages/Config.tsx
 msgid "Full wallet balance per bid. Currently ≈ {resolvedSatStr} sat."
 msgstr "Volledig wallet-saldo per bod. Momenteel ≈ {resolvedSatStr} sat."
+
+#: src/pages/Status.tsx
+msgid "gateway rejects (1h)"
+msgstr "gateway afwijzingen (1u)"
 
 #: src/pages/Config.tsx
 msgid "genesis version"
@@ -1688,6 +1684,10 @@ msgstr "pool-geluk (24u)"
 msgid "pool luck (7d)"
 msgstr "pool-geluk (7d)"
 
+#: src/pages/Status.tsx
+msgid "pool rejects (1h)"
+msgstr "pool afwijzingen (1u)"
+
 #: src/components/HashrateChart.tsx
 msgid "pool reward"
 msgstr "pool-beloning"
@@ -1707,12 +1707,8 @@ msgid "pool workers"
 msgstr "pool-workers"
 
 #: src/pages/Status.tsx
-msgid "Pool-rejected shares Braiins counted over the same trailing hour. Compare with the row above: a sustained gap with Braiins > Datum is the signal Knots → Datum → Ocean is delivering stale work that the pool rejects."
-msgstr "Door de pool afgewezen shares die Braiins telde over hetzelfde uur. Vergelijk met de regel hierboven: een aanhoudend verschil met Braiins > Datum is het signaal dat Knots → Datum → Ocean verouderd werk levert dat de pool afwijst."
-
-#: src/pages/Status.tsx
-msgid "Pool-side share acceptance over the trailing hour: (shares accepted by the target / shares purchased from Braiins) × 100. Healthy baseline ≈ 99.95%; baseline rejection of ~0.05% is normal noise. Sustained drops below ~99% point at Datum stale work, worker-identity misconfiguration, or pool difficulty too low — see docs/research.md §7.5."
-msgstr "Acceptatie van shares door de pool over het afgelopen uur: (door doel geaccepteerde shares / van Braiins gekochte shares) × 100. Gezonde baseline ≈ 99,95%; ~0,05% afwijzing is normale ruis. Aanhoudende daling onder ~99% wijst op verouderd werk vanuit Datum, verkeerd geconfigureerde worker-identiteit, of te lage pool-moeilijkheidsgraad — zie docs/research.md §7.5."
+msgid "Pool-rejected shares the seller's rig reported over the same trailing hour, relayed via Braiins. Compare with the row above: a sustained gap with pool > gateway is the signal Knots → Datum → Ocean is delivering stale work the pool rejects."
+msgstr "Door de pool afgewezen shares die de rig van de verkoper rapporteerde over hetzelfde uur, doorgestuurd via Braiins. Vergelijk met de regel hierboven: een aanhoudend verschil met pool > gateway is het signaal dat Knots → Datum → Ocean verouderd werk levert dat de pool afwijst."
 
 #: src/pages/Status.tsx
 msgid "port"
@@ -1814,10 +1810,6 @@ msgstr "vernieuwt over {0}"
 #: src/pages/Status.tsx
 msgid "refreshing…"
 msgstr "vernieuwen…"
-
-#: src/pages/Status.tsx
-msgid "rejected shares"
-msgstr "afgewezen shares"
 
 #: src/pages/Login.tsx
 msgid "Remember me on this device"
@@ -1955,6 +1947,10 @@ msgstr "Kies hashratemaat (1 EH = 1.000 PH = 1.000.000 TH)"
 #: src/pages/Setup.tsx
 msgid "Setting up…"
 msgstr "Bezig met instellen…"
+
+#: src/pages/Status.tsx
+msgid "Share acceptance over the trailing hour: (shares accepted / shares submitted) × 100. The seller's rig submits shares over stratum to YOUR Datum gateway, Datum responds accept/reject, and the result is what Braiins relays back as the counter — so this is a Datum-side number even though it's sourced via the Braiins API. Healthy baseline ≈ 99.95%; baseline ~0.05% rejection is normal. Sustained drops below ~99% point at Datum serving stale work, worker-identity misconfiguration, or pool difficulty too low — see docs/research.md §7.5."
+msgstr "Acceptatie van shares over het afgelopen uur: (geaccepteerde shares / ingediende shares) × 100. De rig van de verkoper dient shares in via stratum bij JOUW Datum-gateway, Datum reageert met accepteren/afwijzen, en het resultaat wordt door Braiins teruggegeven als teller — dit is dus een Datum-zijde getal, ook al komt het via de Braiins API. Gezonde baseline ≈ 99,95%; ~0,05% afwijzing is normaal. Aanhoudende daling onder ~99% wijst op verouderd werk vanuit Datum, verkeerd geconfigureerde worker-identiteit, of te lage pool-moeilijkheidsgraad — zie docs/research.md §7.5."
 
 #: src/components/HashrateChart.tsx
 #: src/pages/Status.tsx
