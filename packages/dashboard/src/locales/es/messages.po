@@ -1791,6 +1791,10 @@ msgstr "se refresca en {0}"
 msgid "refreshing…"
 msgstr "refrescando…"
 
+#: src/pages/Status.tsx
+msgid "rejected shares"
+msgstr "shares rechazadas"
+
 #: src/pages/Login.tsx
 msgid "Remember me on this device"
 msgstr "Recordarme en este dispositivo"

@@ -23,6 +23,8 @@ export interface DatumPollResult {
   readonly connections: number | null;
   /** Hashrate in PH/s. Null when the poll failed or Datum reported it missing. */
   readonly hashrate_ph: number | null;
+  /** #91 — opportunistic gateway-side rejected-shares counter; null when DATUM does not expose a `/reject/i` tile. */
+  readonly rejected_shares_total: number | null;
   readonly checked_at: number;
   readonly error: string | null;
 }
@@ -31,6 +33,16 @@ export interface DatumServiceOptions {
   readonly apiUrl: string;
   readonly timeoutMs?: number;
   readonly now?: () => number;
+  /**
+   * #91 — receives `console.log`-style messages. The DATUM service
+   * logs every `items[].title` it observes ONCE per service instance
+   * (i.e. once per URL change, including initial connect) so the
+   * operator can grep the daemon log to see what tiles their build
+   * exposes. The log is the scoping data the issue's Step 1 calls
+   * for; it tells us whether to expect a reject tile and what its
+   * exact title is.
+   */
+  readonly log?: (msg: string) => void;
 }
 
 interface UmbrelApiItem {
@@ -63,13 +75,16 @@ export class DatumService {
   private readonly apiUrl: string;
   private readonly timeoutMs: number;
   private readonly now: () => number;
+  private readonly log: (msg: string) => void;
   private lastOkAt: number | null = null;
   private consecutiveFailures = 0;
+  private titlesLogged = false;
 
   constructor(options: DatumServiceOptions) {
     this.apiUrl = options.apiUrl.replace(/\/+$/, '');
     this.timeoutMs = options.timeoutMs ?? 5_000;
     this.now = options.now ?? Date.now;
+    this.log = options.log ?? ((msg) => console.log(msg));
   }
 
   async poll(): Promise<DatumPollResult> {
@@ -86,12 +101,22 @@ export class DatumService {
       const payload = (await response.json()) as UmbrelApiResponse;
       const connections = extractNumber(payload, 'Connections');
       const hashrate_ph = extractHashratePh(payload);
+      const rejected_shares_total = extractRejectedShares(payload);
+      // #91 — log observed item titles once per service instance.
+      // Operator's DATUM build may or may not expose a reject tile;
+      // this is the scoping data the issue's Step 1 calls for.
+      if (!this.titlesLogged && payload.items) {
+        const titles = payload.items.map((i) => i?.title ?? '<no title>').join(' | ');
+        this.log(`[datum] /umbrel-api items observed: ${titles}`);
+        this.titlesLogged = true;
+      }
       this.lastOkAt = checkedAt;
       this.consecutiveFailures = 0;
       return {
         reachable: true,
         connections,
         hashrate_ph,
+        rejected_shares_total,
         checked_at: checkedAt,
         error: null,
       };
@@ -115,10 +140,36 @@ export class DatumService {
       reachable: false,
       connections: null,
       hashrate_ph: null,
+      rejected_shares_total: null,
       checked_at: checkedAt,
       error,
     };
   }
+}
+
+/**
+ * #91 — heuristic scrape of any tile whose title matches /reject/i.
+ *
+ * DATUM exposes its UI tiles as a flat `items: { title, text, subtext }`
+ * list with no machine-readable schema, so we scan title-strings rather
+ * than committing to a specific field name DATUM may or may not adopt.
+ * Parses the leading numeric portion of `text` (the rest is usually
+ * unit / human label like "rejected shares" or "shares"). Returns null
+ * when nothing matches or the value does not parse — which is the
+ * common case as of May 2026 because most DATUM builds do not expose
+ * a reject tile yet.
+ *
+ * Match strategy is `/reject/i` substring on title. Future-proof
+ * against DATUM choosing "Rejected", "Rejects", "Rejected Shares",
+ * "Reject Rate", etc. If the operator sees the wrong tile being
+ * picked up the `[datum] /umbrel-api items observed: ...` log line
+ * tells them what the daemon saw.
+ */
+function extractRejectedShares(payload: UmbrelApiResponse): number | null {
+  const item = payload.items?.find((i) => typeof i?.title === 'string' && /reject/i.test(i.title));
+  if (!item?.text) return null;
+  const n = Number.parseFloat(item.text);
+  return Number.isFinite(n) ? Math.round(n) : null;
 }
 
 function extractNumber(payload: UmbrelApiResponse, title: string): number | null {
@@ -184,6 +235,7 @@ export class DatumPoller {
       reachable: result.reachable,
       connections: result.connections,
       hashrate_ph: result.hashrate_ph,
+      rejected_shares_total: result.rejected_shares_total,
       last_ok_at: snap.last_ok_at,
       consecutive_failures: snap.consecutive_failures,
     };

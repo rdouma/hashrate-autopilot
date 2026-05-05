@@ -206,6 +206,7 @@ export async function registerStatusRoute(
             reachable: state.datum.reachable,
             connections: state.datum.connections,
             hashrate_ph: state.datum.hashrate_ph,
+            rejected_shares_total: state.datum.rejected_shares_total,
             last_ok_at: state.datum.last_ok_at,
             consecutive_failures: state.datum.consecutive_failures,
           }

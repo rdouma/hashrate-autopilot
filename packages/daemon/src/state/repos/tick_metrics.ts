@@ -70,6 +70,8 @@ export interface InsertTickMetricArgs {
   readonly primary_bid_shares_purchased_m: number | null;
   readonly primary_bid_shares_accepted_m: number | null;
   readonly primary_bid_shares_rejected_m: number | null;
+  /** #91: Datum gateway-side rejected-shares counter (cumulative); null when not exposed. */
+  readonly datum_rejected_shares_total: number | null;
   readonly run_mode: TickMetricsTable['run_mode'];
   readonly action_mode: TickMetricsTable['action_mode'];
 }

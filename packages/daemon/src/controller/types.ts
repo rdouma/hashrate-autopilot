@@ -45,6 +45,16 @@ export interface DatumSnapshot {
   readonly reachable: boolean;
   readonly connections: number | null;
   readonly hashrate_ph: number | null;
+  /**
+   * #91 — opportunistic capture of the gateway-side rejected-shares
+   * counter from `/umbrel-api`. Detected heuristically by scanning
+   * `items[].title` for `/reject/i`; null when no such tile is exposed
+   * by the operator's DATUM build (which is the common case in May
+   * 2026 — feature is filed for follow-up if/when DATUM ships it).
+   * Cumulative count, not delta. Future-compatible field name keeps
+   * the door open for `accepted` / `purchased` if they appear too.
+   */
+  readonly rejected_shares_total: number | null;
   readonly last_ok_at: number | null;
   readonly consecutive_failures: number;
 }

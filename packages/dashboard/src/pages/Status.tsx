@@ -2512,6 +2512,7 @@ function DatumPanel({
   const [copied, setCopied] = useState(false);
   const { i18n } = useLingui();
   void i18n;
+  const { intlLocale } = useLocale();
   const denomination = useDenomination();
 
   // Split the pool URL into scheme / host / port so the card doesn't
@@ -2564,6 +2565,14 @@ function DatumPanel({
           <div className="text-right font-mono text-slate-200">
             {datum.connections ?? '—'}
           </div>
+          {datum.rejected_shares_total !== null && (
+            <>
+              <div className="text-slate-400"><Trans>rejected shares</Trans></div>
+              <div className="text-right font-mono text-slate-200">
+                {formatNumber(datum.rejected_shares_total, {}, intlLocale)}
+              </div>
+            </>
+          )}
         </div>
       ) : (
         <div className="text-xs text-slate-500">

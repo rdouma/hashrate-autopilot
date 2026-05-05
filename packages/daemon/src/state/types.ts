@@ -342,6 +342,13 @@ export interface TickMetricsTable {
   primary_bid_shares_purchased_m: number | null;
   primary_bid_shares_accepted_m: number | null;
   primary_bid_shares_rejected_m: number | null;
+  /**
+   * #91 — Datum gateway-side rejected-shares counter, opportunistically
+   * scraped from `/umbrel-api` if the operator's build exposes it.
+   * Cumulative count. Null on every tick when DATUM does not expose
+   * the tile (the common case as of May 2026).
+   */
+  datum_rejected_shares_total: number | null;
   run_mode: RunMode;
   action_mode: ActionMode;
 }

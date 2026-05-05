@@ -231,6 +231,8 @@ export interface StatusResponse {
     reachable: boolean;
     connections: number | null;
     hashrate_ph: number | null;
+    /** #91 — gateway-side rejected-shares counter when DATUM exposes a /reject/i tile; null otherwise. */
+    rejected_shares_total: number | null;
     last_ok_at: number | null;
     consecutive_failures: number;
   } | null;

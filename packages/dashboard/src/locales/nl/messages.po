@@ -1791,6 +1791,10 @@ msgstr "vernieuwt over {0}"
 msgid "refreshing…"
 msgstr "vernieuwen…"
 
+#: src/pages/Status.tsx
+msgid "rejected shares"
+msgstr "afgewezen shares"
+
 #: src/pages/Login.tsx
 msgid "Remember me on this device"
 msgstr "Onthoud mij op dit apparaat"

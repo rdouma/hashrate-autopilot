@@ -176,6 +176,7 @@ export class Controller {
         primary_bid_shares_purchased_m: state.primary_bid_shares_purchased_m,
         primary_bid_shares_accepted_m: state.primary_bid_shares_accepted_m,
         primary_bid_shares_rejected_m: state.primary_bid_shares_rejected_m,
+        datum_rejected_shares_total: state.datum?.rejected_shares_total ?? null,
         run_mode: state.run_mode,
         action_mode: 'NORMAL' as const,
       });
