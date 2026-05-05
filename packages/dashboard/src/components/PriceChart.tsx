@@ -765,17 +765,26 @@ export const PriceChart = memo(function PriceChart({
     // operator sees at a glance that anything above the line is off-
     // limits. Only rendered when we actually have cap points; empty
     // when the column was backfilled as null for pre-migration ticks.
+    //
+    // Closes to y=0 (top of the SVG viewport), not PADDING.top: cap
+    // is excluded from Y-axis scaling on purpose (line 433-440), so
+    // when cap > priceMax the cap line renders ABOVE PADDING.top in
+    // SVG-y space. Closing to PADDING.top in that case puts the
+    // polygon's "top" edge BELOW the cap and inverts the fill —
+    // gradient ends up below the line instead of above. y=0 is
+    // always above any cap-line y, so the polygon always encloses
+    // the correct side regardless of where the cap falls.
     const capExclusionPolygon =
       capPoints.length > 0
         ? (() => {
-            const top = PADDING.top;
+            const top = 0;
             const leftEdgeX = xScale(capPoints[0]!.t).toFixed(1);
             const rightEdgeX = xScale(capPoints[capPoints.length - 1]!.t).toFixed(1);
             const capTrace = capPoints
               .map((p, i) => `${i === 0 ? 'M' : 'L'}${xScale(p.t).toFixed(1)},${yScale(p.v).toFixed(1)}`)
               .join(' ');
             // Start at the first cap point (already M), go up to the
-            // chart top, across to the right edge, and close back down
+            // viewport top, across to the right edge, and close back down
             // to the last cap point — that seals the polygon above
             // the cap curve.
             const close = ` L${rightEdgeX},${top} L${leftEdgeX},${top} Z`;

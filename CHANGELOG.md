@@ -2,6 +2,10 @@
 
 ## 2026-05-05
 
+### `[Fix]` Max-bid exclusion gradient renders above the cap line again
+
+The red gradient that marks the off-limits region above the `max bid` line on the Price chart was rendering on the wrong side: the cap is excluded from the chart's Y-axis auto-scaling on purpose (so the slow-moving ceiling doesn't squash detail in the live data band), but when `max_bid > priceMax` the polygon's "close" edge at `PADDING.top` ended up *below* the cap line in SVG-y space and inverted the fill. Closing the polygon to `y = 0` (top of viewport) instead — always above any cap-line y value — fixes both cases: when the cap sits inside the chart, and when it floats above the auto-ranged top tick.
+
 ### `[Feature]` BIP 110 scan card on Status (#95)
 
 A new "BIP 110 scan" card at the bottom of the Status page lets the operator pull a list of recent BIP 110-signaling blocks straight from the dashboard. Pick a window (2016 / 4032 / 8064 blocks), hit Scan, and the daemon runs `getblockchaininfo` + batched `getblockhash`/`getblockheader` calls against bitcoind RPC to surface the deployment header (status, retarget-window count/threshold) plus a table of signaling block heights with mempool.space links. Useful for verifying #94's crown marker against a known list of signaling blocks - block-level signaling is well under 1% in early adoption, so Ocean's recent-blocks window may not contain any. Requires bitcoind RPC creds configured on the daemon (the same ones the payout observer uses); shows a "not configured" empty state otherwise. en/nl/es catalogs updated.
