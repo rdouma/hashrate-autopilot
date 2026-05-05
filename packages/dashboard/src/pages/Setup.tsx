@@ -18,6 +18,8 @@ import { useNavigate } from 'react-router-dom';
 
 import { LanguagePicker } from '../components/LanguagePicker';
 import { api, type AppConfig, type SetupInfoResponse } from '../lib/api';
+import { formatNumber } from '../lib/format';
+import { useLocale } from '../lib/locale';
 import { setPassword } from '../lib/auth';
 
 const SAT_PER_EH_PER_PH = 1000;
@@ -627,8 +629,9 @@ function ReviewStep({
 }) {
   const { i18n } = useLingui();
   void i18n;
-  const phLabel = (n: number) => `${n} PH/s`;
-  const satLabel = (n: number) => t`${n.toLocaleString()} sat/PH/day (default — tunable later)`;
+  const { intlLocale } = useLocale();
+  const phLabel = (n: number) => `${formatNumber(n, {}, intlLocale)} PH/s`;
+  const satLabel = (n: number) => t`${formatNumber(n, {}, intlLocale)} sat/PH/day (default — tunable later)`;
   return (
     <div className="space-y-4">
       <Section title={t`Review`}>

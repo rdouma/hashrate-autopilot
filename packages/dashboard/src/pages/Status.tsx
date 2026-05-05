@@ -1284,7 +1284,7 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
     <section className="grid grid-cols-2 lg:grid-cols-6 gap-3">
       <StatCard
         label={t`uptime`}
-        value={uptime_pct !== null ? `${uptime_pct.toFixed(1)}%` : '\u2014'}
+        value={uptime_pct !== null ? `${formatNumber(uptime_pct, { minimumFractionDigits: 1, maximumFractionDigits: 1 }, intlLocale)}%` : '\u2014'}
         tooltip={t`Duration-weighted % of time with delivered hashrate > 0. Each tick is weighted by its actual duration (time until the next tick) so gaps after restarts count proportionally.`}
         color={
           uptime_pct === null
@@ -1620,8 +1620,8 @@ function BraiinsBalances({
             day: 'numeric',
           });
           const daysCount = runwayDays >= 10
-            ? Math.round(runwayDays).toString()
-            : runwayDays.toFixed(1);
+            ? formatNumber(Math.round(runwayDays), {}, locale)
+            : formatNumber(runwayDays, { minimumFractionDigits: 1, maximumFractionDigits: 1 }, locale);
           return t`${daysCount} days \u00b7 ~${dateLabel}`;
         })();
         return (
@@ -1740,7 +1740,7 @@ function OceanPanel() {
             k={t`share log`}
             v={
               o.user.share_log_pct !== null
-                ? `${o.user.share_log_pct.toFixed(4)}%`
+                ? `${formatNumber(o.user.share_log_pct, { minimumFractionDigits: 4, maximumFractionDigits: 4 }, intlLocale)}%`
                 : '\u2014'
             }
             tooltip={t`Our slice of Ocean's TIDES window. Ocean's payout system rewards us proportionally to this fraction every block the pool finds. As Ocean's total hashrate grows or our delivered PH/s shrinks, this drifts down; as we deliver more or pool shrinks, it drifts up.`}
@@ -2576,6 +2576,7 @@ function DatumPanel({
 }
 
 function BidProgress({ pct }: { pct: number | null }) {
+  const { intlLocale } = useLocale();
   if (pct === null || pct === undefined) return <span className="text-slate-600 text-xs">—</span>;
   const clamped = Math.max(0, Math.min(100, pct));
   return (
@@ -2584,7 +2585,7 @@ function BidProgress({ pct }: { pct: number | null }) {
         <div className="h-full bg-emerald-500" style={{ width: `${clamped}%` }} />
       </div>
       <span className="text-xs text-slate-400 font-mono tabular-nums w-9 text-right">
-        {clamped.toFixed(0)}%
+        {formatNumber(clamped, {}, intlLocale)}%
       </span>
     </div>
   );

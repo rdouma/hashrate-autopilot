@@ -2,6 +2,10 @@
 
 ## 2026-05-05
 
+### `[Fix]` Sweep stale `.toFixed()` and `.toLocaleString()` calls so every display number respects the configured locale
+
+Operator caught the inconsistency: hero `UPTIME 98.6%` rendered with `.` while `AVG BRAIINS 2,88` rendered with `,` — first one was `uptime_pct.toFixed(1)` (locale-blind, always dot decimal), the second was the locale-aware path. Same shape in five other places: runway-days fractional part, share_log percent on the OCEAN panel, BidProgress percent, share_log right-axis tick formatter on the Hashrate chart, the share_log row in block tooltips, and the Setup wizard's `n.toLocaleString()` PH/sat labels (defaults to browser locale rather than the dashboard's display-locale setting). All seven now go through `formatNumber(...intlLocale)` or `new Intl.NumberFormat(intlLocale, ...)` and respect the locale picker on Config. SVG path coordinates and CSS percent widths still use `.toFixed()` — those have to be locale-blind by spec.
+
 ### `[UI]` Effective-rate moved to the price-chart right-axis dropdown; Electrs test button on Config
 
 Two related Config-page tidies. The `Show effective rate on price chart` and `Show share_log % on hashrate chart` checkboxes were leftovers from before the per-chart right-axis dropdowns landed in #93. share_log already lived in the hashrate dropdown (the checkbox was orphaned); effective rate now joins the price-chart dropdown as a new option, which has the bonus that it gets its own scale on the right axis - the whole reason the original checkbox was off-by-default ("emerald line auto-scales the Y-axis and squashes the bid/fillable detail") is no longer a problem when the line lives on a separate scale. Both checkboxes removed from the Config page; schema columns kept for migration safety, no longer read by chart code. Plus a Test connection button in the Electrs section of Config (matching the bitcoind RPC one), powered by a new `/api/electrs/test` endpoint that opens the TCP socket and fetches the genesis-block header to confirm end-to-end protocol response. Port input narrowed to make room for the button. en/nl/es catalogs updated.

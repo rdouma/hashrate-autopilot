@@ -287,7 +287,11 @@ export const HashrateChart = memo(function HashrateChart({
         case 'share_log':
           return {
             values: points.map((p) => p.share_log_pct),
-            formatTick: (v) => `${v.toFixed(4)}%`,
+            formatTick: (v) =>
+              `${new Intl.NumberFormat(intlLocale, {
+                minimumFractionDigits: 4,
+                maximumFractionDigits: 4,
+              }).format(v)}%`,
             axisLabel: '% of Ocean',
             stroke: '#cbd5e1',
           };
@@ -919,7 +923,12 @@ function BlockTooltip({
             </div>
             <div className="flex justify-between gap-3">
               <span className="text-slate-500"><Trans>share log</Trans></span>
-              <span className="font-mono tabular-nums">{effective.toFixed(4)}%</span>
+              <span className="font-mono tabular-nums">
+                {new Intl.NumberFormat(locale, {
+                  minimumFractionDigits: 4,
+                  maximumFractionDigits: 4,
+                }).format(effective)}%
+              </span>
             </div>
             <BtcRow
               label={t`our earnings`}
