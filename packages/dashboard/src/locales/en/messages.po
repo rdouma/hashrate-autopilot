@@ -417,20 +417,38 @@ msgstr "blocked"
 #~ msgstr "Blocks Ocean found in the last 24h. The 'X.XX× lucky/unlucky' annotation compares observed vs the network-share expectation: at Ocean's ~5% share of network hashrate and ~144 blocks/day on the network, the expected count is ~7 blocks/24h. 1.00× = exactly that; >1 = lucky; <1 = unlucky. Wide variance is normal at 24h (Poisson σ is large at this window); the 7d row below is where sustained drift becomes meaningful."
 
 #: src/pages/Status.tsx
-msgid "Blocks Ocean found in the last 24h. The \"X.XX× expected\" multiplier is the observed rate divided by the Poisson-derived expected rate: at Ocean's ~5% share of network hashrate, the expectation is ~144 × 5% = ~7 blocks/24h. The denominator extends with elapsed-since-last-block so the value decays continuously between finds; at the moment of each find it equals exactly count / expected_for_window. >1.00× means we found more than expected, <1.00× means fewer. Same number the chart's right-axis pool-luck line plots. Wide variance is normal at 24h - Poisson σ is large at this window."
-msgstr "Blocks Ocean found in the last 24h. The \"X.XX× expected\" multiplier is the observed rate divided by the Poisson-derived expected rate: at Ocean's ~5% share of network hashrate, the expectation is ~144 × 5% = ~7 blocks/24h. The denominator extends with elapsed-since-last-block so the value decays continuously between finds; at the moment of each find it equals exactly count / expected_for_window. >1.00× means we found more than expected, <1.00× means fewer. Same number the chart's right-axis pool-luck line plots. Wide variance is normal at 24h - Poisson σ is large at this window."
+msgid "Blocks Ocean found in the last 24h. The \"X.XX× expected\" multiplier compares observed vs Poisson-expected. Pool hashrate / network difficulty unavailable right now; tooltip will show live share % once Ocean stats are reachable again."
+msgstr "Blocks Ocean found in the last 24h. The \"X.XX× expected\" multiplier compares observed vs Poisson-expected. Pool hashrate / network difficulty unavailable right now; tooltip will show live share % once Ocean stats are reachable again."
+
+#: src/pages/Status.tsx
+#~ msgid "Blocks Ocean found in the last 24h. The \"X.XX× expected\" multiplier is the observed rate divided by the Poisson-derived expected rate: at Ocean's ~5% share of network hashrate, the expectation is ~144 × 5% = ~7 blocks/24h. The denominator extends with elapsed-since-last-block so the value decays continuously between finds; at the moment of each find it equals exactly count / expected_for_window. >1.00× means we found more than expected, <1.00× means fewer. Same number the chart's right-axis pool-luck line plots. Wide variance is normal at 24h - Poisson σ is large at this window."
+#~ msgstr "Blocks Ocean found in the last 24h. The \"X.XX× expected\" multiplier is the observed rate divided by the Poisson-derived expected rate: at Ocean's ~5% share of network hashrate, the expectation is ~144 × 5% = ~7 blocks/24h. The denominator extends with elapsed-since-last-block so the value decays continuously between finds; at the moment of each find it equals exactly count / expected_for_window. >1.00× means we found more than expected, <1.00× means fewer. Same number the chart's right-axis pool-luck line plots. Wide variance is normal at 24h - Poisson σ is large at this window."
+
+#. placeholder {0}: fmt(expected24h, 2)
+#: src/pages/Status.tsx
+msgid "Blocks Ocean found in the last 24h. The \"X.XX× expected\" multiplier is the observed rate divided by the Poisson-derived expected rate: Ocean's current share of network hashrate is {shareStr}, so the expectation over 24h (~144 blocks on the network) is ~{0} blocks. The denominator extends with elapsed-since-last-block so the value decays continuously between finds; at the moment of each find it equals exactly count / expected_for_window. >1.00× means we found more than expected, <1.00× means fewer. Same number the chart's right-axis pool-luck line plots. Wide variance is normal at 24h - Poisson σ is large at this window."
+msgstr "Blocks Ocean found in the last 24h. The \"X.XX× expected\" multiplier is the observed rate divided by the Poisson-derived expected rate: Ocean's current share of network hashrate is {shareStr}, so the expectation over 24h (~144 blocks on the network) is ~{0} blocks. The denominator extends with elapsed-since-last-block so the value decays continuously between finds; at the moment of each find it equals exactly count / expected_for_window. >1.00× means we found more than expected, <1.00× means fewer. Same number the chart's right-axis pool-luck line plots. Wide variance is normal at 24h - Poisson σ is large at this window."
 
 #: src/pages/Status.tsx
 #~ msgid "Blocks Ocean found in the last 7d, same formula as the 24h row. 7d smooths the short-term variance: a sustained <0.7× over a week suggests something structural (lower hashrate share than the estimator implies, or a real upstream issue at Ocean)."
 #~ msgstr "Blocks Ocean found in the last 7d, same formula as the 24h row. 7d smooths the short-term variance: a sustained <0.7× over a week suggests something structural (lower hashrate share than the estimator implies, or a real upstream issue at Ocean)."
 
 #: src/pages/Status.tsx
-msgid "Blocks Ocean found in the last 7d, same observed-vs-Poisson-expected ratio as the 24h row. 7d smooths the short-term Poisson variance: a sustained <0.70× over a week suggests something structural (lower hashrate share than the estimator implies, or a real upstream issue at Ocean)."
-msgstr "Blocks Ocean found in the last 7d, same observed-vs-Poisson-expected ratio as the 24h row. 7d smooths the short-term Poisson variance: a sustained <0.70× over a week suggests something structural (lower hashrate share than the estimator implies, or a real upstream issue at Ocean)."
+#~ msgid "Blocks Ocean found in the last 7d, same observed-vs-Poisson-expected ratio as the 24h row. 7d smooths the short-term Poisson variance: a sustained <0.70× over a week suggests something structural (lower hashrate share than the estimator implies, or a real upstream issue at Ocean)."
+#~ msgstr "Blocks Ocean found in the last 7d, same observed-vs-Poisson-expected ratio as the 24h row. 7d smooths the short-term Poisson variance: a sustained <0.70× over a week suggests something structural (lower hashrate share than the estimator implies, or a real upstream issue at Ocean)."
+
+#: src/pages/Status.tsx
+msgid "Blocks Ocean found in the last 7d, same observed-vs-Poisson-expected ratio as the 24h row. Pool hashrate / network difficulty unavailable right now; tooltip will show live numbers once Ocean stats are reachable again."
+msgstr "Blocks Ocean found in the last 7d, same observed-vs-Poisson-expected ratio as the 24h row. Pool hashrate / network difficulty unavailable right now; tooltip will show live numbers once Ocean stats are reachable again."
 
 #: src/pages/Status.tsx
 #~ msgid "Blocks Ocean found in the last 7d, with the same network-share luck multiplier. 7d smooths the short-term Poisson variance: a sustained <0.7× over a week suggests something structural (lower hashrate share than the estimator implies, or a real upstream issue at Ocean)."
 #~ msgstr "Blocks Ocean found in the last 7d, with the same network-share luck multiplier. 7d smooths the short-term Poisson variance: a sustained <0.7× over a week suggests something structural (lower hashrate share than the estimator implies, or a real upstream issue at Ocean)."
+
+#. placeholder {0}: fmt(expected7d, 1)
+#: src/pages/Status.tsx
+msgid "Blocks Ocean found in the last 7d. Same observed-vs-Poisson-expected ratio as the 24h row, with the window extended: at Ocean's current share of {shareStr}, the 7d expectation is ~{0} blocks. 7d smooths the short-term Poisson variance: a sustained <0.70× over a week suggests something structural (lower hashrate share than the estimator implies, or a real upstream issue at Ocean)."
+msgstr "Blocks Ocean found in the last 7d. Same observed-vs-Poisson-expected ratio as the 24h row, with the window extended: at Ocean's current share of {shareStr}, the 7d expectation is ~{0} blocks. 7d smooths the short-term Poisson variance: a sustained <0.70× over a week suggests something structural (lower hashrate share than the estimator implies, or a real upstream issue at Ocean)."
 
 #: src/pages/Config.tsx
 msgid "Boot directly into LIVE. Use only when the autopilot is proven and the box reboots should not interrupt bidding."

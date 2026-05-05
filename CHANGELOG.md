@@ -2,6 +2,10 @@
 
 ## 2026-05-05
 
+### `[UI]` Pool-luck tooltips quote the live network share, not a hardcoded 5% (#92)
+
+The OCEAN panel's pool-blocks tooltip explained the math by example, but the example used a hardcoded "Ocean's ~5% share of network hashrate" which drifted out of date (mempool.space showed Ocean at ~1.7% the day the operator caught it). Now the tooltip computes Ocean's share live from `pool_hashrate_ph / network_hashrate` on every render and quotes the resulting % + the implied expected block count for the relevant window. en/nl/es catalogs updated.
+
 ### `[UI]` Pool-luck multiplier reads "× expected" instead of "× lucky/unlucky" (#92)
 
 The OCEAN panel showed "4 (0.99× unlucky)", which read as a double-negative ("0.99 times more unlucky") and was confusing below 1.00×. Replaced the verdict word with the neutral "× expected" suffix - the multiplier itself is the verdict (>1.00× = above expectation, <1.00× = below). Tooltip rewritten to explain the Poisson-derived expected rate that drives the denominator. en/nl/es catalogs updated.

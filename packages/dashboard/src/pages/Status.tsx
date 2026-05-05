@@ -1814,16 +1814,50 @@ function OceanPanel() {
         ) : (
           <Row k={t`last pool block`} v={'\u2014'} />
         )}
-        <Row
-          k={t`pool blocks 24h`}
-          v={renderPoolBlocksRow(o.blocks_24h, o.pool_luck_24h, intlLocale)}
-          tooltip={t`Blocks Ocean found in the last 24h. The "X.XX\u00d7 expected" multiplier is the observed rate divided by the Poisson-derived expected rate: at Ocean's ~5% share of network hashrate, the expectation is ~144 \u00d7 5% = ~7 blocks/24h. The denominator extends with elapsed-since-last-block so the value decays continuously between finds; at the moment of each find it equals exactly count / expected_for_window. >1.00\u00d7 means we found more than expected, <1.00\u00d7 means fewer. Same number the chart's right-axis pool-luck line plots. Wide variance is normal at 24h - Poisson \u03c3 is large at this window.`}
-        />
-        <Row
-          k={t`pool blocks 7d`}
-          v={renderPoolBlocksRow(o.blocks_7d, o.pool_luck_7d, intlLocale)}
-          tooltip={t`Blocks Ocean found in the last 7d, same observed-vs-Poisson-expected ratio as the 24h row. 7d smooths the short-term Poisson variance: a sustained <0.70\u00d7 over a week suggests something structural (lower hashrate share than the estimator implies, or a real upstream issue at Ocean).`}
-        />
+        {(() => {
+          // Live pool share derived from current Ocean stats. The
+          // tooltip used to hardcode "~5%" which drifted out of date
+          // (Ocean was ~1.7% per mempool.space at the time the
+          // operator caught it). Now computed per render so the
+          // tooltip reflects whatever Ocean's share is right now.
+          const pool = o.pool;
+          const sharePct =
+            pool?.pool_hashrate_ph && pool.network_difficulty && pool.network_difficulty > 0
+              ? (pool.pool_hashrate_ph * 1e15 * 600) /
+                (pool.network_difficulty * 2 ** 32) /
+                0.01
+              : null;
+          const fmt = (n: number, digits: number): string =>
+            new Intl.NumberFormat(intlLocale, {
+              minimumFractionDigits: digits,
+              maximumFractionDigits: digits,
+            }).format(n);
+          const shareStr = sharePct !== null ? `${fmt(sharePct, 2)}%` : null;
+          const expected24h = sharePct !== null ? sharePct * 144 / 100 : null;
+          const expected7d = sharePct !== null ? sharePct * 144 * 7 / 100 : null;
+          const tooltip24h =
+            shareStr && expected24h !== null
+              ? t`Blocks Ocean found in the last 24h. The "X.XX\u00d7 expected" multiplier is the observed rate divided by the Poisson-derived expected rate: Ocean's current share of network hashrate is ${shareStr}, so the expectation over 24h (~144 blocks on the network) is ~${fmt(expected24h, 2)} blocks. The denominator extends with elapsed-since-last-block so the value decays continuously between finds; at the moment of each find it equals exactly count / expected_for_window. >1.00\u00d7 means we found more than expected, <1.00\u00d7 means fewer. Same number the chart's right-axis pool-luck line plots. Wide variance is normal at 24h - Poisson \u03c3 is large at this window.`
+              : t`Blocks Ocean found in the last 24h. The "X.XX\u00d7 expected" multiplier compares observed vs Poisson-expected. Pool hashrate / network difficulty unavailable right now; tooltip will show live share % once Ocean stats are reachable again.`;
+          const tooltip7d =
+            shareStr && expected7d !== null
+              ? t`Blocks Ocean found in the last 7d. Same observed-vs-Poisson-expected ratio as the 24h row, with the window extended: at Ocean's current share of ${shareStr}, the 7d expectation is ~${fmt(expected7d, 1)} blocks. 7d smooths the short-term Poisson variance: a sustained <0.70\u00d7 over a week suggests something structural (lower hashrate share than the estimator implies, or a real upstream issue at Ocean).`
+              : t`Blocks Ocean found in the last 7d, same observed-vs-Poisson-expected ratio as the 24h row. Pool hashrate / network difficulty unavailable right now; tooltip will show live numbers once Ocean stats are reachable again.`;
+          return (
+            <>
+              <Row
+                k={t`pool blocks 24h`}
+                v={renderPoolBlocksRow(o.blocks_24h, o.pool_luck_24h, intlLocale)}
+                tooltip={tooltip24h}
+              />
+              <Row
+                k={t`pool blocks 7d`}
+                v={renderPoolBlocksRow(o.blocks_7d, o.pool_luck_7d, intlLocale)}
+                tooltip={tooltip7d}
+              />
+            </>
+          );
+        })()}
       </div>
       {o.pool && (
         <div className="border-t border-slate-800 mt-2 pt-2">
