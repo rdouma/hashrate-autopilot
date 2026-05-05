@@ -111,6 +111,11 @@ export interface AggregatedTickMetricRow {
   pool_hashrate_ph_avg_7d: number | null;
   pool_luck_24h: number | null;
   pool_luck_7d: number | null;
+  /** #90: per-tick cumulative share counters from /spot/bid/delivery. */
+  primary_bid_shares_purchased_m: number | null;
+  primary_bid_shares_accepted_m: number | null;
+  /** #91: Datum gateway-side rejected-shares counter. */
+  datum_rejected_shares_total: number | null;
 }
 
 export class TickMetricsRepo {
@@ -178,6 +183,9 @@ export class TickMetricsRepo {
         pool_hashrate_ph_avg_7d: r.pool_hashrate_ph_avg_7d,
         pool_luck_24h: r.pool_luck_24h,
         pool_luck_7d: r.pool_luck_7d,
+        primary_bid_shares_purchased_m: r.primary_bid_shares_purchased_m,
+        primary_bid_shares_accepted_m: r.primary_bid_shares_accepted_m,
+        datum_rejected_shares_total: r.datum_rejected_shares_total,
       }));
     }
 
@@ -238,6 +246,13 @@ export class TickMetricsRepo {
         // a bucket's mean luck reads cleanly.
         sql<number | null>`AVG(pool_luck_24h)`.as('pool_luck_24h'),
         sql<number | null>`AVG(pool_luck_7d)`.as('pool_luck_7d'),
+        // #90: cumulative share counters - same MAX-end-of-bucket
+        // strategy as primary_bid_consumed_sat so bucket-to-bucket
+        // forward deltas yield the per-bucket acceptance ratio cleanly.
+        sql<number | null>`MAX(primary_bid_shares_purchased_m)`.as('primary_bid_shares_purchased_m'),
+        sql<number | null>`MAX(primary_bid_shares_accepted_m)`.as('primary_bid_shares_accepted_m'),
+        // #91: cumulative reject counter — same MAX strategy.
+        sql<number | null>`MAX(datum_rejected_shares_total)`.as('datum_rejected_shares_total'),
       ])
       .where('tick_at', '>=', sinceMs)
       .groupBy(sql`tick_at / ${sql.lit(bucketMs)}`)

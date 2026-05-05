@@ -164,6 +164,11 @@ export interface MetricPoint {
    */
   pool_luck_24h: number | null;
   pool_luck_7d: number | null;
+  /** #90: cumulative shares purchased / accepted on the primary bid (millions); pair-wise deltas drive the chart's acceptance series. */
+  primary_bid_shares_purchased_m: number | null;
+  primary_bid_shares_accepted_m: number | null;
+  /** #91: Datum gateway-side rejected-shares counter (cumulative); null when DATUM does not expose a /reject/i tile. */
+  datum_rejected_shares_total: number | null;
 }
 
 export interface BidEventView {

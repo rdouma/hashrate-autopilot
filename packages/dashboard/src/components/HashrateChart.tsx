@@ -145,7 +145,9 @@ export type HashrateRightAxis =
   | 'network_difficulty'
   | 'pool_hashrate'
   | 'pool_luck_24h'
-  | 'pool_luck_7d';
+  | 'pool_luck_7d'
+  | 'acceptance'
+  | 'datum_rejects';
 
 interface RightAxisSpec {
   /** Per-point values pulled off MetricPoint. */
@@ -323,6 +325,69 @@ export const HashrateChart = memo(function HashrateChart({
             axisLabel: `pool ${denomination.hashrateSuffix}`,
             stroke: '#cbd5e1',
           };
+        case 'acceptance': {
+          // #90: per-bucket acceptance ratio computed from forward
+          // deltas of the cumulative shares_purchased / shares_accepted
+          // counters. The aggregated tick rows take MAX-end-of-bucket
+          // for these counters, so bucket-to-bucket pair-wise deltas
+          // give the per-bucket purchased + accepted volume; the ratio
+          // (accepted / purchased) reads as a clean per-tick percentage.
+          // Pairs where either side is null OR the counter went
+          // backwards (bid replacement resets to zero) emit null —
+          // the chart shows a gap on the line for those ticks.
+          const values: (number | null)[] = points.map((p, i) => {
+            if (i === 0) return null;
+            const prev = points[i - 1]!;
+            const curP = p.primary_bid_shares_purchased_m;
+            const curA = p.primary_bid_shares_accepted_m;
+            const prevP = prev.primary_bid_shares_purchased_m;
+            const prevA = prev.primary_bid_shares_accepted_m;
+            if (
+              curP === null || curA === null ||
+              prevP === null || prevA === null ||
+              curP < prevP || curA < prevA
+            ) return null;
+            const dp = curP - prevP;
+            if (dp <= 0) return null;
+            const da = curA - prevA;
+            return (da / dp) * 100;
+          });
+          return {
+            values,
+            formatTick: (v) =>
+              `${new Intl.NumberFormat(intlLocale, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              }).format(v)}%`,
+            axisLabel: 'acceptance %',
+            stroke: '#cbd5e1',
+          };
+        }
+        case 'datum_rejects': {
+          // #91: per-bucket forward delta of the cumulative
+          // datum_rejected_shares_total counter. Same delta semantics
+          // as acceptance — null on the first tick or any pair where
+          // the counter went backwards (DATUM restart). Operators on
+          // builds that do NOT expose the reject tile see an empty
+          // line; the column is null on every tick for them.
+          const values: (number | null)[] = points.map((p, i) => {
+            if (i === 0) return null;
+            const prev = points[i - 1]!;
+            const cur = p.datum_rejected_shares_total;
+            const last = prev.datum_rejected_shares_total;
+            if (cur === null || last === null || cur < last) return null;
+            return cur - last;
+          });
+          return {
+            values,
+            formatTick: (v) =>
+              new Intl.NumberFormat(intlLocale, {
+                maximumFractionDigits: 0,
+              }).format(v),
+            axisLabel: 'datum rejects (per bucket)',
+            stroke: '#cbd5e1',
+          };
+        }
         case 'pool_luck_24h':
         case 'pool_luck_7d': {
           // Gap-based pool luck, computed per tick on the daemon side

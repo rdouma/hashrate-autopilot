@@ -208,8 +208,12 @@ msgid "A few questions to get the daemon operational. Defaults work for typical 
 msgstr "Een paar vragen om de daemon werkend te krijgen. De standaardwaarden werken voor typische thuisminers; pas later aan via de Config-pagina."
 
 #: src/pages/Status.tsx
-msgid "acceptance 1h"
-msgstr "acceptatie 1u"
+msgid "acceptance (1h)"
+msgstr "acceptatie (1u)"
+
+#: src/pages/Status.tsx
+msgid "acceptance %"
+msgstr "acceptatie %"
 
 #: src/pages/Setup.tsx
 msgid "Access"
@@ -748,6 +752,10 @@ msgstr "Datum /umbrel-api HTTP-poll."
 #: src/pages/Status.tsx
 msgid "datum hashrate"
 msgstr "datum hashrate"
+
+#: src/pages/Status.tsx
+msgid "datum rejects"
+msgstr "datum afwijzingen"
 
 #: src/pages/Config.tsx
 msgid "Datum stats API (optional)"

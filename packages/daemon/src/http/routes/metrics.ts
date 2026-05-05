@@ -102,6 +102,11 @@ export interface MetricPoint {
    */
   readonly pool_luck_24h: number | null;
   readonly pool_luck_7d: number | null;
+  /** #90: cumulative shares (millions) purchased / accepted on the primary bid; per-tick deltas drive the chart's acceptance series. */
+  readonly primary_bid_shares_purchased_m: number | null;
+  readonly primary_bid_shares_accepted_m: number | null;
+  /** #91: Datum gateway-side rejected-shares counter (cumulative); null when DATUM does not expose it. */
+  readonly datum_rejected_shares_total: number | null;
 }
 
 export async function registerMetricsRoute(
@@ -181,6 +186,9 @@ function toMetricPoint(r: {
   pool_hashrate_ph_avg_7d: number | null;
   pool_luck_24h: number | null;
   pool_luck_7d: number | null;
+  primary_bid_shares_purchased_m: number | null;
+  primary_bid_shares_accepted_m: number | null;
+  datum_rejected_shares_total: number | null;
 }): MetricPoint {
   return {
     tick_at: r.tick_at,
@@ -223,6 +231,9 @@ function toMetricPoint(r: {
     pool_hashrate_ph_avg_7d: r.pool_hashrate_ph_avg_7d,
     pool_luck_24h: r.pool_luck_24h,
     pool_luck_7d: r.pool_luck_7d,
+    primary_bid_shares_purchased_m: r.primary_bid_shares_purchased_m,
+    primary_bid_shares_accepted_m: r.primary_bid_shares_accepted_m,
+    datum_rejected_shares_total: r.datum_rejected_shares_total,
   };
 }
 

@@ -2,6 +2,10 @@
 
 ## 2026-05-05
 
+### `[UI]` Acceptance + datum-rejects move from hero stat row to BRAIINS panel + hashrate chart right-axis (#90, #91)
+
+Operator review: a one-off `ACCEPTANCE 1H` card on the hero stat row was the wrong shape — it crowded an already-tight hero row and showed only a single instant value with no time series to analyse. Moved off the hero. The 1h-rolling acceptance ratio now lives as a row inside the BRAIINS panel (which is where its inputs come from — `shares_purchased_m` and `shares_accepted_m` are both Braiins-reported). The hashrate chart's right-axis dropdown gains two new options: **acceptance %** (per-bucket forward-delta ratio of the cumulative counters; the chart shows a gap on bid resets where the counter restarts at zero) and **datum rejects** (per-bucket delta of the gateway-side reject counter from #91). Both series persist in `tick_metrics` already; bucket aggregation uses `MAX(...)` for the cumulative counters so chart-bucket-to-bucket deltas read cleanly. en/nl/es catalogs updated.
+
 ### `[Feature]` Datum gateway-side rejected-shares capture (heuristic, opportunistic) (#91, partial)
 
 The DATUM `/umbrel-api` poller now scans `items[]` for any tile whose `title` matches `/reject/i` and parses the leading numeric portion of `text` into `tick_metrics.datum_rejected_shares_total` (migration 0060). Most DATUM builds in May 2026 do not expose a reject tile, so the column stays null on every tick for those operators and the dashboard surface silently no-ops. The poller also logs every observed `items[].title` once per service instance (`[datum] /umbrel-api items observed: ...`), which gives the issue's Step 1 scoping data straight from the operator's running daemon — next time we look at the daemon log we will know exactly what tiles their build exposes and can refine the heuristic if needed. Status page Datum panel renders a `rejected shares` row when the value is non-null. en/nl/es catalogs updated. The "delta vs Braiins-reported rejects" comparison from the issue text is deferred until we have at least one DATUM build actually emitting the counter to design against.

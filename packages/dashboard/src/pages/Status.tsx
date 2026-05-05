@@ -75,7 +75,9 @@ function readStoredHashrateRightAxis(
     raw === 'network_difficulty' ||
     raw === 'pool_hashrate' ||
     raw === 'pool_luck_24h' ||
-    raw === 'pool_luck_7d'
+    raw === 'pool_luck_7d' ||
+    raw === 'acceptance' ||
+    raw === 'datum_rejects'
   ) {
     return raw;
   }
@@ -277,6 +279,8 @@ export function Status() {
             className="bg-slate-800 border border-slate-700 rounded px-2 py-0.5 text-[11px]"
           >
             <option value="none">{t`none`}</option>
+            <option value="acceptance">{t`acceptance %`}</option>
+            <option value="datum_rejects">{t`datum rejects`}</option>
             <option value="share_log">{t`share_log %`}</option>
             <option value="network_difficulty">{t`network difficulty`}</option>
             <option value="pool_hashrate">{t`pool hashrate`}</option>
@@ -403,6 +407,41 @@ export function Status() {
             <Row k={t`best bid`} v={denomination.formatSatPerPhDay(s.market?.best_bid_sat_per_ph_day ?? null, intlLocale)} />
             <Row k={t`best ask`} v={denomination.formatSatPerPhDay(s.market?.best_ask_sat_per_ph_day ?? null, intlLocale)} />
           </div>
+          {(() => {
+            // #90 — 1h-rolling pool acceptance ratio belongs on the
+            // BRAIINS panel because the numerator + denominator are
+            // both Braiins-reported (`shares_purchased_m` is what
+            // Braiins validated; `shares_accepted_m` is what the pool
+            // confirmed back to Braiins). Hidden until we have at
+            // least one usable counter pair in the trailing hour.
+            const acc = statsQuery.data?.acceptance_pct_1h;
+            if (acc === null || acc === undefined) return null;
+            const colorClass =
+              acc >= 99.5
+                ? 'text-emerald-300'
+                : acc >= 98
+                  ? 'text-amber-300'
+                  : 'text-red-300';
+            return (
+              <div className="border-t border-slate-800 mt-2 pt-2">
+                <Tooltip
+                  text={t`Pool-side share acceptance over the trailing hour: (shares accepted by the target / shares purchased from Braiins) × 100. Healthy baseline ≈ 99.95%; baseline rejection of ~0.05% is normal noise. Sustained drops below ~99% point at Datum stale work, worker-identity misconfiguration, or pool difficulty too low — see docs/research.md §7.5.`}
+                >
+                  <div className="flex justify-between text-sm py-0.5 cursor-help">
+                    <span className="text-slate-400"><Trans>acceptance (1h)</Trans></span>
+                    <span className={`font-mono ${colorClass}`}>
+                      {formatNumber(
+                        acc,
+                        { minimumFractionDigits: 2, maximumFractionDigits: 2 },
+                        intlLocale,
+                      )}
+                      %
+                    </span>
+                  </div>
+                </Tooltip>
+              </div>
+            );
+          })()}
           <div className="border-t border-slate-800 mt-2 pt-2">
             <BraiinsBalances
               balances={s.balances}
@@ -1292,24 +1331,6 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
             : uptime_pct >= 90
               ? 'text-emerald-300'
               : uptime_pct >= 50
-                ? 'text-amber-300'
-                : 'text-red-300'
-        }
-      />
-      <StatCard
-        label={t`acceptance 1h`}
-        value={
-          acceptance_pct_1h !== null
-            ? `${formatNumber(acceptance_pct_1h, { minimumFractionDigits: 2, maximumFractionDigits: 2 }, intlLocale)}%`
-            : '\u2014'
-        }
-        tooltip={t`Pool-side share acceptance over the trailing hour: (shares accepted by the target / shares purchased from Braiins) \u00d7 100. Healthy baseline \u2248 99.95%; baseline rejection of ~0.05% is normal noise. Sustained drops below ~99% point at Datum stale work, worker-identity misconfiguration, or pool difficulty too low \u2014 see docs/research.md \u00a77.5.`}
-        color={
-          acceptance_pct_1h === null
-            ? 'text-slate-400'
-            : acceptance_pct_1h >= 99.5
-              ? 'text-emerald-300'
-              : acceptance_pct_1h >= 98
                 ? 'text-amber-300'
                 : 'text-red-300'
         }

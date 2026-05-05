@@ -208,8 +208,12 @@ msgid "A few questions to get the daemon operational. Defaults work for typical 
 msgstr "Unas preguntas para poner el daemon operativo. Los valores predeterminados funcionan para mineros caseros típicos; ajusta más tarde desde la página Config."
 
 #: src/pages/Status.tsx
-msgid "acceptance 1h"
-msgstr "aceptación 1h"
+msgid "acceptance (1h)"
+msgstr "aceptación (1h)"
+
+#: src/pages/Status.tsx
+msgid "acceptance %"
+msgstr "aceptación %"
 
 #: src/pages/Setup.tsx
 msgid "Access"
@@ -748,6 +752,10 @@ msgstr "Sondeo HTTP a /umbrel-api de Datum."
 #: src/pages/Status.tsx
 msgid "datum hashrate"
 msgstr "hashrate datum"
+
+#: src/pages/Status.tsx
+msgid "datum rejects"
+msgstr "rechazos datum"
 
 #: src/pages/Config.tsx
 msgid "Datum stats API (optional)"
