@@ -2,6 +2,10 @@
 
 ## 2026-05-05
 
+### `[Feature]` 1h Datum-vs-Braiins reject comparison on the Datum panel (#91)
+
+The original #91 spec called for "a 'datum rejects (1h)' row on the Datum panel + a delta vs Braiins-reported rejects so the operator can tell which leg is dropping shares" — the per-tick capture shipped earlier but the 1h-rolling row + the side-by-side Braiins comparison did not. Filling that gap. New `/api/stats` fields `datum_rejects_1h` (forward delta of the gateway's cumulative reject counter over the trailing hour) and `braiins_rejects_count_1h` (forward delta of `primary_bid_shares_rejected_m × 1_000_000`, converted to raw count for direct comparison). Datum panel now renders both as side-by-side rows so the operator can read the asymmetry directly: Datum > Braiins means the gateway filtered work that never reached the pool (good — Datum saved cost); Braiins > Datum means the pool rejected work Datum thought was fine (stale-work signature per research.md §4.5). Both rows hidden when their sources are null. en/nl/es catalogs updated.
+
 ### `[UI]` Acceptance + datum-rejects move from hero stat row to BRAIINS panel + hashrate chart right-axis (#90, #91)
 
 Operator review: a one-off `ACCEPTANCE 1H` card on the hero stat row was the wrong shape — it crowded an already-tight hero row and showed only a single instant value with no time series to analyse. Moved off the hero. The 1h-rolling acceptance ratio now lives as a row inside the BRAIINS panel (which is where its inputs come from — `shares_purchased_m` and `shares_accepted_m` are both Braiins-reported). The hashrate chart's right-axis dropdown gains two new options: **acceptance %** (per-bucket forward-delta ratio of the cumulative counters; the chart shows a gap on bid resets where the counter restarts at zero) and **datum rejects** (per-bucket delta of the gateway-side reject counter from #91). Both series persist in `tick_metrics` already; bucket aggregation uses `MAX(...)` for the cumulative counters so chart-bucket-to-bucket deltas read cleanly. en/nl/es catalogs updated.

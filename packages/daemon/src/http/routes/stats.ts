@@ -79,6 +79,25 @@ export interface StatsResponse {
   readonly acceptance_pct_1h: number | null;
   readonly acceptance_purchased_delta_1h: number | null;
   readonly acceptance_accepted_delta_1h: number | null;
+  /**
+   * #91 — 1h-rolling forward delta of the cumulative DATUM gateway
+   * reject counter. Pairs with `braiins_rejects_count_1h` on the
+   * Datum panel so the operator can compare "shares Datum thinks
+   * were rejected upstream of the pool" vs "shares Braiins reports
+   * the pool rejected" — the asymmetry tells which leg of the
+   * Knots → Datum → Ocean pipeline is dropping shares (research.md
+   * §4.5). Null when DATUM does not expose the reject tile (the
+   * common case as of May 2026) or there are no usable counter
+   * pairs in the trailing hour.
+   */
+  readonly datum_rejects_1h: number | null;
+  /**
+   * Braiins-side rejected-shares delta over the same trailing hour,
+   * converted from millions to raw count so it can be compared 1:1
+   * with `datum_rejects_1h`. Null when the bid did not exist for
+   * the full window or the call failed at every tick.
+   */
+  readonly braiins_rejects_count_1h: number | null;
   readonly avg_time_to_fill_ms: number | null;
   /**
    * Count of bid_events (CREATE / EDIT_PRICE / EDIT_SPEED / CANCEL)
@@ -129,6 +148,8 @@ export async function registerStatsRoute(
       // more than usual right now", not "over the last week". Always
       // computed from the trailing 60 minutes of tick_metrics.
       const acceptance = await computeAcceptanceLastHour(deps.db, now);
+      // #91 — same window for the Datum-vs-Braiins reject comparison.
+      const rejects = await computeRejectsLastHour(deps.db, now);
 
       const data: StatsResponse = {
         uptime_pct: metrics.uptime_pct,
@@ -141,6 +162,8 @@ export async function registerStatsRoute(
         acceptance_pct_1h: acceptance.pct,
         acceptance_purchased_delta_1h: acceptance.purchased_delta,
         acceptance_accepted_delta_1h: acceptance.accepted_delta,
+        datum_rejects_1h: rejects.datum,
+        braiins_rejects_count_1h: rejects.braiins,
         avg_time_to_fill_ms: avgFillMs,
         mutation_count: mutationCount,
         range,
@@ -440,6 +463,75 @@ async function computeAcceptanceLastHour(
     pct: (acceptedDelta / purchasedDelta) * 100,
     purchased_delta: purchasedDelta,
     accepted_delta: acceptedDelta,
+  };
+}
+
+/**
+ * #91 — 1h-rolling forward deltas of two reject counters:
+ *
+ * - `datum`: `datum_rejected_shares_total` (raw count). Cumulative
+ *   on DATUM's side, so we sum forward pair-wise deltas across the
+ *   window; pairs where the value went backwards (DATUM restart) or
+ *   either side is null get skipped. Null when DATUM does not expose
+ *   the reject tile.
+ * - `braiins`: `primary_bid_shares_rejected_m × 1_000_000` (raw count
+ *   semantics, converted from millions). Same pair-wise fold over
+ *   the window. Null when the bid did not exist or every tick failed.
+ *
+ * Both numbers are over the SAME tick window so the operator can
+ * directly subtract them on the Datum panel — Datum > Braiins means
+ * the gateway filtered work that never made it to the pool (that's
+ * good — Datum saved you from paying for stale shares); Braiins >
+ * Datum means the pool rejected work Datum thought was fine
+ * (research.md §4.5: stale-work signature).
+ */
+async function computeRejectsLastHour(
+  db: Kysely<Database>,
+  nowMs: number,
+): Promise<{ datum: number | null; braiins: number | null }> {
+  const sinceMs = nowMs - 60 * 60 * 1000;
+  const rows = await db
+    .selectFrom('tick_metrics')
+    .select([
+      'tick_at',
+      'datum_rejected_shares_total',
+      'primary_bid_shares_rejected_m',
+    ])
+    .where('tick_at', '>=', sinceMs)
+    .orderBy('tick_at', 'asc')
+    .execute();
+
+  let datumDelta = 0;
+  let datumPairs = 0;
+  let braiinsDeltaM = 0;
+  let braiinsPairs = 0;
+  let prevDatum: number | null = null;
+  let prevBraiins: number | null = null;
+  for (const r of rows) {
+    const d = r.datum_rejected_shares_total;
+    if (d !== null) {
+      if (prevDatum !== null && d >= prevDatum) {
+        datumDelta += d - prevDatum;
+        datumPairs += 1;
+      }
+      prevDatum = d;
+    } else {
+      prevDatum = null;
+    }
+    const b = r.primary_bid_shares_rejected_m;
+    if (b !== null) {
+      if (prevBraiins !== null && b >= prevBraiins) {
+        braiinsDeltaM += b - prevBraiins;
+        braiinsPairs += 1;
+      }
+      prevBraiins = b;
+    } else {
+      prevBraiins = null;
+    }
+  }
+  return {
+    datum: datumPairs > 0 ? datumDelta : null,
+    braiins: braiinsPairs > 0 ? Math.round(braiinsDeltaM * 1_000_000) : null,
   };
 }
 

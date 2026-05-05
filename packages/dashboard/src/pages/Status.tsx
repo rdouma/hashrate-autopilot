@@ -456,6 +456,8 @@ export function Status() {
           reachable={s.pool.reachable}
           consecutiveFailures={s.pool.consecutive_failures}
           datum={s.datum}
+          rejects1h={statsQuery.data?.datum_rejects_1h ?? null}
+          braiinsRejects1h={statsQuery.data?.braiins_rejects_count_1h ?? null}
           nextTickAt={s.next_tick_at}
         />
         <OceanPanel />
@@ -2522,12 +2524,18 @@ function DatumPanel({
   reachable,
   consecutiveFailures,
   datum,
+  rejects1h,
+  braiinsRejects1h,
   nextTickAt,
 }: {
   url: string;
   reachable: boolean;
   consecutiveFailures: number;
   datum: StatusResponse['datum'];
+  /** #91 — DATUM gateway-side reject delta over the trailing hour. */
+  rejects1h: number | null;
+  /** Braiins-reported reject count over the same trailing hour, for direct comparison. */
+  braiinsRejects1h: number | null;
   nextTickAt: number | null;
 }) {
   const [copied, setCopied] = useState(false);
@@ -2591,6 +2599,26 @@ function DatumPanel({
               <div className="text-slate-400"><Trans>rejected shares</Trans></div>
               <div className="text-right font-mono text-slate-200">
                 {formatNumber(datum.rejected_shares_total, {}, intlLocale)}
+              </div>
+            </>
+          )}
+          {rejects1h !== null && (
+            <>
+              <Tooltip text={t`Datum-side rejects over the trailing hour: forward delta of the cumulative gateway reject counter, with bid resets / poll failures skipped. Compare with the next row to see which leg is dropping shares — Datum > Braiins means the gateway filtered work that never reached the pool (good); Braiins > Datum means the pool rejected work Datum thought was fine (stale-work signature, see research.md §4.5).`}>
+                <div className="text-slate-400 cursor-help"><Trans>datum rejects (1h)</Trans></div>
+              </Tooltip>
+              <div className="text-right font-mono text-slate-200">
+                {formatNumber(rejects1h, {}, intlLocale)}
+              </div>
+            </>
+          )}
+          {braiinsRejects1h !== null && (
+            <>
+              <Tooltip text={t`Pool-rejected shares Braiins counted over the same trailing hour. Compare with the row above: a sustained gap with Braiins > Datum is the signal Knots → Datum → Ocean is delivering stale work that the pool rejects.`}>
+                <div className="text-slate-400 cursor-help"><Trans>braiins rejects (1h)</Trans></div>
+              </Tooltip>
+              <div className="text-right font-mono text-slate-200">
+                {formatNumber(braiinsRejects1h, {}, intlLocale)}
               </div>
             </>
           )}

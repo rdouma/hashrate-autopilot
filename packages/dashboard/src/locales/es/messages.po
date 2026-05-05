@@ -499,6 +499,10 @@ msgstr "API de Braiins inaccesible - esperando conectividad."
 msgid "Braiins marketplace API — reachable when the last observe() read market/orderbook/balance without error."
 msgstr "API del marketplace de Braiins - accesible cuando el último observe() leyó market/orderbook/balance sin error."
 
+#: src/pages/Status.tsx
+msgid "braiins rejects (1h)"
+msgstr "rechazos braiins (1h)"
+
 #: src/pages/Config.tsx
 msgid "Browsers block audio until the page sees a user click; logging in counts. The first poll after a fresh page load establishes a silent baseline so you don't get a sound for every backlog row."
 msgstr "Los navegadores bloquean el audio hasta que la página detecta un clic del usuario; iniciar sesión cuenta. La primera consulta tras cargar la página establece una línea base silenciosa para que no suene por cada fila atrasada."
@@ -757,6 +761,10 @@ msgstr "hashrate datum"
 msgid "datum rejects"
 msgstr "rechazos datum"
 
+#: src/pages/Status.tsx
+msgid "datum rejects (1h)"
+msgstr "rechazos datum (1h)"
+
 #: src/pages/Config.tsx
 msgid "Datum stats API (optional)"
 msgstr "API de estadísticas de Datum (opcional)"
@@ -764,6 +772,10 @@ msgstr "API de estadísticas de Datum (opcional)"
 #: src/pages/Status.tsx
 msgid "Datum stats not configured — set <0>datum_api_url</0> in Config to display connected workers and reported hashrate. See <1>docs/setup-datum-api.md</1>."
 msgstr "Estadísticas de Datum no configuradas - ajusta <0>datum_api_url</0> en Config para mostrar workers conectados y hashrate reportado. Ver <1>docs/setup-datum-api.md</1>."
+
+#: src/pages/Status.tsx
+msgid "Datum-side rejects over the trailing hour: forward delta of the cumulative gateway reject counter, with bid resets / poll failures skipped. Compare with the next row to see which leg is dropping shares — Datum > Braiins means the gateway filtered work that never reached the pool (good); Braiins > Datum means the pool rejected work Datum thought was fine (stale-work signature, see research.md §4.5)."
+msgstr "Rechazos del lado Datum durante la última hora: delta hacia adelante del contador acumulado de rechazos de la gateway, omitiendo reinicios de bid y fallos de poll. Compáralo con la fila siguiente para ver qué tramo está perdiendo shares — Datum > Braiins significa que la gateway filtró trabajo que nunca llegó a la pool (bueno); Braiins > Datum significa que la pool rechazó trabajo que Datum dio por bueno (firma de trabajo obsoleto, véase research.md §4.5)."
 
 #: src/pages/Config.tsx
 msgid "Decision-log rows where the autopilot proposed at least one bid action. Rare (~10% of ticks) and high-value: this is the forensic record for \"why did the autopilot create / edit / cancel that bid?\" Cheap to keep long."
@@ -1693,6 +1705,10 @@ msgstr "usuarios del pool"
 #: src/pages/Status.tsx
 msgid "pool workers"
 msgstr "workers del pool"
+
+#: src/pages/Status.tsx
+msgid "Pool-rejected shares Braiins counted over the same trailing hour. Compare with the row above: a sustained gap with Braiins > Datum is the signal Knots → Datum → Ocean is delivering stale work that the pool rejects."
+msgstr "Shares rechazadas por la pool que Braiins contó durante la misma última hora. Compáralo con la fila de arriba: una diferencia sostenida con Braiins > Datum es la señal de que Knots → Datum → Ocean está entregando trabajo obsoleto que la pool rechaza."
 
 #: src/pages/Status.tsx
 msgid "Pool-side share acceptance over the trailing hour: (shares accepted by the target / shares purchased from Braiins) × 100. Healthy baseline ≈ 99.95%; baseline rejection of ~0.05% is normal noise. Sustained drops below ~99% point at Datum stale work, worker-identity misconfiguration, or pool difficulty too low — see docs/research.md §7.5."

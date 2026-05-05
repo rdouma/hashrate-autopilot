@@ -495,6 +495,10 @@ export interface StatsResponse {
   acceptance_pct_1h: number | null;
   acceptance_purchased_delta_1h: number | null;
   acceptance_accepted_delta_1h: number | null;
+  /** #91 — DATUM gateway-side rejects in the trailing hour (raw count); null when DATUM does not expose the tile. */
+  datum_rejects_1h: number | null;
+  /** Braiins-reported rejects in the same window, converted from millions to raw count for direct comparison. */
+  braiins_rejects_count_1h: number | null;
   avg_time_to_fill_ms: number | null;
   mutation_count: number;
   range: ChartRange;
