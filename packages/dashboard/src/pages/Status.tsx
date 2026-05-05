@@ -307,6 +307,7 @@ export function Status() {
             className="bg-slate-800 border border-slate-700 rounded px-2 py-0.5 text-[11px]"
           >
             <option value="none">{t`none`}</option>
+            <option value="effective_rate">{t`effective rate`}</option>
             <option value="estimated_block_reward">{t`block reward`}</option>
             <option value="btc_usd_price">{t`BTC/USD`}</option>
             <option value="ocean_unpaid_sat">{t`unpaid earnings`}</option>
@@ -324,7 +325,6 @@ export function Status() {
               : null
           }
           priceSmoothingMinutes={configQuery.data?.config?.braiins_price_smoothing_minutes ?? 1}
-          showEffectiveRate={configQuery.data?.config?.show_effective_rate_on_price_chart ?? false}
           rightAxisSeries={priceRightAxis}
         />
       </div>

@@ -876,6 +876,10 @@ msgid "effective cap (binding)"
 msgstr "effectieve cap (bindend)"
 
 #: src/pages/Status.tsx
+msgid "effective rate"
+msgstr "effectief tarief"
+
+#: src/pages/Status.tsx
 msgid "Effective rate {sign}{deltaFormatted} above hashprice ({hashpricePretty}) — positive means paying above break-even, negative means paying below (profitable)."
 msgstr "Effectief tarief {sign}{deltaFormatted} boven hashprice ({hashpricePretty}) - positief betekent betalen boven break-even, negatief betekent betalen onder (winstgevend)."
 
@@ -908,10 +912,6 @@ msgstr "Electrs (aanbevolen)"
 #: src/pages/Config.tsx
 msgid "Electrs host"
 msgstr "Electrs-host"
-
-#: src/pages/Config.tsx
-msgid "Electrs port"
-msgstr "Electrs-poort"
 
 #: src/pages/Status.tsx
 msgid "Escalation in"
@@ -1029,6 +1029,10 @@ msgstr "Volledig wallet-saldo per bod. Momenteel ≈ {resolvedSatStr} sat (afgek
 #: src/pages/Config.tsx
 msgid "Full wallet balance per bid. Currently ≈ {resolvedSatStr} sat."
 msgstr "Volledig wallet-saldo per bod. Momenteel ≈ {resolvedSatStr} sat."
+
+#: src/pages/Config.tsx
+msgid "genesis version"
+msgstr "genesis-versie"
 
 #: src/pages/Config.tsx
 msgid "Glass drop & roll"
@@ -1449,13 +1453,6 @@ msgid "Off"
 msgstr "Uit"
 
 #: src/pages/Config.tsx
-msgid "Off by default. The emerald effective-rate line (what Braiins actually charged, from counter deltas) is dramatically more volatile than bid / fillable / hashprice — when enabled it auto-scales the Y-axis and visibly squashes the finer bot movements into a thin band. The hero PRICE card and the AVG COST / PH DELIVERED stat already show the same number without hijacking the chart. Flip on when you want to eyeball settlement behaviour directly, accept the loss of flatter-line detail in exchange."
-msgstr "Standaard uit. De smaragdgroene effectief-tarief lijn (wat Braiins daadwerkelijk in rekening bracht, uit counter-deltas) is dramatisch volatieler dan bod / vulbaar / hashprice - bij inschakelen schaalt deze de Y-as automatisch en perst de fijnere bot-bewegingen zichtbaar samen tot een smalle band. De hero PRICE-kaart en de AVG COST / PH DELIVERED stat tonen al hetzelfde getal zonder de grafiek te kapen. Zet aan als je het settlement-gedrag direct wilt waarnemen, en accepteer dat je in ruil details van vlakkere lijnen verliest."
-
-#: src/pages/Config.tsx
-msgid "Off by default. When enabled, the Hashrate chart renders our share of Ocean's TIDES window (share_log %) as a violet line on a right-side Y-axis labelled \"% of Ocean\", formatted to 4 decimals. Useful for tracking how our slice of the pool drifts as Ocean's total hashrate grows or our delivered PH/s fluctuates. The controller does not read this signal — display only."
-msgstr "Standaard uit. Indien aan, toont de hashrate-grafiek onze share van Ocean's TIDES-venster (share_log %) als violette lijn op een rechter Y-as met label \"% van Ocean\", weergegeven met 4 decimalen. Handig om te volgen hoe onze slice van de pool verschuift naarmate Ocean's totale hashrate groeit of onze geleverde PH/s fluctueert. De controller leest dit signaal niet - alleen weergave."
-
 #: src/pages/Config.tsx
 msgid "OK"
 msgstr "OK"
@@ -1673,6 +1670,7 @@ msgstr "pool-workers"
 msgid "port"
 msgstr "poort"
 
+#: src/pages/Config.tsx
 #: src/pages/Setup.tsx
 msgid "Port"
 msgstr "Poort"
@@ -1905,14 +1903,6 @@ msgstr "share_log %"
 msgid "Show"
 msgstr "Toon"
 
-#: src/pages/Config.tsx
-msgid "Show effective rate on price chart"
-msgstr "Effectief tarief tonen op prijsgrafiek"
-
-#: src/pages/Config.tsx
-msgid "Show share_log % on hashrate chart"
-msgstr "Toon share_log % op hashrate-grafiek"
-
 #: src/pages/Setup.tsx
 msgid "Show value"
 msgstr "Toon waarde"
@@ -2021,6 +2011,7 @@ msgid "TCP probe of the Datum gateway's stratum port."
 msgstr "TCP-probe van de stratum-poort van de Datum-gateway."
 
 #: src/pages/Config.tsx
+#: src/pages/Config.tsx
 msgid "Test connection"
 msgstr "Verbinding testen"
 
@@ -2028,6 +2019,7 @@ msgstr "Verbinding testen"
 msgid "Test sound"
 msgstr "Geluid testen"
 
+#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "Testing…"
 msgstr "Bezig met testen…"

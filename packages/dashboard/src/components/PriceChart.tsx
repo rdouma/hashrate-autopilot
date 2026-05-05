@@ -116,6 +116,7 @@ const COLOR_EFFECTIVE = '#34d399';
  */
 export type PriceRightAxis =
   | 'none'
+  | 'effective_rate'
   | 'estimated_block_reward'
   | 'btc_usd_price'
   | 'ocean_unpaid_sat'
@@ -166,7 +167,6 @@ export const PriceChart = memo(function PriceChart({
   maxOverpayVsHashpriceSatPerPhDay = null,
   overpaySatPerPhDay = null,
   priceSmoothingMinutes = 1,
-  showEffectiveRate = false,
   rightAxisSeries = 'none',
 }: {
   points: readonly MetricPoint[];
@@ -207,14 +207,13 @@ export const PriceChart = memo(function PriceChart({
    */
   priceSmoothingMinutes?: number;
   /**
-   * Render the emerald "effective" line (window-aggregated Δconsumed
-   * ÷ delivered×Δt). Off by default — the line's per-tick volatility
-   * auto-scales the Y-axis and crushes the flatter bid/fillable/
-   * hashprice detail. Operator enables it from the Config page when
-   * they want to inspect settlement behaviour directly.
+   * #93: secondary Y-axis series. 'none' hides the right axis.
+   * `'effective_rate'` plots the window-aggregated effective rate
+   * (Δconsumed ÷ delivered×Δt) on the right axis with its own scale,
+   * so the line's per-tick volatility no longer drags the left-axis
+   * range — that was the rationale for the legacy `show_effective_rate_on_price_chart`
+   * checkbox. The toggle migrated to this dropdown 2026-05-05.
    */
-  showEffectiveRate?: boolean;
-  /** #93: secondary Y-axis series. 'none' hides the right axis. */
   rightAxisSeries?: PriceRightAxis;
 }) {
   const { i18n } = useLingui();
@@ -455,7 +454,6 @@ export const PriceChart = memo(function PriceChart({
       ...pricePoints.map((p) => p.v),
       ...hashpricePoints.map((p) => p.v),
       ...fillablePoints.map((p) => p.v),
-      ...(showEffectiveRate ? effectivePoints.map((p) => p.v) : []),
       ...eventPrices,
     ];
     const hasPrice = priceSample.length > 0;
@@ -471,6 +469,13 @@ export const PriceChart = memo(function PriceChart({
     const priceMin = yTicks[0] ?? 0;
     const priceMax = yTicks[yTicks.length - 1] ?? 1;
 
+    // Per-tick effective rate values (sat/PH/day), aligned with the
+    // points array — sparse list lifted into a map keyed on tick_at
+    // for O(1) lookup. Used by the effective_rate right-axis case.
+    const effectiveByTick = new Map<number, number>(
+      effectivePoints.map((p) => [p.t, p.v]),
+    );
+
     // #93: right-axis spec, derived from rightAxisSeries. Each branch
     // pulls per-point values off MetricPoint and returns a tick
     // formatter + axis label. 'none' bypasses the right axis
@@ -485,6 +490,16 @@ export const PriceChart = memo(function PriceChart({
       switch (rightAxisSeries) {
         case 'none':
           return null;
+        case 'effective_rate':
+          return {
+            values: points.map((p) => effectiveByTick.get(p.tick_at) ?? null),
+            stroke: COLOR_EFFECTIVE,
+            axisLabel: 'effective (sat/PH/day)',
+            formatTick: (v) =>
+              new Intl.NumberFormat(intlLocale, {
+                maximumFractionDigits: 0,
+              }).format(v),
+          };
         case 'estimated_block_reward':
           return {
             values: points.map((p) => p.estimated_block_reward_sat),
@@ -803,7 +818,7 @@ export const PriceChart = memo(function PriceChart({
         );
 
     return { pricePoints, minX, maxX, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, hashpricePath, fillablePath, fillableHasData: fillablePoints.length > 0, effectivePath, effectiveHasData: effectivePoints.length > 0, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents, rightAxis, hasRightAxis, rightAxisPath, rightYTicks, rightYScale, padRight };
-  }, [points, events, showEventKinds, priceSmoothingMinutes, maxOverpayVsHashpriceSatPerPhDay, chartHeight, showEffectiveRate, rightAxisSeries, denomination, intlLocale]);
+  }, [points, events, showEventKinds, priceSmoothingMinutes, maxOverpayVsHashpriceSatPerPhDay, chartHeight, rightAxisSeries, denomination, intlLocale]);
 
   const eventPriceAt = useCallback((e: BidEventView): number | null => {
     const pricePoints = chartData?.pricePoints ?? [];
@@ -939,7 +954,9 @@ export const PriceChart = memo(function PriceChart({
         <div className="flex items-center gap-3 text-xs flex-wrap">
           <Legend color={COLOR_PRICE} label={t`our bid`} />
           {fillableHasData && <Legend color={COLOR_FILLABLE} label={t`fillable`} />}
-          {showEffectiveRate && effectiveHasData && <Legend color={COLOR_EFFECTIVE} label={t`effective`} />}
+          {rightAxisSeries === 'effective_rate' && effectiveHasData && (
+            <Legend color={COLOR_EFFECTIVE} label={t`effective`} />
+          )}
           <Legend color={COLOR_HASHPRICE} label={t`hashprice`} dashed />
           <Legend color={COLOR_MAXBID} label={t`max bid`} />
           {hasRightAxis && rightAxis && (
@@ -1060,21 +1077,11 @@ export const PriceChart = memo(function PriceChart({
         {pricePath && (
           <path d={pricePath} stroke={COLOR_PRICE} strokeWidth="1.8" fill="none" opacity="0.95" />
         )}
-        {/* Effective rate — what Braiins actually charged us, from
-            the per-tick primary_bid_consumed_sat delta. Drawn on top
-            of the bid (amber) line; under pay-your-bid (#53) the two
-            should track tightly modulo settlement smoothing. Visible
-            divergence is the prompt to investigate (e.g. settlement
-            outage, bid changing mid-window). */}
-        {showEffectiveRate && effectivePath && (
-          <path
-            d={effectivePath}
-            stroke={COLOR_EFFECTIVE}
-            strokeWidth="1.4"
-            fill="none"
-            opacity="0.9"
-          />
-        )}
+        {/* Effective rate is now plotted via the right-axis machinery
+            (rightAxisPath) when the operator picks 'effective_rate'
+            from the right-axis dropdown — it gets its own scale so
+            the volatile line no longer drags the left-axis range. The
+            old left-axis emerald overlay is gone. */}
 
         <defs>
           <linearGradient id="priceFill" x1="0" y1="0" x2="0" y2="1">

@@ -39,6 +39,7 @@ import { registerActionRoutes } from './routes/actions.js';
 import { registerBidEventsRoute } from './routes/bid-events.js';
 import { registerBip110ScanRoute } from './routes/bip110-scan.js';
 import { registerBitcoindTestRoute } from './routes/bitcoind-test.js';
+import { registerElectrsTestRoute } from './routes/electrs-test.js';
 import { registerBlockFoundSoundRoute } from './routes/block-found-sound.js';
 import { registerBtcPriceRoute } from './routes/btc-price.js';
 import { registerConfigRoutes } from './routes/config.js';
@@ -138,6 +139,7 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<HttpServer
   await registerBidEventsRoute(app, deps);
   await registerBip110ScanRoute(app, { configRepo: deps.configRepo, secrets: deps.secrets });
   await registerBitcoindTestRoute(app);
+  await registerElectrsTestRoute(app);
   await registerPayoutsRoute(app, { payoutObserver: deps.payoutObserver });
   await registerStatsRoute(app, { db: deps.db, bidEventsDb: deps.db });
   await registerStorageEstimateRoute(app, { db: deps.db });

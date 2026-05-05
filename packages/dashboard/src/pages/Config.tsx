@@ -308,20 +308,11 @@ function useSections(): Section[] {
             step: 5,
             help: t`Rolling-mean window for the Price chart's \`our bid\` and \`effective\` lines. Useful when the effective line is noisy at tick resolution. Hashprice / max bid are not smoothed — they're market-wide signals.`,
           },
-          {
-            key: 'show_effective_rate_on_price_chart',
-            label: t`Show effective rate on price chart`,
-            kind: 'boolean',
-            fullWidth: true,
-            help: t`Off by default. The emerald effective-rate line (what Braiins actually charged, from counter deltas) is dramatically more volatile than bid / fillable / hashprice — when enabled it auto-scales the Y-axis and visibly squashes the finer bot movements into a thin band. The hero PRICE card and the AVG COST / PH DELIVERED stat already show the same number without hijacking the chart. Flip on when you want to eyeball settlement behaviour directly, accept the loss of flatter-line detail in exchange.`,
-          },
-          {
-            key: 'show_share_log_on_hashrate_chart',
-            label: t`Show share_log % on hashrate chart`,
-            kind: 'boolean',
-            fullWidth: true,
-            help: t`Off by default. When enabled, the Hashrate chart renders our share of Ocean's TIDES window (share_log %) as a violet line on a right-side Y-axis labelled "% of Ocean", formatted to 4 decimals. Useful for tracking how our slice of the pool drifts as Ocean's total hashrate grows or our delivered PH/s fluctuates. The controller does not read this signal — display only.`,
-          },
+          // `show_effective_rate_on_price_chart` and
+          // `show_share_log_on_hashrate_chart` removed from the UI
+          // here: both are now picked via the right-axis dropdown
+          // above each chart on Status. Schema columns kept for
+          // migration safety but are no longer read by the chart code.
         ],
       },
       {
@@ -1176,37 +1167,7 @@ function PayoutSourceSection({
 
         {/* Electrs fields */}
         {source === 'electrs' && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 pt-1">
-            <label className="block">
-              <span className="block text-sm text-slate-300 mb-1">
-                <Trans>Electrs host</Trans>
-              </span>
-              <input
-                type="text"
-                value={(draft.electrs_host as string | null) ?? ''}
-                onChange={(e) => onChange('electrs_host', (e.target.value || null) as never)}
-                className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm font-mono"
-              />
-              <span className="block text-xs text-slate-500 mt-1">
-                <Trans>e.g. 192.168.1.121 or umbrel.local</Trans>
-              </span>
-            </label>
-            <label className="block">
-              <span className="block text-sm text-slate-300 mb-1">
-                <Trans>Electrs port</Trans>
-              </span>
-              <NumberField
-                value={(draft.electrs_port as number | null) ?? 0}
-                onChange={(n) => onChange('electrs_port', (n || null) as never)}
-                step="integer"
-                locale={locale}
-                noGrouping
-              />
-              <span className="block text-xs text-slate-500 mt-1">
-                <Trans>Default 50001.</Trans>
-              </span>
-            </label>
-          </div>
+          <ElectrsFields draft={draft} locale={locale} onChange={onChange} />
         )}
 
         {/* Bitcoin Core RPC fields — always shown, not gated on the
@@ -1222,6 +1183,87 @@ function PayoutSourceSection({
         <BitcoindRpcFields draft={draft} onChange={onChange} />
       </div>
     </section>
+  );
+}
+
+function ElectrsFields({
+  draft,
+  locale,
+  onChange,
+}: {
+  draft: AppConfig;
+  locale: string | undefined;
+  onChange: <K extends keyof AppConfig>(k: K, v: AppConfig[K]) => void;
+}) {
+  const { i18n } = useLingui();
+  void i18n;
+
+  const test = useMutation({
+    mutationFn: () =>
+      api.electrsTest({
+        host: (draft.electrs_host as string | null) ?? '',
+        port: (draft.electrs_port as number | null) ?? 0,
+      }),
+  });
+
+  return (
+    <div className="grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_120px_auto] gap-x-3 gap-y-2 pt-1 items-start">
+      <label className="block">
+        <span className="block text-sm text-slate-300 mb-1">
+          <Trans>Electrs host</Trans>
+        </span>
+        <input
+          type="text"
+          value={(draft.electrs_host as string | null) ?? ''}
+          onChange={(e) => onChange('electrs_host', (e.target.value || null) as never)}
+          className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm font-mono"
+        />
+        <span className="block text-xs text-slate-500 mt-1">
+          <Trans>e.g. 192.168.1.121 or umbrel.local</Trans>
+        </span>
+      </label>
+      <label className="block">
+        <span className="block text-sm text-slate-300 mb-1">
+          <Trans>Port</Trans>
+        </span>
+        <NumberField
+          value={(draft.electrs_port as number | null) ?? 0}
+          onChange={(n) => onChange('electrs_port', (n || null) as never)}
+          step="integer"
+          locale={locale}
+          noGrouping
+        />
+        <span className="block text-xs text-slate-500 mt-1">
+          <Trans>Default 50001.</Trans>
+        </span>
+      </label>
+      <div className="self-start mt-[26px]">
+        <button
+          type="button"
+          onClick={() => test.mutate()}
+          disabled={test.isPending}
+          className="px-3 py-1.5 text-sm rounded bg-amber-400 text-slate-900 font-medium hover:bg-amber-300 disabled:opacity-50 whitespace-nowrap"
+        >
+          {test.isPending ? <Trans>Testing…</Trans> : <Trans>Test connection</Trans>}
+        </button>
+      </div>
+      {(test.data || test.isError) && (
+        <div className="col-span-2 sm:col-span-3 text-xs font-mono break-words">
+          {test.data && test.data.ok && (
+            <span className="text-emerald-300">
+              <Trans>OK</Trans> · <Trans>genesis version</Trans>{' '}
+              {test.data.genesis_version ?? '?'}
+            </span>
+          )}
+          {test.data && !test.data.ok && (
+            <span className="text-red-400">{test.data.error}</span>
+          )}
+          {test.isError && (
+            <span className="text-red-400">{(test.error as Error).message}</span>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 

@@ -876,6 +876,10 @@ msgid "effective cap (binding)"
 msgstr "effective cap (binding)"
 
 #: src/pages/Status.tsx
+msgid "effective rate"
+msgstr "effective rate"
+
+#: src/pages/Status.tsx
 msgid "Effective rate {sign}{deltaFormatted} above hashprice ({hashpricePretty}) — positive means paying above break-even, negative means paying below (profitable)."
 msgstr "Effective rate {sign}{deltaFormatted} above hashprice ({hashpricePretty}) — positive means paying above break-even, negative means paying below (profitable)."
 
@@ -908,10 +912,6 @@ msgstr "Electrs (recommended)"
 #: src/pages/Config.tsx
 msgid "Electrs host"
 msgstr "Electrs host"
-
-#: src/pages/Config.tsx
-msgid "Electrs port"
-msgstr "Electrs port"
 
 #: src/pages/Status.tsx
 msgid "Escalation in"
@@ -1029,6 +1029,10 @@ msgstr "Full wallet balance per bid. Currently ≈ {resolvedSatStr} sat (capped 
 #: src/pages/Config.tsx
 msgid "Full wallet balance per bid. Currently ≈ {resolvedSatStr} sat."
 msgstr "Full wallet balance per bid. Currently ≈ {resolvedSatStr} sat."
+
+#: src/pages/Config.tsx
+msgid "genesis version"
+msgstr "genesis version"
 
 #: src/pages/Config.tsx
 msgid "Glass drop & roll"
@@ -1449,13 +1453,6 @@ msgid "Off"
 msgstr "Off"
 
 #: src/pages/Config.tsx
-msgid "Off by default. The emerald effective-rate line (what Braiins actually charged, from counter deltas) is dramatically more volatile than bid / fillable / hashprice — when enabled it auto-scales the Y-axis and visibly squashes the finer bot movements into a thin band. The hero PRICE card and the AVG COST / PH DELIVERED stat already show the same number without hijacking the chart. Flip on when you want to eyeball settlement behaviour directly, accept the loss of flatter-line detail in exchange."
-msgstr "Off by default. The emerald effective-rate line (what Braiins actually charged, from counter deltas) is dramatically more volatile than bid / fillable / hashprice — when enabled it auto-scales the Y-axis and visibly squashes the finer bot movements into a thin band. The hero PRICE card and the AVG COST / PH DELIVERED stat already show the same number without hijacking the chart. Flip on when you want to eyeball settlement behaviour directly, accept the loss of flatter-line detail in exchange."
-
-#: src/pages/Config.tsx
-msgid "Off by default. When enabled, the Hashrate chart renders our share of Ocean's TIDES window (share_log %) as a violet line on a right-side Y-axis labelled \"% of Ocean\", formatted to 4 decimals. Useful for tracking how our slice of the pool drifts as Ocean's total hashrate grows or our delivered PH/s fluctuates. The controller does not read this signal — display only."
-msgstr "Off by default. When enabled, the Hashrate chart renders our share of Ocean's TIDES window (share_log %) as a violet line on a right-side Y-axis labelled \"% of Ocean\", formatted to 4 decimals. Useful for tracking how our slice of the pool drifts as Ocean's total hashrate grows or our delivered PH/s fluctuates. The controller does not read this signal — display only."
-
 #: src/pages/Config.tsx
 msgid "OK"
 msgstr "OK"
@@ -1673,6 +1670,7 @@ msgstr "pool workers"
 msgid "port"
 msgstr "port"
 
+#: src/pages/Config.tsx
 #: src/pages/Setup.tsx
 msgid "Port"
 msgstr "Port"
@@ -1905,14 +1903,6 @@ msgstr "share_log %"
 msgid "Show"
 msgstr "Show"
 
-#: src/pages/Config.tsx
-msgid "Show effective rate on price chart"
-msgstr "Show effective rate on price chart"
-
-#: src/pages/Config.tsx
-msgid "Show share_log % on hashrate chart"
-msgstr "Show share_log % on hashrate chart"
-
 #: src/pages/Setup.tsx
 msgid "Show value"
 msgstr "Show value"
@@ -2021,6 +2011,7 @@ msgid "TCP probe of the Datum gateway's stratum port."
 msgstr "TCP probe of the Datum gateway's stratum port."
 
 #: src/pages/Config.tsx
+#: src/pages/Config.tsx
 msgid "Test connection"
 msgstr "Test connection"
 
@@ -2028,6 +2019,7 @@ msgstr "Test connection"
 msgid "Test sound"
 msgstr "Test sound"
 
+#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "Testing…"
 msgstr "Testing…"

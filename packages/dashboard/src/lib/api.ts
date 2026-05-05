@@ -454,6 +454,11 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(creds),
     }),
+  electrsTest: (params: { host: string; port: number }) =>
+    request<ElectrsTestResponse>('/api/electrs/test', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    }),
   finance: () => request<FinanceResponse>('/api/finance'),
   financeRange: (range: ChartRange) =>
     request<FinanceRangeResponse>(
@@ -557,6 +562,12 @@ export interface BitcoindTestResponse {
   blocks?: number | null;
   headers?: number | null;
   best_block_hash?: string | null;
+  error?: string | null;
+}
+
+export interface ElectrsTestResponse {
+  ok: boolean;
+  genesis_version?: number | null;
   error?: string | null;
 }
 
