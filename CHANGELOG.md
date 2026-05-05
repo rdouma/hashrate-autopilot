@@ -2,6 +2,10 @@
 
 ## 2026-05-05
 
+### `[Fix]` BIP 110 scanner now picks up Config edits without a daemon restart
+
+The scanner was using a `BitcoindClient` instance built once at daemon boot from whatever creds were saved at that moment. Saving fresh creds in the form persisted them to SQLite but the in-memory client kept hitting the old URL — operator empirically saved a new working URL, hit Scan, and still got "fetch failed" against the old host. The route now reads the live `config` row at request time (with sops/env secrets as fallback for empty fields) and builds an ephemeral client per scan, so saved Config edits take effect immediately. Same restart-free behavior the Test button already has.
+
 ### `[Feature]` Bitcoin Core RPC test button + always-visible RPC fields on Config
 
 The "Bitcoin Core RPC URL / username / password" fields used to live behind the `payout_source = 'bitcoind'` radio, hidden when the operator picked Electrs as the balance-check backend. But those same creds also drive the BIP 110 crown marker (#94) and BIP 110 scan card (#95), which call bitcoind regardless of which payout backend is selected. Hiding the fields made the BIP 110 scanner look broken — the scanner used the saved (potentially stale) values while the operator was typing fresh ones into a form they couldn't see. The fields now always render in their own "Bitcoin Core RPC connection" subsection with help text explaining the multi-feature use, and a new **Test connection** button next to the URL field validates whatever values are currently in the form (before saving) by calling `getblockchaininfo` against them. Returns chain/blocks/headers on success, or the same `ENOTFOUND` / `ECONNREFUSED` / target-URL diagnostic the BIP 110 scanner uses on failure. en/nl/es catalogs updated.

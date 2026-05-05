@@ -71,6 +71,12 @@ export interface HttpServerDeps {
   readonly blockVersionService: BlockVersionService | null;
   /** #95: bitcoind RPC client for the BIP 110 scanner endpoint. Null when bitcoind RPC creds are not configured (scanner returns rpc_available: false). */
   readonly bitcoindClient: BitcoindClient | null;
+  /** Sops/env secrets snapshot — fallback for empty `config` row fields. The BIP 110 scanner uses this to build a fresh client per request so saved Config edits take effect without a daemon restart. */
+  readonly secrets: {
+    readonly bitcoind_rpc_url?: string;
+    readonly bitcoind_rpc_user?: string;
+    readonly bitcoind_rpc_password?: string;
+  };
   readonly db: Kysely<Database>;
   readonly password: string;
   readonly tickIntervalMs: number;
@@ -130,7 +136,7 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<HttpServer
   await registerActionRoutes(app, deps);
   await registerMetricsRoute(app, deps);
   await registerBidEventsRoute(app, deps);
-  await registerBip110ScanRoute(app, { bitcoindClient: deps.bitcoindClient });
+  await registerBip110ScanRoute(app, { configRepo: deps.configRepo, secrets: deps.secrets });
   await registerBitcoindTestRoute(app);
   await registerPayoutsRoute(app, { payoutObserver: deps.payoutObserver });
   await registerStatsRoute(app, { db: deps.db, bidEventsDb: deps.db });

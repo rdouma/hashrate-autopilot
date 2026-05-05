@@ -18,14 +18,29 @@
 
 import type { FastifyInstance } from 'fastify';
 
-import type { BitcoindClient } from '@braiins-hashrate/bitcoind-client';
+import { createBitcoindClient } from '@braiins-hashrate/bitcoind-client';
+
+import type { ConfigRepo } from '../../state/repos/config.js';
 
 const DEFAULT_BLOCKS = 2016;
 const MAX_BLOCKS = 8064;
 const BATCH_SIZE = 200;
 
 export interface Bip110ScanDeps {
-  readonly bitcoindClient: BitcoindClient | null;
+  readonly configRepo: ConfigRepo;
+  /**
+   * RPC creds resolved from the secrets layer at boot. Used as a
+   * fallback when the SQLite config row leaves a field empty (so
+   * sops-only deployments work). Per-request lookup of the live
+   * `config` row still wins over secrets, which is why this route
+   * does NOT take a pre-built BitcoindClient: a saved Config edit
+   * has to take effect on the next scan without a daemon restart.
+   */
+  readonly secrets: {
+    readonly bitcoind_rpc_url?: string;
+    readonly bitcoind_rpc_user?: string;
+    readonly bitcoind_rpc_password?: string;
+  };
 }
 
 export interface Bip110SignalingBlock {
@@ -127,8 +142,19 @@ export async function registerBip110ScanRoute(
   app.get<{ Querystring: { blocks?: string } }>(
     '/api/bip110/scan',
     async (req): Promise<Bip110ScanResponse> => {
+      // Read the live config row at request time — saved Config edits
+      // take effect on the next scan without a daemon restart. The
+      // earlier shape took a boot-time-built client and used stale
+      // creds forever; operator empirically hit this 2026-05-05
+      // (saved a fresh URL, scanner kept hitting the old host).
+      const config = await deps.configRepo.get();
+      const url = config?.bitcoind_rpc_url || deps.secrets.bitcoind_rpc_url || '';
+      const user = config?.bitcoind_rpc_user || deps.secrets.bitcoind_rpc_user || '';
+      const password = config?.bitcoind_rpc_password || deps.secrets.bitcoind_rpc_password || '';
+      const rpcAvailable = Boolean(url && user && password);
+
       const empty = (error: string | null = null): Bip110ScanResponse => ({
-        rpc_available: deps.bitcoindClient !== null,
+        rpc_available: rpcAvailable,
         tip_height: null,
         scanned: 0,
         signaling_count: 0,
@@ -138,9 +164,11 @@ export async function registerBip110ScanRoute(
         error,
       });
 
-      if (!deps.bitcoindClient) {
+      if (!rpcAvailable) {
         return empty('bitcoind RPC not configured');
       }
+
+      const client = createBitcoindClient({ url, username: user, password });
 
       const requested = Number.parseInt(req.query.blocks ?? String(DEFAULT_BLOCKS), 10);
       const blocks = Number.isFinite(requested) && requested > 0
@@ -149,7 +177,7 @@ export async function registerBip110ScanRoute(
 
       let info;
       try {
-        info = await deps.bitcoindClient.getBlockchainInfo();
+        info = await client.getBlockchainInfo();
       } catch (err) {
         return empty(`getblockchaininfo failed: ${(err as Error).message}`);
       }
@@ -163,7 +191,7 @@ export async function registerBip110ScanRoute(
       try {
         hashes = [];
         for (const batch of chunk(heights, BATCH_SIZE)) {
-          const results = await deps.bitcoindClient.batch<string>(
+          const results = await client.batch<string>(
             batch.map((h) => ({ method: 'getblockhash', params: [h] })),
           );
           hashes.push(...results);
@@ -180,7 +208,7 @@ export async function registerBip110ScanRoute(
       try {
         headers = [];
         for (const batch of chunk(hashes, BATCH_SIZE)) {
-          const results = await deps.bitcoindClient.batch<BlockHeaderVerbose>(
+          const results = await client.batch<BlockHeaderVerbose>(
             batch.map((h) => ({ method: 'getblockheader', params: [h, true] })),
           );
           headers.push(...results);

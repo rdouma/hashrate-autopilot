@@ -523,6 +523,11 @@ async function bootOperational(
     hashpriceCache,
     blockVersionService,
     bitcoindClient,
+    secrets: {
+      bitcoind_rpc_url: secrets.bitcoind_rpc_url ?? '',
+      bitcoind_rpc_user: secrets.bitcoind_rpc_user ?? '',
+      bitcoind_rpc_password: secrets.bitcoind_rpc_password ?? '',
+    },
     db: handle.db,
     password: secrets.dashboard_password,
     tickIntervalMs: DEFAULT_TICK_INTERVAL_MS,
