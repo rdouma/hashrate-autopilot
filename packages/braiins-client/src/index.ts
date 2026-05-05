@@ -3,6 +3,8 @@ export {
   createBraiinsClient,
   type AccountBalance,
   type AccountBalances,
+  type BidDeliveryHistory,
+  type BidDeliveryHistoryItem,
   type BidDetail,
   type BidItem,
   type BidsResponse,

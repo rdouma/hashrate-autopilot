@@ -207,6 +207,10 @@ msgstr "A bid is currently running. The next CREATE fires when it finishes — a
 msgid "A few questions to get the daemon operational. Defaults work for typical home miners; tune later from the Config page."
 msgstr "A few questions to get the daemon operational. Defaults work for typical home miners; tune later from the Config page."
 
+#: src/pages/Status.tsx
+msgid "acceptance 1h"
+msgstr "acceptance 1h"
+
 #: src/pages/Setup.tsx
 msgid "Access"
 msgstr "Access"
@@ -1681,6 +1685,10 @@ msgstr "pool users"
 #: src/pages/Status.tsx
 msgid "pool workers"
 msgstr "pool workers"
+
+#: src/pages/Status.tsx
+msgid "Pool-side share acceptance over the trailing hour: (shares accepted by the target / shares purchased from Braiins) × 100. Healthy baseline ≈ 99.95%; baseline rejection of ~0.05% is normal noise. Sustained drops below ~99% point at Datum stale work, worker-identity misconfiguration, or pool difficulty too low — see docs/research.md §7.5."
+msgstr "Pool-side share acceptance over the trailing hour: (shares accepted by the target / shares purchased from Braiins) × 100. Healthy baseline ≈ 99.95%; baseline rejection of ~0.05% is normal noise. Sustained drops below ~99% point at Datum stale work, worker-identity misconfiguration, or pool difficulty too low — see docs/research.md §7.5."
 
 #: src/pages/Status.tsx
 msgid "port"

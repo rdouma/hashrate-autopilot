@@ -207,6 +207,10 @@ msgstr "Er loopt nu een bod. De volgende CREATE volgt zodra dit afloopt - op dat
 msgid "A few questions to get the daemon operational. Defaults work for typical home miners; tune later from the Config page."
 msgstr "Een paar vragen om de daemon werkend te krijgen. De standaardwaarden werken voor typische thuisminers; pas later aan via de Config-pagina."
 
+#: src/pages/Status.tsx
+msgid "acceptance 1h"
+msgstr "acceptatie 1u"
+
 #: src/pages/Setup.tsx
 msgid "Access"
 msgstr "Toegang"
@@ -1681,6 +1685,10 @@ msgstr "pool-gebruikers"
 #: src/pages/Status.tsx
 msgid "pool workers"
 msgstr "pool-workers"
+
+#: src/pages/Status.tsx
+msgid "Pool-side share acceptance over the trailing hour: (shares accepted by the target / shares purchased from Braiins) × 100. Healthy baseline ≈ 99.95%; baseline rejection of ~0.05% is normal noise. Sustained drops below ~99% point at Datum stale work, worker-identity misconfiguration, or pool difficulty too low — see docs/research.md §7.5."
+msgstr "Acceptatie van shares door de pool over het afgelopen uur: (door doel geaccepteerde shares / van Braiins gekochte shares) × 100. Gezonde baseline ≈ 99,95%; ~0,05% afwijzing is normale ruis. Aanhoudende daling onder ~99% wijst op verouderd werk vanuit Datum, verkeerd geconfigureerde worker-identiteit, of te lage pool-moeilijkheidsgraad — zie docs/research.md §7.5."
 
 #: src/pages/Status.tsx
 msgid "port"

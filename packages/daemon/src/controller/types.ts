@@ -191,6 +191,19 @@ export interface State {
   readonly pool_luck_24h: number | null;
   readonly pool_luck_7d: number | null;
 
+  /**
+   * #90: latest cumulative share counters (in millions) for the
+   * primary owned bid, sourced from `/spot/bid/delivery/{order_id}`.
+   * The endpoint returns a time series; observe() takes the most
+   * recent item and forwards its three counters here. Per-tick
+   * deltas drive the dashboard's 1h-rolling acceptance ratio. All
+   * three null when there is no primary owned bid, the call failed,
+   * or the bid has no delivery records yet.
+   */
+  readonly primary_bid_shares_purchased_m: number | null;
+  readonly primary_bid_shares_accepted_m: number | null;
+  readonly primary_bid_shares_rejected_m: number | null;
+
   /** Last successful API read timestamp (ms). */
   readonly last_api_ok_at: number | null;
 

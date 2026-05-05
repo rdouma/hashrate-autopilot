@@ -207,6 +207,10 @@ msgstr "Hay una oferta activa. El próximo CREATE se dispara cuando termine - en
 msgid "A few questions to get the daemon operational. Defaults work for typical home miners; tune later from the Config page."
 msgstr "Unas preguntas para poner el daemon operativo. Los valores predeterminados funcionan para mineros caseros típicos; ajusta más tarde desde la página Config."
 
+#: src/pages/Status.tsx
+msgid "acceptance 1h"
+msgstr "aceptación 1h"
+
 #: src/pages/Setup.tsx
 msgid "Access"
 msgstr "Acceso"
@@ -1681,6 +1685,10 @@ msgstr "usuarios del pool"
 #: src/pages/Status.tsx
 msgid "pool workers"
 msgstr "workers del pool"
+
+#: src/pages/Status.tsx
+msgid "Pool-side share acceptance over the trailing hour: (shares accepted by the target / shares purchased from Braiins) × 100. Healthy baseline ≈ 99.95%; baseline rejection of ~0.05% is normal noise. Sustained drops below ~99% point at Datum stale work, worker-identity misconfiguration, or pool difficulty too low — see docs/research.md §7.5."
+msgstr "Aceptación de shares por la pool durante la última hora: (shares aceptadas por el destino / shares compradas a Braiins) × 100. Baseline sano ≈ 99,95%; el ~0,05% de rechazo de baseline es ruido normal. Caídas sostenidas por debajo de ~99% indican trabajo obsoleto en Datum, mala configuración de identidad de worker, o dificultad de pool demasiado baja — véase docs/research.md §7.5."
 
 #: src/pages/Status.tsx
 msgid "port"

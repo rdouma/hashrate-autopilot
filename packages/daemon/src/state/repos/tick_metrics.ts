@@ -66,6 +66,10 @@ export interface InsertTickMetricArgs {
    */
   readonly pool_luck_24h: number | null;
   readonly pool_luck_7d: number | null;
+  /** #90: per-tick bid acceptance counters from `/spot/bid/delivery/{order_id}`. */
+  readonly primary_bid_shares_purchased_m: number | null;
+  readonly primary_bid_shares_accepted_m: number | null;
+  readonly primary_bid_shares_rejected_m: number | null;
   readonly run_mode: TickMetricsTable['run_mode'];
   readonly action_mode: TickMetricsTable['action_mode'];
 }

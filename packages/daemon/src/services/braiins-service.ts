@@ -14,6 +14,7 @@
 
 import type {
   AccountBalances,
+  BidDeliveryHistory,
   BidsResponse,
   BraiinsClient,
   FeeSchedule,
@@ -81,6 +82,12 @@ export class BraiinsService {
 
   async getCurrentBids(): Promise<BidsResponse> {
     const v = await this.client.getCurrentBids();
+    this.lastApiOkAt = this.now();
+    return v;
+  }
+
+  async getBidDeliveryHistory(orderId: string): Promise<BidDeliveryHistory> {
+    const v = await this.client.getBidDeliveryHistory(orderId);
     this.lastApiOkAt = this.now();
     return v;
   }

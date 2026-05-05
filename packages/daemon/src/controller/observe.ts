@@ -290,6 +290,32 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
     }
   }
 
+  // #90: per-tick acceptance counters from /spot/bid/delivery.
+  // Sort the same way tick.ts picks `primary` so both observe and the
+  // tick_metrics row agree on which bid the counters describe. The
+  // endpoint returns a time-series; the LAST item is the cumulative
+  // counter at this moment, which is what we snapshot.
+  const sortedOwned = [...owned_bids].sort((a, b) =>
+    a.braiins_order_id.localeCompare(b.braiins_order_id),
+  );
+  const primaryBid = sortedOwned[0];
+  let primary_bid_shares_purchased_m: number | null = null;
+  let primary_bid_shares_accepted_m: number | null = null;
+  let primary_bid_shares_rejected_m: number | null = null;
+  if (primaryBid) {
+    try {
+      const history = await deps.braiins.getBidDeliveryHistory(primaryBid.braiins_order_id);
+      const last = history?.items?.[history.items.length - 1];
+      if (last) {
+        primary_bid_shares_purchased_m = last.shares_purchased_m ?? null;
+        primary_bid_shares_accepted_m = last.shares_accepted_m ?? null;
+        primary_bid_shares_rejected_m = last.shares_rejected_m ?? null;
+      }
+    } catch (err) {
+      logAndReturnNull('bid_delivery', err);
+    }
+  }
+
   // Pool probe (always run — we want outage visibility even if API is down).
   const { host, port } = parsePoolUrl(config.destination_pool_url);
   const poolProbe = await deps.poolTracker.probe({ host, port });
@@ -403,6 +429,9 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
     pool_hashrate_ph_avg_7d,
     pool_luck_24h,
     pool_luck_7d,
+    primary_bid_shares_purchased_m,
+    primary_bid_shares_accepted_m,
+    primary_bid_shares_rejected_m,
     last_api_ok_at: deps.braiins.getLastApiOkAt(),
     hashprice_sat_per_ph_day: inputs.hashpriceSatPerPhDay,
     fillable_ask_sat_per_eh_day,

@@ -1272,7 +1272,7 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
 
   if (statsData.tick_count < 2) return null;
 
-  const { uptime_pct, avg_hashrate_ph, avg_datum_hashrate_ph, avg_ocean_hashrate_ph, avg_cost_per_ph_sat_per_ph_day, avg_overpay_vs_hashprice_sat_per_ph_day } = statsData;
+  const { uptime_pct, avg_hashrate_ph, avg_datum_hashrate_ph, avg_ocean_hashrate_ph, avg_cost_per_ph_sat_per_ph_day, avg_overpay_vs_hashprice_sat_per_ph_day, acceptance_pct_1h } = statsData;
   // total_ph_hours + mutation_count remain on the server-side
   // StatsResponse even though no card consumes them — keeping the
   // shape stable so we can re-surface either later without a backend
@@ -1292,6 +1292,24 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
             : uptime_pct >= 90
               ? 'text-emerald-300'
               : uptime_pct >= 50
+                ? 'text-amber-300'
+                : 'text-red-300'
+        }
+      />
+      <StatCard
+        label={t`acceptance 1h`}
+        value={
+          acceptance_pct_1h !== null
+            ? `${formatNumber(acceptance_pct_1h, { minimumFractionDigits: 2, maximumFractionDigits: 2 }, intlLocale)}%`
+            : '\u2014'
+        }
+        tooltip={t`Pool-side share acceptance over the trailing hour: (shares accepted by the target / shares purchased from Braiins) \u00d7 100. Healthy baseline \u2248 99.95%; baseline rejection of ~0.05% is normal noise. Sustained drops below ~99% point at Datum stale work, worker-identity misconfiguration, or pool difficulty too low \u2014 see docs/research.md \u00a77.5.`}
+        color={
+          acceptance_pct_1h === null
+            ? 'text-slate-400'
+            : acceptance_pct_1h >= 99.5
+              ? 'text-emerald-300'
+              : acceptance_pct_1h >= 98
                 ? 'text-amber-300'
                 : 'text-red-300'
         }

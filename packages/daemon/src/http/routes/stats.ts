@@ -67,6 +67,18 @@ export interface StatsResponse {
    * Braiins actually charged us) rather than our bid price.
    */
   readonly avg_cost_per_ph_sat_per_ph_day: number | null;
+  /**
+   * #90 — 1h-rolling acceptance ratio: shares accepted by the pool ÷
+   * shares purchased (Braiins-validated), computed from per-tick
+   * forward deltas of the cumulative counters. Resets (counter
+   * decreased mid-window, e.g. a bid replacement) are skipped so a
+   * fresh bid does not torpedo the ratio. Null when no usable counter
+   * pairs are present in the window. Healthy baseline ~99.95%; alert
+   * threshold proposed at <98%.
+   */
+  readonly acceptance_pct_1h: number | null;
+  readonly acceptance_purchased_delta_1h: number | null;
+  readonly acceptance_accepted_delta_1h: number | null;
   readonly avg_time_to_fill_ms: number | null;
   /**
    * Count of bid_events (CREATE / EDIT_PRICE / EDIT_SPEED / CANCEL)
@@ -112,6 +124,11 @@ export async function registerStatsRoute(
       const metrics = await computeMetrics(deps.db, sinceMs);
       const avgFillMs = await computeAvgTimeToFill(deps.db, deps.bidEventsDb, sinceMs);
       const mutationCount = await computeMutationCount(deps.bidEventsDb, sinceMs);
+      // Acceptance window is fixed at 1h regardless of `range`; the
+      // operator-facing question is "is my pool currently rejecting
+      // more than usual right now", not "over the last week". Always
+      // computed from the trailing 60 minutes of tick_metrics.
+      const acceptance = await computeAcceptanceLastHour(deps.db, now);
 
       const data: StatsResponse = {
         uptime_pct: metrics.uptime_pct,
@@ -121,6 +138,9 @@ export async function registerStatsRoute(
         total_ph_hours: metrics.total_ph_hours,
         avg_overpay_vs_hashprice_sat_per_ph_day: metrics.avg_overpay_vs_hashprice_sat_per_ph_day,
         avg_cost_per_ph_sat_per_ph_day: metrics.avg_cost_per_ph_sat_per_ph_day,
+        acceptance_pct_1h: acceptance.pct,
+        acceptance_purchased_delta_1h: acceptance.purchased_delta,
+        acceptance_accepted_delta_1h: acceptance.accepted_delta,
         avg_time_to_fill_ms: avgFillMs,
         mutation_count: mutationCount,
         range,
@@ -360,6 +380,67 @@ async function computeMutationCount(
     .where('occurred_at', '>=', sinceMs)
     .executeTakeFirst();
   return Number(row?.count ?? 0);
+}
+
+/**
+ * #90 — 1h-rolling acceptance ratio.
+ *
+ * Sums forward deltas of `primary_bid_shares_purchased_m` and
+ * `_accepted_m` across the last hour of tick_metrics rows. Skips
+ * pairs where the counter went backwards (bid replacement resets the
+ * counter to zero) so a fresh bid does not torpedo the ratio. Skips
+ * pairs where either side is null. Returns null pct when no usable
+ * deltas are present in the window — same semantics as uptime_pct
+ * during pre-migration ranges.
+ *
+ * Per-tick fold in TS rather than SQL because the LAG + reset-skip +
+ * null-handling combination is messier in CTEs than in a tiny TS
+ * loop, and the window is tiny (60 rows max).
+ */
+async function computeAcceptanceLastHour(
+  db: Kysely<Database>,
+  nowMs: number,
+): Promise<{
+  pct: number | null;
+  purchased_delta: number | null;
+  accepted_delta: number | null;
+}> {
+  const sinceMs = nowMs - 60 * 60 * 1000;
+  const rows = await db
+    .selectFrom('tick_metrics')
+    .select([
+      'tick_at',
+      'primary_bid_shares_purchased_m',
+      'primary_bid_shares_accepted_m',
+    ])
+    .where('tick_at', '>=', sinceMs)
+    .orderBy('tick_at', 'asc')
+    .execute();
+
+  let purchasedDelta = 0;
+  let acceptedDelta = 0;
+  let prev: { p: number; a: number } | null = null;
+  for (const r of rows) {
+    const p = r.primary_bid_shares_purchased_m;
+    const a = r.primary_bid_shares_accepted_m;
+    if (p === null || a === null) {
+      prev = null;
+      continue;
+    }
+    if (prev !== null && p >= prev.p && a >= prev.a) {
+      purchasedDelta += p - prev.p;
+      acceptedDelta += a - prev.a;
+    }
+    prev = { p, a };
+  }
+  if (purchasedDelta <= 0) {
+    return { pct: null, purchased_delta: null, accepted_delta: null };
+  }
+  return {
+    pct: (acceptedDelta / purchasedDelta) * 100,
+    purchased_delta: purchasedDelta,
+    accepted_delta: acceptedDelta,
+  };
 }
 
 /**

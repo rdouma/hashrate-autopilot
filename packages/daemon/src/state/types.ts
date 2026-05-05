@@ -331,6 +331,17 @@ export interface TickMetricsTable {
    */
   pool_luck_24h: number | null;
   pool_luck_7d: number | null;
+  /**
+   * #90: per-tick bid acceptance counters from Braiins's
+   * `/spot/bid/delivery/{order_id}`. Cumulative shares (in millions)
+   * snapshotted at this tick for the primary owned bid. Per-tick
+   * deltas drive the dashboard's 1h-rolling acceptance ratio stat
+   * card. Null on ticks where the bid did not exist yet, the call
+   * failed, or there was no primary owned bid.
+   */
+  primary_bid_shares_purchased_m: number | null;
+  primary_bid_shares_accepted_m: number | null;
+  primary_bid_shares_rejected_m: number | null;
   run_mode: RunMode;
   action_mode: ActionMode;
 }

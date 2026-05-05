@@ -484,6 +484,10 @@ export interface StatsResponse {
   total_ph_hours: number | null;
   avg_overpay_vs_hashprice_sat_per_ph_day: number | null;
   avg_cost_per_ph_sat_per_ph_day: number | null;
+  /** #90 — 1h-rolling pool acceptance ratio (%); null when no counter pairs in window. */
+  acceptance_pct_1h: number | null;
+  acceptance_purchased_delta_1h: number | null;
+  acceptance_accepted_delta_1h: number | null;
   avg_time_to_fill_ms: number | null;
   mutation_count: number;
   range: ChartRange;

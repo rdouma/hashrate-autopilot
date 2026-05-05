@@ -60,6 +60,8 @@ export type TransactionsResponse = components['schemas']['GetTransactionsRespons
 export type Transaction = components['schemas']['Transaction'];
 export type BidItem = components['schemas']['SpotGetBidsResponseItem'];
 export type BidDetail = components['schemas']['SpotGetBidDetailResponse'];
+export type BidDeliveryHistory = components['schemas']['SpotGetBidDeliveryHistoryResponse'];
+export type BidDeliveryHistoryItem = components['schemas']['SpotBidDeliveryHistoryItem'];
 export type PlaceBidRequest = components['schemas']['SpotPlaceBidRequest'];
 export type PlaceBidResponse = components['schemas']['PlaceOrderResponse'];
 export type EditBidRequest = components['schemas']['SpotEditBidRequest'];
@@ -92,6 +94,13 @@ export interface BraiinsClient {
   }): Promise<BidsResponse>;
   getTransactions(opts?: { limit?: number; offset?: number }): Promise<TransactionsResponse>;
   getBidDetail(orderId: string): Promise<BidDetail>;
+  /**
+   * Bid delivery history (#90): per-tick records of shares purchased
+   * (Braiins-validated), accepted (pool-credited), and rejected.
+   * Used by the daemon to track Ocean acceptance ratio for the
+   * Status-page stat card + threshold alert.
+   */
+  getBidDeliveryHistory(orderId: string): Promise<BidDeliveryHistory>;
   placeBid(request: PlaceBidRequest): Promise<PlaceBidResponse>;
   editBid(request: EditBidRequest): Promise<void>;
   cancelBid(params: CancelBidParams): Promise<CancelResponse>;
@@ -267,6 +276,15 @@ export function createBraiinsClient(config: BraiinsClientConfig = {}): BraiinsCl
           headers: authHeaders('READ_ONLY'),
         });
         return unwrap<BidDetail>('/spot/bid/detail/{order_id}', res);
+      }),
+
+    getBidDeliveryHistory: (orderId: string) =>
+      read('/spot/bid/delivery/{order_id}', async () => {
+        const res = await api.GET('/spot/bid/delivery/{order_id}', {
+          params: { path: { order_id: orderId } },
+          headers: authHeaders('READ_ONLY'),
+        });
+        return unwrap<BidDeliveryHistory>('/spot/bid/delivery/{order_id}', res);
       }),
 
     placeBid: (request: PlaceBidRequest) =>
