@@ -236,10 +236,6 @@ msgid "After submit, the daemon writes everything to <0>state.db</0> and brings 
 msgstr "After submit, the daemon writes everything to <0>state.db</0> and brings the controller online in-place. Boots in <1>DRY-RUN</1> mode; the dashboard signs you in automatically. Promote to LIVE from the Status page when you're ready."
 
 #: src/pages/Config.tsx
-msgid "All values live-editable. Save to apply."
-msgstr "All values live-editable. Save to apply."
-
-#: src/pages/Config.tsx
 msgid "Always dry-run (safest)"
 msgstr "Always dry-run (safest)"
 
@@ -266,6 +262,18 @@ msgstr "API unreachable ({0})"
 #: src/pages/Status.tsx
 msgid "At effective cap - desired fillable + overpay exceeds the ceiling."
 msgstr "At effective cap - desired fillable + overpay exceeds the ceiling."
+
+#: src/pages/Config.tsx
+msgid "auto-save"
+msgstr "auto-save"
+
+#: src/pages/Config.tsx
+msgid "Auto-save off. Changes only persist when you click Save."
+msgstr "Auto-save off. Changes only persist when you click Save."
+
+#: src/pages/Config.tsx
+msgid "Auto-save on. Edits persist about a second after you stop typing."
+msgstr "Auto-save on. Edits persist about a second after you stop typing."
 
 #: src/components/PriceChart.tsx
 msgid "automatic"
@@ -1780,6 +1788,10 @@ msgid "Remember me on this device"
 msgstr "Remember me on this device"
 
 #: src/pages/Config.tsx
+msgid "Restore the values that were on this page when you opened it."
+msgstr "Restore the values that were on this page when you opened it."
+
+#: src/pages/Config.tsx
 msgid "Resume last mode"
 msgstr "Resume last mode"
 
@@ -1859,9 +1871,19 @@ msgid "save"
 msgstr "save"
 
 #: src/pages/Config.tsx
+msgid "save failed:"
+msgstr "save failed:"
+
+#. placeholder {0}: formatAge(lastSavedAt)
+#: src/pages/Config.tsx
+msgid "saved {0}"
+msgstr "saved {0}"
+
+#: src/pages/Config.tsx
 msgid "saved."
 msgstr "saved."
 
+#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "saving…"
 msgstr "saving…"
@@ -2104,6 +2126,14 @@ msgstr "unpaid earnings"
 #: src/pages/Status.tsx
 msgid "unpaid earnings (Ocean)"
 msgstr "unpaid earnings (Ocean)"
+
+#: src/pages/Config.tsx
+msgid "unsaved changes"
+msgstr "unsaved changes"
+
+#: src/pages/Config.tsx
+msgid "unsaved changes…"
+msgstr "unsaved changes…"
 
 #. placeholder {0}: formatAgePrecise(epochMs)
 #: src/pages/Status.tsx

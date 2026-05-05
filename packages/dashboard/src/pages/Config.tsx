@@ -14,7 +14,12 @@ import {
 } from '../lib/api';
 import { blockFoundSoundUrl } from '../lib/block-found-sound';
 import { useDenomination } from '../lib/denomination';
+import { formatAge } from '../lib/format';
 import { LOCALE_PRESETS, useLocale } from '../lib/locale';
+
+// #98 — auto-save defaults on; toggle persists per-browser.
+const AUTOSAVE_STORAGE_KEY = 'braiins.configAutoSave';
+const AUTOSAVE_DEBOUNCE_MS = 800;
 
 const EH_PER_PH = 1000;
 
@@ -385,10 +390,42 @@ export function Config() {
 
   const [draft, setDraft] = useState<AppConfig | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // #98 — page-load snapshot is the target Revert restores to. Set once
+  // on the very first config load and never updated; subsequent server
+  // refreshes (auto-save invalidations, manual saves) leave it alone so
+  // Revert always means "discard everything I touched on this page
+  // visit." `lastSavedSnapshot` tracks the most-recently-persisted draft
+  // and drives the dirty/unsaved-changes indicator + the autosave
+  // debounce gate.
+  const [pageLoadSnapshot, setPageLoadSnapshot] = useState<AppConfig | null>(null);
+  const [lastSavedSnapshot, setLastSavedSnapshot] = useState<AppConfig | null>(null);
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+  const [autoSave, setAutoSaveState] = useState<boolean>(() => {
+    try {
+      return window.localStorage.getItem(AUTOSAVE_STORAGE_KEY) !== 'false';
+    } catch {
+      return true;
+    }
+  });
+  const setAutoSave = (next: boolean) => {
+    setAutoSaveState(next);
+    try {
+      window.localStorage.setItem(AUTOSAVE_STORAGE_KEY, String(next));
+    } catch {
+      /* private mode / quota — silently degrade to per-tab */
+    }
+  };
 
+  // Initial-load only: seed draft + snapshots from the first config
+  // payload. Guarded on `draft === null` so subsequent refetches (auto-
+  // save invalidations especially) do not stomp the live form.
   useEffect(() => {
-    if (query.data?.config) setDraft(query.data.config);
-  }, [query.data]);
+    if (query.data?.config && draft === null) {
+      setDraft(query.data.config);
+      setPageLoadSnapshot(query.data.config);
+      setLastSavedSnapshot(query.data.config);
+    }
+  }, [query.data, draft]);
 
   const mutation = useMutation({
     mutationFn: async (cfg: AppConfig) => {
@@ -406,10 +443,12 @@ export function Config() {
       } catch {
         /* best-effort — next regular tick will pick the change up */
       }
-      return result;
+      return { result, savedDraft: cfg };
     },
-    onSuccess: () => {
+    onSuccess: ({ savedDraft }) => {
       setError(null);
+      setLastSavedSnapshot(savedDraft);
+      setLastSavedAt(Date.now());
       qc.invalidateQueries({ queryKey: ['config'] });
       qc.invalidateQueries({ queryKey: ['status'] });
       qc.invalidateQueries({ queryKey: ['finance'] });
@@ -424,6 +463,36 @@ export function Config() {
     },
     onError: (err: Error) => setError(err.message),
   });
+
+  // Dirty check by deep-equal of the JSON shape. AppConfig is a flat
+  // object of primitives, so the stringify cost is trivial vs. a hand-
+  // rolled equality. Falsy when either side is null (still loading).
+  const isDirty =
+    draft !== null &&
+    lastSavedSnapshot !== null &&
+    JSON.stringify(draft) !== JSON.stringify(lastSavedSnapshot);
+
+  // #98 — debounced autosave. Fires AUTOSAVE_DEBOUNCE_MS after the last
+  // edit, only when (a) auto-save is on, (b) the form is dirty vs the
+  // last persisted draft, (c) no save is currently in flight, and
+  // (d) the same dirty draft hasn't already errored on its previous
+  // attempt (avoids retry-storming a Zod-rejected payload on every
+  // keystroke during the debounce window). Cleanup cancels the pending
+  // timer on every dependency change so a flurry of edits collapses
+  // into one save.
+  const lastAttemptedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!autoSave) return;
+    if (!draft || !isDirty) return;
+    if (mutation.isPending) return;
+    const draftKey = JSON.stringify(draft);
+    if (mutation.isError && lastAttemptedRef.current === draftKey) return;
+    const timer = window.setTimeout(() => {
+      lastAttemptedRef.current = draftKey;
+      mutation.mutate(draft);
+    }, AUTOSAVE_DEBOUNCE_MS);
+    return () => window.clearTimeout(timer);
+  }, [draft, autoSave, isDirty, mutation]);
 
   if (query.isError && query.error instanceof UnauthorizedError) {
     navigate('/login');
@@ -471,30 +540,54 @@ export function Config() {
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto pb-24">
-      <header className="flex items-baseline justify-between">
-        <div>
+      <header className="sticky top-0 z-30 -mx-4 px-4 py-3 bg-slate-950/85 backdrop-blur border-b border-slate-800 flex flex-wrap items-center gap-3">
+        <div className="flex-1 min-w-0">
           <h2 className="text-2xl text-slate-100">
             <Trans>Configuration</Trans>
           </h2>
           <p className="text-sm text-slate-500">
-            <Trans>All values live-editable. Save to apply.</Trans>
+            {autoSave ? (
+              <Trans>Auto-save on. Edits persist about a second after you stop typing.</Trans>
+            ) : (
+              <Trans>Auto-save off. Changes only persist when you click Save.</Trans>
+            )}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-3">
+          <SaveStatus
+            isPending={mutation.isPending}
+            isError={mutation.isError}
+            errorMessage={(mutation.error as Error | null)?.message ?? null}
+            isDirty={isDirty}
+            lastSavedAt={lastSavedAt}
+            autoSave={autoSave}
+          />
+          <label className="flex items-center gap-2 text-xs text-slate-300 select-none cursor-pointer">
+            <input
+              type="checkbox"
+              checked={autoSave}
+              onChange={(e) => setAutoSave(e.target.checked)}
+              className="accent-amber-400"
+            />
+            <Trans>auto-save</Trans>
+          </label>
           <button
-            onClick={() => query.data?.config && setDraft(query.data.config)}
-            disabled={mutation.isPending}
+            onClick={() => pageLoadSnapshot && setDraft(pageLoadSnapshot)}
+            disabled={mutation.isPending || pageLoadSnapshot === null || !isDirty}
+            title={t`Restore the values that were on this page when you opened it.`}
             className="px-3 py-1.5 text-xs text-slate-300 border border-slate-700 rounded hover:bg-slate-800 disabled:opacity-50"
           >
             <Trans>revert</Trans>
           </button>
-          <button
-            onClick={() => mutation.mutate(draft)}
-            disabled={mutation.isPending}
-            className="px-4 py-1.5 text-sm bg-amber-400 text-slate-900 font-medium rounded hover:bg-amber-300 disabled:opacity-50"
-          >
-            {mutation.isPending ? <Trans>saving…</Trans> : <Trans>save</Trans>}
-          </button>
+          {!autoSave && (
+            <button
+              onClick={() => mutation.mutate(draft)}
+              disabled={mutation.isPending || !isDirty}
+              className="px-4 py-1.5 text-sm bg-amber-400 text-slate-900 font-medium rounded hover:bg-amber-300 disabled:opacity-50"
+            >
+              {mutation.isPending ? <Trans>saving…</Trans> : <Trans>save</Trans>}
+            </button>
+          )}
         </div>
       </header>
 
@@ -1184,6 +1277,72 @@ function PayoutSourceSection({
       </div>
     </section>
   );
+}
+
+function SaveStatus({
+  isPending,
+  isError,
+  errorMessage,
+  isDirty,
+  lastSavedAt,
+  autoSave,
+}: {
+  isPending: boolean;
+  isError: boolean;
+  errorMessage: string | null;
+  isDirty: boolean;
+  lastSavedAt: number | null;
+  autoSave: boolean;
+}) {
+  // Tick once a minute so the "saved 3m ago" string ages without
+  // requiring a re-render from elsewhere. Cheap; the indicator is
+  // tiny and there is at most one of these on the page.
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => setTick((n) => n + 1), 30_000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  if (isPending) {
+    return (
+      <span className="flex items-center gap-1.5 text-xs text-slate-300">
+        <span className="inline-block w-3 h-3 rounded-full border-2 border-slate-600 border-t-amber-300 animate-spin" />
+        <Trans>saving…</Trans>
+      </span>
+    );
+  }
+  if (isError) {
+    return (
+      <span
+        className="text-xs text-red-400 max-w-xs truncate"
+        title={errorMessage ?? undefined}
+      >
+        <Trans>save failed:</Trans> {errorMessage}
+      </span>
+    );
+  }
+  if (isDirty && autoSave) {
+    return (
+      <span className="text-xs text-amber-300">
+        <Trans>unsaved changes…</Trans>
+      </span>
+    );
+  }
+  if (isDirty && !autoSave) {
+    return (
+      <span className="text-xs text-amber-300">
+        <Trans>unsaved changes</Trans>
+      </span>
+    );
+  }
+  if (lastSavedAt !== null) {
+    return (
+      <span className="text-xs text-slate-500">
+        <Trans>saved {formatAge(lastSavedAt)}</Trans>
+      </span>
+    );
+  }
+  return null;
 }
 
 function ElectrsFields({

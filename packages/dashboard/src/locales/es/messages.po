@@ -236,10 +236,6 @@ msgid "After submit, the daemon writes everything to <0>state.db</0> and brings 
 msgstr "Tras enviar, el daemon escribe todo en <0>state.db</0> y pone el controlador en línea en el sitio. Arranca en modo <1>DRY-RUN</1>; el panel te conecta automáticamente. Cambia a LIVE desde la página Status cuando estés listo."
 
 #: src/pages/Config.tsx
-msgid "All values live-editable. Save to apply."
-msgstr "Todos los valores son editables en vivo. Guarda para aplicar."
-
-#: src/pages/Config.tsx
 msgid "Always dry-run (safest)"
 msgstr "Siempre dry-run (más seguro)"
 
@@ -266,6 +262,18 @@ msgstr "API inaccesible ({0})"
 #: src/pages/Status.tsx
 msgid "At effective cap - desired fillable + overpay exceeds the ceiling."
 msgstr "En el límite efectivo - el rellenable + sobrepago deseado supera el techo."
+
+#: src/pages/Config.tsx
+msgid "auto-save"
+msgstr "guardado automático"
+
+#: src/pages/Config.tsx
+msgid "Auto-save off. Changes only persist when you click Save."
+msgstr "Guardado automático desactivado. Los cambios solo se guardan al hacer clic en Guardar."
+
+#: src/pages/Config.tsx
+msgid "Auto-save on. Edits persist about a second after you stop typing."
+msgstr "Guardado automático activado. Los cambios se guardan aproximadamente un segundo después de que dejes de escribir."
 
 #: src/components/PriceChart.tsx
 msgid "automatic"
@@ -1780,6 +1788,10 @@ msgid "Remember me on this device"
 msgstr "Recordarme en este dispositivo"
 
 #: src/pages/Config.tsx
+msgid "Restore the values that were on this page when you opened it."
+msgstr "Restaura los valores que había en esta página cuando la abriste."
+
+#: src/pages/Config.tsx
 msgid "Resume last mode"
 msgstr "Reanudar último modo"
 
@@ -1859,9 +1871,19 @@ msgid "save"
 msgstr "guardar"
 
 #: src/pages/Config.tsx
+msgid "save failed:"
+msgstr "guardado fallido:"
+
+#. placeholder {0}: formatAge(lastSavedAt)
+#: src/pages/Config.tsx
+msgid "saved {0}"
+msgstr "guardado {0}"
+
+#: src/pages/Config.tsx
 msgid "saved."
 msgstr "guardado."
 
+#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "saving…"
 msgstr "guardando…"
@@ -2104,6 +2126,14 @@ msgstr "ganancias pendientes"
 #: src/pages/Status.tsx
 msgid "unpaid earnings (Ocean)"
 msgstr "ganancias no pagadas (Ocean)"
+
+#: src/pages/Config.tsx
+msgid "unsaved changes"
+msgstr "cambios sin guardar"
+
+#: src/pages/Config.tsx
+msgid "unsaved changes…"
+msgstr "cambios sin guardar…"
 
 #. placeholder {0}: formatAgePrecise(epochMs)
 #: src/pages/Status.tsx

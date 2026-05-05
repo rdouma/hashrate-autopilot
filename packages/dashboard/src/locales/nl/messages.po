@@ -236,10 +236,6 @@ msgid "After submit, the daemon writes everything to <0>state.db</0> and brings 
 msgstr "Na indienen schrijft de daemon alles naar <0>state.db</0> en zet de controller direct online. Start in <1>DRY-RUN</1> modus; het dashboard logt je automatisch in. Schakel naar LIVE op de Status-pagina wanneer je klaar bent."
 
 #: src/pages/Config.tsx
-msgid "All values live-editable. Save to apply."
-msgstr "Alle waarden zijn live aanpasbaar. Sla op om toe te passen."
-
-#: src/pages/Config.tsx
 msgid "Always dry-run (safest)"
 msgstr "Altijd dry-run (veiligst)"
 
@@ -266,6 +262,18 @@ msgstr "API onbereikbaar ({0})"
 #: src/pages/Status.tsx
 msgid "At effective cap - desired fillable + overpay exceeds the ceiling."
 msgstr "Op effectief plafond - gewenste vulbaar + toeslag overschrijdt het maximum."
+
+#: src/pages/Config.tsx
+msgid "auto-save"
+msgstr "automatisch opslaan"
+
+#: src/pages/Config.tsx
+msgid "Auto-save off. Changes only persist when you click Save."
+msgstr "Automatisch opslaan staat uit. Wijzigingen blijven pas behouden als je op Opslaan klikt."
+
+#: src/pages/Config.tsx
+msgid "Auto-save on. Edits persist about a second after you stop typing."
+msgstr "Automatisch opslaan staat aan. Wijzigingen worden ongeveer een seconde na je laatste invoer opgeslagen."
 
 #: src/components/PriceChart.tsx
 msgid "automatic"
@@ -1780,6 +1788,10 @@ msgid "Remember me on this device"
 msgstr "Onthoud mij op dit apparaat"
 
 #: src/pages/Config.tsx
+msgid "Restore the values that were on this page when you opened it."
+msgstr "Herstel de waarden die op deze pagina stonden toen je hem opende."
+
+#: src/pages/Config.tsx
 msgid "Resume last mode"
 msgstr "Laatste modus hervatten"
 
@@ -1859,9 +1871,19 @@ msgid "save"
 msgstr "opslaan"
 
 #: src/pages/Config.tsx
+msgid "save failed:"
+msgstr "opslaan mislukt:"
+
+#. placeholder {0}: formatAge(lastSavedAt)
+#: src/pages/Config.tsx
+msgid "saved {0}"
+msgstr "opgeslagen {0}"
+
+#: src/pages/Config.tsx
 msgid "saved."
 msgstr "opgeslagen."
 
+#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "saving…"
 msgstr "opslaan…"
@@ -2104,6 +2126,14 @@ msgstr "onbetaalde verdiensten"
 #: src/pages/Status.tsx
 msgid "unpaid earnings (Ocean)"
 msgstr "openstaande verdiensten (Ocean)"
+
+#: src/pages/Config.tsx
+msgid "unsaved changes"
+msgstr "niet-opgeslagen wijzigingen"
+
+#: src/pages/Config.tsx
+msgid "unsaved changes…"
+msgstr "niet-opgeslagen wijzigingen…"
 
 #. placeholder {0}: formatAgePrecise(epochMs)
 #: src/pages/Status.tsx

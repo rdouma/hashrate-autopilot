@@ -2,6 +2,10 @@
 
 ## 2026-05-05
 
+### `[Feature]` Auto-save Config page with sticky header, save status indicator, and revert (#98)
+
+The Config page used to force the operator to scroll back to the top after every change to click Save — annoying enough that they raised it as its own issue. Default flow is now auto-save: ~800 ms after the last keystroke / change, the dashboard PUTs the draft to `/api/config` and the header status indicator transitions through `unsaved changes…` → `saving…` → `saved Xs ago`. The header itself is now sticky at the top of the page so the status, the auto-save toggle, and the Revert button are visible from anywhere on the page. An `auto-save: on/off` checkbox in the header (persisted per-browser to `localStorage` as `braiins.configAutoSave`) lets power users opt back into the manual flow with the explicit Save button. Revert restores the values that were on the page when the operator first opened it (the page-load snapshot — invariant across server invalidations, so it always means "discard everything I touched on this visit"). Validation errors keep the form dirty, the indicator shows `save failed: …`, and the auto-save loop pauses until the operator changes another field. en/nl/es catalogs updated.
+
 ### `[Fix]` 'collected (on-chain)' shows a spinner while the first scan is in flight (#97)
 
 Right after a daemon restart the Lifetime P&L panel's `collected (on-chain)` row used to flicker as an em-dash before the payout observer's first scan settled, which the operator (correctly) read as "this integration looks broken." The route now distinguishes three states — `computing` (observer enabled, no snapshot yet), `ready` (snapshot exists), `idle` (observer disabled / not configured) — and the dashboard renders a small inline spinner during `computing` instead of the em-dash. The em-dash stays for `idle` (with the existing "not configured" tooltip) so misconfiguration is still obvious. en/nl/es catalogs updated.
