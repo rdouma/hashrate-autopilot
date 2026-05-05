@@ -19,6 +19,8 @@ import { resolve } from 'node:path';
 
 import type { Kysely } from 'kysely';
 
+import type { BitcoindClient } from '@braiins-hashrate/bitcoind-client';
+
 import type { Controller } from '../controller/tick.js';
 import type { BidEventsRepo } from '../state/repos/bid_events.js';
 import type { ConfigRepo } from '../state/repos/config.js';
@@ -35,6 +37,7 @@ import type { OceanClient } from '../services/ocean.js';
 import type { PayoutObserver } from '../services/payout-observer.js';
 import { registerActionRoutes } from './routes/actions.js';
 import { registerBidEventsRoute } from './routes/bid-events.js';
+import { registerBip110ScanRoute } from './routes/bip110-scan.js';
 import { registerBlockFoundSoundRoute } from './routes/block-found-sound.js';
 import { registerBtcPriceRoute } from './routes/btc-price.js';
 import { registerConfigRoutes } from './routes/config.js';
@@ -65,6 +68,8 @@ export interface HttpServerDeps {
   readonly hashpriceCache: HashpriceCache;
   /** #94: block-header version lookup for the BIP-110 crown marker. Optional - chart degrades to standard markers when absent. */
   readonly blockVersionService: BlockVersionService | null;
+  /** #95: bitcoind RPC client for the BIP 110 scanner endpoint. Null when bitcoind RPC creds are not configured (scanner returns rpc_available: false). */
+  readonly bitcoindClient: BitcoindClient | null;
   readonly db: Kysely<Database>;
   readonly password: string;
   readonly tickIntervalMs: number;
@@ -124,6 +129,7 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<HttpServer
   await registerActionRoutes(app, deps);
   await registerMetricsRoute(app, deps);
   await registerBidEventsRoute(app, deps);
+  await registerBip110ScanRoute(app, { bitcoindClient: deps.bitcoindClient });
   await registerPayoutsRoute(app, { payoutObserver: deps.payoutObserver });
   await registerStatsRoute(app, { db: deps.db, bidEventsDb: deps.db });
   await registerStorageEstimateRoute(app, { db: deps.db });

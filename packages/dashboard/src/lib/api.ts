@@ -447,6 +447,8 @@ export const api = {
       },
     ),
   btcPrice: () => request<BtcPriceResponse>('/api/btc-price'),
+  bip110Scan: (blocks: number) =>
+    request<Bip110ScanResponse>(`/api/bip110/scan?blocks=${encodeURIComponent(String(blocks))}`),
   finance: () => request<FinanceResponse>('/api/finance'),
   financeRange: (range: ChartRange) =>
     request<FinanceRangeResponse>(
@@ -511,6 +513,37 @@ export interface BtcPriceResponse {
   usd_per_btc: number | null;
   source: string;
   fetched_at_ms: number | null;
+}
+
+export interface Bip110ScanSignalingBlock {
+  height: number;
+  hash: string;
+  time_ms: number;
+  version: number;
+  version_hex: string;
+}
+
+export interface Bip110ScanDeployment {
+  key: string;
+  status: string | null;
+  bit: number | null;
+  statistics: {
+    count: number;
+    elapsed: number;
+    threshold: number;
+    period: number;
+  } | null;
+}
+
+export interface Bip110ScanResponse {
+  rpc_available: boolean;
+  tip_height: number | null;
+  scanned: number;
+  signaling_count: number;
+  signaling_pct: number;
+  deployment: Bip110ScanDeployment | null;
+  signaling_blocks: Bip110ScanSignalingBlock[];
+  error: string | null;
 }
 
 export interface FinanceRangeResponse {

@@ -371,6 +371,14 @@ msgstr "Bid filling at {speed}."
 msgid "Bids"
 msgstr "Bids"
 
+#: src/components/Bip110ScanCard.tsx
+msgid "BIP 110 scan"
+msgstr "BIP 110 scan"
+
+#: src/components/Bip110ScanCard.tsx
+msgid "bit"
+msgstr "bit"
+
 #: src/pages/Setup.tsx
 msgid "Bitcoin Core (bitcoind RPC)"
 msgstr "Bitcoin Core (bitcoind RPC)"
@@ -392,6 +400,14 @@ msgstr "Bitcoin Core RPC URL"
 msgid "Bitcoin payout address"
 msgstr "Bitcoin payout address"
 
+#: src/components/Bip110ScanCard.tsx
+msgid "bitcoind RPC is not configured on the daemon. Set BHA_BITCOIND_RPC_URL / _USER / _PASSWORD or fill the corresponding fields on the Config page."
+msgstr "bitcoind RPC is not configured on the daemon. Set BHA_BITCOIND_RPC_URL / _USER / _PASSWORD or fill the corresponding fields on the Config page."
+
+#: src/components/Bip110ScanCard.tsx
+msgid "block"
+msgstr "block"
+
 #: src/pages/Config.tsx
 msgid "Block explorer"
 msgstr "Block explorer"
@@ -408,21 +424,13 @@ msgstr "Block-found notification"
 msgid "blocked"
 msgstr "blocked"
 
-#: src/pages/Status.tsx
-#~ msgid "Blocks Ocean found in the last 24h, with a luck multiplier comparing observed vs expected. Reads exactly count/expected at the moment of every find (e.g. 2 found vs 3.45 expected = 0.58×); decays continuously between finds (the longer we go without a block, the unluckier we look). At Ocean's ~5% share of network hashrate the expected count is ~7 blocks/24h. Same number the chart's right-axis pool-luck line plots. Wide variance is normal at 24h."
-#~ msgstr "Blocks Ocean found in the last 24h, with a luck multiplier comparing observed vs expected. Reads exactly count/expected at the moment of every find (e.g. 2 found vs 3.45 expected = 0.58×); decays continuously between finds (the longer we go without a block, the unluckier we look). At Ocean's ~5% share of network hashrate the expected count is ~7 blocks/24h. Same number the chart's right-axis pool-luck line plots. Wide variance is normal at 24h."
-
-#: src/pages/Status.tsx
-#~ msgid "Blocks Ocean found in the last 24h. The 'X.XX× lucky/unlucky' annotation compares observed vs the network-share expectation: at Ocean's ~5% share of network hashrate and ~144 blocks/day on the network, the expected count is ~7 blocks/24h. 1.00× = exactly that; >1 = lucky; <1 = unlucky. Wide variance is normal at 24h (Poisson σ is large at this window); the 7d row below is where sustained drift becomes meaningful."
-#~ msgstr "Blocks Ocean found in the last 24h. The 'X.XX× lucky/unlucky' annotation compares observed vs the network-share expectation: at Ocean's ~5% share of network hashrate and ~144 blocks/day on the network, the expected count is ~7 blocks/24h. 1.00× = exactly that; >1 = lucky; <1 = unlucky. Wide variance is normal at 24h (Poisson σ is large at this window); the 7d row below is where sustained drift becomes meaningful."
+#: src/components/Bip110ScanCard.tsx
+msgid "blocks"
+msgstr "blocks"
 
 #: src/pages/Status.tsx
 msgid "Blocks Ocean found in the last 24h. The \"X.XX× expected\" multiplier compares observed vs Poisson-expected. Pool hashrate / network difficulty unavailable right now; tooltip will show live share % once Ocean stats are reachable again."
 msgstr "Blocks Ocean found in the last 24h. The \"X.XX× expected\" multiplier compares observed vs Poisson-expected. Pool hashrate / network difficulty unavailable right now; tooltip will show live share % once Ocean stats are reachable again."
-
-#: src/pages/Status.tsx
-#~ msgid "Blocks Ocean found in the last 24h. The \"X.XX× expected\" multiplier is the observed rate divided by the Poisson-derived expected rate: at Ocean's ~5% share of network hashrate, the expectation is ~144 × 5% = ~7 blocks/24h. The denominator extends with elapsed-since-last-block so the value decays continuously between finds; at the moment of each find it equals exactly count / expected_for_window. >1.00× means we found more than expected, <1.00× means fewer. Same number the chart's right-axis pool-luck line plots. Wide variance is normal at 24h - Poisson σ is large at this window."
-#~ msgstr "Blocks Ocean found in the last 24h. The \"X.XX× expected\" multiplier is the observed rate divided by the Poisson-derived expected rate: at Ocean's ~5% share of network hashrate, the expectation is ~144 × 5% = ~7 blocks/24h. The denominator extends with elapsed-since-last-block so the value decays continuously between finds; at the moment of each find it equals exactly count / expected_for_window. >1.00× means we found more than expected, <1.00× means fewer. Same number the chart's right-axis pool-luck line plots. Wide variance is normal at 24h - Poisson σ is large at this window."
 
 #. placeholder {0}: fmt(expected24h, 2)
 #: src/pages/Status.tsx
@@ -430,20 +438,8 @@ msgid "Blocks Ocean found in the last 24h. The \"X.XX× expected\" multiplier is
 msgstr "Blocks Ocean found in the last 24h. The \"X.XX× expected\" multiplier is the observed rate divided by the Poisson-derived expected rate: Ocean's current share of network hashrate is {shareStr}, so the expectation over 24h (~144 blocks on the network) is ~{0} blocks. The denominator extends with elapsed-since-last-block so the value decays continuously between finds; at the moment of each find it equals exactly count / expected_for_window. >1.00× means we found more than expected, <1.00× means fewer. Same number the chart's right-axis pool-luck line plots. Wide variance is normal at 24h - Poisson σ is large at this window."
 
 #: src/pages/Status.tsx
-#~ msgid "Blocks Ocean found in the last 7d, same formula as the 24h row. 7d smooths the short-term variance: a sustained <0.7× over a week suggests something structural (lower hashrate share than the estimator implies, or a real upstream issue at Ocean)."
-#~ msgstr "Blocks Ocean found in the last 7d, same formula as the 24h row. 7d smooths the short-term variance: a sustained <0.7× over a week suggests something structural (lower hashrate share than the estimator implies, or a real upstream issue at Ocean)."
-
-#: src/pages/Status.tsx
-#~ msgid "Blocks Ocean found in the last 7d, same observed-vs-Poisson-expected ratio as the 24h row. 7d smooths the short-term Poisson variance: a sustained <0.70× over a week suggests something structural (lower hashrate share than the estimator implies, or a real upstream issue at Ocean)."
-#~ msgstr "Blocks Ocean found in the last 7d, same observed-vs-Poisson-expected ratio as the 24h row. 7d smooths the short-term Poisson variance: a sustained <0.70× over a week suggests something structural (lower hashrate share than the estimator implies, or a real upstream issue at Ocean)."
-
-#: src/pages/Status.tsx
 msgid "Blocks Ocean found in the last 7d, same observed-vs-Poisson-expected ratio as the 24h row. Pool hashrate / network difficulty unavailable right now; tooltip will show live numbers once Ocean stats are reachable again."
 msgstr "Blocks Ocean found in the last 7d, same observed-vs-Poisson-expected ratio as the 24h row. Pool hashrate / network difficulty unavailable right now; tooltip will show live numbers once Ocean stats are reachable again."
-
-#: src/pages/Status.tsx
-#~ msgid "Blocks Ocean found in the last 7d, with the same network-share luck multiplier. 7d smooths the short-term Poisson variance: a sustained <0.7× over a week suggests something structural (lower hashrate share than the estimator implies, or a real upstream issue at Ocean)."
-#~ msgstr "Blocks Ocean found in the last 7d, with the same network-share luck multiplier. 7d smooths the short-term Poisson variance: a sustained <0.7× over a week suggests something structural (lower hashrate share than the estimator implies, or a real upstream issue at Ocean)."
 
 #. placeholder {0}: fmt(expected7d, 1)
 #: src/pages/Status.tsx
@@ -785,6 +781,10 @@ msgstr "delivered / cap"
 msgid "delta"
 msgstr "delta"
 
+#: src/components/Bip110ScanCard.tsx
+msgid "deployment"
+msgstr "deployment"
+
 #: src/pages/Config.tsx
 msgid "Disabled (sats only)"
 msgstr "Disabled (sats only)"
@@ -881,6 +881,10 @@ msgstr "Effective rate {sign}{deltaFormatted} below hashprice ({hashpricePretty}
 #: src/pages/Status.tsx
 msgid "Effective rate equals hashprice ({hashpricePretty}) — breaking even."
 msgstr "Effective rate equals hashprice ({hashpricePretty}) — breaking even."
+
+#: src/components/Bip110ScanCard.tsx
+msgid "elapsed"
+msgstr "elapsed"
 
 #. placeholder {0}: form.electrs_host
 #. placeholder {1}: form.electrs_port
@@ -1060,6 +1064,10 @@ msgstr "Hashrate Ocean credits to our payout address (5-min sliding window). Sou
 msgid "Hashrate targets"
 msgstr "Hashrate targets"
 
+#: src/components/Bip110ScanCard.tsx
+msgid "height"
+msgstr "height"
+
 #: src/pages/Setup.tsx
 msgid "Hide"
 msgstr "Hide"
@@ -1188,10 +1196,6 @@ msgstr "Loading…"
 #: src/pages/Config.tsx
 msgid "Log retention"
 msgstr "Log retention"
-
-#: src/pages/Status.tsx
-#~ msgid "lucky"
-#~ msgstr "lucky"
 
 #: src/components/PriceChart.tsx
 msgid "manual"
@@ -1330,6 +1334,10 @@ msgstr "No hashrate available on the market right now."
 msgid "No on-chain balance tracking. The Profit & Loss panel won't show collected BTC."
 msgstr "No on-chain balance tracking. The Profit & Loss panel won't show collected BTC."
 
+#: src/components/Bip110ScanCard.tsx
+msgid "No signaling blocks in this window."
+msgstr "No signaling blocks in this window."
+
 #: src/pages/Status.tsx
 #: src/pages/Status.tsx
 msgid "none"
@@ -1363,6 +1371,10 @@ msgstr "Not enough data in this range yet."
 #: src/pages/Status.tsx
 msgid "not in LIVE mode"
 msgstr "not in LIVE mode"
+
+#: src/components/Bip110ScanCard.tsx
+msgid "not reported"
+msgstr "not reported"
 
 #: src/lib/format.ts
 msgid "now"
@@ -1751,6 +1763,10 @@ msgstr "Remember me on this device"
 msgid "Resume last mode"
 msgstr "Resume last mode"
 
+#: src/components/Bip110ScanCard.tsx
+msgid "retarget window:"
+msgstr "retarget window:"
+
 #: src/pages/Config.tsx
 msgid "revert"
 msgstr "revert"
@@ -1830,6 +1846,26 @@ msgstr "saved."
 msgid "saving…"
 msgstr "saving…"
 
+#: src/components/Bip110ScanCard.tsx
+msgid "Scan"
+msgstr "Scan"
+
+#: src/components/Bip110ScanCard.tsx
+msgid "Scan failed:"
+msgstr "Scan failed:"
+
+#: src/components/Bip110ScanCard.tsx
+msgid "Scan recent blocks for BIP 110 (Reduced Data Temporary Softfork) signaling. Useful for verifying the crown marker on the hashrate chart against a known list of signaling blocks. Block-level signaling is rare in early adoption (well under 1%), so a 0-result run may simply mean no signaling blocks landed in the window."
+msgstr "Scan recent blocks for BIP 110 (Reduced Data Temporary Softfork) signaling. Useful for verifying the crown marker on the hashrate chart against a known list of signaling blocks. Block-level signaling is rare in early adoption (well under 1%), so a 0-result run may simply mean no signaling blocks landed in the window."
+
+#: src/components/Bip110ScanCard.tsx
+msgid "scanned"
+msgstr "scanned"
+
+#: src/components/Bip110ScanCard.tsx
+msgid "Scanning…"
+msgstr "Scanning…"
+
 #: src/components/Layout.tsx
 msgid "Select display currency"
 msgstr "Select display currency"
@@ -1874,6 +1910,10 @@ msgstr "sign in"
 #: src/components/Layout.tsx
 msgid "sign out"
 msgstr "sign out"
+
+#: src/components/Bip110ScanCard.tsx
+msgid "signaling"
+msgstr "signaling"
 
 #: src/components/HashrateChart.tsx
 msgid "Signaling BIP 110 (Reduced Data soft fork)"
@@ -1995,9 +2035,17 @@ msgstr "Tick metrics"
 msgid "ticking…"
 msgstr "ticking…"
 
+#: src/components/Bip110ScanCard.tsx
+msgid "time (UTC)"
+msgstr "time (UTC)"
+
 #: src/pages/Status.tsx
 msgid "Time since Ocean found its most recent block. Ocean's average block-find interval is the inverse of its share of network: at ~5% network share, ~5-6 hours between blocks on average. A 24h gap is unusual but well within Poisson variance; multi-day droughts suggest something structural."
 msgstr "Time since Ocean found its most recent block. Ocean's average block-find interval is the inverse of its share of network: at ~5% network share, ~5-6 hours between blocks on average. A 24h gap is unusual but well within Poisson variance; multi-day droughts suggest something structural."
+
+#: src/components/Bip110ScanCard.tsx
+msgid "tip"
+msgstr "tip"
 
 #: src/pages/Status.tsx
 msgid "total"
@@ -2026,10 +2074,6 @@ msgstr "Unknown"
 #: src/pages/Status.tsx
 msgid "Unknown bid(s) detected - next tick will PAUSE the autopilot."
 msgstr "Unknown bid(s) detected - next tick will PAUSE the autopilot."
-
-#: src/pages/Status.tsx
-#~ msgid "unlucky"
-#~ msgstr "unlucky"
 
 #: src/pages/Status.tsx
 msgid "unpaid"
@@ -2089,6 +2133,10 @@ msgstr "UTXOs at the configured payout address. Read via Electrs (preferred, ins
 #: src/pages/Setup.tsx
 msgid "v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
 msgstr "v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
+
+#: src/components/Bip110ScanCard.tsx
+msgid "version"
+msgstr "version"
 
 #: src/pages/Status.tsx
 msgid "Waiting for Ocean hashprice - trading is paused until the break-even reference is available."

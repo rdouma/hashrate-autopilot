@@ -12,6 +12,7 @@ import {
   type ChartRange,
 } from '@braiins-hashrate/shared';
 
+import { Bip110ScanCard } from '../components/Bip110ScanCard';
 import { HashrateChart, type HashrateRightAxis } from '../components/HashrateChart';
 import { type PriceRightAxis } from '../components/PriceChart';
 import { PriceChart } from '../components/PriceChart';
@@ -520,6 +521,8 @@ export function Status() {
           </ul>
         </section>
       )}
+
+      <Bip110ScanCard />
     </div>
   );
 }

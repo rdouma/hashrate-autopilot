@@ -2,6 +2,10 @@
 
 ## 2026-05-05
 
+### `[Feature]` BIP 110 scan card on Status (#95)
+
+A new "BIP 110 scan" card at the bottom of the Status page lets the operator pull a list of recent BIP 110-signaling blocks straight from the dashboard. Pick a window (2016 / 4032 / 8064 blocks), hit Scan, and the daemon runs `getblockchaininfo` + batched `getblockhash`/`getblockheader` calls against bitcoind RPC to surface the deployment header (status, retarget-window count/threshold) plus a table of signaling block heights with mempool.space links. Useful for verifying #94's crown marker against a known list of signaling blocks - block-level signaling is well under 1% in early adoption, so Ocean's recent-blocks window may not contain any. Requires bitcoind RPC creds configured on the daemon (the same ones the payout observer uses); shows a "not configured" empty state otherwise. en/nl/es catalogs updated.
+
 ### `[UI]` Pool-luck tooltips quote the live network share, not a hardcoded 5% (#92)
 
 The OCEAN panel's pool-blocks tooltip explained the math by example, but the example used a hardcoded "Ocean's ~5% share of network hashrate" which drifted out of date (mempool.space showed Ocean at ~1.7% the day the operator caught it). Now the tooltip computes Ocean's share live from `pool_hashrate_ph / network_hashrate` on every render and quotes the resulting % + the implied expected block count for the relevant window. en/nl/es catalogs updated.

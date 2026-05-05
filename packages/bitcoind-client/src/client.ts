@@ -48,6 +48,14 @@ export interface BlockchainInfo {
   readonly bestblockhash: string;
   readonly verificationprogress: number;
   readonly pruned: boolean;
+  /**
+   * Soft-fork deployment table. Vanilla Core reports a known set
+   * (taproot, etc); Knots-patched builds add `bip110` (or similarly
+   * named) when the BIP 110 patch is applied. Optional because the
+   * shape varies and we only consume it as opaque data in the
+   * BIP 110 scan route.
+   */
+  readonly softforks?: Record<string, unknown>;
 }
 
 export interface ScanTxoutSetResult {
@@ -76,12 +84,24 @@ export interface BlockHeader {
   readonly previousblockhash: string | null;
 }
 
+export interface BatchRequest {
+  readonly method: string;
+  readonly params?: readonly unknown[];
+}
+
 export interface BitcoindClient {
   getBlockchainInfo(): Promise<BlockchainInfo>;
   scanTxoutSet(descriptors: readonly string[]): Promise<ScanTxoutSetResult>;
   /** Fetch the block header for a given block hash. Used to read
    *  the `version` field for soft-fork signaling detection (#94). */
   getBlockHeader(hash: string): Promise<BlockHeader>;
+  /**
+   * JSON-RPC batch: send N requests in a single HTTP round-trip and
+   * receive results in the same order. Used by the BIP 110 scanner
+   * (#95) to fetch 2016 block hashes / headers in two HTTP calls
+   * instead of 2016. Throws on the first error in the batch.
+   */
+  batch<T>(requests: readonly BatchRequest[]): Promise<T[]>;
 }
 
 export function createBitcoindClient(config: BitcoindClientConfig): BitcoindClient {
@@ -134,6 +154,59 @@ export function createBitcoindClient(config: BitcoindClientConfig): BitcoindClie
     return parsed.result as T;
   }
 
+  async function batch<T>(requests: readonly BatchRequest[]): Promise<T[]> {
+    if (requests.length === 0) return [];
+    const body = JSON.stringify(
+      requests.map((r, i) => ({
+        jsonrpc: '1.0',
+        id: i,
+        method: r.method,
+        params: r.params ?? [],
+      })),
+    );
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    let response: Response;
+    try {
+      response = await fetchImpl(config.url, {
+        method: 'POST',
+        headers: {
+          authorization: authHeader,
+          'content-type': 'application/json',
+        },
+        body,
+        signal: controller.signal,
+      });
+    } catch (err) {
+      throw new BitcoindError(`bitcoind RPC batch: ${(err as Error).message}`);
+    } finally {
+      clearTimeout(timeout);
+    }
+    if (response.status === 401) {
+      throw new BitcoindError('bitcoind RPC: 401 Unauthorized (check rpcuser/rpcpassword)', 401);
+    }
+    const text = await response.text();
+    if (!response.ok && !text) {
+      throw new BitcoindError(`bitcoind RPC batch: HTTP ${response.status}`, response.status);
+    }
+    let parsed: JsonRpcResponse<T>[];
+    try {
+      parsed = JSON.parse(text) as JsonRpcResponse<T>[];
+    } catch {
+      throw new BitcoindError(`bitcoind RPC batch: non-JSON response (HTTP ${response.status})`);
+    }
+    if (!Array.isArray(parsed)) {
+      throw new BitcoindError('bitcoind RPC batch: expected array response');
+    }
+    parsed.sort((a, b) => Number(a.id) - Number(b.id));
+    return parsed.map((p) => {
+      if (p.error) {
+        throw new BitcoindError(`bitcoind RPC batch: ${p.error.message}`, p.error.code, p.error);
+      }
+      return p.result as T;
+    });
+  }
+
   return {
     getBlockchainInfo: () => call<BlockchainInfo>('getblockchaininfo'),
     scanTxoutSet: async (descriptors) => {
@@ -150,5 +223,6 @@ export function createBitcoindClient(config: BitcoindClientConfig): BitcoindClie
       return result;
     },
     getBlockHeader: (hash) => call<BlockHeader>('getblockheader', [hash, true]),
+    batch,
   };
 }

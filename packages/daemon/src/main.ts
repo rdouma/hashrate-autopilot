@@ -522,6 +522,7 @@ async function bootOperational(
     btcPriceService,
     hashpriceCache,
     blockVersionService,
+    bitcoindClient,
     db: handle.db,
     password: secrets.dashboard_password,
     tickIntervalMs: DEFAULT_TICK_INTERVAL_MS,

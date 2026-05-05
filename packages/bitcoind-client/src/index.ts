@@ -1,6 +1,7 @@
 export {
   BitcoindError,
   createBitcoindClient,
+  type BatchRequest,
   type BitcoindClient,
   type BitcoindClientConfig,
   type BlockchainInfo,

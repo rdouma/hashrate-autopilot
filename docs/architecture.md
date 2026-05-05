@@ -107,7 +107,8 @@ hashrate-autopilot/
 │   │   └── src/http/               (Fastify; dashboard API)
 │   │       ├── server.ts
 │   │       └── routes/             (status, config, decisions, actions, operator, metrics, run-mode,
-│   │                                finance, stats, storage-estimate, bid-events, ocean, payouts, btc-price)
+│   │                                finance, stats, storage-estimate, bid-events, ocean, payouts, btc-price,
+│   │                                bip110-scan)
 │   │
 │   └── dashboard/                  React SPA
 │       ├── src/main.tsx
