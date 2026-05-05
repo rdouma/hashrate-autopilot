@@ -2,6 +2,10 @@
 
 ## 2026-05-05
 
+### `[UI]` Pool-luck multiplier reads "× expected" instead of "× lucky/unlucky" (#92)
+
+The OCEAN panel showed "4 (0.99× unlucky)", which read as a double-negative ("0.99 times more unlucky") and was confusing below 1.00×. Replaced the verdict word with the neutral "× expected" suffix - the multiplier itself is the verdict (>1.00× = above expectation, <1.00× = below). Tooltip rewritten to explain the Poisson-derived expected rate that drives the denominator. en/nl/es catalogs updated.
+
 ### `[Feature]` Crown marker for BIP-110-signaling blocks (#94)
 
 Pool blocks whose header signals support for BIP 110 ("Reduced Data Temporary Softfork", 55% lock-in threshold, ~September 2026 max activation) now render with a crown icon on the hashrate chart instead of the standard isometric cube. Tooltip on those blocks adds a "Signaling BIP 110 (Reduced Data soft fork)" line. Detection happens daemon-side via bitcoind's `getblockheader <hash>` (preferred) or Electrs's `blockchain.block.header <height>` (fallback); when neither is configured the chart silently falls back to the standard marker. Versions are cached in a new persistent `block_version_cache` table (migration 0058) keyed by block hash so steady-state polls hit only the in-memory map. Catalogs updated for nl + es. Operators with no node configured see no crowns and no errors - the feature is purely additive.

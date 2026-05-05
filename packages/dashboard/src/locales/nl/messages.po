@@ -409,16 +409,24 @@ msgid "blocked"
 msgstr "geblokkeerd"
 
 #: src/pages/Status.tsx
-msgid "Blocks Ocean found in the last 24h, with a luck multiplier comparing observed vs expected. Reads exactly count/expected at the moment of every find (e.g. 2 found vs 3.45 expected = 0.58×); decays continuously between finds (the longer we go without a block, the unluckier we look). At Ocean's ~5% share of network hashrate the expected count is ~7 blocks/24h. Same number the chart's right-axis pool-luck line plots. Wide variance is normal at 24h."
-msgstr "Blokken die Ocean in de laatste 24u vond, met een geluk-vermenigvuldiger die waargenomen versus verwacht vergelijkt. Leest precies telling/verwacht op het moment van elke vondst (bijv. 2 gevonden versus 3,45 verwacht = 0,58×); neemt continu af tussen vondsten (hoe langer we zonder blok zitten, hoe meer pech we hebben). Bij Ocean's ~5% aandeel in de netwerk-hashrate is de verwachte telling ~7 blokken/24u. Hetzelfde getal dat de pool-luck-lijn op de rechter-as van de grafiek toont. Brede variantie is normaal bij 24u."
+#~ msgid "Blocks Ocean found in the last 24h, with a luck multiplier comparing observed vs expected. Reads exactly count/expected at the moment of every find (e.g. 2 found vs 3.45 expected = 0.58×); decays continuously between finds (the longer we go without a block, the unluckier we look). At Ocean's ~5% share of network hashrate the expected count is ~7 blocks/24h. Same number the chart's right-axis pool-luck line plots. Wide variance is normal at 24h."
+#~ msgstr "Blokken die Ocean in de laatste 24u vond, met een geluk-vermenigvuldiger die waargenomen versus verwacht vergelijkt. Leest precies telling/verwacht op het moment van elke vondst (bijv. 2 gevonden versus 3,45 verwacht = 0,58×); neemt continu af tussen vondsten (hoe langer we zonder blok zitten, hoe meer pech we hebben). Bij Ocean's ~5% aandeel in de netwerk-hashrate is de verwachte telling ~7 blokken/24u. Hetzelfde getal dat de pool-luck-lijn op de rechter-as van de grafiek toont. Brede variantie is normaal bij 24u."
 
 #: src/pages/Status.tsx
 #~ msgid "Blocks Ocean found in the last 24h. The 'X.XX× lucky/unlucky' annotation compares observed vs the network-share expectation: at Ocean's ~5% share of network hashrate and ~144 blocks/day on the network, the expected count is ~7 blocks/24h. 1.00× = exactly that; >1 = lucky; <1 = unlucky. Wide variance is normal at 24h (Poisson σ is large at this window); the 7d row below is where sustained drift becomes meaningful."
 #~ msgstr "Blokken die Ocean in de laatste 24u vond. De 'X,XX× geluk/pech'-annotatie vergelijkt waargenomen met de netwerk-aandeel-verwachting: bij Ocean's ~5% aandeel in de netwerk-hashrate en ~144 blokken/dag op het netwerk is de verwachte telling ~7 blokken/24u. 1,00× = precies dat; >1 = geluk; <1 = pech. Brede variantie is normaal bij 24u (Poisson-σ is groot in dit venster); de 7d-rij hieronder is waar aanhoudende afwijking betekenisvol wordt."
 
 #: src/pages/Status.tsx
-msgid "Blocks Ocean found in the last 7d, same formula as the 24h row. 7d smooths the short-term variance: a sustained <0.7× over a week suggests something structural (lower hashrate share than the estimator implies, or a real upstream issue at Ocean)."
-msgstr "Blokken die Ocean in de laatste 7d vond, zelfde formule als de 24u-rij. 7d strijkt de korte-termijn variantie glad: aanhoudend <0,7× over een week suggereert iets structureels (lager hashrate-aandeel dan de schatter impliceert, of een echt upstream-probleem bij Ocean)."
+msgid "Blocks Ocean found in the last 24h. The \"X.XX× expected\" multiplier is the observed rate divided by the Poisson-derived expected rate: at Ocean's ~5% share of network hashrate, the expectation is ~144 × 5% = ~7 blocks/24h. The denominator extends with elapsed-since-last-block so the value decays continuously between finds; at the moment of each find it equals exactly count / expected_for_window. >1.00× means we found more than expected, <1.00× means fewer. Same number the chart's right-axis pool-luck line plots. Wide variance is normal at 24h - Poisson σ is large at this window."
+msgstr "Blokken die Ocean in de laatste 24u vond. De \"X,XX× verwacht\"-vermenigvuldiger is de waargenomen rate gedeeld door de van Poisson afgeleide verwachte rate: bij Ocean's ~5% aandeel in de netwerk-hashrate is de verwachting ~144 × 5% = ~7 blokken/24u. De noemer breidt uit met verstreken-sinds-laatste-blok zodat de waarde continu afneemt tussen vondsten; op het moment van elke vondst is hij precies telling / verwacht_voor_venster. >1,00× betekent dat we meer vonden dan verwacht, <1,00× minder. Hetzelfde getal dat de pool-luck-lijn op de rechter-as van de grafiek toont. Brede variantie is normaal bij 24u - de Poisson-σ is groot bij dit venster."
+
+#: src/pages/Status.tsx
+#~ msgid "Blocks Ocean found in the last 7d, same formula as the 24h row. 7d smooths the short-term variance: a sustained <0.7× over a week suggests something structural (lower hashrate share than the estimator implies, or a real upstream issue at Ocean)."
+#~ msgstr "Blokken die Ocean in de laatste 7d vond, zelfde formule als de 24u-rij. 7d strijkt de korte-termijn variantie glad: aanhoudend <0,7× over een week suggereert iets structureels (lager hashrate-aandeel dan de schatter impliceert, of een echt upstream-probleem bij Ocean)."
+
+#: src/pages/Status.tsx
+msgid "Blocks Ocean found in the last 7d, same observed-vs-Poisson-expected ratio as the 24h row. 7d smooths the short-term Poisson variance: a sustained <0.70× over a week suggests something structural (lower hashrate share than the estimator implies, or a real upstream issue at Ocean)."
+msgstr "Blokken die Ocean in de laatste 7d vond, dezelfde waargenomen-vs-Poisson-verwachte verhouding als de 24u-rij. 7d strijkt de korte-termijn Poisson-variantie glad: aanhoudend <0,70× over een week suggereert iets structureels (lager hashrate-aandeel dan de schatter impliceert, of een echt upstream-probleem bij Ocean)."
 
 #: src/pages/Status.tsx
 #~ msgid "Blocks Ocean found in the last 7d, with the same network-share luck multiplier. 7d smooths the short-term Poisson variance: a sustained <0.7× over a week suggests something structural (lower hashrate share than the estimator implies, or a real upstream issue at Ocean)."
@@ -906,6 +914,10 @@ msgstr "uitklappen"
 msgid "Expand to double height"
 msgstr "Uitklappen naar dubbele hoogte"
 
+#: src/pages/Status.tsx
+msgid "expected"
+msgstr "verwacht"
+
 #: src/pages/Setup.tsx
 msgid "Failed to load setup data: {loadErr}"
 msgstr "Kon setup-gegevens niet laden: {loadErr}"
@@ -1160,8 +1172,8 @@ msgid "Log retention"
 msgstr "Logbewaring"
 
 #: src/pages/Status.tsx
-msgid "lucky"
-msgstr "geluk"
+#~ msgid "lucky"
+#~ msgstr "geluk"
 
 #: src/components/PriceChart.tsx
 msgid "manual"
@@ -1998,8 +2010,8 @@ msgid "Unknown bid(s) detected - next tick will PAUSE the autopilot."
 msgstr "Onbekende bieding(en) gedetecteerd - volgende tick zet de autopilot op PAUSED."
 
 #: src/pages/Status.tsx
-msgid "unlucky"
-msgstr "pech"
+#~ msgid "unlucky"
+#~ msgstr "pech"
 
 #: src/pages/Status.tsx
 msgid "unpaid"

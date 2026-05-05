@@ -1651,8 +1651,12 @@ function renderPoolBlocksRow(
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(luck);
-  const verdict = luck >= 1 ? t`lucky` : t`unlucky`;
-  return `${count} (${luckStr}× ${verdict})`;
+  // Wording: "× expected" rather than "× lucky/unlucky". The
+  // multiplier compares observed-rate to the Poisson-derived
+  // expected-rate; the words "lucky/unlucky" added a misleading
+  // double-negative below 1.0× ("0.99× unlucky" parses as a double
+  // negation). The number is the verdict; tooltip explains the math.
+  return `${count} (${luckStr}× ${t`expected`})`;
 }
 
 function OceanPanel() {
@@ -1813,12 +1817,12 @@ function OceanPanel() {
         <Row
           k={t`pool blocks 24h`}
           v={renderPoolBlocksRow(o.blocks_24h, o.pool_luck_24h, intlLocale)}
-          tooltip={t`Blocks Ocean found in the last 24h, with a luck multiplier comparing observed vs expected. Reads exactly count/expected at the moment of every find (e.g. 2 found vs 3.45 expected = 0.58\u00d7); decays continuously between finds (the longer we go without a block, the unluckier we look). At Ocean's ~5% share of network hashrate the expected count is ~7 blocks/24h. Same number the chart's right-axis pool-luck line plots. Wide variance is normal at 24h.`}
+          tooltip={t`Blocks Ocean found in the last 24h. The "X.XX\u00d7 expected" multiplier is the observed rate divided by the Poisson-derived expected rate: at Ocean's ~5% share of network hashrate, the expectation is ~144 \u00d7 5% = ~7 blocks/24h. The denominator extends with elapsed-since-last-block so the value decays continuously between finds; at the moment of each find it equals exactly count / expected_for_window. >1.00\u00d7 means we found more than expected, <1.00\u00d7 means fewer. Same number the chart's right-axis pool-luck line plots. Wide variance is normal at 24h - Poisson \u03c3 is large at this window.`}
         />
         <Row
           k={t`pool blocks 7d`}
           v={renderPoolBlocksRow(o.blocks_7d, o.pool_luck_7d, intlLocale)}
-          tooltip={t`Blocks Ocean found in the last 7d, same formula as the 24h row. 7d smooths the short-term variance: a sustained <0.7\u00d7 over a week suggests something structural (lower hashrate share than the estimator implies, or a real upstream issue at Ocean).`}
+          tooltip={t`Blocks Ocean found in the last 7d, same observed-vs-Poisson-expected ratio as the 24h row. 7d smooths the short-term Poisson variance: a sustained <0.70\u00d7 over a week suggests something structural (lower hashrate share than the estimator implies, or a real upstream issue at Ocean).`}
         />
       </div>
       {o.pool && (
