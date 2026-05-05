@@ -23,7 +23,11 @@ import { createBitcoindClient } from '@braiins-hashrate/bitcoind-client';
 import type { ConfigRepo } from '../../state/repos/config.js';
 
 const DEFAULT_BLOCKS = 2016;
-const MAX_BLOCKS = 8064;
+// 32256 = 16 retarget periods (~7-8 months at 10-minute target spacing).
+// 16 batches of getblockhash + 16 of getblockheader at BATCH_SIZE=200 is
+// 32 HTTP round-trips total to bitcoind, well within the 300 s default
+// timeout on the bitcoind client.
+const MAX_BLOCKS = 32256;
 const BATCH_SIZE = 200;
 
 export interface Bip110ScanDeps {

@@ -1869,8 +1869,8 @@ msgid "Scan failed:"
 msgstr "Scan failed:"
 
 #: src/components/Bip110ScanCard.tsx
-msgid "Scan recent blocks for <0>BIP 110</0> (Reduced Data Temporary Softfork) signaling. Useful for verifying the crown marker on the hashrate chart against a known list of signaling blocks. Block-level signaling is rare in early adoption (well under 1%), so a 0-result run may simply mean no signaling blocks landed in the window."
-msgstr "Scan recent blocks for <0>BIP 110</0> (Reduced Data Temporary Softfork) signaling. Useful for verifying the crown marker on the hashrate chart against a known list of signaling blocks. Block-level signaling is rare in early adoption (well under 1%), so a 0-result run may simply mean no signaling blocks landed in the window."
+msgid "Scan recent blocks for <0>BIP 110</0> (Reduced Data Temporary Softfork) signaling."
+msgstr "Scan recent blocks for <0>BIP 110</0> (Reduced Data Temporary Softfork) signaling."
 
 #: src/components/Bip110ScanCard.tsx
 msgid "scanned"

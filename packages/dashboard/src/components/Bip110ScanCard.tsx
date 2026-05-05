@@ -20,9 +20,14 @@ import { useState } from 'react';
 import { api } from '../lib/api';
 import type { Bip110ScanResponse } from '../lib/api';
 import { applyExplorerTemplate } from '../lib/blockExplorer';
-import { formatAge } from '../lib/format';
+import { formatAgeMinutes, formatNumber } from '../lib/format';
+import { useLocale } from '../lib/locale';
 
-const WINDOWS = [2016, 4032, 8064] as const;
+// Retarget windows (2016 blocks each), so each step is "one more
+// difficulty period" of context. 32256 = 16 retargets ≈ 7-8 months
+// at 10-minute target spacing - enough back-history for the operator
+// to find any signaling block on a quiet network.
+const WINDOWS = [2016, 4032, 8064, 16128, 32256] as const;
 type ScanWindow = (typeof WINDOWS)[number];
 
 const BIP110_REFERENCE_URL = 'https://bip110.org/';
@@ -32,14 +37,10 @@ function formatTimeUtc(ms: number): string {
   return d.toISOString().replace('T', ' ').slice(0, 16) + 'Z';
 }
 
-function shortHash(hash: string): string {
-  if (hash.length < 16) return hash;
-  return hash.slice(0, 8) + '…' + hash.slice(-8);
-}
-
 export function Bip110ScanCard(): JSX.Element {
   const { i18n } = useLingui();
   void i18n;
+  const { intlLocale } = useLocale();
 
   const [window, setWindow] = useState<ScanWindow>(2016);
 
@@ -83,10 +84,7 @@ export function Bip110ScanCard(): JSX.Element {
               >
                 BIP 110
               </a>{' '}
-              (Reduced Data Temporary Softfork) signaling. Useful for verifying the crown
-              marker on the hashrate chart against a known list of signaling blocks.
-              Block-level signaling is rare in early adoption (well under 1%), so a
-              0-result run may simply mean no signaling blocks landed in the window.
+              (Reduced Data Temporary Softfork) signaling.
             </Trans>
           </p>
         </div>
@@ -138,11 +136,18 @@ export function Bip110ScanCard(): JSX.Element {
       {data && data.rpc_available && !data.error && (
         <>
           <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm font-mono">
-            <Stat label={t`tip`} value={data.tip_height?.toLocaleString() ?? '-'} />
-            <Stat label={t`scanned`} value={data.scanned.toLocaleString()} />
+            <Stat
+              label={t`tip`}
+              value={data.tip_height !== null ? formatNumber(data.tip_height, {}, intlLocale) : '-'}
+            />
+            <Stat label={t`scanned`} value={formatNumber(data.scanned, {}, intlLocale)} />
             <Stat
               label={t`signaling`}
-              value={`${data.signaling_count} (${data.signaling_pct.toFixed(2)}%)`}
+              value={`${formatNumber(data.signaling_count, {}, intlLocale)} (${formatNumber(
+                data.signaling_pct,
+                { minimumFractionDigits: 2, maximumFractionDigits: 2 },
+                intlLocale,
+              )}%)`}
             />
             <Stat
               label={t`deployment`}
@@ -153,8 +158,10 @@ export function Bip110ScanCard(): JSX.Element {
           {data.deployment?.statistics && (
             <div className="mt-3 text-xs text-slate-400 font-mono">
               <Trans>retarget window:</Trans>{' '}
-              {data.deployment.statistics.count}/{data.deployment.statistics.threshold}{' '}
-              ({data.deployment.statistics.elapsed}/{data.deployment.statistics.period}{' '}
+              {formatNumber(data.deployment.statistics.count, {}, intlLocale)}/
+              {formatNumber(data.deployment.statistics.threshold, {}, intlLocale)} (
+              {formatNumber(data.deployment.statistics.elapsed, {}, intlLocale)}/
+              {formatNumber(data.deployment.statistics.period, {}, intlLocale)}{' '}
               <Trans>elapsed</Trans>)
               {data.deployment.bit !== null && (
                 <>
@@ -183,12 +190,14 @@ export function Bip110ScanCard(): JSX.Element {
                 <tbody>
                   {sortedBlocks.map((b) => (
                     <tr key={b.hash} className="text-slate-300 border-t border-slate-800">
-                      <td className="py-1.5 pr-4">{b.height.toLocaleString()}</td>
+                      <td className="py-1.5 pr-4">
+                        {formatNumber(b.height, {}, intlLocale)}
+                      </td>
                       <td className="py-1.5 pr-4" title={formatTimeUtc(b.time_ms)}>
-                        {formatAge(b.time_ms)}
+                        {formatAgeMinutes(b.time_ms)}
                       </td>
                       <td className="py-1.5 pr-4">{b.version_hex}</td>
-                      <td className="py-1.5">
+                      <td className="py-1.5 break-all">
                         <a
                           href={applyExplorerTemplate(explorerTemplate, {
                             block_hash: b.hash,
@@ -198,7 +207,7 @@ export function Bip110ScanCard(): JSX.Element {
                           rel="noopener noreferrer"
                           className="text-amber-400 hover:underline"
                         >
-                          {shortHash(b.hash)}
+                          {b.hash}
                         </a>
                       </td>
                     </tr>

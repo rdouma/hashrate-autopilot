@@ -2,6 +2,10 @@
 
 ## 2026-05-05
 
+### `[UI]` BIP 110 scan: locale-aware numbers, longer windows, two-unit time, full hash, neutral copy
+
+Round two of polish. Numbers in the stats row + the table now respect the dashboard's locale separator settings (`5 (0,06%)` and `948.048` in nl-NL, the way the rest of the dashboard already formatted them). Window dropdown picks up two longer options - 16128 (~4 months) and 32256 (~7-8 months) - so the operator can hunt for signaling blocks across more than two retarget periods on a quiet network; route's MAX_BLOCKS clamp bumped to match (still 32 batched RPC round-trips). Time column switched from single-unit (`21d ago`) to two-unit (`21d 4h ago`) via `formatAgeMinutes`. Block hashes render full-length now that the column has space to breathe (no more `00000000…1b2b2051` truncation - lots of empty pixels in the cell wasted). Description trimmed to the neutral first sentence: BIP 110 is a politically charged topic and the operator wants the surface to stay descriptive without the "useful for verifying the crown marker..." framing.
+
 ### `[UI]` BIP 110 scan polish — newest-first sort, relative time, configured block-explorer link, bip110.org reference
 
 Three small things on the scan results table: signaling blocks now sort newest-first (was random / insertion order — most useful entries are the recent ones); the time column shows a human-readable relative age (`2d ago`, `27m ago`) with the absolute UTC timestamp on hover, instead of always-UTC; and block-hash links now route through `config.block_explorer_url_template` instead of the hardcoded `mempool.space` (so privacy-conscious operators with their own explorer get used). Also added a link to [bip110.org](https://bip110.org/) in the card description AND in the Config page's Bitcoin Core RPC subsection help text, since that's the canonical spec reference.
