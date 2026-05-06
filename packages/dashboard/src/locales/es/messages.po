@@ -580,6 +580,10 @@ msgstr "Ventana sostenida de modo barato"
 msgid "Cheap-mode target"
 msgstr "Objetivo en modo barato"
 
+#: src/pages/Config.tsx
+msgid "Choose file…"
+msgstr "Elegir archivo…"
+
 #: src/components/PriceChart.tsx
 msgid "click outside to close"
 msgstr "haz clic fuera para cerrar"

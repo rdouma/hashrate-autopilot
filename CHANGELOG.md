@@ -2,6 +2,10 @@
 
 ## 2026-05-06
 
+### `[UI]` Custom block-found sound: dropdown change triggers the file picker
+
+The Block-found notification dropdown labelled the "custom" option as "Custom (uploaded)" even before any file had actually been uploaded, and the upload control sat below the dropdown - so picking "Custom" let the operator save with no file in place and made the upload feel like a separate hidden step. Now switching the dropdown to "Custom" auto-opens the OS file picker. Upload row only renders when "Custom" is selected; collapses to just a "Choose file…" button (cleaner than the raw `<input type="file">` styling). en/nl/es catalogs updated.
+
 ### `[UI]` State-aware OCEAN `next payout` tooltip explains what "Next block" means
 
 Previous tooltip (`Ocean's estimate of when our 'unpaid' balance will cross the payout threshold and trigger an on-chain transfer.`) was a single string for two very different states. Operator caught that "Next block" reads ambiguously — could mean the next Bitcoin block in general, when it actually means the next *Ocean pool* block (since under TIDES the pool only pays out when it wins a block; that's the only one whose coinbase it controls). Tooltip now branches on the row's value: when showing `Next block`, the tooltip names the unpaid balance, the threshold (~0.01 BTC ≈ 1.048.576 sat), explains the TIDES coinbase mechanic, and points at the blue cubes on the hashrate chart as the events that trigger payout. When showing `N hours / N days`, it names the same threshold, the current daily-earn rate, and notes that the actual payout still lands on the next pool-block-Ocean-wins (not on a fixed schedule) once the threshold is crossed. en/nl/es catalogs updated.

@@ -580,6 +580,10 @@ msgstr "Goedkoop-modus aanhoudend venster"
 msgid "Cheap-mode target"
 msgstr "Goedkoop-modus doel"
 
+#: src/pages/Config.tsx
+msgid "Choose file…"
+msgstr "Kies bestand…"
+
 #: src/components/PriceChart.tsx
 msgid "click outside to close"
 msgstr "klik buiten om te sluiten"

@@ -580,6 +580,10 @@ msgstr "Cheap-mode sustained window"
 msgid "Cheap-mode target"
 msgstr "Cheap-mode target"
 
+#: src/pages/Config.tsx
+msgid "Choose file…"
+msgstr "Choose file…"
+
 #: src/components/PriceChart.tsx
 msgid "click outside to close"
 msgstr "click outside to close"

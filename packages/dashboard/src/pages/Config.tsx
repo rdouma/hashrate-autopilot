@@ -853,6 +853,28 @@ function BlockFoundSoundExtras({ draft }: { draft: AppConfig }) {
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
+  const prevChoiceRef = useRef<typeof choice>(choice);
+
+  // Auto-open the OS file picker when the user flips the dropdown to
+  // 'custom'. Without this the dropdown shows "Custom (uploaded)"
+  // even before any file has actually been uploaded, and the operator
+  // has to scroll down + hunt for the Browse button - confusing
+  // because the dropdown's label suggests a file is already there.
+  // Triggering the picker here makes the dropdown change feel like
+  // a single action: pick custom -> choose file.
+  useEffect(() => {
+    if (prevChoiceRef.current !== 'custom' && choice === 'custom') {
+      // Schedule one tick out so the dropdown's own state-flush
+      // settles first; clicking the input synchronously inside the
+      // same render cycle was racing with the React-Hook-Form-style
+      // change handler upstream.
+      const t = setTimeout(() => fileRef.current?.click(), 0);
+      prevChoiceRef.current = choice;
+      return () => clearTimeout(t);
+    }
+    prevChoiceRef.current = choice;
+    return undefined;
+  }, [choice]);
 
   const playPreview = () => {
     const url = blockFoundSoundUrl(choice);
@@ -918,24 +940,37 @@ function BlockFoundSoundExtras({ draft }: { draft: AppConfig }) {
         </button>
         <span className="text-slate-500"><Trans>Plays whatever's selected above (no save needed).</Trans></span>
       </div>
-      <div>
-        <label className="block text-xs text-slate-400 mb-1">
-          <Trans>Upload custom MP3 / OGG / WAV / WebM (max 200 KB)</Trans>
-        </label>
-        <input
-          ref={fileRef}
-          type="file"
-          accept="audio/mpeg,audio/mp3,audio/ogg,audio/wav,audio/x-wav,audio/webm"
-          onChange={onUpload}
-          className="text-xs text-slate-400 file:mr-2 file:px-2 file:py-1 file:bg-slate-800 file:border file:border-slate-700 file:rounded file:text-slate-200 file:cursor-pointer"
-        />
-        {uploadStatus && (
-          <p className="text-xs text-emerald-300 mt-1">{uploadStatus}</p>
-        )}
-        {uploadError && (
-          <p className="text-xs text-red-400 mt-1">{uploadError}</p>
-        )}
-      </div>
+      {/* Upload row only shows when the dropdown is set to 'custom'.
+          The hidden <input> stays mounted regardless so the auto-open
+          useEffect above can trigger .click() on it the moment the
+          operator switches to custom. */}
+      <input
+        ref={fileRef}
+        type="file"
+        accept="audio/mpeg,audio/mp3,audio/ogg,audio/wav,audio/x-wav,audio/webm"
+        onChange={onUpload}
+        className="hidden"
+      />
+      {choice === 'custom' && (
+        <div>
+          <label className="block text-xs text-slate-400 mb-1">
+            <Trans>Upload custom MP3 / OGG / WAV / WebM (max 200 KB)</Trans>
+          </label>
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            className="text-xs px-3 py-1 rounded border border-slate-700 text-slate-200 hover:bg-slate-800"
+          >
+            <Trans>Choose file…</Trans>
+          </button>
+          {uploadStatus && (
+            <p className="text-xs text-emerald-300 mt-1">{uploadStatus}</p>
+          )}
+          {uploadError && (
+            <p className="text-xs text-red-400 mt-1">{uploadError}</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
