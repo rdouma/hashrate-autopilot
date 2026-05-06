@@ -1302,6 +1302,10 @@ msgid "Mining"
 msgstr "Mining"
 
 #: src/pages/Config.tsx
+msgid "MP3 / OGG / WAV / WebM, max 200 KB."
+msgstr "MP3 / OGG / WAV / WebM, max 200 KB."
+
+#: src/pages/Config.tsx
 msgid "Must be reachable from the public internet — Braiins probes it."
 msgstr "Must be reachable from the public internet — Braiins probes it."
 
@@ -1829,6 +1833,10 @@ msgid "Remember me on this device"
 msgstr "Remember me on this device"
 
 #: src/pages/Config.tsx
+msgid "Replace file…"
+msgstr "Replace file…"
+
+#: src/pages/Config.tsx
 msgid "Restore the values that were on this page when you opened it."
 msgstr "Restore the values that were on this page when you opened it."
 
@@ -2186,13 +2194,16 @@ msgid "updated {0}"
 msgstr "updated {0}"
 
 #: src/pages/Config.tsx
-msgid "Upload custom MP3 / OGG / WAV / WebM (max 200 KB)"
-msgstr "Upload custom MP3 / OGG / WAV / WebM (max 200 KB)"
+#~ msgid "Upload custom MP3 / OGG / WAV / WebM (max 200 KB)"
+#~ msgstr "Upload custom MP3 / OGG / WAV / WebM (max 200 KB)"
 
-#. placeholder {0}: resp.bytes ?? '?'
 #: src/pages/Config.tsx
-msgid "Uploaded {0} bytes. Switch the dropdown to \"Custom (uploaded)\" and Save to use it."
-msgstr "Uploaded {0} bytes. Switch the dropdown to \"Custom (uploaded)\" and Save to use it."
+#~ msgid "Uploaded {0} bytes. Switch the dropdown to \"Custom (uploaded)\" and Save to use it."
+#~ msgstr "Uploaded {0} bytes. Switch the dropdown to \"Custom (uploaded)\" and Save to use it."
+
+#: src/pages/Config.tsx
+msgid "Uploaded {kb} KB - now active."
+msgstr "Uploaded {kb} KB - now active."
 
 #: src/pages/Config.tsx
 msgid "Uploading…"

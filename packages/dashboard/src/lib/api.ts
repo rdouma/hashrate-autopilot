@@ -453,6 +453,10 @@ export const api = {
         body: JSON.stringify({ data_base64: dataBase64, mime }),
       },
     ),
+  blockFoundSoundStatus: () =>
+    request<{ has_blob: boolean; bytes: number | null; mime: string | null }>(
+      '/api/config/block-found-sound/status',
+    ),
   btcPrice: () => request<BtcPriceResponse>('/api/btc-price'),
   bip110Scan: (blocks: number) =>
     request<Bip110ScanResponse>(`/api/bip110/scan?blocks=${encodeURIComponent(String(blocks))}`),

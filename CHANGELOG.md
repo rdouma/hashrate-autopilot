@@ -2,6 +2,16 @@
 
 ## 2026-05-06
 
+### `[UI]` Custom block-found sound: full normal-app workflow
+
+Tightening the prior pass: the success message used to say "Switch the dropdown to 'Custom (uploaded)' and Save to use it" but the dashboard auto-saves and the dropdown was already on Custom, so the instructions were nonsense. New flow:
+
+- Picking "Custom" for the first time auto-opens the OS file picker. After the upload, the file is active immediately (no further clicks).
+- Once a custom blob exists, the button below the dropdown reads "Replace file…" instead of "Choose file…", and switching back to Custom does NOT re-open the picker (the existing file is just active).
+- Success message now reads "Uploaded N.N KB - now active." - no stale instructions.
+
+Powered by a new `/api/config/block-found-sound/status` daemon route that reports whether a blob exists without streaming it. en/nl/es catalogs updated.
+
 ### `[UI]` Custom block-found sound: dropdown change triggers the file picker
 
 The Block-found notification dropdown labelled the "custom" option as "Custom (uploaded)" even before any file had actually been uploaded, and the upload control sat below the dropdown - so picking "Custom" let the operator save with no file in place and made the upload feel like a separate hidden step. Now switching the dropdown to "Custom" auto-opens the OS file picker. Upload row only renders when "Custom" is selected; collapses to just a "Choose file…" button (cleaner than the raw `<input type="file">` styling). en/nl/es catalogs updated.

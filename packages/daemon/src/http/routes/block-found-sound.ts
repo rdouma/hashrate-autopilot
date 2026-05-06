@@ -94,6 +94,26 @@ export async function registerBlockFoundSoundRoute(
     },
   );
 
+  // Status probe used by the dashboard to know if a custom blob is
+  // already on the daemon, without streaming the whole file. Drives
+  // the Config UI's "Choose file…" / "Replace file…" button label
+  // and decides whether picking 'custom' from the dropdown should
+  // auto-open the OS file picker (auto-open only when no blob yet).
+  app.get('/api/config/block-found-sound/status', async () => {
+    const row = await deps.db
+      .selectFrom('config')
+      .select(['block_found_sound_custom_blob', 'block_found_sound_custom_mime'])
+      .where('id', '=', 1)
+      .executeTakeFirst();
+    const blob = row?.block_found_sound_custom_blob;
+    const mime = row?.block_found_sound_custom_mime ?? null;
+    return {
+      has_blob: !!blob,
+      bytes: blob ? Buffer.from(blob).length : null,
+      mime,
+    };
+  });
+
   app.get('/api/config/block-found-sound', async (_req, reply) => {
     const row = await deps.db
       .selectFrom('config')
