@@ -41,7 +41,7 @@ Two long-running processes on the always-on box, composed in a single Node daemo
    ▼                ▼              ▼                       ▼
 Braiins API   Datum Gateway   bitcoind RPC       Electrs
 (internet)    (LAN, :23334    (LAN, optional)    (LAN, optional)
-               + :7152 opt.)
+               + :7152 rec.)
 ```
 
 The **daemon** is the control loop and the only writer to SQLite. The **dashboard** is a read-mostly React SPA backed
@@ -108,7 +108,8 @@ hashrate-autopilot/
 │   │       ├── server.ts
 │   │       └── routes/             (status, config, decisions, actions, operator, metrics, run-mode,
 │   │                                finance, stats, storage-estimate, bid-events, ocean, payouts, btc-price,
-│   │                                bip110-scan)
+│   │                                bip110-scan, bitcoind-test, electrs-test, block-found-sound,
+│   │                                reward-events)
 │   │
 │   └── dashboard/                  React SPA
 │       ├── src/main.tsx
@@ -327,6 +328,32 @@ CREATE TABLE tick_metrics (
                                           -- deltas are the authoritative actual spend series that
                                           -- drives the per-day P&L panel, the effective-rate line,
                                           -- the UPTIME stat, and counter-derived delivered hashrate
+  -- #89 (migrations 0053–0054): extended capture from already-polled sources
+  network_difficulty REAL,                -- Ocean /pool_stat
+  estimated_block_reward_sat INTEGER,     -- subsidy + fees, sat
+  pool_hashrate_ph REAL,                  -- Ocean total pool hashrate, PH/s
+  pool_active_workers INTEGER,            -- Ocean active worker count
+  braiins_total_deposited_sat INTEGER,    -- Braiins lifetime deposits; spike marks a top-up
+  braiins_total_spent_sat INTEGER,        -- Braiins lifetime settled spend
+  ocean_unpaid_sat INTEGER,               -- Ocean unpaid earnings; sharp drop = TIDES payout
+  btc_usd_price REAL,                     -- BTC/USD oracle reading at tick (sats/USD denom toggle)
+  btc_usd_price_source TEXT,              -- which oracle ('coingecko' / 'coinbase' / 'bitstamp' / 'kraken')
+  primary_bid_last_pause_reason TEXT,     -- Braiins last_pause_reason on the primary bid
+  primary_bid_fee_paid_sat INTEGER,       -- primary bid cumulative fees paid
+  primary_bid_fee_rate_pct REAL,          -- primary bid fee rate at creation
+  -- #92 (migrations 0055–0057): pool-block / pool-luck plot
+  pool_blocks_24h_count INTEGER,          -- pool blocks observed in last 24h
+  pool_blocks_7d_count INTEGER,           -- pool blocks observed in last 7d
+  pool_hashrate_ph_avg_24h REAL,          -- trailing 24h mean of pool_hashrate_ph (luck denominator)
+  pool_hashrate_ph_avg_7d REAL,           -- trailing 7d mean
+  pool_luck_24h REAL,                     -- gap-based per-tick luck = (600 / pool_share) / elapsed
+  pool_luck_7d REAL,
+  -- #90 (migration 0059): per-tick bid-acceptance counters from /spot/bid/delivery
+  primary_bid_shares_purchased_m REAL,    -- in millions; cumulative on the bid
+  primary_bid_shares_accepted_m REAL,
+  primary_bid_shares_rejected_m REAL,
+  -- #91 (migration 0060): Datum gateway-side reject counter, opportunistic
+  datum_rejected_shares_total INTEGER,    -- null when DATUM does not expose a /reject/i tile
   run_mode TEXT NOT NULL,
   action_mode TEXT NOT NULL
 );
@@ -428,6 +455,23 @@ concern (not by order; the file names are authoritative):
   switched to per-tick deltas of that counter (settled cost from Braiins under
   pay-your-bid), and `spend_sat` is no longer written. The column is retained
   for schema continuity. See spec §11.1.
+- **Post-v1.4.8 feature work (0052–0060):** block-found sound config + custom
+  blob (0052, #88); extended per-tick capture from existing data sources
+  (0053–0054, #89 — adds `network_difficulty`, `estimated_block_reward_sat`,
+  `pool_hashrate_ph`, `pool_active_workers`, `braiins_total_deposited_sat`,
+  `braiins_total_spent_sat`, `ocean_unpaid_sat`, `btc_usd_price`,
+  `btc_usd_price_source`, `primary_bid_last_pause_reason`,
+  `primary_bid_fee_paid_sat`, `primary_bid_fee_rate_pct` on `tick_metrics`);
+  pool-block counts + trailing hashrate average + gap-based pool luck
+  (0055–0057, #92 — `pool_blocks_24h_count`, `pool_blocks_7d_count`,
+  `pool_hashrate_ph_avg_24h/7d`, `pool_luck_24h/7d`); block-header version
+  cache for the BIP 110 crown marker (0058, #94 — separate
+  `block_version_cache` table keyed on `block_hash`); per-tick bid-acceptance
+  counters from Braiins delivery history (0059, #90 —
+  `primary_bid_shares_purchased_m`, `_accepted_m`, `_rejected_m`); Datum
+  gateway-side reject counter (0060, #91 — `datum_rejected_shares_total`,
+  null when DATUM does not expose the tile, which is the common case as of
+  May 2026).
 
 ## 6. External integrations
 

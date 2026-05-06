@@ -530,9 +530,7 @@ The `_estimate` variant is the live running count; `_committed` is the most rece
 
 Healthy-bid invariant: `shares_accepted_m / shares_purchased_m` should track
 close to `1 - 0.0005` (the baseline 0.05% rejection). Any drop below ~99%
-acceptance is a signal the Datum endpoint is latent/misconfigured. The
-autopilot should alert when the rolling 1-hour acceptance ratio drops below
-some threshold (suggest 98%).
+acceptance is a signal the Datum endpoint is latent/misconfigured.
 
 ### 7.6 Hashrate unit pedantry
 
@@ -578,7 +576,7 @@ Per-tick work (tick = 1 minute as a conservative starting point; UI refreshes ev
 8. If `last_network_failure` on any bid is recent → surface as a notification. The destination pool may have hiccupped. ([openapi.yml — SpotGetBidsResponseItem.last_network_failure](https://hashpower.braiins.com/api/openapi.yml))
 
 Per-hour work:
-- `GET /v1/spot/bid/delivery/{order_id}` for each active bid → accepted/rejected ratio; alert if acceptance < 98%. ([openapi.yml — spotGetBidDeliveryHistory](https://hashpower.braiins.com/api/openapi.yml))
+- `GET /v1/spot/bid/delivery/{order_id}` for each active bid → accepted/rejected ratio (surfaced on the dashboard's DATUM panel as the `acceptance (1h)` row + `acceptance %` chart series). ([openapi.yml — spotGetBidDeliveryHistory](https://hashpower.braiins.com/api/openapi.yml))
 - `GET /v1/account/balance` → refresh accounting. ([openapi.yml — getAccountBalances](https://hashpower.braiins.com/api/openapi.yml))
 - `GET /v1/spot/fee` → re-check fee schedule; alert if non-zero fees appeared. ([openapi.yml — getFeeStructure](https://hashpower.braiins.com/api/openapi.yml))
 

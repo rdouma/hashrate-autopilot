@@ -89,6 +89,28 @@ Umbrel, Docker and scripted installs. See README.md for details.
 - User-editable configuration (see §8).
 - Dashboard run-mode and manual-override signals.
 
+**Per-tick persistence (`tick_metrics`):**
+
+Every tick the daemon writes a row to `tick_metrics` with the canonical chart + stats + accounting series. Beyond the original
+`delivered_ph`, `target_ph`, prices, `share_log_pct`, and `primary_bid_consumed_sat`, the table now also persists (migrations
+0053–0060):
+
+- Ocean-derived: `network_difficulty`, `estimated_block_reward_sat`, `pool_hashrate_ph`, `pool_active_workers`,
+  `ocean_unpaid_sat`. (#89)
+- Braiins-derived: `braiins_total_deposited_sat`, `braiins_total_spent_sat`, `primary_bid_last_pause_reason`,
+  `primary_bid_fee_paid_sat`, `primary_bid_fee_rate_pct`. (#89)
+- BTC/USD oracle: `btc_usd_price` + `btc_usd_price_source` (per-tick attribution so historical readings stay attributable to
+  the source they came from). (#89)
+- Pool blocks + luck: `pool_blocks_24h_count`, `pool_blocks_7d_count`, `pool_hashrate_ph_avg_24h`, `pool_hashrate_ph_avg_7d`,
+  `pool_luck_24h`, `pool_luck_7d` (gap-based per-tick luck = `(600 / pool_share) / time_since_last_pool_block`). (#92)
+- Bid acceptance counters from `/spot/bid/delivery/{order_id}`: `primary_bid_shares_purchased_m`, `_accepted_m`,
+  `_rejected_m`. Cumulative on the bid (in millions); per-tick deltas drive the BRAIINS-side acceptance ratio. (#90)
+- Datum gateway-side reject counter: `datum_rejected_shares_total` (heuristic capture from `/umbrel-api`'s `items[]` —
+  matches any tile whose title hits `/reject/i`; null when DATUM does not expose the tile, which is the common case as of
+  May 2026). (#91)
+
+The full DDL (with comments and migration numbers) lives in `architecture.md` §5; this list is the operator-facing inventory.
+
 ## 6. Outputs (actions)
 
 - `POST /v1/spot/bid` (**create**) — fully autonomous. Only for orders the autopilot will tag in its local ownership
@@ -304,7 +326,9 @@ all three series on the same cadence.
   first boot)
 - Optional `electrs_host` + `electrs_port` (preferred over `bitcoind` RPC for balance lookups — instant)
 - `payout_source` — `none` | `electrs` | `bitcoind`
+- `block_explorer_url_template` — URL template applied at click time on every dashboard surface that links to a block (Hashrate-chart cube markers, OCEAN panel "last pool block" row, BIP 110 scan results, BlockTooltip). Placeholders `{hash}` and `{height}` are substituted; at least one must be present. Default `https://mempool.space/block/{hash}`. Privacy-conscious operators point this at their own explorer (e.g. `http://umbrel:3006/block/{hash}`); the Config page exposes mempool.space / blockstream.info / blockchair.com / btcscan.org / btc.com presets plus a free-form custom field. (#22)
 - `btc_price_source` — `none` | `coingecko` | `coinbase` | `bitstamp` | `kraken` (feeds the dashboard sat↔USD toggle)
+- `block_found_sound` — `'off'` (default) | bundled name (`cartoon-cowbell`, `glass-drop-and-roll`, `metallic-clank-1`, `metallic-clank-2`) | `'custom'` (operator-uploaded MP3, ≤200 KB, stored as SQLite blob via `POST /api/config/block-found-sound`). Dashboard fires the chosen sound once per new Ocean pool block (max-`height` increment over `/api/ocean.recent_blocks`); first-poll-after-load establishes a silent baseline so the existing backlog never replays. Operator's intent is "a block was found" not "an on-chain payout to my address confirmed" — the trigger is Ocean, not the `reward_events` payout-observer table. (#88, migration 0052)
 - Braiins `owner_access_token` + optional `read_only_access_token` (stored in sops secrets, not the config table)
 
 ## 9. Reliability & outage policy
@@ -469,23 +493,48 @@ perimeter; the dashboard has a shared-password second gate, not full auth.
   `received (Ocean)` (blue). Target + floor as dashed horizontal references. Per-series rolling-mean
   smoothing via `braiins_hashrate_smoothing_minutes` and `datum_hashrate_smoothing_minutes`; Ocean is
   server-smoothed. Ocean-credited pool-block markers appear as isometric cubes (blue for TIDES,
-  gold for own-found); click opens the configured block explorer. Optional fourth series `% of Ocean`
-  (violet) on a right-side Y-axis, hidden by default behind the `show_share_log_on_hashrate_chart`
-  config toggle — historical share_log_pct from `tick_metrics`, formatted as a 4-decimal percentage.
+  gold for own-found); BIP 110-signaling blocks render as a crown icon instead of the cube
+  (#94, detection: `(version & 0xe0000000) === 0x20000000 && (version & 0x10) !== 0`,
+  block-header version cached per `block_hash` via migration 0058). Click opens the
+  `block_explorer_url_template`. A right-axis dropdown above the chart (#93, persisted to
+  localStorage) selects one secondary series: `none` (default), `share_log %` (the legacy
+  `% of Ocean` overlay; replaces the retired `show_share_log_on_hashrate_chart` checkbox),
+  `network difficulty`, `pool hashrate`, `pool luck (24h)` / `pool luck (7d)` (#92, gap-based per-tick
+  luck = `(600 / pool_share) / time_since_last_pool_block`; capped at 10× for chart readability),
+  `acceptance %` (#90, per-tick rolling-60-bucket window forward-delta of the cumulative
+  `primary_bid_shares_*_m` counters with a defensive `min(100)` cap to absorb pool-side ack-batch
+  noise), `datum rejects` (#91, per-bucket forward delta of `datum_rejected_shares_total`; empty line
+  on builds where DATUM does not expose the tile).
 - **Price chart.** Four always-on lines: `our bid` (amber), `fillable` (cyan, the controller's tracking
-  anchor), `hashprice` (violet, dashed), `max bid` / effective ceiling (red). The `effective` line
-  (emerald, per-tick Δconsumed_sat ÷ delivered×Δt) is hidden by default behind the
-  `show_effective_rate_on_price_chart` config toggle — its counter-settlement volatility auto-scales
-  the Y-axis and crushes the flatter-line detail when enabled. Bid-event dots (yellow / cyan / red) on
-  the amber line mark CREATE / EDIT_PRICE / EDIT_SPEED / CANCEL events; clicking pins a detail panel
-  with `fillable`, `overpay`, `hashprice`, cap inputs, effective cap at that tick, and a JSON export
-  button. Per-range filtering: 3h-24h shows all four kinds; 1w drops EDIT_PRICE (it fires on most
-  ticks during normal operation and would drown the chart at that zoom); 1m / 1y / all show none.
-  See `CHART_RANGE_SPECS[r].showEventKinds` in `packages/shared/src/chart-ranges.ts`.
+  anchor), `hashprice` (violet, dashed), `max bid` / effective ceiling (red, with a red gradient above
+  the line marking the off-limits region). Bid-event dots (yellow / cyan / red) on the amber line mark
+  CREATE / EDIT_PRICE / EDIT_SPEED / CANCEL events; clicking pins a detail panel with `fillable`,
+  `overpay`, `hashprice`, cap inputs, effective cap at that tick, and a JSON export button. Per-range
+  filtering: 3h-24h shows all four kinds; 1w drops EDIT_PRICE (it fires on most ticks during normal
+  operation and would drown the chart at that zoom); 1m / 1y / all show none. See
+  `CHART_RANGE_SPECS[r].showEventKinds` in `packages/shared/src/chart-ranges.ts`. A right-axis dropdown
+  (#93) selects one secondary series: `none` (default), `effective rate` (#90/#93 — replaces the
+  retired `show_effective_rate_on_price_chart` checkbox; the line gets its own scale on the right axis
+  so its counter-settlement volatility no longer drags the left-axis range), `block reward`,
+  `BTC/USD`, `unpaid earnings`, `network difficulty`.
 - **Service panels (three-column).** BRAIINS (API reachability, delivered vs target, wallet balance,
-  runway at current spend rate), DATUM GATEWAY (stratum reachability, gateway-measured hashrate,
-  connected workers — if `datum_api_url` is configured), OCEAN (API reachability, Ocean-credited
-  hashrate, current hashprice, recent blocks, time to next payout).
+  runway at current spend rate). DATUM GATEWAY (stratum reachability, gateway-measured hashrate,
+  connected workers — if `datum_api_url` is configured; `acceptance (1h)` row from #90 with
+  green/amber/red threshold colors; conditionally `gateway rejects (1h)` + `pool rejects (1h)`
+  side-by-side rows from #91 when the gateway exposes its own reject counter so the operator can read
+  the asymmetry directly — Datum > Braiins means upstream filtering, Braiins > Datum is the
+  stale-work signature from research.md §4.5). OCEAN (API reachability, Ocean-credited hashrate,
+  current hashprice, recent blocks, time to next payout, plus `pool blocks 24h/7d` rows with inline
+  `Nx lucky/unlucky` annotations from #92 — share computed live from
+  `pool_hashrate_ph / network_hashrate` so the example doesn't drift out of date).
+- **BIP 110 scan card** (#95). Status-page diagnostic at the bottom of the page with a window selector
+  (2016 / 4032 / 8064 / 16128 / 32256 blocks) and a Scan button that calls `GET /api/bip110/scan?blocks=N`.
+  Returns deployment header (`status`, `bit`, retarget-window count/threshold/elapsed when the node is
+  Knots-patched and reports the BIP 110 deployment) plus a table of signaling block heights, hashes,
+  times (relative + UTC on hover), and `version` hex with mempool.space links. Locale-aware number
+  formatting via `formatNumber(...intlLocale)`; sorted newest-first; full hashes (no truncation). The
+  card is operator-facing scaffolding for verifying the crown marker (#94) against known signaling
+  blocks; once that's verified it can be removed without touching the rest of Status.
 - **Active bids table.** All current bids with full order IDs, prices, speed limits, delivery %,
   ownership badge. No inline per-bid operator actions in the current build — run-mode toggle +
   "Run decision now" + the config editor cover the day-to-day needs; per-bid bump / recreate /
