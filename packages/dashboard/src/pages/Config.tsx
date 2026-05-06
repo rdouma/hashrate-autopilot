@@ -882,20 +882,39 @@ function BlockFoundSoundExtras({ draft }: { draft: AppConfig }) {
     return undefined;
   }, [choice, hasBlob]);
 
-  const playPreview = () => {
-    const url = blockFoundSoundUrl(choice);
-    if (!url) return;
-    const a = new Audio(url);
-    // Preview cache-busts custom uploads so a fresh upload audits
-    // immediately - the daemon serves the new blob but the URL is
-    // identical, so the browser would otherwise serve a cached play.
-    if (choice === 'custom') {
-      a.src = `${url}?t=${Date.now()}`;
+  const playPreview = async () => {
+    setUploadError(null);
+    try {
+      let src: string | null;
+      let objectUrl: string | null = null;
+      if (choice === 'custom') {
+        // Custom sounds live behind an auth-gated /api route; HTML5
+        // <audio> doesn't send Basic Auth, so the element gets 401
+        // and reports "media resource not suitable". Fetch through
+        // our authenticated path, wrap as a blob: URL, point the
+        // element at that. Revoke after a short delay - long enough
+        // for play() to lock the resource, short enough that we
+        // don't leak handles across previews.
+        objectUrl = await api.blockFoundSoundBlobUrl();
+        src = objectUrl;
+      } else {
+        src = blockFoundSoundUrl(choice);
+      }
+      if (!src) return;
+      const a = new Audio(src);
+      a.play().catch((err: Error) => {
+        setUploadError(`Audio play failed: ${err.message}`);
+      });
+      if (objectUrl) {
+        // Wait for the audio to start before revoking; revoking
+        // synchronously kills playback. 30s is well past any
+        // sensible cue length.
+        const toRevoke = objectUrl;
+        setTimeout(() => URL.revokeObjectURL(toRevoke), 30_000);
+      }
+    } catch (err) {
+      setUploadError(`Audio play failed: ${(err as Error).message}`);
     }
-    a.play().catch((err: Error) => {
-      setUploadStatus(null);
-      setUploadError(`Audio play failed: ${err.message}`);
-    });
   };
 
   const onUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

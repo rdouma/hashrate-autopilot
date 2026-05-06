@@ -460,6 +460,30 @@ export const api = {
       mime: string | null;
       filename: string | null;
     }>('/api/config/block-found-sound/status'),
+  // Custom block-found sound is served from an auth-gated /api route,
+  // and HTML5 <audio> doesn't include Basic Auth headers when fetching
+  // its src. We have to fetch the bytes through our own request path,
+  // wrap as a Blob, and hand the audio element a blob: URL. Caller is
+  // responsible for revoking the URL when it's no longer needed
+  // (`URL.revokeObjectURL(url)`); leaking object URLs will eventually
+  // exhaust browser handles. Returns null when no blob is on the
+  // daemon (404 from the GET).
+  blockFoundSoundBlobUrl: async (): Promise<string | null> => {
+    const password = getPassword();
+    const headers = new Headers();
+    if (password) headers.set('Authorization', basicAuthHeader(password));
+    const res = await fetch('/api/config/block-found-sound', { headers });
+    if (res.status === 401) {
+      clearPassword();
+      throw new UnauthorizedError();
+    }
+    if (res.status === 404) return null;
+    if (!res.ok) {
+      throw new Error(`${res.status} ${res.statusText}`);
+    }
+    const blob = await res.blob();
+    return URL.createObjectURL(blob);
+  },
   btcPrice: () => request<BtcPriceResponse>('/api/btc-price'),
   bip110Scan: (blocks: number) =>
     request<Bip110ScanResponse>(`/api/bip110/scan?blocks=${encodeURIComponent(String(blocks))}`),

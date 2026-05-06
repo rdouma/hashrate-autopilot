@@ -80,18 +80,49 @@ export function useBlockFoundSound(choice: AppConfig['block_found_sound'] | unde
   const firstPollDoneRef = useRef(false);
 
   // Build / rebuild the Audio object whenever the choice changes.
+  // Custom sounds live behind an auth-gated /api route; HTML5 <audio>
+  // doesn't include Basic Auth, so we fetch via the authenticated
+  // request path and hand the element a blob: URL. Bundled cues are
+  // static under /sounds/* and don't need this dance.
   useEffect(() => {
+    let cancelled = false;
+    let objectUrl: string | null = null;
     if (!choice || choice === 'off') {
       audioRef.current = null;
       return;
     }
-    const url = blockFoundSoundUrl(choice);
-    if (!url) {
-      audioRef.current = null;
-      return;
+    if (choice === 'custom') {
+      void api.blockFoundSoundBlobUrl().then((url) => {
+        if (cancelled) {
+          if (url) URL.revokeObjectURL(url);
+          return;
+        }
+        if (!url) {
+          audioRef.current = null;
+          return;
+        }
+        objectUrl = url;
+        audioRef.current = new Audio(url);
+        audioRef.current.preload = 'auto';
+      }).catch(() => {
+        // Custom sound fetch failed (e.g. no blob on the daemon
+        // yet). Silently fall through - audioRef stays null and
+        // the play() guard later is a no-op.
+        audioRef.current = null;
+      });
+    } else {
+      const url = blockFoundSoundUrl(choice);
+      if (!url) {
+        audioRef.current = null;
+        return;
+      }
+      audioRef.current = new Audio(url);
+      audioRef.current.preload = 'auto';
     }
-    audioRef.current = new Audio(url);
-    audioRef.current.preload = 'auto';
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
   }, [choice]);
 
   const enabled = !!choice && choice !== 'off';

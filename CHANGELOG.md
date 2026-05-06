@@ -2,6 +2,10 @@
 
 ## 2026-05-06
 
+### `[Fix]` Custom block-found sound: HTML5 audio couldn't authenticate
+
+Test sound (and the live block-found cue) on a custom-uploaded MP3 was failing with "Audio play failed: The media resource indicated by the src attribute or assigned media provider object was not suitable." Root cause: HTML5 `<audio>` elements don't include Basic Auth headers when fetching their `src`, but `/api/config/block-found-sound` is auth-gated. The element got a 401 and the browser surfaced the cryptic "not suitable" error. Bundled cues worked because they're served as static files under `/sounds/*.mp3` (not auth-gated). Fix: dashboard now fetches the custom blob through its authenticated `request` path, wraps it as a blob: URL, and points `<audio>` at that. Object URLs are revoked after playback to avoid handle leaks.
+
 ### `[UI]` Custom block-found sound: filename + tighter layout
 
 Putting the previous pass to bed:
