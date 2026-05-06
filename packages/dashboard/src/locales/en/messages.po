@@ -208,8 +208,12 @@ msgid "A few questions to get the daemon operational. Defaults work for typical 
 msgstr "A few questions to get the daemon operational. Defaults work for typical home miners; tune later from the Config page."
 
 #: src/pages/Status.tsx
-msgid "acceptance (1h)"
-msgstr "acceptance (1h)"
+msgid "acceptance ({rangeLbl})"
+msgstr "acceptance ({rangeLbl})"
+
+#: src/pages/Status.tsx
+#~ msgid "acceptance (1h)"
+#~ msgstr "acceptance (1h)"
 
 #: src/pages/Status.tsx
 msgid "acceptance %"
@@ -762,8 +766,12 @@ msgid "Datum /umbrel-api HTTP poll."
 msgstr "Datum /umbrel-api HTTP poll."
 
 #: src/pages/Status.tsx
-msgid "Datum gateway-side rejects over the trailing hour: forward delta of the cumulative gateway reject counter, with bid resets / poll failures skipped. Compare with the next row - gateway > pool means Datum filtered work that never reached the pool (good); pool > gateway means the pool rejected work Datum thought was fine (stale-work signature, see research.md §4.5)."
-msgstr "Datum gateway-side rejects over the trailing hour: forward delta of the cumulative gateway reject counter, with bid resets / poll failures skipped. Compare with the next row - gateway > pool means Datum filtered work that never reached the pool (good); pool > gateway means the pool rejected work Datum thought was fine (stale-work signature, see research.md §4.5)."
+msgid "Datum gateway-side rejects over the chart-range window (currently {rangeLbl}): forward delta of the cumulative gateway reject counter, with bid resets / poll failures skipped. Compare with the next row - gateway > pool means Datum filtered work that never reached the pool (good); pool > gateway means the pool rejected work Datum thought was fine (stale-work signature, see research.md §4.5)."
+msgstr "Datum gateway-side rejects over the chart-range window (currently {rangeLbl}): forward delta of the cumulative gateway reject counter, with bid resets / poll failures skipped. Compare with the next row - gateway > pool means Datum filtered work that never reached the pool (good); pool > gateway means the pool rejected work Datum thought was fine (stale-work signature, see research.md §4.5)."
+
+#: src/pages/Status.tsx
+#~ msgid "Datum gateway-side rejects over the trailing hour: forward delta of the cumulative gateway reject counter, with bid resets / poll failures skipped. Compare with the next row - gateway > pool means Datum filtered work that never reached the pool (good); pool > gateway means the pool rejected work Datum thought was fine (stale-work signature, see research.md §4.5)."
+#~ msgstr "Datum gateway-side rejects over the trailing hour: forward delta of the cumulative gateway reject counter, with bid resets / poll failures skipped. Compare with the next row - gateway > pool means Datum filtered work that never reached the pool (good); pool > gateway means the pool rejected work Datum thought was fine (stale-work signature, see research.md §4.5)."
 
 #: src/pages/Status.tsx
 msgid "datum hashrate"
@@ -1071,8 +1079,12 @@ msgid "Full wallet balance per bid. Currently ≈ {resolvedSatStr} sat."
 msgstr "Full wallet balance per bid. Currently ≈ {resolvedSatStr} sat."
 
 #: src/pages/Status.tsx
-msgid "gateway rejects (1h)"
-msgstr "gateway rejects (1h)"
+msgid "gateway rejects ({rangeLbl})"
+msgstr "gateway rejects ({rangeLbl})"
+
+#: src/pages/Status.tsx
+#~ msgid "gateway rejects (1h)"
+#~ msgstr "gateway rejects (1h)"
 
 #: src/pages/Config.tsx
 msgid "genesis version"
@@ -1703,8 +1715,12 @@ msgid "pool luck (7d)"
 msgstr "pool luck (7d)"
 
 #: src/pages/Status.tsx
-msgid "pool rejects (1h)"
-msgstr "pool rejects (1h)"
+msgid "pool rejects ({rangeLbl})"
+msgstr "pool rejects ({rangeLbl})"
+
+#: src/pages/Status.tsx
+#~ msgid "pool rejects (1h)"
+#~ msgstr "pool rejects (1h)"
 
 #: src/components/HashrateChart.tsx
 msgid "pool reward"
@@ -1725,8 +1741,12 @@ msgid "pool workers"
 msgstr "pool workers"
 
 #: src/pages/Status.tsx
-msgid "Pool-rejected shares the seller's rig reported over the same trailing hour, relayed via Braiins. Compare with the row above: a sustained gap with pool > gateway is the signal Knots → Datum → Ocean is delivering stale work the pool rejects."
-msgstr "Pool-rejected shares the seller's rig reported over the same trailing hour, relayed via Braiins. Compare with the row above: a sustained gap with pool > gateway is the signal Knots → Datum → Ocean is delivering stale work the pool rejects."
+msgid "Pool-rejected shares the seller's rig reported over the same chart-range window (currently {rangeLbl}), relayed via Braiins. Compare with the row above: a sustained gap with pool > gateway is the signal Knots -> Datum -> Ocean is delivering stale work the pool rejects."
+msgstr "Pool-rejected shares the seller's rig reported over the same chart-range window (currently {rangeLbl}), relayed via Braiins. Compare with the row above: a sustained gap with pool > gateway is the signal Knots -> Datum -> Ocean is delivering stale work the pool rejects."
+
+#: src/pages/Status.tsx
+#~ msgid "Pool-rejected shares the seller's rig reported over the same trailing hour, relayed via Braiins. Compare with the row above: a sustained gap with pool > gateway is the signal Knots → Datum → Ocean is delivering stale work the pool rejects."
+#~ msgstr "Pool-rejected shares the seller's rig reported over the same trailing hour, relayed via Braiins. Compare with the row above: a sustained gap with pool > gateway is the signal Knots → Datum → Ocean is delivering stale work the pool rejects."
 
 #: src/pages/Status.tsx
 msgid "port"
@@ -1978,8 +1998,12 @@ msgid "Setting up…"
 msgstr "Setting up…"
 
 #: src/pages/Status.tsx
-msgid "Share acceptance over the trailing hour: (shares accepted / shares submitted) × 100. The seller's rig submits shares over stratum to YOUR Datum gateway, Datum responds accept/reject, and the result is what Braiins relays back as the counter - so this is a Datum-side number even though it's sourced via the Braiins API. Healthy baseline ≈ 99.95%; baseline ~0.05% rejection is normal. Sustained drops below ~99% point at Datum serving stale work, worker-identity misconfiguration, or pool difficulty too low - see docs/research.md §7.5."
-msgstr "Share acceptance over the trailing hour: (shares accepted / shares submitted) × 100. The seller's rig submits shares over stratum to YOUR Datum gateway, Datum responds accept/reject, and the result is what Braiins relays back as the counter - so this is a Datum-side number even though it's sourced via the Braiins API. Healthy baseline ≈ 99.95%; baseline ~0.05% rejection is normal. Sustained drops below ~99% point at Datum serving stale work, worker-identity misconfiguration, or pool difficulty too low - see docs/research.md §7.5."
+msgid "Share acceptance over the chart-range window (currently {rangeLbl}): (shares accepted / shares submitted) × 100, capped at 100%. The seller's rig submits shares over stratum to YOUR Datum gateway, Datum responds accept/reject, and the result is what Braiins relays back as the counter - so this is a Datum-side number even though it's sourced via the Braiins API. Healthy baseline ≈ 99.95%; baseline ~0.05% rejection is normal. Sustained drops below ~99% point at Datum serving stale work, worker-identity misconfiguration, or pool difficulty too low - see docs/research.md §7.5. Cap at 100% absorbs Braiins's slight counter-sync jitter (the two cumulative counters land at slightly different times, which can read just over 100% on short windows; longer windows from the chart-range selector wash this out)."
+msgstr "Share acceptance over the chart-range window (currently {rangeLbl}): (shares accepted / shares submitted) × 100, capped at 100%. The seller's rig submits shares over stratum to YOUR Datum gateway, Datum responds accept/reject, and the result is what Braiins relays back as the counter - so this is a Datum-side number even though it's sourced via the Braiins API. Healthy baseline ≈ 99.95%; baseline ~0.05% rejection is normal. Sustained drops below ~99% point at Datum serving stale work, worker-identity misconfiguration, or pool difficulty too low - see docs/research.md §7.5. Cap at 100% absorbs Braiins's slight counter-sync jitter (the two cumulative counters land at slightly different times, which can read just over 100% on short windows; longer windows from the chart-range selector wash this out)."
+
+#: src/pages/Status.tsx
+#~ msgid "Share acceptance over the trailing hour: (shares accepted / shares submitted) × 100. The seller's rig submits shares over stratum to YOUR Datum gateway, Datum responds accept/reject, and the result is what Braiins relays back as the counter - so this is a Datum-side number even though it's sourced via the Braiins API. Healthy baseline ≈ 99.95%; baseline ~0.05% rejection is normal. Sustained drops below ~99% point at Datum serving stale work, worker-identity misconfiguration, or pool difficulty too low - see docs/research.md §7.5."
+#~ msgstr "Share acceptance over the trailing hour: (shares accepted / shares submitted) × 100. The seller's rig submits shares over stratum to YOUR Datum gateway, Datum responds accept/reject, and the result is what Braiins relays back as the counter - so this is a Datum-side number even though it's sourced via the Braiins API. Healthy baseline ≈ 99.95%; baseline ~0.05% rejection is normal. Sustained drops below ~99% point at Datum serving stale work, worker-identity misconfiguration, or pool difficulty too low - see docs/research.md §7.5."
 
 #: src/components/HashrateChart.tsx
 #: src/pages/Status.tsx

@@ -143,13 +143,15 @@ export async function registerStatsRoute(
       const metrics = await computeMetrics(deps.db, sinceMs);
       const avgFillMs = await computeAvgTimeToFill(deps.db, deps.bidEventsDb, sinceMs);
       const mutationCount = await computeMutationCount(deps.bidEventsDb, sinceMs);
-      // Acceptance window is fixed at 1h regardless of `range`; the
-      // operator-facing question is "is my pool currently rejecting
-      // more than usual right now", not "over the last week". Always
-      // computed from the trailing 60 minutes of tick_metrics.
-      const acceptance = await computeAcceptanceLastHour(deps.db, now);
-      // #91 - same window for the Datum-vs-Braiins reject comparison.
-      const rejects = await computeRejectsLastHour(deps.db, now);
+      // Acceptance + reject windows now follow the chart range
+      // selector (3h/6h/12h/24h/1w/etc) instead of a hardcoded 1h.
+      // 1h was too narrow to wash out Braiins's slight counter-sync
+      // jitter (the two cumulative counters land at slightly
+      // different times, so any short window can drift just over /
+      // just under 100%). Longer windows match what the operator is
+      // already looking at on the chart and average the jitter out.
+      const acceptance = await computeAcceptance(deps.db, sinceMs);
+      const rejects = await computeRejects(deps.db, sinceMs);
 
       const data: StatsResponse = {
         uptime_pct: metrics.uptime_pct,
@@ -420,15 +422,14 @@ async function computeMutationCount(
  * null-handling combination is messier in CTEs than in a tiny TS
  * loop, and the window is tiny (60 rows max).
  */
-async function computeAcceptanceLastHour(
+async function computeAcceptance(
   db: Kysely<Database>,
-  nowMs: number,
+  sinceMs: number,
 ): Promise<{
   pct: number | null;
   purchased_delta: number | null;
   accepted_delta: number | null;
 }> {
-  const sinceMs = nowMs - 60 * 60 * 1000;
   const rows = await db
     .selectFrom('tick_metrics')
     .select([
@@ -459,8 +460,18 @@ async function computeAcceptanceLastHour(
   if (purchasedDelta <= 0) {
     return { pct: null, purchased_delta: null, accepted_delta: null };
   }
+  // Clamp at 100%. Mathematically `accepted <= purchased` always
+  // holds (you cannot accept a share you never submitted), so a
+  // ratio above 100% is an artifact of Braiins's two cumulative
+  // counters not being sampled atomically: when the lag closes
+  // between two snapshots the delta of the lagging counter
+  // overshoots, and we read 100.84% acceptance even though the
+  // physical reality is 100%. Capping at 100% keeps the metric
+  // honest without hiding the underlying counter behaviour (the
+  // raw deltas are still surfaced for debugging).
+  const rawPct = (acceptedDelta / purchasedDelta) * 100;
   return {
-    pct: (acceptedDelta / purchasedDelta) * 100,
+    pct: Math.min(rawPct, 100),
     purchased_delta: purchasedDelta,
     accepted_delta: acceptedDelta,
   };
@@ -485,11 +496,10 @@ async function computeAcceptanceLastHour(
  * Datum means the pool rejected work Datum thought was fine
  * (research.md §4.5: stale-work signature).
  */
-async function computeRejectsLastHour(
+async function computeRejects(
   db: Kysely<Database>,
-  nowMs: number,
+  sinceMs: number,
 ): Promise<{ datum: number | null; braiins: number | null }> {
-  const sinceMs = nowMs - 60 * 60 * 1000;
   const rows = await db
     .selectFrom('tick_metrics')
     .select([

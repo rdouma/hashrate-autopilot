@@ -2,6 +2,16 @@
 
 ## 2026-05-06
 
+### `[UI]` Tab refocus refreshes data instantly; acceptance/rejects follow chart range and cap at 100% (#90)
+
+Three small but related dashboard fixes:
+
+- **Refetch on focus**: React Query's `refetchOnWindowFocus` was off, so the dashboard waited up to a full 60s polling tick to catch up after the operator returned to a backgrounded tab. Flipped on globally so every query (status, metrics, ocean, stats, finance) refetches the moment the tab regains focus.
+- **No catch-up sound on tab refocus**: the block-found audio cue listens for `visibilitychange` and re-baselines silently when the tab transitions hidden → visible. So waking from sleep / unsuspending / coming back from another tab no longer fires "you missed N blocks" all at once - the cue is for "I just found one now," not a backlog replay. Real-time ringing on a backgrounded tab still works as long as the browser keeps polling.
+- **Acceptance / reject windows follow the chart-range selector**: `acceptance (1h)`, `gateway rejects (1h)`, and `pool rejects (1h)` panel rows now read e.g. `acceptance (6h)` when the operator has the 6h chart range selected, computed over the same window. Acceptance is also clamped at 100% on the daemon side - Braiins's two cumulative share counters aren't sampled atomically, so short windows occasionally read just over 100% as a sync artifact (operator caught a 100.84% reading). Mathematically `accepted ≤ purchased`; the cap absorbs the sync jitter without hiding it.
+
+en/nl/es catalogs updated for the new dynamic strings.
+
 ### `[UI]` Em/en-dashes scrubbed across the codebase
 
 Operator preference is ASCII hyphens only, no em-dashes or en-dashes anywhere. Did a project-wide pass: source code (.ts/.tsx in dashboard + daemon + shared), .po locale catalogs (en + nl + es), markdown docs, and YAML config. All 285 tests still pass; Lingui re-extract + recompile shows no new untranslated entries (the catalog deltas are all in-place character replacements). Both builds clean.

@@ -130,9 +130,27 @@ export function useBlockFoundSound(choice: AppConfig['block_found_sound'] | unde
     queryKey: ['ocean'],
     queryFn: api.ocean,
     refetchInterval: enabled ? POLL_INTERVAL_MS : false,
-    refetchOnWindowFocus: false,
+    // Inherits the global refetchOnWindowFocus = true so the dashboard
+    // catches up instantly when the operator returns to the tab.
     enabled,
   });
+
+  // When the tab transitions hidden -> visible (operator returns
+  // after a coffee break / laptop wake / browser unsuspend), reset
+  // the "first poll" flag so the next data tick is treated as a
+  // baseline and does NOT ring for blocks that landed while the tab
+  // was away. The operator's "now I found a block" signal must not
+  // become "here are all the blocks you missed yesterday."
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        firstPollDoneRef.current = false;
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+  }, []);
 
   useEffect(() => {
     if (!enabled) return;

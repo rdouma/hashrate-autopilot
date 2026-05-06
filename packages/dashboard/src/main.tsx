@@ -19,7 +19,11 @@ import { Status } from './pages/Status';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      refetchOnWindowFocus: false,
+      // Tabs that have been backgrounded (or whose host laptop slept)
+      // can be tens of minutes behind by the time the operator clicks
+      // back. Refetch on focus so the dashboard catches up immediately
+      // instead of waiting a full polling tick to re-render.
+      refetchOnWindowFocus: true,
       retry: 1,
     },
   },
