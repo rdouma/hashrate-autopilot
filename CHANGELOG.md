@@ -2,6 +2,16 @@
 
 ## 2026-05-06
 
+### `[UI]` Custom block-found sound: filename + tighter layout
+
+Putting the previous pass to bed:
+
+- The "Replace file…" / "Choose file…" button now sits directly under the dropdown (no more floating in a separate Test-sound row below).
+- The currently-uploaded file is named on screen: `Currently: OceanBlockFound.mp3 (70.1 KB)`. Migration 0061 adds `config.block_found_sound_custom_filename`; the upload route persists it; the status route returns it.
+- Test-sound button moved into its own border-separated row below, where it doesn't compete with the upload UI for attention.
+
+en/nl/es catalogs updated.
+
 ### `[UI]` Custom block-found sound: full normal-app workflow
 
 Tightening the prior pass: the success message used to say "Switch the dropdown to 'Custom (uploaded)' and Save to use it" but the dashboard auto-saves and the dropdown was already on Custom, so the instructions were nonsense. New flow:

@@ -916,15 +916,15 @@ function BlockFoundSoundExtras({ draft }: { draft: AppConfig }) {
         bin += String.fromCharCode(bytes[i] as number);
       }
       const b64 = btoa(bin);
-      const resp = await api.uploadBlockFoundSound(b64, file.type || 'audio/mpeg');
+      const resp = await api.uploadBlockFoundSound(b64, file.type || 'audio/mpeg', file.name || null);
       if (!resp.ok) {
         throw new Error(resp.error ?? 'unknown upload error');
       }
-      const kb = ((resp.bytes ?? 0) / 1024).toFixed(1);
-      setUploadStatus(t`Uploaded ${kb} KB - now active.`);
+      setUploadStatus(t`Uploaded - now active.`);
       if (fileRef.current) fileRef.current.value = '';
       // Refresh the has-blob status so the button label flips from
-      // "Choose file…" to "Replace file…" without a page reload.
+      // "Choose file…" to "Replace file…" and the filename display
+      // updates without a page reload.
       void queryClient.invalidateQueries({ queryKey: ['block-found-sound-status'] });
     } catch (err) {
       setUploadStatus(null);
@@ -932,9 +932,53 @@ function BlockFoundSoundExtras({ draft }: { draft: AppConfig }) {
     }
   };
 
+  const filename = blobStatus.data?.filename ?? null;
+  const blobBytes = blobStatus.data?.bytes ?? null;
+  const blobKb = blobBytes !== null ? (blobBytes / 1024).toFixed(1) : null;
+
   return (
-    <div className="mt-3 pt-3 border-t border-slate-800 space-y-3">
-      <div className="flex items-center gap-2 text-xs">
+    <div className="mt-2 space-y-3">
+      {/* Hidden file input stays mounted so the auto-open useEffect
+          above can call .click() on it. */}
+      <input
+        ref={fileRef}
+        type="file"
+        accept="audio/mpeg,audio/mp3,audio/ogg,audio/wav,audio/x-wav,audio/webm"
+        onChange={onUpload}
+        className="hidden"
+      />
+      {/* Custom-upload row: button + filename info, tight under the
+          dropdown. Only renders when 'custom' is the active choice. */}
+      {choice === 'custom' && (
+        <div className="space-y-1 text-xs">
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              className="px-3 py-1 rounded border border-slate-700 text-slate-200 hover:bg-slate-800"
+            >
+              {hasBlob ? <Trans>Replace file…</Trans> : <Trans>Choose file…</Trans>}
+            </button>
+            {hasBlob && filename && blobKb && (
+              <span className="text-slate-300">
+                <Trans>Currently: <span className="font-mono">{filename}</span> ({blobKb} KB)</Trans>
+              </span>
+            )}
+            {hasBlob && !filename && blobKb && (
+              <span className="text-slate-400">
+                <Trans>Currently: uploaded file ({blobKb} KB)</Trans>
+              </span>
+            )}
+          </div>
+          <p className="text-slate-500">
+            <Trans>MP3 / OGG / WAV / WebM, max 200 KB.</Trans>
+          </p>
+          {uploadStatus && <p className="text-emerald-300">{uploadStatus}</p>}
+          {uploadError && <p className="text-red-400">{uploadError}</p>}
+        </div>
+      )}
+      {/* Test sound stays in its own border-separated row below. */}
+      <div className="pt-3 border-t border-slate-800 flex items-center gap-2 text-xs">
         <button
           type="button"
           onClick={playPreview}
@@ -950,36 +994,6 @@ function BlockFoundSoundExtras({ draft }: { draft: AppConfig }) {
         </button>
         <span className="text-slate-500"><Trans>Plays whatever's selected above (no save needed).</Trans></span>
       </div>
-      {/* Hidden file input stays mounted so the auto-open useEffect
-          above can call .click() on it. Visible Replace/Choose button
-          only appears when 'custom' is the active sound. */}
-      <input
-        ref={fileRef}
-        type="file"
-        accept="audio/mpeg,audio/mp3,audio/ogg,audio/wav,audio/x-wav,audio/webm"
-        onChange={onUpload}
-        className="hidden"
-      />
-      {choice === 'custom' && (
-        <div className="flex items-center gap-2 text-xs">
-          <button
-            type="button"
-            onClick={() => fileRef.current?.click()}
-            className="px-3 py-1 rounded border border-slate-700 text-slate-200 hover:bg-slate-800"
-          >
-            {hasBlob ? <Trans>Replace file…</Trans> : <Trans>Choose file…</Trans>}
-          </button>
-          <span className="text-slate-500">
-            <Trans>MP3 / OGG / WAV / WebM, max 200 KB.</Trans>
-          </span>
-        </div>
-      )}
-      {choice === 'custom' && uploadStatus && (
-        <p className="text-xs text-emerald-300">{uploadStatus}</p>
-      )}
-      {choice === 'custom' && uploadError && (
-        <p className="text-xs text-red-400">{uploadError}</p>
-      )}
     </div>
   );
 }

@@ -75,6 +75,8 @@ export interface ConfigTable {
   block_found_sound_custom_blob: Buffer | null;
   /** MIME type of the custom blob (sniffed at upload). */
   block_found_sound_custom_mime: string | null;
+  /** #88: original filename of the uploaded custom blob, for the Config UI's "currently: X" display. */
+  block_found_sound_custom_filename: string | null;
   updated_at: number;
 }
 

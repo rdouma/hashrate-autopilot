@@ -88,6 +88,7 @@ describe('openDatabase — migrations', () => {
       '0058_block_version_cache.sql',
       '0059_tick_metrics_acceptance.sql',
       '0060_tick_metrics_datum_rejected.sql',
+      '0061_block_found_sound_filename.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });

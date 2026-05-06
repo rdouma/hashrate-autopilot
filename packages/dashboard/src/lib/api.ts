@@ -445,18 +445,21 @@ export const api = {
     request<RewardEventsResponse>(
       `/api/reward-events${limit ? `?limit=${limit}` : ''}`,
     ),
-  uploadBlockFoundSound: (dataBase64: string, mime: string) =>
-    request<{ ok: boolean; bytes?: number; mime?: string; error?: string }>(
+  uploadBlockFoundSound: (dataBase64: string, mime: string, filename: string | null) =>
+    request<{ ok: boolean; bytes?: number; mime?: string; filename?: string | null; error?: string }>(
       '/api/config/block-found-sound',
       {
         method: 'POST',
-        body: JSON.stringify({ data_base64: dataBase64, mime }),
+        body: JSON.stringify({ data_base64: dataBase64, mime, filename }),
       },
     ),
   blockFoundSoundStatus: () =>
-    request<{ has_blob: boolean; bytes: number | null; mime: string | null }>(
-      '/api/config/block-found-sound/status',
-    ),
+    request<{
+      has_blob: boolean;
+      bytes: number | null;
+      mime: string | null;
+      filename: string | null;
+    }>('/api/config/block-found-sound/status'),
   btcPrice: () => request<BtcPriceResponse>('/api/btc-price'),
   bip110Scan: (blocks: number) =>
     request<Bip110ScanResponse>(`/api/bip110/scan?blocks=${encodeURIComponent(String(blocks))}`),

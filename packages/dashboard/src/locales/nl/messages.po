@@ -721,6 +721,14 @@ msgid "Current owned-bid price (sat/PH/day). Under pay-your-bid this is exactly 
 msgstr ""
 
 #: src/pages/Config.tsx
+msgid "Currently: <0>{filename}</0> ({blobKb} KB)"
+msgstr "Huidig: <0>{filename}</0> ({blobKb} KB)"
+
+#: src/pages/Config.tsx
+msgid "Currently: uploaded file ({blobKb} KB)"
+msgstr "Huidig: geüpload bestand ({blobKb} KB)"
+
+#: src/pages/Config.tsx
 msgid "custom"
 msgstr "aangepast"
 
@@ -2198,12 +2206,16 @@ msgstr "bijgewerkt {0}"
 #~ msgstr "Upload eigen MP3 / OGG / WAV / WebM (max 200 KB)"
 
 #: src/pages/Config.tsx
+msgid "Uploaded - now active."
+msgstr "Geüpload - nu actief."
+
+#: src/pages/Config.tsx
 #~ msgid "Uploaded {0} bytes. Switch the dropdown to \"Custom (uploaded)\" and Save to use it."
 #~ msgstr "Geüpload: {0} bytes. Zet het dropdown op \"Eigen (geüpload)\" en sla op om te gebruiken."
 
 #: src/pages/Config.tsx
-msgid "Uploaded {kb} KB - now active."
-msgstr "{kb} KB geüpload - nu actief."
+#~ msgid "Uploaded {kb} KB - now active."
+#~ msgstr "{kb} KB geüpload - nu actief."
 
 #: src/pages/Config.tsx
 msgid "Uploading…"

@@ -45,13 +45,13 @@ export async function registerBlockFoundSoundRoute(
   // wrapper). The default 1 MB Fastify limit is enough but we set
   // 512 KB explicitly so a runaway payload fails fast at parse time
   // rather than after decode.
-  app.post<{ Body: { data_base64?: string; mime?: string } }>(
+  app.post<{ Body: { data_base64?: string; mime?: string; filename?: string } }>(
     '/api/config/block-found-sound',
     {
       bodyLimit: 512 * 1024,
     },
     async (req, reply) => {
-      const { data_base64, mime } = req.body ?? {};
+      const { data_base64, mime, filename } = req.body ?? {};
       if (typeof data_base64 !== 'string' || typeof mime !== 'string') {
         reply.code(400);
         return { error: 'expected JSON body { data_base64: string, mime: string }' };
@@ -82,15 +82,23 @@ export async function registerBlockFoundSoundRoute(
         reply.code(415);
         return { error: 'payload does not look like an audio container (header sniff failed)' };
       }
+      // Trim the filename: strip directory prefixes (some browsers
+      // send "C:\\fakepath\\foo.mp3"), cap length so a pathological
+      // upload can't bloat the row, fall back to null when the
+      // client didn't send one.
+      const cleanName = typeof filename === 'string'
+        ? filename.split(/[\\/]/).pop()?.slice(0, 200) || null
+        : null;
       await deps.db
         .updateTable('config')
         .set({
           block_found_sound_custom_blob: decoded,
           block_found_sound_custom_mime: mime,
+          block_found_sound_custom_filename: cleanName,
         })
         .where('id', '=', 1)
         .execute();
-      return { ok: true, bytes: decoded.length, mime };
+      return { ok: true, bytes: decoded.length, mime, filename: cleanName };
     },
   );
 
@@ -102,15 +110,21 @@ export async function registerBlockFoundSoundRoute(
   app.get('/api/config/block-found-sound/status', async () => {
     const row = await deps.db
       .selectFrom('config')
-      .select(['block_found_sound_custom_blob', 'block_found_sound_custom_mime'])
+      .select([
+        'block_found_sound_custom_blob',
+        'block_found_sound_custom_mime',
+        'block_found_sound_custom_filename',
+      ])
       .where('id', '=', 1)
       .executeTakeFirst();
     const blob = row?.block_found_sound_custom_blob;
     const mime = row?.block_found_sound_custom_mime ?? null;
+    const filename = row?.block_found_sound_custom_filename ?? null;
     return {
       has_blob: !!blob,
       bytes: blob ? Buffer.from(blob).length : null,
       mime,
+      filename,
     };
   });
 

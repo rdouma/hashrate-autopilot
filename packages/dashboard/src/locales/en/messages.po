@@ -721,6 +721,14 @@ msgid "Current owned-bid price (sat/PH/day). Under pay-your-bid this is exactly 
 msgstr "Current owned-bid price (sat/PH/day). Under pay-your-bid this is exactly what Braiins charges per delivered EH-day - the live price you're paying. The plus/minus next to it is the spread vs Ocean's spot hashprice (positive = paying above break-even, negative = below). For the spend-weighted average paid across the selected chart range (handy when the bid moved during the window), see the AVG COST / PH DELIVERED stats card."
 
 #: src/pages/Config.tsx
+msgid "Currently: <0>{filename}</0> ({blobKb} KB)"
+msgstr "Currently: <0>{filename}</0> ({blobKb} KB)"
+
+#: src/pages/Config.tsx
+msgid "Currently: uploaded file ({blobKb} KB)"
+msgstr "Currently: uploaded file ({blobKb} KB)"
+
+#: src/pages/Config.tsx
 msgid "custom"
 msgstr "custom"
 
@@ -2198,12 +2206,16 @@ msgstr "updated {0}"
 #~ msgstr "Upload custom MP3 / OGG / WAV / WebM (max 200 KB)"
 
 #: src/pages/Config.tsx
+msgid "Uploaded - now active."
+msgstr "Uploaded - now active."
+
+#: src/pages/Config.tsx
 #~ msgid "Uploaded {0} bytes. Switch the dropdown to \"Custom (uploaded)\" and Save to use it."
 #~ msgstr "Uploaded {0} bytes. Switch the dropdown to \"Custom (uploaded)\" and Save to use it."
 
 #: src/pages/Config.tsx
-msgid "Uploaded {kb} KB - now active."
-msgstr "Uploaded {kb} KB - now active."
+#~ msgid "Uploaded {kb} KB - now active."
+#~ msgstr "Uploaded {kb} KB - now active."
 
 #: src/pages/Config.tsx
 msgid "Uploading…"

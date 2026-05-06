@@ -721,6 +721,14 @@ msgid "Current owned-bid price (sat/PH/day). Under pay-your-bid this is exactly 
 msgstr ""
 
 #: src/pages/Config.tsx
+msgid "Currently: <0>{filename}</0> ({blobKb} KB)"
+msgstr "Actual: <0>{filename}</0> ({blobKb} KB)"
+
+#: src/pages/Config.tsx
+msgid "Currently: uploaded file ({blobKb} KB)"
+msgstr "Actual: archivo subido ({blobKb} KB)"
+
+#: src/pages/Config.tsx
 msgid "custom"
 msgstr "personalizado"
 
@@ -2198,12 +2206,16 @@ msgstr "actualizado {0}"
 #~ msgstr "Subir MP3 / OGG / WAV / WebM personalizado (máx. 200 KB)"
 
 #: src/pages/Config.tsx
+msgid "Uploaded - now active."
+msgstr "Subido - ahora activo."
+
+#: src/pages/Config.tsx
 #~ msgid "Uploaded {0} bytes. Switch the dropdown to \"Custom (uploaded)\" and Save to use it."
 #~ msgstr "Subido: {0} bytes. Cambia el desplegable a \"Personalizado (subido)\" y guarda para usarlo."
 
 #: src/pages/Config.tsx
-msgid "Uploaded {kb} KB - now active."
-msgstr "{kb} KB subidos - ahora activo."
+#~ msgid "Uploaded {kb} KB - now active."
+#~ msgstr "{kb} KB subidos - ahora activo."
 
 #: src/pages/Config.tsx
 msgid "Uploading…"
