@@ -123,7 +123,7 @@ describe('parseOceanTs', () => {
   it('treats bare ISO datetime as UTC (not local)', () => {
     // Regression: /v1/blocks returns ts without a timezone suffix.
     // new Date(str) interprets that as local time, making the "found X
-    // ago" display drift by the host's UTC offset — sometimes enough
+    // ago" display drift by the host's UTC offset - sometimes enough
     // that a later block appeared older than an earlier one.
     const ms = parseOceanTs('2026-04-18T10:54:28.021400');
     expect(new Date(ms).toISOString()).toBe('2026-04-18T10:54:28.021Z');

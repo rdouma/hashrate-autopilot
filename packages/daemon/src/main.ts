@@ -5,7 +5,7 @@
  *   - Runs the operational tick loop until SIGINT/SIGTERM (normal path), or
  *   - Stands up the first-run wizard server when config/secrets are absent
  *     and transitions in-place to operational mode after the wizard
- *     submits (no external process manager required — see #57 followup
+ *     submits (no external process manager required - see #57 followup
  *     for why the original "exit and let supervisor restart" approach
  *     didn't work on plain `start.sh` deployments).
  */
@@ -84,7 +84,7 @@ async function main(): Promise<void> {
   log(`  age key:  ${ageKeyPath}`);
   log(`  tick:     ${DEFAULT_TICK_INTERVAL_MS} ms`);
 
-  // Open the DB first — needed in both operational and NEEDS_SETUP
+  // Open the DB first - needed in both operational and NEEDS_SETUP
   // boot paths (the wizard writes config + secrets through repos
   // backed by the same handle).
   const handle = await openDatabase({ path: dbPath });
@@ -117,7 +117,7 @@ async function main(): Promise<void> {
     const missing: string[] = [];
     if (!secretsResult) missing.push('secrets');
     if (!dbCfg) missing.push('config');
-    log(`NEEDS_SETUP — missing: ${missing.join(', ')}; serving wizard only`);
+    log(`NEEDS_SETUP - missing: ${missing.join(', ')}; serving wizard only`);
     log(
       'WARNING: setup endpoints are unauthenticated. Restrict access ' +
         '(firewall, Tailscale, Tor) until the wizard has run.',
@@ -155,7 +155,7 @@ async function main(): Promise<void> {
       // OPERATIONAL once createHttpServer is listening on the same
       // port the setup server just released.
       log('setup: transitioning in-place to operational mode');
-      // Drop the setup-mode signal handlers — bootOperational will
+      // Drop the setup-mode signal handlers - bootOperational will
       // install its own. Otherwise both fire on shutdown and the
       // setup handler closes the DB out from under the operational
       // shutdown.
@@ -229,7 +229,7 @@ async function bootOperational(
 
   // Seed bitcoind credentials from secrets into config on first boot
   // so they become dashboard-editable (issue #14). Only runs when secrets
-  // carries all three fields — the wizard no longer collects them
+  // carries all three fields - the wizard no longer collects them
   // there, so wizard-driven installs typically skip this entirely.
   if (
     !dbCfg.bitcoind_rpc_url &&
@@ -258,7 +258,7 @@ async function bootOperational(
   await runtimeRepo.initializeIfMissing();
   // boot_mode decides how run_mode is set at startup. LAST_MODE keeps whatever
   // the operator last set, demoting PAUSED to DRY_RUN (we never auto-boot into
-  // PAUSED — that's only a reactive state).
+  // PAUSED - that's only a reactive state).
   const priorRuntime = await runtimeRepo.get();
   const priorMode = priorRuntime?.run_mode ?? 'DRY_RUN';
   let bootMode: 'DRY_RUN' | 'LIVE' | 'PAUSED';
@@ -343,7 +343,7 @@ async function bootOperational(
     log: (m) => log(m),
   });
 
-  // Hashprice cache — read by the controller for the dynamic cap and
+  // Hashprice cache - read by the controller for the dynamic cap and
   // cheap-hashrate scaling. Warm path is the dashboard's finance poll;
   // a boot-time fetch below guarantees a value on tick 1 so the
   // dynamic cap doesn't silently collapse if the dashboard isn't open
@@ -353,7 +353,7 @@ async function bootOperational(
   const hashpriceCache = new HashpriceCache();
   const HASHPRICE_STALENESS_MS = 60 * 60 * 1000;
 
-  // Ocean stats client — shared between the tick observe path (for
+  // Ocean stats client - shared between the tick observe path (for
   // `state.ocean_hashrate_ph`, issue #36) and the /api/ocean HTTP
   // route. The internal 60 s cache means both callers share one
   // underlying HTTP round-trip per tick instead of firing two.
@@ -441,7 +441,7 @@ async function bootOperational(
   // configured both a payout address and the dynamic cap, seed the
   // cache from Ocean before the tick loop starts so decide()'s first
   // tick has a break-even reference available. If Ocean is down at
-  // boot, we log and continue — the cap gate in decide() will block
+  // boot, we log and continue - the cap gate in decide() will block
   // trading until a later fetch succeeds, matching the operator's
   // "until hashprice is known, all trades are off" requirement.
   if (cfg.btc_payout_address && cfg.max_overpay_vs_hashprice_sat_per_eh_day) {
@@ -451,10 +451,10 @@ async function bootOperational(
         hashpriceCache.set(stats.hashprice_sat_per_ph_day);
         log(`hashprice: seeded from Ocean at boot (${stats.hashprice_sat_per_ph_day} sat/PH/day)`);
       } else {
-        log('hashprice: Ocean fetched but returned no hashprice — dynamic cap gate will block trading until next fetch succeeds');
+        log('hashprice: Ocean fetched but returned no hashprice - dynamic cap gate will block trading until next fetch succeeds');
       }
     } catch (err) {
-      log(`hashprice: boot fetch failed (${(err as Error)?.message ?? err}) — dynamic cap gate will block trading until next fetch succeeds`);
+      log(`hashprice: boot fetch failed (${(err as Error)?.message ?? err}) - dynamic cap gate will block trading until next fetch succeeds`);
     }
   }
 
@@ -489,7 +489,7 @@ async function bootOperational(
   );
   btcPriceRefresher.start();
 
-  // Account-lifetime spend tracker — sums counters_committed.amount_consumed_sat
+  // Account-lifetime spend tracker - sums counters_committed.amount_consumed_sat
   // across every Braiins bid (active + historical). Terminal bids are
   // persisted in closed_bids_cache so steady-state refreshes only
   // paginate the tail, not every bid the account has ever owned.
@@ -594,7 +594,7 @@ function logTick(r: TickResult): void {
   );
 
   if (gated.length === 0) {
-    log(`    (no proposals — ${inferNoActionReason(state)})`);
+    log(`    (no proposals - ${inferNoActionReason(state)})`);
     return;
   }
   for (const g of gated) {
@@ -607,7 +607,7 @@ function logTick(r: TickResult): void {
  * Best-effort explanation of why `decide()` returned an empty proposal
  * set this tick. Mirrors the decision tree in decide.ts so the reason
  * shown in logs matches what actually blocked the tick. Purely for
- * diagnostics — the logic doesn't drive behaviour.
+ * diagnostics - the logic doesn't drive behaviour.
  */
 function inferNoActionReason(state: State): string {
   if (!state.market) return 'no market snapshot';
@@ -634,14 +634,14 @@ function inferNoActionReason(state: State): string {
     dynamicCap !== null ? Math.min(cfg.max_bid_sat_per_eh_day, dynamicCap) : cfg.max_bid_sat_per_eh_day;
 
   if (state.owned_bids.length === 0) {
-    return 'no owned bid yet — CREATE pending';
+    return 'no owned bid yet - CREATE pending';
   }
   const primary = state.owned_bids[0]!;
   const tickSize = state.market.settings.tick_size_sat ?? 1000;
   if (Math.abs(primary.price_sat - effectiveCap) < tickSize) {
-    return 'bid already at effective cap — nothing to do';
+    return 'bid already at effective cap - nothing to do';
   }
-  return 'bid within tolerance of effective cap — nothing to do';
+  return 'bid within tolerance of effective cap - nothing to do';
 }
 
 function describeProposal(p: TickResult['gated'][number]['proposal']): string {
@@ -676,7 +676,7 @@ function log(msg: string): void {
 /**
  * Force-exit fence for graceful shutdown. If the shutdown sequence
  * doesn't `process.exit(0)` within `ms` we exit with code 124
- * (matching `timeout(1)`'s convention) — better to lose an in-flight
+ * (matching `timeout(1)`'s convention) - better to lose an in-flight
  * tick than get SIGKILL'd at the Docker grace boundary with the WAL
  * mid-flush. The timer is `unref`'d so it never *prevents* a clean
  * exit on its own.

@@ -1,5 +1,5 @@
 /**
- * GET /api/btc-price — BTC/USD spot price from the configured exchange.
+ * GET /api/btc-price - BTC/USD spot price from the configured exchange.
  *
  * Returns the latest price snapshot, or nulls if the price source is
  * 'none' or the fetch failed. The dashboard polls this to feed its

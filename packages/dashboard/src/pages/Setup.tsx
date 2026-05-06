@@ -36,7 +36,7 @@ interface FormState {
   destination_pool_url: string;
   destination_pool_worker_name: string;
   btc_payout_address: string;
-  // Pricing — already-defaulted, exposed so the operator sees them
+  // Pricing - already-defaulted, exposed so the operator sees them
   max_bid_sat_per_ph_day: number; // converted from sat/EH/day
   overpay_sat_per_ph_day: number;
   // Payout-tracking backend selector + per-backend connection fields.
@@ -94,7 +94,7 @@ export function Setup() {
         if (cancelled) return;
         const msg = (err as Error).message;
         // 401 means the daemon is in *operational* mode but we're
-        // on /setup — usually because SetupGate's cached probe lagged
+        // on /setup - usually because SetupGate's cached probe lagged
         // a wizard completion. Bounce home; SetupGate's fresh probe
         // will route correctly from there.
         if (msg.includes('401')) {
@@ -175,7 +175,7 @@ export function Setup() {
       // Daemon writes config + secrets, then transitions in-place to
       // operational mode (#57 followup: no process restart). Wait for
       // /api/health to flip, store the password, and do a *full* page
-      // reload — not a `navigate('/')`. SetupGate's last cached probe
+      // reload - not a `navigate('/')`. SetupGate's last cached probe
       // still says NEEDS_SETUP, so a client-side navigation would
       // bounce right back to /setup; the next setup-info call there
       // 401s (daemon is operational now), and the user sees a confusing
@@ -247,7 +247,7 @@ async function waitForOperational(maxAttempts = 60): Promise<void> {
       const h = await api.health();
       if (h.mode === 'OPERATIONAL') return;
     } catch {
-      // Daemon mid-restart — fetch fails, keep polling.
+      // Daemon mid-restart - fetch fails, keep polling.
     }
     await new Promise((r) => setTimeout(r, 1500));
   }
@@ -266,10 +266,10 @@ function Header({ step, info }: { step: Step; info: SetupInfoResponse }) {
   const stepLabels = [t`Access`, t`Mining`, t`Review`];
   return (
     <div className="mb-6">
-      <h1 className="text-2xl text-amber-400 font-semibold">Hashrate Autopilot — {verb}</h1>
+      <h1 className="text-2xl text-amber-400 font-semibold">Hashrate Autopilot - {verb}</h1>
       <p className="text-sm text-slate-400 mt-1">
         {info.has_existing_config ? (
-          <Trans>Existing config detected — fields are pre-filled. Update what changed and click through.</Trans>
+          <Trans>Existing config detected - fields are pre-filled. Update what changed and click through.</Trans>
         ) : (
           <Trans>A few questions to get the daemon operational. Defaults work for typical home miners; tune later from the Config page.</Trans>
         )}
@@ -384,7 +384,7 @@ function MiningStep({
 }) {
   const { i18n } = useLingui();
   void i18n;
-  // Worker identity must be `<btc_payout_address>.<label>` — Ocean
+  // Worker identity must be `<btc_payout_address>.<label>` - Ocean
   // TIDES credits shares by the address prefix. Anything else
   // silently sends shares somewhere else (or to nobody). Treat a
   // mismatch as a hard error, not a soft warning.
@@ -488,7 +488,7 @@ function MiningStep({
         </Field>
         <Field
           label={t`Worker identity`}
-          hint={t`Format: <btc-address>.<label>. Ocean TIDES credits shares by the address prefix — anything else routes shares to nobody.`}
+          hint={t`Format: <btc-address>.<label>. Ocean TIDES credits shares by the address prefix - anything else routes shares to nobody.`}
         >
           <input
             type="text"
@@ -499,14 +499,14 @@ function MiningStep({
           />
           {worker.length > 0 && !worker.includes('.') && (
             <div className="text-xs text-red-400 mt-1">
-              <Trans>must contain a period — without it shares are uncredited on Ocean</Trans>
+              <Trans>must contain a period - without it shares are uncredited on Ocean</Trans>
             </div>
           )}
           {worker.length > 0 && worker.includes('.') && !workerPrefixOk && addr.length > 0 && (
             <div className="text-xs text-red-400 mt-1 leading-snug">
               <Trans>
                 <strong>Mismatch:</strong> the worker identity must start with{' '}
-                <code>{addr}.</code> — otherwise Ocean credits shares to a different address (or
+                <code>{addr}.</code> - otherwise Ocean credits shares to a different address (or
                 nobody). Edit the address above first; this field follows it automatically.
               </Trans>
             </div>
@@ -525,7 +525,7 @@ function MiningStep({
             }
             className={textInputCss}
           >
-            <option value="none">{t`None — skip payout tracking`}</option>
+            <option value="none">{t`None - skip payout tracking`}</option>
             <option value="bitcoind">{t`Bitcoin Core (bitcoind RPC)`}</option>
             <option value="electrs">{t`Electrs (Electrum-style indexed lookup, faster)`}</option>
           </select>
@@ -539,7 +539,7 @@ function MiningStep({
                 <Trans>
                   <strong>Detected from environment:</strong> Umbrel/Start9-style{' '}
                   <code>BITCOIN_RPC_*</code> env vars are set. The fields below are
-                  pre-filled — check them and override if needed.
+                  pre-filled - check them and override if needed.
                 </Trans>
               </div>
             )}
@@ -598,7 +598,7 @@ function MiningStep({
             <p className="text-xs text-slate-500">
               <Trans>
                 Default Electrs port is 50001 (TCP). On Umbrel the in-cluster hostname is typically
-                <code> 10.21.21.10</code> or similar — check the Electrs app's connection details.
+                <code> 10.21.21.10</code> or similar - check the Electrs app's connection details.
               </Trans>
             </p>
           </div>
@@ -631,7 +631,7 @@ function ReviewStep({
   void i18n;
   const { intlLocale } = useLocale();
   const phLabel = (n: number) => `${formatNumber(n, {}, intlLocale)} PH/s`;
-  const satLabel = (n: number) => t`${formatNumber(n, {}, intlLocale)} sat/PH/day (default — tunable later)`;
+  const satLabel = (n: number) => t`${formatNumber(n, {}, intlLocale)} sat/PH/day (default - tunable later)`;
   return (
     <div className="space-y-4">
       <Section title={t`Review`}>
@@ -685,7 +685,7 @@ function ReviewStep({
 }
 
 // ---------------------------------------------------------------------------
-// Small UI primitives — kept inline so this page is self-contained.
+// Small UI primitives - kept inline so this page is self-contained.
 // ---------------------------------------------------------------------------
 
 const textInputCss =
@@ -703,7 +703,7 @@ function CenteredCard({ children, wide = false }: { children: React.ReactNode; w
       >
         {/* Language picker sits inside the card so it follows the
             wizard width and is the first thing the operator sees on a
-            fresh install — language is the right thing to set first. */}
+            fresh install - language is the right thing to set first. */}
         <div className="flex justify-end mb-3">
           <LanguagePicker />
         </div>
@@ -745,8 +745,8 @@ function Field({
 
 /**
  * Password-style input with a click-to-reveal eye toggle. Used for
- * every secret in the wizard — owner token, dashboard password +
- * confirmation, optional read-only token, bitcoind RPC password —
+ * every secret in the wizard - owner token, dashboard password +
+ * confirmation, optional read-only token, bitcoind RPC password -
  * because operators copy-paste tokens and like to verify what they
  * pasted before submitting.
  */

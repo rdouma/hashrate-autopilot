@@ -72,7 +72,7 @@ export interface HttpServerDeps {
   readonly blockVersionService: BlockVersionService | null;
   /** #95: bitcoind RPC client for the BIP 110 scanner endpoint. Null when bitcoind RPC creds are not configured (scanner returns rpc_available: false). */
   readonly bitcoindClient: BitcoindClient | null;
-  /** Sops/env secrets snapshot — fallback for empty `config` row fields. The BIP 110 scanner uses this to build a fresh client per request so saved Config edits take effect without a daemon restart. */
+  /** Sops/env secrets snapshot - fallback for empty `config` row fields. The BIP 110 scanner uses this to build a fresh client per request so saved Config edits take effect without a daemon restart. */
   readonly secrets: {
     readonly bitcoind_rpc_url?: string;
     readonly bitcoind_rpc_user?: string;
@@ -109,14 +109,14 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<HttpServer
         throw new Error('unauthorised');
       }
     },
-    // No `authenticate` option — we don't want the WWW-Authenticate
+    // No `authenticate` option - we don't want the WWW-Authenticate
     // header in 401 responses. That header triggers the browser's
     // native auth dialog, which conflicts with our React login page.
   });
 
   // Guard all /api/* routes with Basic Auth. basicAuth expects the
   // callback-style Fastify middleware signature (req, reply, done).
-  // /api/health is exempt — appliance hosts (Umbrel, Start9, #67) and
+  // /api/health is exempt - appliance hosts (Umbrel, Start9, #67) and
   // the dashboard's mode probe both need to reach it without creds.
   app.addHook('onRequest', (req, reply, done) => {
     if (!req.url.startsWith('/api/')) return done();
@@ -173,7 +173,7 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<HttpServer
         root: resolve(deps.staticRoot),
         prefix: '/',
         // Hashed asset files (index-XXXXX.js/css) are safe to cache long.
-        // HTML is NOT — a stale index.html points at outdated bundle
+        // HTML is NOT - a stale index.html points at outdated bundle
         // hashes and perma-breaks the dashboard on rebuild.
         maxAge: '1y',
         immutable: true,
@@ -191,7 +191,7 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<HttpServer
           .sendFile('index.html');
       });
     } catch {
-      // Static dir missing — run the API without the UI (dev mode).
+      // Static dir missing - run the API without the UI (dev mode).
       deps.log?.(`dashboard static not found at ${deps.staticRoot}; API-only`);
     }
   }

@@ -32,7 +32,7 @@ export interface LoadSecretsOptions {
   /**
    * Environment passed to the sops child process. Defaults to
    * `process.env`. The age key location is typically read from
-   * `SOPS_AGE_KEY_FILE` — add it here if it's not already in the daemon's
+   * `SOPS_AGE_KEY_FILE` - add it here if it's not already in the daemon's
    * environment.
    */
   readonly env?: NodeJS.ProcessEnv;
@@ -75,7 +75,7 @@ export async function loadSecrets(path: string, options: LoadSecretsOptions = {}
 /**
  * Cheap content-based detection: sops-encrypted YAML files carry a top-level
  * `sops:` mapping with metadata. We look for that marker before invoking the
- * CLI. This is not security-sensitive — if we guess wrong we get a clear
+ * CLI. This is not security-sensitive - if we guess wrong we get a clear
  * downstream error.
  */
 export function isSopsEncrypted(yamlText: string): boolean {

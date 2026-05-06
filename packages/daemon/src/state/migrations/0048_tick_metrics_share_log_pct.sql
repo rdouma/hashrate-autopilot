@@ -1,4 +1,4 @@
--- Per-tick record of Ocean's `share_log` percentage — our share of the
+-- Per-tick record of Ocean's `share_log` percentage - our share of the
 -- pool's TIDES window, derived from `/statsnap.shares_in_tides ÷
 -- pool_stat.current_tides_shares × 100` (issue #72). Plotted as an
 -- opt-in fourth series on the Hashrate chart's right-side Y-axis when
@@ -10,6 +10,6 @@
 -- failed, or the pool's tides shares were zero. Stored as a percentage
 -- (e.g. 0.0182 for 0.0182%) to match Ocean's display convention.
 --
--- Display-only — never read by the controller.
+-- Display-only - never read by the controller.
 
 ALTER TABLE tick_metrics ADD COLUMN share_log_pct REAL;

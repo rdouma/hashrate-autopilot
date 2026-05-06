@@ -104,7 +104,7 @@ export class Controller {
     state = { ...state, owned_bids: patchedOwnedBids };
 
     // Persist runtime diagnostics. The retired timers are nulled out
-    // on every tick — their columns are kept only for backwards-compat
+    // on every tick - their columns are kept only for backwards-compat
     // with the runtime_state table shape.
     await this.deps.runtimeRepo.patch({
       last_tick_at: state.tick_at,
@@ -116,14 +116,14 @@ export class Controller {
       above_floor_ticks: this.aboveFloorTicks,
     });
 
-    // Metrics snapshot — one row per tick, used by the Hashrate chart.
+    // Metrics snapshot - one row per tick, used by the Hashrate chart.
     try {
       const primary = [...state.owned_bids].sort((a, b) =>
         a.braiins_order_id.localeCompare(b.braiins_order_id),
       )[0];
       const primaryBalance = state.balance?.accounts?.[0];
       // Under pay-your-bid (#53) the authoritative actual spend comes
-      // from `primary_bid_consumed_sat` deltas — keep the legacy
+      // from `primary_bid_consumed_sat` deltas - keep the legacy
       // `spend_sat` column null so downstream readers don't confuse it
       // with the real figure.
       const spendSat: number | null = null;

@@ -1,4 +1,4 @@
--- Pay-your-bid controller (#53). NO-OP — see the note below.
+-- Pay-your-bid controller (#53). NO-OP - see the note below.
 --
 -- Earlier versions of this file ran:
 --   ALTER TABLE config ADD COLUMN overpay_sat_per_eh_day INTEGER NOT NULL DEFAULT 1000000;

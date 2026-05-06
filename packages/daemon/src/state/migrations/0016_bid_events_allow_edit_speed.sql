@@ -2,7 +2,7 @@
 -- predates the EDIT_SPEED proposal kind, so live inserts silently
 -- failed (caught by the execute.ts try/catch -> warning only) and
 -- the dashboard chart never got a marker for in-place speed edits.
--- SQLite can't modify a CHECK constraint in place — rebuild the
+-- SQLite can't modify a CHECK constraint in place - rebuild the
 -- table the standard way.
 
 CREATE TABLE bid_events_new (

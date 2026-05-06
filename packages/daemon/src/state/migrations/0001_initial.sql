@@ -30,7 +30,7 @@ CREATE TABLE config (
 );
 
 -- Persistent runtime state (single-row pattern). run_mode is reset to
--- DRY_RUN on every startup per SPEC §7.1 — this table stores the
+-- DRY_RUN on every startup per SPEC §7.1 - this table stores the
 -- last-known values for crash recovery / dashboard.
 CREATE TABLE runtime_state (
   id INTEGER PRIMARY KEY CHECK (id = 1),

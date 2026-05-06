@@ -1,5 +1,5 @@
 -- Cached enrichment of Ocean pool blocks derived locally from the
--- operator's own bitcoind node — no external HTTP, no disclosure of
+-- operator's own bitcoind node - no external HTTP, no disclosure of
 -- the node's presence to third-party explorers. The block-marker
 -- tooltip on the Hashrate chart wants to show the miner identity
 -- the way block explorers do (e.g. "Simple Mining · OCEAN"), which
@@ -9,7 +9,7 @@
 -- coinbase scriptSig, parsing its printable ASCII, and picking the
 -- first operator-meaningful token. `pool_name` is currently the
 -- literal "OCEAN" for every block (since they all come from Ocean's
--- API) — the column is kept generic so a future pool adapter can
+-- API) - the column is kept generic so a future pool adapter can
 -- populate it from a tags-matcher without another migration.
 --
 -- Blocks are immutable, so a successful enrichment is cached forever

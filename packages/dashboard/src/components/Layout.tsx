@@ -37,7 +37,7 @@ export function Layout() {
   const navItems = useNavItems();
 
   // Status powers the global header (mode badge + balance) on every
-  // page. 30 s mirrors the Status-page polling cadence — header
+  // page. 30 s mirrors the Status-page polling cadence - header
   // figures don't need to be fresher than the page below them.
   const status = useQuery({
     queryKey: ['status'],
@@ -64,7 +64,7 @@ export function Layout() {
     <div className="min-h-full flex flex-col">
       {/* Top bar: brand on the left, nav tabs in the middle, run-mode +
           balance + locale + sign-out on the right. Replaces the old
-          left sidebar — the dashboard is dense enough that giving up
+          left sidebar - the dashboard is dense enough that giving up
           ~14 rem of permanent left chrome to widen the work area
           makes a real difference, especially for the new vertical
           Money panel. */}
@@ -115,7 +115,7 @@ export function Layout() {
       </header>
 
       <main className="flex-1 overflow-auto">
-        {/* Use the full viewport width — the operator runs this
+        {/* Use the full viewport width - the operator runs this
             full-screen on a desktop and earlier max-w-[1600px] left a
             visible empty bar on the right on wider monitors. Side
             padding only. */}

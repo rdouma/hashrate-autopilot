@@ -34,7 +34,7 @@ describe('probePool', () => {
   });
 
   it('times out on unroutable address', async () => {
-    // 240.0.0.0/4 is reserved — the OS refuses immediately on macOS/Linux
+    // 240.0.0.0/4 is reserved - the OS refuses immediately on macOS/Linux
     // rather than waiting. Either a refusal or a timeout is acceptable.
     const result = await probePool({ host: '240.0.0.1', port: 80, timeoutMs: 500 });
     expect(result.reachable).toBe(false);

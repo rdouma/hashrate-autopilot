@@ -2,8 +2,8 @@
  * Cross-context copy-to-clipboard helper.
  *
  * `navigator.clipboard.writeText` is only defined in secure contexts
- * (HTTPS or localhost). On a LAN hostname over plain HTTP — e.g.
- * `http://clarent:3010` — `navigator.clipboard` is undefined and
+ * (HTTPS or localhost). On a LAN hostname over plain HTTP - e.g.
+ * `http://clarent:3010` - `navigator.clipboard` is undefined and
  * calling `.writeText(...)` throws, which means a button with a
  * bare `await navigator.clipboard.writeText(...)` wrapped in a
  * silent try/catch will appear to do nothing.

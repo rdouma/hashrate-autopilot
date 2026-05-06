@@ -2,6 +2,10 @@
 
 ## 2026-05-06
 
+### `[UI]` Em/en-dashes scrubbed across the codebase
+
+Operator preference is ASCII hyphens only, no em-dashes or en-dashes anywhere. Did a project-wide pass: source code (.ts/.tsx in dashboard + daemon + shared), .po locale catalogs (en + nl + es), markdown docs, and YAML config. All 285 tests still pass; Lingui re-extract + recompile shows no new untranslated entries (the catalog deltas are all in-place character replacements). Both builds clean.
+
 ### `[Fix]` Custom block-found sound: HTML5 audio couldn't authenticate
 
 Test sound (and the live block-found cue) on a custom-uploaded MP3 was failing with "Audio play failed: The media resource indicated by the src attribute or assigned media provider object was not suitable." Root cause: HTML5 `<audio>` elements don't include Basic Auth headers when fetching their `src`, but `/api/config/block-found-sound` is auth-gated. The element got a 401 and the browser surfaced the cryptic "not suitable" error. Bundled cues worked because they're served as static files under `/sounds/*.mp3` (not auth-gated). Fix: dashboard now fetches the custom blob through its authenticated `request` path, wraps it as a blob: URL, and points `<audio>` at that. Object URLs are revoked after playback to avoid handle leaks.
@@ -32,7 +36,7 @@ The Block-found notification dropdown labelled the "custom" option as "Custom (u
 
 ### `[UI]` State-aware OCEAN `next payout` tooltip explains what "Next block" means
 
-Previous tooltip (`Ocean's estimate of when our 'unpaid' balance will cross the payout threshold and trigger an on-chain transfer.`) was a single string for two very different states. Operator caught that "Next block" reads ambiguously — could mean the next Bitcoin block in general, when it actually means the next *Ocean pool* block (since under TIDES the pool only pays out when it wins a block; that's the only one whose coinbase it controls). Tooltip now branches on the row's value: when showing `Next block`, the tooltip names the unpaid balance, the threshold (~0.01 BTC ≈ 1.048.576 sat), explains the TIDES coinbase mechanic, and points at the blue cubes on the hashrate chart as the events that trigger payout. When showing `N hours / N days`, it names the same threshold, the current daily-earn rate, and notes that the actual payout still lands on the next pool-block-Ocean-wins (not on a fixed schedule) once the threshold is crossed. en/nl/es catalogs updated.
+Previous tooltip (`Ocean's estimate of when our 'unpaid' balance will cross the payout threshold and trigger an on-chain transfer.`) was a single string for two very different states. Operator caught that "Next block" reads ambiguously - could mean the next Bitcoin block in general, when it actually means the next *Ocean pool* block (since under TIDES the pool only pays out when it wins a block; that's the only one whose coinbase it controls). Tooltip now branches on the row's value: when showing `Next block`, the tooltip names the unpaid balance, the threshold (~0.01 BTC ≈ 1.048.576 sat), explains the TIDES coinbase mechanic, and points at the blue cubes on the hashrate chart as the events that trigger payout. When showing `N hours / N days`, it names the same threshold, the current daily-earn rate, and notes that the actual payout still lands on the next pool-block-Ocean-wins (not on a fixed schedule) once the threshold is crossed. en/nl/es catalogs updated.
 
 ## 2026-05-05
 
@@ -42,43 +46,43 @@ Slate-300 (the previous neutral grey) read as washed-out white on the dark backg
 
 ### `[Fix]` Block-found sound now rings on every Ocean pool block, not on on-chain payouts
 
-Operator's stated intent on #88 from day one was: hear a cue every time Ocean finds a block (~3/day at typical pool share), NOT when an on-chain payout to the configured BTC address confirms (which is rare under TIDES — only when unpaid balance crosses the ~1.05M-sat threshold — and a wallet already notifies on those). The shipped wiring listened to `reward_events` (the payout-observer's table), so the operator sat at their desk through a pool block 13 minutes ago with no sound. Switching the trigger to `/api/ocean.recent_blocks[]`: hook fires once per increment of the maximum block height across the list, baseline-on-first-poll-silently to avoid a backlog burst, and uses a fresh localStorage key (`braiins.lastSeenOceanBlockHeight`) so existing operators upgrading past this commit also get a clean silent baseline rather than a sudden replay of the last 15 historical pool blocks.
+Operator's stated intent on #88 from day one was: hear a cue every time Ocean finds a block (~3/day at typical pool share), NOT when an on-chain payout to the configured BTC address confirms (which is rare under TIDES - only when unpaid balance crosses the ~1.05M-sat threshold - and a wallet already notifies on those). The shipped wiring listened to `reward_events` (the payout-observer's table), so the operator sat at their desk through a pool block 13 minutes ago with no sound. Switching the trigger to `/api/ocean.recent_blocks[]`: hook fires once per increment of the maximum block height across the list, baseline-on-first-poll-silently to avoid a backlog burst, and uses a fresh localStorage key (`braiins.lastSeenOceanBlockHeight`) so existing operators upgrading past this commit also get a clean silent baseline rather than a sudden replay of the last 15 historical pool blocks.
 
 ### `[Fix]` Acceptance ratio belongs in the Datum panel; chart series rolls 1h to dampen ack-lag noise
 
 Operator review caught two issues with the previous shape:
-1. Acceptance was on the BRAIINS panel and the raw `pool rejects (1h)` raw count was on the DATUM panel — backwards from how the data should be read. The seller's rig submits shares over stratum to *your* Datum gateway; Datum responds accept/reject; that response is what Braiins relays back as the counter. Both numbers are Datum-side regardless of being sourced via the Braiins API. Acceptance moves to the DATUM panel.
-2. The chart's `acceptance %` series went above 100% on spikes — impossible in cumulative-ratio terms but possible per-bucket because the pool sometimes acks shares in batches (`accepted_m` jumps after `purchased_m` already counted them). Switched the chart series from per-bucket forward-deltas to a per-tick rolling 60-bucket window with a defensive `min(100)` cap, matching the panel's 1h-rolling semantics. Smooth, never artifactually >100%, no more sparse gaps from buckets that happened to have zero counter advance.
+1. Acceptance was on the BRAIINS panel and the raw `pool rejects (1h)` raw count was on the DATUM panel - backwards from how the data should be read. The seller's rig submits shares over stratum to *your* Datum gateway; Datum responds accept/reject; that response is what Braiins relays back as the counter. Both numbers are Datum-side regardless of being sourced via the Braiins API. Acceptance moves to the DATUM panel.
+2. The chart's `acceptance %` series went above 100% on spikes - impossible in cumulative-ratio terms but possible per-bucket because the pool sometimes acks shares in batches (`accepted_m` jumps after `purchased_m` already counted them). Switched the chart series from per-bucket forward-deltas to a per-tick rolling 60-bucket window with a defensive `min(100)` cap, matching the panel's 1h-rolling semantics. Smooth, never artifactually >100%, no more sparse gaps from buckets that happened to have zero counter advance.
 
-Plus: `pool rejects (1h)` (the raw count from Braiins) only renders alongside `gateway rejects (1h)` (Datum's own counter) when both are present — without a side-by-side comparison the absolute count alone is just noise (raw share count at Braiins's validation difficulty looks alarming even at the 0.05% baseline that the acceptance % already signals cleanly). Cumulative `rejected shares` row dropped (duplicative with the 1h delta). Row labels renamed `gateway rejects` / `pool rejects` to underline the comparison semantic. en/nl/es catalogs updated.
+Plus: `pool rejects (1h)` (the raw count from Braiins) only renders alongside `gateway rejects (1h)` (Datum's own counter) when both are present - without a side-by-side comparison the absolute count alone is just noise (raw share count at Braiins's validation difficulty looks alarming even at the 0.05% baseline that the acceptance % already signals cleanly). Cumulative `rejected shares` row dropped (duplicative with the 1h delta). Row labels renamed `gateway rejects` / `pool rejects` to underline the comparison semantic. en/nl/es catalogs updated.
 
 ### `[Feature]` 1h Datum-vs-Braiins reject comparison on the Datum panel (#91)
 
-The original #91 spec called for "a 'datum rejects (1h)' row on the Datum panel + a delta vs Braiins-reported rejects so the operator can tell which leg is dropping shares" — the per-tick capture shipped earlier but the 1h-rolling row + the side-by-side Braiins comparison did not. Filling that gap. New `/api/stats` fields `datum_rejects_1h` (forward delta of the gateway's cumulative reject counter over the trailing hour) and `braiins_rejects_count_1h` (forward delta of `primary_bid_shares_rejected_m × 1_000_000`, converted to raw count for direct comparison). Datum panel now renders both as side-by-side rows so the operator can read the asymmetry directly: Datum > Braiins means the gateway filtered work that never reached the pool (good — Datum saved cost); Braiins > Datum means the pool rejected work Datum thought was fine (stale-work signature per research.md §4.5). Both rows hidden when their sources are null. en/nl/es catalogs updated.
+The original #91 spec called for "a 'datum rejects (1h)' row on the Datum panel + a delta vs Braiins-reported rejects so the operator can tell which leg is dropping shares" - the per-tick capture shipped earlier but the 1h-rolling row + the side-by-side Braiins comparison did not. Filling that gap. New `/api/stats` fields `datum_rejects_1h` (forward delta of the gateway's cumulative reject counter over the trailing hour) and `braiins_rejects_count_1h` (forward delta of `primary_bid_shares_rejected_m × 1_000_000`, converted to raw count for direct comparison). Datum panel now renders both as side-by-side rows so the operator can read the asymmetry directly: Datum > Braiins means the gateway filtered work that never reached the pool (good - Datum saved cost); Braiins > Datum means the pool rejected work Datum thought was fine (stale-work signature per research.md §4.5). Both rows hidden when their sources are null. en/nl/es catalogs updated.
 
 ### `[UI]` Acceptance + datum-rejects move from hero stat row to BRAIINS panel + hashrate chart right-axis (#90, #91)
 
-Operator review: a one-off `ACCEPTANCE 1H` card on the hero stat row was the wrong shape — it crowded an already-tight hero row and showed only a single instant value with no time series to analyse. Moved off the hero. The 1h-rolling acceptance ratio now lives as a row inside the BRAIINS panel (which is where its inputs come from — `shares_purchased_m` and `shares_accepted_m` are both Braiins-reported). The hashrate chart's right-axis dropdown gains two new options: **acceptance %** (per-bucket forward-delta ratio of the cumulative counters; the chart shows a gap on bid resets where the counter restarts at zero) and **datum rejects** (per-bucket delta of the gateway-side reject counter from #91). Both series persist in `tick_metrics` already; bucket aggregation uses `MAX(...)` for the cumulative counters so chart-bucket-to-bucket deltas read cleanly. en/nl/es catalogs updated.
+Operator review: a one-off `ACCEPTANCE 1H` card on the hero stat row was the wrong shape - it crowded an already-tight hero row and showed only a single instant value with no time series to analyse. Moved off the hero. The 1h-rolling acceptance ratio now lives as a row inside the BRAIINS panel (which is where its inputs come from - `shares_purchased_m` and `shares_accepted_m` are both Braiins-reported). The hashrate chart's right-axis dropdown gains two new options: **acceptance %** (per-bucket forward-delta ratio of the cumulative counters; the chart shows a gap on bid resets where the counter restarts at zero) and **datum rejects** (per-bucket delta of the gateway-side reject counter from #91). Both series persist in `tick_metrics` already; bucket aggregation uses `MAX(...)` for the cumulative counters so chart-bucket-to-bucket deltas read cleanly. en/nl/es catalogs updated.
 
 ### `[Feature]` Datum gateway-side rejected-shares capture (heuristic, opportunistic) (#91, partial)
 
-The DATUM `/umbrel-api` poller now scans `items[]` for any tile whose `title` matches `/reject/i` and parses the leading numeric portion of `text` into `tick_metrics.datum_rejected_shares_total` (migration 0060). Most DATUM builds in May 2026 do not expose a reject tile, so the column stays null on every tick for those operators and the dashboard surface silently no-ops. The poller also logs every observed `items[].title` once per service instance (`[datum] /umbrel-api items observed: ...`), which gives the issue's Step 1 scoping data straight from the operator's running daemon — next time we look at the daemon log we will know exactly what tiles their build exposes and can refine the heuristic if needed. Status page Datum panel renders a `rejected shares` row when the value is non-null. en/nl/es catalogs updated. The "delta vs Braiins-reported rejects" comparison from the issue text is deferred until we have at least one DATUM build actually emitting the counter to design against.
+The DATUM `/umbrel-api` poller now scans `items[]` for any tile whose `title` matches `/reject/i` and parses the leading numeric portion of `text` into `tick_metrics.datum_rejected_shares_total` (migration 0060). Most DATUM builds in May 2026 do not expose a reject tile, so the column stays null on every tick for those operators and the dashboard surface silently no-ops. The poller also logs every observed `items[].title` once per service instance (`[datum] /umbrel-api items observed: ...`), which gives the issue's Step 1 scoping data straight from the operator's running daemon - next time we look at the daemon log we will know exactly what tiles their build exposes and can refine the heuristic if needed. Status page Datum panel renders a `rejected shares` row when the value is non-null. en/nl/es catalogs updated. The "delta vs Braiins-reported rejects" comparison from the issue text is deferred until we have at least one DATUM build actually emitting the counter to design against.
 
 ### `[Feature]` Bid acceptance ratio capture + 1h-rolling stat card (#90, partial)
 
-Per-tick capture of the three share counters (`shares_purchased_m`, `shares_accepted_m`, `shares_rejected_m`) from Braiins's `/spot/bid/delivery/{order_id}` endpoint, persisted onto `tick_metrics` via migration 0059. New braiins-client method `getBidDeliveryHistory(orderId)` and a matching wrapper on `BraiinsService`. Observe-time fetch picks the same primary owned bid that the existing `primary_bid_consumed_sat` snapshot uses (sort by `braiins_order_id` ascending, take first), forwards the latest delivery item's three counters into the State, and tick.ts persists. The `/api/stats` endpoint now exposes `acceptance_pct_1h` computed by folding paired forward-deltas across the last 60 minutes (skipping resets, e.g. when a bid gets replaced and the counter restarts at zero) — null when no usable counter pairs exist in the window. Status page gets a new `acceptance 1h` stat card (green ≥99.5% / amber 98-99.5% / red <98%) with an explanatory tooltip pointing at `docs/research.md` §7.5. **Deferred to a follow-up**: the dashboard alert when 1h acceptance drops below 98% — the alerts table exists but no alerts repo / surface UI shipped yet, and the threshold-crossing detection wants its own debounce machinery worth scoping properly. Issue stays open with the alert work itemised. en/nl/es catalogs updated.
+Per-tick capture of the three share counters (`shares_purchased_m`, `shares_accepted_m`, `shares_rejected_m`) from Braiins's `/spot/bid/delivery/{order_id}` endpoint, persisted onto `tick_metrics` via migration 0059. New braiins-client method `getBidDeliveryHistory(orderId)` and a matching wrapper on `BraiinsService`. Observe-time fetch picks the same primary owned bid that the existing `primary_bid_consumed_sat` snapshot uses (sort by `braiins_order_id` ascending, take first), forwards the latest delivery item's three counters into the State, and tick.ts persists. The `/api/stats` endpoint now exposes `acceptance_pct_1h` computed by folding paired forward-deltas across the last 60 minutes (skipping resets, e.g. when a bid gets replaced and the counter restarts at zero) - null when no usable counter pairs exist in the window. Status page gets a new `acceptance 1h` stat card (green ≥99.5% / amber 98-99.5% / red <98%) with an explanatory tooltip pointing at `docs/research.md` §7.5. **Deferred to a follow-up**: the dashboard alert when 1h acceptance drops below 98% - the alerts table exists but no alerts repo / surface UI shipped yet, and the threshold-crossing detection wants its own debounce machinery worth scoping properly. Issue stays open with the alert work itemised. en/nl/es catalogs updated.
 
 ### `[Feature]` Auto-save Config page with sticky header, save status indicator, and revert (#98)
 
-The Config page used to force the operator to scroll back to the top after every change to click Save — annoying enough that they raised it as its own issue. Default flow is now auto-save: ~800 ms after the last keystroke / change, the dashboard PUTs the draft to `/api/config` and the header status indicator transitions through `unsaved changes…` → `saving…` → `saved Xs ago`. The header itself is now sticky at the top of the page so the status, the auto-save toggle, and the Revert button are visible from anywhere on the page. An `auto-save: on/off` checkbox in the header (persisted per-browser to `localStorage` as `braiins.configAutoSave`) lets power users opt back into the manual flow with the explicit Save button. Revert restores the values that were on the page when the operator first opened it (the page-load snapshot — invariant across server invalidations, so it always means "discard everything I touched on this visit"). Validation errors keep the form dirty, the indicator shows `save failed: …`, and the auto-save loop pauses until the operator changes another field. en/nl/es catalogs updated.
+The Config page used to force the operator to scroll back to the top after every change to click Save - annoying enough that they raised it as its own issue. Default flow is now auto-save: ~800 ms after the last keystroke / change, the dashboard PUTs the draft to `/api/config` and the header status indicator transitions through `unsaved changes…` → `saving…` → `saved Xs ago`. The header itself is now sticky at the top of the page so the status, the auto-save toggle, and the Revert button are visible from anywhere on the page. An `auto-save: on/off` checkbox in the header (persisted per-browser to `localStorage` as `braiins.configAutoSave`) lets power users opt back into the manual flow with the explicit Save button. Revert restores the values that were on the page when the operator first opened it (the page-load snapshot - invariant across server invalidations, so it always means "discard everything I touched on this visit"). Validation errors keep the form dirty, the indicator shows `save failed: …`, and the auto-save loop pauses until the operator changes another field. en/nl/es catalogs updated.
 
 ### `[Fix]` 'collected (on-chain)' shows a spinner while the first scan is in flight (#97)
 
-Right after a daemon restart the Lifetime P&L panel's `collected (on-chain)` row used to flicker as an em-dash before the payout observer's first scan settled, which the operator (correctly) read as "this integration looks broken." The route now distinguishes three states — `computing` (observer enabled, no snapshot yet), `ready` (snapshot exists), `idle` (observer disabled / not configured) — and the dashboard renders a small inline spinner during `computing` instead of the em-dash. The em-dash stays for `idle` (with the existing "not configured" tooltip) so misconfiguration is still obvious. en/nl/es catalogs updated.
+Right after a daemon restart the Lifetime P&L panel's `collected (on-chain)` row used to flicker as an em-dash before the payout observer's first scan settled, which the operator (correctly) read as "this integration looks broken." The route now distinguishes three states - `computing` (observer enabled, no snapshot yet), `ready` (snapshot exists), `idle` (observer disabled / not configured) - and the dashboard renders a small inline spinner during `computing` instead of the em-dash. The em-dash stays for `idle` (with the existing "not configured" tooltip) so misconfiguration is still obvious. en/nl/es catalogs updated.
 
 ### `[Fix]` Sweep stale `.toFixed()` and `.toLocaleString()` calls so every display number respects the configured locale
 
-Operator caught the inconsistency: hero `UPTIME 98.6%` rendered with `.` while `AVG BRAIINS 2,88` rendered with `,` — first one was `uptime_pct.toFixed(1)` (locale-blind, always dot decimal), the second was the locale-aware path. Same shape in five other places: runway-days fractional part, share_log percent on the OCEAN panel, BidProgress percent, share_log right-axis tick formatter on the Hashrate chart, the share_log row in block tooltips, and the Setup wizard's `n.toLocaleString()` PH/sat labels (defaults to browser locale rather than the dashboard's display-locale setting). All seven now go through `formatNumber(...intlLocale)` or `new Intl.NumberFormat(intlLocale, ...)` and respect the locale picker on Config. SVG path coordinates and CSS percent widths still use `.toFixed()` — those have to be locale-blind by spec.
+Operator caught the inconsistency: hero `UPTIME 98.6%` rendered with `.` while `AVG BRAIINS 2,88` rendered with `,` - first one was `uptime_pct.toFixed(1)` (locale-blind, always dot decimal), the second was the locale-aware path. Same shape in five other places: runway-days fractional part, share_log percent on the OCEAN panel, BidProgress percent, share_log right-axis tick formatter on the Hashrate chart, the share_log row in block tooltips, and the Setup wizard's `n.toLocaleString()` PH/sat labels (defaults to browser locale rather than the dashboard's display-locale setting). All seven now go through `formatNumber(...intlLocale)` or `new Intl.NumberFormat(intlLocale, ...)` and respect the locale picker on Config. SVG path coordinates and CSS percent widths still use `.toFixed()` - those have to be locale-blind by spec.
 
 ### `[UI]` Effective-rate moved to the price-chart right-axis dropdown; Electrs test button on Config
 
@@ -88,17 +92,17 @@ Two related Config-page tidies. The `Show effective rate on price chart` and `Sh
 
 Round two of polish. Numbers in the stats row + the table now respect the dashboard's locale separator settings (`5 (0,06%)` and `948.048` in nl-NL, the way the rest of the dashboard already formatted them). Window dropdown picks up two longer options - 16128 (~4 months) and 32256 (~7-8 months) - so the operator can hunt for signaling blocks across more than two retarget periods on a quiet network; route's MAX_BLOCKS clamp bumped to match (still 32 batched RPC round-trips). Time column switched from single-unit (`21d ago`) to two-unit (`21d 4h ago`) via `formatAgeMinutes`. Block hashes render full-length now that the column has space to breathe (no more `00000000…1b2b2051` truncation - lots of empty pixels in the cell wasted). Description trimmed to the neutral first sentence: BIP 110 is a politically charged topic and the operator wants the surface to stay descriptive without the "useful for verifying the crown marker..." framing.
 
-### `[UI]` BIP 110 scan polish — newest-first sort, relative time, configured block-explorer link, bip110.org reference
+### `[UI]` BIP 110 scan polish - newest-first sort, relative time, configured block-explorer link, bip110.org reference
 
-Three small things on the scan results table: signaling blocks now sort newest-first (was random / insertion order — most useful entries are the recent ones); the time column shows a human-readable relative age (`2d ago`, `27m ago`) with the absolute UTC timestamp on hover, instead of always-UTC; and block-hash links now route through `config.block_explorer_url_template` instead of the hardcoded `mempool.space` (so privacy-conscious operators with their own explorer get used). Also added a link to [bip110.org](https://bip110.org/) in the card description AND in the Config page's Bitcoin Core RPC subsection help text, since that's the canonical spec reference.
+Three small things on the scan results table: signaling blocks now sort newest-first (was random / insertion order - most useful entries are the recent ones); the time column shows a human-readable relative age (`2d ago`, `27m ago`) with the absolute UTC timestamp on hover, instead of always-UTC; and block-hash links now route through `config.block_explorer_url_template` instead of the hardcoded `mempool.space` (so privacy-conscious operators with their own explorer get used). Also added a link to [bip110.org](https://bip110.org/) in the card description AND in the Config page's Bitcoin Core RPC subsection help text, since that's the canonical spec reference.
 
 ### `[Fix]` BIP 110 scanner now picks up Config edits without a daemon restart
 
-The scanner was using a `BitcoindClient` instance built once at daemon boot from whatever creds were saved at that moment. Saving fresh creds in the form persisted them to SQLite but the in-memory client kept hitting the old URL — operator empirically saved a new working URL, hit Scan, and still got "fetch failed" against the old host. The route now reads the live `config` row at request time (with sops/env secrets as fallback for empty fields) and builds an ephemeral client per scan, so saved Config edits take effect immediately. Same restart-free behavior the Test button already has.
+The scanner was using a `BitcoindClient` instance built once at daemon boot from whatever creds were saved at that moment. Saving fresh creds in the form persisted them to SQLite but the in-memory client kept hitting the old URL - operator empirically saved a new working URL, hit Scan, and still got "fetch failed" against the old host. The route now reads the live `config` row at request time (with sops/env secrets as fallback for empty fields) and builds an ephemeral client per scan, so saved Config edits take effect immediately. Same restart-free behavior the Test button already has.
 
 ### `[Feature]` Bitcoin Core RPC test button + always-visible RPC fields on Config
 
-The "Bitcoin Core RPC URL / username / password" fields used to live behind the `payout_source = 'bitcoind'` radio, hidden when the operator picked Electrs as the balance-check backend. But those same creds also drive the BIP 110 crown marker (#94) and BIP 110 scan card (#95), which call bitcoind regardless of which payout backend is selected. Hiding the fields made the BIP 110 scanner look broken — the scanner used the saved (potentially stale) values while the operator was typing fresh ones into a form they couldn't see. The fields now always render in their own "Bitcoin Core RPC connection" subsection with help text explaining the multi-feature use, and a new **Test connection** button next to the URL field validates whatever values are currently in the form (before saving) by calling `getblockchaininfo` against them. Returns chain/blocks/headers on success, or the same `ENOTFOUND` / `ECONNREFUSED` / target-URL diagnostic the BIP 110 scanner uses on failure. en/nl/es catalogs updated.
+The "Bitcoin Core RPC URL / username / password" fields used to live behind the `payout_source = 'bitcoind'` radio, hidden when the operator picked Electrs as the balance-check backend. But those same creds also drive the BIP 110 crown marker (#94) and BIP 110 scan card (#95), which call bitcoind regardless of which payout backend is selected. Hiding the fields made the BIP 110 scanner look broken - the scanner used the saved (potentially stale) values while the operator was typing fresh ones into a form they couldn't see. The fields now always render in their own "Bitcoin Core RPC connection" subsection with help text explaining the multi-feature use, and a new **Test connection** button next to the URL field validates whatever values are currently in the form (before saving) by calling `getblockchaininfo` against them. Returns chain/blocks/headers on success, or the same `ENOTFOUND` / `ECONNREFUSED` / target-URL diagnostic the BIP 110 scanner uses on failure. en/nl/es catalogs updated.
 
 ### `[Fix]` BIP 110 scan now reports concrete network errors, not "fetch failed"
 
@@ -106,7 +110,7 @@ The scanner card was surfacing Node's umbrella `fetch failed` message when the d
 
 ### `[Fix]` Max-bid exclusion gradient renders above the cap line again
 
-The red gradient that marks the off-limits region above the `max bid` line on the Price chart was rendering on the wrong side: the cap is excluded from the chart's Y-axis auto-scaling on purpose (so the slow-moving ceiling doesn't squash detail in the live data band), but when `max_bid > priceMax` the polygon's "close" edge at `PADDING.top` ended up *below* the cap line in SVG-y space and inverted the fill. Closing the polygon to `y = 0` (top of viewport) instead — always above any cap-line y value — fixes both cases: when the cap sits inside the chart, and when it floats above the auto-ranged top tick.
+The red gradient that marks the off-limits region above the `max bid` line on the Price chart was rendering on the wrong side: the cap is excluded from the chart's Y-axis auto-scaling on purpose (so the slow-moving ceiling doesn't squash detail in the live data band), but when `max_bid > priceMax` the polygon's "close" edge at `PADDING.top` ended up *below* the cap line in SVG-y space and inverted the fill. Closing the polygon to `y = 0` (top of viewport) instead - always above any cap-line y value - fixes both cases: when the cap sits inside the chart, and when it floats above the auto-ranged top tick.
 
 ### `[Feature]` BIP 110 scan card on Status (#95)
 
@@ -292,7 +296,7 @@ Ships the #83 copy-correctness pass. The Cheap-threshold help text on Config no 
 
 ### `[Fix]` Stale CLOB references contradict pay-your-bid (#83)
 
-The dashboard's Cheap-threshold help text claimed *"Under CLOB you pay the matched ask, so this is the price we can actually reach"* — operator-facing copy that directly contradicts the pay-your-bid model verified in #53 (and which every other piece of pricing copy on the dashboard already reflects). Audited every CLOB mention in the codebase: 1 operator-facing string in Config.tsx and 6 internal comments / JSDoc blocks (4 in PriceChart.tsx, 1 in routes/status.ts, 1 in routes/stats.ts) that framed the current behaviour as CLOB. All seven rewritten to reflect the verified pay-your-bid reality (bid IS the per-EH-day price; the consumed counter is the source of truth for settlement, not because "bid is just a ceiling" but because it's the authoritative number from Braiins independent of our model). Historical references in migrations, version-history changelogs, research.md §1.8, and architecture.md were left intact — those correctly describe the v2.0 → v2.1 transition. NL + ES translations updated for the operator-facing string. No behavioural changes; pure copy / comment correctness pass.
+The dashboard's Cheap-threshold help text claimed *"Under CLOB you pay the matched ask, so this is the price we can actually reach"* - operator-facing copy that directly contradicts the pay-your-bid model verified in #53 (and which every other piece of pricing copy on the dashboard already reflects). Audited every CLOB mention in the codebase: 1 operator-facing string in Config.tsx and 6 internal comments / JSDoc blocks (4 in PriceChart.tsx, 1 in routes/status.ts, 1 in routes/stats.ts) that framed the current behaviour as CLOB. All seven rewritten to reflect the verified pay-your-bid reality (bid IS the per-EH-day price; the consumed counter is the source of truth for settlement, not because "bid is just a ceiling" but because it's the authoritative number from Braiins independent of our model). Historical references in migrations, version-history changelogs, research.md §1.8, and architecture.md were left intact - those correctly describe the v2.0 → v2.1 transition. NL + ES translations updated for the operator-facing string. No behavioural changes; pure copy / comment correctness pass.
 
 ## 2026-04-28
 
@@ -310,7 +314,7 @@ The "Show effective rate on price chart" toggle worked on 3h / 6h / 12h / 24h bu
 
 ### `[UI]` Log retention defaults bumped, panel reflowed (#80)
 
-`tick_metrics_retention_days` 7 → 365 and `decisions_eventful_retention_days` 90 → 365: tick_metrics is a compact numeric series that backs every chart, and eventful decisions are rare (~10% of ticks) and high-value forensic records — both are cheap to keep long. `decisions_uneventful_retention_days` stays at 7 because uneventful rows carry the heavy JSON state snapshots that drive disk bloat. Existing installs on the old defaults get lifted by migration 0051; deliberately-set values are left alone. Config panel layout reworked: tick_metrics gets its own row, the two `decisions_*` knobs sit side-by-side on a second row with a shared `Decisions log —` label prefix, and the help text now explicitly clarifies that the per-tick measurements (price, hashrate, share log) live in tick_metrics regardless of how aggressively the decisions log is pruned — fixing a real "am I losing my pricing history?" confusion.
+`tick_metrics_retention_days` 7 → 365 and `decisions_eventful_retention_days` 90 → 365: tick_metrics is a compact numeric series that backs every chart, and eventful decisions are rare (~10% of ticks) and high-value forensic records - both are cheap to keep long. `decisions_uneventful_retention_days` stays at 7 because uneventful rows carry the heavy JSON state snapshots that drive disk bloat. Existing installs on the old defaults get lifted by migration 0051; deliberately-set values are left alone. Config panel layout reworked: tick_metrics gets its own row, the two `decisions_*` knobs sit side-by-side on a second row with a shared `Decisions log -` label prefix, and the help text now explicitly clarifies that the per-tick measurements (price, hashrate, share log) live in tick_metrics regardless of how aggressively the decisions log is pruned - fixing a real "am I losing my pricing history?" confusion.
 
 ### `[Fix]` Block tooltip uses historical share_log for blocks within tick history (#79)
 
@@ -440,25 +444,25 @@ Both Umbrel and Start9 inject standard env vars (`BITCOIN_RPC_HOST`/`PORT`/`USER
 
 ### `[Infra]` Graceful SIGTERM in setup mode + 8s hard force-exit fence (#61)
 
-Operational shutdown already handled SIGTERM/SIGINT (drain tick loop → close HTTP → close DB), but the NEEDS_SETUP path didn't — a `docker stop` mid-wizard would force-kill the daemon and risk a half-flushed WAL. Added a setup-mode shutdown handler that closes the wizard server + DB cleanly on signal, and a `forceExitAfter(8_000)` fence on both shutdown paths so a stuck Braiins API call inside an in-flight tick can't ride out the 10 s Docker grace and earn a SIGKILL with the WAL mid-flush. Hard exit code is 124 (matching `timeout(1)`'s convention). Setup-mode handlers are removed before `bootOperational` installs its own — otherwise both fire on the next signal and the setup handler closes the DB out from under the operational shutdown.
+Operational shutdown already handled SIGTERM/SIGINT (drain tick loop → close HTTP → close DB), but the NEEDS_SETUP path didn't - a `docker stop` mid-wizard would force-kill the daemon and risk a half-flushed WAL. Added a setup-mode shutdown handler that closes the wizard server + DB cleanly on signal, and a `forceExitAfter(8_000)` fence on both shutdown paths so a stuck Braiins API call inside an in-flight tick can't ride out the 10 s Docker grace and earn a SIGKILL with the WAL mid-flush. Hard exit code is 124 (matching `timeout(1)`'s convention). Setup-mode handlers are removed before `bootOperational` installs its own - otherwise both fire on the next signal and the setup handler closes the DB out from under the operational shutdown.
 
 ### `[UI]` Setup wizard polish: eye toggles, hard-reload on success; Config page address↔worker binding
 
 Three operator-feedback fixes:
 
 - **Eye-toggle on every secret field** in the wizard (owner token, optional read-only token, dashboard password + confirm, bitcoind RPC password). Operators copy-paste tokens and want to verify what they pasted before submitting. Click-to-reveal SVG icon, no library dependency.
-- **Hard reload after wizard success** instead of `navigate('/')`. SetupGate's poll runs every 30 s, so its cached probe state lags a wizard completion by up to that interval — a soft navigation could land on `/`, get bounced back to `/setup` by the stale probe, and then 401 on `/api/setup-info` (no longer in setup mode). `window.location.replace('/')` drops React state, refreshes the gate, and lands cleanly. Also: setup page now self-redirects home if `setup-info` returns 401, as a belt-and-suspenders defence against the same race.
+- **Hard reload after wizard success** instead of `navigate('/')`. SetupGate's poll runs every 30 s, so its cached probe state lags a wizard completion by up to that interval - a soft navigation could land on `/`, get bounced back to `/setup` by the stale probe, and then 401 on `/api/setup-info` (no longer in setup mode). `window.location.replace('/')` drops React state, refreshes the gate, and lands cleanly. Also: setup page now self-redirects home if `setup-info` returns 401, as a belt-and-suspenders defence against the same race.
 - **Config page now mirrors the wizard's address ↔ worker binding.** BTC payout address moved from the on-chain-payouts section into the Pool destination section, sitting directly above the worker identity. Editing the address auto-derives the worker (`<address>.<label>`) preserving the operator's chosen label. Editing the worker into anything that doesn't have the address as its prefix surfaces a hard-red mismatch warning (same logic as the wizard) so an operator can't silently route shares to a different address. The on-chain-payouts section now displays the address read-only with a pointer to where to edit it.
 
 ### `[Fix]` Login page also bounces to wizard on NEEDS_SETUP
 
-Belt-and-suspenders for the SetupGate redirect race. SetupGate already redirects when the daemon reports needs-setup, but if a browser is running a stale JS bundle (cached from a prior install where SetupGate didn't exist) it never gets there — it falls through `RequireAuth` to `/login`. The Login page now re-probes `/api/health` on mount and, if `NEEDS_SETUP`, clears any stored auth and redirects to `/setup` itself. Even an old-bundle browser eventually catches itself.
+Belt-and-suspenders for the SetupGate redirect race. SetupGate already redirects when the daemon reports needs-setup, but if a browser is running a stale JS bundle (cached from a prior install where SetupGate didn't exist) it never gets there - it falls through `RequireAuth` to `/login`. The Login page now re-probes `/api/health` on mount and, if `NEEDS_SETUP`, clears any stored auth and redirects to `/setup` itself. Even an old-bundle browser eventually catches itself.
 
 ### `[Fix]` Setup wizard: in-place transition; spinner step 0.5
 
-The wizard previously exited the daemon via `process.exit(0)` after writing config + secrets, on the assumption that systemd / Docker / a supervisor would relaunch. That breaks on plain `./scripts/start.sh` deployments — `start.sh` has no respawn loop, so the daemon stayed dead and the wizard's poll-for-OPERATIONAL hung indefinitely.
+The wizard previously exited the daemon via `process.exit(0)` after writing config + secrets, on the assumption that systemd / Docker / a supervisor would relaunch. That breaks on plain `./scripts/start.sh` deployments - `start.sh` has no respawn loop, so the daemon stayed dead and the wizard's poll-for-OPERATIONAL hung indefinitely.
 
-Refactor `main.ts` to extract the operational boot into a `bootOperational(deps, secrets, cfg)` function. The `onSetupComplete` callback now stops the setup-mode HTTP server (releasing port 3010), re-loads secrets + config from db, and calls `bootOperational` directly — same process, same DB handle, no exit. Wizard's polling sees `mode: OPERATIONAL` within a couple seconds and signs the operator in. No external supervisor required, which is what every appliance platform expects anyway.
+Refactor `main.ts` to extract the operational boot into a `bootOperational(deps, secrets, cfg)` function. The `onSetupComplete` callback now stops the setup-mode HTTP server (releasing port 3010), re-loads secrets + config from db, and calls `bootOperational` directly - same process, same DB handle, no exit. Wizard's polling sees `mode: OPERATIONAL` within a couple seconds and signs the operator in. No external supervisor required, which is what every appliance platform expects anyway.
 
 Also: the wizard's PH/s number inputs used `step="0.1"` + `min="0.001"`, which combine to make `3.0` invalid (browser thinks the valid grid is 0.001, 0.101, …, 2.901, 3.001). Switched to `step="0.5"` + `min="0.5"` so whole and half PH/s values are valid.
 
@@ -466,9 +470,9 @@ Also: the wizard's PH/s number inputs used `step="0.1"` + `min="0.001"`, which c
 
 Three first-bug-report fixes after shipping the wizard:
 
-- **`SetupGate` clears stored auth when the daemon reports `NEEDS_SETUP`.** Operators with a remembered password from a previous install on the same host were getting routed straight to the auth flow on a fresh install, never seeing the wizard. Caught us once on a genuine fresh install — the operator's browser remembered the dashboard from a wiped+re-cloned working directory.
+- **`SetupGate` clears stored auth when the daemon reports `NEEDS_SETUP`.** Operators with a remembered password from a previous install on the same host were getting routed straight to the auth flow on a fresh install, never seeing the wizard. Caught us once on a genuine fresh install - the operator's browser remembered the dashboard from a wiped+re-cloned working directory.
 - **Mining step now has a "Payout tracking" backend selector** (None / Bitcoin Core / Electrs) with per-backend connection fields. The previous wizard hardcoded Bitcoin Core RPC as the only option, hiding the Electrs path entirely.
-- **Worker identity is auto-derived from the BTC payout address** (`<address>.<label>`). Editing the address now follows through to the worker. Editing the worker to anything that doesn't have the address as its prefix surfaces a hard error blocking submission — Ocean TIDES credits shares by the address prefix, so a mismatch silently routes shares to nobody.
+- **Worker identity is auto-derived from the BTC payout address** (`<address>.<label>`). Editing the address now follows through to the worker. Editing the worker to anything that doesn't have the address as its prefix surfaces a hard error blocking submission - Ocean TIDES credits shares by the address prefix, so a mismatch silently routes shares to nobody.
 
 ### `[Docs]` README: lead with the web wizard; SOPS becomes a power-user appendix
 
@@ -476,7 +480,7 @@ The Getting started section now points operators at `./scripts/start.sh` followe
 
 ### `[Feature]` First-run web onboarding wizard (#57, #67)
 
-Daemon no longer hard-fails on missing config or secrets. When either is absent the daemon boots a slim NEEDS_SETUP HTTP server exposing a 3-step wizard at `/setup`: access (Braiins token + dashboard password), mining (target + floor hashrate, pool URL, worker identity, payout address; optional bitcoind RPC), review. On submit the daemon writes both rows to `state.db` and exits — the process manager (Docker, systemd, `restart.sh`) brings it back into operational mode, while the dashboard polls `/api/health` until `mode: OPERATIONAL` and auto-signs the operator in.
+Daemon no longer hard-fails on missing config or secrets. When either is absent the daemon boots a slim NEEDS_SETUP HTTP server exposing a 3-step wizard at `/setup`: access (Braiins token + dashboard password), mining (target + floor hashrate, pool URL, worker identity, payout address; optional bitcoind RPC), review. On submit the daemon writes both rows to `state.db` and exits - the process manager (Docker, systemd, `restart.sh`) brings it back into operational mode, while the dashboard polls `/api/health` until `mode: OPERATIONAL` and auto-signs the operator in.
 
 Secrets resolution is now `env > SOPS file > db-backed wizard > NEEDS_SETUP`. Power-user `setup.ts` + SOPS path is unchanged. New `secrets` table (migration 0047) co-locates wizard-collected secrets with the existing config row, so the appliance backup/restore story is a single directory.
 
@@ -488,19 +492,19 @@ Foundation for #56 (appliance packaging umbrella). Closes #57 and #67.
 
 Every field in `AppConfig` and `Secrets` now also resolves from a matching `BHA_<UPPER_SNAKE>` environment variable, with priority `env > db > defaults`. Read once at boot and re-validated through the same Zod schemas the dashboard uses, so a malformed value fails loudly on startup rather than being silently ignored. New `docs/configuration.md` lists every variable; README links to it.
 
-Foundation for #57 (web onboarding wizard) and the wider appliance-packaging effort (#56). Power-user SOPS path is unchanged — env-vars overlay on top of whatever the SOPS file produces, so a `docker run -e BHA_BRAIINS_OWNER_TOKEN=…` rotation works without touching the encrypted file. Cross-field invariants (e.g. `floor <= target`) are still enforced after the overlay.
+Foundation for #57 (web onboarding wizard) and the wider appliance-packaging effort (#56). Power-user SOPS path is unchanged - env-vars overlay on top of whatever the SOPS file produces, so a `docker run -e BHA_BRAIINS_OWNER_TOKEN=…` rotation works without touching the encrypted file. Cross-field invariants (e.g. `floor <= target`) are still enforced after the overlay.
 
 ## 2026-04-25
 
 ### `[Fix]` Hero PRICE card: cap at bid + lengthen window to 30 min (#55)
 
-The first round of this fix earlier today switched the hero card to a 10-min trailing duration-weighted average, expecting that to wash out the per-tick polling and metering jitter. It addressed the wild per-tick swings, but the operator caught a deeper bug: the smoothed value still read above the bid (52k vs a 47k bid) — physically impossible under pay-your-bid, where the bid is a hard ceiling.
+The first round of this fix earlier today switched the hero card to a 10-min trailing duration-weighted average, expecting that to wash out the per-tick polling and metering jitter. It addressed the wild per-tick swings, but the operator caught a deeper bug: the smoothed value still read above the bid (52k vs a 47k bid) - physically impossible under pay-your-bid, where the bid is a hard ceiling.
 
-Root cause: `delivered_ph` is sourced from Braiins's `avg_speed_ph`, which is itself a *trailing* moving average, while `Δprimary_bid_consumed_sat` is real-time. When recent delivery has trended above the smoothed reading, Σ Δsat / Σ (delivered_ph × Δt) overshoots the bid by 5–15%. The stats card already handles this by capping at the duration-weighted average bid (see stats.ts → "the bid is a hard ceiling"); the hero query just missed the same cap.
+Root cause: `delivered_ph` is sourced from Braiins's `avg_speed_ph`, which is itself a *trailing* moving average, while `Δprimary_bid_consumed_sat` is real-time. When recent delivery has trended above the smoothed reading, Σ Δsat / Σ (delivered_ph × Δt) overshoots the bid by 5-15%. The stats card already handles this by capping at the duration-weighted average bid (see stats.ts → "the bid is a hard ceiling"); the hero query just missed the same cap.
 
 Two changes:
 - **Cap at the weighted-average bid** in `effectiveSatPerEhDayWindow`, mirroring `/api/stats`. Eliminates the above-bid impossibility regardless of window length.
-- **Lengthen the window to 30 min**. At 5–20 min the raw ratio routinely exceeds the bid, so the cap pegs the value flat at the bid (useless — just a duplicate of NEXT ACTION). At 30+ min the avg_speed_ph lag bias washes out and the unfiltered metric is self-consistent on the operator's data, while still being far shorter than the stats card's range so the hero stays "live."
+- **Lengthen the window to 30 min**. At 5-20 min the raw ratio routinely exceeds the bid, so the cap pegs the value flat at the bid (useless - just a duplicate of NEXT ACTION). At 30+ min the avg_speed_ph lag bias washes out and the unfiltered metric is self-consistent on the operator's data, while still being far shorter than the stats card's range so the hero stays "live."
 
 Hero card tooltip + `live_effective_sat_per_ph_day` field doc updated to match.
 
@@ -508,25 +512,25 @@ Hero card tooltip + `live_effective_sat_per_ph_day` field doc updated to match.
 
 ### `[UI]` Hero PRICE card: live effective rate, not the 3h average (#55)
 
-The top-left price figure was reading `avg_cost_per_ph_sat_per_ph_day` — the same range-averaged number the `avg cost / PH delivered` stats card already showed below. Hero now reads a new `live_effective_sat_per_ph_day` field computed from just the most recent valid inter-tick `primary_bid_consumed_sat` delta (`Δsat × 86_400_000_000 / (delivered_ph × Δt_ms)`), matching the "current" semantics the operator expects from a hero card. The stats row keeps the range-averaged figure. Same zero-dip filter as the existing spend/hashrate helpers.
+The top-left price figure was reading `avg_cost_per_ph_sat_per_ph_day` - the same range-averaged number the `avg cost / PH delivered` stats card already showed below. Hero now reads a new `live_effective_sat_per_ph_day` field computed from just the most recent valid inter-tick `primary_bid_consumed_sat` delta (`Δsat × 86_400_000_000 / (delivered_ph × Δt_ms)`), matching the "current" semantics the operator expects from a hero card. The stats row keeps the range-averaged figure. Same zero-dip filter as the existing spend/hashrate helpers.
 
 ### `[UI]` Stats card: colour-code "avg cost vs hashprice" by sign (#54)
 
-Negative values (we paid under hashprice — cheaper than mining at current difficulty) now render emerald green; positive values (we paid over hashprice) render red. Null / zero keep the default slate. Mirrors the hero PRICE card's delta coloring so the stat strip reads consistently at a glance.
+Negative values (we paid under hashprice - cheaper than mining at current difficulty) now render emerald green; positive values (we paid over hashprice) render red. Null / zero keep the default slate. Mirrors the hero PRICE card's delta coloring so the stat strip reads consistently at a glance.
 
 ### `[Infra]` Migrations 0043/0045: preserve `overpay_sat_per_eh_day` through the CLOB-redesign retirements
 
 Earlier the pair dropped (0043) then re-added (0045) `overpay_sat_per_eh_day`, resetting every operator's configured value to the 1,000 sat/PH/day default on upgrade. Revised 0043 to preserve the column (semantics are identical pre-#49 and post-#53, so the operator's value remains meaningful). Revised 0045 to a no-op (SELECT 1;) so the migration sequence stays contiguous and operators who already applied the column-adding version on dev don't re-execute it.
 
-Net effect: main-branch users pulling post-v2.1 keep their existing overpay through the upgrade rather than silently resetting. The other v1.x fill-strategy knobs (escalation_mode, fill_escalation_*, lower_patience_minutes, min_lower_delta_sat_per_eh_day) stay retired — they have no counterpart in the post-#53 controller.
+Net effect: main-branch users pulling post-v2.1 keep their existing overpay through the upgrade rather than silently resetting. The other v1.x fill-strategy knobs (escalation_mode, fill_escalation_*, lower_patience_minutes, min_lower_delta_sat_per_eh_day) stay retired - they have no counterpart in the post-#53 controller.
 
 ### `[UI]` Event-detail tooltip: promote `fillable` + `overpay` to first-class rows
 
-They were previously folded into an italic sentence at the bottom of the panel ("(fillable X + overpay Y)") while less-central values like `hashprice + max overpay` got line items. Swapped: `fillable` and `overpay` now appear as top rows in the "market at this tick" block — they're the load-bearing inputs the controller used to decide that edit, so the tooltip leads with them.
+They were previously folded into an italic sentence at the bottom of the panel ("(fillable X + overpay Y)") while less-central values like `hashprice + max overpay` got line items. Swapped: `fillable` and `overpay` now appear as top rows in the "market at this tick" block - they're the load-bearing inputs the controller used to decide that edit, so the tooltip leads with them.
 
 ### `[UI]` Price chart: draw `fillable` as a first-class cyan line
 
-The controller targets `fillable_ask + overpay_sat_per_eh_day` every tick, yet the price chart had no line for fillable — so the operator saw the amber bid stepping around and hashprice drifting underneath, with no visible signal explaining *why* the bid moved. Every edit is explained by fillable moving; it belongs on the chart.
+The controller targets `fillable_ask + overpay_sat_per_eh_day` every tick, yet the price chart had no line for fillable - so the operator saw the amber bid stepping around and hashprice drifting underneath, with no visible signal explaining *why* the bid moved. Every edit is explained by fillable moving; it belongs on the chart.
 
 Added a cyan `fillable` line below the amber bid. The vertical gap between the two is exactly `overpay_sat_per_eh_day` (clamped by the cap), so the cushion is now visually explicit. The line gets null-gap-bridged like hashprice and participates in Y-axis auto-scaling.
 
@@ -534,27 +538,27 @@ Added a cyan `fillable` line below the amber bid. The vertical gap between the t
 
 ### `[Feature]` Config toggle: show the effective-rate line on the price chart
 
-Off by default. The emerald effective-rate line is window-aggregated Δconsumed_sat ÷ (delivered_ph × Δt) — legitimately dramatic dips every time Braiins' counter settles in lumps, which autoscales the Y-axis down by 10–15 k sat/PH/day and crushes the flatter bid/fillable/hashprice/max-bid detail into a thin band at the top. Flip on from Config → Chart smoothing when you want to eyeball settlement behaviour; you'll lose resolution on the finer controller movements in exchange.
+Off by default. The emerald effective-rate line is window-aggregated Δconsumed_sat ÷ (delivered_ph × Δt) - legitimately dramatic dips every time Braiins' counter settles in lumps, which autoscales the Y-axis down by 10-15 k sat/PH/day and crushes the flatter bid/fillable/hashprice/max-bid detail into a thin band at the top. Flip on from Config → Chart smoothing when you want to eyeball settlement behaviour; you'll lose resolution on the finer controller movements in exchange.
 
 The hero PRICE card and the AVG COST / PH DELIVERED stat already surface the effective rate as a number without hijacking the chart, so the line is only useful for operators specifically inspecting the settlement rhythm.
 
 ### `[UI]` Hero PRICE + stats "avg cost" card: clarify these are averages, not spot (#53)
 
-The hero PRICE card read "48,290 sat/PH/day effective" while NEXT ACTION read "current 47,130" — same underlying question ("what am I paying?"), two different numbers, no tooltip explaining the relationship. Operator reasonably wondered why those disagreed.
+The hero PRICE card read "48,290 sat/PH/day effective" while NEXT ACTION read "current 47,130" - same underlying question ("what am I paying?"), two different numbers, no tooltip explaining the relationship. Operator reasonably wondered why those disagreed.
 
-Added a tooltip on the hero PRICE card ("Average effective rate over the selected chart range — not the live bid. For the current bid see NEXT ACTION") and rewrote the AVG COST / PH DELIVERED stats tooltip to match. The two numbers are the same metric on the same window; they're deliberately duplicated so each panel stands on its own.
+Added a tooltip on the hero PRICE card ("Average effective rate over the selected chart range - not the live bid. For the current bid see NEXT ACTION") and rewrote the AVG COST / PH DELIVERED stats tooltip to match. The two numbers are the same metric on the same window; they're deliberately duplicated so each panel stands on its own.
 
 ### `[Fix]` Pay-your-bid controller: deadband on EDIT_PRICE to stop the jitter storm (#53)
 
-First hour on the new controller surfaced a flap mode: `fillable_ask` naturally jitters ±1-5 sat/PH/day tick-to-tick as distant supply levels reshuffle, and the EDIT_PRICE tolerance was `tick_size = 1,000 sat/EH/day = 1 sat/PH/day` — so every jitter proposed a mutation. Dashboard filled with yellow edit-price dots, each lower burned the 10-min cooldown, the chart became unreadable.
+First hour on the new controller surfaced a flap mode: `fillable_ask` naturally jitters ±1-5 sat/PH/day tick-to-tick as distant supply levels reshuffle, and the EDIT_PRICE tolerance was `tick_size = 1,000 sat/EH/day = 1 sat/PH/day` - so every jitter proposed a mutation. Dashboard filled with yellow edit-price dots, each lower burned the 10-min cooldown, the chart became unreadable.
 
-Deadband now scales to `max(tick_size, overpay/5)`. At the 1,000 sat/PH/day default overpay this is 200 sat/PH/day — below that, the current bid is still comfortably above fillable and chasing the noise buys nothing. NEXT ACTION's "will lower from 47,062 → 47,049 (delta 13 sat/PH/day)" style micro-moves are now absorbed.
+Deadband now scales to `max(tick_size, overpay/5)`. At the 1,000 sat/PH/day default overpay this is 200 sat/PH/day - below that, the current bid is still comfortably above fillable and chasing the noise buys nothing. NEXT ACTION's "will lower from 47,062 → 47,049 (delta 13 sat/PH/day)" style micro-moves are now absorbed.
 
 ### `[Feature]` Pay-your-bid controller: track `fillable_ask + overpay` (#53)
 
 Direct A/B on live data this afternoon falsified the CLOB assumption behind the #49 redesign: lowering
 `max_bid_sat_per_eh_day` from 50,000 → 49,000 dropped effective cost from ~50,300 → ~49,899 sat/PH/day while the
-fillable ask sat unchanged at ~47,158 the whole time. Braiins matches pay-your-bid — the gap between bid and
+fillable ask sat unchanged at ~47,158 the whole time. Braiins matches pay-your-bid - the gap between bid and
 fillable was money left on the table, every tick, for weeks.
 
 New controller: each tick the bid is set to `min(fillable_ask + overpay_sat_per_eh_day, effective_cap)` where
@@ -563,45 +567,45 @@ knob (default 1,000 sat/PH/day) is the one pricing dial: higher = more headroom 
 moves and bigger premium; lower = closer to the cheapest fillable price and more sensitive to noise.
 
 The retired fill-strategy machinery from v1.x (`escalation_mode`, `fill_escalation_*`, `lower_patience_minutes`,
-`min_lower_delta_sat_per_eh_day`) stays retired — under direct fillable tracking the optimal price is already
+`min_lower_delta_sat_per_eh_day`) stays retired - under direct fillable tracking the optimal price is already
 proposed every tick, and Braiins' 10-min price-decrease cooldown in `gate.ts` is the only pacing rule needed.
 Reopened #15, #16, #38, #48, #51 for operator triage against the new design; each now has a comment referencing
 #53 and the empirical data.
 
 ### `[UI]` Stats card: rename "avg overpay vs hashprice" → "avg cost vs hashprice"
 
-The label said *overpay* but the value is routinely negative (paying below break-even hashprice is the normal, desirable case under CLOB). "Overpay" implied we were always paying above — contradicted by a `−1,097` reading. Renamed to "avg cost vs hashprice" and rewrote the tooltip so the sign convention reads correctly: negative means we matched asks below break-even (good), positive means above.
+The label said *overpay* but the value is routinely negative (paying below break-even hashprice is the normal, desirable case under CLOB). "Overpay" implied we were always paying above - contradicted by a `−1,097` reading. Renamed to "avg cost vs hashprice" and rewrote the tooltip so the sign convention reads correctly: negative means we matched asks below break-even (good), positive means above.
 
 ### `[Fix]` Effective-rate line: per-pair lag filter catches outage-dominated deep dips
 
-Earlier fix skipped zero-delta pairs and required ≥3 non-zero pairs in the window. Worked for "counter flat through settlement lulls", but missed the other failure mode: outage ticks where the counter barely ticks (delta 4–6 sat/min) while `delivered_ph` carries its stale 3.67 PH/s reading. Those pairs have non-zero deltas so they passed the earlier filter, but their implied rate is near zero (2,000 sat/PH/day where we actually pay 45,000). The effective-rate line still dipped to the floor during today's 10:00 outage.
+Earlier fix skipped zero-delta pairs and required ≥3 non-zero pairs in the window. Worked for "counter flat through settlement lulls", but missed the other failure mode: outage ticks where the counter barely ticks (delta 4-6 sat/min) while `delivered_ph` carries its stale 3.67 PH/s reading. Those pairs have non-zero deltas so they passed the earlier filter, but their implied rate is near zero (2,000 sat/PH/day where we actually pay 45,000). The effective-rate line still dipped to the floor during today's 10:00 outage.
 
-New per-pair guard: skip any pair where observed `delta / (our_bid × delivered_ph × dt / 86.4e6)` < 0.30 — i.e. we charged less than 30 % of what delivered_ph × our_bid would predict. Normal CLOB matches run at ~80 % of bid; outage pairs run at < 10 %. The 30 % cutoff sits comfortably between them.
+New per-pair guard: skip any pair where observed `delta / (our_bid × delivered_ph × dt / 86.4e6)` < 0.30 - i.e. we charged less than 30 % of what delivered_ph × our_bid would predict. Normal CLOB matches run at ~80 % of bid; outage pairs run at < 10 %. The 30 % cutoff sits comfortably between them.
 
-Empirical on 12 h of real data: minimum rate went from ~2,000 → 32,464; 33 lag-dominated pairs dropped across ~750 total. The line now stays honest during outages — it goes dark rather than plunging toward zero.
+Empirical on 12 h of real data: minimum rate went from ~2,000 → 32,464; 33 lag-dominated pairs dropped across ~750 total. The line now stays honest during outages - it goes dark rather than plunging toward zero.
 
 ### `[Fix]` Hashrate chart + UPTIME: use counter-derived delivered instead of Braiins' lagged avg (#52)
 
-The dashboard trusted `tick_metrics.delivered_ph` — Braiins' own `avg_speed_ph` rolling-average — as the truth about "how much hashrate are we actually getting right now". That field lags reality by minutes: during the 2026-04-23 12:55-12:59 outage the counter delta dropped to ~4 sat/min (95% cut) and Datum/Ocean both fell below 0.2 PH/s, but `delivered_ph` still read 3.67 PH/s. Visible consequences: the hashrate chart's orange Braiins line sat flat through the outage (contradicting the other two series), and the UPTIME card advertised 100% through a multi-minute no-matching event.
+The dashboard trusted `tick_metrics.delivered_ph` - Braiins' own `avg_speed_ph` rolling-average - as the truth about "how much hashrate are we actually getting right now". That field lags reality by minutes: during the 2026-04-23 12:55-12:59 outage the counter delta dropped to ~4 sat/min (95% cut) and Datum/Ocean both fell below 0.2 PH/s, but `delivered_ph` still read 3.67 PH/s. Visible consequences: the hashrate chart's orange Braiins line sat flat through the outage (contradicting the other two series), and the UPTIME card advertised 100% through a multi-minute no-matching event.
 
 Now the Braiins-side delivered is computed from counter deltas: `Δprimary_bid_consumed_sat × 86.4e9 / (our_bid × Δt)`. Same signal the PRICE chart's effective-rate line already uses, just rearranged to solve for hashrate. Applied to:
 
 - Hashrate chart's "delivered (Braiins)" series (client-side; falls back to `delivered_ph` for pre-migration rows or null-counter ticks).
-- `/api/stats` `uptime_pct`: now "time with Δ > dur/1000" (i.e. more than 1 sat per second of span — catches the 4-sat/tick incident; normal 90+ sat/tick passes).
+- `/api/stats` `uptime_pct`: now "time with Δ > dur/1000" (i.e. more than 1 sat per second of span - catches the 4-sat/tick incident; normal 90+ sat/tick passes).
 - `/api/stats` `avg_hashrate_ph` and `total_ph_hours`: counter-derived, time-weighted.
 - `TickMetricsRepo.avgDeliveredPhSince` (used by `/api/status` for the 3h hashrate readout).
 
 Sanity-checked on the real 3h window: old uptime 100% → new uptime 94%; old avg hashrate 3.43 PH → new 2.85 PH. The 6% gap and ~0.58 PH discrepancy are exactly the Braiins-lag leakage the operator was seeing.
 
-The BRAIINS service panel's "delivered" row still reads the raw Braiins API value — keep the cross-check visible.
+The BRAIINS service panel's "delivered" row still reads the raw Braiins API value - keep the cross-check visible.
 
 ### `[Fix]` Effective-rate line: no more misleading dips across Braiins settlement lulls
 
-The Price chart's `effective` line computed `Σdelta / Σ(delivered×dt)` over a rolling window. When Braiins' `primary_bid_consumed_sat` counter went flat for several minutes (a normal settlement-batching artifact — the counter doesn't tick every minute even though `delivered_ph` keeps reporting ~full delivery via its own lagged rolling average), the numerator stalled but the denominator kept accumulating. Result: effective rate read ~2,000 sat/PH/day through stretches where we were actually paying our normal ~45,000 — visually implying we got hashrate almost for free during settlement lulls.
+The Price chart's `effective` line computed `Σdelta / Σ(delivered×dt)` over a rolling window. When Braiins' `primary_bid_consumed_sat` counter went flat for several minutes (a normal settlement-batching artifact - the counter doesn't tick every minute even though `delivered_ph` keeps reporting ~full delivery via its own lagged rolling average), the numerator stalled but the denominator kept accumulating. Result: effective rate read ~2,000 sat/PH/day through stretches where we were actually paying our normal ~45,000 - visually implying we got hashrate almost for free during settlement lulls.
 
 Two guards now applied inside the rolling-window loop:
 
-1. **Skip zero-delta pairs entirely** — neither numerator nor denominator advances across a "counter unchanged" pair. Those pairs carry no pricing information; averaging them in only pulls the estimate toward zero.
+1. **Skip zero-delta pairs entirely** - neither numerator nor denominator advances across a "counter unchanged" pair. Those pairs carry no pricing information; averaging them in only pulls the estimate toward zero.
 2. **Require ≥3 non-zero pairs in the window** before emitting a point. Below that, the line goes dark (truthful gap) rather than drawing a rate we can't stand behind.
 
 Empirical on 12 h of real data: minimum effective rate went from 2,126 → 14,889; only 22 of 568 points dropped; rate distribution is now tight (p05 37,937, median 47,118, max 71,320).
@@ -612,29 +616,29 @@ The README was still pitching the pre-CLOB worldview: "careful bidding", three-m
 
 ### `[Feature]` Cheap-mode: sustained-average engagement window (#50)
 
-Cheap-mode previously engaged on a per-tick spot comparison of `best_ask` vs `hashprice × cheap_threshold_pct`. A single flash-dip in best ask was enough to flip the target up; a single spike back flipped it straight off — with a matching EDIT_SPEED on each flip, each one requeuing the bid and incurring stale shares during resubscribe.
+Cheap-mode previously engaged on a per-tick spot comparison of `best_ask` vs `hashprice × cheap_threshold_pct`. A single flash-dip in best ask was enough to flip the target up; a single spike back flipped it straight off - with a matching EDIT_SPEED on each flip, each one requeuing the bid and incurring stale shares during resubscribe.
 
-New `cheap_sustained_window_minutes` config (default 0 preserves legacy behaviour). When > 0, cheap-mode engages only when `avg(best_ask)` over that many minutes is below `cheap_threshold_pct × avg(hashprice)` over the same window — averages computed from `tick_metrics` (no new columns). Natural hysteresis falls out of the window: cheap-mode only flips when the window as a whole crosses the threshold. Requires ≥5 samples before honouring; below that it falls back to the spot check.
+New `cheap_sustained_window_minutes` config (default 0 preserves legacy behaviour). When > 0, cheap-mode engages only when `avg(best_ask)` over that many minutes is below `cheap_threshold_pct × avg(hashprice)` over the same window - averages computed from `tick_metrics` (no new columns). Natural hysteresis falls out of the window: cheap-mode only flips when the window as a whole crosses the threshold. Requires ≥5 samples before honouring; below that it falls back to the spot check.
 
 Lives on the Config page under Hashrate targets next to `cheap_target` / `cheap_threshold`. Help text calls out the insufficient-history fallback.
 
 ### `[Fix]` P&L + runway: measured spend, not modelled bid × delivered
 
-Under CLOB the bid is a ceiling and the *actual* price we pay comes from matched asks. The dashboard had been computing "projected spend/day" and runway from `bid × delivered × time / 1_440_000` — the pay-your-bid formula. With a 48k bid, 3 PH/s delivery, and real spend matching asks around 41k, this consistently **overstated daily spend by 15-20%** and understated runway by the same amount. Wherever we used `bid`-based modelling, we now use `primary_bid_consumed_sat` deltas (the authoritative Braiins counter).
+Under CLOB the bid is a ceiling and the *actual* price we pay comes from matched asks. The dashboard had been computing "projected spend/day" and runway from `bid × delivered × time / 1_440_000` - the pay-your-bid formula. With a 48k bid, 3 PH/s delivery, and real spend matching asks around 41k, this consistently **overstated daily spend by 15-20%** and understated runway by the same amount. Wherever we used `bid`-based modelling, we now use `primary_bid_consumed_sat` deltas (the authoritative Braiins counter).
 
-- **P&L per-day card**: "spend/day" and "net/day" are measured, not projected. Tooltips updated. "Avg bid price" input row deleted — it was the multiplier for the dropped model. Income/day stays as a projection (`avg hashprice × avg delivered`).
-- **Braiins panel runway** ("3.9 days · ~26 apr") now divides available balance by `actual_spend_per_day_sat_3h` — the last 3 h of real consumed sat, scaled to 24 h. Same zero-dip filter as the stats SQL so a transient bid-swap blink can't swing the forecast.
+- **P&L per-day card**: "spend/day" and "net/day" are measured, not projected. Tooltips updated. "Avg bid price" input row deleted - it was the multiplier for the dropped model. Income/day stays as a projection (`avg hashprice × avg delivered`).
+- **Braiins panel runway** ("3.9 days · ~26 apr") now divides available balance by `actual_spend_per_day_sat_3h` - the last 3 h of real consumed sat, scaled to 24 h. Same zero-dip filter as the stats SQL so a transient bid-swap blink can't swing the forecast.
 - **Server**: `/api/finance/range` gains `actual_spend_sat` + `actual_spend_per_day_sat`, drops `avg_price_sat_per_ph_day` and `sum_spend_sat`. `/api/status` gains `actual_spend_per_day_sat_3h`. Backend: new `TickMetricsRepo.actualSpendSatSince()` with the zero-dip filter.
-- **`tick_metrics.spend_sat` column**: stopped being populated (writes always null) — the modelled value had no remaining readers. Column kept for schema continuity.
+- **`tick_metrics.spend_sat` column**: stopped being populated (writes always null) - the modelled value had no remaining readers. Column kept for schema continuity.
 - `packages/dashboard/src/lib/finance.ts` deleted. All 212 tests pass.
 
 ### `[Fix]` Effective-rate zero-dip inflation; retire fillable UI; expandable price chart; cheap-mode to best-ask
 
-**Root cause nailed for the "800k sat/PH/day" hero display**: when Braiins snapshots the primary bid during a CREATE/EDIT cycle, `amount_sat` and `amount_remaining_sat` can both read zero for one tick — so our `amount_consumed_sat = amount_sat - amount_remaining_sat` dips to 0 and back up to the real counter on the next tick. `LAG()` across that dip turns the entire recovery value (hundreds of thousands of sat) into a bogus delta that then dominates every window-aggregate it lands in. On the operator's DB a single 311,495-sat spurious delta turned a real 41k sat/PH/day rate into a reported 800k+. Fix: require **both** endpoints of every delta to be > 0 in the stats SQL and the chart's effective-rate computation. Belt-and-suspenders: clamp the displayed effective rate to our own bid (physical CLOB ceiling).
+**Root cause nailed for the "800k sat/PH/day" hero display**: when Braiins snapshots the primary bid during a CREATE/EDIT cycle, `amount_sat` and `amount_remaining_sat` can both read zero for one tick - so our `amount_consumed_sat = amount_sat - amount_remaining_sat` dips to 0 and back up to the real counter on the next tick. `LAG()` across that dip turns the entire recovery value (hundreds of thousands of sat) into a bogus delta that then dominates every window-aggregate it lands in. On the operator's DB a single 311,495-sat spurious delta turned a real 41k sat/PH/day rate into a reported 800k+. Fix: require **both** endpoints of every delta to be > 0 in the stats SQL and the chart's effective-rate computation. Belt-and-suspenders: clamp the displayed effective rate to our own bid (physical CLOB ceiling).
 
-**Fillable removed from the dashboard.** Under CLOB the bid is a ceiling and we pay the matched ask — "fillable" (the depth-aware price at which our whole target would fit) became a meaningless abstraction in October but was still plastered across the UI. Gone: the Braiins panel row, the orange dashed line + legend entry on the Price chart, the fillable / fillable+overpay rows in the pinned-event tooltip, and the fillable references in Config help text. The underlying `tick_metrics.fillable_ask_sat_per_eh_day` column is still populated and still surfaces on the Next-Action predictor for now — pure UI cleanup.
+**Fillable removed from the dashboard.** Under CLOB the bid is a ceiling and we pay the matched ask - "fillable" (the depth-aware price at which our whole target would fit) became a meaningless abstraction in October but was still plastered across the UI. Gone: the Braiins panel row, the orange dashed line + legend entry on the Price chart, the fillable / fillable+overpay rows in the pinned-event tooltip, and the fillable references in Config help text. The underlying `tick_metrics.fillable_ask_sat_per_eh_day` column is still populated and still surfaces on the Next-Action predictor for now - pure UI cleanup.
 
-**Cheap-mode now activates on `best_ask` instead of `fillable`.** Under CLOB the cheapest reachable price is whatever sits at the top of the ask ladder — exactly what cheap-mode semantics ("opportunistic scale-up when the market is cheap") want. Config help text reworded accordingly.
+**Cheap-mode now activates on `best_ask` instead of `fillable`.** Under CLOB the cheapest reachable price is whatever sits at the top of the ask ladder - exactly what cheap-mode semantics ("opportunistic scale-up when the market is cheap") want. Config help text reworded accordingly.
 
 **Price chart expand/collapse.** New "expand" button next to the Price chart title doubles the chart height so closely-stacked lines (bid, hashprice, max bid, effective) can be read independently. Tightened the Y-axis headroom from ±10%/±15% to ±5% so the chart doesn't waste half its space on empty range above the top data point.
 
@@ -642,31 +646,31 @@ Under CLOB the bid is a ceiling and the *actual* price we pay comes from matched
 
 Two fixes on the CLOB redesign:
 
-**Hero PRICE widget** — the big number at the top of the Status page was showing our bid price with a "+N" delta vs fillable. Under CLOB the bid is a ceiling, not what we pay. Replaced with the window-aggregated **effective rate** (from `/api/stats.avg_cost_per_ph_sat_per_ph_day`), and the ±N delta is now against the **spot hashprice** (negative = paying below break-even, profitable; positive = above). New tooltip re-explains.
+**Hero PRICE widget** - the big number at the top of the Status page was showing our bid price with a "+N" delta vs fillable. Under CLOB the bid is a ceiling, not what we pay. Replaced with the window-aggregated **effective rate** (from `/api/stats.avg_cost_per_ph_sat_per_ph_day`), and the ±N delta is now against the **spot hashprice** (negative = paying below break-even, profitable; positive = above). New tooltip re-explains.
 
-**Stats SQL filter mismatch** — operator reported AVG COST / PH DELIVERED showing ~1M sat/PH/day (should be ~46k). Root cause: the numerator filter (`delta IS NOT NULL`) was looser than the denominator filter (`delta IS NOT NULL AND delivered_ph > 0 AND dur > 0`). A tick with a non-null consumed delta but zero delivery at that instant (Braiins' counter caught a match from earlier while our snapshot saw delivery=0) counted in the numerator without a corresponding denominator share, inflating the rate. Also added a 5-min cap on `dur` to discard restart-gap intervals. Numerator and denominator now share a single `valid` condition. Same fix applied to `avg_overpay_vs_hashprice`.
+**Stats SQL filter mismatch** - operator reported AVG COST / PH DELIVERED showing ~1M sat/PH/day (should be ~46k). Root cause: the numerator filter (`delta IS NOT NULL`) was looser than the denominator filter (`delta IS NOT NULL AND delivered_ph > 0 AND dur > 0`). A tick with a non-null consumed delta but zero delivery at that instant (Braiins' counter caught a match from earlier while our snapshot saw delivery=0) counted in the numerator without a corresponding denominator share, inflating the rate. Also added a 5-min cap on `dur` to discard restart-gap intervals. Numerator and denominator now share a single `valid` condition. Same fix applied to `avg_overpay_vs_hashprice`.
 
-### `[Feature]` Retire the fill-strategy machinery — CLOB redesign (#49 master)
+### `[Feature]` Retire the fill-strategy machinery - CLOB redesign (#49 master)
 
 Empirical verification confirmed Braiins matches CLOB-style: the bid is a ceiling, the actual price paid is the matched ask. Our entire fill-strategy subsystem (overpay-above-fillable, three-way escalation mode, lowering patience, min-lower-delta) was authored under a pay-your-bid assumption and turned out to be pointless complexity. This release removes it.
 
 **Daemon**:
 - Migration 0043 drops `overpay_sat_per_eh_day`, `escalation_mode`, `fill_escalation_step_sat_per_eh_day`, `fill_escalation_after_minutes`, `min_lower_delta_sat_per_eh_day`, `lower_patience_minutes` from the config table.
 - `decide()` rewritten from 329 lines to ~130: compute effective cap, keep one bid at it, EDIT_SPEED on cheap-mode transitions. No timers, no patience gates, no escalation modes.
-- `controller/tick.ts` loses its `lowerReadySince` / `belowTargetSince` / `manualOverrideUntilMs` state — dead under the new model.
+- `controller/tick.ts` loses its `lowerReadySince` / `belowTargetSince` / `manualOverrideUntilMs` state - dead under the new model.
 - `/api/simulate` endpoint + `SimulateRoute` deleted entirely. Replaying "what if overpay=X" against historical ticks had no decision value under CLOB.
-- `/api/stats` — `avg_cost_per_ph_sat_per_ph_day` and `avg_overpay_vs_hashprice_sat_per_ph_day` now computed from `primary_bid_consumed_sat` deltas (actual effective rate), not bid price. `avg_overpay_sat_per_ph_day` removed (bid-vs-fillable is meaningless under CLOB).
+- `/api/stats` - `avg_cost_per_ph_sat_per_ph_day` and `avg_overpay_vs_hashprice_sat_per_ph_day` now computed from `primary_bid_consumed_sat` deltas (actual effective rate), not bid price. `avg_overpay_sat_per_ph_day` removed (bid-vs-fillable is meaningless under CLOB).
 - `/api/status` next-action inference simplified to match.
 
 **Dashboard**:
 - Simulation tab removed. No more Real-time / Simulation toggle.
-- Config page — entire "Fill strategy" section deleted.
+- Config page - entire "Fill strategy" section deleted.
 - Header stats bar loses "AVG OVERPAY VS FILLABLE" card. "AVG COST / PH DELIVERED" and "AVG OVERPAY VS HASHPRICE" re-label tooltips to explain they're effective-rate-based.
 - Status page's `SimParamBar` + `SIM_NUMBER_FIELDS` + sim-event synthesis + simulated-metric-overlay logic all removed. Price chart's sim-mode price line gone.
 
-The "our bid" line on the price chart is kept for now — once stable, it will be removed too (it equals the effective cap at all times).
+The "our bid" line on the price chart is kept for now - once stable, it will be removed too (it equals the effective cap at all times).
 
-**Tests**: `decide.test.ts` rewritten to cover the minimal new contract (16 tests down from 51 — the deleted ones tested escalation/lowering/patience paths that no longer exist).
+**Tests**: `decide.test.ts` rewritten to cover the minimal new contract (16 tests down from 51 - the deleted ones tested escalation/lowering/patience paths that no longer exist).
 
 Existing installs need a fresh pull + restart to pick up migration 0043. Any operator still relying on the retired knobs: they no longer exist. The autopilot now just sits at `min(max_bid, hashprice + max_overpay_vs_hashprice)` and lets CLOB do the work.
 
@@ -674,46 +678,46 @@ Existing installs need a fresh pull + restart to pick up migration 0043. Any ope
 
 ### `[Fix]` Effective rate: suppress thin-data transients at window edge (#49 follow-up)
 
-Inspected the operator's DB directly: the weird 52k → 40k "crash" on the effective line right after the migration backfill was an artifact of thin-data aggregation. Braiins' `amount_consumed_sat` counter updates ~every minute on their side, so the very first observation in a fresh window sees a *catch-up delta* — the first Δ we compute spans more real matching activity than its wall-clock interval implies, and with only 1–2 intervals in the aggregation window the inflated first interval dominates. Manual calc on the DB: first aggregated rate came out 88k (outlier-filtered), second 52k (inside the 1.5×-bid guard so it rendered), then it collapsed to the real 40–46k range as the window filled with real data.
+Inspected the operator's DB directly: the weird 52k → 40k "crash" on the effective line right after the migration backfill was an artifact of thin-data aggregation. Braiins' `amount_consumed_sat` counter updates ~every minute on their side, so the very first observation in a fresh window sees a *catch-up delta* - the first Δ we compute spans more real matching activity than its wall-clock interval implies, and with only 1-2 intervals in the aggregation window the inflated first interval dominates. Manual calc on the DB: first aggregated rate came out 88k (outlier-filtered), second 52k (inside the 1.5×-bid guard so it rendered), then it collapsed to the real 40-46k range as the window filled with real data.
 
 Fix: require the aggregation to cover at least `max(90s, window/2)` of wall-clock span before emitting a point. With smoothing off (3-min window) that means waiting ~90s post-restart; with 30-min smoothing, ~15 min. The line starts drawing once its value is meaningful rather than showing spurious spikes that settle into the real value.
 
 ### `[Fix]` Effective rate: include in Y-axis scaling so the line is visible (#49 follow-up)
 
-Empirically the window-aggregated effective rate sits 2-20% below bid (~38k-46k sat/PH/day in fresh observation vs a ~47k bid), but the chart's Y-axis was auto-scaling off bid/fillable/hashprice only — so the effective line was rendering BELOW the visible viewport. Only the handful of points that happened to brush the 46k lower edge poked into the chart, drawing as near-vertical strokes from off-chart-bottom up to the 46k floor. The rest of the line was invisible.
+Empirically the window-aggregated effective rate sits 2-20% below bid (~38k-46k sat/PH/day in fresh observation vs a ~47k bid), but the chart's Y-axis was auto-scaling off bid/fillable/hashprice only - so the effective line was rendering BELOW the visible viewport. Only the handful of points that happened to brush the 46k lower edge poked into the chart, drawing as near-vertical strokes from off-chart-bottom up to the 46k floor. The rest of the line was invisible.
 
-Effective is back in the Y-axis sample now. The previous reason for excluding it — rogue per-tick rate spikes — no longer applies now that computation is window-aggregated (Σ numerator / Σ denominator), plus the 1.5×-bid last-chance outlier filter keeps the scale safe. Legitimate effective-below-bid is exactly what the chart needs to show.
+Effective is back in the Y-axis sample now. The previous reason for excluding it - rogue per-tick rate spikes - no longer applies now that computation is window-aggregated (Σ numerator / Σ denominator), plus the 1.5×-bid last-chance outlier filter keeps the scale safe. Legitimate effective-below-bid is exactly what the chart needs to show.
 
 ### `[Fix]` Effective rate: window-aggregate Σconsumed / Σ(delivered × dt) instead of averaging ratios (#49 follow-up)
 
 Per-tick rates were meaningless: Braiins' `amount_consumed_sat` counter updates asynchronously from our tick loop, so some ticks report Δ=0 and the next absorbs a catch-up Δ that spans multiple ticks. Per-tick rates swung wildly between zero and multiples of the real rate; naive rolling-mean of those ratios amplified the problem, and the outlier filter thinned the survivor set into sparse disconnected points rendered as vertical spikes or missing lines entirely (depending on the smoothing window).
 
-Correct approach ships now: aggregate the numerator (Σ Δconsumed) and denominator (Σ delivered_ph × Δt_ms / 86,400,000 = PH-days) separately over the last N minutes, then divide. That's the true time-weighted average rate — summing-before-dividing absorbs Braiins' update cadence naturally. Window = max(3, priceSmoothingMinutes) so the line is legible even with smoothing set to 1; bumping it to 5 or 10 smooths over longer trends. Outlier rejection against 1.5× current bid preserved as a last-chance guard.
+Correct approach ships now: aggregate the numerator (Σ Δconsumed) and denominator (Σ delivered_ph × Δt_ms / 86,400,000 = PH-days) separately over the last N minutes, then divide. That's the true time-weighted average rate - summing-before-dividing absorbs Braiins' update cadence naturally. Window = max(3, priceSmoothingMinutes) so the line is legible even with smoothing set to 1; bumping it to 5 or 10 smooths over longer trends. Outlier rejection against 1.5× current bid preserved as a last-chance guard.
 
 ### `[Feature]` Price chart: rolling-mean smoothing for our-bid and effective lines (#49 follow-up)
 
-Operator requested a smoothing knob for the Price chart analogous to the one the Hashrate chart has had since #42. New `braiins_price_smoothing_minutes` config (migration 0042, default 1 = off) applies a rolling-mean window to both `our bid` and `effective`. Fillable / hashprice / max bid stay untouched — they're market-wide signals, not ours. Lives in the Config → Chart smoothing section next to the existing Braiins/Datum knobs. Same `integer_spinner` presentation (step 5, min 1).
+Operator requested a smoothing knob for the Price chart analogous to the one the Hashrate chart has had since #42. New `braiins_price_smoothing_minutes` config (migration 0042, default 1 = off) applies a rolling-mean window to both `our bid` and `effective`. Fillable / hashprice / max bid stay untouched - they're market-wide signals, not ours. Lives in the Config → Chart smoothing section next to the existing Braiins/Datum knobs. Same `integer_spinner` presentation (step 5, min 1).
 
 ### `[Fix]` Effective-rate chart line: outlier rejection + exclude from Y-scaling (#49 follow-up)
 
-First live look at the effective-rate line had one bad sample pull the Y-axis up to 100k sat/PH/day, squashing the real 45-50k data into a thin band. Root cause: `amount_consumed_sat` snapshots update asynchronously from Braiins while our tick's `delivered_ph` is an instantaneous reading — at a boundary where delivered briefly dips but consumed has already accumulated a chunk, the per-tick rate divides by a small denominator and reports multiples above reality for one tick.
+First live look at the effective-rate line had one bad sample pull the Y-axis up to 100k sat/PH/day, squashing the real 45-50k data into a thin band. Root cause: `amount_consumed_sat` snapshots update asynchronously from Braiins while our tick's `delivered_ph` is an instantaneous reading - at a boundary where delivered briefly dips but consumed has already accumulated a chunk, the per-tick rate divides by a small denominator and reports multiples above reality for one tick.
 
-Two-part fix: (a) outlier rejection at point-construction — a rate above 1.5× the current bid price is physically implausible (bid is an upper bound by definition), so drop the sample; tightened the near-zero-delivery cutoff from 0.01 to 0.1 PH/s while there. (b) Excluded the effective series from Y-axis auto-scaling — same treatment as max bid and cap — so any residual noise doesn't distort the viewport.
+Two-part fix: (a) outlier rejection at point-construction - a rate above 1.5× the current bid price is physically implausible (bid is an upper bound by definition), so drop the sample; tightened the near-zero-delivery cutoff from 0.01 to 0.1 PH/s while there. (b) Excluded the effective series from Y-axis auto-scaling - same treatment as max bid and cap - so any residual noise doesn't distort the viewport.
 
 ### `[Feature]` Per-tick actual-spend snapshot + "effective rate" chart line (#49)
 
-Empirical analysis of `owned_bids.amount_consumed_sat` vs `tick_metrics.spend_sat` (modeled at pay-your-bid) across the operator's active bid showed actual consumed sitting ~7.7% below modeled — suggestive but not conclusive of CLOB/pay-at-ask. Contributing noise on either side (Braiins' rolling `avg_speed_ph` lag per `observe.ts:283`, our 1-min-per-tick `spend_sat` approximation, and a tiny possible CLOB effect) all mix into a single bid-aggregate number we can't cleanly decompose.
+Empirical analysis of `owned_bids.amount_consumed_sat` vs `tick_metrics.spend_sat` (modeled at pay-your-bid) across the operator's active bid showed actual consumed sitting ~7.7% below modeled - suggestive but not conclusive of CLOB/pay-at-ask. Contributing noise on either side (Braiins' rolling `avg_speed_ph` lag per `observe.ts:283`, our 1-min-per-tick `spend_sat` approximation, and a tiny possible CLOB effect) all mix into a single bid-aggregate number we can't cleanly decompose.
 
-Fix: migration 0041 adds `primary_bid_consumed_sat` to `tick_metrics` — a per-tick snapshot of the primary owned bid's cumulative `amount_consumed_sat` straight from Braiins' `/spot/bid`. Per-tick deltas give the authoritative actual spend at the same sampling rate as the rest of the chart data, no aggregation noise.
+Fix: migration 0041 adds `primary_bid_consumed_sat` to `tick_metrics` - a per-tick snapshot of the primary owned bid's cumulative `amount_consumed_sat` straight from Braiins' `/spot/bid`. Per-tick deltas give the authoritative actual spend at the same sampling rate as the rest of the chart data, no aggregation noise.
 
-On the Price chart, a new emerald "effective" line shows the per-tick actual rate, computed client-side as `Δconsumed × 86_400_000 / (delivered_ph × Δt_ms)` in sat/PH/day. Drawn on top of the amber "our bid" line so any systematic gap between "what we bid" and "what Braiins actually charged" reads at a glance. Gap-safe (same 5-min bridge threshold as the other null-gap helpers), filtered against counter resets and near-zero delivery. Populated going forward — existing historical ticks show nothing (null column).
+On the Price chart, a new emerald "effective" line shows the per-tick actual rate, computed client-side as `Δconsumed × 86_400_000 / (delivered_ph × Δt_ms)` in sat/PH/day. Drawn on top of the amber "our bid" line so any systematic gap between "what we bid" and "what Braiins actually charged" reads at a glance. Gap-safe (same 5-min bridge threshold as the other null-gap helpers), filtered against counter resets and near-zero delivery. Populated going forward - existing historical ticks show nothing (null column).
 
-Pull + restart the daemon to enable the snapshot; a few hours of data and a noticeable overpay make the two lines' relationship unambiguous — pay-your-bid has effective tracking the bid, CLOB has it tracking fillable, anything else gets characterised empirically from the new data.
+Pull + restart the daemon to enable the snapshot; a few hours of data and a noticeable overpay make the two lines' relationship unambiguous - pay-your-bid has effective tracking the bid, CLOB has it tracking fillable, anything else gets characterised empirically from the new data.
 
 ### `[Docs]` README: preemptive escalation mode, per-bid budget = 0, updated Config screenshot
 
 README was stale on three fronts: (1) the `above_market` (preemptive) escalation mode added in #38 was not
-mentioned — the escalation-ladder bullet only described "raises in steps (or jumps)"; (2) the per-bid budget now
+mentioned - the escalation-ladder bullet only described "raises in steps (or jumps)"; (2) the per-bid budget now
 treats 0 as "use the full available wallet balance" (#40) and that sentinel wasn't called out; (3) the Configuration
 section listed an "Alerts & timers" subsection that has been hidden from the UI. Refreshed the escalation bullet to
 cover all three modes, added the budget=0 semantics, dropped the stale subsection reference, and replaced the Config
@@ -723,23 +727,23 @@ screenshot with a current one.
 
 The panel would announce "Will lower in ~2 min" whenever the market-settle patience window was the first pending gate, even if the Braiins 10-min price-decrease cooldown was in fact longer and would hold the edit for another 6 minutes. Operator saw an ETA that couldn't be met.
 
-Now all three lower-gates — override lock, market-settle patience, and the Braiins price-decrease cooldown — are evaluated, and whichever one ends *latest* is surfaced as the reason + ETA. Side effect: the progress bar label on the patience path used to read "Override lock clears in" because the event_kind was mislabeled; there is now a distinct `lower_after_patience` event_kind and the label reads "Patience clears in".
+Now all three lower-gates - override lock, market-settle patience, and the Braiins price-decrease cooldown - are evaluated, and whichever one ends *latest* is surfaced as the reason + ETA. Side effect: the progress bar label on the patience path used to read "Override lock clears in" because the event_kind was mislabeled; there is now a distinct `lower_after_patience` event_kind and the label reads "Patience clears in".
 
 ### `[Fix]` Price chart: bridge single-tick blips instead of rendering a visible gap (#47)
 
-A single null tick (daemon restart boot, transient `/spot/bid` API hiccup) made the price line + fill drop out for ~60 seconds on the chart — reading as a mini-outage when the operator actually just saw a blink. Root cause: `pathWithNullGaps` (#44) closed the subpath on any null, which is correct for multi-minute market outages but too aggressive for one-tick observe noise.
+A single null tick (daemon restart boot, transient `/spot/bid` API hiccup) made the price line + fill drop out for ~60 seconds on the chart - reading as a mini-outage when the operator actually just saw a blink. Root cause: `pathWithNullGaps` (#44) closed the subpath on any null, which is correct for multi-minute market outages but too aggressive for one-tick observe noise.
 
 Now the null-gap helpers bridge based on wall-clock duration instead of null-count. If the next valid sample arrives within ~3 tick intervals (180 s), draw a line across any intervening nulls; otherwise break as before. Applied symmetrically to the fill polygon so line and fill stay in sync. Long outages still surface loudly; the single-tick noise absorbs invisibly.
 
 ### `[Fix]` Price chart: fill no longer paints diagonal wedges across null gaps (#46)
 
-Regression introduced by the #44 fix. That change made the price line break into multiple SVG subpaths on null (market-outage) ticks — correct for the line, but the fill wrapper still appended a single baseline closure at the very end (`${pricePath} L<lastX>,<bot> L<firstX>,<bot> Z`). SVG only closed the *last* subpath to the baseline; every interior subpath closed back to its own starting `M`, painting diagonal "sun ray" wedges across the gap.
+Regression introduced by the #44 fix. That change made the price line break into multiple SVG subpaths on null (market-outage) ticks - correct for the line, but the fill wrapper still appended a single baseline closure at the very end (`${pricePath} L<lastX>,<bot> L<firstX>,<bot> Z`). SVG only closed the *last* subpath to the baseline; every interior subpath closed back to its own starting `M`, painting diagonal "sun ray" wedges across the gap.
 
 Now a dedicated `areaPathWithNullGaps` helper emits one closed polygon per non-null sub-run, each anchored to the baseline at its own segment endpoints. The fill tracks right under the price line again, and genuine gaps render as gaps in both line and fill.
 
 ### `[UI]` P&L per-day: surface the avg inputs so the projection math is readable
 
-The panel showed `projected income/day`, `projected spend/day`, `projected net/day` and `hashprice (break-even)` — four numbers with no visible shared multiplicand. Operators had to reverse-engineer `avg delivered` by dividing income by hashprice to see why the net wasn't just "target × hashprice". Worse: the hashprice row was the CURRENT spot rate, but the projection actually used the range-averaged hashprice — close but subtly different.
+The panel showed `projected income/day`, `projected spend/day`, `projected net/day` and `hashprice (break-even)` - four numbers with no visible shared multiplicand. Operators had to reverse-engineer `avg delivered` by dividing income by hashprice to see why the net wasn't just "target × hashprice". Worse: the hashprice row was the CURRENT spot rate, but the projection actually used the range-averaged hashprice - close but subtly different.
 
 Now the card is laid out as inputs → derivations → reference, visually separated by thin dividers:
 
@@ -761,108 +765,108 @@ Every derived number is now traceable to the rows directly above it. The spot ha
 
 ### `[UI]` Config: Budget section hint spans full panel width (#40 follow-up)
 
-The sentinel hint wrapped narrowly in one grid column, stacking into 3–4 short lines next to a huge empty right column. Set `fullWidth: true` on the `bid_budget_sat` field so the label cell spans both columns; the `<NumberField>` itself is capped at 200 px so the input stays its normal size. Hint now renders as a single wide line.
+The sentinel hint wrapped narrowly in one grid column, stacking into 3-4 short lines next to a huge empty right column. Set `fullWidth: true` on the `bid_budget_sat` field so the label cell spans both columns; the `<NumberField>` itself is capped at 200 px so the input stays its normal size. Hint now renders as a single wide line.
 
 ### `[Fix]` Price chart: raise short-gap bridge threshold to 5 min (#47 follow-up)
 
-The 3-minute bridge turned out to be too tight for a full deploy cycle on the operator box — pnpm install + rebuild + restart routinely takes 2–3 min cold, so a single deploy left a visible hole right at the restart boundary. Bumped to 5 minutes. Covers a full deploy window plus one follow-up observe-miss; real market outages run many minutes to hours so the 2-minute widening doesn't blur the #44 signal.
+The 3-minute bridge turned out to be too tight for a full deploy cycle on the operator box - pnpm install + rebuild + restart routinely takes 2-3 min cold, so a single deploy left a visible hole right at the restart boundary. Bumped to 5 minutes. Covers a full deploy window plus one follow-up observe-miss; real market outages run many minutes to hours so the 2-minute widening doesn't blur the #44 signal.
 
 ### `[UI]` Config: bid_budget=0 hint acknowledges the active bid (#40 follow-up)
 
-The sentinel hint ("Full wallet balance per bid. Currently ≈ 83,704 sat") read as if the autopilot was about to spend that amount right now — but if an owned bid is already running, the next CREATE doesn't fire until it finishes. The figure was correct, the framing wasn't.
+The sentinel hint ("Full wallet balance per bid. Currently ≈ 83,704 sat") read as if the autopilot was about to spend that amount right now - but if an owned bid is already running, the next CREATE doesn't fire until it finishes. The figure was correct, the framing wasn't.
 
-Now when an active owned bid is present, the hint surfaces it explicitly: "A bid is currently running (≈ 157,860 sat left). The next CREATE fires when it finishes — at that point the full available wallet balance (currently ≈ 83,704 sat) will be used." Same field, same amounts; just the order of operations the operator actually experiences.
+Now when an active owned bid is present, the hint surfaces it explicitly: "A bid is currently running (≈ 157,860 sat left). The next CREATE fires when it finishes - at that point the full available wallet balance (currently ≈ 83,704 sat) will be used." Same field, same amounts; just the order of operations the operator actually experiences.
 
 ### `[Feature]` bid_budget_sat: 0 = "use full wallet balance" sentinel (#40)
 
-`bid_budget_sat` is how much wallet gets slotted into `amount_sat` on each `CREATE_BID`. Because Braiins bids have no duration field and run until `amount_sat` is consumed, the value effectively decided how often the autopilot cycles through cancel/recreate — a second decision the operator was forced to make that doesn't really track how people think about their wallet ("I funded X sat, spend X sat").
+`bid_budget_sat` is how much wallet gets slotted into `amount_sat` on each `CREATE_BID`. Because Braiins bids have no duration field and run until `amount_sat` is consumed, the value effectively decided how often the autopilot cycles through cancel/recreate - a second decision the operator was forced to make that doesn't really track how people think about their wallet ("I funded X sat, spend X sat").
 
 Now `0` is a sentinel meaning **"use the full available wallet balance on each CREATE"**, resolved at decision time and clamped to Braiins' 1 BTC per-bid hard cap (spec §13). When the wallet is empty or the balance API is down, the CREATE is skipped silently that tick instead of proposing a doomed bid. Any positive value still pins every new bid to that exact amount like before, so existing operators keep their current behavior end-to-end.
 
-New installs default to `0`. Existing installs are unaffected — their explicit value stays in `config.toml` unchanged. The Config page surfaces the live-resolved figure next to the field when it's set to `0` (e.g. "Currently ≈ 850,000 sat"), and the Status page's CREATE_BID "next action" detail reflects the resolved budget rather than the raw sentinel.
+New installs default to `0`. Existing installs are unaffected - their explicit value stays in `config.toml` unchanged. The Config page surfaces the live-resolved figure next to the field when it's set to `0` (e.g. "Currently ≈ 850,000 sat"), and the Status page's CREATE_BID "next action" detail reflects the resolved budget rather than the raw sentinel.
 
 ### `[UI]` Chart popovers: show relative age next to absolute timestamp (#45)
 
-The EDIT PRICE popover (yellow dot on price chart) and POOL BLOCK popover (block icon on hashrate chart) used to show only absolute timestamps — readers had to mentally subtract from "now" to answer "how long ago was this?" Now a muted `· 5m ago` / `· 18h 22m ago` / `· 2d 5h ago` suffix sits next to the human-readable line. Uses a new minute-resolution `formatAgeMinutes` helper — single-unit below an hour, two-unit (`Xh Ym` / `Xd Yh`) past that, and a quiet `just now` under a minute. No seconds (popovers don't tick).
+The EDIT PRICE popover (yellow dot on price chart) and POOL BLOCK popover (block icon on hashrate chart) used to show only absolute timestamps - readers had to mentally subtract from "now" to answer "how long ago was this?" Now a muted `· 5m ago` / `· 18h 22m ago` / `· 2d 5h ago` suffix sits next to the human-readable line. Uses a new minute-resolution `formatAgeMinutes` helper - single-unit below an hour, two-unit (`Xh Ym` / `Xd Yh`) past that, and a quiet `just now` under a minute. No seconds (popovers don't tick).
 
 ### `[Fix]` Price chart: break fillable/hashprice/our-bid lines across null gaps (#44)
 
-Market-outage periods (empty orderbook, no fillable, no hashprice) used to render as straight bridges on the Price chart — the fillable dashed orange line walked directly from the last valid sample to the first sample on the far side of the gap, visually implying the market had a continuous level it didn't. Confusing because the adjacent stats cards (AVG OVERPAY VS FILLABLE etc.) already correctly exclude null ticks from their range-weighted averages, so the eye was reading a visual that the math was explicitly ignoring.
+Market-outage periods (empty orderbook, no fillable, no hashprice) used to render as straight bridges on the Price chart - the fillable dashed orange line walked directly from the last valid sample to the first sample on the far side of the gap, visually implying the market had a continuous level it didn't. Confusing because the adjacent stats cards (AVG OVERPAY VS FILLABLE etc.) already correctly exclude null ticks from their range-weighted averages, so the eye was reading a visual that the math was explicitly ignoring.
 
-`pathWithNullGaps` — the same helper `HashrateChart` uses for the sparse Datum/Ocean series — now drives the `our bid`, `fillable`, `hashprice`, and effective-cap paths. Null inputs break the line into discrete segments so a real data gap looks like one.
+`pathWithNullGaps` - the same helper `HashrateChart` uses for the sparse Datum/Ocean series - now drives the `our bid`, `fillable`, `hashprice`, and effective-cap paths. Null inputs break the line into discrete segments so a real data gap looks like one.
 
-Does not touch the stats math (already correct per the #44 investigation — all three range averages `WHERE price IS NOT NULL AND {fillable,hashprice} IS NOT NULL` or `WHERE delivered_ph > 0`).
+Does not touch the stats math (already correct per the #44 investigation - all three range averages `WHERE price IS NOT NULL AND {fillable,hashprice} IS NOT NULL` or `WHERE delivered_ph > 0`).
 
 ## 2026-04-21
 
 ### `[Feature]` P&L per-day: range-aware, averaged spend & income, collapsible card (#43)
 
-The **Profit & Loss · per day** card used to mix a 3h-averaged spend with Ocean's 3h income estimate, and repriced the *entire* 3h window the instant the autopilot raised a bid — a 5% price bump made the projected spend number jump 5% for hours that had already happened at the old price. Two problems operators kept hitting: the numbers weren't keyed to the chart range dropdown above them, and mid-window price moves retroactively rewrote history.
+The **Profit & Loss · per day** card used to mix a 3h-averaged spend with Ocean's 3h income estimate, and repriced the *entire* 3h window the instant the autopilot raised a bid - a 5% price bump made the projected spend number jump 5% for hours that had already happened at the old price. Two problems operators kept hitting: the numbers weren't keyed to the chart range dropdown above them, and mid-window price moves retroactively rewrote history.
 
 Rewritten so both sides share the chart's selected range:
-- **ocean est. income/day (3h)** — Ocean's own `daily_estimate_sat`, kept as-is for the authoritative pool-view estimate (always 3h per Ocean; tooltip notes this).
-- **projected income/day (3h/6h/24h/…)** — new: `avg(hashprice) × avg(delivered_ph)` across whichever range the chart picker is on. Range-aware counterpart to Ocean's 3h value.
-- **projected spend/day (3h/6h/24h/…)** — `avg(bid_price) × avg(delivered_ph)` over the same window. A mid-window price change no longer retroactively reprices earlier hours.
+- **ocean est. income/day (3h)** - Ocean's own `daily_estimate_sat`, kept as-is for the authoritative pool-view estimate (always 3h per Ocean; tooltip notes this).
+- **projected income/day (3h/6h/24h/…)** - new: `avg(hashprice) × avg(delivered_ph)` across whichever range the chart picker is on. Range-aware counterpart to Ocean's 3h value.
+- **projected spend/day (3h/6h/24h/…)** - `avg(bid_price) × avg(delivered_ph)` over the same window. A mid-window price change no longer retroactively reprices earlier hours.
 - **projected net/day (…)** = (projected income) − (spend), keyed off the range-aware income so both sides are symmetric.
 
-Under the hood: new `spend_sat` column on `tick_metrics` (migration 0040; backfilled from the existing price + delivery columns) records per-tick sat-spend at insert time, and a new `/api/finance/range?range=<ChartRange>` endpoint returns the aggregates + derived `spend_per_day_sat` / `projected_income_per_day_sat` / `projected_net_per_day_sat` in one call. Dashboard queries the endpoint keyed on `chartRange` (60s refetch) and falls back to the legacy `projectedDailySpendSat3h` path when the server returns `insufficient_history` (< 5 ticks in the window — fresh installs, post-prune, daemon just started).
+Under the hood: new `spend_sat` column on `tick_metrics` (migration 0040; backfilled from the existing price + delivery columns) records per-tick sat-spend at insert time, and a new `/api/finance/range?range=<ChartRange>` endpoint returns the aggregates + derived `spend_per_day_sat` / `projected_income_per_day_sat` / `projected_net_per_day_sat` in one call. Dashboard queries the endpoint keyed on `chartRange` (60s refetch) and falls back to the legacy `projectedDailySpendSat3h` path when the server returns `insufficient_history` (< 5 ticks in the window - fresh installs, post-prune, daemon just started).
 
-The card is now **collapsible** — chevron in the header, state persisted per-browser under `pnl-per-day-collapsed`. Operators who want the hashrate chart uncluttered by finance projections can fold it away.
+The card is now **collapsible** - chevron in the header, state persisted per-browser under `pnl-per-day-collapsed`. Operators who want the hashrate chart uncluttered by finance projections can fold it away.
 
 ### `[Feature]` Hashrate chart: per-series smoothing windows for Braiins and Datum (#42)
 
 Ocean's hashrate line is an inherently 5-min server-side rolling average (`/user_hashrate` returns it that way), while Braiins-delivered and Datum-received are raw per-tick samples. On the 3h view the raw series jitter wildly around the smooth Ocean line and it's hard to eyeball whether all three sources actually agree on what's being delivered.
 
-Two new Config-page spinners — **Braiins (delivered)** and **Datum (received)** — control independent rolling-mean minute windows applied client-side in `HashrateChart`. Integer, step 5, min 1; `1 = raw (no smoothing)`. Setting both to 5 lines the three lines up on the same cadence and makes disagreements between Braiins, Datum, and Ocean pop out visually.
+Two new Config-page spinners - **Braiins (delivered)** and **Datum (received)** - control independent rolling-mean minute windows applied client-side in `HashrateChart`. Integer, step 5, min 1; `1 = raw (no smoothing)`. Setting both to 5 lines the three lines up on the same cadence and makes disagreements between Braiins, Datum, and Ocean pop out visually.
 
-Implementation: `rollingMean()` in `HashrateChart.tsx` is a time-window (not sample-count) smoother so uneven tick spacing doesn't skew the mean. Ocean is not touched. Null inputs are skipped in the mean; an all-null window yields null so `pathWithNullGaps` still breaks the line on Datum outages. The daemon stores the two settings in `config` (migration 0039) but never reads them — pure display.
+Implementation: `rollingMean()` in `HashrateChart.tsx` is a time-window (not sample-count) smoother so uneven tick spacing doesn't skew the mean. Ocean is not touched. Null inputs are skipped in the mean; an all-null window yields null so `pathWithNullGaps` still breaks the line on Datum outages. The daemon stores the two settings in `config` (migration 0039) but never reads them - pure display.
 
 ### `[UI]` Config page: hide the unwired "Alerts & timers" section (#41)
 
-The five fields in that panel (`below_floor_alert_after_minutes`, `zero_hashrate_loud_alert_after_minutes`, `pool_outage_blip_tolerance_seconds`, `api_outage_alert_after_minutes`, `wallet_runway_alert_days`) were exposed on the Config page but never read by any runtime code — they were scaffolding for a dashboard-alerting layer that was never built, and the closely-related Telegram notifier path (#18) is still unshipped. Surfacing them as editable inputs was actively misleading.
+The five fields in that panel (`below_floor_alert_after_minutes`, `zero_hashrate_loud_alert_after_minutes`, `pool_outage_blip_tolerance_seconds`, `api_outage_alert_after_minutes`, `wallet_runway_alert_days`) were exposed on the Config page but never read by any runtime code - they were scaffolding for a dashboard-alerting layer that was never built, and the closely-related Telegram notifier path (#18) is still unshipped. Surfacing them as editable inputs was actively misleading.
 
-Section removed from `SECTIONS` in `Config.tsx`. The schema fields, DB columns, and API types are left intact so reintroduction (whichever path wins in #41 — wire dashboard alerts, ship Telegram, or delete) is cheap and doesn't need a new migration.
+Section removed from `SECTIONS` in `Config.tsx`. The schema fields, DB columns, and API types are left intact so reintroduction (whichever path wins in #41 - wire dashboard alerts, ship Telegram, or delete) is cheap and doesn't need a new migration.
 
 ### `[UI]` Sim panel: three-way Esc. mode picker, relocated to header row
 
-Follow-up on the `above_market` landing earlier today (#38). The Sim Parameters bar only exposed a two-way Dampened/Market toggle, which meant the operator couldn't actually backtest `above_market` behaviour against historical ticks — they'd have had to flip the live autopilot to evaluate it, which defeats the whole point of having a simulator.
+Follow-up on the `above_market` landing earlier today (#38). The Sim Parameters bar only exposed a two-way Dampened/Market toggle, which meant the operator couldn't actually backtest `above_market` behaviour against historical ticks - they'd have had to flip the live autopilot to evaluate it, which defeats the whole point of having a simulator.
 
 Two changes:
-- **Three-way picker** — Dampened / Market / Above mkt. Re-uses the same amber pill styling as before; above-market uses the short label to keep the pill compact.
-- **Moved to the header row** — the Esc. mode control sits alongside the Reset / Apply to config buttons instead of inside the numeric-inputs grid. Rationale: the numeric grid dropped from `lg:grid-cols-8` back to `lg:grid-cols-7`, giving the remaining seven inputs (Overpay, Max bid, Max over hashprice, Esc. step, Esc. window, Wait to lower, Min delta) a noticeable bit of extra horizontal breathing room on wider viewports. The mode selector is a tool-level control (like Reset / Apply), not a field-level input, so its new location is semantically cleaner too.
+- **Three-way picker** - Dampened / Market / Above mkt. Re-uses the same amber pill styling as before; above-market uses the short label to keep the pill compact.
+- **Moved to the header row** - the Esc. mode control sits alongside the Reset / Apply to config buttons instead of inside the numeric-inputs grid. Rationale: the numeric grid dropped from `lg:grid-cols-8` back to `lg:grid-cols-7`, giving the remaining seven inputs (Overpay, Max bid, Max over hashprice, Esc. step, Esc. window, Wait to lower, Min delta) a noticeable bit of extra horizontal breathing room on wider viewports. The mode selector is a tool-level control (like Reset / Apply), not a field-level input, so its new location is semantically cleaner too.
 
-Under the hood: `simParams` stays a `Record<string, number>` for the numeric-field loop; `escalation_mode` is now a separate typed state slot (`'dampened' | 'market' | 'above_market'`) on `StatusPage`, threaded into `SimParamBar`. The sim query key includes both, so changing the mode re-runs the replay engine. The Apply-to-config flow writes the string straight through — no more 0/1 boolean indirection.
+Under the hood: `simParams` stays a `Record<string, number>` for the numeric-field loop; `escalation_mode` is now a separate typed state slot (`'dampened' | 'market' | 'above_market'`) on `StatusPage`, threaded into `SimParamBar`. The sim query key includes both, so changing the mode re-runs the replay engine. The Apply-to-config flow writes the string straight through - no more 0/1 boolean indirection.
 
 ### `[Feature]` escalation_mode: add `above_market` (preemptive raise) (#38)
 
-New third value for `escalation_mode` alongside `market` and `dampened`. Where the existing two modes are **reactive** (they wait for delivery to drop under the floor for `fill_escalation_after_minutes`, then either step up or jump to target), `above_market` is **preemptive** — the instant the market catches up enough that `current_bid < fillable + overpay`, a new `below_target_since` timer starts. When it clears `fill_escalation_after_minutes`, the autopilot jumps to target (same as `market`), even while delivery is still fine. Defends the fill instead of recovering from a cut-off.
+New third value for `escalation_mode` alongside `market` and `dampened`. Where the existing two modes are **reactive** (they wait for delivery to drop under the floor for `fill_escalation_after_minutes`, then either step up or jump to target), `above_market` is **preemptive** - the instant the market catches up enough that `current_bid < fillable + overpay`, a new `below_target_since` timer starts. When it clears `fill_escalation_after_minutes`, the autopilot jumps to target (same as `market`), even while delivery is still fine. Defends the fill instead of recovering from a cut-off.
 
-No new numeric parameters. Reuses `overpay_sat_per_eh_day` (defines the target gap), `fill_escalation_after_minutes` (how long the trigger condition must hold), and `lower_patience_minutes` (unchanged — the lowering path is identical across all three modes). Same effective cap (`min(max_bid, hashprice + max_overpay)`) — preemptive mode cannot push past the ceiling any more than reactive escalation can.
+No new numeric parameters. Reuses `overpay_sat_per_eh_day` (defines the target gap), `fill_escalation_after_minutes` (how long the trigger condition must hold), and `lower_patience_minutes` (unchanged - the lowering path is identical across all three modes). Same effective cap (`min(max_bid, hashprice + max_overpay)`) - preemptive mode cannot push past the ceiling any more than reactive escalation can.
 
 Wired end-to-end:
-- **Daemon**: new persisted `below_target_since_ms` on `runtime_state` (migration 0038), mirroring the existing floor/lower timers so a restart doesn't reset the window. `tick.ts` populates it each tick via a new `computeBelowTarget()` predicate. `decide.ts`'s `shouldTriggerEscalation` branches on `escalation_mode` — reads `below_target_since` under `above_market`, `below_floor_since` under the others. The `above_market` raise path shares the `market`-mode price calc (jump to target, not stepped).
-- **Simulator** (`routes/simulate.ts`): mirrored — new `belowTargetSince` tracker, same branching on mode so sim replay matches live decisions.
+- **Daemon**: new persisted `below_target_since_ms` on `runtime_state` (migration 0038), mirroring the existing floor/lower timers so a restart doesn't reset the window. `tick.ts` populates it each tick via a new `computeBelowTarget()` predicate. `decide.ts`'s `shouldTriggerEscalation` branches on `escalation_mode` - reads `below_target_since` under `above_market`, `below_floor_since` under the others. The `above_market` raise path shares the `market`-mode price calc (jump to target, not stepped).
+- **Simulator** (`routes/simulate.ts`): mirrored - new `belowTargetSince` tracker, same branching on mode so sim replay matches live decisions.
 - **Next Action predictor** (`routes/status.ts`): new preemptive-raise countdown surfaces `Market caught up to bid (X < target Y sat/PH/day). Preemptive raise in N min.` when `above_market` mode is selected and the bid is below target. Honours the dynamic/fixed cap the same way the reactive predictor does.
-- **Dashboard Config page**: third option on the escalation-mode selector (`Above market (preemptive — raise before cut-off)`) with a help note explaining the reactive-vs-preemptive distinction.
+- **Dashboard Config page**: third option on the escalation-mode selector (`Above market (preemptive - raise before cut-off)`) with a help note explaining the reactive-vs-preemptive distinction.
 
-Sim panel's two-way escalation toggle still flips between `market` and `dampened` only — a three-way picker on the sim bar is a follow-up. Operators testing `above_market` flip it on the Config page and observe the live autopilot.
+Sim panel's two-way escalation toggle still flips between `market` and `dampened` only - a three-way picker on the sim bar is a follow-up. Operators testing `above_market` flip it on the Config page and observe the live autopilot.
 
 ### `[Feature]` Dashboard login: "Remember me on this device" checkbox (#39)
 
-Basic-Auth password was stored in `sessionStorage`, which tab-scoped closes/backgrounds drop on mobile — operators were re-entering the password on every visit from their phone. Added a **Remember me on this device** checkbox to the login form (default: checked). When ticked, the password writes to `localStorage` so it survives tab closes and device reboots; unticked keeps the old per-tab behaviour. `getPassword()` reads localStorage first, then sessionStorage, so the rest of the app is oblivious to which backend is in use. `clearPassword()` clears both (for the sign-out path, belt-and-braces).
+Basic-Auth password was stored in `sessionStorage`, which tab-scoped closes/backgrounds drop on mobile - operators were re-entering the password on every visit from their phone. Added a **Remember me on this device** checkbox to the login form (default: checked). When ticked, the password writes to `localStorage` so it survives tab closes and device reboots; unticked keeps the old per-tab behaviour. `getPassword()` reads localStorage first, then sessionStorage, so the rest of the app is oblivious to which backend is in use. `clearPassword()` clears both (for the sign-out path, belt-and-braces).
 
-Security note: LAN-only dashboard behind a password — the realistic threat is physical device access, which `localStorage` persistence doesn't meaningfully worsen.
+Security note: LAN-only dashboard behind a password - the realistic threat is physical device access, which `localStorage` persistence doesn't meaningfully worsen.
 
-## v1.1.1 — 2026-04-21
+## v1.1.1 - 2026-04-21
 
-Polish release on top of v1.1.0. No schema changes, no migrations — safe to upgrade in place with `./scripts/deploy.sh`.
+Polish release on top of v1.1.0. No schema changes, no migrations - safe to upgrade in place with `./scripts/deploy.sh`.
 
-The headline fix: projected spend/day and the Braiins runway date no longer jitter tick-to-tick. Both figures now ride the same 3-hour rolling average of delivered hashrate that Ocean uses for its income estimate, so the two sides of the P&L panel are finally on the same cadence. Under that: a `min_delta`-as-floor correction for escalation (builds 78/79 treated it as a veto, which stalled fills when the market moved in tiny increments — now it rounds the next step up to `current + min_delta` instead of skipping entirely), a 3 h range preset on the chart (and a bug fix so the picker actually renders it), and a batch of UI polish — Ocean panel regrouped by meaning, last-pool-block reward relabeled to "our earnings (est.)", Sim **Apply to config** now has visual feedback, amber-500 for the yellow delivered/our-bid lines, and the "US$" label drops the "US" prefix for non-en-US locales. Denomination toggle now appears immediately after enabling the BTC price oracle (no page reload needed).
+The headline fix: projected spend/day and the Braiins runway date no longer jitter tick-to-tick. Both figures now ride the same 3-hour rolling average of delivered hashrate that Ocean uses for its income estimate, so the two sides of the P&L panel are finally on the same cadence. Under that: a `min_delta`-as-floor correction for escalation (builds 78/79 treated it as a veto, which stalled fills when the market moved in tiny increments - now it rounds the next step up to `current + min_delta` instead of skipping entirely), a 3 h range preset on the chart (and a bug fix so the picker actually renders it), and a batch of UI polish - Ocean panel regrouped by meaning, last-pool-block reward relabeled to "our earnings (est.)", Sim **Apply to config** now has visual feedback, amber-500 for the yellow delivered/our-bid lines, and the "US$" label drops the "US" prefix for non-en-US locales. Denomination toggle now appears immediately after enabling the BTC price oracle (no page reload needed).
 
 ### `[Fix]` P&L "projected spend/day" and Braiins runway: smooth over 3 h of delivered hashrate
 
 Both figures were computed from the current tick's per-bid `avg_speed_ph`, which
-wobbles noticeably minute-to-minute — the headline "projected spend/day" number
+wobbles noticeably minute-to-minute - the headline "projected spend/day" number
 on the P&L panel jumped around tick-to-tick even when the autopilot hadn't
 changed anything, and the Braiins-card runway date slid back and forth with it.
 The income side of the same panel already reads Ocean's "earnings at the
@@ -884,23 +888,23 @@ cadence. Tooltip on "projected spend/day" updated to say so.
 
 Three tweaks:
 
-- `hashprice (break-even)` moved up under `ocean hashrate`. Both are current observations (same flavour as Datum's `datum hashrate` or Braiins' `delivered`) — nothing to do with our accrued earnings. Grouping them at the top and adding a divider below makes the panel read top→bottom as "what's happening now" → "what we've earned / will earn" → "pool-wide context".
-- The last-pool-block section's `reward` row (the full block reward, irrelevant to us) is now `our earnings (est.)` — `total_reward × current share_log`, same math the chart tooltip uses. Approximation for older blocks since share_log drifts, but operator-relevant: it answers "how much did that block put in my unpaid bucket" instead of "what did the pool collectively win".
+- `hashprice (break-even)` moved up under `ocean hashrate`. Both are current observations (same flavour as Datum's `datum hashrate` or Braiins' `delivered`) - nothing to do with our accrued earnings. Grouping them at the top and adding a divider below makes the panel read top→bottom as "what's happening now" → "what we've earned / will earn" → "pool-wide context".
+- The last-pool-block section's `reward` row (the full block reward, irrelevant to us) is now `our earnings (est.)` - `total_reward × current share_log`, same math the chart tooltip uses. Approximation for older blocks since share_log drifts, but operator-relevant: it answers "how much did that block put in my unpaid bucket" instead of "what did the pool collectively win".
 - Divider inserted between the current-observations group and the earnings group.
 
 ### `[UI]` Sim "Apply to config" now has visual feedback
 
-The button swallowed clicks silently — the only "feedback" was that it eventually disappeared when `dirty` went false after the config round-trip, with nothing in between. Added a local `applyState` machine: `Applying…` during the save (button disabled), `Applied ✓` in emerald for 1.5 s on success, `Failed — retry` in red on error (persists until next click). Reset button disables while applying too.
+The button swallowed clicks silently - the only "feedback" was that it eventually disappeared when `dirty` went false after the config round-trip, with nothing in between. Added a local `applyState` machine: `Applying…` during the save (button disabled), `Applied ✓` in emerald for 1.5 s on success, `Failed - retry` in red on error (persists until next click). Reset button disables while applying too.
 
 ### `[Fix]` Escalation min-delta is a floor, not a veto
 
-Operator clarified the intent of the symmetric min-delta work: when the natural next price sits less than `min_delta` above the current bid, the autopilot should still raise — it just rounds **up** to `current + min_delta` so we never sit one sat above the previous step. The previous behaviour (build 78/79) skipped the escalation entirely, which stalled fills when the market was moving in tiny increments. Raising is now: `min(max(naive_step, current + min_delta), effective_cap)`. Lowering keeps its deadband semantics (`min_delta` remains a veto there — lowering burns the Braiins 10-min cooldown and isn't worth a small saving).
+Operator clarified the intent of the symmetric min-delta work: when the natural next price sits less than `min_delta` above the current bid, the autopilot should still raise - it just rounds **up** to `current + min_delta` so we never sit one sat above the previous step. The previous behaviour (build 78/79) skipped the escalation entirely, which stalled fills when the market was moving in tiny increments. Raising is now: `min(max(naive_step, current + min_delta), effective_cap)`. Lowering keeps its deadband semantics (`min_delta` remains a veto there - lowering burns the Braiins 10-min cooldown and isn't worth a small saving).
 
 Applied to both `decide.ts` (real controller) and `routes/simulate.ts` (replay engine) so sim and live behave identically.
 
 ### `[Fix]` 3 h range selector now visible in the chart picker
 
-Status-page picker was hardcoded to `['6h', '12h', '24h', '1w', '1m', '1y', 'all']` — the shared `CHART_RANGES` array added `3h` but the picker wasn't iterating over it. Swapped the literal for `CHART_RANGES.map(...)` so future ranges are picked up without touching the render site.
+Status-page picker was hardcoded to `['6h', '12h', '24h', '1w', '1m', '1y', 'all']` - the shared `CHART_RANGES` array added `3h` but the picker wasn't iterating over it. Swapped the literal for `CHART_RANGES.map(...)` so future ranges are picked up without touching the render site.
 
 ### `[Feature]` Chart range picker: added 3 h preset
 
@@ -908,18 +912,18 @@ New `3h` option at the left end of the range picker, sitting before `6h`. Same r
 
 ### `[UI]` Delivered (Braiins) / our-bid: amber-400 → amber-500
 
-Operator eyecheck: on the live dashboard the Hashrate chart's yellow `delivered (Braiins)` line read pale next to the PriceChart's "our bid" line, even though both were the same `#fbbf24`. Bumped both shared constants to Tailwind amber-500 (`#f59e0b`) — a deeper, more orange amber — so the Braiins-side colour reads saturated across both charts. Sim mode moves to `#f97316` (orange-500) on both charts for a consistent toggled-on overlay. The gold found-by-us block cube keeps `#fbbf24`, now the unique "jackpot" accent.
+Operator eyecheck: on the live dashboard the Hashrate chart's yellow `delivered (Braiins)` line read pale next to the PriceChart's "our bid" line, even though both were the same `#fbbf24`. Bumped both shared constants to Tailwind amber-500 (`#f59e0b`) - a deeper, more orange amber - so the Braiins-side colour reads saturated across both charts. Sim mode moves to `#f97316` (orange-500) on both charts for a consistent toggled-on overlay. The gold found-by-us block cube keeps `#fbbf24`, now the unique "jackpot" accent.
 
 ### `[Fix]` Denomination toggle reacts to config save; USD label drops the "US" prefix (#37)
 
 Two small fixes in one pass:
 
-- Enabling the BTC price oracle in Config (`btc_price_source: none` → `coingecko`/etc.) now makes the sats/USD toggle in the header appear immediately after Save. Previously the operator had to reload the page — the config-save `onSuccess` invalidated the status / finance / stats / metrics queries but forgot `['btc-price']`, so the DenominationToggle kept seeing `btcPrice === null` until the next 5-min poll. Added the invalidation.
-- On non-`en-US` locales, USD values rendered as "US$ 36,48" because `Intl.NumberFormat` disambiguates the currency symbol by default. That "US" prefix ate horizontal space on the narrow PRICE card and every stat-card value without adding information — inside a Bitcoin dashboard "dollars = USD" is already unambiguous. Replaced the four `style: 'currency', currency: 'USD'` sites (Status PRICE card, Status unit label, PriceChart Y-axis, the shared `formatUsd` helper) with a plain `$` prefix plus locale-aware number formatting. Grouping + decimals still honour the operator's locale; only the symbol changed.
+- Enabling the BTC price oracle in Config (`btc_price_source: none` → `coingecko`/etc.) now makes the sats/USD toggle in the header appear immediately after Save. Previously the operator had to reload the page - the config-save `onSuccess` invalidated the status / finance / stats / metrics queries but forgot `['btc-price']`, so the DenominationToggle kept seeing `btcPrice === null` until the next 5-min poll. Added the invalidation.
+- On non-`en-US` locales, USD values rendered as "US$ 36,48" because `Intl.NumberFormat` disambiguates the currency symbol by default. That "US" prefix ate horizontal space on the narrow PRICE card and every stat-card value without adding information - inside a Bitcoin dashboard "dollars = USD" is already unambiguous. Replaced the four `style: 'currency', currency: 'USD'` sites (Status PRICE card, Status unit label, PriceChart Y-axis, the shared `formatUsd` helper) with a plain `$` prefix plus locale-aware number formatting. Grouping + decimals still honour the operator's locale; only the symbol changed.
 
-## v1.1.0 — 2026-04-20
+## v1.1.0 - 2026-04-20
 
-Observability release. The dashboard's Hashrate chart grows from two series (Braiins delivered + Datum received) to three — Ocean-credited hashrate is now a first-class line, polled every tick. Every Ocean pool block credited to the operator's wallet is marked on the chart with a clickable cube that opens the configured block explorer. The Ocean panel's "last pool block" is clickable too. A new runway-forecast row on the Braiins panel projects when the account will run dry at the current spend rate. Plenty of UI polish — stat cards split by source, chart palette reassigned for accessibility, Ocean panel re-ordered so the operator's own stats sit at the top. Under the hood: symmetric `min_delta` gate (no more +2/+7 sat price flutter), Ocean refresh dropped 5 min → 60 s, and `monthly_budget_ceiling_sat` removed as a bookkeeping concept that never had enforcement behind it. Migrations 0033-0037 apply on startup.
+Observability release. The dashboard's Hashrate chart grows from two series (Braiins delivered + Datum received) to three - Ocean-credited hashrate is now a first-class line, polled every tick. Every Ocean pool block credited to the operator's wallet is marked on the chart with a clickable cube that opens the configured block explorer. The Ocean panel's "last pool block" is clickable too. A new runway-forecast row on the Braiins panel projects when the account will run dry at the current spend rate. Plenty of UI polish - stat cards split by source, chart palette reassigned for accessibility, Ocean panel re-ordered so the operator's own stats sit at the top. Under the hood: symmetric `min_delta` gate (no more +2/+7 sat price flutter), Ocean refresh dropped 5 min → 60 s, and `monthly_budget_ceiling_sat` removed as a bookkeeping concept that never had enforcement behind it. Migrations 0033-0037 apply on startup.
 
 No controller behaviour changes beyond the `min_delta` tightening; the observability work is purely additive.
 
@@ -927,7 +931,7 @@ No controller behaviour changes beyond the `min_delta` tightening; the observabi
 
 Review-pass cleanup. Three issues found, all fixed:
 
-1. **Duplicate `/v1/user_hashrate` HTTP call (MEDIUM).** The per-tick `OceanHashrateService` and the cached `OceanClient` were both hitting the same Ocean endpoint every minute — 2 req/min per wallet where 1 suffices. The split existed because `OceanClient` originally cached for 5 min; that rationale died when the TTL was dropped to 60 s in build 76. Removed the dedicated service; the observe tick path now reads `user_hashrate_5m_ph` off the shared cached `oceanClient.fetchStats()` call.
+1. **Duplicate `/v1/user_hashrate` HTTP call (MEDIUM).** The per-tick `OceanHashrateService` and the cached `OceanClient` were both hitting the same Ocean endpoint every minute - 2 req/min per wallet where 1 suffices. The split existed because `OceanClient` originally cached for 5 min; that rationale died when the TTL was dropped to 60 s in build 76. Removed the dedicated service; the observe tick path now reads `user_hashrate_5m_ph` off the shared cached `oceanClient.fetchStats()` call.
 2. **Duplicated daily-spend calculation (MEDIUM).** The Braiins-panel runway row inlined the same filter + reduce the `FinancePanel`'s `useMemo` already runs. Extracted `projectedDailySpendSat(bids)` to `packages/dashboard/src/lib/finance.ts`; both callers now share it. The inline 50-line `.map` callback became a `<BraiinsBalances>` subcomponent so the reduce runs once per render instead of once per balance row, with a `useMemo` around it.
 3. **`fmtHashrate` inline duplicates `formatHashratePH` (NIT).** Two sites (`StatsBar` and `OceanPanel`) were hand-rolling `${n.toFixed(2)} PH/s` when `lib/format.ts#formatHashratePH` exists for exactly this. Swapped both.
 
@@ -935,15 +939,15 @@ Plus minor comment cleanup in HashrateChart (stripped two comments that narrated
 
 ### `[Infra]` Remove monthly_budget_ceiling_sat (#35)
 
-Scope-changed #35 — instead of wiring up enforcement (new decide gate, Next-Action hint, alert dedupe, P&L progress indicator) for a knob the operator doesn't want, pulled the field out entirely. Per-bid budget + Braiins account balance already bound outflow; a monthly ceiling on top was cognitive overhead without a real constraint behind it. Migration 0037 drops the column from deployed DBs, the Zod schema / state type / dashboard Config page lose the field, and the Budget section on the Config page now has a single row ("Per-bid budget") instead of two.
+Scope-changed #35 - instead of wiring up enforcement (new decide gate, Next-Action hint, alert dedupe, P&L progress indicator) for a knob the operator doesn't want, pulled the field out entirely. Per-bid budget + Braiins account balance already bound outflow; a monthly ceiling on top was cognitive overhead without a real constraint behind it. Migration 0037 drops the column from deployed DBs, the Zod schema / state type / dashboard Config page lose the field, and the Budget section on the Config page now has a single row ("Per-bid budget") instead of two.
 
 ### `[Feature]` Block tooltip shows estimated our-share + our-earnings
 
-The block-marker tooltip now renders an "our share (est.)" sub-block when an Ocean share_log value is available: share log % + estimated sat earnings for that block (`reward × share_log / 100`). The estimate uses the *current* share_log, which is approximate for older blocks since share_log drifts as pool hashrate changes — annotated in the tooltip so it's not read as precise history.
+The block-marker tooltip now renders an "our share (est.)" sub-block when an Ocean share_log value is available: share log % + estimated sat earnings for that block (`reward × share_log / 100`). The estimate uses the *current* share_log, which is approximate for older blocks since share_log drifts as pool hashrate changes - annotated in the tooltip so it's not read as precise history.
 
 ### `[Feature]` Braiins panel: runway forecast row
 
-New "runway" row on the Braiins card, under total. Calculated as `total_balance / projected_spend_per_day` (same projected-spend math the P&L panel already uses — sum of `price × effective_speed` across active owned bids), rendered as `X.Y days · ~Apr 25`. Since the Braiins account doesn't auto-replenish, this is the "when does the tank run dry" forecast at the current spend rate. Deliberately not a moving-average — too much overkill for now; a flat snapshot is good enough for pre-deposit planning.
+New "runway" row on the Braiins card, under total. Calculated as `total_balance / projected_spend_per_day` (same projected-spend math the P&L panel already uses - sum of `price × effective_speed` across active owned bids), rendered as `X.Y days · ~Apr 25`. Since the Braiins account doesn't auto-replenish, this is the "when does the tank run dry" forecast at the current spend rate. Deliberately not a moving-average - too much overkill for now; a flat snapshot is good enough for pre-deposit planning.
 
 ### `[Fix]` Simulator honours symmetric min-delta gate; sim panel label matches
 
@@ -953,33 +957,33 @@ The symmetric `min_delta` gate landed in build 78 updated the real controller (`
 
 Two operator asks layered on top of build 78:
 
-- The cyan Ocean line in build 78 still disappeared into the green Datum line at the operator's eye-check. Swapped to saturated blue (`#3b82f6`), matching the colour of the TIDES-credited block cubes elsewhere on the chart — reinforces the "Ocean → blue" association and gives a hard contrast against green.
+- The cyan Ocean line in build 78 still disappeared into the green Datum line at the operator's eye-check. Swapped to saturated blue (`#3b82f6`), matching the colour of the TIDES-credited block cubes elsewhere on the chart - reinforces the "Ocean → blue" association and gives a hard contrast against green.
 - The Avg Ocean stat tooltip referenced `/v1/user_hashrate` and "5-minute sliding window" without explaining the relationship between our **poll cadence** (every 60 s) and the **window size** of the value we read (`hashrate_300s`, 5 min). Rewritten: "sampled every minute, each sample is a 5-minute smoothed value."
 
 ### `[Feature]` Status-page polish pass (operator backlog)
 
 A batch of follow-up tweaks that piled up while other work was in flight:
 
-- **Stat bar redesign.** Dropped the "mutations" card; split the combined "avg hashrate" into three dedicated cards — "avg braiins", "avg datum", "avg ocean" — so the three sources sit side-by-side instead of being packed into one slash-separated cell. Still seven cards total, now a hair narrower to fit.
-- **Hashrate chart palette.** `delivered (Braiins)` is now **yellow** (matches the "our bid" yellow on the price chart — semantic "what we pay"), `received (Datum)` is **green** (was the delivered colour), `received (Ocean)` is **cyan** (was the Datum colour). Simulation mode moves to **orange** so the toggled-on sim still reads distinct from delivered. The purple / blue Ocean line was near-invisible for colour-blind operators.
-- **Ocean panel reorder.** Operator-centric rows (ocean hashrate, share log, unpaid, next block est., income/day est., next payout, break-even hashprice) are now at the top of the panel — parity with the Braiins / Datum panels, where the panel's own hashrate is always the first row. Pool-wide context (last pool block, pool blocks 24h / 7d, pool users, pool workers) moved to the bottom under a divider.
-- **Explorer link style.** The "last pool block" value is still sky-blue and hover-brightens, but the underline is gone — colour alone communicates "click me" without the visual noise.
+- **Stat bar redesign.** Dropped the "mutations" card; split the combined "avg hashrate" into three dedicated cards - "avg braiins", "avg datum", "avg ocean" - so the three sources sit side-by-side instead of being packed into one slash-separated cell. Still seven cards total, now a hair narrower to fit.
+- **Hashrate chart palette.** `delivered (Braiins)` is now **yellow** (matches the "our bid" yellow on the price chart - semantic "what we pay"), `received (Datum)` is **green** (was the delivered colour), `received (Ocean)` is **cyan** (was the Datum colour). Simulation mode moves to **orange** so the toggled-on sim still reads distinct from delivered. The purple / blue Ocean line was near-invisible for colour-blind operators.
+- **Ocean panel reorder.** Operator-centric rows (ocean hashrate, share log, unpaid, next block est., income/day est., next payout, break-even hashprice) are now at the top of the panel - parity with the Braiins / Datum panels, where the panel's own hashrate is always the first row. Pool-wide context (last pool block, pool blocks 24h / 7d, pool users, pool workers) moved to the bottom under a divider.
+- **Explorer link style.** The "last pool block" value is still sky-blue and hover-brightens, but the underline is gone - colour alone communicates "click me" without the visual noise.
 - **"Min lower delta" → "Min delta".** The deadband now applies in **both directions**: the autopilot no longer fires EDIT_PRICE on a +2 / +7 sat market tick either. Storage key (`min_lower_delta_sat_per_eh_day`) unchanged so existing configs keep their value; label + description rewritten to reflect the symmetric gate.
-- **Next Action copy fix.** The "too expensive to fill" message referenced the config *variable* name `max_overpay_vs_hashprice` — operators see the human label "Max premium over hashprice" on the Config page, which is what the hint now links them to.
+- **Next Action copy fix.** The "too expensive to fill" message referenced the config *variable* name `max_overpay_vs_hashprice` - operators see the human label "Max premium over hashprice" on the Config page, which is what the hint now links them to.
 
 ### `[Infra]` Remove block-marker miner-identity enrichment
 
-Pulled the whole enrichment feature landed in builds 73 / 75 / 76. It required bitcoind RPC regardless of the operator's payout-source choice, which muddied the Config panel; the `getblock` coinbase parse rarely yielded a useful operator tag anyway; and the Ocean feed already tells us these are all Ocean blocks by construction, so "pool_name = OCEAN" wasn't buying much on its own. Tooltip is back to reward / subsidy / fees only — cleaner and doesn't rely on a local bitcoind being reachable.
+Pulled the whole enrichment feature landed in builds 73 / 75 / 76. It required bitcoind RPC regardless of the operator's payout-source choice, which muddied the Config panel; the `getblock` coinbase parse rarely yielded a useful operator tag anyway; and the Ocean feed already tells us these are all Ocean blocks by construction, so "pool_name = OCEAN" wasn't buying much on its own. Tooltip is back to reward / subsidy / fees only - cleaner and doesn't rely on a local bitcoind being reachable.
 
 Reverts: `services/coinbase.ts`, `state/repos/block_metadata.ts`, the bitcoind-client `getBlock` helper, the `OurBlock.pool_name` / `miner_tag` fields, the Ocean-panel "miner" row, and the always-visible bitcoind RPC fields in the Config panel (they're gated behind `payout_source === 'bitcoind'` again, which is how it was before). Adds migration 0036 to drop the unused `block_metadata` table on deployed DBs.
 
 ### `[Perf]` Ocean panel refreshes every 60 s (was 5 min); enrichment picks up new blocks within a minute
 
-The Ocean panel was on a 5-min refresh (both client-side refetch and server-side cache) which felt sluggish — and because block-marker enrichment only runs on a cache-miss of `/api/ocean`, new blocks took up to 5 minutes to get their `Simple Mining · OCEAN` style label. Dropped both to 60 s, aligned with the chart / tick cadence. Net cost is ~4 req/min to Ocean's public API per wallet — well below any sane rate limit and on par with what Ocean's own dashboard does.
+The Ocean panel was on a 5-min refresh (both client-side refetch and server-side cache) which felt sluggish - and because block-marker enrichment only runs on a cache-miss of `/api/ocean`, new blocks took up to 5 minutes to get their `Simple Mining · OCEAN` style label. Dropped both to 60 s, aligned with the chart / tick cadence. Net cost is ~4 req/min to Ocean's public API per wallet - well below any sane rate limit and on par with what Ocean's own dashboard does.
 
 ### `[UI]` Bitcoin Core RPC always visible in Config; dual-purpose hint
 
-The bitcoind RPC credentials were previously only shown when "Bitcoin Core RPC" was selected as the on-chain-payout backend. With block-marker miner-identity enrichment added, the credentials are now used by that feature regardless of the payout choice — so an operator running Electrs for payouts was left with the enrichment silently disabled and no UI surface to configure the RPC. Pulled the three fields out from behind the radio-selector gate; they now render unconditionally with a help note that swaps wording based on whether the Electrs or bitcoind payout path is in use.
+The bitcoind RPC credentials were previously only shown when "Bitcoin Core RPC" was selected as the on-chain-payout backend. With block-marker miner-identity enrichment added, the credentials are now used by that feature regardless of the payout choice - so an operator running Electrs for payouts was left with the enrichment silently disabled and no UI surface to configure the RPC. Pulled the three fields out from behind the radio-selector gate; they now render unconditionally with a help note that swaps wording based on whether the Electrs or bitcoind payout path is in use.
 
 ### `[UI]` Ocean panel shows Ocean-credited hashrate; chart line recoloured to match the block cubes
 
@@ -990,25 +994,25 @@ Follow-up polish on #36 after operator testing. Two tweaks:
 
 ### `[Feature]` Hashrate chart: third series for Ocean-credited hashrate (#36)
 
-The chart previously showed Braiins-delivered and Datum-received, but not what Ocean's own API credits to our payout address — arguably the single most important number ("what hashrate does the pool actually see from us?"). Added a violet `received (Ocean)` line sourced from Ocean's `/v1/user_hashrate` endpoint (the `hashrate_300s` field, a 5-min sliding window — responsive but smooth at a 1-min tick cadence).
+The chart previously showed Braiins-delivered and Datum-received, but not what Ocean's own API credits to our payout address - arguably the single most important number ("what hashrate does the pool actually see from us?"). Added a violet `received (Ocean)` line sourced from Ocean's `/v1/user_hashrate` endpoint (the `hashrate_300s` field, a 5-min sliding window - responsive but smooth at a 1-min tick cadence).
 
-Plumbing: new `tick_metrics.ocean_hashrate_ph` column (migration 0035), a small stateless `OceanHashrateService` polled each tick from `observe()` alongside the existing Datum poll, and a `State.ocean_hashrate_ph` field piped through to the metrics API. No control-loop impact — purely observational. The main `OceanClient` keeps its 5-min cache for blocks / pool_stat / statsnap, since none of those need per-tick freshness.
+Plumbing: new `tick_metrics.ocean_hashrate_ph` column (migration 0035), a small stateless `OceanHashrateService` polled each tick from `observe()` alongside the existing Datum poll, and a `State.ocean_hashrate_ph` field piped through to the metrics API. No control-loop impact - purely observational. The main `OceanClient` keeps its 5-min cache for blocks / pool_stat / statsnap, since none of those need per-tick freshness.
 
 ### `[Feature]` Block-marker tooltip shows the miner identity ("Simple Mining · OCEAN")
 
-Block explorers display the miner behind a block as e.g. "Simple Mining · OCEAN", distinct from the Stratum worker label (which, for TIDES-credited pool blocks, is some other operator's rig-name like `14283759` and is meaningless to us). Added local, privacy-preserving enrichment: on each Ocean poll, the daemon calls `getblock <hash> 2` on the operator's own bitcoind node, extracts the coinbase scriptSig, and picks the first operator-meaningful ASCII token as the miner tag. The pool is hardcoded to "OCEAN" for every block (since they come from Ocean's API — no pool-tags database needed).
+Block explorers display the miner behind a block as e.g. "Simple Mining · OCEAN", distinct from the Stratum worker label (which, for TIDES-credited pool blocks, is some other operator's rig-name like `14283759` and is meaningless to us). Added local, privacy-preserving enrichment: on each Ocean poll, the daemon calls `getblock <hash> 2` on the operator's own bitcoind node, extracts the coinbase scriptSig, and picks the first operator-meaningful ASCII token as the miner tag. The pool is hardcoded to "OCEAN" for every block (since they come from Ocean's API - no pool-tags database needed).
 
-No external HTTP — no third-party block explorer learns about this node. Enrichment is cached forever per block hash in a new `block_metadata` table (blocks are immutable). Falls back to the Stratum workername when bitcoind RPC isn't configured or the coinbase yields nothing.
+No external HTTP - no third-party block explorer learns about this node. Enrichment is cached forever per block hash in a new `block_metadata` table (blocks are immutable). Falls back to the Stratum workername when bitcoind RPC isn't configured or the coinbase yields nothing.
 
 Surfaced on the Hashrate-chart cube tooltip (replacing the bare "worker" field) and the Ocean panel (new "miner" row between "found" and "reward").
 
 ### `[UI]` Config: Block explorer moved up so P&L and BTC price oracle pair again
 
-Inserting the new "Block explorer" section between the existing "Profit & Loss" and "BTC price oracle" sections broke their side-by-side pairing — both became half-width cards stranded in their own rows. Moved the Block explorer section up one slot (above Profit & Loss) so the P&L + BTC-price-oracle pair reunites on a single row.
+Inserting the new "Block explorer" section between the existing "Profit & Loss" and "BTC price oracle" sections broke their side-by-side pairing - both became half-width cards stranded in their own rows. Moved the Block explorer section up one slot (above Profit & Loss) so the P&L + BTC-price-oracle pair reunites on a single row.
 
 ### `[UI]` Hashrate chart block tooltip: "worker" → "miner"
 
-Block-marker tooltips labelled the Stratum worker name as "worker", which doesn't read naturally next to the block-explorer vocabulary most operators are used to (where the row is usually called the miner / coinbase tag — e.g. "Foundry USA"). Relabelled to "miner" to match that convention, even though the value still comes from Ocean's `workername` field (the Stratum side, not the coinbase tag).
+Block-marker tooltips labelled the Stratum worker name as "worker", which doesn't read naturally next to the block-explorer vocabulary most operators are used to (where the row is usually called the miner / coinbase tag - e.g. "Foundry USA"). Relabelled to "miner" to match that convention, even though the value still comes from Ocean's `workername` field (the Stratum side, not the coinbase tag).
 
 ### `[Feature]` Configurable block explorer; clickable block links (#22)
 
@@ -1018,27 +1022,27 @@ Wiring: the Ocean panel's "last pool block" row is now a link to the configured 
 
 ### `[UI]` Hashrate chart block tooltips: interactive, richer fields, localised dates
 
-Replaced the SVG `<title>` hover text with an interactive HTML tooltip matching the price-chart edit-event style — dark pill, rounded, pins on click, closes on outside click or the × button. Fields: block height, localised full timestamp (uses the dashboard's configured locale — no more hard-coded American M/D/Y), UTC line, pool reward / subsidy / fees all in BTC with the ₿ symbol (8-decimal mining precision), finder worker, and an "open in block explorer" link. The raw hex block hash, Bitcoin-network difficulty, and transaction count were dropped as non-essential for the operator's day-to-day question of "did we earn anything and where do I dig deeper". The solo-finder ("found by us") case keeps the existing gold colour; TIDES-credited pool blocks (the common case) are now blue (Tailwind blue-500) — distinct from the Datum cyan and the teal delivered curve.
+Replaced the SVG `<title>` hover text with an interactive HTML tooltip matching the price-chart edit-event style - dark pill, rounded, pins on click, closes on outside click or the × button. Fields: block height, localised full timestamp (uses the dashboard's configured locale - no more hard-coded American M/D/Y), UTC line, pool reward / subsidy / fees all in BTC with the ₿ symbol (8-decimal mining precision), finder worker, and an "open in block explorer" link. The raw hex block hash, Bitcoin-network difficulty, and transaction count were dropped as non-essential for the operator's day-to-day question of "did we earn anything and where do I dig deeper". The solo-finder ("found by us") case keeps the existing gold colour; TIDES-credited pool blocks (the common case) are now blue (Tailwind blue-500) - distinct from the Datum cyan and the teal delivered curve.
 
 ### `[Fix]` Hashrate chart: cubes for every TIDES-credited pool block (#23)
 
-Original issue #23 implementation filtered pool blocks by `username === our_payout_address`, i.e. only marked blocks our own worker literally found — a solo-lottery event that, at 3 PH/s against the network, effectively never happens. The operator saw Ocean's panel report `last pool block 1h 30m ago` and reasonably expected a cube at 15:30 on the chart; none appeared.
+Original issue #23 implementation filtered pool blocks by `username === our_payout_address`, i.e. only marked blocks our own worker literally found - a solo-lottery event that, at 3 PH/s against the network, effectively never happens. The operator saw Ocean's panel report `last pool block 1h 30m ago` and reasonably expected a cube at 15:30 on the chart; none appeared.
 
-Under Ocean TIDES every pool block credits everyone with shares in the 8-block reward window, so the chart now marks every recent pool block returned by Ocean. The rare "our worker found it" case is still distinguished visually — solid-ish dashed line for found-by-us, faint dotted line for TIDES-credit — and the hover tooltip says `FOUND BY US` vs `credited via TIDES`. Legend label is now "pool block". MVP simplification: we do not yet cross-check whether our shares were actually in the reward window at the time of a given block, so a long daemon outage would display cubes for blocks that did not, in reality, credit us.
+Under Ocean TIDES every pool block credits everyone with shares in the 8-block reward window, so the chart now marks every recent pool block returned by Ocean. The rare "our worker found it" case is still distinguished visually - solid-ish dashed line for found-by-us, faint dotted line for TIDES-credit - and the hover tooltip says `FOUND BY US` vs `credited via TIDES`. Legend label is now "pool block". MVP simplification: we do not yet cross-check whether our shares were actually in the reward window at the time of a given block, so a long daemon outage would display cubes for blocks that did not, in reality, credit us.
 
 ### `[UI]` Ocean panel: "last block" rows relabeled "last pool block"
 
-The Ocean panel's "last block / blocks 24h / blocks 7d" rows are pool-wide figures (Ocean's `recent_blocks` feed), not blocks found by the operator's own payout address — but the unqualified "last block" read as "your last block." Operators who saw `found 22 min ago` next to no marker on the hashrate chart were correctly confused: the chart only marks blocks credited to the configured payout address (that's issue #23's whole point), and the 22-min-ago block wasn't one of them. Renamed the three rows to `last pool block` / `pool blocks 24h` / `pool blocks 7d` so the distinction is visible on-panel.
+The Ocean panel's "last block / blocks 24h / blocks 7d" rows are pool-wide figures (Ocean's `recent_blocks` feed), not blocks found by the operator's own payout address - but the unqualified "last block" read as "your last block." Operators who saw `found 22 min ago` next to no marker on the hashrate chart were correctly confused: the chart only marks blocks credited to the configured payout address (that's issue #23's whole point), and the 22-min-ago block wasn't one of them. Renamed the three rows to `last pool block` / `pool blocks 24h` / `pool blocks 7d` so the distinction is visible on-panel.
 
 ### `[UI]` Hashrate chart block markers: isometric cube, matching Ocean's icon
 
-Replaced the `₿` glyph that sat above the block-marker line with a small isometric cube SVG — three rhombus faces (top, front, right) in the gold block-marker colour — so the marker style matches the cube icons Ocean uses on its own block viewer.
+Replaced the `₿` glyph that sat above the block-marker line with a small isometric cube SVG - three rhombus faces (top, front, right) in the gold block-marker colour - so the marker style matches the cube icons Ocean uses on its own block viewer.
 
-## v1.0.3 — 2026-04-20
+## v1.0.3 - 2026-04-20
 
-Defaults polish. The v1.0.2 setup wizard got the installation *process* smooth on a fresh Ubuntu box, but the defaults it wrote in were intentionally-conservative placeholders from the very first prototype — fine to start with, but not what most operators actually want to run. This release retunes them to the values the operator has been running against the live market for weeks, flips escalation mode to `market`, turns the dynamic hashprice cap on by default, and switches P&L to the whole-account scope. Plus a fix for a phantom "Escalation overdue" countdown on the Next Action card when the dynamic cap is what's blocking.
+Defaults polish. The v1.0.2 setup wizard got the installation *process* smooth on a fresh Ubuntu box, but the defaults it wrote in were intentionally-conservative placeholders from the very first prototype - fine to start with, but not what most operators actually want to run. This release retunes them to the values the operator has been running against the live market for weeks, flips escalation mode to `market`, turns the dynamic hashprice cap on by default, and switches P&L to the whole-account scope. Plus a fix for a phantom "Escalation overdue" countdown on the Next Action card when the dynamic cap is what's blocking.
 
-No schema changes, no migration — existing installs keep every stored value; only fresh setups see the new defaults.
+No schema changes, no migration - existing installs keep every stored value; only fresh setups see the new defaults.
 
 ### `[Infra]` P&L spent-scope defaults to whole account
 
@@ -1058,33 +1062,33 @@ Fresh installs now start with operator-tested values instead of intentionally-co
 - `bid_budget_sat` → **200,000 sat** (was 50,000)
 - `monthly_budget_ceiling_sat` → **1,000,000 sat** (was 500,000)
 
-Existing installs keep their stored values — no migration.
+Existing installs keep their stored values - no migration.
 
 ### `[Fix]` Next Action card respects the dynamic cap, not just `max_bid`
 
-When the effective cap was `hashprice + max_overpay` (tighter than the fixed `max_bid`) and `fillable + overpay` exceeded it, the card showed a phantom "Escalation in X min … market mode will jump to Y" countdown that could never fire — decide() was correctly refusing because `desiredPrice > effectiveCap`, but the predictor only compared against the fixed cap. Now the predictor computes the effective cap the same way decide() does and, when blocked, shows the specific detail: "Fillable + overpay 47,671 sat/PH/day exceeds your dynamic hashprice+max_overpay cap (47,075 sat/PH/day). Raise max_overpay_vs_hashprice in Config to unblock."
+When the effective cap was `hashprice + max_overpay` (tighter than the fixed `max_bid`) and `fillable + overpay` exceeded it, the card showed a phantom "Escalation in X min … market mode will jump to Y" countdown that could never fire - decide() was correctly refusing because `desiredPrice > effectiveCap`, but the predictor only compared against the fixed cap. Now the predictor computes the effective cap the same way decide() does and, when blocked, shows the specific detail: "Fillable + overpay 47,671 sat/PH/day exceeds your dynamic hashprice+max_overpay cap (47,075 sat/PH/day). Raise max_overpay_vs_hashprice in Config to unblock."
 
 ### `[Infra]` Default escalation mode is now `market`
 
 Fresh installs and unconfigured rows default to market-mode escalation (jump straight to `fillable + overpay` when below floor) instead of dampened stepping. The dampened ladder is still available from the Config page; it just isn't the default any more. Existing installs keep their current setting.
 
-## v1.0.2 — 2026-04-20
+## v1.0.2 - 2026-04-20
 
-The "fresh-install survives first contact with Ubuntu" release. v1.0.1 worked well on a machine that was already set up, but a fresh clone on a fresh host surfaced a long list of small paper cuts — missing prerequisites in the README, a dashboard package that didn't declare its own workspace dep, a setup wizard that prompted for dead fields (Telegram, bitcoind RPC), committed secrets files that confused `pnpm run setup`, a `--force` flag that deleted history as a "side effect", copy buttons that silently failed on LAN HTTP, and a price chart that let a far-above-the-data cap line squash 70% of the plot area. This release rolls all of those up plus a new diagnostic tick-log message that surfaces the actual reason `decide()` returned no proposals.
+The "fresh-install survives first contact with Ubuntu" release. v1.0.1 worked well on a machine that was already set up, but a fresh clone on a fresh host surfaced a long list of small paper cuts - missing prerequisites in the README, a dashboard package that didn't declare its own workspace dep, a setup wizard that prompted for dead fields (Telegram, bitcoind RPC), committed secrets files that confused `pnpm run setup`, a `--force` flag that deleted history as a "side effect", copy buttons that silently failed on LAN HTTP, and a price chart that let a far-above-the-data cap line squash 70% of the plot area. This release rolls all of those up plus a new diagnostic tick-log message that surfaces the actual reason `decide()` returned no proposals.
 
 No API or schema changes; safe to upgrade in place with `./scripts/deploy.sh`.
 
 ### `[UI]` Price chart: cap line no longer hijacks Y-axis scaling
 
-When the effective cap (fixed `max_bid` or the dynamic `hashprice + max_overpay`) sat well above the live data, the cap line forced the Y-axis to stretch up to accommodate it — squashing the bid/fillable/hashprice lines into a thin strip at the bottom and filling the remaining ~70% of the chart with the red "excluded zone" gradient. This regressed the earlier `ddb5a15` work ("Exclude max bid from price chart Y-axis scaling") once the cap line started tracking the *effective* cap (issue #27) instead of plain `max_bid`. Fix: drop `capPoints` from the auto-scale sample. The cap renders if it falls in the auto-scaled range, and the excluded-zone shading clips to the top edge otherwise.
+When the effective cap (fixed `max_bid` or the dynamic `hashprice + max_overpay`) sat well above the live data, the cap line forced the Y-axis to stretch up to accommodate it - squashing the bid/fillable/hashprice lines into a thin strip at the bottom and filling the remaining ~70% of the chart with the red "excluded zone" gradient. This regressed the earlier `ddb5a15` work ("Exclude max bid from price chart Y-axis scaling") once the cap line started tracking the *effective* cap (issue #27) instead of plain `max_bid`. Fix: drop `capPoints` from the auto-scale sample. The cap renders if it falls in the auto-scaled range, and the excluded-zone shading clips to the top edge otherwise.
 
 ### `[Infra]` Logger: concrete reason when decide() returns no proposals
 
-`(no proposals — nothing to do)` was a catch-all that hid the actual blocker — whether the market was too expensive vs the effective cap, the orderbook was too thin at the target depth, or the dynamic-cap guard was holding trading. Added an `inferNoActionReason` helper in `main.ts` that mirrors decide()'s decision tree and emits a specific diagnostic reason per tick. Complements the work in #33.
+`(no proposals - nothing to do)` was a catch-all that hid the actual blocker - whether the market was too expensive vs the effective cap, the orderbook was too thin at the target depth, or the dynamic-cap guard was holding trading. Added an `inferNoActionReason` helper in `main.ts` that mirrors decide()'s decision tree and emits a specific diagnostic reason per tick. Complements the work in #33.
 
 ### `[Fix]` `pnpm run setup --force` no longer destroys the history DB
 
-`--force` used to `rm data/state.db` as part of its "overwrite" path, silently wiping every tick_metrics, decisions, bid_events, and owned_bids row on what the operator thought was just a secrets-file refresh. Split into two flags: plain `--force` now only rewrites secrets + age key + sops policy (and the DB-config row is idempotently upserted, preserving all history); explicit `--wipe-db` is required to delete the DB. Retroactive protection for operators coming back from the previous behavior is impossible — but this closes the footgun for anyone re-running setup from here on.
+`--force` used to `rm data/state.db` as part of its "overwrite" path, silently wiping every tick_metrics, decisions, bid_events, and owned_bids row on what the operator thought was just a secrets-file refresh. Split into two flags: plain `--force` now only rewrites secrets + age key + sops policy (and the DB-config row is idempotently upserted, preserving all history); explicit `--wipe-db` is required to delete the DB. Retroactive protection for operators coming back from the previous behavior is impossible - but this closes the footgun for anyone re-running setup from here on.
 
 ### `[Fix]` Copy buttons work over plain HTTP (LAN hostnames)
 
@@ -1092,7 +1096,7 @@ The pool-URL and bid-ID copy buttons did nothing when the dashboard was accessed
 
 ### `[Infra]` Drop bitcoind RPC prompts from `pnpm run setup`
 
-`#14` moved bitcoind RPC credentials to the dashboard Config page, but the setup wizard was still prompting for URL / user / password on every fresh install — dead weight, and worse, `bitcoind_rpc_user` validation rejected empty input even though the credentials are only needed when the operator picks `bitcoind` as the payout source (Electrs is the default). Prompts removed. `SecretsSchema`'s three bitcoind fields are now `.optional()`; main.ts's legacy seed-from-secrets path still works when the fields happen to be present, but fresh installs no longer touch them. Read-only Braiins token prompt stays — it's a legit privilege-separation optimization for `READ_ONLY`-scoped API calls.
+`#14` moved bitcoind RPC credentials to the dashboard Config page, but the setup wizard was still prompting for URL / user / password on every fresh install - dead weight, and worse, `bitcoind_rpc_user` validation rejected empty input even though the credentials are only needed when the operator picks `bitcoind` as the payout source (Electrs is the default). Prompts removed. `SecretsSchema`'s three bitcoind fields are now `.optional()`; main.ts's legacy seed-from-secrets path still works when the fields happen to be present, but fresh installs no longer touch them. Read-only Braiins token prompt stays - it's a legit privilege-separation optimization for `READ_ONLY`-scoped API calls.
 
 ### `[Infra]` Drop Telegram prompts from `pnpm run setup`
 
@@ -1105,14 +1109,14 @@ Fresh clones of the repo failed at `pnpm build` with `Cannot find module '@braii
 ### `[UI]` Footer links to the CHANGELOG on GitHub
 
 Dashboard footer now carries a `changelog` link next to the build + hash, pointing at `CHANGELOG.md` on `main`. No local
-render — for the curious, a click away.
+render - for the curious, a click away.
 
 ### `[UI]` Price-chart legend: max-bid swatch is now solid, matching the chart
 
-The legend swatch for "max bid" was drawn dashed while the actual cap line on the chart is solid — visually inconsistent
+The legend swatch for "max bid" was drawn dashed while the actual cap line on the chart is solid - visually inconsistent
 with no functional reason. Legend now renders solid for that entry.
 
-## v1.0.1 — 2026-04-20
+## v1.0.1 - 2026-04-20
 
 Point release for a significant autopilot-stalling bug (#33): a headless daemon would silently stop producing proposals
 once the hashprice cache aged past its 60-min freshness window, because only the dashboard refreshed it. Operators
@@ -1128,15 +1132,15 @@ Datum pool-URL row.
 
 ### `[Fix]` Keep the hashprice cache warm inside the daemon (#33)
 
-The dynamic-cap guard refuses to trade when hashprice is unknown/stale — which was correct, but in steady state the only
+The dynamic-cap guard refuses to trade when hashprice is unknown/stale - which was correct, but in steady state the only
 thing refreshing the cache was the dashboard's finance poll. A headless daemon running longer than the 60-min freshness
 window would silently stop producing proposals, the bid would drift below fillable, and hashrate uptime would collapse.
 Added a `HashpriceRefresher` service that polls Ocean every 10 min from the daemon itself, independent of any dashboard
 client. Also: the tick log now explicitly says
-`(no proposals — hashprice unknown/stale, dynamic-cap guard is holding trading)` when the guard fires, instead of the
+`(no proposals - hashprice unknown/stale, dynamic-cap guard is holding trading)` when the guard fires, instead of the
 bland `(nothing to do)` that hid the problem.
 
-## v1.0.0 — 2026-04-19
+## v1.0.0 - 2026-04-19
 
 First stable release. Tagged so operators who don't want to track `main` daily have a pinned reference to run against.
 
@@ -1149,13 +1153,13 @@ First stable release. Tagged so operators who don't want to track `main` daily h
 - Independent break-even reference via Ocean: dynamic cap gates on a fresh Ocean hashprice, refuses to trade when that
   reference is unavailable, and falls back to the fixed cap only when the operator hasn't configured the dynamic one.
 - Full-history simulator that replays `tick_metrics` under candidate parameters and reports uptime / mutations / cost /
-  overpay — now with the Braiins 10-min cooldown and the dynamic cap respected, so simulated stats match what the real
+  overpay - now with the Braiins 10-min cooldown and the dynamic cap respected, so simulated stats match what the real
   controller can actually achieve.
 - Dashboard with Status + Config pages, per-tick Next Action prediction, depth-aware price / hashrate charts, pinned
   event tooltips with full market context, and P&L per-day + lifetime panels.
 - Datum Gateway + Ocean pool integration for end-to-end pipeline observation.
 
-**Bug fixes since CHANGELOG introduction (issues #28–#32):**
+**Bug fixes since CHANGELOG introduction (issues #28-#32):**
 
 - `[Fix]` Dynamic cap no longer silently collapses when the dashboard is closed (#28). Hashprice cache timestamps its
   writes, seeds from a boot-time Ocean fetch, and decide() refuses to trade when the cap is configured but hashprice is
@@ -1166,10 +1170,10 @@ First stable release. Tagged so operators who don't want to track `main` daily h
   truthful (#30).
 - `[Fix]` P&L per-day rows stop disappearing on transient 0-spend or missing-income states; show `calculating…` when
   Ocean income hasn't landed yet (#31).
-- `[Fix]` Simulator enforces the Braiins 10-min price-decrease cooldown; no more simulated lowerings 5–8 minutes apart
+- `[Fix]` Simulator enforces the Braiins 10-min price-decrease cooldown; no more simulated lowerings 5-8 minutes apart
   that the real bot could never execute (#32).
 - `[Polish]` Event tooltip units use the ≡ sat glyph and muted styling, matching the rest of the Status page.
-- `[Polish]` Hashprice row moved from the Braiins card to the Ocean card, where it belongs — it's Ocean-derived, not
+- `[Polish]` Hashprice row moved from the Braiins card to the Ocean card, where it belongs - it's Ocean-derived, not
   Braiins-reported.
 - `[Feature]` Tooltip now surfaces `max overpay vs hashprice` and `hashprice + max overpay` so operators can see which
   cap is binding at the event's tick.
@@ -1264,7 +1268,7 @@ P&L, and repaired tooltips that broke in the split.
 
 ### `[Fix]` Auto-refetch status when countdown expires
 
-Status polls kept counting down past zero without refetching when the daemon was mid-tick. Fixed — `RefreshCountdown`
+Status polls kept counting down past zero without refetching when the daemon was mid-tick. Fixed - `RefreshCountdown`
 now keeps polling and the Datum badge says "API reachable" when live.
 
 ### `[Fix]` Honor Datum's reported hashrate unit
@@ -1387,7 +1391,7 @@ Moved Bitcoin node RPC host/user/pass out of env vars into the dashboard Config 
 
 ### `[Feature]` Lower-patience window
 
-Added a lower-patience window to prevent chasing short market dips — the autopilot will only lower the price after the
+Added a lower-patience window to prevent chasing short market dips - the autopilot will only lower the price after the
 market has sat cheap continuously for N minutes.
 
 ### `[Feature]` Hashprice + overpay-vs-hashprice as time series + stat
@@ -1596,7 +1600,7 @@ Scrub remaining "max overpay" references from live UI.
 
 ### `[Infra]` Rename `max_overpay` → `overpay`
 
-Renamed the config field to reflect reality — it was never a `max`.
+Renamed the config field to reflect reality - it was never a `max`.
 
 ### `[Infra]` CLAUDE.md with issue-lifecycle convention
 

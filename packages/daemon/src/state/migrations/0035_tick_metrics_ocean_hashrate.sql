@@ -4,7 +4,7 @@
 -- Datum-received so the gap between them is visible at a glance.
 --
 -- Sourced from GET /v1/user_hashrate/<address>?field=hashrate_300s
--- (5-minute window — responsive but not noisy). NULL when Ocean is
+-- (5-minute window - responsive but not noisy). NULL when Ocean is
 -- not configured or the poll failed. Stored in PH/s to match the
 -- existing hashrate columns.
 

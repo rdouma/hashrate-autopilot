@@ -2,7 +2,7 @@
 -- 'autopilot' (default) = sum of consumed across owned_bids the
 -- autopilot has tagged. 'account' = sum of all
 -- "(Partial) order settlement (brutto price)" entries from
--- /v1/account/transaction — includes bids placed before the autopilot
+-- /v1/account/transaction - includes bids placed before the autopilot
 -- existed, so the net P&L matches Ocean's lifetime earnings on the
 -- income side.
 

@@ -1,8 +1,8 @@
 /**
  * Account-lifetime spend tracker.
  *
- * Sums spend across every bid the Braiins account has ever owned —
- * active + historical — to derive the true "total BTC paid out for
+ * Sums spend across every bid the Braiins account has ever owned -
+ * active + historical - to derive the true "total BTC paid out for
  * hashrate." Covers bids placed before the autopilot was switched on,
  * so it pairs honestly with Ocean's lifetime earnings.
  *
@@ -10,7 +10,7 @@
  * `closed_bids_cache` (see state/repos/closed_bids_cache.ts).
  *
  * Per-bid spend: `counters_committed.amount_consumed_sat`. Empirically
- * the list endpoint returns only `counters_committed` per item —
+ * the list endpoint returns only `counters_committed` per item -
  * `counters_estimate` and `state_estimate` are populated solely on
  * `/spot/bid/detail/{id}`. The OpenAPI spec promises all three; the
  * wire only delivers the committed counter.
@@ -19,7 +19,7 @@
  *   - Terminal bids (is_current=false) are immutable after the status
  *     flips. We upsert each one into `closed_bids_cache` the first
  *     time we see it, then count them from the DB sum on every
- *     subsequent refresh — never re-reading their consumed value.
+ *     subsequent refresh - never re-reading their consumed value.
  *   - Active bids (is_current=true) are always read live from the
  *     wire; their consumed counter updates hourly as Braiins settles.
  *   - Pagination short-circuits: once a page produces zero new
@@ -102,13 +102,13 @@ export class AccountSpendService {
   async rebuild(): Promise<void> {
     await this.repo.clear();
     this.snapshotCache = null;
-    // Don't await any in-flight fetch — just invalidate and let the
+    // Don't await any in-flight fetch - just invalidate and let the
     // next call trigger a new one.
   }
 
   private async fetchAndSum(): Promise<AccountSpendSnapshot | null> {
     // Start with the already-cached terminal sum. We'll only *add*
-    // newly-discovered terminals on top of this — never re-read
+    // newly-discovered terminals on top of this - never re-read
     // existing cached rows.
     const closedFromCache = await this.repo.sumConsumedSat();
     const cachedIds = await this.repo.allIds();
@@ -140,11 +140,11 @@ export class AccountSpendService {
         if (!Number.isFinite(consumed) || consumed <= 0) continue;
 
         if (isCurrentBid(item)) {
-          // Active — always counted live, never cached.
+          // Active - always counted live, never cached.
           active += consumed;
         } else {
           const id = bidIdOf(item);
-          if (!id) continue; // terminal with no ID — shouldn't happen, but skip defensively
+          if (!id) continue; // terminal with no ID - shouldn't happen, but skip defensively
           if (!cachedIds.has(id)) {
             closedNew += consumed;
             cachedIds.add(id);
@@ -159,7 +159,7 @@ export class AccountSpendService {
 
       // Short-circuit: if this whole page had zero new terminals, the
       // older tail is definitely already in the cache. Note that a
-      // page can still contain new *active* bids — those are at the
+      // page can still contain new *active* bids - those are at the
       // top (newest created) and we always process them. We only
       // terminate the pagination when terminals stop appearing fresh.
       if (newTerminalsOnThisPage === 0) break;

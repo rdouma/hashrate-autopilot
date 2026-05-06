@@ -4,8 +4,8 @@
 -- pay-your-bid `spend_sat` model.
 --
 -- Used by (a) the pay-your-bid-vs-pay-at-ask verification workflow
--- (issue #49 TBD) — per-tick actual vs modeled ratio pins down the
--- matching semantics definitively — and (b) a new "effective rate"
+-- (issue #49 TBD) - per-tick actual vs modeled ratio pins down the
+-- matching semantics definitively - and (b) a new "effective rate"
 -- line on the Price chart derived client-side as
 --   actual_rate_sat_per_ph_day =
 --     (consumed[N] − consumed[N-1]) × 1_440_000 /

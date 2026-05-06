@@ -17,7 +17,7 @@ import { useDenomination } from '../lib/denomination';
 import { formatAge } from '../lib/format';
 import { LOCALE_PRESETS, useLocale } from '../lib/locale';
 
-// #98 — auto-save defaults on; toggle persists per-browser.
+// #98 - auto-save defaults on; toggle persists per-browser.
 const AUTOSAVE_STORAGE_KEY = 'braiins.configAutoSave';
 const AUTOSAVE_DEBOUNCE_MS = 800;
 
@@ -107,7 +107,7 @@ function useSections(): Section[] {
             label: t`Cheap threshold`,
             kind: 'integer',
             unit: '%',
-            help: t`0 = disabled. Example: 95 = activate cheap mode when the best ask on the orderbook is below 95% of the break-even hashprice from Ocean. Braiins matches pay-your-bid (the bid IS the price we pay), and the autopilot tracks the fillable ask plus a small overpay — so a cheap best ask reliably translates into a cheap bid.`,
+            help: t`0 = disabled. Example: 95 = activate cheap mode when the best ask on the orderbook is below 95% of the break-even hashprice from Ocean. Braiins matches pay-your-bid (the bid IS the price we pay), and the autopilot tracks the fillable ask plus a small overpay - so a cheap best ask reliably translates into a cheap bid.`,
           },
           {
             key: 'cheap_sustained_window_minutes',
@@ -121,13 +121,13 @@ function useSections(): Section[] {
       {
         id: 'pool-destination',
         title: t`Pool destination`,
-        description: t`Where rented hashrate lands. Change only if your pool endpoint moves. The BTC payout address sits here too — the worker identity below is auto-derived from it whenever you edit the address, same as the first-run wizard.`,
+        description: t`Where rented hashrate lands. Change only if your pool endpoint moves. The BTC payout address sits here too - the worker identity below is auto-derived from it whenever you edit the address, same as the first-run wizard.`,
         fields: [
           {
             key: 'destination_pool_url',
             label: t`Pool URL`,
             kind: 'text',
-            help: t`Must be reachable from the public internet — Braiins probes it.`,
+            help: t`Must be reachable from the public internet - Braiins probes it.`,
             fullWidth: true,
           },
           {
@@ -141,14 +141,14 @@ function useSections(): Section[] {
             key: 'destination_pool_worker_name',
             label: t`Worker identity`,
             kind: 'text',
-            help: t`Format: <btc-address>.<label>. Ocean TIDES credits shares by the address prefix — anything else routes shares to nobody.`,
+            help: t`Format: <btc-address>.<label>. Ocean TIDES credits shares by the address prefix - anything else routes shares to nobody.`,
             fullWidth: true,
           },
           {
             key: 'datum_api_url',
             label: t`Datum stats API (optional)`,
             kind: 'text',
-            help: t`Optional. Datum Gateway's /umbrel-api endpoint — e.g. http://192.168.1.121:7152. Leave empty to disable; the Datum panel will show "not configured". See docs/setup-datum-api.md for the Umbrel-side port-exposure recipe.`,
+            help: t`Optional. Datum Gateway's /umbrel-api endpoint - e.g. http://192.168.1.121:7152. Leave empty to disable; the Datum panel will show "not configured". See docs/setup-datum-api.md for the Umbrel-side port-exposure recipe.`,
             fullWidth: true,
           },
         ],
@@ -181,7 +181,7 @@ function useSections(): Section[] {
       {
         id: 'budget',
         title: t`Budget`,
-        description: t`How big a single bid is. Set to 0 to use the full available wallet balance on each create — simpler mental model, no manual slicing.`,
+        description: t`How big a single bid is. Set to 0 to use the full available wallet balance on each create - simpler mental model, no manual slicing.`,
         fields: [
           {
             key: 'bid_budget_sat',
@@ -189,7 +189,7 @@ function useSections(): Section[] {
             kind: 'integer',
             unit: 'sat',
             fullWidth: true,
-            help: t`0 = use the full available wallet balance each CREATE (clamped to 1 BTC — the Braiins per-bid hard cap). Any positive value pins every new bid to that exact amount regardless of balance.`,
+            help: t`0 = use the full available wallet balance each CREATE (clamped to 1 BTC - the Braiins per-bid hard cap). Any positive value pins every new bid to that exact amount regardless of balance.`,
           },
         ],
       },
@@ -233,7 +233,7 @@ function useSections(): Section[] {
             label: t`URL template`,
             kind: 'text_with_presets',
             fullWidth: true,
-            help: t`Pick a preset or paste your own template — at least one placeholder ({hash} or {height}) is required. Example custom: http://umbrel.local:3006/block/{hash}.`,
+            help: t`Pick a preset or paste your own template - at least one placeholder ({hash} or {height}) is required. Example custom: http://umbrel.local:3006/block/{hash}.`,
             presets: [
               { label: 'mempool.space', template: 'https://mempool.space/block/{hash}' },
               { label: 'blockstream.info', template: 'https://blockstream.info/block/{hash}' },
@@ -258,14 +258,14 @@ function useSections(): Section[] {
               { value: 'autopilot', label: t`Autopilot only (autopilot-tagged bids)` },
               { value: 'account', label: t`Whole account (all settled bids ever)` },
             ],
-            help: t`"Autopilot only" sums consumed across bids the daemon has tagged in its ledger — accurate for what *this* autopilot has cost. "Whole account" sums counters_committed.amount_consumed_sat across every bid on /v1/spot/bid — covers active + historical bids (including any placed before the autopilot was switched on). May lag the latest hour of active-bid consumption.`,
+            help: t`"Autopilot only" sums consumed across bids the daemon has tagged in its ledger - accurate for what *this* autopilot has cost. "Whole account" sums counters_committed.amount_consumed_sat across every bid on /v1/spot/bid - covers active + historical bids (including any placed before the autopilot was switched on). May lag the latest hour of active-bid consumption.`,
           },
         ],
       },
       {
         id: 'btc-price-oracle',
         title: t`BTC price oracle`,
-        description: t`Fetches the BTC/USD spot price from a public exchange API. Enables a sats/USD denomination toggle in the dashboard header. No API key required — uses unauthenticated public endpoints.`,
+        description: t`Fetches the BTC/USD spot price from a public exchange API. Enables a sats/USD denomination toggle in the dashboard header. No API key required - uses unauthenticated public endpoints.`,
         sideBySide: true,
         fields: [
           {
@@ -279,14 +279,14 @@ function useSections(): Section[] {
               { value: 'bitstamp', label: 'Bitstamp' },
               { value: 'kraken', label: 'Kraken' },
             ],
-            help: t`Polled every 5 minutes. The daemon never makes decisions based on fiat price — this is purely a display convenience. Set to "Disabled" if you want a sats-only dashboard.`,
+            help: t`Polled every 5 minutes. The daemon never makes decisions based on fiat price - this is purely a display convenience. Set to "Disabled" if you want a sats-only dashboard.`,
           },
         ],
       },
       {
         id: 'chart-smoothing',
         title: t`Chart smoothing`,
-        description: t`Rolling-mean window applied to the hashrate chart. 1 = raw (no smoothing). Ocean is excluded — its /user_hashrate endpoint already returns a server-side 5-min average, so set these to 5 to line all three series up on the same cadence.`,
+        description: t`Rolling-mean window applied to the hashrate chart. 1 = raw (no smoothing). Ocean is excluded - its /user_hashrate endpoint already returns a server-side 5-min average, so set these to 5 to line all three series up on the same cadence.`,
         fields: [
           {
             key: 'braiins_hashrate_smoothing_minutes',
@@ -311,7 +311,7 @@ function useSections(): Section[] {
             unit: 'min',
             min: 1,
             step: 5,
-            help: t`Rolling-mean window for the Price chart's \`our bid\` and \`effective\` lines. Useful when the effective line is noisy at tick resolution. Hashprice / max bid are not smoothed — they're market-wide signals.`,
+            help: t`Rolling-mean window for the Price chart's \`our bid\` and \`effective\` lines. Useful when the effective line is noisy at tick resolution. Hashprice / max bid are not smoothed - they're market-wide signals.`,
           },
           // `show_effective_rate_on_price_chart` and
           // `show_share_log_on_hashrate_chart` removed from the UI
@@ -331,18 +331,18 @@ function useSections(): Section[] {
             kind: 'integer',
             unit: 'days',
             fullWidth: true,
-            help: t`Compact numeric time series — one row per tick (~1,440/day) with hashrate, prices, share-log %, spend. This is what backs the Hashrate / Price / Overpay charts, so set it to the longest range you want to be able to chart. Cheap on disk: a year is ~525k small rows.`,
+            help: t`Compact numeric time series - one row per tick (~1,440/day) with hashrate, prices, share-log %, spend. This is what backs the Hashrate / Price / Overpay charts, so set it to the longest range you want to be able to chart. Cheap on disk: a year is ~525k small rows.`,
           },
           {
             key: 'decisions_uneventful_retention_days',
-            label: t`Decisions log — uneventful`,
+            label: t`Decisions log - uneventful`,
             kind: 'integer',
             unit: 'days',
-            help: t`Decision-log rows where the autopilot proposed no action this tick (the vast majority). Heavy JSON state snapshots — the main disk-bloat lever, prune aggressively. The per-tick measurements (price, hashrate, share log) are still kept in tick_metrics regardless of this setting.`,
+            help: t`Decision-log rows where the autopilot proposed no action this tick (the vast majority). Heavy JSON state snapshots - the main disk-bloat lever, prune aggressively. The per-tick measurements (price, hashrate, share log) are still kept in tick_metrics regardless of this setting.`,
           },
           {
             key: 'decisions_eventful_retention_days',
-            label: t`Decisions log — eventful`,
+            label: t`Decisions log - eventful`,
             kind: 'integer',
             unit: 'days',
             help: t`Decision-log rows where the autopilot proposed at least one bid action. Rare (~10% of ticks) and high-value: this is the forensic record for "why did the autopilot create / edit / cancel that bid?" Cheap to keep long.`,
@@ -390,7 +390,7 @@ export function Config() {
 
   const [draft, setDraft] = useState<AppConfig | null>(null);
   const [error, setError] = useState<string | null>(null);
-  // #98 — page-load snapshot is the target Revert restores to. Set once
+  // #98 - page-load snapshot is the target Revert restores to. Set once
   // on the very first config load and never updated; subsequent server
   // refreshes (auto-save invalidations, manual saves) leave it alone so
   // Revert always means "discard everything I touched on this page
@@ -412,7 +412,7 @@ export function Config() {
     try {
       window.localStorage.setItem(AUTOSAVE_STORAGE_KEY, String(next));
     } catch {
-      /* private mode / quota — silently degrade to per-tab */
+      /* private mode / quota - silently degrade to per-tab */
     }
   };
 
@@ -435,13 +435,13 @@ export function Config() {
       // next interval fires. Without this, the Status page sits on
       // the last-tick snapshot for up to a full tick interval after
       // the save and the "nothing changed" feel is jarring. tick-now
-      // is the same endpoint the manual operator button uses — safe
+      // is the same endpoint the manual operator button uses - safe
       // to call; best-effort so a tick failure doesn't mask the
       // successful save.
       try {
         await api.tickNow();
       } catch {
-        /* best-effort — next regular tick will pick the change up */
+        /* best-effort - next regular tick will pick the change up */
       }
       return { result, savedDraft: cfg };
     },
@@ -456,7 +456,7 @@ export function Config() {
       qc.invalidateQueries({ queryKey: ['metrics'] });
       // btc_price_source lives on the config but the header's
       // DenominationToggle reads `btcPrice` off the `['btc-price']`
-      // query — without this invalidation, enabling the oracle
+      // query - without this invalidation, enabling the oracle
       // wouldn't surface the sats/USD toggle until the next 5-min
       // poll or a page reload.
       qc.invalidateQueries({ queryKey: ['btc-price'] });
@@ -472,7 +472,7 @@ export function Config() {
     lastSavedSnapshot !== null &&
     JSON.stringify(draft) !== JSON.stringify(lastSavedSnapshot);
 
-  // #98 — debounced autosave. Fires AUTOSAVE_DEBOUNCE_MS after the last
+  // #98 - debounced autosave. Fires AUTOSAVE_DEBOUNCE_MS after the last
   // edit, only when (a) auto-save is on, (b) the form is dirty vs the
   // last persisted draft, (c) no save is currently in flight, and
   // (d) the same dirty draft hasn't already errored on its previous
@@ -508,7 +508,7 @@ export function Config() {
 
   const update = <K extends keyof AppConfig>(key: K, value: AppConfig[K]) => {
     if (key === 'btc_payout_address') {
-      // Auto-bind worker identity to the address — same shape as the
+      // Auto-bind worker identity to the address - same shape as the
       // first-run wizard. When the operator edits the BTC payout
       // address, follow with `destination_pool_worker_name` if its
       // current value is the obvious "<oldAddr>.<label>" derivation
@@ -691,7 +691,7 @@ function BidBudgetField({
     availableSat !== null ? Math.min(availableSat, BRAIINS_MAX_AMOUNT_SAT) : null;
 
   // Active owned bid defers the next CREATE until it drains. Surface
-  // that — without it, the "Currently ≈ X sat" figure reads as "what
+  // that - without it, the "Currently ≈ X sat" figure reads as "what
   // the autopilot will spend this tick" when actually no create will
   // fire until the running bid finishes.
   const activeOwnedBid = statusQuery.data?.bids?.find(
@@ -744,31 +744,31 @@ function BidBudgetField({
                 resolvedSat !== null ? (
                   isCapped ? (
                     <Trans>
-                      A bid is currently running (≈ {remainingSatStr} sat left). The next CREATE fires when it finishes — at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat, capped at 1 BTC) will be used.
+                      A bid is currently running (≈ {remainingSatStr} sat left). The next CREATE fires when it finishes - at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat, capped at 1 BTC) will be used.
                     </Trans>
                   ) : (
                     <Trans>
-                      A bid is currently running (≈ {remainingSatStr} sat left). The next CREATE fires when it finishes — at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat) will be used.
+                      A bid is currently running (≈ {remainingSatStr} sat left). The next CREATE fires when it finishes - at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat) will be used.
                     </Trans>
                   )
                 ) : (
                   <Trans>
-                    A bid is currently running (≈ {remainingSatStr} sat left). The next CREATE fires when it finishes — at that point the full available wallet balance will be used.
+                    A bid is currently running (≈ {remainingSatStr} sat left). The next CREATE fires when it finishes - at that point the full available wallet balance will be used.
                   </Trans>
                 )
               ) : resolvedSat !== null ? (
                 isCapped ? (
                   <Trans>
-                    A bid is currently running. The next CREATE fires when it finishes — at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat, capped at 1 BTC) will be used.
+                    A bid is currently running. The next CREATE fires when it finishes - at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat, capped at 1 BTC) will be used.
                   </Trans>
                 ) : (
                   <Trans>
-                    A bid is currently running. The next CREATE fires when it finishes — at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat) will be used.
+                    A bid is currently running. The next CREATE fires when it finishes - at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat) will be used.
                   </Trans>
                 )
               ) : (
                 <Trans>
-                  A bid is currently running. The next CREATE fires when it finishes — at that point the full available wallet balance will be used.
+                  A bid is currently running. The next CREATE fires when it finishes - at that point the full available wallet balance will be used.
                 </Trans>
               )}
             </>
@@ -1179,7 +1179,7 @@ function pickBucketForKey(
 /**
  * Per-browser display preferences. Lives outside the daemon-config
  * SECTIONS because it's local-only (saved to localStorage), not pushed
- * to the autopilot. Format-first labels — "1.234,56 · 16 apr 2026" —
+ * to the autopilot. Format-first labels - "1.234,56 · 16 apr 2026" -
  * because the picker controls *how numbers and dates look*, not the
  * UI language. UI strings stay English regardless until proper i18n
  * (#1) lands.
@@ -1195,7 +1195,7 @@ function DisplaySettingsSection() {
         <p className="text-xs text-slate-500 mt-1">
           <Trans>
             How numbers and dates render in this browser. Doesn't change the
-            UI language. Saved locally — every operator can pick their own.
+            UI language. Saved locally - every operator can pick their own.
           </Trans>
         </p>
       </header>
@@ -1290,13 +1290,13 @@ function PayoutSourceSection({
           {payoutAddr.length > 0 ? (
             <Trans>
               Observing payouts to <code className="text-slate-200 break-all">{payoutAddr}</code>.
-              Edit this in the <strong>Pool destination</strong> section above — the worker
+              Edit this in the <strong>Pool destination</strong> section above - the worker
               identity is auto-derived from it.
             </Trans>
           ) : (
             <Trans>
               Observing payouts to <span className="text-amber-400">(no address set)</span>. Edit
-              this in the <strong>Pool destination</strong> section above — the worker identity
+              this in the <strong>Pool destination</strong> section above - the worker identity
               is auto-derived from it.
             </Trans>
           )}
@@ -1340,7 +1340,7 @@ function PayoutSourceSection({
           <ElectrsFields draft={draft} locale={locale} onChange={onChange} />
         )}
 
-        {/* Bitcoin Core RPC fields — always shown, not gated on the
+        {/* Bitcoin Core RPC fields - always shown, not gated on the
             balance-check radio. These creds drive THREE features and
             only one of them is on-chain payouts: the BIP 110 crown
             marker on the Hashrate chart (#94) and the BIP 110 scan
@@ -1541,7 +1541,7 @@ function BitcoindRpcFields({
               BIP 110
             </a>{' '}
             crown marker on the Hashrate chart and the BIP 110 scan card on Status
-            — those last two call bitcoind regardless of which payout backend is
+            - those last two call bitcoind regardless of which payout backend is
             selected. The Test button below validates the values currently in the
             form, before saving.
           </Trans>
@@ -1569,7 +1569,7 @@ function BitcoindRpcFields({
             </button>
           </div>
           <span className="block text-xs text-slate-500 mt-1">
-            <Trans>e.g. http://192.168.1.121:8332 — your Bitcoin Core RPC endpoint.</Trans>
+            <Trans>e.g. http://192.168.1.121:8332 - your Bitcoin Core RPC endpoint.</Trans>
           </span>
           {test.data && test.data.ok && (
             <div className="mt-2 text-xs text-emerald-300 font-mono">
@@ -1614,7 +1614,7 @@ function BitcoindRpcFields({
             className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm font-mono"
           />
           <span className="block text-xs text-slate-500 mt-1">
-            <Trans>RPC password — stored in the config database, not in logs.</Trans>
+            <Trans>RPC password - stored in the config database, not in logs.</Trans>
           </span>
         </label>
       </div>
@@ -1772,7 +1772,7 @@ function Field({
           <span className="block text-xs text-red-400 mt-1 leading-snug">
             <Trans>
               <strong>Mismatch:</strong> the worker identity must start with{' '}
-              <code className="text-slate-200">{addr}.</code> — otherwise Ocean credits shares
+              <code className="text-slate-200">{addr}.</code> - otherwise Ocean credits shares
               to a different address (or nobody). Edit the BTC payout address above; this
               field follows it automatically.
             </Trans>
@@ -1827,7 +1827,7 @@ function Field({
 
   if (spec.kind === 'integer_spinner') {
     const current = ((value as number | null) ?? spec.min) as number;
-    // Ladder {min, step, 2·step, 3·step, …} — e.g. min=1, step=5 →
+    // Ladder {min, step, 2·step, 3·step, …} - e.g. min=1, step=5 →
     // 1, 5, 10, 15, 20… Native <input step=5 min=1> can't express
     // this because its step rule only yields min + n·step (→ 1, 6,
     // 11), so we drive the up/down with explicit buttons that call
@@ -1939,7 +1939,7 @@ function Field({
     );
   }
 
-  // Hashrate fields (target / floor / cheap-target) — declared with
+  // Hashrate fields (target / floor / cheap-target) - declared with
   // unit: 'PH/s'; scale display by the toggle but keep storage in PH/s.
   if (
     (spec.kind === 'decimal' || spec.kind === 'integer') &&

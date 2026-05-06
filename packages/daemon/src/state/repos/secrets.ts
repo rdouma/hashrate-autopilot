@@ -4,7 +4,7 @@
  * Populated by the first-run web wizard (#57) so appliance installs
  * (Umbrel, Start9) can persist their owner-token + dashboard-password
  * + optional bitcoind RPC creds inside the same SQLite file the
- * appliance backs up — no SOPS file required.
+ * appliance backs up - no SOPS file required.
  *
  * Power-user SOPS path is unchanged: when `.env.sops.yaml` exists the
  * daemon prefers it. This repo is only consulted when no SOPS file is

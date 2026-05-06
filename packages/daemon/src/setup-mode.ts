@@ -11,7 +11,7 @@
  *                                       off to operational boot
  *
  * Every other `/api/*` path returns `412 Precondition Failed` with
- * `{ needs_setup: true }` — clients see immediately that the daemon
+ * `{ needs_setup: true }` - clients see immediately that the daemon
  * isn't ready yet and can route to the wizard. Static dashboard
  * assets (and the SPA index.html fallback) are served just like in
  * operational mode so the wizard URL renders end-to-end.
@@ -20,12 +20,12 @@
  * and invokes `onSetupComplete`. The default behaviour is an
  * in-place handoff: the daemon's main entrypoint stops this server,
  * re-loads from db, and brings the operational HTTP server up on
- * the same port — no process restart, no external supervisor
+ * the same port - no process restart, no external supervisor
  * required. (The earlier shipped behaviour was `process.exit(0)` on
  * the assumption a process manager would relaunch us; that broke on
  * plain `start.sh` deployments where there's no supervisor.)
  *
- * Setup endpoints are intentionally unauthenticated — the dashboard
+ * Setup endpoints are intentionally unauthenticated - the dashboard
  * password is one of the values the wizard *creates*, so requiring
  * auth would be a chicken-and-egg. Operators on public networks
  * should restrict access (firewall, Tailscale, etc.) until the
@@ -57,14 +57,14 @@ export interface SetupModeServerDeps {
    * Called after a successful POST /api/setup. The daemon entrypoint
    * provides one that stops this server and hands off to operational
    * boot in-place (no process restart). The default below is a
-   * fail-safe — used only when no callback is provided (e.g. tests):
+   * fail-safe - used only when no callback is provided (e.g. tests):
    * it logs and stays running, so the test runner isn't torn down.
    */
   readonly onSetupComplete?: () => void;
 }
 
 const defaultOnSetupComplete = (log?: (msg: string) => void) => () => {
-  log?.('setup: complete — no onSetupComplete handler provided; staying in setup mode');
+  log?.('setup: complete - no onSetupComplete handler provided; staying in setup mode');
 };
 
 const SetupRequestSchema = z.object({
@@ -88,10 +88,10 @@ export async function createSetupModeServer(
   await app.register(fastifyCors, { origin: true, credentials: true });
 
   // ---------------------------------------------------------------
-  // Setup endpoints — unauthenticated.
+  // Setup endpoints - unauthenticated.
   // ---------------------------------------------------------------
 
-  // Public mode probe — the dashboard hits this on every page load
+  // Public mode probe - the dashboard hits this on every page load
   // to decide between the wizard and the normal status flow, and
   // appliance hosts (Umbrel, Start9) consume it as the basic
   // liveness check (#67). Always 200 + `{ status: 'ok', mode }`.
@@ -103,7 +103,7 @@ export async function createSetupModeServer(
   // Bootstrap data the wizard pre-fills its form from. If config
   // already exists (re-setup after losing secrets) we surface it so
   // the operator doesn't have to re-enter every field; otherwise we
-  // surface the schema defaults — with appliance-detected bitcoind
+  // surface the schema defaults - with appliance-detected bitcoind
   // RPC creds layered on top (#60) so an Umbrel/Start9 install with
   // bitcoind already running pre-fills that side automatically.
   app.get('/api/setup-info', async () => {
@@ -169,7 +169,7 @@ export async function createSetupModeServer(
   // The static-files / SPA fallback below handles non-/api paths.
   // ---------------------------------------------------------------
 
-  // Static assets first — Fastify serves these via fastifyStatic and
+  // Static assets first - Fastify serves these via fastifyStatic and
   // its built-in not-found handling routes anything else to our
   // setNotFoundHandler.
   if (deps.staticRoot) {
@@ -198,7 +198,7 @@ export async function createSetupModeServer(
         .send({ error: 'needs_setup', needs_setup: true });
       return;
     }
-    // SPA fallback — let the dashboard handle the route, including
+    // SPA fallback - let the dashboard handle the route, including
     // the /setup wizard route itself.
     reply
       .type('text/html')
@@ -220,7 +220,7 @@ export async function createSetupModeServer(
 /**
  * Look at the process environment for the standard env-var triples
  * Umbrel and Start9 inject when an app declares a Bitcoin Core
- * dependency. Returns whichever pieces we found — the wizard uses
+ * dependency. Returns whichever pieces we found - the wizard uses
  * this to prefill the bitcoind section so an operator who already
  * runs bitcoind on the same appliance doesn't have to re-enter creds.
  *

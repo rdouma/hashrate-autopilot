@@ -1,4 +1,4 @@
--- Single-row `secrets` table — daemon's persistent home for the values
+-- Single-row `secrets` table - daemon's persistent home for the values
 -- that historically lived only in `.env.sops.yaml`.
 --
 -- Why: appliance environments (Umbrel, Start9) cannot run the
@@ -6,7 +6,7 @@
 -- file with a separately-distributed age key. The first-run web wizard
 -- (#57) writes secrets to this table directly, so the same SQLite file
 -- the appliance backs up carries everything the daemon needs to boot.
--- Power-user SOPS path is unchanged — `.env.sops.yaml` still wins when
+-- Power-user SOPS path is unchanged - `.env.sops.yaml` still wins when
 -- present.
 --
 -- Schema mirrors `SecretsSchema` in packages/daemon/src/config/schema.ts.

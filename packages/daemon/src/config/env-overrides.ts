@@ -27,13 +27,13 @@ import {
 } from './schema.js';
 
 // ---------------------------------------------------------------------------
-// Per-field coercion table — AppConfig
+// Per-field coercion table - AppConfig
 // ---------------------------------------------------------------------------
 
 /**
  * Coercer signature: take the raw string from the env, return the
  * value the schema expects (number, string, null, etc.). Throw on
- * anything that obviously won't pass schema validation — the surfaced
+ * anything that obviously won't pass schema validation - the surfaced
  * error is more actionable than a deeply-nested Zod failure.
  */
 type Coercer = (raw: string, fieldName: string) => unknown;
@@ -166,7 +166,7 @@ const APP_CONFIG_ENV: {
 };
 
 // ---------------------------------------------------------------------------
-// Per-field coercion table — Secrets
+// Per-field coercion table - Secrets
 // ---------------------------------------------------------------------------
 
 const SECRETS_ENV: {
@@ -231,7 +231,7 @@ export function applyEnvOverridesToConfig(
 /**
  * Apply env-var overrides on top of already-loaded `Secrets`.
  *
- * Same semantics as `applyEnvOverridesToConfig` — empty string
+ * Same semantics as `applyEnvOverridesToConfig` - empty string
  * overrides the underlying value with `""`, which fails schema
  * validation for the required tokens (intentional: an operator who
  * sets `BHA_BRAIINS_OWNER_TOKEN=` to "blank it" should see an error,
@@ -252,7 +252,7 @@ export function applyEnvOverridesToSecrets(
 }
 
 /**
- * Build a `Secrets` object purely from environment variables — used
+ * Build a `Secrets` object purely from environment variables - used
  * by the wizard / NEEDS_SETUP path (#57) to decide whether the
  * appliance has provided enough secret material to skip the wizard
  * entirely. Returns `null` if any required field is missing.

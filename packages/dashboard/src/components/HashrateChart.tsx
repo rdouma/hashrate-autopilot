@@ -5,7 +5,7 @@
  * series let the operator eyeball the gap between what Braiins bills
  * for and what Datum actually sees arrive at the gateway. Pairs with
  * `PriceChart` rendered immediately below it so price moves can be
- * matched against fill events visually — both charts share the same
+ * matched against fill events visually - both charts share the same
  * time-range filter and X-axis layout.
  */
 
@@ -41,7 +41,7 @@ const WIDTH = 880;
 const HEIGHT = 200;
 // Padding kept identical to PriceChart so the two charts can be stacked
 // and the X-axis lines up tick-for-tick. Right padding is small now that
-// the price-side Y-axis moved to the left — just enough to keep the
+// the price-side Y-axis moved to the left - just enough to keep the
 // rightmost timestamp from clipping the edge.
 const PADDING = { top: 16, right: 16, bottom: 24, left: 80 };
 // When the optional share_log overlay is on, the chart grows a second
@@ -49,16 +49,16 @@ const PADDING = { top: 16, right: 16, bottom: 24, left: 80 };
 // labels have the same breathing room as PH/s on the left.
 const PADDING_RIGHT_WITH_SHARE_LOG = 80;
 
-// Tailwind amber-500 — the deeper "our bid" amber on the PriceChart.
+// Tailwind amber-500 - the deeper "our bid" amber on the PriceChart.
 // Previously #fbbf24 (amber-400); nudged a shade darker at the
 // operator's eyecheck so the Braiins-delivered line reads as a
 // saturated amber/orange rather than pale yellow. The PriceChart
 // "our bid" line shares this constant.
 const COLOR_DELIVERED = '#f59e0b';
-// Green — measured locally at the DATUM gateway.
+// Green - measured locally at the DATUM gateway.
 const COLOR_DATUM = '#34d399';
 // Same saturated blue as the TIDES-credited block cubes on this
-// chart — reinforces the "Ocean → blue" association and contrasts
+// chart - reinforces the "Ocean → blue" association and contrasts
 // harder against the green Datum line than cyan did.
 const COLOR_OCEAN = '#3b82f6';
 const COLOR_TARGET = '#94a3b8';
@@ -67,10 +67,10 @@ const COLOR_FLOOR = '#64748b';
 // (found_by_us === true). Reads as "jackpot" against the dark
 // background.
 const COLOR_OUR_BLOCK = '#fbbf24';
-// Same hue as COLOR_OCEAN by design — TIDES-credited block cubes
+// Same hue as COLOR_OCEAN by design - TIDES-credited block cubes
 // and the Ocean hashrate line share the Ocean-is-blue association.
 const COLOR_POOL_BLOCK = '#3b82f6';
-// Tailwind violet-400 — distinct from amber/green/blue/gray; reads
+// Tailwind violet-400 - distinct from amber/green/blue/gray; reads
 // well against the slate background. Used for the opt-in `% of Ocean`
 // (share_log) overlay on the right Y-axis.
 const COLOR_SHARE_LOG = '#a78bfa';
@@ -81,7 +81,7 @@ const COLOR_SHARE_LOG = '#a78bfa';
  * falls in `[xs[i] - windowMs, xs[i]]`. Null input values are
  * skipped; a window with no non-null samples yields null (keeps
  * null-gap rendering intact). Window ≤ 0 or 1 minute returns the
- * input unchanged — 1 is the "off" sentinel from the config.
+ * input unchanged - 1 is the "off" sentinel from the config.
  */
 function rollingMean(
   xs: readonly number[],
@@ -189,7 +189,7 @@ export const HashrateChart = memo(function HashrateChart({
    *  estimate of what Ocean would have credited at the time. */
   shareLogPct?: number | null;
   /** Rolling-mean window (minutes) applied to the Braiins-delivered
-   *  series; 1 = raw. Ocean is not smoothed here — /user_hashrate
+   *  series; 1 = raw. Ocean is not smoothed here - /user_hashrate
    *  already returns a server-side 5-min average. */
   braiinsSmoothingMinutes?: number;
   datumSmoothingMinutes?: number;
@@ -249,7 +249,7 @@ export const HashrateChart = memo(function HashrateChart({
     const xs = points.map((p) => p.tick_at);
     // Counter-derived Braiins delivered (#52). Braiins' own
     // `delivered_ph` is a lagged rolling average that holds elevated
-    // for minutes after shares actually stop flowing — during
+    // for minutes after shares actually stop flowing - during
     // outages the orange line sat at 3.67 PH/s while Datum/Ocean
     // correctly dipped to near-zero and the counter stopped ticking.
     // Deriving PH from `Δprimary_bid_consumed_sat / (our_bid × Δt)`
@@ -326,14 +326,14 @@ export const HashrateChart = memo(function HashrateChart({
             stroke: '#c084fc',
           };
         case 'acceptance': {
-          // #90 — per-tick rolling acceptance ratio. Earlier per-bucket
+          // #90 - per-tick rolling acceptance ratio. Earlier per-bucket
           // forward delta yielded values >100% (impossible) due to
           // acknowledgment-lag noise: the pool sometimes acks shares in
           // batches (accepted_m jumps after purchased_m already counted
           // them), so within a single small bucket the accepted-delta
           // can transiently exceed the purchased-delta. Rolling the
           // acceptance over a window the size of the panel's 1h figure
-          // smooths that noise out and matches the panel's semantics —
+          // smooths that noise out and matches the panel's semantics -
           // each chart point reads as "acceptance over the trailing
           // window ending here".
           //
@@ -383,7 +383,7 @@ export const HashrateChart = memo(function HashrateChart({
         case 'datum_rejects': {
           // #91: per-bucket forward delta of the cumulative
           // datum_rejected_shares_total counter. Same delta semantics
-          // as acceptance — null on the first tick or any pair where
+          // as acceptance - null on the first tick or any pair where
           // the counter went backwards (DATUM restart). Operators on
           // builds that do NOT expose the reject tile see an empty
           // line; the column is null on every tick for them.
@@ -439,7 +439,7 @@ export const HashrateChart = memo(function HashrateChart({
     // Off → unchanged from today (no layout shift).
     const padRight = hasShareLog ? PADDING_RIGHT_WITH_SHARE_LOG : PADDING.right;
     // Apply operator-configured rolling-mean smoothing to the raw
-    // per-tick signals. Ocean is left alone — /user_hashrate is
+    // per-tick signals. Ocean is left alone - /user_hashrate is
     // already a 5-min server-side average. The counter-derived
     // Braiins series can be null for pre-migration rows (falls back
     // to delivered_ph in the map above), so `?? 0` is only defensive.
@@ -480,7 +480,7 @@ export const HashrateChart = memo(function HashrateChart({
 
     // Right-side Y-axis for the share_log overlay. niceYTicks gives a
     // human-readable scale (0.01, 0.02, 0.03 etc.) without us having
-    // to special-case the 4-decimal magnitude — the ticks come out as
+    // to special-case the 4-decimal magnitude - the ticks come out as
     // round numbers and the formatter renders them with 4 decimals to
     // match Ocean's display convention.
     let shareLogYTicks: number[] = [];
@@ -988,7 +988,7 @@ function BlockTooltip({
       {(() => {
         // Prefer the per-block historical share_log captured at the
         // block's moment; only fall back to the live share_log (with
-        // the drift caveat) when we have no tick within tolerance —
+        // the drift caveat) when we have no tick within tolerance -
         // i.e. the block predates our tick history.
         const historical = block.share_log_pct_at_block;
         const usingHistorical = historical !== null && historical > 0;
@@ -1020,7 +1020,7 @@ function BlockTooltip({
             {!usingHistorical && (
               <div className="text-[10px] text-slate-500 italic mt-0.5 whitespace-normal max-w-[18rem]">
                 <Trans>
-                  uses current share_log — an approximation for older blocks,
+                  uses current share_log - an approximation for older blocks,
                   since share_log drifts as pool hashrate moves.
                 </Trans>
               </div>

@@ -84,7 +84,7 @@ export class DecisionsRepo {
   /**
    * Delete "uneventful" decisions (empty proposed_json array) older
    * than cutoffMs. These are the vast majority of rows and carry no
-   * forensic value — the tick saw nothing to do.
+   * forensic value - the tick saw nothing to do.
    */
   async pruneUneventfulOlderThan(cutoffMs: number): Promise<number> {
     // SQLite has no JSON array-length in every build, but
@@ -102,7 +102,7 @@ export class DecisionsRepo {
   /**
    * Delete decision-bearing rows (proposed_json != '[]') older than
    * cutoffMs. Should run with a much longer retention than the
-   * uneventful prune — these are the forensic records.
+   * uneventful prune - these are the forensic records.
    */
   async pruneEventfulOlderThan(cutoffMs: number): Promise<number> {
     const result = await this.db

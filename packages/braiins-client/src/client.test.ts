@@ -40,7 +40,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('createBraiinsClient — auth header wiring', () => {
+describe('createBraiinsClient - auth header wiring', () => {
   it('omits apikey on PUBLIC calls (getStats)', async () => {
     const { fetch, calls } = recordingFetch(jsonResponse(200, { now: 123, stats: {} }));
     const client = createBraiinsClient({
@@ -76,7 +76,7 @@ describe('createBraiinsClient — auth header wiring', () => {
   });
 });
 
-describe('createBraiinsClient — error translation', () => {
+describe('createBraiinsClient - error translation', () => {
   it('throws BraiinsApiError with grpc-message on 4xx/5xx', async () => {
     const body = { error: 'rate limited' };
     const { fetch } = recordingFetch(
@@ -101,7 +101,7 @@ describe('createBraiinsClient — error translation', () => {
   });
 
   it('surfaces BraiinsAuthMissingError for OWNER call without owner token', async () => {
-    // getCurrentBids uses READ_ONLY — owner-only path (e.g., account/balance-equivalent)
+    // getCurrentBids uses READ_ONLY - owner-only path (e.g., account/balance-equivalent)
     // isn't exercised via GETs in M1. Instead test the selector directly via a call
     // that requires OWNER: create a client with a read-only token only and call
     // a method that needs READ_ONLY; it should succeed by falling through.

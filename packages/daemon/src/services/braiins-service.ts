@@ -2,9 +2,9 @@
  * Wraps the raw Braiins client with two concerns:
  *
  * 1. **TTL cache** for slow-moving market metadata (`/spot/settings`,
- *    `/spot/fee`) — refresh every `settingsTtlMs` / `feeTtlMs` rather
+ *    `/spot/fee`) - refresh every `settingsTtlMs` / `feeTtlMs` rather
  *    than on every tick.
- * 2. **Last-OK tracking** — records the timestamp of the last successful
+ * 2. **Last-OK tracking** - records the timestamp of the last successful
  *    read so the control loop can detect API outages (SPEC §9
  *    `api_outage_alert_after_minutes`).
  *

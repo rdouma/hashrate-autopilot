@@ -79,7 +79,7 @@ export interface InsertTickMetricArgs {
 export type TickMetricRow = Selectable<TickMetricsTable>;
 
 /**
- * Bucketed row — matches TickMetricRow shape on the fields the chart
+ * Bucketed row - matches TickMetricRow shape on the fields the chart
  * consumes. Fields not aggregated here (owned_bid_count, run_mode etc.)
  * are not surfaced, since the chart doesn't need them.
  */
@@ -214,7 +214,7 @@ export class TickMetricsRepo {
         sql<number | null>`AVG(datum_hashrate_ph)`.as('datum_hashrate_ph'),
         sql<number | null>`AVG(ocean_hashrate_ph)`.as('ocean_hashrate_ph'),
         sql<number | null>`AVG(share_log_pct)`.as('share_log_pct'),
-        // Cumulative counter — MAX gives the end-of-bucket value, so
+        // Cumulative counter - MAX gives the end-of-bucket value, so
         // bucket-to-bucket deltas yield the actual-spend per bucket.
         // AVG would smear the ramp and break the derived rate.
         sql<number | null>`MAX(primary_bid_consumed_sat)`.as('primary_bid_consumed_sat'),
@@ -251,7 +251,7 @@ export class TickMetricsRepo {
         // forward deltas yield the per-bucket acceptance ratio cleanly.
         sql<number | null>`MAX(primary_bid_shares_purchased_m)`.as('primary_bid_shares_purchased_m'),
         sql<number | null>`MAX(primary_bid_shares_accepted_m)`.as('primary_bid_shares_accepted_m'),
-        // #91: cumulative reject counter — same MAX strategy.
+        // #91: cumulative reject counter - same MAX strategy.
         sql<number | null>`MAX(datum_rejected_shares_total)`.as('datum_rejected_shares_total'),
       ])
       .where('tick_at', '>=', sinceMs)
@@ -279,7 +279,7 @@ export class TickMetricsRepo {
     // Counter-derived: per-tick PH = delta × 86.4e9 / (our_bid × dur).
     // Time-weighted average over the window simplifies to
     // SUM(delta × 86.4e9 / our_bid) / SUM(dur). Uses the same zero-dip
-    // filter pattern as actualSpendSatSince — see #52 and the stats.ts
+    // filter pattern as actualSpendSatSince - see #52 and the stats.ts
     // rationale. Falls back to null (not AVG(delivered_ph)) when the
     // window has no valid counter-deltas; callers already handle null
     // as "insufficient history".
@@ -344,7 +344,7 @@ export class TickMetricsRepo {
     /**
      * Actual sat consumed across the range, summed from per-tick
      * `primary_bid_consumed_sat` deltas. Applies the same zero-dip
-     * filter as the stats endpoint — any delta where either endpoint
+     * filter as the stats endpoint - any delta where either endpoint
      * is 0 or the tick gap is out of bounds is skipped. This is what
      * Braiins actually charged us; no bid-price modelling.
      */
@@ -378,7 +378,7 @@ export class TickMetricsRepo {
    * Rolling-average inputs for the sustained cheap-mode check (#50).
    * Returns the simple-mean best_ask and hashprice over the window, plus
    * the count of samples that contributed to each. Samples with either
-   * field null are excluded from that field's average independently —
+   * field null are excluded from that field's average independently -
    * matches how the rest of the stats endpoints handle the common case
    * where hashprice may be cached-null while best_ask is present (or
    * vice versa).
@@ -419,11 +419,11 @@ export class TickMetricsRepo {
    *   - both endpoints of each delta must be > 0 (zero mid-sequence is
    *     a transient "no primary bid" snapshot and LAG across it would
    *     report the recovery counter as fresh spend, inflating the sum
-   *     by orders of magnitude — see the April 23 incident)
+   *     by orders of magnitude - see the April 23 incident)
    *   - delta must be non-negative (primary-bid ID swap produces
    *     a negative; already caught by the > 0 guard but kept
    *     explicit)
-   *   - tick gap between 1 ms and 5 min — longer gaps are restarts
+   *   - tick gap between 1 ms and 5 min - longer gaps are restarts
    *
    * Unbounded when `sinceMs` is null (used by the P&L `all` range).
    */
@@ -457,7 +457,7 @@ export class TickMetricsRepo {
   /**
    * Trailing duration-weighted effective rate (sat/EH/day) over a
    * rolling window ending at the most recent tick. Powers the hero
-   * PRICE card on the Status page — the "live" figure, distinct from
+   * PRICE card on the Status page - the "live" figure, distinct from
    * the range-averaged `avg cost / PH delivered` in the stats row.
    *
    * Formula (sat/EH/day):
@@ -465,7 +465,7 @@ export class TickMetricsRepo {
    *     Σ(Δsat) × 86_400_000_000 / Σ(delivered_ph × Δt_ms),
    *     Σ(bid × delivered_ph × Δt_ms) / Σ(delivered_ph × Δt_ms)
    *   )
-   * — duration-weighted realised rate, capped at the duration-weighted
+   * - duration-weighted realised rate, capped at the duration-weighted
    * average bid. The cap is structurally required: under pay-your-bid
    * Braiins cannot charge above our bid, so any uncapped result above
    * it is a computation artefact from `delivered_ph` (a trailing
@@ -473,7 +473,7 @@ export class TickMetricsRepo {
    * `Δprimary_bid_consumed_sat`. Same cap discipline as `/api/stats`
    * (see stats.ts → "the bid is a hard ceiling").
    *
-   * Window choice matters: at 5–20 min the raw ratio routinely exceeds
+   * Window choice matters: at 5-20 min the raw ratio routinely exceeds
    * the bid (capped result pegs flat at the bid, hiding all signal).
    * 30+ min lets the avg_speed_ph lag wash out so the unfiltered ratio
    * is self-consistent. Caller picks the window.

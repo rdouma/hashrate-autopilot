@@ -21,29 +21,29 @@ export interface ConfigTable {
   destination_pool_url: string;
   destination_pool_worker_name: string;
   max_bid_sat_per_eh_day: number;
-  /** @deprecated Legacy column — kept for NOT NULL; ignored by the app. */
+  /** @deprecated Legacy column - kept for NOT NULL; ignored by the app. */
   emergency_max_bid_sat_per_eh_day: number;
   bid_budget_sat: number;
   wallet_runway_alert_days: number;
   below_floor_alert_after_minutes: number;
-  /** @deprecated Legacy column — kept for NOT NULL; ignored by the app. */
+  /** @deprecated Legacy column - kept for NOT NULL; ignored by the app. */
   below_floor_emergency_cap_after_minutes: number;
   zero_hashrate_loud_alert_after_minutes: number;
   pool_outage_blip_tolerance_seconds: number;
   api_outage_alert_after_minutes: number;
-  /** @deprecated Legacy column — kept for NOT NULL; ignored by the app. */
+  /** @deprecated Legacy column - kept for NOT NULL; ignored by the app. */
   quiet_hours_start: string;
-  /** @deprecated Legacy column — kept for NOT NULL; ignored by the app. */
+  /** @deprecated Legacy column - kept for NOT NULL; ignored by the app. */
   quiet_hours_end: string;
-  /** @deprecated Legacy column — kept for NOT NULL; ignored by the app. */
+  /** @deprecated Legacy column - kept for NOT NULL; ignored by the app. */
   quiet_hours_timezone: string;
-  /** @deprecated Legacy column — kept for NOT NULL; ignored by the app. */
+  /** @deprecated Legacy column - kept for NOT NULL; ignored by the app. */
   confirmation_timeout_minutes: number;
   handover_window_minutes: number;
   btc_payout_address: string;
-  /** @deprecated Legacy column — kept for NOT NULL; ignored by the app. */
+  /** @deprecated Legacy column - kept for NOT NULL; ignored by the app. */
   telegram_chat_id: string;
-  /** @deprecated Legacy column — kept for NOT NULL; ignored by the app. */
+  /** @deprecated Legacy column - kept for NOT NULL; ignored by the app. */
   hibernate_on_expensive_market: 0 | 1;
   electrs_host: string | null;
   electrs_port: number | null;
@@ -266,7 +266,7 @@ export interface TickMetricsTable {
    * 0.0182%). Derived from Ocean's `/statsnap.shares_in_tides ÷
    * pool_stat.current_tides_shares × 100`, sampled from the same
    * cached fetch that supplies `hashprice_sat_per_eh_day`. Display-only
-   * — opt-in fourth series on the Hashrate chart via the
+   * - opt-in fourth series on the Hashrate chart via the
    * `show_share_log_on_hashrate_chart` config toggle. Null when Ocean
    * isn't configured, the poll failed, or for ticks predating
    * migration 0048.
@@ -276,7 +276,7 @@ export interface TickMetricsTable {
   /**
    * Primary owned bid's cumulative `amount_consumed_sat` at this tick,
    * in sat. Per-tick deltas give the authoritative actual spend from
-   * Braiins (independent of our pay-your-bid `spend_sat` model) — see
+   * Braiins (independent of our pay-your-bid `spend_sat` model) - see
    * migration 0041. Null when there was no primary owned bid at this
    * tick, or for pre-0041 rows.
    */
@@ -345,7 +345,7 @@ export interface TickMetricsTable {
   primary_bid_shares_accepted_m: number | null;
   primary_bid_shares_rejected_m: number | null;
   /**
-   * #91 — Datum gateway-side rejected-shares counter, opportunistically
+   * #91 - Datum gateway-side rejected-shares counter, opportunistically
    * scraped from `/umbrel-api` if the operator's build exposes it.
    * Cumulative count. Null on every tick when DATUM does not expose
    * the tile (the common case as of May 2026).
@@ -366,10 +366,10 @@ export interface MigrationsTable {
 }
 
 // ---------------------------------------------------------------------------
-// closed_bids_cache — persistent sum cache for AccountSpendService.
+// closed_bids_cache - persistent sum cache for AccountSpendService.
 // Terminal (CANCELED / FULFILLED) Braiins bids' consumed counter is
 // immutable, so we store the amount once and never re-fetch it.
-// Active bids are NOT cached here — they're always re-read live.
+// Active bids are NOT cached here - they're always re-read live.
 // ---------------------------------------------------------------------------
 
 export interface ClosedBidsCacheTable {
@@ -384,7 +384,7 @@ export interface ClosedBidsCacheTable {
 // ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
-// secrets — single-row table mirroring SecretsSchema, populated by the
+// secrets - single-row table mirroring SecretsSchema, populated by the
 // first-run web wizard (#57) so appliance installs that can't carry a
 // SOPS-encrypted file have a persistent home for token + password.
 // ---------------------------------------------------------------------------

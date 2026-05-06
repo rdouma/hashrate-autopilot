@@ -39,7 +39,7 @@ export class RuntimeStateRepo {
 
   /**
    * Initialize the row with safe defaults: DRY_RUN, NORMAL, not available.
-   * Idempotent — existing rows are left untouched. Used on first boot.
+   * Idempotent - existing rows are left untouched. Used on first boot.
    */
   async initializeIfMissing(): Promise<void> {
     await this.db

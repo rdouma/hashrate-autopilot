@@ -1,5 +1,5 @@
 /**
- * GET /api/finance — top-level money panel for the dashboard.
+ * GET /api/finance - top-level money panel for the dashboard.
  *
  * Combines three sources into a single profit/loss view:
  *   - spent      = lifetime sum of `amount_consumed_sat` across every
@@ -8,7 +8,7 @@
  *                  the autopilot's owned-bids ledger so it's counted).
  *   - collected  = on-chain UTXOs at the configured payout address
  *                  (electrs preferred, bitcoind fallback).
- *   - expected   = Ocean's "Unpaid Earnings" — the BTC amount that
+ *   - expected   = Ocean's "Unpaid Earnings" - the BTC amount that
  *                  will land at the next payout (when above threshold)
  *                  or has already been earned but is below threshold.
  *
@@ -17,7 +17,7 @@
  *
  * Each source can independently be `null` when its data isn't
  * available yet (Ocean down, electrs/bitcoind unconfigured, fresh
- * install with no bids). The dashboard renders "—" for nulls and
+ * install with no bids). The dashboard renders "-" for nulls and
  * skips them in the net calculation (so `net` is null until both
  * collected and expected have at least one observation).
  */
@@ -66,14 +66,14 @@ export interface FinanceResponse {
   readonly spent_active_sat: number | null;
   readonly collected_sat: number | null;
   /**
-   * #97 — disambiguates the three states `collected_sat: null` collapses
+   * #97 - disambiguates the three states `collected_sat: null` collapses
    * into for the dashboard:
-   * - 'computing' — payout observer is enabled but the first scan has
+   * - 'computing' - payout observer is enabled but the first scan has
    *   not yet produced a snapshot. Dashboard renders a spinner so the
    *   operator does not see a blank em-dash mid-startup.
-   * - 'ready'     — observer has produced a snapshot; `collected_sat`
+   * - 'ready'     - observer has produced a snapshot; `collected_sat`
    *   reflects it.
-   * - 'idle'      — observer is disabled (`payout_source = 'none'` or
+   * - 'idle'      - observer is disabled (`payout_source = 'none'` or
    *   missing creds). Dashboard renders the existing "not configured"
    *   tooltip on the em-dash.
    */
@@ -120,7 +120,7 @@ export interface FinanceRangeResponse {
   readonly avg_delivered_ph: number | null;
   /**
    * Actual sat consumed across the range, summed from per-tick
-   * `primary_bid_consumed_sat` deltas. Authoritative spend — what
+   * `primary_bid_consumed_sat` deltas. Authoritative spend - what
    * Braiins actually charged. Null when no usable deltas in range.
    */
   readonly actual_spend_sat: number | null;
@@ -133,7 +133,7 @@ export interface FinanceRangeResponse {
   /**
    * Derived: `avg_hashprice × avg_delivered`, in sat/day. The income
    * side is still a projection (Ocean's 3h hashrate × market
-   * break-even), not a measurement — kept symmetric with the
+   * break-even), not a measurement - kept symmetric with the
    * previous version. Null equivalently.
    */
   readonly projected_income_per_day_sat: number | null;
@@ -262,7 +262,7 @@ export async function registerFinanceRoute(
     // Net = (collected + expected) − spent. `collected_sat` null means
     // on-chain tracking isn't configured (payout_source=none) or the
     // observer hasn't fetched yet; we treat it as 0 for the arithmetic
-    // so the net line still makes sense — the "collected: —" row on
+    // so the net line still makes sense - the "collected: -" row on
     // the panel already tells the operator that piece is missing.
     // Only surface net=null when the *income* side is unavailable
     // (Ocean unreachable): without unpaid earnings we genuinely can't
@@ -292,7 +292,7 @@ export async function registerFinanceRoute(
         : null,
       // Use the oldest data-source timestamp, not Date.now(). The
       // operator wants to see how stale the *data* is, not when the
-      // endpoint responded. Date.now() was always "0s ago" — useless.
+      // endpoint responded. Date.now() was always "0s ago" - useless.
       checked_at_ms: oldestSourceTimestamp(
         oceanStats?.fetched_at_ms ?? null,
         deps.payoutObserver?.getLastSnapshot()?.checked_at ?? null,

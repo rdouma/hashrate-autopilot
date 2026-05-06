@@ -1,7 +1,7 @@
 /**
  * In-memory cache holding the latest hashprice from Ocean stats.
  *
- * Read by the controller each tick via `getFresh(maxAgeMs)` — values
+ * Read by the controller each tick via `getFresh(maxAgeMs)` - values
  * older than `maxAgeMs` are treated as unknown so a silent Ocean
  * outage can't leave decide() pricing against a stale break-even
  * reference (issue #28).
@@ -12,10 +12,10 @@
  *     for the dashboard to open.
  *   - finance.ts route: warm-path refresh piggybacking on the
  *     dashboard's existing Ocean poll. No dedicated background
- *     poller — the operator explicitly didn't want minute-by-minute
+ *     poller - the operator explicitly didn't want minute-by-minute
  *     Ocean calls.
  *
- * Stores internally in sat/PH/day — the same unit used by the rest
+ * Stores internally in sat/PH/day - the same unit used by the rest
  * of the daemon's config and display layer.
  */
 

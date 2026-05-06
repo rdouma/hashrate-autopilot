@@ -49,7 +49,7 @@ export interface MetricPoint {
    */
   readonly datum_hashrate_ph: number | null;
   /**
-   * Hashrate Ocean credits to the operator's payout address — the
+   * Hashrate Ocean credits to the operator's payout address - the
    * `hashrate_300s` field from `/v1/user_hashrate` (5-min sliding
    * window), in PH/s. Null when Ocean isn't configured, the poll
    * failed, or the tick predates migration 0035.
@@ -57,7 +57,7 @@ export interface MetricPoint {
   readonly ocean_hashrate_ph: number | null;
   /**
    * Ocean `share_log` percentage at this tick (e.g. 0.0182 for
-   * 0.0182%) — our slice of the pool's TIDES window, sampled from
+   * 0.0182%) - our slice of the pool's TIDES window, sampled from
    * the same `/statsnap` + `/pool_stat` fetch that supplies
    * `hashprice_sat_per_ph_day`. Drives the optional violet `% of
    * Ocean` overlay on the Hashrate chart's right Y-axis. Null when

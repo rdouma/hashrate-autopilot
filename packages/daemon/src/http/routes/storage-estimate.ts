@@ -144,7 +144,7 @@ async function computeStorageEstimate(
   `.execute(db);
   const dt = decisionsTotal.rows[0];
 
-  // db file size — best effort. Wrapped in try/catch because the
+  // db file size - best effort. Wrapped in try/catch because the
   // table-valued pragma form (`pragma_page_count()`) is only available
   // when SQLite was compiled with SQLITE_ENABLE_PRAGMA_FUNCTIONS, which
   // is the default for better-sqlite3 but not strictly guaranteed.

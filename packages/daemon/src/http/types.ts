@@ -101,7 +101,7 @@ export interface NextActionView {
     | 'lower_after_cooldown'
     | null;
   /**
-   * Breadcrumb of what the *most recent* tick actually executed —
+   * Breadcrumb of what the *most recent* tick actually executed -
    * "just lowered to X", "just raised to X", "just placed bid", etc.
    * Surfaced for a brief window so the operator sees explicit
    * confirmation that the action they were waiting for fired, instead
@@ -130,7 +130,7 @@ export interface StatusResponse {
     readonly best_bid_sat_per_ph_day: number | null;
     readonly best_ask_sat_per_ph_day: number | null;
     /**
-     * Depth-aware "fillable ask" — the cheapest price at which the full
+     * Depth-aware "fillable ask" - the cheapest price at which the full
      * `target_hashrate_ph` is fillable by walking asks cumulatively. This
      * is what the autopilot actually targets (plus `overpay`).
      * `null` when the market has no supply at all.
@@ -156,7 +156,7 @@ export interface StatusResponse {
     readonly reachable: boolean;
     readonly connections: number | null;
     readonly hashrate_ph: number | null;
-    /** #91 — gateway-side rejected-shares counter when DATUM exposes a /reject/i tile; null otherwise. */
+    /** #91 - gateway-side rejected-shares counter when DATUM exposes a /reject/i tile; null otherwise. */
     readonly rejected_shares_total: number | null;
     readonly last_ok_at: number | null;
     readonly consecutive_failures: number;
@@ -183,7 +183,7 @@ export interface StatusResponse {
    * Live effective rate in sat/PH/day, derived as the duration-weighted
    * average of valid inter-tick `primary_bid_consumed_sat` deltas over
    * a 30-min trailing window, capped at the duration-weighted average
-   * bid (since under pay-your-bid the bid is a hard ceiling — anything
+   * bid (since under pay-your-bid the bid is a hard ceiling - anything
    * above is a computation artefact of `avg_speed_ph` lag). Powers the
    * hero PRICE card on the Status page; distinct from the range-
    * averaged `avg cost / PH delivered` in the stats row, which uses

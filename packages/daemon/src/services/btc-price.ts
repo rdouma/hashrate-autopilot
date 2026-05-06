@@ -7,7 +7,7 @@
  * doubling up (same pattern as AccountSpendService).
  *
  * Used by the dashboard to offer a sats <-> USD denomination toggle.
- * The daemon itself never makes decisions based on fiat price — this
+ * The daemon itself never makes decisions based on fiat price - this
  * is purely a display convenience.
  */
 

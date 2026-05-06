@@ -1,5 +1,5 @@
 /**
- * Pool-health probe — opens a TCP connection to the Datum Gateway and
+ * Pool-health probe - opens a TCP connection to the Datum Gateway and
  * tracks consecutive failures. SPEC §9 "Datum pool unreachable" uses this
  * to distinguish a transient blip from a sustained outage.
  */
@@ -21,7 +21,7 @@ export interface PoolProbeOptions {
 
 /**
  * One-shot TCP probe. Resolves quickly for happy-path, or within
- * `timeoutMs` (default 2500ms) on failure. Never throws — failures are
+ * `timeoutMs` (default 2500ms) on failure. Never throws - failures are
  * encoded in the result.
  */
 export function probePool(options: PoolProbeOptions): Promise<PoolProbeResult> {

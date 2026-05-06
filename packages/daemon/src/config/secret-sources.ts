@@ -6,9 +6,9 @@
  * 1. **Pure environment variables** (`BHA_BRAIINS_OWNER_TOKEN` +
  *    `BHA_DASHBOARD_PASSWORD` set, plus any optional fields). Lets a
  *    Docker / Umbrel / Start9 deployment skip both the SOPS file and
- *    the wizard entirely — declare creds in the manifest, done.
+ *    the wizard entirely - declare creds in the manifest, done.
  *
- * 2. **SOPS-encrypted file** (`.env.sops.yaml`). Power-user path —
+ * 2. **SOPS-encrypted file** (`.env.sops.yaml`). Power-user path -
  *    unchanged from the v1.x flow. Env-var overrides still overlay
  *    on top so a `docker run -e BHA_…` rotation works without
  *    touching the encrypted file.
@@ -17,7 +17,7 @@
  *    web onboarding wizard (#57). Same env-var overlay as the SOPS
  *    path.
  *
- * 4. **Null** — no source carries a complete `Secrets` object. The
+ * 4. **Null** - no source carries a complete `Secrets` object. The
  *    daemon entrypoint interprets this as NEEDS_SETUP and starts a
  *    slim HTTP server with the wizard route exposed.
  */
@@ -46,7 +46,7 @@ export interface LoadSecretsAnySourceResult {
 
 /**
  * Try every secret source in priority order, returning the first one
- * that produces a valid `Secrets` object. Returns `null` if none do —
+ * that produces a valid `Secrets` object. Returns `null` if none do -
  * caller should branch into NEEDS_SETUP.
  *
  * Env-var overrides are applied on top of the file/db sources so the
@@ -64,7 +64,7 @@ export async function loadSecretsAnySource(
     return { secrets: fromEnv, source: 'env' };
   }
 
-  // 2. SOPS file — if it exists, use it. A decrypt/parse failure is
+  // 2. SOPS file - if it exists, use it. A decrypt/parse failure is
   // surfaced as-is (not silently swallowed into the db fallback) so
   // operators with a misconfigured SOPS setup get a clear error.
   if (await fileExists(opts.sopsPath)) {

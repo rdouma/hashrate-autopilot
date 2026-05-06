@@ -30,7 +30,7 @@ export function formatNumber(
 }
 
 /**
- * Compact tick label for chart axes — auto-scales to the magnitude
+ * Compact tick label for chart axes - auto-scales to the magnitude
  * and adds a k / M / B suffix so big numbers don't eat half the
  * chart's horizontal space. Targets readability at-a-glance, not
  * full precision (use formatNumber elsewhere when every digit
@@ -54,7 +54,7 @@ export function formatCompactNumber(
   n: number,
   locale: Locale = defaultLocale(),
 ): string {
-  if (!Number.isFinite(n)) return '—';
+  if (!Number.isFinite(n)) return '-';
   const abs = Math.abs(n);
   const fmt = (v: number, minDecimals: number, maxDecimals: number): string =>
     new Intl.NumberFormat(locale, {
@@ -89,7 +89,7 @@ export function formatSatPerPH(
   n: number | null | undefined,
   locale: Locale = defaultLocale(),
 ): string {
-  if (n === null || n === undefined) return '—';
+  if (n === null || n === undefined) return '-';
   return `${formatNumber(n, {}, locale)} sat/PH/day`;
 }
 
@@ -97,7 +97,7 @@ export function formatSats(
   n: number | null | undefined,
   locale: Locale = defaultLocale(),
 ): string {
-  if (n === null || n === undefined) return '—';
+  if (n === null || n === undefined) return '-';
   return `${formatNumber(n, {}, locale)} sat`;
 }
 
@@ -105,7 +105,7 @@ export function formatHashratePH(
   n: number | null | undefined,
   locale: Locale = defaultLocale(),
 ): string {
-  if (n === null || n === undefined) return '—';
+  if (n === null || n === undefined) return '-';
   return `${new Intl.NumberFormat(locale, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -116,7 +116,7 @@ export function formatTimestamp(
   ms: number | null | undefined,
   locale: Locale = defaultLocale(),
 ): string {
-  if (!ms) return '—';
+  if (!ms) return '-';
   return new Date(ms).toLocaleString(locale, {
     year: 'numeric',
     month: 'short',
@@ -147,7 +147,7 @@ export function formatTimestampHuman(ms: number | null | undefined): string {
     const parts = new Intl.DateTimeFormat(undefined, { timeZoneName: 'short' }).formatToParts(d);
     tz = parts.find((p) => p.type === 'timeZoneName')?.value ?? '';
   } catch {
-    // ignore — fall through to offset-based string below
+    // ignore - fall through to offset-based string below
   }
   if (!tz) {
     const off = -d.getTimezoneOffset();
@@ -163,14 +163,14 @@ export function formatTimestampHuman(ms: number | null | undefined): string {
  * is always UTC). Always `YYYY-MM-DD HH:MM:SS UTC`, no locale conversion.
  */
 export function formatTimestampUtc(ms: number | null | undefined): string {
-  if (!ms) return '—';
+  if (!ms) return '-';
   const d = new Date(ms);
   const pad = (n: number) => n.toString().padStart(2, '0');
   return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())} UTC`;
 }
 
 export function formatAge(ms: number | null | undefined, now: number = Date.now()): string {
-  if (!ms) return '—';
+  if (!ms) return '-';
   const seconds = Math.max(0, Math.round((now - ms) / 1000));
   if (seconds < 60) return t`${seconds}s ago`;
   const minutes = Math.round(seconds / 60);
@@ -182,7 +182,7 @@ export function formatAge(ms: number | null | undefined, now: number = Date.now(
 }
 
 /**
- * Two-unit age at minute resolution — "just now", "5m ago", "18h 22m ago",
+ * Two-unit age at minute resolution - "just now", "5m ago", "18h 22m ago",
  * "2d 5h ago". No seconds (too noisy for static popovers); single-unit
  * {@link formatAge} loses the minute detail past an hour ("18h ago").
  */
@@ -190,7 +190,7 @@ export function formatAgeMinutes(
   ms: number | null | undefined,
   now: number = Date.now(),
 ): string {
-  if (!ms) return '—';
+  if (!ms) return '-';
   const totalSec = Math.max(0, Math.floor((now - ms) / 1000));
   if (totalSec < 60) return t`just now`;
   const totalMin = Math.floor(totalSec / 60);
@@ -206,7 +206,7 @@ export function formatAgeMinutes(
 }
 
 /**
- * Two-unit age — "45s ago", "12m 17s ago", "3h 4m ago", "2d 5h ago".
+ * Two-unit age - "45s ago", "12m 17s ago", "3h 4m ago", "2d 5h ago".
  * Re-render once per second and the seconds digit ticks visibly; the
  * single-unit {@link formatAge} rounds and so feels frozen mid-minute.
  */
@@ -214,7 +214,7 @@ export function formatAgePrecise(
   ms: number | null | undefined,
   now: number = Date.now(),
 ): string {
-  if (!ms) return '—';
+  if (!ms) return '-';
   const totalSec = Math.max(0, Math.floor((now - ms) / 1000));
   if (totalSec < 60) return t`${totalSec}s ago`;
   const totalMin = Math.floor(totalSec / 60);
@@ -233,7 +233,7 @@ export function formatAgePrecise(
 }
 
 /**
- * Two-unit forward duration — "45s", "12m 17s", "3h 4m", "2d 5h".
+ * Two-unit forward duration - "45s", "12m 17s", "3h 4m", "2d 5h".
  * Used for the "refreshes in X" countdown in panel headers. Rounds
  * fractional seconds up so a 950ms remainder shows as 1s (not 0s)
  * and the counter doesn't flicker down to 0 while the timer fires.

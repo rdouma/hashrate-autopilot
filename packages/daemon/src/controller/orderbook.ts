@@ -1,5 +1,5 @@
 /**
- * Orderbook helpers — pure functions for inspecting ask-side supply.
+ * Orderbook helpers - pure functions for inspecting ask-side supply.
  *
  * `cheapestAskForDepth` is the depth-aware pricing primitive the
  * controller uses when deciding where to bid. It walks asks in ascending
@@ -45,12 +45,12 @@ export interface DepthLookupResult {
   /**
    * `true` when the cumulative supply across the whole book is less
    * than `neededPh`. In that case the returned `price_sat` is the
-   * highest-priced ask with non-zero supply (best we can do) — bidding
+   * highest-priced ask with non-zero supply (best we can do) - bidding
    * at this price captures all the thin supply that exists.
    */
   readonly thin: boolean;
   /**
-   * Cumulative PH available up to and including `price_sat` — useful
+   * Cumulative PH available up to and including `price_sat` - useful
    * for diagnostics / display.
    */
   readonly cumulative_ph: number;
@@ -83,7 +83,7 @@ export function cheapestAskForDepth(
   }
 
   // Ran out of supply before hitting the target. Fall back to the
-  // highest-priced ask with any supply — that's as deep as the book
+  // highest-priced ask with any supply - that's as deep as the book
   // goes and bidding there captures every fillable share.
   return {
     price_sat: lastNonZeroPrice,

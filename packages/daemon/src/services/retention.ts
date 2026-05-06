@@ -5,8 +5,8 @@
  * so it doesn't thrash the DB.
  *
  * Keep two retention horizons for `decisions`:
- *   - uneventful (empty proposed array) — short, default 7 days
- *   - eventful (at least one proposal) — long, default 90 days
+ *   - uneventful (empty proposed array) - short, default 7 days
+ *   - eventful (at least one proposal) - long, default 90 days
  *
  * The vast majority of decisions rows are uneventful ticks that carry
  * no forensic value; pruning them aggressively is the whole point of
@@ -96,7 +96,7 @@ export class RetentionService {
       try {
         await this.tickMetricsRepo.pruneOlderThan(cutoff);
         // tick_metrics's prune returns void; we don't get a count.
-        // That's fine — the summary line just won't populate this.
+        // That's fine - the summary line just won't populate this.
       } catch (err) {
         this.log(`[retention] tick_metrics prune failed: ${(err as Error).message}`);
       }

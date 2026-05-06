@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { closeDatabase, openDatabase, type DatabaseHandle } from '../db.js';
 import { RuntimeStateRepo } from './runtime_state.js';
 
-describe('RuntimeStateRepo — floor-state persistence (#11)', () => {
+describe('RuntimeStateRepo - floor-state persistence (#11)', () => {
   let handle: DatabaseHandle;
   let repo: RuntimeStateRepo;
 
@@ -30,7 +30,7 @@ describe('RuntimeStateRepo — floor-state persistence (#11)', () => {
     const row = await repo.get();
     expect(row?.lower_ready_since_ms).toBe(sinceMs);
 
-    // And a fresh repo against the same db reads it back — the
+    // And a fresh repo against the same db reads it back - the
     // single-process approximation of a daemon restart.
     const reborn = new RuntimeStateRepo(handle.db);
     const rebornRow = await reborn.get();
@@ -45,11 +45,11 @@ describe('RuntimeStateRepo — floor-state persistence (#11)', () => {
     expect(row?.above_floor_ticks).toBe(3);
   });
 
-  it('survives a "restart" — second repo instance against the same db reads the persisted state', async () => {
+  it('survives a "restart" - second repo instance against the same db reads the persisted state', async () => {
     const droughtStart = 1_700_000_000_000;
     await repo.patch({ below_floor_since_ms: droughtStart, above_floor_ticks: 5 });
 
-    // Same db handle, fresh repo instance — the closest single-test
+    // Same db handle, fresh repo instance - the closest single-test
     // approximation of a daemon restart against the same state.db.
     const reborn = new RuntimeStateRepo(handle.db);
     const row = await reborn.get();

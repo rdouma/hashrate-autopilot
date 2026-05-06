@@ -1,7 +1,7 @@
 /**
  * Price chart: our primary bid (amber solid) vs the market-wide hashprice
  * (dashed purple), the cheapest fillable ask (cyan), the effective cap, and
- * — opt-in — the effective paid rate (emerald) reconstructed from per-tick
+ * - opt-in - the effective paid rate (emerald) reconstructed from per-tick
  * primary_bid_consumed_sat deltas. Under pay-your-bid (#53) the bid IS the
  * price paid, so the effective line should track the bid closely modulo
  * settlement smoothing. Bid events render as markers anchored to the
@@ -43,7 +43,7 @@ const HEIGHT = 200;
 // padding only needs to keep the last X-axis timestamp from clipping.
 const PADDING = { top: 16, right: 16, bottom: 24, left: 80 };
 
-// Tailwind amber-500 — shared with the Hashrate chart's delivered
+// Tailwind amber-500 - shared with the Hashrate chart's delivered
 // (Braiins) line so the two charts speak the same visual language
 // for "our bid / what we pay Braiins for".
 const COLOR_PRICE = '#f59e0b';
@@ -97,10 +97,10 @@ const COLOR_MAXBID = '#f87171'; // red-400
 // fillable_ask = cheapestAskForDepth(orderbook, target_hashrate_ph).
 // This is what the controller tracks: bid = fillable + overpay,
 // clamped to the cap. Drawing it below the amber bid makes the
-// overpay cushion visually explicit — every bid edit is explained
+// overpay cushion visually explicit - every bid edit is explained
 // by a move in this line.
 const COLOR_FILLABLE = '#22d3ee'; // cyan-400
-// Effective rate — what Braiins actually charged, per-tick from
+// Effective rate - what Braiins actually charged, per-tick from
 // primary_bid_consumed_sat deltas. Emerald so it's clearly a
 // "realised" number distinct from the bid (amber) and the market
 // (orange/violet).
@@ -182,7 +182,7 @@ export const PriceChart = memo(function PriceChart({
   /**
    * Current config's dynamic-cap allowance. When set, the cap line is
    * computed per-tick as `min(max_bid, hashprice + this)` rather than
-   * the flat `max_bid` — matches what decide() actually uses each
+   * the flat `max_bid` - matches what decide() actually uses each
    * tick. Null → fall back to max_bid. Applied as a constant across
    * the history (we don't store historical config per tick), so past
    * effective caps are approximate if the operator changed this
@@ -193,7 +193,7 @@ export const PriceChart = memo(function PriceChart({
    * Current config's overpay above fillable (sat/PH/day). Used in the
    * pinned event tooltip so the operator can read `fillable` and
    * `overpay` as first-class rows. Applied as a constant across
-   * history — past tooltips are approximate if the value was tuned.
+   * history - past tooltips are approximate if the value was tuned.
    */
   overpaySatPerPhDay?: number | null;
   /**
@@ -201,7 +201,7 @@ export const PriceChart = memo(function PriceChart({
    * only. 1 = raw (no smoothing). Mirrors the smoothing knobs the
    * Hashrate chart already has for the Braiins and Datum series
    * (issue #42). The noisy-per-tick `effective` line in particular
-   * benefits — `amount_consumed_sat` updates asynchronously from
+   * benefits - `amount_consumed_sat` updates asynchronously from
    * `avg_speed_ph` at Braiins, so a tick-resolution rate can wiggle
    * around the real trend by ±a few percent.
    */
@@ -211,7 +211,7 @@ export const PriceChart = memo(function PriceChart({
    * `'effective_rate'` plots the window-aggregated effective rate
    * (Δconsumed ÷ delivered×Δt) on the right axis with its own scale,
    * so the line's per-tick volatility no longer drags the left-axis
-   * range — that was the rationale for the legacy `show_effective_rate_on_price_chart`
+   * range - that was the rationale for the legacy `show_effective_rate_on_price_chart`
    * checkbox. The toggle migrated to this dropdown 2026-05-05.
    */
   rightAxisSeries?: PriceRightAxis;
@@ -238,7 +238,7 @@ export const PriceChart = memo(function PriceChart({
       .filter((p) => Number.isFinite(p.fillable_ask_sat_per_ph_day))
       .map((p) => ({ t: p.tick_at, v: p.fillable_ask_sat_per_ph_day as number }));
 
-    // Effective rate — what Braiins actually charged per PH per day —
+    // Effective rate - what Braiins actually charged per PH per day -
     // computed as a WINDOW-AGGREGATED ratio of total consumed vs total
     // PH-days delivered over the last N minutes, anchored at each tick:
     //
@@ -258,7 +258,7 @@ export const PriceChart = memo(function PriceChart({
     // correct time-weighted average and naturally absorbs the update
     // lag (#49 follow-up).
     //
-    // Window = max(3, priceSmoothingMinutes) — 1-minute resolution is
+    // Window = max(3, priceSmoothingMinutes) - 1-minute resolution is
     // smaller than Braiins' own settlement cadence, so a minimum of 3
     // minutes keeps the line legible even with smoothing "off".
     //
@@ -267,14 +267,14 @@ export const PriceChart = memo(function PriceChart({
     // (Δ < 0), tick gap > MAX_EFFECTIVE_DT_MS (daemon restart or
     // legitimate bucket boundary on long ranges), near-zero delivery.
     // Final outlier rejection: if aggregated rate exceeds 1.5× bid at
-    // the anchor tick, drop — the bid is a hard upper bound by
+    // the anchor tick, drop - the bid is a hard upper bound by
     // definition, anything above is a computation artifact.
     //
     // Long-range scaling (#81): on 1w / 1m / 1y / all the API
     // pre-aggregates ticks into 30-min / 1-h / 1-day buckets via
     // CHART_RANGE_SPECS. The aggregated rows preserve
     // primary_bid_consumed_sat as MAX over the bucket, so per-bucket
-    // deltas are still meaningful — but the previous fixed
+    // deltas are still meaningful - but the previous fixed
     // 5-minute MAX_EFFECTIVE_DT_MS rejected every pair on long ranges
     // and the line vanished. Scale all the per-tick-rate cadence
     // gates to the median dt of the points stream so bucketed data
@@ -300,7 +300,7 @@ export const PriceChart = memo(function PriceChart({
     // wildly-off rates: Braiins' amount_consumed_sat counter only
     // updates every ~minute on its side, so the first delta we see
     // in a fresh observation window spans more *actual* matching
-    // activity than its wall-clock interval suggests — inflating
+    // activity than its wall-clock interval suggests - inflating
     // the computed rate transiently. Requiring ≥ half the window
     // means the series doesn't draw until the aggregation has
     // enough history to be meaningful (~1.5 min for "off", 5 min
@@ -312,14 +312,14 @@ export const PriceChart = memo(function PriceChart({
       Math.floor(effectiveWindowMs / 2),
     );
     const effectivePoints: PricePoint[] = [];
-    // Braiins' primary_bid_consumed_sat counter settles in lumps — for
+    // Braiins' primary_bid_consumed_sat counter settles in lumps - for
     // minutes at a time the counter stays flat while delivered_ph
     // keeps reporting a lagged nonzero value. Averaging those "stale
     // settlement" pairs into the rate pulls it toward zero, producing
     // visually dramatic dips that imply we got hashrate almost for
-    // free — wrong and misleading. Two guards:
+    // free - wrong and misleading. Two guards:
     //   1. Skip zero-delta pairs entirely (neither numerator nor
-    //      denominator advance). They carry no information — the
+    //      denominator advance). They carry no information - the
     //      counter hasn't reported yet.
     //   2. Require at least MIN_NONZERO_PAIRS real settlements inside
     //      the window before trusting the average. Settlement lulls
@@ -434,11 +434,11 @@ export const PriceChart = memo(function PriceChart({
     // squashes the interesting lines (bid, fillable, hashprice) into
     // a thin strip at the bottom. If the cap happens to fall inside
     // the auto-ranged window it's drawn; otherwise it sits above the
-    // viewport and the excluded-zone shading clips to the top edge —
+    // viewport and the excluded-zone shading clips to the top edge -
     // which is exactly the intended "the ceiling is up there somewhere"
     // affordance without hijacking the chart.
     // Include effectivePoints in Y-axis scaling. With window-aggregated
-    // rates (not per-tick ratios) the values are well-bounded — the
+    // rates (not per-tick ratios) the values are well-bounded - the
     // 1.5×-bid last-chance outlier filter prevents any spike from
     // pulling the scale, and legitimate effective values routinely
     // sit below the bid/fillable band (the whole point of charting
@@ -447,7 +447,7 @@ export const PriceChart = memo(function PriceChart({
     // now that aggregation is numerator-and-denominator-summed.
     // Effective values are included in Y-scale sampling ONLY when the
     // operator has opted-in to seeing the line. Otherwise they're
-    // excluded — the whole point of the toggle is that the flatter
+    // excluded - the whole point of the toggle is that the flatter
     // bid/fillable/hashprice detail is crushed when the volatile
     // effective line drags the Y-axis range down.
     const priceSample = [
@@ -470,7 +470,7 @@ export const PriceChart = memo(function PriceChart({
     const priceMax = yTicks[yTicks.length - 1] ?? 1;
 
     // Per-tick effective rate values (sat/PH/day), aligned with the
-    // points array — sparse list lifted into a map keyed on tick_at
+    // points array - sparse list lifted into a map keyed on tick_at
     // for O(1) lookup. Used by the effective_rate right-axis case.
     const effectiveByTick = new Map<number, number>(
       effectivePoints.map((p) => [p.t, p.v]),
@@ -591,7 +591,7 @@ export const PriceChart = memo(function PriceChart({
     };
 
     // Right-axis line path. Same null-gap logic as the left-axis
-    // series — null values become segment breaks.
+    // series - null values become segment breaks.
     const rightAxisPath = ((): string => {
       if (!hasRightAxis || !rightAxis) return '';
       const segments: string[] = [];
@@ -615,7 +615,7 @@ export const PriceChart = memo(function PriceChart({
 
     // Null-gap path builder. Iterates the full `points` series and
     // emits a separate SVG subpath when the wall-clock distance
-    // between two adjacent *valid* samples exceeds MAX_BRIDGE_MS —
+    // between two adjacent *valid* samples exceeds MAX_BRIDGE_MS -
     // so a real market outage (fillable IS NULL, hashprice IS NULL
     // for many minutes) renders as a visible break (#44), while a
     // one-tick restart blip or a transient /spot/bid hiccup just
@@ -668,7 +668,7 @@ export const PriceChart = memo(function PriceChart({
 
     // Smoothed "our bid" series via rolling-mean. Fillable / hashprice /
     // max_bid are market-wide and stay raw. effectivePoints is already
-    // window-aggregated above — no post-hoc smoothing needed.
+    // window-aggregated above - no post-hoc smoothing needed.
     const smoothedPricePoints = rollingMeanPoints(pricePoints, priceSmoothingMinutes);
     const smoothedPriceByTick = new Map<number, number>(
       smoothedPricePoints.map((p) => [p.t, p.v]),
@@ -681,7 +681,7 @@ export const PriceChart = memo(function PriceChart({
     const fillablePath = pathWithNullGaps((p) => p.fillable_ask_sat_per_ph_day);
 
     // Area-fill variant of the null-gap path. Each non-null run becomes
-    // its own closed polygon down to the baseline — `M x0,y0 L…L xN,yN
+    // its own closed polygon down to the baseline - `M x0,y0 L…L xN,yN
     // L xN,base L x0,base Z`. A single bulk closure at the end of the
     // stroke path only closes the last subpath; the interior subpaths
     // would close back to their own starting M, painting diagonal
@@ -737,7 +737,7 @@ export const PriceChart = memo(function PriceChart({
       (p) => smoothedPriceByTick.get(p.tick_at) ?? null,
     );
 
-    // Effective-rate path — pre-computed as its own {t,v} series, not
+    // Effective-rate path - pre-computed as its own {t,v} series, not
     // per-MetricPoint, so we can't reuse pathWithNullGaps. Inline a
     // similar wall-clock-gated subpath builder: break across gaps >
     // MAX_BRIDGE_MS for symmetry with the other lines.
@@ -761,12 +761,12 @@ export const PriceChart = memo(function PriceChart({
     };
     const effectivePath = effectivePathBuilder(effectivePoints);
 
-    // Cap is config-derived — `max_bid_sat_per_ph_day` is always
+    // Cap is config-derived - `max_bid_sat_per_ph_day` is always
     // present when the daemon is running. The only way it goes
     // "missing" is when the dynamic branch kicks in and hashprice
     // happens to be null for that tick; in that case the fallback
     // is the fixed cap, so cap has a value regardless. Still use
-    // the null-gap builder for uniformity — pre-migration rows
+    // the null-gap builder for uniformity - pre-migration rows
     // (max_bid column null) will now break cleanly instead of
     // drawing a long bridge from the first post-migration sample.
     const capByTick = new Map<number, number>(
@@ -774,7 +774,7 @@ export const PriceChart = memo(function PriceChart({
     );
     const capPath = pathWithNullGaps((p) => capByTick.get(p.tick_at) ?? null);
 
-    // Polygon tracing the "excluded" region above the cap — the chart
+    // Polygon tracing the "excluded" region above the cap - the chart
     // top edge along the top, then the cap curve in reverse along the
     // bottom. Filled with a red-to-transparent linear gradient so the
     // operator sees at a glance that anything above the line is off-
@@ -785,7 +785,7 @@ export const PriceChart = memo(function PriceChart({
     // is excluded from Y-axis scaling on purpose (line 433-440), so
     // when cap > priceMax the cap line renders ABOVE PADDING.top in
     // SVG-y space. Closing to PADDING.top in that case puts the
-    // polygon's "top" edge BELOW the cap and inverts the fill —
+    // polygon's "top" edge BELOW the cap and inverts the fill -
     // gradient ends up below the line instead of above. y=0 is
     // always above any cap-line y, so the polygon always encloses
     // the correct side regardless of where the cap falls.
@@ -800,7 +800,7 @@ export const PriceChart = memo(function PriceChart({
               .join(' ');
             // Start at the first cap point (already M), go up to the
             // viewport top, across to the right edge, and close back down
-            // to the last cap point — that seals the polygon above
+            // to the last cap point - that seals the polygon above
             // the cap curve.
             const close = ` L${rightEdgeX},${top} L${leftEdgeX},${top} Z`;
             return capTrace + close;
@@ -842,7 +842,7 @@ export const PriceChart = memo(function PriceChart({
   // the chart container's overflow/clip and can flip near the viewport
   // edges. Coords stored are viewport-absolute (e.clientX/Y).
   //
-  // Hover opens a transient tooltip; clicking a marker pins it — pinned
+  // Hover opens a transient tooltip; clicking a marker pins it - pinned
   // tooltips stay until the × is clicked, another marker is clicked, or
   // the user clicks outside. Pinned also exposes a "copy JSON" button.
   const onMarkerEnter = useCallback((event: BidEventView) => (e: React.MouseEvent) => {
@@ -1012,7 +1012,7 @@ export const PriceChart = memo(function PriceChart({
             </g>
           ))}
 
-        {/* Fillable ask — the tracking anchor for the controller.
+        {/* Fillable ask - the tracking anchor for the controller.
             bid = fillable + overpay (clamped to cap). Rendered below
             the amber bid line so the vertical gap between them is the
             overpay cushion at a glance; any edit the controller
@@ -1027,7 +1027,7 @@ export const PriceChart = memo(function PriceChart({
           />
         )}
 
-        {/* Hashprice break-even line — now a time series, not a static
+        {/* Hashprice break-even line - now a time series, not a static
             horizontal line. Moves with difficulty adjustments + block
             reward fluctuations. Below = profitable, above = unprofitable. */}
         {hashpricePath && (
@@ -1040,7 +1040,7 @@ export const PriceChart = memo(function PriceChart({
             opacity="0.7"
           />
         )}
-        {/* Effective cap — the tighter of fixed max_bid and the
+        {/* Effective cap - the tighter of fixed max_bid and the
             dynamic hashprice+max_overpay cap. Anything above this
             line is the "off-limits" region, shaded with a red
             gradient that fades down to transparent at the cap curve
@@ -1067,10 +1067,10 @@ export const PriceChart = memo(function PriceChart({
           />
         )}
         {priceAreaPath && (
-          /* Soft gradient fill below the price line — mirrors the
+          /* Soft gradient fill below the price line - mirrors the
              delivered-hashrate fill on the chart above. Each null-gap
              sub-run is its own closed polygon down to the baseline
-             (#46 — the earlier single-closure variant painted diagonal
+             (#46 - the earlier single-closure variant painted diagonal
              wedges across gaps after #44 split the line into subpaths). */
           <path d={priceAreaPath} fill="url(#priceFill)" opacity="0.5" />
         )}
@@ -1079,7 +1079,7 @@ export const PriceChart = memo(function PriceChart({
         )}
         {/* Effective rate is now plotted via the right-axis machinery
             (rightAxisPath) when the operator picks 'effective_rate'
-            from the right-axis dropdown — it gets its own scale so
+            from the right-axis dropdown - it gets its own scale so
             the volatile line no longer drags the left-axis range. The
             old left-axis emerald overlay is gone. */}
 
@@ -1120,7 +1120,7 @@ export const PriceChart = memo(function PriceChart({
           if (e.kind === 'EDIT_SPEED') {
             // Speed-edit marker: hollow blue diamond on the price line at
             // the event time. Earlier I parked it at chart-top reasoning
-            // that a speed change has no inherent price coordinate — but
+            // that a speed change has no inherent price coordinate - but
             // operator pointed out (correctly) that anchoring it to the
             // price line is what makes it readable: you see *at what
             // price* the capacity got resized, lined up with the rest of
@@ -1241,7 +1241,7 @@ export const PriceChart = memo(function PriceChart({
 
 // Walk a plain-data object and, for any numeric field whose name ends
 // in `_at`, inject a sibling `<field>_hr` with a locale-aware human
-// string including the timezone. Non-destructive — returns a new
+// string including the timezone. Non-destructive - returns a new
 // object. Used to enrich the copy-JSON payload so raw unix-ms fields
 // are readable without mental math.
 function withHumanTimestamps<T>(obj: T): T {
@@ -1296,7 +1296,7 @@ function EventTooltip({
 
   // Find the tick_metrics row for the event's timestamp so the
   // tooltip can surface fillable / hashprice / max_bid at that
-  // moment in sat/PH/day — the numbers the operator needs to
+  // moment in sat/PH/day - the numbers the operator needs to
   // sanity-check "did the escalation make sense" without digging
   // into the JSON payload.
   const marketAtEvent = useMemo(() => {
@@ -1306,7 +1306,7 @@ function EventTooltip({
     let bestDiff = Infinity;
     for (const p of points) {
       const diff = Math.abs(p.tick_at - target);
-      // Within ±2 min of the event is close enough — tick_metrics
+      // Within ±2 min of the event is close enough - tick_metrics
       // is stored per tick (60s cadence), so the nearest row is
       // always the right one.
       if (diff > 2 * 60_000) continue;
@@ -1331,7 +1331,7 @@ function EventTooltip({
 
   // Prefetch recent decisions + the specific matched detail so the copy
   // payload reflects the rich context the operator saw in the old
-  // Decisions tab. Only runs once pinned — hover-only tooltips don't
+  // Decisions tab. Only runs once pinned - hover-only tooltips don't
   // need the extra round-trips.
   const decisionsList = useQuery({
     queryKey: ['decisions-for-chart'],
@@ -1459,7 +1459,7 @@ function EventTooltip({
     <div
       ref={ref}
       id={tip.pinned ? 'price-chart-pinned-tooltip' : undefined}
-      // `fixed` so positioning is purely viewport-relative — no chart
+      // `fixed` so positioning is purely viewport-relative - no chart
       // container clip / scroll math. `whitespace-nowrap` on the body
       // means data lines (price/delta/budget/id) never wrap; the reason
       // line opts back into wrapping below.
@@ -1494,7 +1494,7 @@ function EventTooltip({
       {e.kind === 'CREATE_BID' && (
         <div className="mt-2 space-y-0.5 text-slate-300">
           <Row label={t`price`} value={`${formatNumber(Math.round(e.new_price_sat_per_ph_day ?? 0))} sat/PH/day`} />
-          <Row label={t`speed`} value={`${e.speed_limit_ph ?? '—'} PH/s`} />
+          <Row label={t`speed`} value={`${e.speed_limit_ph ?? '-'} PH/s`} />
           <Row label={t`budget`} value={`${formatNumber(e.amount_sat ?? 0)} sat`} />
         </div>
       )}
@@ -1518,7 +1518,7 @@ function EventTooltip({
 
       {e.kind === 'EDIT_SPEED' && (
         <div className="mt-2 space-y-0.5 text-slate-300">
-          <Row label={t`new speed`} value={`${e.speed_limit_ph ?? '—'} PH/s`} />
+          <Row label={t`new speed`} value={`${e.speed_limit_ph ?? '-'} PH/s`} />
         </div>
       )}
 
@@ -1545,7 +1545,7 @@ function EventTooltip({
               value={`${formatNumber(Math.round(marketAtEvent.hashprice_sat_per_ph_day))} sat/PH/day`}
             />
           ) : (
-            <Row label={t`hashprice`} value={t`— (not recorded this tick)`} />
+            <Row label={t`hashprice`} value={t`- (not recorded this tick)`} />
           )}
           {maxOverpayVsHashpriceSatPerPhDay !== null && (
             <Row
@@ -1635,7 +1635,7 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 /**
- * Mirror of Status.tsx's helpers — split "46,940 sat/PH/day" into
+ * Mirror of Status.tsx's helpers - split "46,940 sat/PH/day" into
  * `{ num, unit }` so the tooltip's Row can mute the unit and swap
  * "sat" for the ≡ glyph, matching the aesthetic used across the
  * rest of the dashboard. Duplicated here because PriceChart.tsx

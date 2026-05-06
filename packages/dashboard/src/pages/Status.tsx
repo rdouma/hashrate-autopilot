@@ -167,7 +167,7 @@ export function Status() {
   const metricsQuery = useQuery({
     queryKey: ['metrics', chartRange],
     queryFn: () => api.metrics(chartRange),
-    // Charts span hours-to-months — a 60s refresh is plenty.
+    // Charts span hours-to-months - a 60s refresh is plenty.
     refetchInterval: 60_000,
   });
 
@@ -196,7 +196,7 @@ export function Status() {
   const financeQuery = useQuery({
     queryKey: ['finance'],
     queryFn: api.finance,
-    // Money is a slow-moving summary — earnings per day, lifetime
+    // Money is a slow-moving summary - earnings per day, lifetime
     // figures, ocean stats. Hourly refresh is plenty; the operator can
     // hit the refresh button on the panel for an immediate pull.
     refetchInterval: 3_600_000,
@@ -204,7 +204,7 @@ export function Status() {
 
   // Range-aware aggregates for the P&L per-day card (issue #43).
   // Separate query from /api/finance because the two have different
-  // cadences — lifetime/Ocean data is hourly; range aggregates track
+  // cadences - lifetime/Ocean data is hourly; range aggregates track
   // the ~1-min tick cadence. Keyed on `chartRange` so switching the
   // chart range picker above refetches with the new window.
   const financeRangeQuery = useQuery({
@@ -237,7 +237,7 @@ export function Status() {
 
   return (
     <div className="space-y-5">
-      {/* No "Status" h2 header — the top nav already announces the
+      {/* No "Status" h2 header - the top nav already announces the
           page, and last-tick info is duplicated in the
           NextActionCard's footer. Saved a chunk of vertical real
           estate above the fold. */}
@@ -351,7 +351,7 @@ export function Status() {
               label={t`API reachable`}
               reachable={s.market !== null}
               downLabel={t`API DOWN`}
-              title={t`Braiins marketplace API — reachable when the last observe() read market/orderbook/balance without error.`}
+              title={t`Braiins marketplace API - reachable when the last observe() read market/orderbook/balance without error.`}
             />
           }
         >
@@ -371,12 +371,12 @@ export function Status() {
             </div>
           )}
           {/*
-           * Market + pricing block — Braiins-sourced numbers only.
+           * Market + pricing block - Braiins-sourced numbers only.
            * Fillable-at-target leads (what we'd actually pay). Then
-           * max-bid (+ its dynamic sibling) — the ceiling. Best bid /
+           * max-bid (+ its dynamic sibling) - the ceiling. Best bid /
            * best ask are market color at the bottom.
            *
-           * Hashprice (break-even) is shown in the Ocean card — it's
+           * Hashprice (break-even) is shown in the Ocean card - it's
            * an Ocean-derived figure, not a Braiins one, and mixing
            * them here misled operators into thinking the controller
            * was using a Braiins-sourced break-even reference.
@@ -472,7 +472,7 @@ export function Status() {
                           </div>
                         </>
                       ) : (
-                        <span className="text-slate-600">—</span>
+                        <span className="text-slate-600">-</span>
                       )}
                     </td>
                     <td className="py-2 px-3 text-right font-mono">
@@ -535,7 +535,7 @@ export function Status() {
 }
 
 // ---------------------------------------------------------------------------
-// Hero operations card — run mode, action mode, operator avail, quiet hours.
+// Hero operations card - run mode, action mode, operator avail, quiet hours.
 // ---------------------------------------------------------------------------
 
 const heroColors: Record<StatusResponse['run_mode'], string> = {
@@ -620,7 +620,7 @@ function OperationsCard({
             <div className="flex flex-col items-center cursor-help">
               <div className="text-[11px] uppercase tracking-wider text-slate-100 mb-1"><Trans>price</Trans></div>
               {/* relative wrapper so the ±delta can be position:absolute
-                  outside the flow — that way the big number stays centered
+                  outside the flow - that way the big number stays centered
                   regardless of how wide the badge gets (e.g. "+9" vs "+126"). */}
               <div className="relative leading-none">
                 <span className="text-4xl font-mono font-semibold text-slate-100 tabular-nums">
@@ -690,7 +690,7 @@ function OperationsCard({
         </div>
       ) : (
         <div className="flex flex-col items-center">
-          <div className="text-3xl font-mono text-slate-500">—</div>
+          <div className="text-3xl font-mono text-slate-500">-</div>
           <div className="text-xs text-slate-400 mt-0.5"><Trans>no active bid</Trans></div>
         </div>
       )}
@@ -773,7 +773,7 @@ function NextActionCard({
         <button
           onClick={onTickNow}
           disabled={tickPending}
-          title={t`Run the pending decision immediately — clears the post-edit lock and bypasses the patience/escalation timers so a waiting-to-settle EDIT_PRICE fires on this tick instead of after the full window.`}
+          title={t`Run the pending decision immediately - clears the post-edit lock and bypasses the patience/escalation timers so a waiting-to-settle EDIT_PRICE fires on this tick instead of after the full window.`}
           className="px-3 py-1.5 text-xs rounded border border-slate-700 text-slate-200 hover:bg-slate-800 disabled:opacity-50"
         >
           {tickPending ? <Trans>ticking…</Trans> : <Trans>Run decision now</Trans>}
@@ -811,7 +811,7 @@ function NextActionCard({
                           </span>
                           {reasonLabel && (
                             <span className="text-slate-500 text-[11px]">
-                              — {reasonLabel}
+                              - {reasonLabel}
                             </span>
                           )}
                         </span>
@@ -869,7 +869,7 @@ function NextActionFooter({
       <span title={tickAt !== null ? formatTimestampUtc(tickAt) : ''}>
         <Trans>last tick:</Trans>{' '}
         <span className="text-slate-400">
-          {tickAt !== null ? formatTimestamp(tickAt) : '—'}
+          {tickAt !== null ? formatTimestamp(tickAt) : '-'}
         </span>
         {tickAt !== null && (
           <span className="ml-1 text-slate-600">({formatAge(tickAt)})</span>
@@ -877,7 +877,7 @@ function NextActionFooter({
       </span>
       <span>
         {remainingSec === null
-          ? '—'
+          ? '-'
           : remainingSec > 0 ? (
               <Trans>
                 next in{' '}
@@ -919,7 +919,7 @@ function PriceDeltaVsHashprice({
     return (
       <span
         className="text-xs font-mono text-slate-400 cursor-help"
-        title={t`Effective rate equals hashprice (${hashpricePretty}) — breaking even.`}
+        title={t`Effective rate equals hashprice (${hashpricePretty}) - breaking even.`}
       >
         ±0
       </span>
@@ -931,8 +931,8 @@ function PriceDeltaVsHashprice({
   const deltaFormatted = denomination.formatSatPerPhDay(Math.abs(delta));
   const tooltip =
     delta > 0
-      ? t`Effective rate ${sign}${deltaFormatted} above hashprice (${hashpricePretty}) — positive means paying above break-even, negative means paying below (profitable).`
-      : t`Effective rate ${sign}${deltaFormatted} below hashprice (${hashpricePretty}) — positive means paying above break-even, negative means paying below (profitable).`;
+      ? t`Effective rate ${sign}${deltaFormatted} above hashprice (${hashpricePretty}) - positive means paying above break-even, negative means paying below (profitable).`
+      : t`Effective rate ${sign}${deltaFormatted} below hashprice (${hashpricePretty}) - positive means paying above break-even, negative means paying below (profitable).`;
 
   return (
     <Tooltip text={tooltip}>
@@ -953,7 +953,7 @@ const JUST_EXECUTED_VISIBLE_MS = 90_000;
 
 /**
  * Briefly surfaces the most recent autopilot mutation so the operator
- * sees explicit confirmation when a tick fires — instead of the panel
+ * sees explicit confirmation when a tick fires - instead of the panel
  * silently jumping from "Will lower …" to "On target". Auto-fades
  * after ~90s. Re-renders every 5s so the relative-age text refreshes.
  */
@@ -1247,7 +1247,7 @@ function FilterBar({
  * Four KPIs from the server-side `/api/stats` endpoint. The server
  * computes duration-weighted averages from the raw tick_metrics table
  * using SQL LEAD() window function, so each tick is weighted by its
- * actual duration — not an equal-weight approximation that distorts
+ * actual duration - not an equal-weight approximation that distorts
  * on pre-aggregated chart buckets (1w/1m).
  *
  * Responds to the chart range filter (same query param) so the
@@ -1271,7 +1271,7 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
     return (
       <section className="grid grid-cols-2 lg:grid-cols-6 gap-3">
         {placeholderCards.map((label) => (
-          <StatCard key={label} label={label} value="—" tooltip={t`Loading or daemon restart required.`} />
+          <StatCard key={label} label={label} value="-" tooltip={t`Loading or daemon restart required.`} />
         ))}
       </section>
     );
@@ -1281,7 +1281,7 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
 
   const { uptime_pct, avg_hashrate_ph, avg_datum_hashrate_ph, avg_ocean_hashrate_ph, avg_cost_per_ph_sat_per_ph_day, avg_overpay_vs_hashprice_sat_per_ph_day, acceptance_pct_1h } = statsData;
   // total_ph_hours + mutation_count remain on the server-side
-  // StatsResponse even though no card consumes them — keeping the
+  // StatsResponse even though no card consumes them - keeping the
   // shape stable so we can re-surface either later without a backend
   // round-trip.
   void statsData.total_ph_hours;
@@ -1316,7 +1316,7 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
       <StatCard
         label={t`avg ocean`}
         value={denomination.formatHashrate(avg_ocean_hashrate_ph, intlLocale)}
-        tooltip={t`Duration-weighted average of the hashrate Ocean credits to our payout address. Each tick (every 60 s) the daemon calls Ocean's /v1/user_hashrate endpoint and reads the \`hashrate_300s\` field — Ocean's own 5-minute sliding-window estimate for this wallet. So: sampled every minute, each sample is a 5-minute smoothed value. A sustained gap below Avg Braiins / Avg Datum means the pool isn't crediting work we think we delivered.`}
+        tooltip={t`Duration-weighted average of the hashrate Ocean credits to our payout address. Each tick (every 60 s) the daemon calls Ocean's /v1/user_hashrate endpoint and reads the \`hashrate_300s\` field - Ocean's own 5-minute sliding-window estimate for this wallet. So: sampled every minute, each sample is a 5-minute smoothed value. A sustained gap below Avg Braiins / Avg Datum means the pool isn't crediting work we think we delivered.`}
       />
       <StatCard
         label={t`avg cost / hashrate delivered`}
@@ -1358,7 +1358,7 @@ function StatCard({
       <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 cursor-help text-center">
         {/* Reserve two lines for the label so single-line cards
             ("uptime") line up with two-line cards ("avg cost / PH
-            delivered") — otherwise the big numbers underneath
+            delivered") - otherwise the big numbers underneath
             don't share a baseline. */}
         <div className="text-xs uppercase tracking-wider text-slate-100 mb-2 min-h-8 leading-4 flex items-start justify-center">
           <span>{label}</span>
@@ -1400,11 +1400,11 @@ function TickingAge({ epochMs }: { epochMs: number | null | undefined }) {
 }
 
 /**
- * Forward countdown — "refreshes in 42s", "refreshes in 2m 13s".
+ * Forward countdown - "refreshes in 42s", "refreshes in 2m 13s".
  * The panel decides when it will next fetch and hands us that
  * timestamp; we re-render once per second so the digits tick visibly.
  * Prefer this over {@link TickingAge} on panels that refresh on a
- * predictable cadence — operators want to know how long until new
+ * predictable cadence - operators want to know how long until new
  * data, not how old the current data is.
  */
 function RefreshCountdown({
@@ -1417,7 +1417,7 @@ function RefreshCountdown({
    * panel's data catches up without waiting for react-query's next
    * scheduled poll. Needed on panels whose `nextAtMs` tracks a
    * server-side cadence (daemon tick) that's faster than the
-   * dashboard's background poll interval — otherwise "refreshing…"
+   * dashboard's background poll interval - otherwise "refreshing…"
    * sits on screen for up to the poll interval (30s for /api/status)
    * even when the underlying data source is instant.
    */
@@ -1436,7 +1436,7 @@ function RefreshCountdown({
     // + tickIntervalMs`, and `last_tick_at` is only written *after*
     // the tick's observe/decide/execute/persist chain finishes. If the
     // refetch lands while the daemon is mid-tick, the response still
-    // carries the previous `next_tick_at` — same number as before, so
+    // carries the previous `next_tick_at` - same number as before, so
     // the effect-deps don't change, and the countdown stays on
     // "refreshing…" until the next react-query poll (up to
     // refetchInterval, i.e. 30 s for /api/status). Instead we keep
@@ -1467,7 +1467,7 @@ function RefreshCountdown({
       clearTimeout(handle);
     };
   }, [nextAtMs, refetchQueryKey, qc]);
-  if (nextAtMs == null) return <span>—</span>;
+  if (nextAtMs == null) return <span>-</span>;
   const msUntil = nextAtMs - now;
   // Once the countdown crosses zero we're waiting on either the
   // server's next tick (which runs on the interval timer) or the
@@ -1575,17 +1575,17 @@ function ReachabilityBadge({
 
 /**
  * Vertical money panel: cost on top, then the two income sources,
- * then net at the bottom. Reads naturally as a profit-and-loss page —
+ * then net at the bottom. Reads naturally as a profit-and-loss page -
  * the two incomes obviously add up to "what we'll have", which is
  * then offset against "what we paid".
  *
- *   spent     — lifetime sat consumed across all autopilot-owned bids
- *   expected  — Ocean's "Unpaid Earnings" (pending next payout)
- *   collected — on-chain UTXOs at the configured payout address
- *   net       — collected + expected − spent (final result)
+ *   spent     - lifetime sat consumed across all autopilot-owned bids
+ *   expected  - Ocean's "Unpaid Earnings" (pending next payout)
+ *   collected - on-chain UTXOs at the configured payout address
+ *   net       - collected + expected − spent (final result)
  *
- * Each input renders "—" when its source isn't reporting yet; net
- * stays "—" until both income halves have at least one observation.
+ * Each input renders "-" when its source isn't reporting yet; net
+ * stays "-" until both income halves have at least one observation.
  */
 function BraiinsBalances({
   balances,
@@ -1716,11 +1716,11 @@ function OceanPanel() {
           label={t`API reachable`}
           reachable={o.fetched_at_ms !== null && o.pool !== null}
           downLabel={t`API DOWN`}
-          title={t`Ocean stats API — reachable when the last /api/ocean fetch returned a pool snapshot.`}
+          title={t`Ocean stats API - reachable when the last /api/ocean fetch returned a pool snapshot.`}
         />
       }
     >
-      {/* Current observations — same genre as Datum's "datum hashrate"
+      {/* Current observations - same genre as Datum's "datum hashrate"
           or Braiins' "delivered": what the pool reports about our
           wallet right now. */}
       {o.user && (
@@ -1784,7 +1784,7 @@ function OceanPanel() {
                     )}) has already crossed the payout threshold (${denomination.formatSat(
                       o.user.payout_threshold_sat,
                       intlLocale,
-                    )} ≈ 0,01 BTC). The accumulated balance ships as a coinbase output the next time Ocean wins a pool block — under TIDES the pool only pays out when it finds a block, since that's the only block where it controls the coinbase. "Next block" means the next Ocean pool block (~3/day at typical share), NOT the next Bitcoin block in general. The blue cubes on the hashrate chart above mark each pool block as it lands.`
+                    )} ≈ 0,01 BTC). The accumulated balance ships as a coinbase output the next time Ocean wins a pool block - under TIDES the pool only pays out when it finds a block, since that's the only block where it controls the coinbase. "Next block" means the next Ocean pool block (~3/day at typical share), NOT the next Bitcoin block in general. The blue cubes on the hashrate chart above mark each pool block as it lands.`
                   : t`Projected time until our unpaid balance (${denomination.formatSat(
                       o.user.unpaid_sat,
                       intlLocale,
@@ -1801,7 +1801,7 @@ function OceanPanel() {
         </div>
       )}
 
-      {/* Pool-wide context — less important day-to-day, so it lives
+      {/* Pool-wide context - less important day-to-day, so it lives
           at the bottom of the panel. */}
       <div className="border-t border-slate-800 mt-2 pt-2">
         {o.last_block ? (
@@ -1957,7 +1957,7 @@ function FinancePanel({
   // falls back to the instantaneous formula when the server doesn't
   // have enough ticks yet (fresh install, post-prune, daemon just
   // started). The "Ocean est." row is always the 3h snapshot from
-  // Ocean's `daily_estimate_sat` regardless of range — it's
+  // Ocean's `daily_estimate_sat` regardless of range - it's
   // authoritative for the pool-view estimate.
   //
   // Computed BEFORE the `!data` early return so hook count is stable
@@ -1977,7 +1977,7 @@ function FinancePanel({
 
     // Range-aware path: derived fields are null when the server
     // returns `insufficient_history`. Fall back to the 3h actual
-    // spend rate carried on /api/status — which also derives from
+    // spend rate carried on /api/status - which also derives from
     // primary_bid_consumed_sat deltas, just over a fixed 3h window
     // instead of the selected range.
     const haveRange =
@@ -2077,11 +2077,11 @@ function FinancePanel({
 
   // Two separate cards: per-day run-rate and lifetime totals. Same
   // data source, but visually distinct so the operator reads them as
-  // two different questions — "am I burning money per day right now?"
+  // two different questions - "am I burning money per day right now?"
   // vs "did I end up ahead over the whole run?".
   return (
     <section className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-      {/* Left card — per-day run-rate */}
+      {/* Left card - per-day run-rate */}
       <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 flex flex-col">
         <div className="flex items-baseline justify-between mb-3">
           <div className="text-xs uppercase tracking-wider text-slate-100">
@@ -2094,18 +2094,18 @@ function FinancePanel({
           // 3h-hashrate extrapolation for income, live bid price ×
           // delivered for spend). Label them "projected" so the
           // operator reads them as forecasts rather than facts. The
-          // exceptions — hashprice (current market break-even) and
-          // ocean lifetime (actual earnings) — keep their existing
+          // exceptions - hashprice (current market break-even) and
+          // ocean lifetime (actual earnings) - keep their existing
           // plain labels.
           //
           // Rows always render once we're past the initial loading
-          // gate — hiding them on transient nulls (Ocean hasn't
+          // gate - hiding them on transient nulls (Ocean hasn't
           // reported yet, bid stopped filling this tick, etc.) made
           // the panel look broken whenever one piece was missing.
           // "calculating…" makes the loading state explicit instead
           // of a silent empty panel.
           <div className="space-y-1.5 text-sm font-mono">
-            {/* Inputs — the averages that the projections below
+            {/* Inputs - the averages that the projections below
                 multiply. Surfaced explicitly so projected income /
                 spend / net read as derivations, not magic numbers.
                 Hidden when rangeFallback is active because the
@@ -2132,11 +2132,11 @@ function FinancePanel({
                         )
                       : t`calculating…`
                   }
-                  tooltip={t`Average break-even unit price over the selected range. Multiplied by avg delivered to get projected income. Different from the spot hashprice row below — this is what the projection actually uses.`}
+                  tooltip={t`Average break-even unit price over the selected range. Multiplied by avg delivered to get projected income. Different from the spot hashprice row below - this is what the projection actually uses.`}
                 />
               </>
             )}
-            {/* Derivations — built from the three averages above. */}
+            {/* Derivations - built from the three averages above. */}
             <div
               className={
                 !rangeFallback && rangeData
@@ -2177,7 +2177,7 @@ function FinancePanel({
               valueClass={dailyNetColor}
             />
             </div>
-            {/* Reference rows — alternate views (pool-side estimate,
+            {/* Reference rows - alternate views (pool-side estimate,
                 spot hashprice, lifetime) that the projection doesn't
                 derive from. */}
             <div className="pt-2 mt-2 border-t border-slate-800 space-y-1.5">
@@ -2188,7 +2188,7 @@ function FinancePanel({
                     ? denomination.formatSat(oceanDailyIncomeSat, intlLocale)
                     : t`calculating…`
                 }
-                tooltip={t`Ocean's own estimate — the pool extrapolates from the address's last 3-hour hashrate and its share of pool output. Always 3h-based regardless of the chart range you've picked, so it may differ from projected income at other ranges.`}
+                tooltip={t`Ocean's own estimate - the pool extrapolates from the address's last 3-hour hashrate and its share of pool output. Always 3h-based regardless of the chart range you've picked, so it may differ from projected income at other ranges.`}
               />
               {data.ocean?.hashprice_sat_per_ph_day != null && (
                 <FinanceFootnote
@@ -2211,13 +2211,13 @@ function FinancePanel({
         )}
       </div>
 
-      {/* Right card — lifetime totals (the actual P&L ledger) */}
+      {/* Right card - lifetime totals (the actual P&L ledger) */}
       <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 flex flex-col">
         <div className="flex items-baseline justify-between mb-3">
           <div className="text-xs uppercase tracking-wider text-slate-100">
             <Trans>Profit &amp; Loss · lifetime</Trans>
           </div>
-          {/* refresh/rebuild controls live on the per-day card only —
+          {/* refresh/rebuild controls live on the per-day card only -
               they refresh the same data, no point duplicating them */}
         </div>
         {/* The panel reads as the arithmetic of the net line: an
@@ -2231,7 +2231,7 @@ function FinancePanel({
           value={data.spent_sat}
           tooltip={
             data.spent_scope === 'account'
-              ? t`Sum of counters_committed.amount_consumed_sat across every bid on /v1/spot/bid — covers active + historical bids, including any that existed before the autopilot was switched on. May lag the latest hour of active-bid consumption (Braiins only updates committed counters on each hourly settlement tick). Switch via Config → P&L panel.`
+              ? t`Sum of counters_committed.amount_consumed_sat across every bid on /v1/spot/bid - covers active + historical bids, including any that existed before the autopilot was switched on. May lag the latest hour of active-bid consumption (Braiins only updates committed counters on each hourly settlement tick). Switch via Config → P&L panel.`
               : t`Lifetime sum of (amount_sat − amount_remaining_sat) across every bid the autopilot has tagged. Excludes any bids placed before the autopilot was switched on. Switch to "whole account" via Config → Money panel.`
           }
         />
@@ -2242,12 +2242,12 @@ function FinancePanel({
               <FinanceSubRow
                 label={t`closed bids`}
                 value={data.spent_closed_sat}
-                tooltip={t`Sum across terminal bids — status CANCELED or FULFILLED (is_current=false). Money that has definitively left the account.`}
+                tooltip={t`Sum across terminal bids - status CANCELED or FULFILLED (is_current=false). Money that has definitively left the account.`}
               />
               <FinanceSubRow
                 label={t`active (in-flight)`}
                 value={data.spent_active_sat}
-                tooltip={t`Sum across still-running bids — status ACTIVE / PAUSED / etc. (is_current=true). Live in-flight consumption; not yet settled in Braiins' hourly ledger.`}
+                tooltip={t`Sum across still-running bids - status ACTIVE / PAUSED / etc. (is_current=true). Live in-flight consumption; not yet settled in Braiins' hourly ledger.`}
               />
             </>
           )}
@@ -2257,7 +2257,7 @@ function FinancePanel({
           value={data.expected_sat}
           tooltip={
             data.ocean
-              ? t`Ocean's Unpaid Earnings — what will land on-chain at the next payout. Threshold: ${formatSats(data.ocean.payout_threshold_sat)} sat (~0.01 BTC).`
+              ? t`Ocean's Unpaid Earnings - what will land on-chain at the next payout. Threshold: ${formatSats(data.ocean.payout_threshold_sat)} sat (~0.01 BTC).`
               : t`Ocean stats unavailable.`
           }
         />
@@ -2268,10 +2268,10 @@ function FinancePanel({
           status={data.collected_status}
           tooltip={
             data.collected_status === 'computing'
-              ? t`Payout observer is starting up. Waiting for the first balance scan to complete — usually a few seconds with Electrs, up to a minute with bitcoind scantxoutset.`
+              ? t`Payout observer is starting up. Waiting for the first balance scan to complete - usually a few seconds with Electrs, up to a minute with bitcoind scantxoutset.`
               : data.collected_sat !== null
                 ? t`UTXOs at the configured payout address. Read via Electrs (preferred, instant) or bitcoind RPC (slower).`
-                : t`Not configured. Go to Config → On-chain payouts and select Electrs or Bitcoin Core RPC to track your on-chain balance. The net line treats missing collected as 0 so the arithmetic still reads — a blank row here is the hint that a piece of the income side isn't wired up.`
+                : t`Not configured. Go to Config → On-chain payouts and select Electrs or Bitcoin Core RPC to track your on-chain balance. The net line treats missing collected as 0 so the arithmetic still reads - a blank row here is the hint that a piece of the income side isn't wired up.`
           }
         />
 
@@ -2280,12 +2280,12 @@ function FinancePanel({
             sign="equals"
             label={t`net`}
             value={data.net_sat}
-            // Only the bottom-line gets a sentiment color — green when
+            // Only the bottom-line gets a sentiment color - green when
             // the autopilot has paid for itself, red when it's still
             // digging out of the initial deposit. Keeps the rest of
             // the panel calm so the eye lands on the conclusion.
             valueClass={netColor}
-            tooltip={t`Collected on-chain + Ocean's unpaid earnings − spent on bids. Missing collected is treated as 0 (the on-chain row still shows — so the operator sees the gap). Negative = still recouping the initial deposit.`}
+            tooltip={t`Collected on-chain + Ocean's unpaid earnings − spent on bids. Missing collected is treated as 0 (the on-chain row still shows - so the operator sees the gap). Negative = still recouping the initial deposit.`}
           />
         </div>
       </div>
@@ -2296,7 +2296,7 @@ function FinancePanel({
 /**
  * One row in the vertical money stack: label on the left, value on
  * the right (right-aligned, monospace, tabular-nums so the digits
- * line up across rows). `value=null` renders as "—".
+ * line up across rows). `value=null` renders as "-".
  */
 function FinanceRow({
   label,
@@ -2314,7 +2314,7 @@ function FinanceRow({
    *  rather than a dictionary of unrelated figures. */
   sign?: 'plus' | 'minus' | 'equals';
   /**
-   * #97 — when 'computing', renders a small inline spinner instead of
+   * #97 - when 'computing', renders a small inline spinner instead of
    * the standard em-dash so the operator does not mistake "first scan
    * still in flight after a daemon restart" for "this integration is
    * broken". Only the collected (on-chain) row currently passes this.
@@ -2326,7 +2326,7 @@ function FinanceRow({
   // Match the size + label-color of the standard <Row> used by the
   // sibling Hashrate-and-market and Braiins-balance cards so the three
   // panels read as a set. Only the value's *color* varies (caller can
-  // override via valueClass — used for the green/red net bottom line).
+  // override via valueClass - used for the green/red net bottom line).
   const formatted = denomination.formatSat(value, intlLocale);
   const split = splitUnit(formatted);
   const signChar = sign === 'plus' ? '+' : sign === 'minus' ? '−' : sign === 'equals' ? '=' : '';
@@ -2377,7 +2377,7 @@ function FinanceRow({
  * Indented sub-line under a main FinanceRow. Used to break "spent
  * (whole account)" into its closed vs active halves without competing
  * for visual weight with the top-level additions and subtraction.
- * No arithmetic sign — it's a breakdown, not another operand.
+ * No arithmetic sign - it's a breakdown, not another operand.
  */
 function FinanceSubRow({
   label,
@@ -2447,7 +2447,7 @@ function FinanceFootnote({
 /**
  * Turn Ocean's "Estimated Time Until Minimum Payout" string ("11 days",
  * "5 hours", "Below threshold", etc.) into a footnote value that
- * includes both the raw text and a concrete date — easier to plan
+ * includes both the raw text and a concrete date - easier to plan
  * around than counting days mentally.
  *
  * Falls back to the raw text if it can't be parsed (e.g. "Below
@@ -2523,9 +2523,9 @@ function DatumPanel({
   reachable: boolean;
   consecutiveFailures: number;
   datum: StatusResponse['datum'];
-  /** #90 — 1h-rolling acceptance ratio. Belongs in this panel because the seller's rig submits shares to *our* Datum gateway over stratum and the accept/reject response Braiins relays back is whatever Datum decided. The number is Datum-side regardless of being sourced via the Braiins API. */
+  /** #90 - 1h-rolling acceptance ratio. Belongs in this panel because the seller's rig submits shares to *our* Datum gateway over stratum and the accept/reject response Braiins relays back is whatever Datum decided. The number is Datum-side regardless of being sourced via the Braiins API. */
   acceptancePct1h: number | null;
-  /** #91 — DATUM gateway-side reject delta over the trailing hour. */
+  /** #91 - DATUM gateway-side reject delta over the trailing hour. */
   rejects1h: number | null;
   /** Braiins-reported reject count over the same trailing hour. Only rendered when `rejects1h` is also non-null so the two appear as a comparison pair. */
   braiinsRejects1h: number | null;
@@ -2539,7 +2539,7 @@ function DatumPanel({
 
   // Split the pool URL into scheme / host / port so the card doesn't
   // wrap an unreadable 60-character string. Pool URLs on Ocean look
-  // like stratum+tcp://alkimia.mynetgear.com:23334 — we care about
+  // like stratum+tcp://alkimia.mynetgear.com:23334 - we care about
   // the host most, the scheme rarely, the port sometimes. Rendering
   // three aligned rows beats a wrapped monofont URL every time.
   const urlParts = splitPoolUrl(url);
@@ -2581,16 +2581,16 @@ function DatumPanel({
         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
           <div className="text-slate-400"><Trans>datum hashrate</Trans></div>
           <div className="text-right font-mono text-slate-200">
-            {datum.hashrate_ph !== null ? denomination.formatHashrate(datum.hashrate_ph) : '—'}
+            {datum.hashrate_ph !== null ? denomination.formatHashrate(datum.hashrate_ph) : '-'}
           </div>
           <div className="text-slate-400"><Trans>workers connected</Trans></div>
           <div className="text-right font-mono text-slate-200">
-            {datum.connections ?? '—'}
+            {datum.connections ?? '-'}
           </div>
           {acceptancePct1h !== null && (
             <>
               <Tooltip
-                text={t`Share acceptance over the trailing hour: (shares accepted / shares submitted) × 100. The seller's rig submits shares over stratum to YOUR Datum gateway, Datum responds accept/reject, and the result is what Braiins relays back as the counter — so this is a Datum-side number even though it's sourced via the Braiins API. Healthy baseline ≈ 99.95%; baseline ~0.05% rejection is normal. Sustained drops below ~99% point at Datum serving stale work, worker-identity misconfiguration, or pool difficulty too low — see docs/research.md §7.5.`}
+                text={t`Share acceptance over the trailing hour: (shares accepted / shares submitted) × 100. The seller's rig submits shares over stratum to YOUR Datum gateway, Datum responds accept/reject, and the result is what Braiins relays back as the counter - so this is a Datum-side number even though it's sourced via the Braiins API. Healthy baseline ≈ 99.95%; baseline ~0.05% rejection is normal. Sustained drops below ~99% point at Datum serving stale work, worker-identity misconfiguration, or pool difficulty too low - see docs/research.md §7.5.`}
               >
                 <div className="text-slate-400 cursor-help"><Trans>acceptance (1h)</Trans></div>
               </Tooltip>
@@ -2613,7 +2613,7 @@ function DatumPanel({
               </div>
             </>
           )}
-          {/* #91 — only render the side-by-side reject pair when DATUM
+          {/* #91 - only render the side-by-side reject pair when DATUM
               actually exposes its own reject counter. Without that
               counter the absolute Braiins-reported reject count is
               just confusing noise (raw share count at validation
@@ -2622,7 +2622,7 @@ function DatumPanel({
           {rejects1h !== null && (
             <>
               <Tooltip
-                text={t`Datum gateway-side rejects over the trailing hour: forward delta of the cumulative gateway reject counter, with bid resets / poll failures skipped. Compare with the next row — gateway > pool means Datum filtered work that never reached the pool (good); pool > gateway means the pool rejected work Datum thought was fine (stale-work signature, see research.md §4.5).`}
+                text={t`Datum gateway-side rejects over the trailing hour: forward delta of the cumulative gateway reject counter, with bid resets / poll failures skipped. Compare with the next row - gateway > pool means Datum filtered work that never reached the pool (good); pool > gateway means the pool rejected work Datum thought was fine (stale-work signature, see research.md §4.5).`}
               >
                 <div className="text-slate-400 cursor-help"><Trans>gateway rejects (1h)</Trans></div>
               </Tooltip>
@@ -2647,13 +2647,13 @@ function DatumPanel({
       ) : (
         <div className="text-xs text-slate-500">
           <Trans>
-            Datum stats not configured — set <span className="font-mono text-slate-400">datum_api_url</span>{' '}
+            Datum stats not configured - set <span className="font-mono text-slate-400">datum_api_url</span>{' '}
             in Config to display connected workers and reported hashrate. See{' '}
             <span className="font-mono text-slate-400">docs/setup-datum-api.md</span>.
           </Trans>
         </div>
       )}
-      {/* Pool info lives at the bottom — stratum URL rarely changes
+      {/* Pool info lives at the bottom - stratum URL rarely changes
           after initial setup, so it deserves less visual weight than
           the live numbers above. Icon-only copy button keeps the
           footprint small. */}
@@ -2693,7 +2693,7 @@ function DatumPanel({
 
 function BidProgress({ pct }: { pct: number | null }) {
   const { intlLocale } = useLocale();
-  if (pct === null || pct === undefined) return <span className="text-slate-600 text-xs">—</span>;
+  if (pct === null || pct === undefined) return <span className="text-slate-600 text-xs">-</span>;
   const clamped = Math.max(0, Math.min(100, pct));
   return (
     <div className="flex items-center gap-2">
@@ -2710,8 +2710,8 @@ function BidProgress({ pct }: { pct: number | null }) {
 /**
  * Parse a pool URL like `stratum+tcp://alkimia.example.com:23334`
  * into its three human-readable pieces. Any part that can't be
- * extracted comes back null (the component renders "—" for missing
- * pieces). This is cosmetic-only — the copy button still copies the
+ * extracted comes back null (the component renders "-" for missing
+ * pieces). This is cosmetic-only - the copy button still copies the
  * original unparsed string.
  */
 function splitPoolUrl(url: string): {
@@ -2783,7 +2783,7 @@ function FormattedValue({ v, className = '' }: { v: string; className?: string }
 /**
  * Renders a unit string with "sat" replaced by the ₿-style sat
  * symbol icon. Handles "sat", "sat/PH/day", "PH/s" (no replacement
- * for non-sat units). Only applies in sats mode — USD values like
+ * for non-sat units). Only applies in sats mode - USD values like
  * "$4.75/PH/day" don't match splitUnit so they render as plain text.
  */
 function SatUnit({ unit }: { unit: string }) {
@@ -2809,7 +2809,7 @@ function SatUnit({ unit }: { unit: string }) {
 /**
  * Key-value row used across all info cards. Detects trailing unit
  * suffixes (sat, PH/s, sat/PH/day) and renders them in a muted
- * smaller style so the number pops and the unit recedes — matching
+ * smaller style so the number pops and the unit recedes - matching
  * the aesthetic the Money panel's FinanceRow already uses.
  */
 function Row({ k, v, tooltip }: { k: string; v: string; tooltip?: string }) {
@@ -3060,5 +3060,5 @@ function RunModeToggle({
   );
 }
 
-// Silence linter — ModeBadge is imported for consistency elsewhere in the app.
+// Silence linter - ModeBadge is imported for consistency elsewhere in the app.
 void ModeBadge;

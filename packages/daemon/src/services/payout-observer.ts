@@ -5,7 +5,7 @@
  * snapshot in memory for the HTTP layer.
  *
  * We deliberately use `scantxoutset` instead of `listreceivedbyaddress`
- * so the address doesn't need to be imported into any bitcoind wallet —
+ * so the address doesn't need to be imported into any bitcoind wallet -
  * it works against a vanilla node out of the box.
  *
  * Caveat: `scantxoutset` returns **currently unspent** outputs. If the
@@ -219,12 +219,12 @@ export class PayoutObserver {
 
   /**
    * State machine for the dashboard's `collected (on-chain)` row (#97):
-   * - 'computing' — observer is enabled but the first scan has not yet
+   * - 'computing' - observer is enabled but the first scan has not yet
    *   produced a snapshot. Either the very first scan is in flight, or
    *   the previous attempt errored before any snapshot existed. Renders
    *   as a spinner instead of the em-dash that confused the operator
    *   into thinking the integration was broken.
-   * - 'ready'     — at least one scan has produced a snapshot. The
+   * - 'ready'     - at least one scan has produced a snapshot. The
    *   `collected_sat` value the route returns reflects that snapshot.
    *
    * `idle` (observer disabled / not configured) is detected by the

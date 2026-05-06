@@ -19,7 +19,7 @@ function makeClient(overrides: Partial<BraiinsClient> = {}): BraiinsClient {
   } as BraiinsClient;
 }
 
-describe('BraiinsService — metadata cache', () => {
+describe('BraiinsService - metadata cache', () => {
   it('fetches settings on first call', async () => {
     const client = makeClient();
     const svc = new BraiinsService({ client, now: () => 1_000_000 });
@@ -59,7 +59,7 @@ describe('BraiinsService — metadata cache', () => {
   });
 });
 
-describe('BraiinsService — last-OK tracking', () => {
+describe('BraiinsService - last-OK tracking', () => {
   it('records the wall-clock time of the last successful read', async () => {
     const client = makeClient();
     const svc = new BraiinsService({ client, now: () => 1_234_567 });

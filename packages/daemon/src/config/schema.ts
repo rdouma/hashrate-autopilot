@@ -1,10 +1,10 @@
 /**
  * Zod schemas for the two tiers of configuration:
  *
- * - {@link SecretsSchema} — values held in the sops-encrypted file on disk.
+ * - {@link SecretsSchema} - values held in the sops-encrypted file on disk.
  *   Decrypted at startup, kept in memory, never re-written plain.
  *
- * - {@link AppConfigSchema} — live-editable tunables stored in the SQLite
+ * - {@link AppConfigSchema} - live-editable tunables stored in the SQLite
  *   `config` table. Validated on every write (architecture §7) and on read
  *   via repository layer. Shape mirrors SPEC §8 and architecture §5.
  */
@@ -16,14 +16,14 @@ import { z } from 'zod';
 // ---------------------------------------------------------------------------
 
 // Braiins API tokens are opaque bearer strings; we require at minimum that
-// they are non-empty. Read-only is optional — a user may only have one token.
+// they are non-empty. Read-only is optional - a user may only have one token.
 const nonEmptyString = z.string().min(1, 'must be non-empty');
 
 export const SecretsSchema = z.object({
   braiins_owner_token: nonEmptyString,
   braiins_read_only_token: nonEmptyString.optional(),
 
-  // Legacy — kept optional so old .env.sops.yaml files still parse.
+  // Legacy - kept optional so old .env.sops.yaml files still parse.
   telegram_bot_token: nonEmptyString.optional(),
   telegram_webhook_secret: nonEmptyString.optional(),
 
@@ -55,7 +55,7 @@ export const AppConfigSchema = z.object({
   target_hashrate_ph: positiveNumber,
   minimum_floor_hashrate_ph: positiveNumber,
 
-  // Destination pool (SPEC §8 — Datum-connected Ocean)
+  // Destination pool (SPEC §8 - Datum-connected Ocean)
   destination_pool_url: z.string().url(),
   destination_pool_worker_name: nonEmptyString,
 
@@ -85,7 +85,7 @@ export const AppConfigSchema = z.object({
   // Default 1_000_000 sat/EH/day = 1,000 sat/PH/day.
   overpay_sat_per_eh_day: positiveInt.default(1_000_000),
 
-  // Budgeting — size of the `amount_sat` on each CREATE_BID. 0 is a
+  // Budgeting - size of the `amount_sat` on each CREATE_BID. 0 is a
   // sentinel meaning "use the full available wallet balance on each
   // create" (resolved at decision time, clamped to Braiins' 1 BTC
   // per-bid hard cap). Positive integers set an explicit budget.
@@ -111,13 +111,13 @@ export const AppConfigSchema = z.object({
   // `fillable_ask + overpay_sat_per_eh_day` directly every tick; the
   // old timers were a way to simulate that target under a mistaken
   // mental model. Braiins' own 10-min price-decrease cooldown is
-  // enforced by gate.ts — no additional patience timer is needed.
+  // enforced by gate.ts - no additional patience timer is needed.
 
   // Electrs (optional, for fast balance lookups)
   electrs_host: z.string().nullable().default(null),
   electrs_port: z.number().int().positive().nullable().default(null),
 
-  // Boot mode — how the daemon chooses run_mode on startup.
+  // Boot mode - how the daemon chooses run_mode on startup.
   boot_mode: z
     .enum(['ALWAYS_DRY_RUN', 'LAST_MODE', 'ALWAYS_LIVE'])
     .default('ALWAYS_DRY_RUN'),
@@ -148,18 +148,18 @@ export const AppConfigSchema = z.object({
   // > 0 = cheap-mode engages only when avg(best_ask) over this many
   // minutes is below cheap_threshold_pct * avg(hashprice) over the
   // same window. Avoids flapping on single-tick market spikes. The
-  // window pattern gives implicit hysteresis — cheap-mode only flips
+  // window pattern gives implicit hysteresis - cheap-mode only flips
   // when the window as a whole crosses the threshold.
   cheap_sustained_window_minutes: z.number().int().nonnegative().default(0),
 
   // Bitcoin Core RPC credentials (issue #14).
   // Seeded from secrets on first boot; editable from the dashboard afterwards.
-  // Empty strings mean "not configured" — the daemon falls back to secrets.
+  // Empty strings mean "not configured" - the daemon falls back to secrets.
   bitcoind_rpc_url: z.string().default(''),
   bitcoind_rpc_user: z.string().default(''),
   bitcoind_rpc_password: z.string().default(''),
 
-  // Payout observation source — which backend to use for on-chain balance
+  // Payout observation source - which backend to use for on-chain balance
   // tracking. 'none' disables tracking entirely; 'electrs' uses the fast
   // Electrum-style indexed lookup; 'bitcoind' falls back to scantxoutset.
   payout_source: z.enum(['none', 'electrs', 'bitcoind']).default('none'),
@@ -168,7 +168,7 @@ export const AppConfigSchema = z.object({
   //
   // `tick_metrics` is a compact numeric time series (~1,440 rows/day)
   // that backs every dashboard chart. Cheap on disk, high value as
-  // history — default 365 days so the 1y chart range works out of
+  // history - default 365 days so the 1y chart range works out of
   // the box. `decisions` is a forensic decision log split into:
   //   - uneventful (no-proposal ticks): heavy JSON state snapshots
   //     that are the main bloat lever; default 7 days.
@@ -183,7 +183,7 @@ export const AppConfigSchema = z.object({
   // Optional Datum Gateway stats API (issue #19). When set, the daemon
   // polls {datum_api_url}/umbrel-api each tick to record Datum's view
   // of connection count and hashrate. Integration is informational
-  // only — the control loop never depends on Datum being reachable.
+  // only - the control loop never depends on Datum being reachable.
   // See docs/setup-datum-api.md for the Umbrel-side port exposure.
   // Empty string is coerced to null so the dashboard's generic text
   // input can clear the field without tripping URL validation.
@@ -209,7 +209,7 @@ export const AppConfigSchema = z.object({
     )
     .default('https://mempool.space/block/{hash}'),
 
-  // Chart smoothing — rolling-mean minute window applied client-side
+  // Chart smoothing - rolling-mean minute window applied client-side
   // to the hashrate chart's Braiins-delivered and Datum-received
   // series (issue #42). 1 = no smoothing. Ocean is excluded because
   // its /user_hashrate endpoint already returns a 5-min average.
@@ -220,14 +220,14 @@ export const AppConfigSchema = z.object({
   // chart's `our bid` (amber) and `effective` (emerald) series (#49
   // follow-up). 1 = no smoothing. The effective line in particular
   // is noisy at tick resolution because Braiins' amount_consumed_sat
-  // snapshots update asynchronously from avg_speed_ph — a rolling
+  // snapshots update asynchronously from avg_speed_ph - a rolling
   // mean lets the operator see the trend rather than per-tick
   // quantisation. Fillable / hashprice / max_bid are unaffected
   // (they're market-wide signals, not ours).
   braiins_price_smoothing_minutes: positiveInt.default(1),
 
   // Operator toggle for the emerald "effective" line on the price
-  // chart. Off by default — the line's per-tick volatility auto-scales
+  // chart. Off by default - the line's per-tick volatility auto-scales
   // the Y-axis and crushes the much flatter bid/fillable/hashprice
   // detail. The hero PRICE card + AVG COST / PH DELIVERED stat card
   // already surface the effective rate as a number. Flip on to inspect
@@ -236,7 +236,7 @@ export const AppConfigSchema = z.object({
   show_effective_rate_on_price_chart: z.boolean().default(false),
 
   // Operator toggle for the violet `% of Ocean` line on the Hashrate
-  // chart (issue #72). Off by default — the controller does not read
+  // chart (issue #72). Off by default - the controller does not read
   // share_log_pct; adding a second Y-axis to a chart that already
   // carries 3-5 hashrate lines costs more glance-time than most
   // operators need. Flip on when you want to track how our slice of
@@ -298,7 +298,7 @@ export const APP_CONFIG_DEFAULTS: Omit<
   // Pricing caps. sat/EH/day internally; the dashboard displays them
   // in sat/PH/day (1 sat/PH/day = 1,000 sat/EH/day).
   max_bid_sat_per_eh_day: 49_000_000, // 49,000 sat/PH/day
-  // Dynamic hashprice-relative cap enabled by default — typical hashprice
+  // Dynamic hashprice-relative cap enabled by default - typical hashprice
   // today is ~46,000 sat/PH/day, so a 2,000 premium caps at ~48,000 which
   // is comfortably below the fixed cap without being overly tight.
   max_overpay_vs_hashprice_sat_per_eh_day: 2_000_000, // 2,000 sat/PH/day

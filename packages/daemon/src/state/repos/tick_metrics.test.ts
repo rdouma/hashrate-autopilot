@@ -68,7 +68,7 @@ describe('TickMetricsRepo.listAggregated', () => {
     expect(out).toHaveLength(1);
     expect(out[0]!.delivered_ph).toBeCloseTo(2.0, 5);
     expect(out[0]!.our_primary_price_sat_per_eh_day).toBeCloseTo(46_002_000, 0);
-    // Anchor time is MAX(tick_at) within the bucket — i.e. 4 * MINUTE.
+    // Anchor time is MAX(tick_at) within the bucket - i.e. 4 * MINUTE.
     expect(out[0]!.tick_at).toBe(4 * MINUTE);
   });
 
@@ -127,7 +127,7 @@ describe('TickMetricsRepo.listAggregated', () => {
       await repo.insert(sampleRow({ tick_at: (10 + i) * MINUTE, delivered_ph: i }));
     }
     const out = await repo.listAggregated(10 * MINUTE, 5 * MINUTE);
-    // Only the three in-window rows contribute — one bucket, avg(0,1,2)=1.
+    // Only the three in-window rows contribute - one bucket, avg(0,1,2)=1.
     expect(out).toHaveLength(1);
     expect(out[0]!.delivered_ph).toBeCloseTo(1, 5);
   });
@@ -236,7 +236,7 @@ describe('TickMetricsRepo.effectiveSatPerEhDayWindow', () => {
     // a hard ceiling, but `delivered_ph` (a trailing avg_speed_ph)
     // lags real-time delivery. When Braiins meters faster than
     // avg_speed_ph reflects, Σ Δsat / Σ (delivered_ph × Δt) lands
-    // above the bid — physically impossible. Cap must kick in.
+    // above the bid - physically impossible. Cap must kick in.
     //
     // Construct: bid = 47_000_000, but charge 200 sat per 60 s at
     // delivered_ph = 2.93 (raw rate ~98M, way above bid). Result must
@@ -256,9 +256,9 @@ describe('TickMetricsRepo.effectiveSatPerEhDayWindow', () => {
     expect(r).toBeCloseTo(47_000_000, -3);
   });
 
-  it('smooths through delivered_ph + spend jitter — average matches the steady-state rate', async () => {
+  it('smooths through delivered_ph + spend jitter - average matches the steady-state rate', async () => {
     // Reproduces the live failure mode: alternating 2.93/3.67 PH and
-    // 78–117 sat per-tick deltas, with an underlying steady-state rate
+    // 78-117 sat per-tick deltas, with an underlying steady-state rate
     // of ~40k sat/PH/day = 40e6 sat/EH/day.
     //
     // Construction: pair (low PH, low Δ) with (high PH, high Δ) so the
@@ -290,7 +290,7 @@ describe('TickMetricsRepo.effectiveSatPerEhDayWindow', () => {
     }
     const r = await repo.effectiveSatPerEhDayWindow(11 * MINUTE);
     expect(r).not.toBeNull();
-    // 40e6 ± 5% — well inside the noise band a per-tick read would have.
+    // 40e6 ± 5% - well inside the noise band a per-tick read would have.
     expect(r!).toBeGreaterThan(38_000_000);
     expect(r!).toBeLessThan(42_000_000);
   });

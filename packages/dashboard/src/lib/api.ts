@@ -25,7 +25,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   }
   if (!res.ok) {
     const text = await res.text().catch(() => '');
-    throw new Error(`${res.status} ${res.statusText}${text ? ` — ${text}` : ''}`);
+    throw new Error(`${res.status} ${res.statusText}${text ? ` - ${text}` : ''}`);
   }
   return res.json() as Promise<T>;
 }
@@ -136,7 +136,7 @@ export interface MetricPoint {
   /**
    * Primary owned bid's cumulative `amount_consumed_sat` at this tick
    * (sat). Per-tick deltas against this give the authoritative actual
-   * effective rate — drives the chart's "effective" line. Null for
+   * effective rate - drives the chart's "effective" line. Null for
    * pre-migration ticks and ticks with no primary owned bid.
    */
   primary_bid_consumed_sat: number | null;
@@ -236,7 +236,7 @@ export interface StatusResponse {
     reachable: boolean;
     connections: number | null;
     hashrate_ph: number | null;
-    /** #91 — gateway-side rejected-shares counter when DATUM exposes a /reject/i tile; null otherwise. */
+    /** #91 - gateway-side rejected-shares counter when DATUM exposes a /reject/i tile; null otherwise. */
     rejected_shares_total: number | null;
     last_ok_at: number | null;
     consecutive_failures: number;
@@ -340,7 +340,7 @@ export interface ConfigResponse {
 }
 
 // ---------------------------------------------------------------------------
-// First-run onboarding wizard (#57) — public endpoints, no auth.
+// First-run onboarding wizard (#57) - public endpoints, no auth.
 // ---------------------------------------------------------------------------
 
 export interface HealthResponse {
@@ -383,7 +383,7 @@ export interface SetupResponse {
   ok: boolean;
 }
 
-/** Public probe — no auth, returns 200 in both setup and operational modes. */
+/** Public probe - no auth, returns 200 in both setup and operational modes. */
 async function publicGet<T>(path: string): Promise<T> {
   const res = await fetch(path, { headers: { Accept: 'application/json' } });
   if (!res.ok) {
@@ -400,7 +400,7 @@ async function publicPost<T>(path: string, body: unknown): Promise<T> {
   });
   const text = await res.text();
   if (!res.ok) {
-    throw new Error(`${res.status} ${res.statusText}${text ? ` — ${text}` : ''}`);
+    throw new Error(`${res.status} ${res.statusText}${text ? ` - ${text}` : ''}`);
   }
   return JSON.parse(text) as T;
 }
@@ -522,11 +522,11 @@ export interface StatsResponse {
   total_ph_hours: number | null;
   avg_overpay_vs_hashprice_sat_per_ph_day: number | null;
   avg_cost_per_ph_sat_per_ph_day: number | null;
-  /** #90 — 1h-rolling pool acceptance ratio (%); null when no counter pairs in window. */
+  /** #90 - 1h-rolling pool acceptance ratio (%); null when no counter pairs in window. */
   acceptance_pct_1h: number | null;
   acceptance_purchased_delta_1h: number | null;
   acceptance_accepted_delta_1h: number | null;
-  /** #91 — DATUM gateway-side rejects in the trailing hour (raw count); null when DATUM does not expose the tile. */
+  /** #91 - DATUM gateway-side rejects in the trailing hour (raw count); null when DATUM does not expose the tile. */
   datum_rejects_1h: number | null;
   /** Braiins-reported rejects in the same window, converted from millions to raw count for direct comparison. */
   braiins_rejects_count_1h: number | null;
@@ -638,7 +638,7 @@ export interface FinanceResponse {
   spent_closed_sat: number | null;
   spent_active_sat: number | null;
   collected_sat: number | null;
-  /** #97 — distinguishes "first scan still running" (computing) from "0 sat collected" (ready) from "observer disabled" (idle). */
+  /** #97 - distinguishes "first scan still running" (computing) from "0 sat collected" (ready) from "observer disabled" (idle). */
   collected_status: 'computing' | 'ready' | 'idle';
   expected_sat: number | null;
   net_sat: number | null;
@@ -664,7 +664,7 @@ export interface OceanBlockView {
 }
 
 /**
- * Pool block that credited our wallet — surfaced as a cube marker on
+ * Pool block that credited our wallet - surfaced as a cube marker on
  * the Hashrate chart. Under Ocean TIDES, every pool block credits
  * everyone with shares in the reward window, so this is populated for
  * every recent pool block while the daemon is mining. `found_by_us`

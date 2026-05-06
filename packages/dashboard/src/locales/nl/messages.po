@@ -19,11 +19,11 @@ msgid "this-is-not-a-real-id-9876"
 msgstr ""
 
 #: src/components/PriceChart.tsx
-msgid "— (not recorded this tick)"
+msgid "- (not recorded this tick)"
 msgstr "- (niet vastgelegd in deze tick)"
 
 #: src/pages/Config.tsx
-msgid "\"Autopilot only\" sums consumed across bids the daemon has tagged in its ledger — accurate for what *this* autopilot has cost. \"Whole account\" sums counters_committed.amount_consumed_sat across every bid on /v1/spot/bid — covers active + historical bids (including any placed before the autopilot was switched on). May lag the latest hour of active-bid consumption."
+msgid "\"Autopilot only\" sums consumed across bids the daemon has tagged in its ledger - accurate for what *this* autopilot has cost. \"Whole account\" sums counters_committed.amount_consumed_sat across every bid on /v1/spot/bid - covers active + historical bids (including any placed before the autopilot was switched on). May lag the latest hour of active-bid consumption."
 msgstr "\"Alleen autopilot\" telt het verbruik op van biedingen die de daemon in zijn ledger heeft getagd - accuraat voor wat *deze* autopilot heeft gekost. \"Hele account\" telt counters_committed.amount_consumed_sat op over elk bod op /v1/spot/bid - omvat actieve + historische biedingen (inclusief biedingen die geplaatst werden voordat de autopilot werd aangezet). Kan achterlopen op het laatste uur van het actieve-bod verbruik."
 
 #: src/pages/Config.tsx
@@ -40,7 +40,7 @@ msgstr "(goedkoop-modus)"
 
 #. placeholder {0}: formatNumber(n, {}, intlLocale)
 #: src/pages/Setup.tsx
-msgid "{0} sat/PH/day (default — tunable later)"
+msgid "{0} sat/PH/day (default - tunable later)"
 msgstr "{0} sat/PH/dag (standaard - later aan te passen)"
 
 #: src/lib/format.ts
@@ -152,15 +152,15 @@ msgid "← Back"
 msgstr "← Terug"
 
 #: src/pages/Setup.tsx
-msgid "<0>Detected from environment:</0> Umbrel/Start9-style <1>BITCOIN_RPC_*</1> env vars are set. The fields below are pre-filled — check them and override if needed."
+msgid "<0>Detected from environment:</0> Umbrel/Start9-style <1>BITCOIN_RPC_*</1> env vars are set. The fields below are pre-filled - check them and override if needed."
 msgstr "<0>Gedetecteerd uit omgeving:</0> Umbrel/Start9-stijl <1>BITCOIN_RPC_*</1> env-variabelen zijn ingesteld. De velden hieronder zijn vooringevuld - controleer ze en pas aan indien nodig."
 
 #: src/pages/Setup.tsx
-msgid "<0>Mismatch:</0> the worker identity must start with <1>{addr}.</1> — otherwise Ocean credits shares to a different address (or nobody). Edit the address above first; this field follows it automatically."
+msgid "<0>Mismatch:</0> the worker identity must start with <1>{addr}.</1> - otherwise Ocean credits shares to a different address (or nobody). Edit the address above first; this field follows it automatically."
 msgstr "<0>Komt niet overeen:</0> de worker-identiteit moet beginnen met <1>{addr}.</1> - anders schrijft Ocean shares toe aan een ander adres (of niemand). Pas eerst het adres hierboven aan; dit veld volgt automatisch."
 
 #: src/pages/Config.tsx
-msgid "<0>Mismatch:</0> the worker identity must start with <1>{addr}.</1> — otherwise Ocean credits shares to a different address (or nobody). Edit the BTC payout address above; this field follows it automatically."
+msgid "<0>Mismatch:</0> the worker identity must start with <1>{addr}.</1> - otherwise Ocean credits shares to a different address (or nobody). Edit the BTC payout address above; this field follows it automatically."
 msgstr "<0>Komt niet overeen:</0> de worker-identiteit moet beginnen met <1>{addr}.</1> - anders schrijft Ocean shares toe aan een ander adres (of niemand). Pas hierboven het BTC-uitbetaaladres aan; dit veld volgt automatisch."
 
 #: src/pages/Config.tsx
@@ -172,35 +172,35 @@ msgid "⚠ No period found. Ocean TIDES requires \"<BTC address>.<label>\". With
 msgstr "⚠ Geen punt gevonden. Ocean TIDES vereist \"<BTC-adres>.<label>\". Zonder het adres-voorvoegsel worden shares niet bijgeschreven."
 
 #: src/pages/Config.tsx
-msgid "0 = disabled. Example: 95 = activate cheap mode when the best ask on the orderbook is below 95% of the break-even hashprice from Ocean. Braiins matches pay-your-bid (the bid IS the price we pay), and the autopilot tracks the fillable ask plus a small overpay — so a cheap best ask reliably translates into a cheap bid."
-msgstr "0 = uitgeschakeld. Voorbeeld: 95 = schakel goedkope modus in wanneer de beste ask in het orderboek onder 95% van de break-even hashprice van Ocean ligt. Braiins matcht pay-your-bid (het bod IS de prijs die we betalen), en de autopilot volgt de fillable ask plus een kleine overpay — dus een goedkope beste ask vertaalt zich betrouwbaar in een goedkoop bod."
+msgid "0 = disabled. Example: 95 = activate cheap mode when the best ask on the orderbook is below 95% of the break-even hashprice from Ocean. Braiins matches pay-your-bid (the bid IS the price we pay), and the autopilot tracks the fillable ask plus a small overpay - so a cheap best ask reliably translates into a cheap bid."
+msgstr "0 = uitgeschakeld. Voorbeeld: 95 = schakel goedkope modus in wanneer de beste ask in het orderboek onder 95% van de break-even hashprice van Ocean ligt. Braiins matcht pay-your-bid (het bod IS de prijs die we betalen), en de autopilot volgt de fillable ask plus een kleine overpay - dus een goedkope beste ask vertaalt zich betrouwbaar in een goedkoop bod."
 
 #: src/pages/Config.tsx
-msgid "0 = use the full available wallet balance each CREATE (clamped to 1 BTC — the Braiins per-bid hard cap). Any positive value pins every new bid to that exact amount regardless of balance."
+msgid "0 = use the full available wallet balance each CREATE (clamped to 1 BTC - the Braiins per-bid hard cap). Any positive value pins every new bid to that exact amount regardless of balance."
 msgstr "0 = gebruik bij elke CREATE het volledige beschikbare wallet-saldo (afgekapt op 1 BTC - de harde Braiins-limiet per bod). Elke positieve waarde zet ieder nieuw bod precies op dat bedrag, ongeacht het saldo."
 
 #: src/pages/Config.tsx
-msgid "A bid is currently running (≈ {remainingSatStr} sat left). The next CREATE fires when it finishes — at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat, capped at 1 BTC) will be used."
+msgid "A bid is currently running (≈ {remainingSatStr} sat left). The next CREATE fires when it finishes - at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat, capped at 1 BTC) will be used."
 msgstr "Er loopt nu een bod (≈ {remainingSatStr} sat over). De volgende CREATE volgt zodra dit afloopt - op dat moment wordt het volledige beschikbare wallet-saldo (nu ≈ {resolvedSatStr} sat, afgekapt op 1 BTC) gebruikt."
 
 #: src/pages/Config.tsx
-msgid "A bid is currently running (≈ {remainingSatStr} sat left). The next CREATE fires when it finishes — at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat) will be used."
+msgid "A bid is currently running (≈ {remainingSatStr} sat left). The next CREATE fires when it finishes - at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat) will be used."
 msgstr "Er loopt nu een bod (≈ {remainingSatStr} sat over). De volgende CREATE volgt zodra dit afloopt - op dat moment wordt het volledige beschikbare wallet-saldo (nu ≈ {resolvedSatStr} sat) gebruikt."
 
 #: src/pages/Config.tsx
-msgid "A bid is currently running (≈ {remainingSatStr} sat left). The next CREATE fires when it finishes — at that point the full available wallet balance will be used."
+msgid "A bid is currently running (≈ {remainingSatStr} sat left). The next CREATE fires when it finishes - at that point the full available wallet balance will be used."
 msgstr "Er loopt nu een bod (≈ {remainingSatStr} sat over). De volgende CREATE volgt zodra dit afloopt - op dat moment wordt het volledige beschikbare wallet-saldo gebruikt."
 
 #: src/pages/Config.tsx
-msgid "A bid is currently running. The next CREATE fires when it finishes — at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat, capped at 1 BTC) will be used."
+msgid "A bid is currently running. The next CREATE fires when it finishes - at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat, capped at 1 BTC) will be used."
 msgstr "Er loopt nu een bod. De volgende CREATE volgt zodra dit afloopt - op dat moment wordt het volledige beschikbare wallet-saldo (nu ≈ {resolvedSatStr} sat, afgekapt op 1 BTC) gebruikt."
 
 #: src/pages/Config.tsx
-msgid "A bid is currently running. The next CREATE fires when it finishes — at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat) will be used."
+msgid "A bid is currently running. The next CREATE fires when it finishes - at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat) will be used."
 msgstr "Er loopt nu een bod. De volgende CREATE volgt zodra dit afloopt - op dat moment wordt het volledige beschikbare wallet-saldo (nu ≈ {resolvedSatStr} sat) gebruikt."
 
 #: src/pages/Config.tsx
-msgid "A bid is currently running. The next CREATE fires when it finishes — at that point the full available wallet balance will be used."
+msgid "A bid is currently running. The next CREATE fires when it finishes - at that point the full available wallet balance will be used."
 msgstr "Er loopt nu een bod. De volgende CREATE volgt zodra dit afloopt - op dat moment wordt het volledige beschikbare wallet-saldo gebruikt."
 
 #: src/pages/Setup.tsx
@@ -300,7 +300,7 @@ msgid "available"
 msgstr "beschikbaar"
 
 #: src/pages/Status.tsx
-msgid "Average break-even unit price over the selected range. Multiplied by avg delivered to get projected income. Different from the spot hashprice row below — this is what the projection actually uses."
+msgid "Average break-even unit price over the selected range. Multiplied by avg delivered to get projected income. Different from the spot hashprice row below - this is what the projection actually uses."
 msgstr "Gemiddelde break-even eenheidsprijs over het geselecteerde bereik. Vermenigvuldigd met de gemiddelde levering om geprojecteerde inkomsten te krijgen. Verschillend van de spot-hashprice rij hieronder - dit is wat de projectie daadwerkelijk gebruikt."
 
 #: src/pages/Status.tsx
@@ -496,7 +496,7 @@ msgid "Braiins API unreachable - waiting for connectivity."
 msgstr "Braiins API onbereikbaar - wacht op verbinding."
 
 #: src/pages/Status.tsx
-msgid "Braiins marketplace API — reachable when the last observe() read market/orderbook/balance without error."
+msgid "Braiins marketplace API - reachable when the last observe() read market/orderbook/balance without error."
 msgstr "Braiins marketplace API - bereikbaar wanneer de laatste observe() market/orderbook/balance zonder fout heeft gelezen."
 
 #: src/pages/Config.tsx
@@ -610,12 +610,12 @@ msgid "collected (on-chain)"
 msgstr "ontvangen (on-chain)"
 
 #: src/pages/Status.tsx
-msgid "Collected on-chain + Ocean's unpaid earnings − spent on bids. Missing collected is treated as 0 (the on-chain row still shows — so the operator sees the gap). Negative = still recouping the initial deposit."
+msgid "Collected on-chain + Ocean's unpaid earnings − spent on bids. Missing collected is treated as 0 (the on-chain row still shows - so the operator sees the gap). Negative = still recouping the initial deposit."
 msgstr "Ontvangen on-chain + Oceans openstaande verdiensten − uitgegeven aan biedingen. Ontbrekende ontvangsten worden als 0 behandeld (de on-chain rij blijft zichtbaar - zodat de operator het gat ziet). Negatief = nog bezig met het terugverdienen van de initiële inleg."
 
 #: src/pages/Config.tsx
-msgid "Compact numeric time series — one row per tick (~1,440/day) with hashrate, prices, share-log %, spend. This is what backs the Hashrate / Price / Overpay charts, so set it to the longest range you want to be able to chart. Cheap on disk: a year is ~525k small rows."
-msgstr "Compacte numerieke tijdreeks — één rij per tick (~1.440/dag) met hashrate, prijzen, share-log %, uitgaven. Dit voedt de grafieken Hashrate / Prijs / Overpay, dus stel het in op het langste bereik dat je wilt kunnen weergeven. Goedkoop op schijf: een jaar is ~525k kleine rijen."
+msgid "Compact numeric time series - one row per tick (~1,440/day) with hashrate, prices, share-log %, spend. This is what backs the Hashrate / Price / Overpay charts, so set it to the longest range you want to be able to chart. Cheap on disk: a year is ~525k small rows."
+msgstr "Compacte numerieke tijdreeks - één rij per tick (~1.440/dag) met hashrate, prijzen, share-log %, uitgaven. Dit voedt de grafieken Hashrate / Prijs / Overpay, dus stel het in op het langste bereik dat je wilt kunnen weergeven. Goedkoop op schijf: een jaar is ~525k kleine rijen."
 
 #: src/pages/Setup.tsx
 msgid "Complete setup"
@@ -762,8 +762,8 @@ msgid "Datum /umbrel-api HTTP poll."
 msgstr "Datum /umbrel-api HTTP-poll."
 
 #: src/pages/Status.tsx
-msgid "Datum gateway-side rejects over the trailing hour: forward delta of the cumulative gateway reject counter, with bid resets / poll failures skipped. Compare with the next row — gateway > pool means Datum filtered work that never reached the pool (good); pool > gateway means the pool rejected work Datum thought was fine (stale-work signature, see research.md §4.5)."
-msgstr "Datum gateway-zijde afwijzingen over het afgelopen uur: voorwaarts verschil van de cumulatieve gateway-afwijzingsteller, met bid-resets en gefaalde polls overgeslagen. Vergelijk met de regel hieronder — gateway > pool betekent dat Datum werk filterde dat nooit de pool bereikte (goed); pool > gateway betekent dat de pool werk afwees dat Datum prima vond (verouderd-werk signaal, zie research.md §4.5)."
+msgid "Datum gateway-side rejects over the trailing hour: forward delta of the cumulative gateway reject counter, with bid resets / poll failures skipped. Compare with the next row - gateway > pool means Datum filtered work that never reached the pool (good); pool > gateway means the pool rejected work Datum thought was fine (stale-work signature, see research.md §4.5)."
+msgstr "Datum gateway-zijde afwijzingen over het afgelopen uur: voorwaarts verschil van de cumulatieve gateway-afwijzingsteller, met bid-resets en gefaalde polls overgeslagen. Vergelijk met de regel hieronder - gateway > pool betekent dat Datum werk filterde dat nooit de pool bereikte (goed); pool > gateway betekent dat de pool werk afwees dat Datum prima vond (verouderd-werk signaal, zie research.md §4.5)."
 
 #: src/pages/Status.tsx
 msgid "datum hashrate"
@@ -778,7 +778,7 @@ msgid "Datum stats API (optional)"
 msgstr "Datum stats-API (optioneel)"
 
 #: src/pages/Status.tsx
-msgid "Datum stats not configured — set <0>datum_api_url</0> in Config to display connected workers and reported hashrate. See <1>docs/setup-datum-api.md</1>."
+msgid "Datum stats not configured - set <0>datum_api_url</0> in Config to display connected workers and reported hashrate. See <1>docs/setup-datum-api.md</1>."
 msgstr "Datum stats niet geconfigureerd - stel <0>datum_api_url</0> in via Config om verbonden workers en gerapporteerde hashrate te tonen. Zie <1>docs/setup-datum-api.md</1>."
 
 #: src/pages/Config.tsx
@@ -786,16 +786,16 @@ msgid "Decision-log rows where the autopilot proposed at least one bid action. R
 msgstr "Rijen in het beslissingenlogboek waar de autopilot ten minste één bidactie voorstelde. Zeldzaam (~10% van de ticks) en waardevol: dit is het forensische dossier voor \"waarom maakte/bewerkte/annuleerde de autopilot dat bod?\" Goedkoop om lang te bewaren."
 
 #: src/pages/Config.tsx
-msgid "Decision-log rows where the autopilot proposed no action this tick (the vast majority). Heavy JSON state snapshots — the main disk-bloat lever, prune aggressively. The per-tick measurements (price, hashrate, share log) are still kept in tick_metrics regardless of this setting."
-msgstr "Rijen in het beslissingenlogboek waar de autopilot deze tick geen actie voorstelde (de overgrote meerderheid). Zware JSON-momentopnames van de toestand — de belangrijkste hefboom voor schijfgebruik, snoei agressief. De metingen per tick (prijs, hashrate, share log) blijven in tick_metrics bewaard, ongeacht deze instelling."
+msgid "Decision-log rows where the autopilot proposed no action this tick (the vast majority). Heavy JSON state snapshots - the main disk-bloat lever, prune aggressively. The per-tick measurements (price, hashrate, share log) are still kept in tick_metrics regardless of this setting."
+msgstr "Rijen in het beslissingenlogboek waar de autopilot deze tick geen actie voorstelde (de overgrote meerderheid). Zware JSON-momentopnames van de toestand - de belangrijkste hefboom voor schijfgebruik, snoei agressief. De metingen per tick (prijs, hashrate, share log) blijven in tick_metrics bewaard, ongeacht deze instelling."
 
 #: src/pages/Config.tsx
-msgid "Decisions log — eventful"
-msgstr "Beslissingenlogboek — gebeurtenisrijk"
+msgid "Decisions log - eventful"
+msgstr "Beslissingenlogboek - gebeurtenisrijk"
 
 #: src/pages/Config.tsx
-msgid "Decisions log — uneventful"
-msgstr "Beslissingenlogboek — gebeurtenisloos"
+msgid "Decisions log - uneventful"
+msgstr "Beslissingenlogboek - gebeurtenisloos"
 
 #: src/pages/Config.tsx
 msgid "decrease"
@@ -806,7 +806,7 @@ msgid "Default 50001."
 msgstr "Standaard 50001."
 
 #: src/pages/Setup.tsx
-msgid "Default Electrs port is 50001 (TCP). On Umbrel the in-cluster hostname is typically<0> 10.21.21.10</0> or similar — check the Electrs app's connection details."
+msgid "Default Electrs port is 50001 (TCP). On Umbrel the in-cluster hostname is typically<0> 10.21.21.10</0> or similar - check the Electrs app's connection details."
 msgstr "Standaard Electrs-poort is 50001 (TCP). Op Umbrel is de hostnaam binnen het cluster meestal<0> 10.21.21.10</0> of vergelijkbaar - controleer de verbindingsgegevens van de Electrs-app."
 
 #: src/pages/Status.tsx
@@ -867,7 +867,7 @@ msgid "Duration-weighted average of the hashrate Datum measures at the gateway. 
 msgstr "Duur-gewogen gemiddelde van de hashrate die Datum bij de gateway meet. Een aanhoudend tekort onder Gem. Braiins betekent dat Braiins kosten in rekening brengt voor hashrate die Datum nooit zag aankomen."
 
 #: src/pages/Status.tsx
-msgid "Duration-weighted average of the hashrate Ocean credits to our payout address. Each tick (every 60 s) the daemon calls Ocean's /v1/user_hashrate endpoint and reads the `hashrate_300s` field — Ocean's own 5-minute sliding-window estimate for this wallet. So: sampled every minute, each sample is a 5-minute smoothed value. A sustained gap below Avg Braiins / Avg Datum means the pool isn't crediting work we think we delivered."
+msgid "Duration-weighted average of the hashrate Ocean credits to our payout address. Each tick (every 60 s) the daemon calls Ocean's /v1/user_hashrate endpoint and reads the `hashrate_300s` field - Ocean's own 5-minute sliding-window estimate for this wallet. So: sampled every minute, each sample is a 5-minute smoothed value. A sustained gap below Avg Braiins / Avg Datum means the pool isn't crediting work we think we delivered."
 msgstr "Duur-gewogen gemiddelde van de hashrate die Ocean toeschrijft aan ons uitbetaaladres. Elke tick (elke 60 s) roept de daemon Oceans /v1/user_hashrate-endpoint aan en leest het `hashrate_300s`-veld - Oceans eigen 5-minuten schuivend-venster schatting voor deze wallet. Dus: elke minuut bemonsterd, elke meting is een 5-minuten gladde waarde. Een aanhoudend tekort onder Gem. Braiins / Gem. Datum betekent dat de pool geen werk credit geeft waarvan wij denken dat het geleverd is."
 
 #: src/pages/Config.tsx
@@ -875,7 +875,7 @@ msgid "e.g. 192.168.1.121 or umbrel.local"
 msgstr "bijv. 192.168.1.121 of umbrel.local"
 
 #: src/pages/Config.tsx
-msgid "e.g. http://192.168.1.121:8332 — your Bitcoin Core RPC endpoint."
+msgid "e.g. http://192.168.1.121:8332 - your Bitcoin Core RPC endpoint."
 msgstr "bijv. http://192.168.1.121:8332 - je Bitcoin Core RPC-endpoint."
 
 #: src/components/PriceChart.tsx
@@ -920,15 +920,15 @@ msgid "effective rate"
 msgstr "effectief tarief"
 
 #: src/pages/Status.tsx
-msgid "Effective rate {sign}{deltaFormatted} above hashprice ({hashpricePretty}) — positive means paying above break-even, negative means paying below (profitable)."
+msgid "Effective rate {sign}{deltaFormatted} above hashprice ({hashpricePretty}) - positive means paying above break-even, negative means paying below (profitable)."
 msgstr "Effectief tarief {sign}{deltaFormatted} boven hashprice ({hashpricePretty}) - positief betekent betalen boven break-even, negatief betekent betalen onder (winstgevend)."
 
 #: src/pages/Status.tsx
-msgid "Effective rate {sign}{deltaFormatted} below hashprice ({hashpricePretty}) — positive means paying above break-even, negative means paying below (profitable)."
+msgid "Effective rate {sign}{deltaFormatted} below hashprice ({hashpricePretty}) - positive means paying above break-even, negative means paying below (profitable)."
 msgstr "Effectief tarief {sign}{deltaFormatted} onder hashprice ({hashpricePretty}) - positief betekent betalen boven break-even, negatief betekent betalen onder (winstgevend)."
 
 #: src/pages/Status.tsx
-msgid "Effective rate equals hashprice ({hashpricePretty}) — breaking even."
+msgid "Effective rate equals hashprice ({hashpricePretty}) - breaking even."
 msgstr "Effectief tarief gelijk aan hashprice ({hashpricePretty}) - break-even."
 
 #: src/components/Bip110ScanCard.tsx
@@ -970,7 +970,7 @@ msgid "Every restart resets to DRY_RUN. You explicitly flip to LIVE from the das
 msgstr "Elke herstart reset naar DRY_RUN. Je schakelt expliciet over naar LIVE vanuit het dashboard."
 
 #: src/pages/Setup.tsx
-msgid "Existing config detected — fields are pre-filled. Update what changed and click through."
+msgid "Existing config detected - fields are pre-filled. Update what changed and click through."
 msgstr "Bestaande config gedetecteerd - velden zijn vooringevuld. Pas aan wat veranderd is en ga verder."
 
 #: src/components/PriceChart.tsx
@@ -1003,7 +1003,7 @@ msgid "fees"
 msgstr "fees"
 
 #: src/pages/Config.tsx
-msgid "Fetches the BTC/USD spot price from a public exchange API. Enables a sats/USD denomination toggle in the dashboard header. No API key required — uses unauthenticated public endpoints."
+msgid "Fetches the BTC/USD spot price from a public exchange API. Enables a sats/USD denomination toggle in the dashboard header. No API key required - uses unauthenticated public endpoints."
 msgstr "Haalt de BTC/USD spotprijs op van een publieke exchange-API. Schakelt een sats/USD eenheid-wisselaar in de dashboard-header in. Geen API-sleutel nodig - gebruikt niet-geauthenticeerde publieke endpoints."
 
 #: src/components/PriceChart.tsx
@@ -1030,7 +1030,7 @@ msgstr "Ondergrens hashrate"
 
 #: src/pages/Config.tsx
 #: src/pages/Setup.tsx
-msgid "Format: <btc-address>.<label>. Ocean TIDES credits shares by the address prefix — anything else routes shares to nobody."
+msgid "Format: <btc-address>.<label>. Ocean TIDES credits shares by the address prefix - anything else routes shares to nobody."
 msgstr "Formaat: <btc-adres>.<label>. Ocean TIDES schrijft shares toe op basis van het adres-voorvoegsel - alles anders stuurt shares naar niemand."
 
 #: src/components/Bip110ScanCard.tsx
@@ -1143,7 +1143,7 @@ msgid "Host"
 msgstr "Host"
 
 #: src/pages/Config.tsx
-msgid "How big a single bid is. Set to 0 to use the full available wallet balance on each create — simpler mental model, no manual slicing."
+msgid "How big a single bid is. Set to 0 to use the full available wallet balance on each create - simpler mental model, no manual slicing."
 msgstr "Hoe groot een enkel bod is. Zet op 0 om bij elke create het volledige beschikbare wallet-saldo te gebruiken - eenvoudiger denkmodel, geen handmatige opdeling."
 
 #: src/pages/Status.tsx
@@ -1151,7 +1151,7 @@ msgid "How many sats we'd earn from the next block Ocean finds, assuming current
 msgstr "Hoeveel sats we zouden verdienen aan het volgende blok dat Ocean vindt, ervan uitgaande dat de huidige share_log gelijk blijft. Gelijk aan (next_block_reward * share_log_pct / 100). Controleer tegen een typische Ocean-blokbeloning (~3,13 BTC)."
 
 #: src/pages/Config.tsx
-msgid "How numbers and dates render in this browser. Doesn't change the UI language. Saved locally — every operator can pick their own."
+msgid "How numbers and dates render in this browser. Doesn't change the UI language. Saved locally - every operator can pick their own."
 msgstr "Hoe getallen en datums in deze browser worden weergegeven. Verandert de UI-taal niet. Lokaal opgeslagen - elke operator kan zelf kiezen."
 
 #: src/pages/Config.tsx
@@ -1314,11 +1314,11 @@ msgid "MP3 / OGG / WAV / WebM, max 200 KB."
 msgstr "MP3 / OGG / WAV / WebM, max 200 KB."
 
 #: src/pages/Config.tsx
-msgid "Must be reachable from the public internet — Braiins probes it."
+msgid "Must be reachable from the public internet - Braiins probes it."
 msgstr "Moet bereikbaar zijn vanaf het publieke internet - Braiins controleert het."
 
 #: src/pages/Setup.tsx
-msgid "must contain a period — without it shares are uncredited on Ocean"
+msgid "must contain a period - without it shares are uncredited on Ocean"
 msgstr "moet een punt bevatten - zonder dat worden shares niet bijgeschreven op Ocean"
 
 #: src/pages/Status.tsx
@@ -1410,7 +1410,7 @@ msgid "None"
 msgstr "Geen"
 
 #: src/pages/Setup.tsx
-msgid "None — skip payout tracking"
+msgid "None - skip payout tracking"
 msgstr "Geen - sla uitbetaalmonitoring over"
 
 #: src/lib/labels.ts
@@ -1422,7 +1422,7 @@ msgid "Not configured"
 msgstr "Niet geconfigureerd"
 
 #: src/pages/Status.tsx
-msgid "Not configured. Go to Config → On-chain payouts and select Electrs or Bitcoin Core RPC to track your on-chain balance. The net line treats missing collected as 0 so the arithmetic still reads — a blank row here is the hint that a piece of the income side isn't wired up."
+msgid "Not configured. Go to Config → On-chain payouts and select Electrs or Bitcoin Core RPC to track your on-chain balance. The net line treats missing collected as 0 so the arithmetic still reads - a blank row here is the hint that a piece of the income side isn't wired up."
 msgstr "Niet geconfigureerd. Ga naar Config → On-chain uitbetalingen en kies Electrs of Bitcoin Core RPC om je on-chain saldo te volgen. De netto-regel behandelt ontbrekende ontvangsten als 0 zodat de berekening blijft kloppen - een lege rij hier is de hint dat een deel van de inkomstenzijde niet is aangesloten."
 
 #: src/components/HashrateChart.tsx
@@ -1447,11 +1447,11 @@ msgid "Number & date format"
 msgstr "Getal- & datumformaat"
 
 #: src/pages/Config.tsx
-msgid "Observing payouts to <0>(no address set)</0>. Edit this in the <1>Pool destination</1> section above — the worker identity is auto-derived from it."
+msgid "Observing payouts to <0>(no address set)</0>. Edit this in the <1>Pool destination</1> section above - the worker identity is auto-derived from it."
 msgstr "Uitbetalingen naar <0>(geen adres ingesteld)</0> worden gevolgd. Pas dit hierboven aan in de sectie <1>Pool-bestemming</1> - de worker-identiteit wordt hier automatisch uit afgeleid."
 
 #: src/pages/Config.tsx
-msgid "Observing payouts to <0>{payoutAddr}</0>. Edit this in the <1>Pool destination</1> section above — the worker identity is auto-derived from it."
+msgid "Observing payouts to <0>{payoutAddr}</0>. Edit this in the <1>Pool destination</1> section above - the worker identity is auto-derived from it."
 msgstr "Uitbetalingen naar <0>{payoutAddr}</0> worden gevolgd. Pas dit hierboven aan in de sectie <1>Pool-bestemming</1> - de worker-identiteit wordt hier automatisch uit afgeleid."
 
 #. placeholder {0}: localizedRangeLabel('3h', i18n.locale)
@@ -1472,7 +1472,7 @@ msgid "ocean lifetime"
 msgstr "Ocean levenslang"
 
 #: src/pages/Status.tsx
-msgid "Ocean stats API — reachable when the last /api/ocean fetch returned a pool snapshot."
+msgid "Ocean stats API - reachable when the last /api/ocean fetch returned a pool snapshot."
 msgstr "Ocean stats-API - bereikbaar wanneer de laatste /api/ocean fetch een pool-snapshot terugbracht."
 
 #: src/pages/Status.tsx
@@ -1484,12 +1484,12 @@ msgid "Ocean's own 'daily_estimate' for our address - what they expect to credit
 msgstr "Ocean's eigen 'daily_estimate' voor ons adres - wat zij verwachten ons per dag te crediteren bij onze 3u-hashrate. Afgeleid van user_hashrate * hashprice. Altijd 3u-gebaseerd, ongeacht het bovenstaande grafiekbereik."
 
 #: src/pages/Status.tsx
-msgid "Ocean's own estimate — the pool extrapolates from the address's last 3-hour hashrate and its share of pool output. Always 3h-based regardless of the chart range you've picked, so it may differ from projected income at other ranges."
+msgid "Ocean's own estimate - the pool extrapolates from the address's last 3-hour hashrate and its share of pool output. Always 3h-based regardless of the chart range you've picked, so it may differ from projected income at other ranges."
 msgstr "Oceans eigen schatting - de pool extrapoleert vanuit de hashrate van het adres over de afgelopen 3 uur en het aandeel in de pool-output. Altijd 3h-gebaseerd ongeacht het grafiekbereik dat je hebt gekozen, dus kan afwijken van de geprojecteerde inkomsten bij andere bereiken."
 
 #. placeholder {0}: formatSats(data.ocean.payout_threshold_sat)
 #: src/pages/Status.tsx
-msgid "Ocean's Unpaid Earnings — what will land on-chain at the next payout. Threshold: {0} sat (~0.01 BTC)."
+msgid "Ocean's Unpaid Earnings - what will land on-chain at the next payout. Threshold: {0} sat (~0.01 BTC)."
 msgstr "Oceans openstaande verdiensten - wat bij de volgende uitbetaling on-chain binnenkomt. Drempel: {0} sat (~0.01 BTC)."
 
 #: src/pages/Config.tsx
@@ -1526,7 +1526,7 @@ msgid "Optional dynamic ceiling. On each tick the effective cap = min(Maximum, h
 msgstr "Optionele dynamische bovengrens. Bij elke tick is de effectieve cap = min(Maximum, hashprice + dit). Voorkomt dat de autopilot wild overbetaalt wanneer hashprice scherp daalt en het vaste Maximum dit alleen nog steeds zou toestaan. Zet op 0 om uit te schakelen."
 
 #: src/pages/Config.tsx
-msgid "Optional. Datum Gateway's /umbrel-api endpoint — e.g. http://192.168.1.121:7152. Leave empty to disable; the Datum panel will show \"not configured\". See docs/setup-datum-api.md for the Umbrel-side port-exposure recipe."
+msgid "Optional. Datum Gateway's /umbrel-api endpoint - e.g. http://192.168.1.121:7152. Leave empty to disable; the Datum panel will show \"not configured\". See docs/setup-datum-api.md for the Umbrel-side port-exposure recipe."
 msgstr "Optioneel. Het /umbrel-api-endpoint van Datum Gateway - bijv. http://192.168.1.121:7152. Laat leeg om uit te schakelen; het Datum-paneel toont dan \"niet geconfigureerd\". Zie docs/setup-datum-api.md voor het port-exposure recept aan de Umbrel-kant."
 
 #: src/pages/Setup.tsx
@@ -1556,8 +1556,8 @@ msgstr "Ons aandeel in Ocean's TIDES-venster. Ocean's uitbetalingssysteem beloon
 #. placeholder {0}: denomination.formatSat( o.user.unpaid_sat, intlLocale, )
 #. placeholder {1}: denomination.formatSat( o.user.payout_threshold_sat, intlLocale, )
 #: src/pages/Status.tsx
-msgid "Our unpaid balance ({0}) has already crossed the payout threshold ({1} ≈ 0,01 BTC). The accumulated balance ships as a coinbase output the next time Ocean wins a pool block — under TIDES the pool only pays out when it finds a block, since that's the only block where it controls the coinbase. \"Next block\" means the next Ocean pool block (~3/day at typical share), NOT the next Bitcoin block in general. The blue cubes on the hashrate chart above mark each pool block as it lands."
-msgstr "Ons niet-uitbetaalde saldo ({0}) heeft de uitbetaaldrempel ({1} ≈ 0,01 BTC) al overschreden. Het opgebouwde saldo wordt verzonden als een coinbase-output de eerstvolgende keer dat Ocean een pool-blok wint — onder TIDES betaalt de pool alleen uit als ze een blok vinden, omdat dat het enige blok is waarvan de pool de coinbase kan vullen. \"Next block\" betekent het volgende Ocean pool-blok (~3 per dag bij typisch aandeel), NIET het volgende Bitcoin-blok in het algemeen. De blauwe blokjes op de hashrate-grafiek hierboven markeren elk pool-blok zodra het binnenkomt."
+msgid "Our unpaid balance ({0}) has already crossed the payout threshold ({1} ≈ 0,01 BTC). The accumulated balance ships as a coinbase output the next time Ocean wins a pool block - under TIDES the pool only pays out when it finds a block, since that's the only block where it controls the coinbase. \"Next block\" means the next Ocean pool block (~3/day at typical share), NOT the next Bitcoin block in general. The blue cubes on the hashrate chart above mark each pool block as it lands."
+msgstr "Ons niet-uitbetaalde saldo ({0}) heeft de uitbetaaldrempel ({1} ≈ 0,01 BTC) al overschreden. Het opgebouwde saldo wordt verzonden als een coinbase-output de eerstvolgende keer dat Ocean een pool-blok wint - onder TIDES betaalt de pool alleen uit als ze een blok vinden, omdat dat het enige blok is waarvan de pool de coinbase kan vullen. \"Next block\" betekent het volgende Ocean pool-blok (~3 per dag bij typisch aandeel), NIET het volgende Bitcoin-blok in het algemeen. De blauwe blokjes op de hashrate-grafiek hierboven markeren elk pool-blok zodra het binnenkomt."
 
 #: src/pages/Status.tsx
 msgid "overdue {overdueFormatted}"
@@ -1627,8 +1627,8 @@ msgid "Payout address"
 msgstr "Uitbetaaladres"
 
 #: src/pages/Status.tsx
-msgid "Payout observer is starting up. Waiting for the first balance scan to complete — usually a few seconds with Electrs, up to a minute with bitcoind scantxoutset."
-msgstr "Uitbetaal-observer is aan het opstarten. Wachten op de eerste saldo-scan — meestal enkele seconden met Electrs, tot een minuut met bitcoind scantxoutset."
+msgid "Payout observer is starting up. Waiting for the first balance scan to complete - usually a few seconds with Electrs, up to a minute with bitcoind scantxoutset."
+msgstr "Uitbetaal-observer is aan het opstarten. Wachten op de eerste saldo-scan - meestal enkele seconden met Electrs, tot een minuut met bitcoind scantxoutset."
 
 #: src/pages/Setup.tsx
 msgid "Payout tracking"
@@ -1647,7 +1647,7 @@ msgid "Per-tick bid = fillable_ask + this. Braiins matches pay-your-bid, so this
 msgstr "Per-tick bod = fillable_ask + dit. Braiins matcht pay-your-bid, dus dit is de werkelijke toeslag die je betaalt boven de goedkoopste beschikbare prijs. Hoger = beter bestand tegen korte opwaartse marktbewegingen, grotere toeslag; lager = dichter bij de goedkoopste vulbare prijs, gevoeliger voor ruis. 300 sat/PH/day is een redelijk uitgangspunt."
 
 #: src/pages/Config.tsx
-msgid "Pick a preset or paste your own template — at least one placeholder ({hash} or {height}) is required. Example custom: http://umbrel.local:3006/block/{hash}."
+msgid "Pick a preset or paste your own template - at least one placeholder ({hash} or {height}) is required. Example custom: http://umbrel.local:3006/block/{hash}."
 msgstr "Kies een preset of plak je eigen sjabloon - er is minstens één placeholder ({hash} of {height}) vereist. Aangepast voorbeeld: http://umbrel.local:3006/block/{hash}."
 
 #: src/pages/Config.tsx
@@ -1659,7 +1659,7 @@ msgid "Plays whatever's selected above (no save needed)."
 msgstr "Speelt wat hierboven is geselecteerd (opslaan niet nodig)."
 
 #: src/pages/Config.tsx
-msgid "Polled every 5 minutes. The daemon never makes decisions based on fiat price — this is purely a display convenience. Set to \"Disabled\" if you want a sats-only dashboard."
+msgid "Polled every 5 minutes. The daemon never makes decisions based on fiat price - this is purely a display convenience. Set to \"Disabled\" if you want a sats-only dashboard."
 msgstr "Elke 5 minuten bevraagd. De daemon neemt nooit beslissingen op basis van de fiat-prijs - dit is puur een weergavegemak. Zet op \"Uitgeschakeld\" als je een dashboard met alleen sats wilt."
 
 #: src/pages/Status.tsx
@@ -1871,11 +1871,11 @@ msgid "right axis"
 msgstr "rechter as"
 
 #: src/pages/Config.tsx
-msgid "Rolling-mean window applied to the hashrate chart. 1 = raw (no smoothing). Ocean is excluded — its /user_hashrate endpoint already returns a server-side 5-min average, so set these to 5 to line all three series up on the same cadence."
+msgid "Rolling-mean window applied to the hashrate chart. 1 = raw (no smoothing). Ocean is excluded - its /user_hashrate endpoint already returns a server-side 5-min average, so set these to 5 to line all three series up on the same cadence."
 msgstr "Rollend-gemiddelde venster toegepast op de hashrate-grafiek. 1 = ruw (geen smoothing). Ocean is uitgesloten - zijn /user_hashrate-endpoint geeft al een serverside 5-min gemiddelde terug, dus zet deze op 5 om alle drie de reeksen op dezelfde cadans uit te lijnen."
 
 #: src/pages/Config.tsx
-msgid "Rolling-mean window for the Price chart's `our bid` and `effective` lines. Useful when the effective line is noisy at tick resolution. Hashprice / max bid are not smoothed — they're market-wide signals."
+msgid "Rolling-mean window for the Price chart's `our bid` and `effective` lines. Useful when the effective line is noisy at tick resolution. Hashprice / max bid are not smoothed - they're market-wide signals."
 msgstr "Rollend-gemiddelde venster voor de `ons bod`- en `effectief`-lijnen op de Prijs-grafiek. Handig wanneer de effectieve lijn op tick-resolutie luidruchtig is. Hashprice / max bod worden niet gladgemaakt - dat zijn marktbrede signalen."
 
 #: src/pages/Config.tsx
@@ -1884,7 +1884,7 @@ msgid "RPC password"
 msgstr "RPC-wachtwoord"
 
 #: src/pages/Config.tsx
-msgid "RPC password — stored in the config database, not in logs."
+msgid "RPC password - stored in the config database, not in logs."
 msgstr "RPC-wachtwoord - opgeslagen in de config-database, niet in logs."
 
 #: src/pages/Setup.tsx
@@ -1908,7 +1908,7 @@ msgid "Run decision now"
 msgstr "Beslissing nu uitvoeren"
 
 #: src/pages/Status.tsx
-msgid "Run the pending decision immediately — clears the post-edit lock and bypasses the patience/escalation timers so a waiting-to-settle EDIT_PRICE fires on this tick instead of after the full window."
+msgid "Run the pending decision immediately - clears the post-edit lock and bypasses the patience/escalation timers so a waiting-to-settle EDIT_PRICE fires on this tick instead of after the full window."
 msgstr "Voer de wachtende beslissing onmiddellijk uit - heft de post-edit-lock op en omzeilt de patience/escalation-timers zodat een wachtende EDIT_PRICE op deze tick afgaat in plaats van na het volledige venster."
 
 #: src/pages/Status.tsx
@@ -1978,8 +1978,8 @@ msgid "Setting up…"
 msgstr "Bezig met instellen…"
 
 #: src/pages/Status.tsx
-msgid "Share acceptance over the trailing hour: (shares accepted / shares submitted) × 100. The seller's rig submits shares over stratum to YOUR Datum gateway, Datum responds accept/reject, and the result is what Braiins relays back as the counter — so this is a Datum-side number even though it's sourced via the Braiins API. Healthy baseline ≈ 99.95%; baseline ~0.05% rejection is normal. Sustained drops below ~99% point at Datum serving stale work, worker-identity misconfiguration, or pool difficulty too low — see docs/research.md §7.5."
-msgstr "Acceptatie van shares over het afgelopen uur: (geaccepteerde shares / ingediende shares) × 100. De rig van de verkoper dient shares in via stratum bij JOUW Datum-gateway, Datum reageert met accepteren/afwijzen, en het resultaat wordt door Braiins teruggegeven als teller — dit is dus een Datum-zijde getal, ook al komt het via de Braiins API. Gezonde baseline ≈ 99,95%; ~0,05% afwijzing is normaal. Aanhoudende daling onder ~99% wijst op verouderd werk vanuit Datum, verkeerd geconfigureerde worker-identiteit, of te lage pool-moeilijkheidsgraad — zie docs/research.md §7.5."
+msgid "Share acceptance over the trailing hour: (shares accepted / shares submitted) × 100. The seller's rig submits shares over stratum to YOUR Datum gateway, Datum responds accept/reject, and the result is what Braiins relays back as the counter - so this is a Datum-side number even though it's sourced via the Braiins API. Healthy baseline ≈ 99.95%; baseline ~0.05% rejection is normal. Sustained drops below ~99% point at Datum serving stale work, worker-identity misconfiguration, or pool difficulty too low - see docs/research.md §7.5."
+msgstr "Acceptatie van shares over het afgelopen uur: (geaccepteerde shares / ingediende shares) × 100. De rig van de verkoper dient shares in via stratum bij JOUW Datum-gateway, Datum reageert met accepteren/afwijzen, en het resultaat wordt door Braiins teruggegeven als teller - dit is dus een Datum-zijde getal, ook al komt het via de Braiins API. Gezonde baseline ≈ 99,95%; ~0,05% afwijzing is normaal. Aanhoudende daling onder ~99% wijst op verouderd werk vanuit Datum, verkeerd geconfigureerde worker-identiteit, of te lage pool-moeilijkheidsgraad - zie docs/research.md §7.5."
 
 #: src/components/HashrateChart.tsx
 #: src/pages/Status.tsx
@@ -2072,15 +2072,15 @@ msgid "subsidy"
 msgstr "subsidie"
 
 #: src/pages/Status.tsx
-msgid "Sum across still-running bids — status ACTIVE / PAUSED / etc. (is_current=true). Live in-flight consumption; not yet settled in Braiins' hourly ledger."
+msgid "Sum across still-running bids - status ACTIVE / PAUSED / etc. (is_current=true). Live in-flight consumption; not yet settled in Braiins' hourly ledger."
 msgstr "Som over nog lopende biedingen - status ACTIVE / PAUSED / etc. (is_current=true). Live lopend verbruik; nog niet afgerekend in Braiins' uurlijkse ledger."
 
 #: src/pages/Status.tsx
-msgid "Sum across terminal bids — status CANCELED or FULFILLED (is_current=false). Money that has definitively left the account."
+msgid "Sum across terminal bids - status CANCELED or FULFILLED (is_current=false). Money that has definitively left the account."
 msgstr "Som over afgesloten biedingen - status CANCELED of FULFILLED (is_current=false). Geld dat definitief de account heeft verlaten."
 
 #: src/pages/Status.tsx
-msgid "Sum of counters_committed.amount_consumed_sat across every bid on /v1/spot/bid — covers active + historical bids, including any that existed before the autopilot was switched on. May lag the latest hour of active-bid consumption (Braiins only updates committed counters on each hourly settlement tick). Switch via Config → P&L panel."
+msgid "Sum of counters_committed.amount_consumed_sat across every bid on /v1/spot/bid - covers active + historical bids, including any that existed before the autopilot was switched on. May lag the latest hour of active-bid consumption (Braiins only updates committed counters on each hourly settlement tick). Switch via Config → P&L panel."
 msgstr "Som van counters_committed.amount_consumed_sat over elk bod op /v1/spot/bid - omvat actieve + historische biedingen, inclusief eventuele die bestonden voordat de autopilot werd aangezet. Kan achterlopen op het laatste uur van actief-bod verbruik (Braiins werkt committed counters alleen bij op elke uurlijkse settlement-tick). Schakel via Config → P&L-paneel."
 
 #: src/components/HashrateChart.tsx
@@ -2231,15 +2231,15 @@ msgid "URL template"
 msgstr "URL-sjabloon"
 
 #: src/pages/Config.tsx
-msgid "Used by the on-chain payout balance check (when \"Bitcoin Core RPC\" is selected as the backend above), AND by the <0>BIP 110</0> crown marker on the Hashrate chart and the BIP 110 scan card on Status — those last two call bitcoind regardless of which payout backend is selected. The Test button below validates the values currently in the form, before saving."
-msgstr "Wordt gebruikt door de on-chain saldocontrole van uitbetalingen (wanneer hierboven \"Bitcoin Core RPC\" is geselecteerd als backend) ÉN door de <0>BIP 110</0>-kroonmarkering op de hashrate-grafiek en de BIP 110-scan-kaart op Status — die laatste twee roepen bitcoind aan ongeacht welke uitbetaal-backend is geselecteerd. De Test-knop hieronder valideert de waarden die momenteel in het formulier staan, vóór opslaan."
+msgid "Used by the on-chain payout balance check (when \"Bitcoin Core RPC\" is selected as the backend above), AND by the <0>BIP 110</0> crown marker on the Hashrate chart and the BIP 110 scan card on Status - those last two call bitcoind regardless of which payout backend is selected. The Test button below validates the values currently in the form, before saving."
+msgstr "Wordt gebruikt door de on-chain saldocontrole van uitbetalingen (wanneer hierboven \"Bitcoin Core RPC\" is geselecteerd als backend) ÉN door de <0>BIP 110</0>-kroonmarkering op de hashrate-grafiek en de BIP 110-scan-kaart op Status - die laatste twee roepen bitcoind aan ongeacht welke uitbetaal-backend is geselecteerd. De Test-knop hieronder valideert de waarden die momenteel in het formulier staan, vóór opslaan."
 
 #: src/pages/Config.tsx
 msgid "Used for click-through from the Ocean panel's \"last pool block\" row and the block-marker tooltips on the Hashrate chart. `{hash}` and `{height}` placeholders are substituted."
 msgstr "Wordt gebruikt voor click-through vanuit de \"laatste pool-blok\"-rij in het Ocean-paneel en de blok-marker tooltips op de Hashrate-grafiek. `{hash}` en `{height}` placeholders worden vervangen."
 
 #: src/components/HashrateChart.tsx
-msgid "uses current share_log — an approximation for older blocks, since share_log drifts as pool hashrate moves."
+msgid "uses current share_log - an approximation for older blocks, since share_log drifts as pool hashrate moves."
 msgstr "gebruikt de huidige share_log - een benadering voor oudere blokken, aangezien share_log verschuift naarmate de pool-hashrate verandert."
 
 #: src/pages/Config.tsx
@@ -2275,7 +2275,7 @@ msgid "When the market is cheap (below the hashprice threshold), scale up to thi
 msgstr "Wanneer de markt goedkoop is (onder de hashprice-drempel), schaal op naar dit doel in plaats van het normale. Zet op 0 om uit te schakelen."
 
 #: src/pages/Config.tsx
-msgid "Where rented hashrate lands. Change only if your pool endpoint moves. The BTC payout address sits here too — the worker identity below is auto-derived from it whenever you edit the address, same as the first-run wizard."
+msgid "Where rented hashrate lands. Change only if your pool endpoint moves. The BTC payout address sits here too - the worker identity below is auto-derived from it whenever you edit the address, same as the first-run wizard."
 msgstr "Waar gehuurde hashrate aankomt. Pas alleen aan als je pool-endpoint verandert. Het BTC-uitbetaaladres staat hier ook - de worker-identiteit hieronder wordt hier automatisch uit afgeleid wanneer je het adres aanpast, net als bij de eerste-keer wizard."
 
 #: src/pages/Config.tsx

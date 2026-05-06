@@ -2,11 +2,11 @@
 
 The daemon resolves configuration in priority order:
 
-1. **Environment variables** — anything matching `BHA_*` (table below).
-2. **SQLite database** (`data/state.db`) — written by the dashboard's
+1. **Environment variables** - anything matching `BHA_*` (table below).
+2. **SQLite database** (`data/state.db`) - written by the dashboard's
    Config page, by `pnpm setup`, or by the future first-run wizard
    (#57).
-3. **Schema defaults** — see `packages/daemon/src/config/schema.ts`.
+3. **Schema defaults** - see `packages/daemon/src/config/schema.ts`.
 
 Env-var overrides are read **once at boot** and re-validated through
 the same Zod schemas the dashboard uses, so a malformed value fails
@@ -25,7 +25,7 @@ a complete path.
 Every env-var is `BHA_<UPPER_SNAKE_CASE>` of the underlying schema
 field. The `BHA_` (Braiins Hashrate Autopilot) prefix avoids collision
 with the unrelated `BITCOIN_RPC_*` env vars Umbrel and Start9 inject
-for bitcoind discovery — that integration is a separate concern, see
+for bitcoind discovery - that integration is a separate concern, see
 issue #60.
 
 ## Secrets
@@ -120,7 +120,7 @@ issue #60.
 ## Process-level env vars (not config overrides)
 
 These are read directly by the daemon entrypoint and have no `BHA_`
-prefix — they predate the override layer:
+prefix - they predate the override layer:
 
 | Env var | Default | Purpose |
 |---|---|---|

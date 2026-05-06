@@ -47,7 +47,7 @@ describe('SecretsRepo', () => {
     expect(await repo.get()).toEqual(full);
   });
 
-  it('upsert is idempotent — replaces the existing row', async () => {
+  it('upsert is idempotent - replaces the existing row', async () => {
     await repo.upsert(VALID);
     await repo.upsert({ ...VALID, dashboard_password: 'new-pw-1234' });
     const out = await repo.get();

@@ -33,7 +33,7 @@ export function Login() {
         }
       })
       .catch(() => {
-        /* probe failed — fall through, let the form render */
+        /* probe failed - fall through, let the form render */
       });
     return () => {
       cancelled = true;

@@ -2,7 +2,7 @@
  * POST /api/bitcoind/test
  *
  * Test bitcoind RPC connectivity using the URL/user/pass supplied in
- * the request body — typically the form values the operator just
+ * the request body - typically the form values the operator just
  * typed on the Config page, before saving. The endpoint deliberately
  * does NOT fall back to the saved config: the operator's whole reason
  * for clicking Test is to validate UNSAVED candidate values, and

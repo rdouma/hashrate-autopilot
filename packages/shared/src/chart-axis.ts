@@ -12,8 +12,8 @@ const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 
 /**
- * Pick a "nice" interval that yields roughly 4–8 labels across the
- * visible span. Candidates are the human-friendly clock divisions —
+ * Pick a "nice" interval that yields roughly 4-8 labels across the
+ * visible span. Candidates are the human-friendly clock divisions -
  * 5/10/15/30 min, 1/2/3/6/12 h, 1/2/7/14/30 days.
  */
 export function pickTimeTickInterval(spanMs: number): number {
@@ -106,11 +106,11 @@ export function localAlignedTimeTicks(
 
 /**
  * Format a tick timestamp for display under the X-axis. Sub-day
- * intervals get `HH:mm`; day-and-up get `dd MMM` (no year — the chart
+ * intervals get `HH:mm`; day-and-up get `dd MMM` (no year - the chart
  * never spans more than ~12 months in our worst case).
  */
 /**
- * Generate "nice" Y-axis ticks — round numbers that a human would
+ * Generate "nice" Y-axis ticks - round numbers that a human would
  * pick (0, 1, 2, 3 or 45,000, 45,500, 46,000, not 45,127, 45,893).
  *
  * Algorithm: find a step size from the 1-2-5 series that yields

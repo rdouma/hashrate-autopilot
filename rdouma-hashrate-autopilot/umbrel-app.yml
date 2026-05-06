@@ -1,7 +1,7 @@
 # Umbrel app manifest. Loaded when this repo is added as a Community
 # App Store. Umbrel community-store convention: the directory name
 # (and the `id:` field below) must be prefixed with the store's id
-# from `umbrel-app-store.yml` — here that's `rdouma-`.
+# from `umbrel-app-store.yml` - here that's `rdouma-`.
 
 manifestVersion: 1
 id: rdouma-hashrate-autopilot

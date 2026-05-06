@@ -193,7 +193,7 @@ describe('createSetupModeServer', () => {
 
   it('non-/api paths get the SPA fallback (404 since no static root)', async () => {
     // No staticRoot configured for these tests, so the SPA fallback's
-    // sendFile fails — but the handler should still NOT return 412
+    // sendFile fails - but the handler should still NOT return 412
     // for non-/api paths. We expect a 5xx from the missing static
     // file rather than the 412 from the API gate.
     const res = await server.app.inject({ method: 'GET', url: '/setup' });

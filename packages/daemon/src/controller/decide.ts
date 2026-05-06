@@ -11,7 +11,7 @@
  *
  * What this function does:
  *   1. Compute target_price = min(fillable_ask + overpay, effective_cap).
- *      If fillable_ask is null (orderbook down/empty), skip — we have
+ *      If fillable_ask is null (orderbook down/empty), skip - we have
  *      no reference to track and pinning to max_bid would burn money.
  *   2. If no owned bids → CREATE_BID at target_price, target speed,
  *      wallet budget.
@@ -24,7 +24,7 @@
  *   6. Unknown bids → PAUSE (SPEC §9 unambiguity requirement).
  *
  * No escalation timers, no lowering-patience window, no min-lower-delta
- * gate — under direct fillable-tracking each tick already proposes the
+ * gate - under direct fillable-tracking each tick already proposes the
  * optimal price, and Braiins' own cooldown is the only pacing rule we
  * care about.
  */
@@ -62,7 +62,7 @@ export function decide(state: State): readonly Proposal[] {
   // Hashprice is needed for the dynamic cap. When the dynamic cap is
   // configured but hashprice is unknown (boot fetch failed, stale
   // cache), refuse to trade rather than silently fall back to the
-  // fixed cap — that defeats the whole point of configuring the
+  // fixed cap - that defeats the whole point of configuring the
   // dynamic cap (#28).
   const hashpriceSatPerPhDay = state.hashprice_sat_per_ph_day;
   const hashpriceSatEh =
@@ -93,7 +93,7 @@ export function decide(state: State): readonly Proposal[] {
   // Cheap-mode check (#13 / #50): opportunistic scale-up when the
   // market is cheap relative to hashprice. Rolling-average window when
   // configured (`cheap_sustained_window_minutes > 0`), spot fallback
-  // otherwise. Controls target_hashrate_ph only — pricing stays on
+  // otherwise. Controls target_hashrate_ph only - pricing stays on
   // the fillable-tracking path.
   const cheapEnabled =
     config.cheap_threshold_pct > 0 &&
@@ -127,12 +127,12 @@ export function decide(state: State): readonly Proposal[] {
   // Deadband on EDIT_PRICE (#53 fix). fillable_ask jitters ±1-5 sat/PH/day
   // (~1,000-5,000 sat/EH/day) tick-to-tick as distant supply levels
   // reshuffle. With the naive tick_size tolerance, every jitter triggers
-  // a mutation — dense trade storm on the chart, API noise, and each
+  // a mutation - dense trade storm on the chart, API noise, and each
   // lower burns the 10-min cooldown. Scale the deadband to 1/5 of
   // overpay: if fillable has moved by less than 20 % of our overpay
   // cushion, the current bid still sits comfortably above fillable and
   // delivery stays healthy. At the 1,000 sat/PH/day default overpay this
-  // gives a ~200 sat/PH/day deadband. Never below tick_size — Braiins
+  // gives a ~200 sat/PH/day deadband. Never below tick_size - Braiins
   // would reject a smaller edit.
   const editDeadband = Math.max(
     tickSize,
@@ -172,7 +172,7 @@ export function decide(state: State): readonly Proposal[] {
 
   const proposals: Proposal[] = [];
 
-  // Keep one owned bid — cancel any extras.
+  // Keep one owned bid - cancel any extras.
   const [primary, ...extras] = [...owned_bids].sort((a, b) =>
     a.braiins_order_id.localeCompare(b.braiins_order_id),
   );
@@ -186,7 +186,7 @@ export function decide(state: State): readonly Proposal[] {
   }
 
   // Price edit: move the live bid to target_price when it has drifted
-  // by more than `editDeadband`. Below the deadband we sit tight — the
+  // by more than `editDeadband`. Below the deadband we sit tight - the
   // current bid is still a good approximation of fillable + overpay
   // and each mutation is noise (chart + API). gate.ts enforces
   // Braiins' 10-min price-decrease cooldown below this layer.

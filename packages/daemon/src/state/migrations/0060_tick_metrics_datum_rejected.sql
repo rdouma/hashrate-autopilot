@@ -1,5 +1,5 @@
 -- #91: Datum gateway-side rejected-shares counter, captured per
--- tick. Cumulative (not delta) — the dashboard computes deltas on
+-- tick. Cumulative (not delta) - the dashboard computes deltas on
 -- read for the Datum panel's "rejects (1h)" row.
 --
 -- Heuristic detection: the daemon's DATUM poller scans

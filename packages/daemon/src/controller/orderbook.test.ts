@@ -102,7 +102,7 @@ describe('cheapestAskForDepth', () => {
     expect(result.price_sat).toBe(46_000_000);
   });
 
-  it('subtracts hr_matched_ph from hr_available_ph — the Braiins semantic', () => {
+  it('subtracts hr_matched_ph from hr_available_ph - the Braiins semantic', () => {
     // Fully-matched level contributes zero unmatched supply even though
     // `hr_available_ph` is huge.
     const asks: OrderbookAsk[] = [

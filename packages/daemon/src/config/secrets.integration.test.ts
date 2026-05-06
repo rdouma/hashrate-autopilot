@@ -33,7 +33,7 @@ function haveBinary(name: string): boolean {
 
 const needsTools = describe.skipIf(!haveBinary('sops') || !haveBinary('age-keygen'));
 
-needsTools('loadSecrets — sops+age round-trip', () => {
+needsTools('loadSecrets - sops+age round-trip', () => {
   it('encrypts with age, decrypts via loadSecrets, yields the original payload', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'braiins-sops-e2e-'));
     const keyPath = join(dir, 'age.key');

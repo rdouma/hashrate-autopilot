@@ -70,7 +70,7 @@ export class OwnedBidsRepo {
   }
 
   /**
-   * Record a newly-placed bid. Safe to call repeatedly — does nothing if
+   * Record a newly-placed bid. Safe to call repeatedly - does nothing if
    * the ID is already known (idempotent on Braiins's own retry semantics).
    *
    * Empty cl_order_id strings are stored as NULL so they don't collide on
@@ -119,7 +119,7 @@ export class OwnedBidsRepo {
    * `speed_limit_ph`, and sets `first_seen_active_at` the first time a bid
    * appears as ACTIVE.
    *
-   * Does NOT insert unknown bids — ownership is a client-side decision that
+   * Does NOT insert unknown bids - ownership is a client-side decision that
    * happens only on our own POST.
    */
   async reconcileFromApi(now: number, bids: readonly ReconcilableBid[]): Promise<void> {

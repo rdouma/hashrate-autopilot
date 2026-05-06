@@ -149,9 +149,9 @@ const defaultContext: DenominationContextValue = {
   btcPrice: null,
   hashrateUnit: 'PH',
   setHashrateUnit: () => undefined,
-  formatSat: () => '—',
-  formatSatPerPhDay: () => '—',
-  formatHashrate: () => '—',
+  formatSat: () => '-',
+  formatSatPerPhDay: () => '-',
+  formatHashrate: () => '-',
   hashrateSuffix: 'PH/s',
   rateSuffix: 'sat/PH/day',
 };
@@ -228,7 +228,7 @@ export function DenominationProvider({ children }: { children: ReactNode }) {
     // Otherwise the operator's chosen display locale wins via
     // `defaultLocale`.
     const formatSat = (sat: number | null, locale: string | undefined = defaultLocale): string => {
-      if (sat === null) return '—';
+      if (sat === null) return '-';
       if (effectiveMode === 'usd' && btcPrice !== null) {
         return formatUsd(satToUsd(sat, btcPrice), locale);
       }
@@ -240,7 +240,7 @@ export function DenominationProvider({ children }: { children: ReactNode }) {
       satPerPhDay: number | null,
       locale: string | undefined = defaultLocale,
     ): string => {
-      if (satPerPhDay === null) return '—';
+      if (satPerPhDay === null) return '-';
       const scaled = satPerPhDay * rateMultiplier;
       if (effectiveMode === 'usd' && btcPrice !== null) {
         return `${formatUsd(satToUsd(scaled, btcPrice), locale)}/${hashrateUnit}/day`;
@@ -271,7 +271,7 @@ export function DenominationProvider({ children }: { children: ReactNode }) {
       ph: number | null,
       locale: string | undefined = defaultLocale,
     ): string => {
-      if (ph === null) return '—';
+      if (ph === null) return '-';
       const scaled = ph * hashrateMultiplier;
       // TH wants integer-or-1-decimal (~1000x bigger than PH);
       // PH wants 2 decimals (operator-native granularity);

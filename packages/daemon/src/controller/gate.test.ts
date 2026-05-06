@@ -63,7 +63,7 @@ const EDIT_UP: Proposal = {
 const CANCEL: Proposal = { kind: 'CANCEL_BID', braiins_order_id: 'bid-a', reason: 'extra' };
 const PAUSE: Proposal = { kind: 'PAUSE', reason: 'unknown_bids_present' };
 
-describe('gate — run-mode gating', () => {
+describe('gate - run-mode gating', () => {
   it('blocks CREATE in DRY_RUN', () => {
     const [outcome] = gate([CREATE], state({ run_mode: 'DRY_RUN' }));
     expect(outcome).toMatchObject({ allowed: false, reason: 'RUN_MODE_NOT_LIVE' });
@@ -87,7 +87,7 @@ describe('gate — run-mode gating', () => {
   });
 });
 
-describe('gate — price-decrease cooldown', () => {
+describe('gate - price-decrease cooldown', () => {
   it('blocks an EDIT_PRICE that decreases inside the cooldown window', () => {
     const s = state({
       owned_bids: [

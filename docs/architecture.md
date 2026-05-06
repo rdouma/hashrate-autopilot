@@ -1,4 +1,4 @@
-# Hashrate Autopilot — Architecture (v1.6)
+# Hashrate Autopilot - Architecture (v1.6)
 
 > Concretion of `docs/spec.md` into module boundaries, data flow, deployment shape, and a
 > milestone-ordered build plan.
@@ -46,7 +46,7 @@ Braiins API   Datum Gateway   bitcoind RPC       Electrs
 
 The **daemon** is the control loop and the only writer to SQLite. The **dashboard** is a read-mostly React SPA backed
 by a thin HTTP API the daemon exposes (same Node process). The operator interacts through the dashboard only; there
-is no external notification channel in v1 — alerts and pending work surface in-app.
+is no external notification channel in v1 - alerts and pending work surface in-app.
 
 ## 2. Repository layout
 
@@ -92,9 +92,9 @@ hashrate-autopilot/
 │   │   │   ├── payout-observer.ts  (Electrs-preferred; bitcoind fallback)
 │   │   │   ├── pool-health.ts      (TCP probe of Datum Gateway :23334)
 │   │   │   ├── ocean.ts            (Ocean pool REST client: stats, blocks, earnings)
-│   │   │   ├── datum.ts            (optional /umbrel-api poller — gateway-measured hashrate + workers)
+│   │   │   ├── datum.ts            (optional /umbrel-api poller - gateway-measured hashrate + workers)
 │   │   │   ├── hashprice-cache.ts  (in-memory hashprice cache, fed from Ocean)
-│   │   │   ├── btc-price.ts        (BTC/USD oracle — CoinGecko / Coinbase / Bitstamp / Kraken)
+│   │   │   ├── btc-price.ts        (BTC/USD oracle - CoinGecko / Coinbase / Bitstamp / Kraken)
 │   │   │   ├── account-spend.ts    (whole-account spend ledger from /v1/account/transaction)
 │   │   │   └── retention.ts        (hourly pruner for tick_metrics + decisions)
 │   │   ├── src/controller/
@@ -129,7 +129,7 @@ hashrate-autopilot/
 
 Rationale for the split:
 
-- `shared` is the contract layer — any type or conversion used on both sides lives here.
+- `shared` is the contract layer - any type or conversion used on both sides lives here.
 - `braiins-client` and `bitcoind-client` are separable packages because they could be reused by future projects (or
   replaced with test doubles during dry-run).
 - `daemon` owns SQLite writes exclusively.
@@ -139,8 +139,8 @@ Rationale for the split:
 
 Single Node process. Inside it, two runtime concerns share the event loop:
 
-1. **Control loop** — a `setInterval`-driven tick (default 60s). On each tick: observe, decide, gate, execute.
-2. **HTTP server** — Fastify serving the dashboard API.
+1. **Control loop** - a `setInterval`-driven tick (default 60s). On each tick: observe, decide, gate, execute.
+2. **HTTP server** - Fastify serving the dashboard API.
 
 Sharing a process (rather than splitting into two services) keeps the SQLite write-path single-threaded and avoids
 inter-process coordination headaches.
@@ -164,9 +164,9 @@ done.
 ### 3.2 State inputs the tick consumes
 
 - `MarketSettings`, `FeeSchedule` (cached, refreshed every N ticks): tick size, cooldowns, limits, fees.
-- `/v1/spot/stats` + `/v1/spot/orderbook` — current market.
-- `/v1/spot/bid/current` + per-bid `/v1/spot/bid/detail/{id}` — our active bids.
-- `/v1/account/balance` — wallet (and reward income via Electrs/bitcoind separately).
+- `/v1/spot/stats` + `/v1/spot/orderbook` - current market.
+- `/v1/spot/bid/current` + per-bid `/v1/spot/bid/detail/{id}` - our active bids.
+- `/v1/account/balance` - wallet (and reward income via Electrs/bitcoind separately).
 - Pool reachability (TCP connect to Datum Gateway:23334).
 - Payout observer: recent coinbase outputs to the BTC payout address since the last check.
 - Local DB: ownership ledger, config, last-decrease timestamps, run mode, manual-override windows.
@@ -179,7 +179,7 @@ Two tiers of config:
   priority order: `BHA_*` environment variables > `.env.sops.yaml` (sops-decrypted) > the `secrets` table in
   `state.db` (populated by the first-run web onboarding wizard). Restart required to change.
 - **Live tunables** (§8 of SPEC): stored in SQLite. The HTTP API writes them; the control loop reads the current row
-  at the start of every tick. No watcher / pub-sub — cheap enough to re-read each tick.
+  at the start of every tick. No watcher / pub-sub - cheap enough to re-read each tick.
 
 ## 4. Dashboard architecture
 
@@ -206,7 +206,7 @@ CREATE TABLE config (
   minimum_floor_hashrate_ph REAL NOT NULL,
   destination_pool_url TEXT NOT NULL,
   destination_pool_worker_name TEXT NOT NULL,  -- must be <btc-addr>.<label>
-  -- Pricing (pay-your-bid fillable-tracking — bid = min(fillable_ask + overpay, effective_cap))
+  -- Pricing (pay-your-bid fillable-tracking - bid = min(fillable_ask + overpay, effective_cap))
   max_bid_sat_per_eh_day INTEGER NOT NULL,
   max_overpay_vs_hashprice_sat_per_eh_day INTEGER,  -- dynamic cap; null = disabled
   overpay_sat_per_eh_day INTEGER NOT NULL,          -- premium above fillable_ask (#53)
@@ -261,8 +261,8 @@ CREATE TABLE config (
 CREATE TABLE runtime_state (
   id INTEGER PRIMARY KEY CHECK (id = 1),
   run_mode TEXT NOT NULL,                 -- 'DRY_RUN' | 'LIVE' | 'PAUSED'
-  action_mode TEXT NOT NULL,              -- Legacy v1.0 state — always 'NORMAL' in v2.x
-  operator_available INTEGER NOT NULL,    -- Legacy v1.0 flag — always 0 in v2.x
+  action_mode TEXT NOT NULL,              -- Legacy v1.0 state - always 'NORMAL' in v2.x
+  operator_available INTEGER NOT NULL,    -- Legacy v1.0 flag - always 0 in v2.x
   last_tick_at INTEGER,
   last_api_ok_at INTEGER,
   last_rpc_ok_at INTEGER,                 -- last successful bitcoind RPC call
@@ -277,7 +277,7 @@ CREATE TABLE runtime_state (
 --   LAST_MODE                → keeps whatever mode was active pre-restart; PAUSED → DRY_RUN
 --   ALWAYS_LIVE              → boots directly into LIVE (for trusted redeployments)
 
--- Ownership ledger — which Braiins order IDs we created
+-- Ownership ledger - which Braiins order IDs we created
 CREATE TABLE owned_bids (
   braiins_order_id TEXT PRIMARY KEY,
   cl_order_id TEXT UNIQUE,
@@ -328,7 +328,7 @@ CREATE TABLE tick_metrics (
                                           -- deltas are the authoritative actual spend series that
                                           -- drives the per-day P&L panel, the effective-rate line,
                                           -- the UPTIME stat, and counter-derived delivered hashrate
-  -- #89 (migrations 0053–0054): extended capture from already-polled sources
+  -- #89 (migrations 0053-0054): extended capture from already-polled sources
   network_difficulty REAL,                -- Ocean /pool_stat
   estimated_block_reward_sat INTEGER,     -- subsidy + fees, sat
   pool_hashrate_ph REAL,                  -- Ocean total pool hashrate, PH/s
@@ -341,7 +341,7 @@ CREATE TABLE tick_metrics (
   primary_bid_last_pause_reason TEXT,     -- Braiins last_pause_reason on the primary bid
   primary_bid_fee_paid_sat INTEGER,       -- primary bid cumulative fees paid
   primary_bid_fee_rate_pct REAL,          -- primary bid fee rate at creation
-  -- #92 (migrations 0055–0057): pool-block / pool-luck plot
+  -- #92 (migrations 0055-0057): pool-block / pool-luck plot
   pool_blocks_24h_count INTEGER,          -- pool blocks observed in last 24h
   pool_blocks_7d_count INTEGER,           -- pool blocks observed in last 7d
   pool_hashrate_ph_avg_24h REAL,          -- trailing 24h mean of pool_hashrate_ph (luck denominator)
@@ -358,7 +358,7 @@ CREATE TABLE tick_metrics (
   action_mode TEXT NOT NULL
 );
 
--- Accounting — spend (sourced from Braiins)
+-- Accounting - spend (sourced from Braiins)
 CREATE TABLE spend_events (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   bid_id TEXT NOT NULL,
@@ -370,7 +370,7 @@ CREATE TABLE spend_events (
   shares_rejected_m REAL
 );
 
--- Accounting — income (sourced from bitcoind/Electrs)
+-- Accounting - income (sourced from bitcoind/Electrs)
 CREATE TABLE reward_events (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   txid TEXT NOT NULL,
@@ -407,38 +407,38 @@ CREATE TABLE fee_schedule_cache (
 );
 ```
 
-Migration history in `packages/daemon/src/state/migrations/` — forward-only, applied in filename order
+Migration history in `packages/daemon/src/state/migrations/` - forward-only, applied in filename order
 on startup. See `packages/daemon/src/state/db.test.ts` for the authoritative expected list. Grouped by
 concern (not by order; the file names are authoritative):
 
-- **Baseline (0001–0004):** initial schema, strategy knobs, `cl_order_id` unique-constraint fix,
+- **Baseline (0001-0004):** initial schema, strategy knobs, `cl_order_id` unique-constraint fix,
   `tick_metrics` time-series.
-- **Payout observation (0005, 0021–0022):** electrs config, bitcoind RPC in the config table,
+- **Payout observation (0005, 0021-0022):** electrs config, bitcoind RPC in the config table,
   `payout_source` selector.
 - **Runtime state + alerting (0006, 0008, 0014, 0031, 0032, 0038):** `run_mode` index, `boot_mode`,
   persistent floor state. Migrations 0031 → 0032 renamed the above-floor counter column; 0038 added
   `below_target_since_ms` for an above-market escalation mode that was retired in v2.0 (column remains
   as nullable). All fill-strategy timers are now defunct under v2.1.
-- **Pricing v1.x (0007, 0010–0011, 0013, 0015):** overpay-before-lowering, lowering-step dampener,
+- **Pricing v1.x (0007, 0010-0011, 0013, 0015):** overpay-before-lowering, lowering-step dampener,
   v1.6 formula rewrite, `min_lower_delta`, `max_overpay_sat_per_eh_day` rename. **Retired by 0043.**
-- **Bid events + ownership (0009, 0016–0017, 0026):** bid-event log, edit-speed kind, `owned_bids`
+- **Bid events + ownership (0009, 0016-0017, 0026):** bid-event log, edit-speed kind, `owned_bids`
   consumed column, terminal-bid cache.
-- **Accounting (0018–0019, 0037):** `spent_scope` toggle (`autopilot` vs `account`), BTC/USD price
+- **Accounting (0018-0019, 0037):** `spent_scope` toggle (`autopilot` vs `account`), BTC/USD price
   source, `monthly_budget_ceiling_sat` drop.
-- **Block metadata (0033–0036):** block-explorer URL template, `tick_metrics_ocean_hashrate`, two
-  block-metadata migrations (added 0034, dropped 0036 — feature removed).
-- **Ocean / hashprice (0012, 0023–0024):** `fillable_ask_sat_per_eh_day`, per-tick hashprice,
+- **Block metadata (0033-0036):** block-explorer URL template, `tick_metrics_ocean_hashrate`, two
+  block-metadata migrations (added 0034, dropped 0036 - feature removed).
+- **Ocean / hashprice (0012, 0023-0024):** `fillable_ask_sat_per_eh_day`, per-tick hashprice,
   per-tick max-bid snapshot.
 - **Cheap-mode scaling (0020, 0044):** `cheap_target_hashrate_ph` + `cheap_threshold_pct` in 0020,
   `cheap_sustained_window_minutes` in 0044 (sustained-average hysteresis).
 - **Retention (0027):** `tick_metrics_retention_days`, `decisions_{uneventful,eventful}_retention_days`.
-- **Datum integration (0028–0029):** `datum_api_url` in config, `datum_hashrate_ph` on `tick_metrics`.
+- **Datum integration (0028-0029):** `datum_api_url` in config, `datum_hashrate_ph` on `tick_metrics`.
 - **Dynamic cap (0030):** `max_overpay_vs_hashprice_sat_per_eh_day` hashprice-relative ceiling.
 - **Chart smoothing (0039, 0042, 0046):** rolling-mean minute windows the dashboard applies
   client-side (`braiins_hashrate_smoothing_minutes`, `datum_hashrate_smoothing_minutes`, and
   `braiins_price_smoothing_minutes`); `show_effective_rate_on_price_chart` boolean toggle in 0046.
-- **Actual-spend pipeline (0040–0041):** `spend_sat` column on `tick_metrics` (0040, now unused — see
-  note below), `primary_bid_consumed_sat` cumulative-counter snapshot (0041) — this is the
+- **Actual-spend pipeline (0040-0041):** `spend_sat` column on `tick_metrics` (0040, now unused - see
+  note below), `primary_bid_consumed_sat` cumulative-counter snapshot (0041) - this is the
   authoritative per-tick spend series that drives the effective-rate line, the UPTIME metric, and
   counter-derived delivered hashrate.
 - **CLOB redesign + pay-your-bid correction (0043 + 0045):** 0043 retired the v1.x fill-strategy
@@ -455,21 +455,21 @@ concern (not by order; the file names are authoritative):
   switched to per-tick deltas of that counter (settled cost from Braiins under
   pay-your-bid), and `spend_sat` is no longer written. The column is retained
   for schema continuity. See spec §11.1.
-- **Post-v1.4.8 feature work (0052–0060):** block-found sound config + custom
+- **Post-v1.4.8 feature work (0052-0060):** block-found sound config + custom
   blob (0052, #88); extended per-tick capture from existing data sources
-  (0053–0054, #89 — adds `network_difficulty`, `estimated_block_reward_sat`,
+  (0053-0054, #89 - adds `network_difficulty`, `estimated_block_reward_sat`,
   `pool_hashrate_ph`, `pool_active_workers`, `braiins_total_deposited_sat`,
   `braiins_total_spent_sat`, `ocean_unpaid_sat`, `btc_usd_price`,
   `btc_usd_price_source`, `primary_bid_last_pause_reason`,
   `primary_bid_fee_paid_sat`, `primary_bid_fee_rate_pct` on `tick_metrics`);
   pool-block counts + trailing hashrate average + gap-based pool luck
-  (0055–0057, #92 — `pool_blocks_24h_count`, `pool_blocks_7d_count`,
+  (0055-0057, #92 - `pool_blocks_24h_count`, `pool_blocks_7d_count`,
   `pool_hashrate_ph_avg_24h/7d`, `pool_luck_24h/7d`); block-header version
-  cache for the BIP 110 crown marker (0058, #94 — separate
+  cache for the BIP 110 crown marker (0058, #94 - separate
   `block_version_cache` table keyed on `block_hash`); per-tick bid-acceptance
-  counters from Braiins delivery history (0059, #90 —
+  counters from Braiins delivery history (0059, #90 -
   `primary_bid_shares_purchased_m`, `_accepted_m`, `_rejected_m`); Datum
-  gateway-side reject counter (0060, #91 — `datum_rejected_shares_total`,
+  gateway-side reject counter (0060, #91 - `datum_rejected_shares_total`,
   null when DATUM does not expose the tile, which is the common case as of
   May 2026).
 
@@ -491,8 +491,8 @@ concern (not by order; the file names are authoritative):
 
 Two modes, selected per-config:
 
-- **Electrs (preferred)** — TCP client with bech32→scripthash conversion; instant balance and tx lookups.
-- **`bitcoind` JSON-RPC (fallback)** — `listreceivedbyaddress` / `gettransaction`, with `scantxoutset` as a last
+- **Electrs (preferred)** - TCP client with bech32→scripthash conversion; instant balance and tx lookups.
+- **`bitcoind` JSON-RPC (fallback)** - `listreceivedbyaddress` / `gettransaction`, with `scantxoutset` as a last
   resort when the wallet is not configured to watch the payout address.
 
 Reconciliation pass: periodic full scan to catch anything real-time detection missed.
@@ -511,12 +511,12 @@ Reconciliation pass: periodic full scan to catch anything real-time detection mi
 
 Bare-process deployment via operator scripts in `scripts/`:
 
-- `scripts/start.sh` — backgrounds the daemon, writes PID to `data/daemon.pid`, appends stdout/stderr to
+- `scripts/start.sh` - backgrounds the daemon, writes PID to `data/daemon.pid`, appends stdout/stderr to
   `data/logs/daemon.log`.
-- `scripts/stop.sh` / `scripts/restart.sh` / `scripts/status.sh` / `scripts/logs.sh` — companions.
-- `scripts/deploy.sh` — one-shot updater: pulls `main`, installs deps, builds, tests, then restarts the daemon.
+- `scripts/stop.sh` / `scripts/restart.sh` / `scripts/status.sh` / `scripts/logs.sh` - companions.
+- `scripts/deploy.sh` - one-shot updater: pulls `main`, installs deps, builds, tests, then restarts the daemon.
 
-Port 3010 binds to `0.0.0.0` (all interfaces) by default — reachable from any machine on the LAN. The operator's
+Port 3010 binds to `0.0.0.0` (all interfaces) by default - reachable from any machine on the LAN. The operator's
 VPN or Tailscale is the real perimeter; the shared dashboard password is a second factor. To restrict to loopback,
 set `HTTP_HOST=127.0.0.1`. To change the port, set `HTTP_PORT=nnnn`.
 
@@ -534,8 +534,8 @@ set `HTTP_HOST=127.0.0.1`. To change the port, set `HTTP_PORT=nnnn`.
 - **Build**: `pnpm -r build` (tsc per package; Vite build for dashboard).
 - **Type check**: `pnpm -r typecheck`.
 - **Lint**: ESLint + Prettier. Strict TS config.
-- **Unit tests** (vitest): focused on pure modules — `decide()`, `gate()`, unit conversions, cooldown logic.
-- **Integration tests**: Braiins client against a mocked server (MSW) — verifies error decoding, cooldown tracking,
+- **Unit tests** (vitest): focused on pure modules - `decide()`, `gate()`, unit conversions, cooldown logic.
+- **Integration tests**: Braiins client against a mocked server (MSW) - verifies error decoding, cooldown tracking,
   ownership tracking.
 - **Manual first-run checklist** (`docs/first-run.md`, to be written): verify Datum Gateway reachability; verify
   owner token with a read-only call; read `/v1/spot/settings`; validate worker-identity shape
@@ -544,14 +544,14 @@ set `HTTP_HOST=127.0.0.1`. To change the port, set `HTTP_PORT=nnnn`.
 
 ## 11. Build milestones (shipped)
 
-All milestones M1–M6 shipped as of v1.1 (commit `4cc8ad5`):
+All milestones M1-M6 shipped as of v1.1 (commit `4cc8ad5`):
 
-- M1 — Repo scaffold + Braiins read path.
-- M2 — SQLite, config loader, sops-encrypted secrets.
-- M3 — Control-loop skeleton in DRY-RUN with pure `decide()` / `gate()`.
-- M4 — Live execution (POST/PUT/DELETE) with ownership tracking and unknown-order auto-PAUSE.
-- M5 — Dashboard shell: Status, Decisions, Config, Login pages; shared-password auth.
-- M6 — Payout observation via Electrs (preferred) or `bitcoind` RPC; accounting data path.
+- M1 - Repo scaffold + Braiins read path.
+- M2 - SQLite, config loader, sops-encrypted secrets.
+- M3 - Control-loop skeleton in DRY-RUN with pure `decide()` / `gate()`.
+- M4 - Live execution (POST/PUT/DELETE) with ownership tracking and unknown-order auto-PAUSE.
+- M5 - Dashboard shell: Status, Decisions, Config, Login pages; shared-password auth.
+- M6 - Payout observation via Electrs (preferred) or `bitcoind` RPC; accounting data path.
 
 Remaining work is tracked in GitHub issues.
 
@@ -562,7 +562,7 @@ Remaining work is tracked in GitHub issues.
 | Braiins API shape changes during beta          | Pin `openapi.yml` version in repo; CI regenerate and diff; alert on breaking change.                      |
 | Beta-period assumptions change (e.g. fees)     | Poll `/spot/fee` every tick; loud alert on any non-zero value so operator can re-tune max prices.         |
 | Owner token leak                               | sops at rest; log redaction in flight; age private key on-box with chmod 600 + operator backup.           |
-| sops/age key lost                              | Operator backup responsibility, documented in README. Daemon refuses to start without it — fail closed.   |
+| sops/age key lost                              | Operator backup responsibility, documented in README. Daemon refuses to start without it - fail closed.   |
 | Dashboard password leak on LAN                 | Tailscale is the real perimeter; password is a second-gate, not a first-line.                            |
 | SQLite corruption                              | WAL mode; automatic backup to `data/backups/state-<ts>.db` on each daemon startup.                        |
 | "First ever bid" produces a bug that loses BTC | DRY-RUN at startup by design; operator engages LIVE only after 24h of decisions look right.               |
@@ -581,9 +581,9 @@ Remaining work is tracked in GitHub issues.
 |---------|------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | 1.0     | 2026-04-14 | Initial version.                                                                                                                                                                           |
 | 1.1     | 2026-04-16 | Post-empirical rewrite: removed the confirmation bot, quiet-hours buffering, `PENDING_CONFIRMATION` / `CONFIRMATION_TIMEOUT` action modes, operator-availability flag. Updated milestones, schema, diagrams, and risk register to reflect the fully-autonomous gate now in the code. |
-| 1.2     | 2026-04-19 | Refreshed the service inventory and HTTP-route listing in §2 to reflect everything shipped through mid-April: `ocean` + `datum` + `hashprice-cache` + `btc-price` + `account-spend` + `retention` services, and the `finance` / `stats` / `bid-events` / `ocean` / `payouts` / `btc-price` / `simulate` HTTP routes. Rewrote the migration summary in §5 with concern-grouped coverage of 0001–0031 instead of the stale "see git" placeholder. No schema or control-loop shape changes — this is a documentation catch-up, not a design revision. |
+| 1.2     | 2026-04-19 | Refreshed the service inventory and HTTP-route listing in §2 to reflect everything shipped through mid-April: `ocean` + `datum` + `hashprice-cache` + `btc-price` + `account-spend` + `retention` services, and the `finance` / `stats` / `bid-events` / `ocean` / `payouts` / `btc-price` / `simulate` HTTP routes. Rewrote the migration summary in §5 with concern-grouped coverage of 0001-0031 instead of the stale "see git" placeholder. No schema or control-loop shape changes - this is a documentation catch-up, not a design revision. |
 | 1.3     | 2026-04-23 | Spec consistency sweep: updated §5 config/runtime_state/tick_metrics schemas to current state (all migrations through 0040+), marked CLOB-retired pricing columns as DEPRECATED, fixed port/bind to 3010/0.0.0.0, replaced Docker Compose deployment with bare-process scripts, removed stale "In flight" milestone tracker, fixed "collapsible" panel reference. |
-| 1.4     | 2026-04-24 | Aligned architecture with spec v2.1 (pay-your-bid controller). Removed `simulate` from the HTTP route list (retired in v2.0). Fixed §5 `config` schema — removed the duplicate/stray `overpay_sat_per_eh_day` line that was listed both as active and as DEPRECATED; added `braiins_price_smoothing_minutes`, `show_effective_rate_on_price_chart`. Fixed `runtime_state` block — added `action_mode` / `operator_available` (legacy-but-present) and `above_floor_ticks` (the debounce counter) which the code has but the doc omitted. Rewrote `tick_metrics` table to match the actual columns (was significantly wrong — old doc listed `actual_hashrate_ph`, `wallet_balance_sat`, etc. which the code doesn't use). Migration summary extended through 0046 with an explicit note on the 0043/0045 pay-your-bid preservation fix. |
-| 1.5     | 2026-04-25 | Aligned with spec v2.2 (appliance packaging, v1.3.0 release, umbrella #56). Documented three-layer secrets resolution (env > sops > db) and the new `secrets` table (migration 0047). Added the NEEDS_SETUP boot path: when secrets or config are absent, daemon stands up only the wizard's three endpoints and transitions in-place to operational on submit. Added `/api/health` as a public probe shared by both boot phases. Noted setup.ts as the power-user CLI path; the dashboard wizard is the appliance default. Touched §3.3 and §10 (operator-facing helpers) only — no schema or control-loop shape changes. |
+| 1.4     | 2026-04-24 | Aligned architecture with spec v2.1 (pay-your-bid controller). Removed `simulate` from the HTTP route list (retired in v2.0). Fixed §5 `config` schema - removed the duplicate/stray `overpay_sat_per_eh_day` line that was listed both as active and as DEPRECATED; added `braiins_price_smoothing_minutes`, `show_effective_rate_on_price_chart`. Fixed `runtime_state` block - added `action_mode` / `operator_available` (legacy-but-present) and `above_floor_ticks` (the debounce counter) which the code has but the doc omitted. Rewrote `tick_metrics` table to match the actual columns (was significantly wrong - old doc listed `actual_hashrate_ph`, `wallet_balance_sat`, etc. which the code doesn't use). Migration summary extended through 0046 with an explicit note on the 0043/0045 pay-your-bid preservation fix. |
+| 1.5     | 2026-04-25 | Aligned with spec v2.2 (appliance packaging, v1.3.0 release, umbrella #56). Documented three-layer secrets resolution (env > sops > db) and the new `secrets` table (migration 0047). Added the NEEDS_SETUP boot path: when secrets or config are absent, daemon stands up only the wizard's three endpoints and transitions in-place to operational on submit. Added `/api/health` as a public probe shared by both boot phases. Noted setup.ts as the power-user CLI path; the dashboard wizard is the appliance default. Touched §3.3 and §10 (operator-facing helpers) only - no schema or control-loop shape changes. |
 
-| 1.6     | 2026-05-02 | Catch-up sweep with spec v2.3. §5 config schema gains `show_share_log_on_hashrate_chart` (migration 0049) and flips `btc_price_source` default to `coingecko` (migration 0050, #77). §5 tick_metrics gains `share_log_pct` (migration 0048). Rewrote the `spend_sat` migration-summary entry (was self-contradicting: §5 marked it LEGACY/no-longer-written while the migration summary still said it fed the per-day P&L panel; per-day P&L is actually driven by `primary_bid_consumed_sat` deltas added in 0041). §2 repo-layout block: dropped the never-shipped `Decisions` page (spec §12.3 confirms it was not built) and added `storage-estimate` to the `routes/` listing (#85 shipped 2026-05-01). §9 observability: removed stale `/healthz` and Prometheus `/metrics` references (neither shipped) in favour of the actual `/api/health` endpoint, with a forward-looking note that `/metrics` is deferred. §1 high-level diagram: added the Datum Gateway's optional `:7152` `/umbrel-api` port (only `:23334` was shown), and dropped the misleading "Umbrel" annotation on bitcoind RPC — bitcoind can run anywhere on the LAN, and like Electrs it's an optional payout-observation source. No schema or control-loop shape changes. |
+| 1.6     | 2026-05-02 | Catch-up sweep with spec v2.3. §5 config schema gains `show_share_log_on_hashrate_chart` (migration 0049) and flips `btc_price_source` default to `coingecko` (migration 0050, #77). §5 tick_metrics gains `share_log_pct` (migration 0048). Rewrote the `spend_sat` migration-summary entry (was self-contradicting: §5 marked it LEGACY/no-longer-written while the migration summary still said it fed the per-day P&L panel; per-day P&L is actually driven by `primary_bid_consumed_sat` deltas added in 0041). §2 repo-layout block: dropped the never-shipped `Decisions` page (spec §12.3 confirms it was not built) and added `storage-estimate` to the `routes/` listing (#85 shipped 2026-05-01). §9 observability: removed stale `/healthz` and Prometheus `/metrics` references (neither shipped) in favour of the actual `/api/health` endpoint, with a forward-looking note that `/metrics` is deferred. §1 high-level diagram: added the Datum Gateway's optional `:7152` `/umbrel-api` port (only `:23334` was shown), and dropped the misleading "Umbrel" annotation on bitcoind RPC - bitcoind can run anywhere on the LAN, and like Electrs it's an optional payout-observation source. No schema or control-loop shape changes. |

@@ -1,6 +1,6 @@
 -- Reverts 0034. The block_metadata table cached per-block
 -- enrichment (pool_name / miner_tag) derived from bitcoind's
--- getblock coinbase parse. The enrichment feature was pulled —
+-- getblock coinbase parse. The enrichment feature was pulled -
 -- it required bitcoind RPC configured regardless of the operator's
 -- payout-source choice, which made the Config panel confusing, and
 -- the extracted miner tag was rarely meaningful anyway.

@@ -5,7 +5,7 @@
 # - `app_proxy` is Umbrel's auth + reverse-proxy sidecar. It terminates
 #   Tor / LAN traffic in front of our app. PROXY_AUTH_ADD=false because
 #   the daemon already runs its own Basic Auth (the password the wizard
-#   creates) — we don't want a double login.
+#   creates) - we don't want a double login.
 #
 # - `web` is the daemon + dashboard, pulled from GHCR. It listens on
 #   port 3010 and reads/writes its single state directory at /app/data,

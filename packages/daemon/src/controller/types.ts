@@ -1,5 +1,5 @@
 /**
- * Domain types for the control loop. Everything here is JSON-serialisable —
+ * Domain types for the control loop. Everything here is JSON-serialisable -
  * full ticks get written to the `decisions` table for post-hoc debugging
  * (SPEC §9: "All autopilot decisions are logged with the input state").
  */
@@ -35,7 +35,7 @@ export interface PoolHealth {
 }
 
 /**
- * Datum Gateway stats (issue #19). Optional — present only when
+ * Datum Gateway stats (issue #19). Optional - present only when
  * `datum_api_url` is configured and the last poll succeeded. The
  * integration is informational-only; the control loop never reads
  * this. Hashrate comes across as Th/s from Datum and is converted
@@ -46,11 +46,11 @@ export interface DatumSnapshot {
   readonly connections: number | null;
   readonly hashrate_ph: number | null;
   /**
-   * #91 — opportunistic capture of the gateway-side rejected-shares
+   * #91 - opportunistic capture of the gateway-side rejected-shares
    * counter from `/umbrel-api`. Detected heuristically by scanning
    * `items[].title` for `/reject/i`; null when no such tile is exposed
    * by the operator's DATUM build (which is the common case in May
-   * 2026 — feature is filed for follow-up if/when DATUM ships it).
+   * 2026 - feature is filed for follow-up if/when DATUM ships it).
    * Cumulative count, not delta. Future-compatible field name keeps
    * the door open for `accepted` / `purchased` if they appear too.
    */
@@ -73,7 +73,7 @@ export interface OwnedBidSnapshot {
   readonly progress_pct: number;
   readonly amount_remaining_sat: number;
   /**
-   * `amount_sat − amount_remaining_sat` — authoritative cumulative
+   * `amount_sat − amount_remaining_sat` - authoritative cumulative
    * spend on this bid, straight from Braiins' `/spot/bid`. Surfaced
    * here so the tick-metrics writer can snapshot it per tick (#49).
    */
@@ -139,7 +139,7 @@ export interface State {
   /**
    * Datum Gateway stats (null when the integration is disabled via
    * empty `datum_api_url`). Present regardless of reachability when
-   * configured — see `reachable` field to distinguish up from down.
+   * configured - see `reachable` field to distinguish up from down.
    */
   readonly datum: DatumSnapshot | null;
 
@@ -148,16 +148,16 @@ export interface State {
    * operator's payout address, from the 5-minute sliding-window
    * field `hashrate_300s`. Plotted as a third series on the
    * Hashrate chart alongside Braiins-delivered + Datum-received.
-   * Null when Ocean is not configured or the poll failed — purely
+   * Null when Ocean is not configured or the poll failed - purely
    * observational, never read by the control loop.
    */
   readonly ocean_hashrate_ph: number | null;
 
   /**
    * Ocean's `share_log` percentage at this tick (e.g. 0.0182 for
-   * 0.0182%) — our slice of the pool's TIDES window. Sourced from
+   * 0.0182%) - our slice of the pool's TIDES window. Sourced from
    * the same cached `/statsnap` + `/pool_stat` fetch that supplies
-   * `hashprice_sat_per_ph_day`. Display-only — opt-in fourth series
+   * `hashprice_sat_per_ph_day`. Display-only - opt-in fourth series
    * on the Hashrate chart via `show_share_log_on_hashrate_chart`.
    * Null when Ocean isn't configured, the poll failed, or pool
    * tides shares were zero.
@@ -226,7 +226,7 @@ export interface State {
 
   /**
    * Cheapest price (sat/EH/day) at which the orderbook's cumulative
-   * unmatched ask supply covers `target_hashrate_ph` — the depth-aware
+   * unmatched ask supply covers `target_hashrate_ph` - the depth-aware
    * equivalent of "best_ask" for our own target size. Computed in
    * observe() via `cheapestAskForDepth`. null when the orderbook is
    * unavailable or has zero unmatched supply. decide() uses this as
@@ -249,7 +249,7 @@ export interface State {
   } | null;
 
   /**
-   * One-shot operator override — when true, decide() skips its own
+   * One-shot operator override - when true, decide() skips its own
    * patience / escalation timers and executes whatever EDIT_PRICE
    * move the current state would justify on a settled basis. Set by
    * the "Run decision now" button (`/api/actions/tick-now`) and
@@ -291,11 +291,11 @@ export interface EditPriceProposal {
 /**
  * In-place speed-limit edit. Used when the operator changes
  * `target_hashrate_ph` and we want to grow / shrink the existing bid
- * without losing its matched fills (Design A — empirically confirmed
+ * without losing its matched fills (Design A - empirically confirmed
  * 2026-04-16, see `scripts/test-speed-limit-edit.ts`).
  *
  * Speed-only edits bypass the Braiins price-decrease cooldown and the
- * autopilot's post-EDIT_PRICE override lock — neither of those exists
+ * autopilot's post-EDIT_PRICE override lock - neither of those exists
  * to constrain capacity changes.
  */
 export interface EditSpeedProposal {

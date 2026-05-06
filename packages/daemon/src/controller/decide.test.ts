@@ -108,7 +108,7 @@ function unknown(overrides: Partial<UnknownBidSnapshot> = {}): UnknownBidSnapsho
   };
 }
 
-describe('decide — case selection', () => {
+describe('decide - case selection', () => {
   it('PAUSES when unknown bids are present', () => {
     const proposals = decide(state({ unknown_bids: [unknown()] }));
     expect(proposals).toHaveLength(1);
@@ -132,7 +132,7 @@ describe('decide — case selection', () => {
   });
 });
 
-describe('decide — CREATE path', () => {
+describe('decide - CREATE path', () => {
   it('creates at fillable + overpay when below the fixed cap', () => {
     const proposals = decide(state());
     expect(proposals).toHaveLength(1);
@@ -155,7 +155,7 @@ describe('decide — CREATE path', () => {
   it('clamps target to the dynamic cap when tighter than fixed', () => {
     // hashprice 46,000 sat/PH/day × 1000 = 46M sat/EH/day; allowance
     // 500,000 → dynamic cap 46,500,000. fillable 45M + overpay 1M =
-    // 46M, below dynamic cap — no clamp.
+    // 46M, below dynamic cap - no clamp.
     const s1 = state({
       config: {
         ...BASE_CONFIG,
@@ -186,7 +186,7 @@ describe('decide — CREATE path', () => {
   });
 });
 
-describe('decide — EDIT_PRICE to target', () => {
+describe('decide - EDIT_PRICE to target', () => {
   it('does nothing when the bid is already at fillable + overpay', () => {
     expect(decide(state({ owned_bids: [owned()] }))).toEqual([]);
   });
@@ -238,7 +238,7 @@ describe('decide — EDIT_PRICE to target', () => {
   });
 });
 
-describe('decide — EDIT_SPEED', () => {
+describe('decide - EDIT_SPEED', () => {
   it('proposes EDIT_SPEED when target_hashrate_ph changes', () => {
     const s = state({
       config: { ...BASE_CONFIG, target_hashrate_ph: 2.0 },
@@ -258,7 +258,7 @@ describe('decide — EDIT_SPEED', () => {
   });
 });
 
-describe('decide — cheap-mode engagement (#50 sustained window)', () => {
+describe('decide - cheap-mode engagement (#50 sustained window)', () => {
   const CHEAP_CONFIG = {
     ...BASE_CONFIG,
     target_hashrate_ph: 1,
@@ -318,7 +318,7 @@ describe('decide — cheap-mode engagement (#50 sustained window)', () => {
   });
 });
 
-describe('decide — multi-bid cleanup', () => {
+describe('decide - multi-bid cleanup', () => {
   it('cancels duplicate owned bids beyond the primary', () => {
     const proposals = decide(
       state({
@@ -332,7 +332,7 @@ describe('decide — multi-bid cleanup', () => {
   });
 });
 
-describe('decide — bid_budget_sat sentinel (0 = full wallet)', () => {
+describe('decide - bid_budget_sat sentinel (0 = full wallet)', () => {
   const balance = (availableSat: number | null) =>
     availableSat === null
       ? null

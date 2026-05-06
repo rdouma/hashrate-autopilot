@@ -1,7 +1,7 @@
 -- Remove monthly_budget_ceiling_sat (issue #35).
 --
 -- Original plan: implement enforcement so the field actually does
--- something. Operator changed course — the field is judged
+-- something. Operator changed course - the field is judged
 -- superfluous (per-bid budget + overall account balance already
 -- bound outflow), so we rip it out instead of wiring up a gate,
 -- a Next-Action hint, and an alert row for a knob nobody wants.

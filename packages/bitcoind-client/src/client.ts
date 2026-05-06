@@ -4,8 +4,8 @@
  * stick to the subset we actually need.
  *
  * Methods exposed:
- *   - `getBlockchainInfo()` — for smoke checks and current chain height.
- *   - `scanTxoutSet(descriptor)` — sum of unspent outputs matching the
+ *   - `getBlockchainInfo()` - for smoke checks and current chain height.
+ *   - `scanTxoutSet(descriptor)` - sum of unspent outputs matching the
  *     descriptor (e.g. `addr(bc1…)`). Doesn't require the address to be
  *     imported in any wallet, which is why we prefer it over
  *     `listreceivedbyaddress` for the "collected BTC" card.
@@ -128,7 +128,7 @@ function describeFetchFailure(err: unknown, url: string): string {
   })();
   const causeMsg = e.cause?.code ?? e.cause?.message ?? null;
   const base = e.message || 'fetch failed';
-  return causeMsg ? `${base} (${causeMsg}) — target ${safeUrl}` : `${base} — target ${safeUrl}`;
+  return causeMsg ? `${base} (${causeMsg}) - target ${safeUrl}` : `${base} - target ${safeUrl}`;
 }
 
 export function createBitcoindClient(config: BitcoindClientConfig): BitcoindClient {
@@ -239,7 +239,7 @@ export function createBitcoindClient(config: BitcoindClientConfig): BitcoindClie
     scanTxoutSet: async (descriptors) => {
       // bitcoind only allows ONE concurrent scantxoutset. If a prior
       // scan orphaned (our HTTP timeout killed the fetch but the node
-      // kept scanning), we abort it first. `abort` is idempotent —
+      // kept scanning), we abort it first. `abort` is idempotent -
       // harmless if nothing is running.
       try {
         await call<unknown>('scantxoutset', ['abort']);

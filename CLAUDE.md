@@ -8,7 +8,7 @@ verifying the fix on the running dashboard.
 When a commit resolves an issue:
 
 - **Do not** put `Closes #N` / `Fixes #N` / `Resolves #N` in the commit
-  message — those auto-close on push to main.
+  message - those auto-close on push to main.
 - **Do** apply the `review` label to the issue and remove any status
   label that no longer applies (`backlog`, `in-progress`, etc.).
 - **Do** mention the issue number in the commit body (e.g. "addresses
@@ -23,7 +23,7 @@ When you start implementing work for an issue, move it to
 `agent-ready` as applicable) without asking first. When the work
 ships, swap `in-progress` for `review` as described above.
 
-`agent-ready` means "ready to be picked up by an agent" — it's an
+`agent-ready` means "ready to be picked up by an agent" - it's an
 *inbox* signal set by the operator after they finish triaging an
 issue. Once an agent starts on it (and certainly once the work
 ships) the label is stale and must be removed. Never leave
@@ -32,7 +32,7 @@ ships) the label is stale and must be removed. Never leave
 ## Picking labels
 
 Pick labels freely from the current `gh label list` when filing or
-triaging issues — no need to show the chosen set for approval
+triaging issues - no need to show the chosen set for approval
 beforehand. Include workflow-stage (`backlog`/`todo`/`in-progress`/
 `review`/etc.), type (`bug`/`feature`/`infra`/`discuss`), and
 triage/routing labels (`agent-ready`/`human-only`/`hold`/
@@ -53,20 +53,20 @@ staging`. Plus `agent-ready`, `agent-testing`, `human-only`, `hold`,
 
 ## Commit hygiene
 
-Match existing style — subject line in the imperative, short summary,
+Match existing style - subject line in the imperative, short summary,
 body explains the "why" not just the "what," Co-Authored-By trailer on
 Claude-assisted commits.
 
 ## Changelog
 
 `CHANGELOG.md` at repo root. Format: `## YYYY-MM-DD` headers (newest
-first), entries as `### \`[Tag]\` Brief title (#issue)` + a 1–3
+first), entries as `### \`[Tag]\` Brief title (#issue)` + a 1-3
 sentence body explaining user-visible impact. Tags in use: `[Feature]`,
 `[Fix]`, `[UI]`, `[Perf]`, `[Infra]`, `[Docs]`. Date is the
 implementation date (`date +%Y-%m-%d`), not the issue-open date.
 
 Every behavior-change commit gets an entry in the same commit that
-changes the behavior — not a later catch-up sweep. Skip pure
+changes the behavior - not a later catch-up sweep. Skip pure
 refactors with no user-visible effect and pure doc-only commits
 (those are already visible in git log).
 
@@ -95,13 +95,13 @@ body to a temp file first, then pass `--body-file`.
 
 ## Running the daemon
 
-A fix landing in `main` is not a fix landing in the running daemon —
+A fix landing in `main` is not a fix landing in the running daemon -
 the operator must restart it for new code to take effect. When an
 operator reports a bug still present after a fix was committed,
 sanity-check: did the daemon restart since the commit? Restart scripts
 live in `scripts/restart.sh` / `scripts/start.sh` / `scripts/stop.sh`.
 
-## Umbrel image pin convention (load-bearing — do not get this wrong)
+## Umbrel image pin convention (load-bearing - do not get this wrong)
 
 `rdouma-hashrate-autopilot/docker-compose.yml` pins
 `image: ghcr.io/rdouma/hashrate-autopilot:<tag>`. Umbrel reads this
@@ -115,7 +115,7 @@ not exist on GHCR, every Umbrel install hangs on "Updating" forever
    silently regress; pin a specific version.
 2. **Pin bare semver, not v-prefixed.** Use `:1.4.2`, not `:v1.4.2`.
    The publish workflow's `docker/metadata-action` strips the `v`
-   from semver tags by convention — GHCR carries `1.4.2` / `1.4` /
+   from semver tags by convention - GHCR carries `1.4.2` / `1.4` /
    `1` / `latest`. We *also* publish `v`-prefixed mirrors as a safety
    net, but the canonical pin is bare-semver to match what GHCR's UI
    shows.
@@ -125,7 +125,7 @@ not exist on GHCR, every Umbrel install hangs on "Updating" forever
    refer to the same release. The CI workflow
    `.github/workflows/umbrel-image-pin-check.yml` enforces the
    manifest-version-vs-compose-image consistency on every push to
-   `main` — if it fails, the release is broken before users see it.
+   `main` - if it fails, the release is broken before users see it.
 4. **Verify the image exists on GHCR before announcing the
    release.** After tagging, wait for the publish run to finish
    (~7-8 min, multi-arch build) and `curl` the manifest:

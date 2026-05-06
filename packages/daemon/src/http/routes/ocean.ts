@@ -91,7 +91,7 @@ export interface OceanResponse {
    * Simplification: we do not yet cross-check per-block share-window
    * presence. If the daemon was offline long enough for our shares
    * to roll out of the 8-block TIDES window, those blocks would not
-   * have actually credited us — but while mining continuously the
+   * have actually credited us - but while mining continuously the
    * window is always non-empty, which matches the operator's day
    * to day use.
    */

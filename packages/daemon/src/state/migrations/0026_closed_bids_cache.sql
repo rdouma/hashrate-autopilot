@@ -1,13 +1,13 @@
 -- Persistent cache of terminal Braiins bids (CANCELED / FULFILLED).
 --
 -- Terminal bids have `is_current = false` and their
--- `counters_committed.amount_consumed_sat` is immutable — once a bid
+-- `counters_committed.amount_consumed_sat` is immutable - once a bid
 -- is closed, its consumed figure never changes. Storing them locally
 -- means `AccountSpendService` can start each refresh from a cached
 -- running total and only paginate `/spot/bid` far enough to catch
 -- new closed bids (usually one page).
 --
--- Active bids (is_current=true) are NOT cached here — their consumed
+-- Active bids (is_current=true) are NOT cached here - their consumed
 -- counter updates hourly as Braiins settles, and we always re-read
 -- them live from `/spot/bid`.
 

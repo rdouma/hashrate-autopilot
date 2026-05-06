@@ -18,7 +18,7 @@ export class BraiinsApiError extends Error {
     body?: unknown;
     message?: string;
   }) {
-    const grpcPart = args.grpcMessage ? ` — ${args.grpcMessage}` : '';
+    const grpcPart = args.grpcMessage ? ` - ${args.grpcMessage}` : '';
     super(args.message ?? `Braiins API ${args.endpoint} returned ${args.status}${grpcPart}`);
     this.name = 'BraiinsApiError';
     this.status = args.status;

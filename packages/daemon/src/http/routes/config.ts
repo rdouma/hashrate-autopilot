@@ -12,7 +12,7 @@ export async function registerConfigRoutes(
     const config = await deps.configRepo.get();
     if (!config) {
       reply.code(503);
-      return { error: 'config not seeded — run setup CLI' };
+      return { error: 'config not seeded - run setup CLI' };
     }
     return { config };
   });

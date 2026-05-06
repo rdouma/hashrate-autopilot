@@ -4,7 +4,7 @@
 -- When enabled, the dashboard renders `share_log_pct` (recorded each
 -- tick into `tick_metrics`) as a violet line on a right-side Y-axis
 -- labelled `% of Ocean`, formatted to 4 decimals (e.g. 0.0182%). Off
--- by default — the controller does not read it, and adding a second
+-- by default - the controller does not read it, and adding a second
 -- Y-axis to a chart that already carries 3-5 hashrate lines costs
 -- more glance-time than most operators need. Useful for tracking how
 -- our slice of the pool drifts as Ocean's total hashrate grows or

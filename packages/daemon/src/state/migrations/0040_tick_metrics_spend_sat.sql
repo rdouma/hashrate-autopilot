@@ -1,5 +1,5 @@
 -- Per-tick spend in sats (issue #43). Enables the range-aware P&L
--- per-day panel — SUM(spend_sat) over the selected chart range gives
+-- per-day panel - SUM(spend_sat) over the selected chart range gives
 -- total sats spent in that window; divide by window-days to get the
 -- daily rate without re-deriving from price × delivered_ph on the
 -- dashboard side.
@@ -11,7 +11,7 @@
 -- divisor is 1_440_000).
 --
 -- Nullable so ticks without a primary price (no owned bid) record
--- NULL instead of 0 — keeps "nothing to spend" distinct from
+-- NULL instead of 0 - keeps "nothing to spend" distinct from
 -- "spent zero".
 ALTER TABLE tick_metrics ADD COLUMN spend_sat REAL;
 

@@ -10,7 +10,7 @@
 #   `ghcr.io/<owner>/hashrate-autopilot` with every relevant tag
 #   permutation (vX.Y.Z, vX.Y, vX, latest).
 #
-# ARM64 is mandatory for appliance deployments — Umbrel and Start9
+# ARM64 is mandatory for appliance deployments - Umbrel and Start9
 # both run on Pi-class hardware. We only build it on the publish
 # path because QEMU-emulated arm64 builds take ~5x longer than
 # native amd64.

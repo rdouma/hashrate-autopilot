@@ -76,7 +76,7 @@ export async function registerBidEventsRoute(
       ).filter((r) => allowedKinds.has(r.kind));
 
       // Legacy default window (24 h) if someone calls /api/bid-events
-      // with no params at all — unchanged behaviour.
+      // with no params at all - unchanged behaviour.
       if (!req.query.range && !Number.isFinite(legacySince)) {
         const defaultSince = Date.now() - DEFAULT_WINDOW_MS;
         const filtered = rows.filter((r) => r.occurred_at >= defaultSince);

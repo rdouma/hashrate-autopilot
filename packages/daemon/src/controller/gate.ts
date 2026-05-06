@@ -1,5 +1,5 @@
 /**
- * gate() — applies the SPEC §7.3 mutation-gate to every proposal and also
+ * gate() - applies the SPEC §7.3 mutation-gate to every proposal and also
  * enforces client-side pacing rules the market settings give us.
  *
  * The core `canMutate()` check lives in `@braiins-hashrate/shared`. This
@@ -17,7 +17,7 @@ export function gate(proposals: readonly Proposal[], state: State): GateOutcome[
 }
 
 function gateOne(proposal: Proposal, state: State): GateOutcome {
-  // PAUSE is not a Braiins mutation — it's an internal run-mode transition.
+  // PAUSE is not a Braiins mutation - it's an internal run-mode transition.
   // Always "allowed" in the sense that the tick driver will act on it.
   if (proposal.kind === 'PAUSE') {
     return { proposal, allowed: true };

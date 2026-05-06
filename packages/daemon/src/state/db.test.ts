@@ -15,7 +15,7 @@ const SAMPLE_CONFIG: AppConfig = {
   btc_payout_address: 'bc1qexampleaddressxxxxxxxxxxxxxxxxxxxxxxxxx',
 };
 
-describe('openDatabase — migrations', () => {
+describe('openDatabase - migrations', () => {
   let handle: DatabaseHandle;
 
   beforeEach(async () => {
@@ -123,7 +123,7 @@ describe('openDatabase — migrations', () => {
   });
 });
 
-describe('openDatabase — idempotency', () => {
+describe('openDatabase - idempotency', () => {
   it('skips already-applied migrations on a file-backed DB', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'braiins-db-test-'));
     const path = join(dir, 'state.db');

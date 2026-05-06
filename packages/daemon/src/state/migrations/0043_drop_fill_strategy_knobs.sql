@@ -1,12 +1,12 @@
 -- Retire the fill-strategy subsystem shipped in v1.x (#49 redesign,
--- partially reversed by #53 — see below).
+-- partially reversed by #53 - see below).
 --
 -- The v1.x controller layered escalation modes, dampening, patience
 -- timers and min-lower-delta on top of a `bid = fillable + overpay`
 -- primitive. The v2.0 CLOB-redesign (#49) ripped all of that out on a
 -- mistaken pay-at-ask premise. v2.1 (#53) restored direct
 -- `fillable + overpay` tracking without the escalation/patience
--- machinery — so the old bolted-on timers and modes stay retired,
+-- machinery - so the old bolted-on timers and modes stay retired,
 -- but `overpay_sat_per_eh_day` itself is PRESERVED with identical
 -- semantics ("how far above fillable to sit").
 --

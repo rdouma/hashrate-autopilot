@@ -3,7 +3,7 @@
  *
  * Connects to a standard Electrs instance (port 50001, no SSL) and
  * queries address balance via `blockchain.scripthash.get_balance`.
- * Instant indexed lookups — no full-UTXO-set scan like scantxoutset.
+ * Instant indexed lookups - no full-UTXO-set scan like scantxoutset.
  *
  * The `scripthash` that Electrum protocol requires is:
  *   SHA256(scriptPubKey) with bytes reversed → hex string.
@@ -148,14 +148,14 @@ export function addressToScripthash(address: string): string {
 
 function addressToScriptPubKey(address: string): Buffer {
   if (address.startsWith('bc1p') || address.startsWith('tb1p')) {
-    // Bech32m — P2TR (witness v1, 32-byte key)
+    // Bech32m - P2TR (witness v1, 32-byte key)
     const decoded = bech32m.decode(address);
     const version = decoded.words[0]!;
     const program = Buffer.from(bech32m.fromWords(decoded.words.slice(1)));
     return witnessScript(version, program);
   }
   if (address.startsWith('bc1') || address.startsWith('tb1')) {
-    // Bech32 — P2WPKH (v0, 20 bytes) or P2WSH (v0, 32 bytes)
+    // Bech32 - P2WPKH (v0, 20 bytes) or P2WSH (v0, 32 bytes)
     const decoded = bech32.decode(address);
     const version = decoded.words[0]!;
     const program = Buffer.from(bech32.fromWords(decoded.words.slice(1)));

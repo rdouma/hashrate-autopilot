@@ -1,5 +1,5 @@
 /**
- * Braiins Hashpower API client — thin typed wrapper over the generated
+ * Braiins Hashpower API client - thin typed wrapper over the generated
  * OpenAPI types. See SPEC §13 and RESEARCH.md §2.
  *
  * Exposes the GET subset used for observation (M1) plus POST/PUT/DELETE
@@ -7,9 +7,9 @@
  * account-scoped data require at least a read-only token.
  *
  * Retry policy:
- *   - 429 Too Many Requests — retried with exponential backoff (safe; the
+ *   - 429 Too Many Requests - retried with exponential backoff (safe; the
  *     rate limiter rejects before any server-side commit).
- *   - 5xx — retried on GETs and DELETEs (idempotent). Not retried on
+ *   - 5xx - retried on GETs and DELETEs (idempotent). Not retried on
  *     POST/PUT, to avoid double-committing a mutation whose outcome is
  *     unknown.
  *   - SPEC §6.1: a 2FA-confirmation timeout is a controller-level state
@@ -80,7 +80,7 @@ export interface BraiinsClient {
   getBalance(): Promise<AccountBalances>;
   getCurrentBids(): Promise<BidsResponse>;
   /**
-   * List the user's bids — historical + active — with pagination.
+   * List the user's bids - historical + active - with pagination.
    *
    * Mirrors the OpenAPI `GET /spot/bid` endpoint. `limit` is capped at
    * 1000 by the server; default 200 to stay polite. Default order is
@@ -193,7 +193,7 @@ export function createBraiinsClient(config: BraiinsClientConfig = {}): BraiinsCl
       retryOnNetworkError: true,
     });
 
-  // Mutations (create/edit): never retry 5xx or network errors — outcome
+  // Mutations (create/edit): never retry 5xx or network errors - outcome
   // may be indeterminate on the server. 429 is safe (pre-commit rejection).
   const mutate = <T>(endpoint: string, fn: () => Promise<T>): Promise<T> =>
     withRetry(endpoint, () => withNetworkErrorWrap(endpoint, fn), {
@@ -201,7 +201,7 @@ export function createBraiinsClient(config: BraiinsClientConfig = {}): BraiinsCl
       retryOnNetworkError: false,
     });
 
-  // Cancel is idempotent — retry more liberally.
+  // Cancel is idempotent - retry more liberally.
   const cancel = <T>(endpoint: string, fn: () => Promise<T>): Promise<T> =>
     withRetry(endpoint, () => withNetworkErrorWrap(endpoint, fn), {
       retryOn5xx: true,
@@ -247,7 +247,7 @@ export function createBraiinsClient(config: BraiinsClientConfig = {}): BraiinsCl
 
     listBids: ({ limit = 200, offset = 0, reverse, exclude_active } = {}) =>
       read('/spot/bid', async () => {
-        // Build query object with only the fields set — passing
+        // Build query object with only the fields set - passing
         // `undefined` through openapi-fetch's query serializer renders
         // as `&reverse=undefined`, which some servers reject.
         const query: Record<string, string | number | boolean> = { limit, offset };

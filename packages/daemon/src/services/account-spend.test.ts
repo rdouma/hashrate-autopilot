@@ -33,7 +33,7 @@ function pageOf(bids: BidItem[]): BidsResponse {
   return { items: bids };
 }
 
-// In-memory fake ClosedBidsCacheRepo — captures upserts, satisfies
+// In-memory fake ClosedBidsCacheRepo - captures upserts, satisfies
 // the interface the service uses.
 function makeFakeRepo() {
   const rows = new Map<string, { braiins_order_id: string; amount_consumed_sat: number; first_seen_at: number; last_seen_at: number }>();
@@ -102,7 +102,7 @@ describe('AccountSpendService (repo-backed)', () => {
     await svc.getLifetimeSpend();
     const snap = await svc.getLifetimeSpend();
     expect(snap?.closed_sat).toBe(750);
-    // Both calls walked just one page — short-circuit on page without
+    // Both calls walked just one page - short-circuit on page without
     // new terminals. 2 calls total (one per getLifetimeSpend).
     expect(listBids).toHaveBeenCalledTimes(2);
   });
@@ -159,7 +159,7 @@ describe('AccountSpendService (repo-backed)', () => {
       now: () => now,
     });
     await svc.getLifetimeSpend();
-    await svc.getLifetimeSpend(); // within TTL — snapshot hit
+    await svc.getLifetimeSpend(); // within TTL - snapshot hit
     expect(listBids).toHaveBeenCalledTimes(1);
     now += 60_001;
     await svc.getLifetimeSpend(); // TTL expired

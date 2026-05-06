@@ -22,8 +22,8 @@ const AVG_DELIVERED_WINDOW_MS = 3 * 60 * 60 * 1000;
 
 // Trailing window for the hero PRICE card's "live effective rate".
 // 30 min is the shortest window where the unfiltered ratio
-// Σ Δsat / Σ (delivered_ph × Δt) becomes self-consistent: at 5–20 min,
-// `delivered_ph` (a trailing `avg_speed_ph` from Braiins) runs ~5–10%
+// Σ Δsat / Σ (delivered_ph × Δt) becomes self-consistent: at 5-20 min,
+// `delivered_ph` (a trailing `avg_speed_ph` from Braiins) runs ~5-10%
 // below real-time delivery, so the ratio routinely exceeds the bid
 // and the cap-at-bid pegs flat. By 30 min the lag bias washes out
 // and the metric reads below the bid like the 3 h stats card. Still
@@ -39,7 +39,7 @@ export async function registerStatusRoute(
     const runtime = await deps.runtimeRepo.get();
     const config = await deps.configRepo.get();
     if (!config || !runtime) {
-      throw new Error('daemon not initialised — run setup');
+      throw new Error('daemon not initialised - run setup');
     }
 
     const tickIntervalMs = deps.tickIntervalMs;
@@ -50,7 +50,7 @@ export async function registerStatusRoute(
     // Actual spend/day, derived from the last 3h of primary_bid_consumed_sat
     // deltas (same zero-dip filter as /api/stats and /api/finance/range).
     // Runway uses this rather than `bid × delivered` because the consumed
-    // counter is the authoritative settlement number from Braiins —
+    // counter is the authoritative settlement number from Braiins -
     // independent of our model and resilient to mid-window bid changes
     // and delivered-hashrate lag. Under pay-your-bid (#53) the two
     // should agree closely, but the counter is the source of truth.
@@ -59,7 +59,7 @@ export async function registerStatusRoute(
       spend3hSat !== null && spend3hSat > 0
         ? spend3hSat * 8 // 3h → 24h
         : null;
-    // Live effective rate — duration-weighted across a short trailing
+    // Live effective rate - duration-weighted across a short trailing
     // window (LIVE_EFFECTIVE_WINDOW_MS). Powers the hero PRICE card;
     // distinct from the range-averaged figure in the stats row. In
     // sat/PH/day for direct dashboard consumption.
@@ -107,7 +107,7 @@ export async function registerStatusRoute(
     }
 
     const { state, gated, executed } = last;
-    // Always expose the LIVE runtime state for mode / availability — not
+    // Always expose the LIVE runtime state for mode / availability - not
     // the snapshot captured at observe() time. Otherwise toggling LIVE via
     // the dashboard keeps showing DRY_RUN until the next tick observes.
     const liveRunMode = runtime.run_mode;
@@ -230,7 +230,7 @@ export async function registerStatusRoute(
 /**
  * Summarise the last tick's executed mutation as a one-liner the
  * dashboard can display as a fading "just did this" breadcrumb. We
- * pick the first EXECUTED proposal from the last tick — there's
+ * pick the first EXECUTED proposal from the last tick - there's
  * usually at most one anyway. DRY_RUN / BLOCKED / FAILED outcomes
  * intentionally don't surface here; those are visible in the
  * decisions log and the proposals list lower on the page.
@@ -263,7 +263,7 @@ function summariseLastExecuted(
       summary = `Just cancelled bid ${p.braiins_order_id.slice(0, 8)}…`;
       break;
     case 'PAUSE':
-      // PAUSE isn't a mutation in the Braiins sense — skip the breadcrumb.
+      // PAUSE isn't a mutation in the Braiins sense - skip the breadcrumb.
       return null;
   }
   return { summary, executed_at_ms: tickAt };
@@ -300,7 +300,7 @@ function describeProposal(p: GateOutcome['proposal']): string {
 
 /**
  * Plain-English forecast of what the autopilot is waiting for / what the
- * next tick is likely to do. Not a re-run of decide() — just a readable
+ * next tick is likely to do. Not a re-run of decide() - just a readable
  * posture summary so the operator doesn't have to reverse-engineer state.
  */
 // describeNextAction is concerned only with the prediction; the route
@@ -315,7 +315,7 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
   if (runMode === 'PAUSED') {
     return {
       descriptor: { kind: 'paused' },
-      summary: 'Paused — no bids will be placed or edited until run mode changes.',
+      summary: 'Paused - no bids will be placed or edited until run mode changes.',
       detail: null,
       ...noEvent,
     };
@@ -325,7 +325,7 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
     const ids = state.unknown_bids.map((b) => b.braiins_order_id.slice(0, 8) + '…');
     return {
       descriptor: { kind: 'unknown_bids', ids },
-      summary: 'Unknown bid(s) detected — next tick will PAUSE the autopilot.',
+      summary: 'Unknown bid(s) detected - next tick will PAUSE the autopilot.',
       detail: `IDs: ${ids.join(', ')}`,
       ...noEvent,
     };
@@ -334,7 +334,7 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
   if (!state.market) {
     return {
       descriptor: { kind: 'braiins_unreachable' },
-      summary: 'Braiins API unreachable — waiting for connectivity.',
+      summary: 'Braiins API unreachable - waiting for connectivity.',
       detail: null,
       ...noEvent,
     };
@@ -350,7 +350,7 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
   ) {
     return {
       descriptor: { kind: 'awaiting_hashprice' },
-      summary: 'Waiting for Ocean hashprice — trading is paused until the break-even reference is available.',
+      summary: 'Waiting for Ocean hashprice - trading is paused until the break-even reference is available.',
       detail: "Ocean hashprice is required to evaluate the dynamic cap you configured. If this persists, check Ocean's reachability in the Ocean panel.",
       ...noEvent,
     };
@@ -440,7 +440,7 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
     const statusLower = primary.status.replace('BID_STATUS_', '').toLowerCase();
     return {
       descriptor: { kind: 'bid_pending', id_short: idShort, status: statusLower },
-      summary: `Bid ${idShort} is ${statusLower} — waiting for it to become active.`,
+      summary: `Bid ${idShort} is ${statusLower} - waiting for it to become active.`,
       detail:
         primary.status === 'BID_STATUS_CREATED'
           ? 'Confirm in Telegram (@BraiinsBotOfficial) to activate.'
@@ -473,7 +473,7 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
           mins_left: minsLeft,
           direction,
         },
-        summary: `Bid above target — Braiins price-decrease cooldown active.`,
+        summary: `Bid above target - Braiins price-decrease cooldown active.`,
         detail: `Will ${direction} to ${targetPH.toLocaleString('en-US')} sat/PH/day in ~${minsLeft} min (current ${currentPricePH.toLocaleString('en-US')}).`,
         eta_ms: cooldownEndsMs,
         event_started_ms: lastDecrease,
@@ -489,7 +489,7 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
         clamped: cappedByCeiling,
       },
       summary: `Will ${verb} bid to ${targetPH.toLocaleString('en-US')} sat/PH/day on the next tick.`,
-      detail: `Current ${currentPricePH.toLocaleString('en-US')} sat/PH/day — tracking fillable + overpay${cappedByCeiling ? ' (clamped)' : ''}.`,
+      detail: `Current ${currentPricePH.toLocaleString('en-US')} sat/PH/day - tracking fillable + overpay${cappedByCeiling ? ' (clamped)' : ''}.`,
       ...noEvent,
     };
   }
@@ -497,8 +497,8 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
   return {
     descriptor: { kind: 'on_target', capped: cappedByCeiling, avg_speed_ph: primary.avg_speed_ph },
     summary: cappedByCeiling
-      ? 'At effective cap — desired fillable + overpay exceeds the ceiling.'
-      : 'On target — bid at fillable + overpay.',
+      ? 'At effective cap - desired fillable + overpay exceeds the ceiling.'
+      : 'On target - bid at fillable + overpay.',
     detail: `Bid filling at ${primary.avg_speed_ph.toFixed(2)} PH/s.`,
     ...noEvent,
   };

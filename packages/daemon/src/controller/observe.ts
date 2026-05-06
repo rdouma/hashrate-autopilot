@@ -1,5 +1,5 @@
 /**
- * observe() — read-only assembly of the inputs the controller needs for
+ * observe() - read-only assembly of the inputs the controller needs for
  * this tick. Runs against Braiins + pool + SQLite; no mutating API calls.
  * The only DB write is a targeted **ledger reconciliation**
  * (`owned_bids.reconcileFromApi`), which aligns our local status/price
@@ -59,7 +59,7 @@ export interface ObserveDeps {
   /**
    * Optional Ocean client. When present and `btc_payout_address` is
    * configured, each tick reads the operator's 5-min sliding-window
-   * hashrate from Ocean's stats response (issue #36) — sourced from
+   * hashrate from Ocean's stats response (issue #36) - sourced from
    * the same cached `fetchStats` call the `/api/ocean` route uses,
    * so we don't fire two HTTP calls per tick against the same
    * endpoint.
@@ -87,7 +87,7 @@ export interface ObserveInputs {
   /** Break-even hashprice in sat/PH/day from Ocean stats (null if unknown). */
   readonly hashpriceSatPerPhDay: number | null;
   /**
-   * One-shot operator override — forwarded into State.bypass_pacing for
+   * One-shot operator override - forwarded into State.bypass_pacing for
    * decide() to skip its self-imposed patience / escalation timers.
    */
   readonly bypassPacing: boolean;
@@ -125,15 +125,15 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
     deps.ownedBidsRepo.getIds(),
     deps.ownedBidsRepo.list(),
   ]);
-  if (!config) throw new Error('config row missing — run setup CLI');
-  if (!runtime) throw new Error('runtime_state row missing — daemon must initialize first');
+  if (!config) throw new Error('config row missing - run setup CLI');
+  if (!runtime) throw new Error('runtime_state row missing - daemon must initialize first');
 
   const lastPriceDecreaseByOrder = new Map(
     ledgerRows.map((r) => [r.braiins_order_id, r.last_price_decrease_at]),
   );
 
   // Braiins reads in parallel; individual failures downgrade to null.
-  // Datum + Ocean polls run alongside — best-effort, never throw
+  // Datum + Ocean polls run alongside - best-effort, never throw
   // out. Ocean is chart-only (never gates a decision); we read it
   // from the shared cached client so the `/api/ocean` HTTP handler
   // and this observe call share one underlying HTTP request per
@@ -316,7 +316,7 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
     }
   }
 
-  // Pool probe (always run — we want outage visibility even if API is down).
+  // Pool probe (always run - we want outage visibility even if API is down).
   const { host, port } = parsePoolUrl(config.destination_pool_url);
   const poolProbe = await deps.poolTracker.probe({ host, port });
   const pool: PoolHealth = {
@@ -337,7 +337,7 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
   };
 
   // Cheap-mode sustained-window aggregates (#50). Only compute when the
-  // operator has opted in — keeps the default tick cheap for users who
+  // operator has opted in - keeps the default tick cheap for users who
   // don't care about the feature. Requires at least 5 samples in each
   // relevant series, matching the `/api/finance/range` "insufficient
   // history" pattern; below that we return null so decide() falls back
@@ -479,7 +479,7 @@ function extractBids(bidsResponse: { items?: unknown[] } | null): ApiBid[] {
     const bid = item.bid;
     if (!bid?.id) continue;
     const status = bid.status ?? 'UNKNOWN';
-    // Braiins's rolling `avg_speed_ph` lags — it stays non-zero for a
+    // Braiins's rolling `avg_speed_ph` lags - it stays non-zero for a
     // while even when instantaneous delivery is 0. For non-ACTIVE bids
     // (pending 2FA, paused, finished, etc.) the lag is misleading, so
     // we floor to 0. For ACTIVE bids we trust the value.

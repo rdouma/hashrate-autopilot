@@ -23,7 +23,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  // Not cleaning up — small test files, OS reaps the tmpdir on reboot.
+  // Not cleaning up - small test files, OS reaps the tmpdir on reboot.
 });
 
 describe('isSopsEncrypted', () => {
@@ -42,7 +42,7 @@ describe('isSopsEncrypted', () => {
   });
 });
 
-describe('loadSecrets — plaintext path', () => {
+describe('loadSecrets - plaintext path', () => {
   it('loads and validates a valid plaintext secrets file', async () => {
     const path = join(tmp, 'valid.yaml');
     await writeFile(path, VALID_YAML, 'utf8');
@@ -85,7 +85,7 @@ describe('loadSecrets — plaintext path', () => {
   });
 });
 
-describe('loadSecrets — sops path', () => {
+describe('loadSecrets - sops path', () => {
   it('reports SOPS_NOT_INSTALLED when the binary cannot be spawned', async () => {
     const path = join(tmp, 'encrypted.yaml');
     // Produce a file that LOOKS sops-encrypted by the content sniff:
@@ -101,7 +101,7 @@ describe('loadSecrets — sops path', () => {
   it('reports SOPS_DECRYPT_FAILED when sops exits non-zero', async () => {
     const path = join(tmp, 'encrypted2.yaml');
     await writeFile(path, `${VALID_YAML}sops:\n  version: 3.12.2\n`, 'utf8');
-    // Use `false(1)` — always exits 1 — as a stand-in for "sops failed".
+    // Use `false(1)` - always exits 1 - as a stand-in for "sops failed".
     await expect(loadSecrets(path, { sopsBin: '/usr/bin/false' })).rejects.toMatchObject({
       name: 'ConfigError',
       code: 'SOPS_DECRYPT_FAILED',

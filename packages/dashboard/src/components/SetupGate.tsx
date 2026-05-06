@@ -12,7 +12,7 @@
  *     they could otherwise still see (e.g. the Login page).
  *
  * The probe re-runs on a slow interval as a safety net for the case
- * where a daemon-side `setup.ts` was run from CLI mid-session — the
+ * where a daemon-side `setup.ts` was run from CLI mid-session - the
  * dashboard discovers the operational status without the operator
  * having to refresh manually.
  */
@@ -56,7 +56,7 @@ export function SetupGate({ children }: { children: ReactNode }) {
         setProbe({ kind: 'mode', mode: h.mode });
       } catch {
         if (cancelled) return;
-        // Don't lock the user out on a transient probe failure —
+        // Don't lock the user out on a transient probe failure -
         // optimistically let pages render and let them surface their
         // own errors.
         setProbe({ kind: 'error' });
@@ -73,7 +73,7 @@ export function SetupGate({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // Allow /setup to render while we figure out the mode — the wizard
+  // Allow /setup to render while we figure out the mode - the wizard
   // is the only useful destination if we're loading the probe AND
   // already on /setup, so don't bounce.
   if (probe.kind === 'loading' && location.pathname !== '/setup') {
@@ -92,7 +92,7 @@ export function SetupGate({ children }: { children: ReactNode }) {
 
   if (probe.kind === 'mode' && probe.mode === 'OPERATIONAL') {
     if (location.pathname === '/setup') {
-      // Daemon is operational but the user is on /setup — redirect
+      // Daemon is operational but the user is on /setup - redirect
       // to the home page (or login). Wizard's own post-submit flow
       // handles its own redirect, so this only triggers if a stale
       // wizard tab survives across a manual setup completion.

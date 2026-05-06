@@ -36,12 +36,12 @@ export interface StatsResponse {
    * Duration-weighted average of `datum_hashrate_ph` over ticks that
    * had a Datum reading. Null when the Datum integration was off (or
    * no ticks in range had a non-null reading). Compared side-by-side
-   * with `avg_hashrate_ph` on the stat card — a sustained gap is the
+   * with `avg_hashrate_ph` on the stat card - a sustained gap is the
    * signal that Braiins's billing diverged from what Datum measured.
    */
   readonly avg_datum_hashrate_ph: number | null;
   /**
-   * Duration-weighted average of `ocean_hashrate_ph` — what Ocean's
+   * Duration-weighted average of `ocean_hashrate_ph` - what Ocean's
    * `user_hashrate` endpoint credited the operator with over the
    * selected range. Null when no tick in the range had an Ocean
    * reading (pre-migration history, Ocean not configured, or every
@@ -68,7 +68,7 @@ export interface StatsResponse {
    */
   readonly avg_cost_per_ph_sat_per_ph_day: number | null;
   /**
-   * #90 — 1h-rolling acceptance ratio: shares accepted by the pool ÷
+   * #90 - 1h-rolling acceptance ratio: shares accepted by the pool ÷
    * shares purchased (Braiins-validated), computed from per-tick
    * forward deltas of the cumulative counters. Resets (counter
    * decreased mid-window, e.g. a bid replacement) are skipped so a
@@ -80,11 +80,11 @@ export interface StatsResponse {
   readonly acceptance_purchased_delta_1h: number | null;
   readonly acceptance_accepted_delta_1h: number | null;
   /**
-   * #91 — 1h-rolling forward delta of the cumulative DATUM gateway
+   * #91 - 1h-rolling forward delta of the cumulative DATUM gateway
    * reject counter. Pairs with `braiins_rejects_count_1h` on the
    * Datum panel so the operator can compare "shares Datum thinks
    * were rejected upstream of the pool" vs "shares Braiins reports
-   * the pool rejected" — the asymmetry tells which leg of the
+   * the pool rejected" - the asymmetry tells which leg of the
    * Knots → Datum → Ocean pipeline is dropping shares (research.md
    * §4.5). Null when DATUM does not expose the reject tile (the
    * common case as of May 2026) or there are no usable counter
@@ -103,7 +103,7 @@ export interface StatsResponse {
    * Count of bid_events (CREATE / EDIT_PRICE / EDIT_SPEED / CANCEL)
    * that actually executed in the range. bid_events is append-only
    * and only written on success, so this is a count of "what the
-   * controller actually did" — not proposals, not DRY_RUN attempts.
+   * controller actually did" - not proposals, not DRY_RUN attempts.
    */
   readonly mutation_count: number;
   readonly range: ChartRange;
@@ -148,7 +148,7 @@ export async function registerStatsRoute(
       // more than usual right now", not "over the last week". Always
       // computed from the trailing 60 minutes of tick_metrics.
       const acceptance = await computeAcceptanceLastHour(deps.db, now);
-      // #91 — same window for the Datum-vs-Braiins reject comparison.
+      // #91 - same window for the Datum-vs-Braiins reject comparison.
       const rejects = await computeRejectsLastHour(deps.db, now);
 
       const data: StatsResponse = {
@@ -391,7 +391,7 @@ async function computeMetrics(
  * EDIT_SPEED / CANCEL) recorded in `bid_events` during the range.
  * bid_events is append-only and only populated on successful wire
  * execution, so this is a clean count of "what the controller
- * actually did" — DRY_RUN / BLOCKED proposals never get here.
+ * actually did" - DRY_RUN / BLOCKED proposals never get here.
  */
 async function computeMutationCount(
   db: Kysely<Database>,
@@ -406,14 +406,14 @@ async function computeMutationCount(
 }
 
 /**
- * #90 — 1h-rolling acceptance ratio.
+ * #90 - 1h-rolling acceptance ratio.
  *
  * Sums forward deltas of `primary_bid_shares_purchased_m` and
  * `_accepted_m` across the last hour of tick_metrics rows. Skips
  * pairs where the counter went backwards (bid replacement resets the
  * counter to zero) so a fresh bid does not torpedo the ratio. Skips
  * pairs where either side is null. Returns null pct when no usable
- * deltas are present in the window — same semantics as uptime_pct
+ * deltas are present in the window - same semantics as uptime_pct
  * during pre-migration ranges.
  *
  * Per-tick fold in TS rather than SQL because the LAG + reset-skip +
@@ -467,7 +467,7 @@ async function computeAcceptanceLastHour(
 }
 
 /**
- * #91 — 1h-rolling forward deltas of two reject counters:
+ * #91 - 1h-rolling forward deltas of two reject counters:
  *
  * - `datum`: `datum_rejected_shares_total` (raw count). Cumulative
  *   on DATUM's side, so we sum forward pair-wise deltas across the
@@ -479,9 +479,9 @@ async function computeAcceptanceLastHour(
  *   the window. Null when the bid did not exist or every tick failed.
  *
  * Both numbers are over the SAME tick window so the operator can
- * directly subtract them on the Datum panel — Datum > Braiins means
+ * directly subtract them on the Datum panel - Datum > Braiins means
  * the gateway filtered work that never made it to the pool (that's
- * good — Datum saved you from paying for stale shares); Braiins >
+ * good - Datum saved you from paying for stale shares); Braiins >
  * Datum means the pool rejected work Datum thought was fine
  * (research.md §4.5: stale-work signature).
  */

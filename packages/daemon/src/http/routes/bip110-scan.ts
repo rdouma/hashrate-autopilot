@@ -146,7 +146,7 @@ export async function registerBip110ScanRoute(
   app.get<{ Querystring: { blocks?: string } }>(
     '/api/bip110/scan',
     async (req): Promise<Bip110ScanResponse> => {
-      // Read the live config row at request time — saved Config edits
+      // Read the live config row at request time - saved Config edits
       // take effect on the next scan without a daemon restart. The
       // earlier shape took a boot-time-built client and used stale
       // creds forever; operator empirically hit this 2026-05-05

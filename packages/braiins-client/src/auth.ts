@@ -4,9 +4,9 @@
  * Auth is a single `apikey:` header carrying one of two tokens the user has
  * provisioned:
  *
- * - **OWNER** — can issue mutations (POST/PUT/DELETE on /spot/bid) and read
+ * - **OWNER** - can issue mutations (POST/PUT/DELETE on /spot/bid) and read
  *   account-scoped data.
- * - **READ_ONLY** — read-only access to user-scoped data.
+ * - **READ_ONLY** - read-only access to user-scoped data.
  *
  * Public endpoints (market stats, orderbook) need no token.
  */

@@ -3,14 +3,14 @@
  *
  * Polls `{apiUrl}/umbrel-api` once per tick when configured, parses the
  * three-stats JSON response, and exposes connection count + hashrate.
- * Integration is informational only — the control loop does not depend
+ * Integration is informational only - the control loop does not depend
  * on Datum being reachable. Failures are counted and surfaced as
  * `reachable: false`; they never throw out of `poll()`.
  *
  * `DatumPoller` wraps a `DatumService` and re-reads `datum_api_url`
  * from config on every poll, so config edits take effect on the next
  * tick without a daemon restart. When the URL is empty, it returns
- * null — observe() translates that to `state.datum = null` and the
+ * null - observe() translates that to `state.datum = null` and the
  * dashboard shows a "not configured" empty state.
  *
  * See docs/setup-datum-api.md for the Umbrel-side port-exposure recipe.
@@ -23,7 +23,7 @@ export interface DatumPollResult {
   readonly connections: number | null;
   /** Hashrate in PH/s. Null when the poll failed or Datum reported it missing. */
   readonly hashrate_ph: number | null;
-  /** #91 — opportunistic gateway-side rejected-shares counter; null when DATUM does not expose a `/reject/i` tile. */
+  /** #91 - opportunistic gateway-side rejected-shares counter; null when DATUM does not expose a `/reject/i` tile. */
   readonly rejected_shares_total: number | null;
   readonly checked_at: number;
   readonly error: string | null;
@@ -34,7 +34,7 @@ export interface DatumServiceOptions {
   readonly timeoutMs?: number;
   readonly now?: () => number;
   /**
-   * #91 — receives `console.log`-style messages. The DATUM service
+   * #91 - receives `console.log`-style messages. The DATUM service
    * logs every `items[].title` it observes ONCE per service instance
    * (i.e. once per URL change, including initial connect) so the
    * operator can grep the daemon log to see what tiles their build
@@ -59,9 +59,9 @@ interface UmbrelApiResponse {
 /**
  * Multiplier to convert a Datum-reported hashrate to PH/s, keyed by
  * the unit Datum prints in `subtext`. Datum picks the unit based on
- * magnitude — below ~1 PH/s it reports Th/s, above that it reports
+ * magnitude - below ~1 PH/s it reports Th/s, above that it reports
  * Ph/s. Case-insensitive match (observed "Ph/s" in the wild, but the
- * capitalisation is not contractual — `"TH/s"`, `"th/s"`, etc. all
+ * capitalisation is not contractual - `"TH/s"`, `"th/s"`, etc. all
  * seen across similar tools).
  */
 const HASHRATE_UNIT_TO_PH: Record<string, number> = {
@@ -102,7 +102,7 @@ export class DatumService {
       const connections = extractNumber(payload, 'Connections');
       const hashrate_ph = extractHashratePh(payload);
       const rejected_shares_total = extractRejectedShares(payload);
-      // #91 — log observed item titles once per service instance.
+      // #91 - log observed item titles once per service instance.
       // Operator's DATUM build may or may not expose a reject tile;
       // this is the scoping data the issue's Step 1 calls for.
       if (!this.titlesLogged && payload.items) {
@@ -148,14 +148,14 @@ export class DatumService {
 }
 
 /**
- * #91 — heuristic scrape of any tile whose title matches /reject/i.
+ * #91 - heuristic scrape of any tile whose title matches /reject/i.
  *
  * DATUM exposes its UI tiles as a flat `items: { title, text, subtext }`
  * list with no machine-readable schema, so we scan title-strings rather
  * than committing to a specific field name DATUM may or may not adopt.
  * Parses the leading numeric portion of `text` (the rest is usually
  * unit / human label like "rejected shares" or "shares"). Returns null
- * when nothing matches or the value does not parse — which is the
+ * when nothing matches or the value does not parse - which is the
  * common case as of May 2026 because most DATUM builds do not expose
  * a reject tile yet.
  *
@@ -181,7 +181,7 @@ function extractNumber(payload: UmbrelApiResponse, title: string): number | null
 
 /**
  * Parse the Hashrate item's text + subtext and convert to PH/s. Datum
- * switches the unit between Th/s and Ph/s based on magnitude — an
+ * switches the unit between Th/s and Ph/s based on magnitude - an
  * unconditional ÷ 1000 would silently report a ~1.3 PH/s rig as
  * "0.00 PH/s" once it crosses the boundary.
  */
@@ -193,7 +193,7 @@ function extractHashratePh(payload: UmbrelApiResponse): number | null {
   const unit = item.subtext?.toLowerCase().trim() ?? '';
   const multiplier = HASHRATE_UNIT_TO_PH[unit];
   if (multiplier === undefined) {
-    // Unknown unit — fall back to the pre-fix behaviour (assume Th/s)
+    // Unknown unit - fall back to the pre-fix behaviour (assume Th/s)
     // rather than returning null, so a future Datum label change
     // degrades gracefully instead of blanking the field.
     return n / 1_000;
@@ -205,7 +205,7 @@ function extractHashratePh(payload: UmbrelApiResponse): number | null {
  * Observer-facing wrapper: reads `datum_api_url` at every poll (via the
  * supplied getter), lazily creates a `DatumService` keyed on the URL,
  * and returns a `DatumSnapshot` shaped for `State.datum`. Returns null
- * when the URL is unset — that's the "not configured" signal the
+ * when the URL is unset - that's the "not configured" signal the
  * dashboard surfaces.
  */
 export class DatumPoller {

@@ -1,7 +1,7 @@
 -- Repurpose the lowering-patience timer to track "time the market has
 -- been continuously cheap enough to lower", not "time hashrate has been
 -- above floor". Operators reported that the old semantics fired too
--- readily — as soon as a bid started filling, the timer started
+-- readily - as soon as a bid started filling, the timer started
 -- counting down, even on ticks where the market had only just become
 -- marginally cheaper than the current bid. What they actually wanted is
 -- "N minutes of continuous opportunity to save > min_lower_delta", so
@@ -12,7 +12,7 @@
 -- `primary.price_sat > fillable + overpay + min_lower_delta` becomes
 -- continuously true and reset when that condition breaks. The old
 -- `above_floor_since_ms` column is renamed (SQLite 3.25+ supports
--- RENAME COLUMN) — its in-flight value becomes stale on the first tick
+-- RENAME COLUMN) - its in-flight value becomes stale on the first tick
 -- after this migration, which just means the patience window restarts
 -- once. No data to preserve is lost.
 ALTER TABLE runtime_state RENAME COLUMN above_floor_since_ms TO lower_ready_since_ms;

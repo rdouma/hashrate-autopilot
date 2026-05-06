@@ -36,7 +36,7 @@ describe('pickTimeTickInterval', () => {
 describe('localAlignedTimeTicks', () => {
   it('returns hourly ticks aligned to local top-of-hour', () => {
     // Pick a span that crosses several hours. Use Date.now()-relative
-    // values so the test stays timezone-agnostic — we only check the
+    // values so the test stays timezone-agnostic - we only check the
     // *alignment*, not the absolute clock value.
     const start = new Date();
     start.setHours(8, 37, 12, 555); // not on the hour

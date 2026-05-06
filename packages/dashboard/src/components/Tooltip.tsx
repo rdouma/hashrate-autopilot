@@ -25,7 +25,7 @@ export function Tooltip({
   useLayoutEffect(() => {
     if (!show || !ref.current) return;
     // The wrapper uses `display: contents`, which means `ref.current`
-    // itself doesn't generate a layout box — getBoundingClientRect on
+    // itself doesn't generate a layout box - getBoundingClientRect on
     // it returns {0,0,0,0} and the tooltip ends up pinned to the
     // top-left corner of the viewport instead of above the hovered
     // child. Measure the first element child instead. Fall through to
@@ -33,7 +33,7 @@ export function Tooltip({
     const anchor =
       (ref.current.firstElementChild as HTMLElement | null) ?? ref.current;
     const rect = anchor.getBoundingClientRect();
-    // Still zero? Bail out — positioning blindly would flash the tip
+    // Still zero? Bail out - positioning blindly would flash the tip
     // in the corner. Next mouseenter will try again.
     if (rect.width === 0 && rect.height === 0) return;
     const tipEl = tipRef.current;

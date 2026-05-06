@@ -1,21 +1,21 @@
 /**
  * Ocean pool stats client using the public JSON API at api.ocean.xyz.
  *
- * Primary endpoint: GET /v1/statsnap/<address> — returns unpaid
+ * Primary endpoint: GET /v1/statsnap/<address> - returns unpaid
  * earnings, estimated next-block earnings, shares in the TIDES
  * reward window.
  *
- * Secondary: GET /v1/user_hashrate/<address> — multi-interval
+ * Secondary: GET /v1/user_hashrate/<address> - multi-interval
  * hashrates + active worker count. Used for the daily-earnings
  * estimate and share-log %.
  *
- * GET /v1/pool_stat — pool-wide stats for share-log % computation.
+ * GET /v1/pool_stat - pool-wide stats for share-log % computation.
  *
  * All endpoints are unauthenticated, per-address. No rate-limit
  * headers observed; we cache with a 5-min TTL to be polite.
  *
  * Previous version scraped HTML templates from ocean.xyz (fragments
- * at /template/workers/*). Replaced per issue #9 — the JSON API is
+ * at /template/workers/*). Replaced per issue #9 - the JSON API is
  * more reliable and returns structured data.
  */
 
@@ -24,7 +24,7 @@ const PAYOUT_THRESHOLD_SAT = 1_048_576;
 // 60 s matches the dashboard tick / Ocean-panel refetch cadence.
 // Originally 5 min to "be polite" to Ocean's public API, but the
 // panel felt sluggish and the four endpoints we hit (statsnap,
-// user_hashrate, pool_stat, blocks) total ~4 req/min per wallet —
+// user_hashrate, pool_stat, blocks) total ~4 req/min per wallet -
 // well below any sane rate limit. Keeping this aligned with the
 // panel refetchInterval also makes block-metadata enrichment pick
 // up new blocks within a minute instead of up to five.
@@ -64,7 +64,7 @@ export interface OceanStats {
    * Break-even hashprice: revenue per PH/s per day from mining at
    * the current network difficulty and block reward. If you're
    * buying hashrate ABOVE this, you're paying more than mining
-   * earns — unprofitable. Below = profitable.
+   * earns - unprofitable. Below = profitable.
    *
    * Formula: (block_reward_sat × 144 blocks/day) / network_hashrate_ph
    */
@@ -77,7 +77,7 @@ export interface OceanStats {
   readonly user_hashrate_th: number | null;
   /**
    * 5-minute sliding-window hashrate (PH/s) from the same
-   * `/v1/user_hashrate` response's `hashrate_300s` field — what the
+   * `/v1/user_hashrate` response's `hashrate_300s` field - what the
    * Hashrate chart plots as `received (Ocean)`. Exposed on the Ocean
    * panel so the at-a-glance row matches the chart series. Null when
    * unavailable.
@@ -167,7 +167,7 @@ export function createOceanClient(opts: OceanClientOptions = {}): OceanClient {
             : null;
 
         // Hashprice: revenue per PH/s per day at current difficulty.
-        // This is the break-even line — if you're buying above this,
+        // This is the break-even line - if you're buying above this,
         // mining costs more than it earns.
         const networkHashratePh = networkHashrate / 1e15;
         const hashprice_sat_per_ph_day =
@@ -200,7 +200,7 @@ export function createOceanClient(opts: OceanClientOptions = {}): OceanClient {
         // microsecond precision and no timezone suffix, e.g.
         // "2026-04-18T10:54:28.021400". JavaScript's Date parser treats
         // such a string as *local time*, which made our "found X ago"
-        // display drift by whatever TZ the daemon host was in — a block
+        // display drift by whatever TZ the daemon host was in - a block
         // mined minutes ago could appear hours off, sometimes even
         // inverting the monotonic height/time ordering. Force UTC.
         const rawBlocks = (blocksResp?.result as Record<string, unknown>)?.blocks;
@@ -225,7 +225,7 @@ export function createOceanClient(opts: OceanClientOptions = {}): OceanClient {
         // User hashrate (3h window, in H/s from the API)
         const userHash3hRaw = Number(hr.hashrate_10800s ?? 0);
         const user_hashrate_th = userHash3hRaw > 0 ? userHash3hRaw / 1e12 : null;
-        // 5-min window — matches what the chart plots.
+        // 5-min window - matches what the chart plots.
         const userHash5mRaw = Number(hr.hashrate_300s ?? 0);
         const user_hashrate_5m_ph = userHash5mRaw > 0 ? userHash5mRaw / 1e15 : null;
 
@@ -287,7 +287,7 @@ export function createOceanClient(opts: OceanClientOptions = {}): OceanClient {
 }
 
 /**
- * Ocean returns ts like "2026-04-18T10:54:28.021400" — bare ISO with
+ * Ocean returns ts like "2026-04-18T10:54:28.021400" - bare ISO with
  * no timezone suffix. Treat it as UTC by appending "Z" unless the
  * string already carries an offset. Return 0 on parse failure (our
  * caller converts that into a "never" in the UI).

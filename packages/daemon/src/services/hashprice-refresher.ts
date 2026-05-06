@@ -5,7 +5,7 @@
  * the operator has configured `max_overpay_vs_hashprice_sat_per_eh_day`
  * but the hashprice cache is empty or stale beyond the freshness
  * window. Without an in-daemon refresher, the cache only ever gets
- * written on boot + from the dashboard's finance poll — so a daemon
+ * written on boot + from the dashboard's finance poll - so a daemon
  * running headless for more than the freshness window silently stops
  * responding to the market (issue #33).
  *

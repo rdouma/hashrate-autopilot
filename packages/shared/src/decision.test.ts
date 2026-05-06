@@ -5,7 +5,7 @@ import type { MutationAction, RunMode } from './types.js';
 const ALL_RUN_MODES: RunMode[] = ['DRY_RUN', 'LIVE', 'PAUSED'];
 const ALL_ACTIONS: MutationAction[] = ['create', 'edit', 'cancel'];
 
-describe('canMutate — run mode gates', () => {
+describe('canMutate - run mode gates', () => {
   it.each(ALL_ACTIONS)('blocks %s in DRY_RUN', (action) => {
     expect(canMutate({ runMode: 'DRY_RUN', action })).toEqual({
       allowed: false,
@@ -25,7 +25,7 @@ describe('canMutate — run mode gates', () => {
   });
 });
 
-describe('canMutate — exhaustive sanity check', () => {
+describe('canMutate - exhaustive sanity check', () => {
   it('matches the SPEC §7.2 truth table: LIVE allows, everything else blocks', () => {
     for (const runMode of ALL_RUN_MODES) {
       for (const action of ALL_ACTIONS) {

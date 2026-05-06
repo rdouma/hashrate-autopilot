@@ -1,5 +1,5 @@
 /**
- * Unit tests for the pure bits of observe() — primarily the
+ * Unit tests for the pure bits of observe() - primarily the
  * below_floor_since hysteresis (issue #10). The computeBelowFloorSince
  * function is pulled out and exported so we can drive it with fabricated
  * inputs instead of standing up a whole Braiins/pool/DB surface.
@@ -25,7 +25,7 @@ const UNREACHABLE: PoolProbeResult = {
   error: 'ECONNREFUSED',
 };
 
-describe('computeBelowFloorSince — hysteresis', () => {
+describe('computeBelowFloorSince - hysteresis', () => {
   it('starts the timer on the first below-floor tick', () => {
     const r = computeBelowFloorSince(0.0, FLOOR_PH, null, 0, 1_000, REACHABLE, true);
     expect(r).toEqual({ below_floor_since: 1_000, above_floor_ticks: 0 });
@@ -50,7 +50,7 @@ describe('computeBelowFloorSince — hysteresis', () => {
     expect(r).toEqual({ below_floor_since: 1_000, above_floor_ticks: 0 });
   });
 
-  it('holds the timer for a single above-floor tick — does NOT clear', () => {
+  it('holds the timer for a single above-floor tick - does NOT clear', () => {
     // This is the #10 bug case: a transient spike from Braiins' lagged
     // rolling avg_speed_ph on a bid-state flicker. One above-floor tick
     // must not clear a multi-minute drought.
@@ -120,7 +120,7 @@ describe('computeBelowFloorSince — hysteresis', () => {
     }
 
     // tick 5: bid flickers ACTIVE with a stale 1.2 PH/s rolling avg.
-    // This is the #10 bug — old code cleared here. New code must hold.
+    // This is the #10 bug - old code cleared here. New code must hold.
     s = computeBelowFloorSince(
       1.2,
       FLOOR_PH,
@@ -165,12 +165,12 @@ describe('computeBelowFloorSince — hysteresis', () => {
     expect(s.above_floor_ticks).toBe(FLOOR_DEBOUNCE_TICKS);
   });
 
-  it('freezes state when API is down — preserves both timer and counter', () => {
+  it('freezes state when API is down - preserves both timer and counter', () => {
     const r = computeBelowFloorSince(0.0, FLOOR_PH, 1_000, 2, 9_999, REACHABLE, false);
     expect(r).toEqual({ below_floor_since: 1_000, above_floor_ticks: 2 });
   });
 
-  it('freezes state when pool is unreachable — preserves both timer and counter', () => {
+  it('freezes state when pool is unreachable - preserves both timer and counter', () => {
     const r = computeBelowFloorSince(2.0, FLOOR_PH, 1_000, 2, 9_999, UNREACHABLE, true);
     expect(r).toEqual({ below_floor_since: 1_000, above_floor_ticks: 2 });
   });

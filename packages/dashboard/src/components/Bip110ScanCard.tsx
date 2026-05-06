@@ -1,5 +1,5 @@
 /**
- * BIP 110 scan card — small Status-page diagnostic that fires the
+ * BIP 110 scan card - small Status-page diagnostic that fires the
  * `/api/bip110/scan` endpoint and renders the deployment header +
  * signaling block list.
  *
@@ -44,8 +44,8 @@ export function Bip110ScanCard(): JSX.Element {
 
   const [window, setWindow] = useState<ScanWindow>(2016);
 
-  // Shares the cached value with the rest of Status — same queryKey used
-  // by Layout / OceanCard / etc — so adding this hook adds zero network
+  // Shares the cached value with the rest of Status - same queryKey used
+  // by Layout / OceanCard / etc - so adding this hook adds zero network
   // traffic.
   const configQuery = useQuery({
     queryKey: ['config'],

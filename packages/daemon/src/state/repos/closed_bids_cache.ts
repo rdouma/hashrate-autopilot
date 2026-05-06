@@ -4,10 +4,10 @@
  * Terminal bids' `counters_committed.amount_consumed_sat` is
  * immutable, so we store the amount once and
  * `AccountSpendService.getLifetimeSpend()` starts each refresh from
- * this cached running total — only paginating `/spot/bid` far enough
+ * this cached running total - only paginating `/spot/bid` far enough
  * to pick up newly-closed bids.
  *
- * Active bids (is_current=true) are NOT cached here — their consumed
+ * Active bids (is_current=true) are NOT cached here - their consumed
  * counter updates hourly as Braiins settles, and the service always
  * re-reads them live.
  */
@@ -68,7 +68,7 @@ export class ClosedBidsCacheRepo {
     return new Set(rows.map((r) => r.braiins_order_id));
   }
 
-  /** Row count — mostly for diagnostics / tests. */
+  /** Row count - mostly for diagnostics / tests. */
   async count(): Promise<number> {
     const result = await this.db
       .selectFrom('closed_bids_cache')

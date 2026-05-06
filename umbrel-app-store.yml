@@ -12,7 +12,7 @@
 # of the official one.
 
 id: rdouma
-# Umbrel renders this as "<name> App Store" — so this becomes
+# Umbrel renders this as "<name> App Store" - so this becomes
 # "Hashrate Autopilot App Store".
 name: Hashrate Autopilot
 tagline: Decentralizing Bitcoin mining, one pleb at a time

@@ -1,5 +1,5 @@
 /**
- * execute() — turn gated proposals into side effects.
+ * execute() - turn gated proposals into side effects.
  *
  * - **DRY_RUN** (default after boot): every allowed proposal becomes an
  *   `outcome: 'DRY_RUN'` record with a human-readable "would have …" note.
@@ -11,7 +11,7 @@
  * - Blocked proposals (any mode) record `outcome: 'BLOCKED'` with the
  *   gate denial reason.
  *
- * PAUSE is a controller-only transition — when LIVE it flips
+ * PAUSE is a controller-only transition - when LIVE it flips
  * `runtime_state.run_mode` to PAUSED; in DRY_RUN it's logged only.
  *
  * Every tick persists the full (state, proposals, gated, executed) tuple

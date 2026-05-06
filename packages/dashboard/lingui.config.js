@@ -1,6 +1,6 @@
 // Lingui v5 config (issue #1).
 //
-// `locales` is the launch set: English, Dutch, Spanish — the three
+// `locales` is the launch set: English, Dutch, Spanish - the three
 // languages the operator can verify directly. Czech is appealing
 // (Braiins/Trezor/Prague culture) but deferred until a CZ reviewer
 // is available. Adding a locale later is a matter of adding the
@@ -10,7 +10,7 @@
 // `sourceLocale: 'en'` means messages in the source code use English
 // keys (via the <Trans> macro and the `t` template tag from
 // @lingui/macro). The English catalog is therefore "the source of
-// truth" — copy edits land in the EN catalog (or directly in code,
+// truth" - copy edits land in the EN catalog (or directly in code,
 // then re-extracted) and translators see the new strings on the
 // next pull.
 //

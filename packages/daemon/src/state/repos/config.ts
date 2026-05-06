@@ -68,7 +68,7 @@ export class ConfigRepo {
       show_share_log_on_hashrate_chart: (validated.show_share_log_on_hashrate_chart
         ? 1
         : 0) as 0 | 1,
-      // Legacy NOT NULL columns still in the DB — provide harmless defaults
+      // Legacy NOT NULL columns still in the DB - provide harmless defaults
       // so INSERT succeeds.
       emergency_max_bid_sat_per_eh_day: validated.max_bid_sat_per_eh_day,
       below_floor_emergency_cap_after_minutes: 9999,

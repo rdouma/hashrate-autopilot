@@ -4,7 +4,7 @@
  * The daemon stores a single string template (e.g.
  * `https://mempool.space/block/{hash}`); the dashboard substitutes
  * `{hash}` and `{height}` at click time. Both placeholders are
- * optional — the config schema enforces that at least one is present.
+ * optional - the config schema enforces that at least one is present.
  */
 
 export function applyExplorerTemplate(

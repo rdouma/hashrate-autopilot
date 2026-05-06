@@ -74,7 +74,7 @@ jobs:
           set -euo pipefail
           TAG='${{ steps.compose.outputs.tag }}'
           if [[ "$TAG" == "latest" ]]; then
-            echo "::error::docker-compose pins ':latest' — release manifests must pin a specific version. See CLAUDE.md 'Umbrel image pin convention'."
+            echo "::error::docker-compose pins ':latest' - release manifests must pin a specific version. See CLAUDE.md 'Umbrel image pin convention'."
             exit 1
           fi
 
@@ -83,7 +83,7 @@ jobs:
           set -euo pipefail
           TAG='${{ steps.compose.outputs.tag }}'
           if [[ "$TAG" =~ ^v[0-9] ]]; then
-            echo "::error::docker-compose pins '$TAG' — pin bare semver (no leading 'v'). docker/metadata-action publishes '${TAG#v}' on GHCR by default; ':v...' tags 404. See CLAUDE.md 'Umbrel image pin convention'."
+            echo "::error::docker-compose pins '$TAG' - pin bare semver (no leading 'v'). docker/metadata-action publishes '${TAG#v}' on GHCR by default; ':v...' tags 404. See CLAUDE.md 'Umbrel image pin convention'."
             exit 1
           fi
 
