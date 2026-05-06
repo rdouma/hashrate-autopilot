@@ -1,12 +1,19 @@
 /**
  * Block-found audible cue (#88).
  *
- * Polls /api/reward-events on a 60s interval and rings the operator's
- * configured sound once when a new reward_events row appears. The
- * "newest seen" id is persisted in localStorage so a tab refresh
- * doesn't re-fire on previously-seen events. The first poll after
- * cold boot establishes a baseline silently rather than ringing for
- * the entire backlog.
+ * Polls /api/ocean on a 60s interval and rings the operator's
+ * configured sound once when a new pool block appears in
+ * `recent_blocks[]`. Operator's stated intent: hear a cue every
+ * time Ocean finds a block (3-ish per day at Ocean's typical
+ * share), NOT when an on-chain payout to their address confirms
+ * (which is what `reward_events` tracks - rare, and a wallet
+ * already notifies on those).
+ *
+ * Tracking key is `height` (monotonically increasing across the
+ * Bitcoin chain), persisted to localStorage so a tab refresh
+ * doesn't re-fire on previously-seen blocks. The first poll after
+ * cold boot establishes a baseline silently rather than ringing
+ * for the entire backlog.
  *
  * Browser autoplay restrictions: modern browsers block sound played
  * before any user gesture on the page. The login click counts as
@@ -21,7 +28,12 @@ import { useQuery } from '@tanstack/react-query';
 
 import { api, type AppConfig } from './api';
 
-const STORAGE_KEY = 'braiins.lastSeenRewardEventId';
+// Separate key from the legacy reward-event-id one - different
+// units (block height vs reward event id) and different semantics
+// (pool block found vs on-chain payout confirmed). Using a fresh
+// key also re-baselines silently on first poll for existing
+// operators upgrading past this commit.
+const STORAGE_KEY = 'braiins.lastSeenOceanBlockHeight';
 const POLL_INTERVAL_MS = 60_000;
 
 /**
@@ -84,8 +96,8 @@ export function useBlockFoundSound(choice: AppConfig['block_found_sound'] | unde
 
   const enabled = !!choice && choice !== 'off';
   const query = useQuery({
-    queryKey: ['reward-events'],
-    queryFn: () => api.rewardEvents(50),
+    queryKey: ['ocean'],
+    queryFn: api.ocean,
     refetchInterval: enabled ? POLL_INTERVAL_MS : false,
     refetchOnWindowFocus: false,
     enabled,
@@ -93,19 +105,28 @@ export function useBlockFoundSound(choice: AppConfig['block_found_sound'] | unde
 
   useEffect(() => {
     if (!enabled) return;
-    const events = query.data?.events;
-    if (!events || events.length === 0) return;
-    // Ascending by id - last is the newest.
-    const newestId = events[events.length - 1]?.id ?? null;
-    if (newestId === null) return;
+    const blocks = query.data?.recent_blocks;
+    if (!blocks || blocks.length === 0) return;
+    // Take the max height across the list rather than indexing by
+    // position - Ocean returns recent blocks but the array order is
+    // not contractually newest-first or newest-last; height is the
+    // unambiguous monotonic key.
+    let newestHeight: number | null = null;
+    for (const b of blocks) {
+      if (typeof b.height === 'number' && Number.isFinite(b.height)) {
+        if (newestHeight === null || b.height > newestHeight) {
+          newestHeight = b.height;
+        }
+      }
+    }
+    if (newestHeight === null) return;
 
     if (!firstPollDoneRef.current) {
-      // Establish baseline silently. If localStorage already has a
-      // higher id (rare - could happen if the user manually cleared
-      // events server-side), fall through to fire on the next new id.
+      // Establish baseline silently so the operator does not get a
+      // burst of sounds for the existing backlog on first load.
       const stored = getStoredMaxId();
-      if (stored === null || newestId > stored) {
-        setStoredMaxId(newestId);
+      if (stored === null || newestHeight > stored) {
+        setStoredMaxId(newestHeight);
       }
       firstPollDoneRef.current = true;
       return;
@@ -114,11 +135,11 @@ export function useBlockFoundSound(choice: AppConfig['block_found_sound'] | unde
     const stored = getStoredMaxId();
     if (stored === null) {
       // localStorage was cleared between polls - re-baseline.
-      setStoredMaxId(newestId);
+      setStoredMaxId(newestHeight);
       return;
     }
-    if (newestId > stored) {
-      setStoredMaxId(newestId);
+    if (newestHeight > stored) {
+      setStoredMaxId(newestHeight);
       const audio = audioRef.current;
       if (audio) {
         // Rewind in case the previous play() left it at the end.
