@@ -1464,10 +1464,6 @@ msgid "Ocean stats unavailable."
 msgstr "Ocean stats niet beschikbaar."
 
 #: src/pages/Status.tsx
-msgid "Ocean's estimate of when our 'unpaid' balance will cross the payout threshold and trigger an on-chain transfer. Updates as our hashrate, the pool's block-find luck, and the threshold itself move."
-msgstr "Ocean's schatting van wanneer ons 'unpaid' saldo de uitbetalingsdrempel passeert en een on-chain transfer activeert. Wordt bijgewerkt naarmate onze hashrate, de blok-vind-luck van de pool en de drempel zelf veranderen."
-
-#: src/pages/Status.tsx
 msgid "Ocean's own 'daily_estimate' for our address - what they expect to credit us per day at our 3h hashrate. Derived from user_hashrate * hashprice. Always 3h-based regardless of the chart range above."
 msgstr "Ocean's eigen 'daily_estimate' voor ons adres - wat zij verwachten ons per dag te crediteren bij onze 3u-hashrate. Afgeleid van user_hashrate * hashprice. Altijd 3u-gebaseerd, ongeacht het bovenstaande grafiekbereik."
 
@@ -1540,6 +1536,12 @@ msgstr "ons aandeel (schat.)"
 #: src/pages/Status.tsx
 msgid "Our slice of Ocean's TIDES window. Ocean's payout system rewards us proportionally to this fraction every block the pool finds. As Ocean's total hashrate grows or our delivered PH/s shrinks, this drifts down; as we deliver more or pool shrinks, it drifts up."
 msgstr "Ons aandeel in Ocean's TIDES-venster. Ocean's uitbetalingssysteem beloont ons evenredig aan deze fractie bij elk blok dat de pool vindt. Als Ocean's totale hashrate groeit of onze geleverde PH/s krimpt, daalt dit; als wij meer leveren of de pool krimpt, stijgt het."
+
+#. placeholder {0}: denomination.formatSat( o.user.unpaid_sat, intlLocale, )
+#. placeholder {1}: denomination.formatSat( o.user.payout_threshold_sat, intlLocale, )
+#: src/pages/Status.tsx
+msgid "Our unpaid balance ({0}) has already crossed the payout threshold ({1} ≈ 0,01 BTC). The accumulated balance ships as a coinbase output the next time Ocean wins a pool block — under TIDES the pool only pays out when it finds a block, since that's the only block where it controls the coinbase. \"Next block\" means the next Ocean pool block (~3/day at typical share), NOT the next Bitcoin block in general. The blue cubes on the hashrate chart above mark each pool block as it lands."
+msgstr "Ons niet-uitbetaalde saldo ({0}) heeft de uitbetaaldrempel ({1} ≈ 0,01 BTC) al overschreden. Het opgebouwde saldo wordt verzonden als een coinbase-output de eerstvolgende keer dat Ocean een pool-blok wint — onder TIDES betaalt de pool alleen uit als ze een blok vinden, omdat dat het enige blok is waarvan de pool de coinbase kan vullen. \"Next block\" betekent het volgende Ocean pool-blok (~3 per dag bij typisch aandeel), NIET het volgende Bitcoin-blok in het algemeen. De blauwe blokjes op de hashrate-grafiek hierboven markeren elk pool-blok zodra het binnenkomt."
 
 #: src/pages/Status.tsx
 msgid "overdue {overdueFormatted}"
@@ -1763,6 +1765,13 @@ msgstr "Geprojecteerde inkomsten − werkelijke uitgaven (rijen hierboven). Posi
 #: src/pages/Status.tsx
 msgid "projected income/day ({rangeLabel})"
 msgstr "geprojecteerd inkomen/dag ({rangeLabel})"
+
+#. placeholder {0}: denomination.formatSat( o.user.unpaid_sat, intlLocale, )
+#. placeholder {1}: denomination.formatSat( o.user.payout_threshold_sat, intlLocale, )
+#. placeholder {2}: denomination.formatSat( o.user.daily_estimate_sat, intlLocale, )
+#: src/pages/Status.tsx
+msgid "Projected time until our unpaid balance ({0}) crosses the payout threshold ({1} ≈ 0,01 BTC), at the current {2}/day earn rate. Once crossed, the actual payout lands on the next pool block Ocean wins (not on a fixed schedule). Updates as our hashrate moves, the pool's block-find luck shifts, and the unpaid balance keeps climbing."
+msgstr "Geschatte tijd totdat ons niet-uitbetaalde saldo ({0}) de uitbetaaldrempel ({1} ≈ 0,01 BTC) overschrijdt, bij het huidige verdientempo van {2}/dag. Zodra de drempel is overschreden, valt de werkelijke uitbetaling op het volgende pool-blok dat Ocean wint (niet op een vast schema). Wordt bijgewerkt naarmate onze hashrate verandert, het block-find geluk van de pool verschuift en het niet-uitbetaalde saldo blijft stijgen."
 
 #: src/pages/Status.tsx
 msgid "Projection: avg hashprice × avg delivered (rows above), both averaged over the selected chart range. Range-aware counterpart to Ocean's own 3h estimate."

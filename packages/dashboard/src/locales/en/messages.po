@@ -1464,10 +1464,6 @@ msgid "Ocean stats unavailable."
 msgstr "Ocean stats unavailable."
 
 #: src/pages/Status.tsx
-msgid "Ocean's estimate of when our 'unpaid' balance will cross the payout threshold and trigger an on-chain transfer. Updates as our hashrate, the pool's block-find luck, and the threshold itself move."
-msgstr "Ocean's estimate of when our 'unpaid' balance will cross the payout threshold and trigger an on-chain transfer. Updates as our hashrate, the pool's block-find luck, and the threshold itself move."
-
-#: src/pages/Status.tsx
 msgid "Ocean's own 'daily_estimate' for our address - what they expect to credit us per day at our 3h hashrate. Derived from user_hashrate * hashprice. Always 3h-based regardless of the chart range above."
 msgstr "Ocean's own 'daily_estimate' for our address - what they expect to credit us per day at our 3h hashrate. Derived from user_hashrate * hashprice. Always 3h-based regardless of the chart range above."
 
@@ -1540,6 +1536,12 @@ msgstr "our share (est.)"
 #: src/pages/Status.tsx
 msgid "Our slice of Ocean's TIDES window. Ocean's payout system rewards us proportionally to this fraction every block the pool finds. As Ocean's total hashrate grows or our delivered PH/s shrinks, this drifts down; as we deliver more or pool shrinks, it drifts up."
 msgstr "Our slice of Ocean's TIDES window. Ocean's payout system rewards us proportionally to this fraction every block the pool finds. As Ocean's total hashrate grows or our delivered PH/s shrinks, this drifts down; as we deliver more or pool shrinks, it drifts up."
+
+#. placeholder {0}: denomination.formatSat( o.user.unpaid_sat, intlLocale, )
+#. placeholder {1}: denomination.formatSat( o.user.payout_threshold_sat, intlLocale, )
+#: src/pages/Status.tsx
+msgid "Our unpaid balance ({0}) has already crossed the payout threshold ({1} ≈ 0,01 BTC). The accumulated balance ships as a coinbase output the next time Ocean wins a pool block — under TIDES the pool only pays out when it finds a block, since that's the only block where it controls the coinbase. \"Next block\" means the next Ocean pool block (~3/day at typical share), NOT the next Bitcoin block in general. The blue cubes on the hashrate chart above mark each pool block as it lands."
+msgstr "Our unpaid balance ({0}) has already crossed the payout threshold ({1} ≈ 0,01 BTC). The accumulated balance ships as a coinbase output the next time Ocean wins a pool block — under TIDES the pool only pays out when it finds a block, since that's the only block where it controls the coinbase. \"Next block\" means the next Ocean pool block (~3/day at typical share), NOT the next Bitcoin block in general. The blue cubes on the hashrate chart above mark each pool block as it lands."
 
 #: src/pages/Status.tsx
 msgid "overdue {overdueFormatted}"
@@ -1763,6 +1765,13 @@ msgstr "Projected income − actual spend (rows above). Positive = the autopilot
 #: src/pages/Status.tsx
 msgid "projected income/day ({rangeLabel})"
 msgstr "projected income/day ({rangeLabel})"
+
+#. placeholder {0}: denomination.formatSat( o.user.unpaid_sat, intlLocale, )
+#. placeholder {1}: denomination.formatSat( o.user.payout_threshold_sat, intlLocale, )
+#. placeholder {2}: denomination.formatSat( o.user.daily_estimate_sat, intlLocale, )
+#: src/pages/Status.tsx
+msgid "Projected time until our unpaid balance ({0}) crosses the payout threshold ({1} ≈ 0,01 BTC), at the current {2}/day earn rate. Once crossed, the actual payout lands on the next pool block Ocean wins (not on a fixed schedule). Updates as our hashrate moves, the pool's block-find luck shifts, and the unpaid balance keeps climbing."
+msgstr "Projected time until our unpaid balance ({0}) crosses the payout threshold ({1} ≈ 0,01 BTC), at the current {2}/day earn rate. Once crossed, the actual payout lands on the next pool block Ocean wins (not on a fixed schedule). Updates as our hashrate moves, the pool's block-find luck shifts, and the unpaid balance keeps climbing."
 
 #: src/pages/Status.tsx
 msgid "Projection: avg hashprice × avg delivered (rows above), both averaged over the selected chart range. Range-aware counterpart to Ocean's own 3h estimate."

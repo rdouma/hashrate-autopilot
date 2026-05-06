@@ -1771,7 +1771,31 @@ function OceanPanel() {
             <Row
               k={t`next payout`}
               v={formatNextPayout(o.user.time_to_payout_text, intlLocale)}
-              tooltip={t`Ocean's estimate of when our 'unpaid' balance will cross the payout threshold and trigger an on-chain transfer. Updates as our hashrate, the pool's block-find luck, and the threshold itself move.`}
+              tooltip={
+                // State-aware: when the daemon emits the literal
+                // 'Next block' string the balance is already past
+                // threshold and the wording flips to explain what
+                // "next block" means in context (next pool block
+                // Ocean wins, not next Bitcoin block).
+                o.user.time_to_payout_text === 'Next block'
+                  ? t`Our unpaid balance (${denomination.formatSat(
+                      o.user.unpaid_sat,
+                      intlLocale,
+                    )}) has already crossed the payout threshold (${denomination.formatSat(
+                      o.user.payout_threshold_sat,
+                      intlLocale,
+                    )} ≈ 0,01 BTC). The accumulated balance ships as a coinbase output the next time Ocean wins a pool block — under TIDES the pool only pays out when it finds a block, since that's the only block where it controls the coinbase. "Next block" means the next Ocean pool block (~3/day at typical share), NOT the next Bitcoin block in general. The blue cubes on the hashrate chart above mark each pool block as it lands.`
+                  : t`Projected time until our unpaid balance (${denomination.formatSat(
+                      o.user.unpaid_sat,
+                      intlLocale,
+                    )}) crosses the payout threshold (${denomination.formatSat(
+                      o.user.payout_threshold_sat,
+                      intlLocale,
+                    )} ≈ 0,01 BTC), at the current ${denomination.formatSat(
+                      o.user.daily_estimate_sat,
+                      intlLocale,
+                    )}/day earn rate. Once crossed, the actual payout lands on the next pool block Ocean wins (not on a fixed schedule). Updates as our hashrate moves, the pool's block-find luck shifts, and the unpaid balance keeps climbing.`
+              }
             />
           )}
         </div>
