@@ -2,6 +2,10 @@
 
 ## 2026-05-05
 
+### `[UI]` Right-axis colour back to purple (#93)
+
+Slate-300 (the previous neutral grey) read as washed-out white on the dark background and didn't pop against the other lines. Switched back to a purple - specifically `#c084fc` (purple-400, pink-leaning) rather than the previous `#ec4899` pink (which collided with the Price chart's max-bid red) or `#a78bfa` violet-400 (which would collide with the dashed hashprice line). Distinct from every existing palette entry; reads cleanly against slate.
+
 ### `[Fix]` Block-found sound now rings on every Ocean pool block, not on on-chain payouts
 
 Operator's stated intent on #88 from day one was: hear a cue every time Ocean finds a block (~3/day at typical pool share), NOT when an on-chain payout to the configured BTC address confirms (which is rare under TIDES — only when unpaid balance crosses the ~1.05M-sat threshold — and a wallet already notifies on those). The shipped wiring listened to `reward_events` (the payout-observer's table), so the operator sat at their desk through a pool block 13 minutes ago with no sound. Switching the trigger to `/api/ocean.recent_blocks[]`: hook fires once per increment of the maximum block height across the list, baseline-on-first-poll-silently to avoid a backlog burst, and uses a fresh localStorage key (`braiins.lastSeenOceanBlockHeight`) so existing operators upgrading past this commit also get a clean silent baseline rather than a sudden replay of the last 15 historical pool blocks.

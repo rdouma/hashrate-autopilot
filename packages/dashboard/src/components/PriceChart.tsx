@@ -503,14 +503,14 @@ export const PriceChart = memo(function PriceChart({
         case 'estimated_block_reward':
           return {
             values: points.map((p) => p.estimated_block_reward_sat),
-            stroke: '#cbd5e1',
+            stroke: '#c084fc',
             axisLabel: `block reward (${denomination.mode === 'usd' ? '$' : denomination.mode === 'btc' ? '₿' : 'sat'})`,
             formatTick: (v) => formatSatCompact(v, denomination, intlLocale),
           };
         case 'btc_usd_price':
           return {
             values: points.map((p) => p.btc_usd_price),
-            stroke: '#cbd5e1',
+            stroke: '#c084fc',
             axisLabel: 'BTC/USD ($)',
             // The $ prefix + thousand-sep dot makes "$80.500" 7
             // chars, which overruns the right-axis padding. Keep
@@ -531,14 +531,14 @@ export const PriceChart = memo(function PriceChart({
         case 'ocean_unpaid_sat':
           return {
             values: points.map((p) => p.ocean_unpaid_sat),
-            stroke: '#cbd5e1',
+            stroke: '#c084fc',
             axisLabel: `unpaid (${denomination.mode === 'usd' ? '$' : denomination.mode === 'btc' ? '₿' : 'sat'})`,
             formatTick: (v) => formatSatCompact(v, denomination, intlLocale),
           };
         case 'network_difficulty':
           return {
             values: points.map((p) => p.network_difficulty),
-            stroke: '#cbd5e1',
+            stroke: '#c084fc',
             axisLabel: 'difficulty',
             // Difficulty in trillions, compact - chain difficulty
             // sits ~1.4e14, so /1e12 lands at ~140. formatCompactNumber

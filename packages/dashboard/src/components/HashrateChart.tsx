@@ -295,7 +295,7 @@ export const HashrateChart = memo(function HashrateChart({
                 maximumFractionDigits: 4,
               }).format(v)}%`,
             axisLabel: '% of Ocean',
-            stroke: '#cbd5e1',
+            stroke: '#c084fc',
           };
         case 'network_difficulty':
           return {
@@ -308,7 +308,7 @@ export const HashrateChart = memo(function HashrateChart({
                 maximumFractionDigits: 2,
               })} T`,
             axisLabel: 'difficulty',
-            stroke: '#cbd5e1',
+            stroke: '#c084fc',
           };
         case 'pool_hashrate':
           return {
@@ -323,7 +323,7 @@ export const HashrateChart = memo(function HashrateChart({
               return formatCompactNumber(v * factor, intlLocale);
             },
             axisLabel: `pool ${denomination.hashrateSuffix}`,
-            stroke: '#cbd5e1',
+            stroke: '#c084fc',
           };
         case 'acceptance': {
           // #90 — per-tick rolling acceptance ratio. Earlier per-bucket
@@ -377,7 +377,7 @@ export const HashrateChart = memo(function HashrateChart({
                 maximumFractionDigits: 2,
               }).format(v)}%`,
             axisLabel: 'acceptance %',
-            stroke: '#cbd5e1',
+            stroke: '#c084fc',
           };
         }
         case 'datum_rejects': {
@@ -402,7 +402,7 @@ export const HashrateChart = memo(function HashrateChart({
                 maximumFractionDigits: 0,
               }).format(v),
             axisLabel: 'datum rejects (per bucket)',
-            stroke: '#cbd5e1',
+            stroke: '#c084fc',
           };
         }
         case 'pool_luck_24h':
@@ -427,7 +427,7 @@ export const HashrateChart = memo(function HashrateChart({
                 maximumFractionDigits: 2,
               }).format(v)}×`,
             axisLabel: isDay ? 'pool luck (24h)' : 'pool luck (7d)',
-            stroke: '#cbd5e1',
+            stroke: '#c084fc',
           };
         }
       }
