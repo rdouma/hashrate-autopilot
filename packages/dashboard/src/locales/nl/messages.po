@@ -179,6 +179,18 @@ msgstr "0 = uitgeschakeld. Voorbeeld: 95 = schakel goedkope modus in wanneer de 
 msgid "0 = use the full available wallet balance each CREATE (clamped to 1 BTC - the Braiins per-bid hard cap). Any positive value pins every new bid to that exact amount regardless of balance."
 msgstr "0 = gebruik bij elke CREATE het volledige beschikbare wallet-saldo (afgekapt op 1 BTC - de harde Braiins-limiet per bod). Elke positieve waarde zet ieder nieuw bod precies op dat bedrag, ongeacht het saldo."
 
+#: src/pages/Alerts.tsx
+msgid "24h"
+msgstr "24u"
+
+#: src/pages/Alerts.tsx
+msgid "2h"
+msgstr "2u"
+
+#: src/pages/Alerts.tsx
+msgid "30m"
+msgstr "30m"
+
 #: src/pages/Config.tsx
 msgid "A bid is currently running (≈ {remainingSatStr} sat left). The next CREATE fires when it finishes - at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat, capped at 1 BTC) will be used."
 msgstr "Er loopt nu een bod (≈ {remainingSatStr} sat over). De volgende CREATE volgt zodra dit afloopt - op dat moment wordt het volledige beschikbare wallet-saldo (nu ≈ {resolvedSatStr} sat, afgekapt op 1 BTC) gebruikt."
@@ -211,9 +223,18 @@ msgstr "Een paar vragen om de daemon werkend te krijgen. De standaardwaarden wer
 msgid "Access"
 msgstr "Toegang"
 
+#. placeholder {0}: formatAge(row.acknowledged_at_ms)
+#: src/pages/Alerts.tsx
+msgid "acknowledged {0}"
+msgstr "bevestigd {0}"
+
 #: src/pages/Status.tsx
 msgid "action mode blocks this"
 msgstr "actie-modus blokkeert dit"
+
+#: src/pages/Alerts.tsx
+msgid "actions"
+msgstr "acties"
 
 #: src/lib/labels.ts
 msgid "Active"
@@ -234,6 +255,15 @@ msgstr "Werkelijk verbruikte sat over de laatste 3 u, geschaald naar een 24u-tem
 #: src/pages/Setup.tsx
 msgid "After submit, the daemon writes everything to <0>state.db</0> and brings the controller online in-place. Boots in <1>DRY-RUN</1> mode; the dashboard signs you in automatically. Promote to LIVE from the Status page when you're ready."
 msgstr "Na indienen schrijft de daemon alles naar <0>state.db</0> en zet de controller direct online. Start in <1>DRY-RUN</1> modus; het dashboard logt je automatisch in. Schakel naar LIVE op de Status-pagina wanneer je klaar bent."
+
+#: src/components/Layout.tsx
+#: src/pages/Alerts.tsx
+msgid "Alerts"
+msgstr "Meldingen"
+
+#: src/pages/Alerts.tsx
+msgid "all severities"
+msgstr "alle ernst"
 
 #: src/pages/Config.tsx
 msgid "Always dry-run (safest)"
@@ -262,6 +292,10 @@ msgstr "API onbereikbaar ({0})"
 #: src/pages/Status.tsx
 msgid "At effective cap - desired fillable + overpay exceeds the ceiling."
 msgstr "Op effectief plafond - gewenste vulbaar + toeslag overschrijdt het maximum."
+
+#: src/pages/Alerts.tsx
+msgid "Audit trail for every notification the daemon recorded - sent, failed, muted, snoozed, or given-up. Configure the Telegram destination on Config → Notifications."
+msgstr "Auditspoor van elke melding die de daemon heeft vastgelegd - verzonden, mislukt, gedempt, gesnoozed of opgegeven. Configureer de Telegram-bestemming op Config → Meldingen."
 
 #: src/pages/Config.tsx
 msgid "auto-save"
@@ -814,6 +848,10 @@ msgstr "geleverd (Braiins)"
 msgid "delivered / cap"
 msgstr "geleverd / cap"
 
+#: src/pages/Alerts.tsx
+msgid "delivery"
+msgstr "aflevering"
+
 #: src/components/PriceChart.tsx
 msgid "delta"
 msgstr "delta"
@@ -1003,6 +1041,10 @@ msgstr "Haalt de BTC/USD spotprijs op van een publieke exchange-API. Schakelt ee
 msgid "fillable"
 msgstr "vulbaar"
 
+#: src/pages/Alerts.tsx
+msgid "filter:"
+msgstr "filter:"
+
 #: src/pages/Setup.tsx
 msgid "First-run setup"
 msgstr "Eerste-keer setup"
@@ -1176,6 +1218,10 @@ msgstr "onjuist wachtwoord"
 msgid "increase"
 msgstr "verhogen"
 
+#: src/pages/Alerts.tsx
+msgid "INFO"
+msgstr "INFO"
+
 #: src/pages/Status.tsx
 msgid "insufficient history"
 msgstr "onvoldoende geschiedenis"
@@ -1229,6 +1275,7 @@ msgstr "beslissing laden…"
 msgid "Loading or daemon restart required."
 msgstr "Laden of daemon-herstart vereist."
 
+#: src/pages/Alerts.tsx
 #: src/pages/Config.tsx
 #: src/pages/Status.tsx
 #: src/pages/Status.tsx
@@ -1243,9 +1290,17 @@ msgstr "Laden…"
 msgid "Log retention"
 msgstr "Logbewaring"
 
+#: src/pages/Alerts.tsx
+msgid "LOUD"
+msgstr "LOUD"
+
 #: src/components/PriceChart.tsx
 msgid "manual"
 msgstr "handmatig"
+
+#: src/pages/Alerts.tsx
+msgid "mark seen"
+msgstr "gezien markeren"
 
 #: src/components/PriceChart.tsx
 msgid "market at this tick"
@@ -1375,6 +1430,10 @@ msgstr "geen actief bod"
 #: src/pages/Status.tsx
 msgid "no active bids"
 msgstr "geen actieve biedingen"
+
+#: src/pages/Alerts.tsx
+msgid "no alerts matching the filter."
+msgstr "geen meldingen die aan het filter voldoen."
 
 #: src/pages/Config.tsx
 msgid "No auto-prune; growing ~ {dailyStr}/day"
@@ -1826,6 +1885,10 @@ msgstr "ontvangen (Datum)"
 msgid "received (Ocean)"
 msgstr "ontvangen (Ocean)"
 
+#: src/pages/Alerts.tsx
+msgid "recovery"
+msgstr "herstel"
+
 #: src/pages/Status.tsx
 msgid "Refresh the money panel now (auto-refreshes every 60s)."
 msgstr "Ververs het money-paneel nu (vernieuwt automatisch elke 60s)."
@@ -1985,6 +2048,10 @@ msgstr "Kies hashratemaat (1 EH = 1.000 PH = 1.000.000 TH)"
 msgid "Setting up…"
 msgstr "Bezig met instellen…"
 
+#: src/pages/Alerts.tsx
+msgid "severity"
+msgstr "ernst"
+
 #: src/components/HashrateChart.tsx
 #: src/pages/Status.tsx
 msgid "share log"
@@ -2021,6 +2088,15 @@ msgstr "Signaleert BIP 110 (Reduced Data softfork)"
 #: src/pages/Login.tsx
 msgid "signing in…"
 msgstr "bezig met aanmelden…"
+
+#. placeholder {0}: p.label()
+#: src/pages/Alerts.tsx
+msgid "snooze {0}"
+msgstr "snooze {0}"
+
+#: src/pages/Alerts.tsx
+msgid "snoozed until"
+msgstr "gesnoozed tot"
 
 #: src/pages/Config.tsx
 msgid "Sound"
@@ -2162,6 +2238,10 @@ msgstr "Tijd sinds Ocean het meest recente blok vond. Ocean's gemiddelde blok-vi
 msgid "tip"
 msgstr "tip"
 
+#: src/pages/Alerts.tsx
+msgid "title"
+msgstr "titel"
+
 #: src/pages/Status.tsx
 msgid "total"
 msgstr "totaal"
@@ -2177,6 +2257,10 @@ msgstr "Totaal aantal worker-verbindingen op Ocean (één adres kan veel workers
 #: src/pages/Config.tsx
 msgid "Two append-only logs back the dashboard. tick_metrics powers every chart; decisions is a per-tick forensic log split by whether the autopilot proposed any action. Pruning runs hourly and on daemon boot. 0 on any field = keep forever."
 msgstr "Twee append-only logs voeden het dashboard. tick_metrics vormt de basis van elke grafiek; decisions is een forensisch logboek per tick, gesplitst op basis van of de autopilot een actie heeft voorgesteld. Opschonen gebeurt elk uur en bij het opstarten van de daemon. 0 in een veld = voor altijd bewaren."
+
+#: src/pages/Alerts.tsx
+msgid "unacknowledged only"
+msgstr "alleen onbevestigd"
 
 #: src/pages/Status.tsx
 msgid "unknown"
@@ -2264,6 +2348,10 @@ msgstr "versie"
 msgid "Waiting for Ocean hashprice - trading is paused until the break-even reference is available."
 msgstr "Wacht op Ocean hashprice - trading is gepauzeerd tot de break-even-referentie beschikbaar is."
 
+#: src/pages/Alerts.tsx
+msgid "WARN"
+msgstr "WARN"
+
 #: src/pages/Setup.tsx
 msgid "What the controller aims for."
 msgstr "Waar de controller op richt."
@@ -2271,6 +2359,10 @@ msgstr "Waar de controller op richt."
 #: src/pages/Status.tsx
 msgid "What this last block earned us, estimated as block_reward * share_log_pct / 100. Uses the share_log recorded at the block's moment when our tick history covers it; falls back to the live share_log for older blocks."
 msgstr "Wat dit laatste blok ons opleverde, geschat als block_reward * share_log_pct / 100. Gebruikt de share_log opgeslagen op het moment van het blok wanneer onze tick-geschiedenis het dekt; valt terug op de live share_log voor oudere blokken."
+
+#: src/pages/Alerts.tsx
+msgid "when"
+msgstr "wanneer"
 
 #: src/pages/Config.tsx
 msgid "When on, alerts are still recorded on the /alerts page with status \"muted\" but nothing is sent to Telegram. Recovery messages also stay silent."

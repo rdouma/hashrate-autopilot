@@ -25,6 +25,7 @@ function useNavItems() {
   void i18n;
   return [
     { label: t`Status`, to: '/' },
+    { label: t`Alerts`, to: '/alerts' },
     { label: t`Config`, to: '/config' },
   ];
 }
@@ -44,6 +45,15 @@ export function Layout() {
     queryFn: api.status,
     refetchInterval: 30_000,
   });
+
+  // #100: un-acknowledged LOUD + WARN alert count, drives the small
+  // red dot on the /alerts nav tab. Same 30 s cadence as status.
+  const alertsHead = useQuery({
+    queryKey: ['alerts-head'],
+    queryFn: () => api.alertsList({ unacknowledged_only: true, limit: 1 }),
+    refetchInterval: 30_000,
+  });
+  const unreadCount = alertsHead.data?.unacknowledged_high_severity_count ?? 0;
 
   // Audible block-found cue (#88). Reads the operator's choice from
   // the live config; pollster lives inside the hook.
@@ -85,13 +95,18 @@ export function Layout() {
                   key={item.to}
                   to={item.to}
                   className={
-                    'px-3 py-1.5 text-sm rounded-md transition ' +
+                    'px-3 py-1.5 text-sm rounded-md transition relative ' +
                     (active
                       ? 'bg-slate-800 text-amber-400'
                       : 'text-slate-300 hover:bg-slate-800/60')
                   }
                 >
                   {item.label}
+                  {item.to === '/alerts' && unreadCount > 0 && (
+                    <span className="ml-1.5 inline-flex items-center justify-center min-w-[1.25rem] h-4 px-1 text-[10px] font-medium rounded-full bg-red-500 text-white align-middle">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
                 </Link>
               );
             })}

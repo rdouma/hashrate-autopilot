@@ -11,6 +11,7 @@ import './index.css';
 import { DenominationProvider } from './lib/denomination';
 import { getInitialLocale, i18n, loadAndActivate } from './lib/i18n';
 import { LocaleContext, useLocaleState } from './lib/locale';
+import { Alerts } from './pages/Alerts';
 import { Config } from './pages/Config';
 import { Login } from './pages/Login';
 import { Setup } from './pages/Setup';
@@ -52,6 +53,7 @@ function AppShell() {
                     }
                   >
                     <Route index element={<Status />} />
+                    <Route path="/alerts" element={<Alerts />} />
                     <Route path="/config" element={<Config />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Route>
