@@ -35,6 +35,7 @@ import { createOceanClient } from './services/ocean.js';
 import { PayoutObserver } from './services/payout-observer.js';
 import { PoolHealthTracker } from './services/pool-health.js';
 import { closeDatabase, openDatabase, type DatabaseHandle } from './state/db.js';
+import { AlertsRepo } from './state/repos/alerts.js';
 import { BidEventsRepo } from './state/repos/bid_events.js';
 import { ClosedBidsCacheRepo } from './state/repos/closed_bids_cache.js';
 import { ConfigRepo } from './state/repos/config.js';
@@ -66,6 +67,7 @@ interface BootDeps {
   readonly decisionsRepo: DecisionsRepo;
   readonly tickMetricsRepo: TickMetricsRepo;
   readonly bidEventsRepo: BidEventsRepo;
+  readonly alertsRepo: AlertsRepo;
   readonly closedBidsCacheRepo: ClosedBidsCacheRepo;
   readonly secretsRepo: SecretsRepo;
   readonly secretsPath: string;
@@ -96,6 +98,7 @@ async function main(): Promise<void> {
     decisionsRepo: new DecisionsRepo(handle.db),
     tickMetricsRepo: new TickMetricsRepo(handle.db),
     bidEventsRepo: new BidEventsRepo(handle.db),
+    alertsRepo: new AlertsRepo(handle.db),
     closedBidsCacheRepo: new ClosedBidsCacheRepo(handle.db),
     secretsRepo: new SecretsRepo(handle.db),
     secretsPath,
@@ -221,6 +224,7 @@ async function bootOperational(
     decisionsRepo,
     tickMetricsRepo,
     bidEventsRepo,
+    alertsRepo,
     closedBidsCacheRepo,
     secretsPath,
     ageKeyPath,
@@ -516,6 +520,7 @@ async function bootOperational(
     decisionsRepo,
     tickMetricsRepo,
     bidEventsRepo,
+    alertsRepo,
     payoutObserver,
     oceanClient,
     accountSpend,
