@@ -250,9 +250,6 @@ export interface StatusResponse {
     binding_cap: 'fixed' | 'dynamic';
     bid_budget_sat: number;
     pool_url: string;
-    quiet_hours_start: string;
-    quiet_hours_end: string;
-    quiet_hours_timezone: string;
     effective_target_hashrate_ph: number;
     cheap_mode_active: boolean;
   };
@@ -290,13 +287,11 @@ export interface AppConfig {
   zero_hashrate_loud_alert_after_minutes: number;
   pool_outage_blip_tolerance_seconds: number;
   api_outage_alert_after_minutes: number;
-  quiet_hours_start: string;
-  quiet_hours_end: string;
-  quiet_hours_timezone: string;
-  confirmation_timeout_minutes: number;
   handover_window_minutes: number;
   btc_payout_address: string;
   telegram_chat_id: string;
+  notifications_muted: boolean;
+  notification_retry_interval_minutes: number;
   electrs_host: string | null;
   electrs_port: number | null;
   boot_mode: 'ALWAYS_DRY_RUN' | 'LAST_MODE' | 'ALWAYS_LIVE';

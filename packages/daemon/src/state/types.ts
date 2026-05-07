@@ -31,18 +31,14 @@ export interface ConfigTable {
   zero_hashrate_loud_alert_after_minutes: number;
   pool_outage_blip_tolerance_seconds: number;
   api_outage_alert_after_minutes: number;
-  /** @deprecated Legacy column - kept for NOT NULL; ignored by the app. */
-  quiet_hours_start: string;
-  /** @deprecated Legacy column - kept for NOT NULL; ignored by the app. */
-  quiet_hours_end: string;
-  /** @deprecated Legacy column - kept for NOT NULL; ignored by the app. */
-  quiet_hours_timezone: string;
-  /** @deprecated Legacy column - kept for NOT NULL; ignored by the app. */
-  confirmation_timeout_minutes: number;
   handover_window_minutes: number;
   btc_payout_address: string;
-  /** @deprecated Legacy column - kept for NOT NULL; ignored by the app. */
+  /** #100: Telegram chat id the notifier POSTs into. Empty string = unconfigured. */
   telegram_chat_id: string;
+  /** #100: global mute toggle for the Telegram notifier. */
+  notifications_muted: 0 | 1;
+  /** #100: cadence between retry attempts when state stays bad. Default 30. */
+  notification_retry_interval_minutes: number;
   /** @deprecated Legacy column - kept for NOT NULL; ignored by the app. */
   hibernate_on_expensive_market: 0 | 1;
   electrs_host: string | null;
@@ -192,6 +188,14 @@ export interface RewardEventsTable {
 
 export type AlertSeverity = 'INFO' | 'WARN' | 'LOUD';
 export type AlertStatus = 'BUFFERED' | 'SENT' | 'FAILED';
+/** #100: per-alert delivery state, channel-agnostic. */
+export type AlertDeliveryStatus =
+  | 'pending'
+  | 'sent'
+  | 'failed'
+  | 'muted'
+  | 'snoozed'
+  | 'gave_up';
 
 export interface AlertsTable {
   id: Generated<number>;
@@ -201,7 +205,24 @@ export interface AlertsTable {
   body: string;
   status: AlertStatus;
   sent_at: number | null;
-  telegram_message_id: string | null;
+  /** #100: which event class triggered this alert (e.g. 'datum_unreachable'). Null on rows pre-0062. */
+  event_class: string | null;
+  /** #100: pending | sent | failed | muted | snoozed | gave_up. */
+  delivery_status: AlertDeliveryStatus;
+  /** #100: how many times the notifier has tried to POST this alert. */
+  delivery_attempts: number;
+  /** #100: ms-epoch of the last delivery attempt. Null if never attempted. */
+  last_attempt_at_ms: number | null;
+  /** #100: ms-epoch when the next retry is scheduled. Null = no retry due. */
+  next_retry_at_ms: number | null;
+  /** #100: ms-epoch until which Telegram POSTs are short-circuited as 'snoozed'. */
+  snoozed_until_ms: number | null;
+  /** #100: FK back to the alert this row recovers from. Null on the original alert. */
+  paired_alert_id: number | null;
+  /** #100: JSON payload with channel-specific identifiers (Telegram message_id, etc). */
+  delivery_meta_json: string | null;
+  /** #100: ms-epoch when the operator clicked acknowledge. Null = unacknowledged. */
+  acknowledged_at_ms: number | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -380,7 +401,6 @@ export interface SecretsTable {
   bitcoind_rpc_user: string | null;
   bitcoind_rpc_password: string | null;
   telegram_bot_token: string | null;
-  telegram_webhook_secret: string | null;
   updated_at: number;
 }
 

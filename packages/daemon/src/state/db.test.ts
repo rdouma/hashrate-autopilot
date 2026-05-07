@@ -87,6 +87,7 @@ describe('openDatabase - migrations', () => {
       '0057_tick_metrics_pool_luck.sql',
       '0058_block_version_cache.sql',
       '0061_block_found_sound_filename.sql',
+      '0062_telegram_notifications.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });

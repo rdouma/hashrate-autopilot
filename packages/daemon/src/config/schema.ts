@@ -23,9 +23,10 @@ export const SecretsSchema = z.object({
   braiins_owner_token: nonEmptyString,
   braiins_read_only_token: nonEmptyString.optional(),
 
-  // Legacy - kept optional so old .env.sops.yaml files still parse.
+  // #100: Telegram bot token. Optional so installs without notifications
+  // configured still parse; when set it's the authentication credential
+  // for POST https://api.telegram.org/bot{token}/sendMessage.
   telegram_bot_token: nonEmptyString.optional(),
-  telegram_webhook_secret: nonEmptyString.optional(),
 
   // bitcoind RPC is edited from the dashboard Config page (#14 moved these
   // out of the secrets file). Kept as optional so existing .env.sops.yaml
@@ -264,6 +265,23 @@ export const AppConfigSchema = z.object({
       'custom',
     ])
     .default('off'),
+
+  // #100: Telegram chat id the notifier POSTs into. Empty string =
+  // unconfigured (notifier short-circuits with delivery_status='failed'
+  // and a clear error message). Stored unencrypted on `config` because
+  // a chat id is not a credential; the bot_token (on `secrets`) is.
+  telegram_chat_id: z.string().default(''),
+
+  // #100: global mute toggle. When true the notifier skips the actual
+  // Telegram POST but still records the alert row + retry ladder, so
+  // the operator sees on /alerts what *would* have fired.
+  notifications_muted: z.boolean().default(false),
+
+  // #100: cadence between retry attempts while state stays bad.
+  // Default 30 minutes; first attempt fires immediately, then up to 4
+  // retries at this interval, then a final "giving up" message and
+  // silence until recovery or fresh transition.
+  notification_retry_interval_minutes: positiveInt.default(30),
 });
 
 export type AppConfig = z.infer<typeof AppConfigSchema>;
@@ -349,4 +367,8 @@ export const APP_CONFIG_DEFAULTS: Omit<
   show_effective_rate_on_price_chart: false,
   show_share_log_on_hashrate_chart: false,
   block_found_sound: 'off',
+
+  telegram_chat_id: '',
+  notifications_muted: false,
+  notification_retry_interval_minutes: 30,
 };

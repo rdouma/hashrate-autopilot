@@ -42,7 +42,6 @@ export class SecretsRepo {
     if (row.bitcoind_rpc_user) candidate['bitcoind_rpc_user'] = row.bitcoind_rpc_user;
     if (row.bitcoind_rpc_password) candidate['bitcoind_rpc_password'] = row.bitcoind_rpc_password;
     if (row.telegram_bot_token) candidate['telegram_bot_token'] = row.telegram_bot_token;
-    if (row.telegram_webhook_secret) candidate['telegram_webhook_secret'] = row.telegram_webhook_secret;
     return SecretsSchema.parse(candidate);
   }
 
@@ -61,7 +60,6 @@ export class SecretsRepo {
       bitcoind_rpc_user: validated.bitcoind_rpc_user ?? null,
       bitcoind_rpc_password: validated.bitcoind_rpc_password ?? null,
       telegram_bot_token: validated.telegram_bot_token ?? null,
-      telegram_webhook_secret: validated.telegram_webhook_secret ?? null,
     };
     await this.db
       .insertInto('secrets')
