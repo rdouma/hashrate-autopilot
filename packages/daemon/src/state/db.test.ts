@@ -95,6 +95,7 @@ describe('openDatabase - migrations', () => {
       '0067_ddns.sql',
       '0068_ddns_update_url.sql',
       '0069_owned_bids_dest_url.sql',
+      '0070_telegram_instance_label.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });
