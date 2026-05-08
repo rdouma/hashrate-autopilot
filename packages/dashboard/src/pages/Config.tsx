@@ -620,6 +620,17 @@ export function Config() {
               />,
             );
           }
+          // Insert the custom notifications section right before "Block-found notification"
+          if (section.id === 'block-found-sound') {
+            nodes.push(
+              <NotificationsSection
+                key="notifications"
+                draft={draft}
+                locale={intlLocale}
+                onChange={update}
+              />,
+            );
+          }
           // Group consecutive sideBySide sections into one row.
           if (section.sideBySide) {
             const group: Section[] = [];
@@ -1230,6 +1241,306 @@ function DisplaySettingsSection() {
  * old flat "Bitcoin node (optional)" section with a radio-driven layout
  * that shows only the fields relevant to the selected backend.
  */
+function NotificationsSection({
+  draft,
+  locale,
+  onChange,
+}: {
+  draft: AppConfig;
+  locale: string | undefined;
+  onChange: <K extends keyof AppConfig>(k: K, v: AppConfig[K]) => void;
+}) {
+  const { i18n } = useLingui();
+  void i18n;
+
+  const test = useMutation({
+    mutationFn: () =>
+      api.notificationsTest({
+        bot_token: draft.telegram_bot_token ?? '',
+        chat_id: draft.telegram_chat_id ?? '',
+      }),
+  });
+
+  return (
+    <section className="bg-slate-900 border border-slate-800 rounded-lg p-4">
+      <header className="mb-3">
+        <h3 className="text-sm uppercase tracking-wider text-amber-400">
+          <Trans>Notifications</Trans>
+        </h3>
+        <p className="text-xs text-slate-500 mt-1">
+          <Trans>
+            Push outage alerts (Datum unreachable, hashrate floor breach, wallet
+            runway, etc.) to Telegram so the operator finds out within minutes,
+            not hours. See the setup walkthrough for the @BotFather + @userinfobot
+            steps.
+          </Trans>
+        </p>
+      </header>
+
+      <div className="space-y-4">
+        <label className="block">
+          <span className="block text-sm text-slate-300 mb-1">
+            <Trans>Telegram bot token</Trans>
+          </span>
+          <input
+            type="password"
+            value={draft.telegram_bot_token ?? ''}
+            onChange={(e) => onChange('telegram_bot_token', e.target.value as never)}
+            placeholder="123456789:AA..."
+            autoComplete="off"
+            className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm font-mono"
+          />
+          <span className="block text-xs text-slate-500 mt-1">
+            <Trans>
+              Open Telegram and chat with{' '}
+              <a
+                href="https://t.me/BotFather"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-amber-400 hover:underline"
+              >
+                @BotFather
+              </a>
+              , send /newbot, follow the prompts; @BotFather replies with the token.
+              Paste it here.
+            </Trans>
+          </span>
+        </label>
+
+        <label className="block">
+          <span className="block text-sm text-slate-300 mb-1">
+            <Trans>Chat ID</Trans>
+          </span>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={draft.telegram_chat_id ?? ''}
+              onChange={(e) => onChange('telegram_chat_id', e.target.value as never)}
+              placeholder="123456789"
+              className="flex-1 bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm font-mono"
+            />
+            <button
+              type="button"
+              onClick={() => test.mutate()}
+              disabled={test.isPending || !draft.telegram_bot_token || !draft.telegram_chat_id}
+              className="px-3 py-1.5 text-sm rounded bg-amber-400 text-slate-900 font-medium hover:bg-amber-300 disabled:opacity-50 whitespace-nowrap"
+            >
+              {test.isPending ? <Trans>Testing…</Trans> : <Trans>Test connection</Trans>}
+            </button>
+          </div>
+          <span className="block text-xs text-slate-500 mt-1">
+            <Trans>
+              Start a chat with your bot, then send /start. Send any message to{' '}
+              <a
+                href="https://t.me/userinfobot"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-amber-400 hover:underline"
+              >
+                @userinfobot
+              </a>{' '}
+              and copy the numeric Id back into this field. Test connection
+              validates the values currently in the form, before saving.
+            </Trans>
+          </span>
+          {(test.data || test.isError) && (
+            <div className="mt-2 text-xs font-mono break-words">
+              {test.data && test.data.ok && (
+                <span className="text-emerald-300">
+                  <Trans>OK · message delivered</Trans>
+                </span>
+              )}
+              {test.data && !test.data.ok && (
+                <span className="text-red-400">{test.data.error}</span>
+              )}
+              {test.isError && (
+                <span className="text-red-400">{(test.error as Error).message}</span>
+              )}
+            </div>
+          )}
+        </label>
+
+        <label className="block">
+          <span className="block text-sm text-slate-300 mb-1">
+            <Trans>Retry interval</Trans>
+          </span>
+          <div className="flex items-center gap-2">
+            <NumberField
+              value={draft.notification_retry_interval_minutes}
+              onChange={(n) => onChange('notification_retry_interval_minutes', (n || 30) as never)}
+              step="integer"
+              locale={locale}
+              noGrouping
+              className="w-32"
+            />
+            <span className="text-xs text-slate-500">
+              <Trans>minutes</Trans>
+            </span>
+          </div>
+          <span className="block text-xs text-slate-500 mt-1">
+            <Trans>
+              Cadence between retries when an alert fails to deliver or the bad
+              state persists. First attempt fires immediately; up to 4 retries
+              follow at this cadence; the 5th carries a final "giving up" message
+              and the notifier stays silent until recovery.
+            </Trans>
+          </span>
+        </label>
+
+        <EventClassSubscriptions draft={draft} onChange={onChange} />
+      </div>
+    </section>
+  );
+}
+
+/**
+ * #106: per-event-class opt-out. One checkbox per known event class.
+ * Storage is a string[] of disabled class names; the UI renders them
+ * as enable/disable toggles for clarity ("checked = I want this
+ * alert" rather than "checked = silenced").
+ */
+function EventClassSubscriptions({
+  draft,
+  onChange,
+}: {
+  draft: AppConfig;
+  onChange: <K extends keyof AppConfig>(k: K, v: AppConfig[K]) => void;
+}) {
+  const { i18n } = useLingui();
+  void i18n;
+  const disabled = new Set(draft.notification_disabled_event_classes);
+
+  const eventClasses: Array<{ id: string; label: string; help: string }> = [
+    {
+      id: 'datum_unreachable',
+      label: t`Datum stratum unreachable`,
+      help: t`Buyer-side gateway has been unreachable for the configured tolerance window.`,
+    },
+    {
+      id: 'hashrate_below_floor',
+      label: t`Hashrate below floor`,
+      help: t`Delivered hashrate has been under minimum_floor_hashrate_ph for below_floor_alert_after_minutes.`,
+    },
+    {
+      id: 'zero_hashrate',
+      label: t`Zero hashrate`,
+      help: t`Effectively zero delivery for zero_hashrate_loud_alert_after_minutes.`,
+    },
+    {
+      id: 'api_unreachable',
+      label: t`Braiins API unreachable`,
+      help: t`Marketplace API has been down for api_outage_alert_after_minutes.`,
+    },
+    {
+      id: 'unknown_bid',
+      label: t`Unknown bid detected`,
+      help: t`A bid in the account that the autopilot did not create. Already triggers auto-PAUSE.`,
+    },
+    {
+      id: 'sustained_paused',
+      label: t`Bid sustained-paused`,
+      help: t`Primary owned bid carries a non-null last_pause_reason for the tolerance window.`,
+    },
+    {
+      id: 'beta_exit',
+      label: t`Beta-exit detected`,
+      help: t`Any active owned bid reports fee_rate_pct > 0.`,
+    },
+  ];
+
+  const toggle = (id: string, enabled: boolean) => {
+    const next = new Set(disabled);
+    if (enabled) next.delete(id);
+    else next.add(id);
+    onChange(
+      'notification_disabled_event_classes',
+      Array.from(next).sort() as never,
+    );
+  };
+
+  const muteHelp = i18n._(
+    'When on, alerts are still recorded on the /alerts page with status "muted" but nothing is sent to Telegram. Recovery messages also stay silent.',
+  );
+
+  return (
+    <fieldset className="pt-3 border-t border-slate-800">
+      <legend className="block text-sm text-slate-300 mb-2">
+        <Trans>What to send to Telegram</Trans>
+      </legend>
+
+      {/* Global kill-switch sits at the top of the cluster - it's the
+          override that silences everything below regardless of the
+          per-event ticks. */}
+      <label
+        className="flex items-center gap-2 p-2 mb-2 rounded border border-slate-800 hover:bg-slate-800/40 cursor-pointer"
+        title={muteHelp}
+      >
+        <input
+          type="checkbox"
+          checked={draft.notifications_muted}
+          onChange={(e) => onChange('notifications_muted', e.target.checked as never)}
+          className="accent-amber-400 h-4 w-4"
+        />
+        <span className="text-sm text-slate-100 font-semibold">
+          <Trans>Mute all Telegram notifications</Trans>
+        </span>
+        <HelpDot />
+      </label>
+
+      <p className="text-xs text-slate-500 mb-2">
+        <Trans>
+          Untick any event type you don't want pushed. Disabled types skip the
+          daemon entirely - no Telegram, no /alerts row, no retry ladder. Hover
+          a row for the trigger condition.
+        </Trans>
+      </p>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {eventClasses.map((ec) => {
+          const enabled = !disabled.has(ec.id);
+          const muted = draft.notifications_muted;
+          return (
+            <label
+              key={ec.id}
+              className={
+                'flex items-center gap-2 p-2 rounded border cursor-pointer transition ' +
+                (muted
+                  ? 'border-slate-800 opacity-60'
+                  : 'border-slate-800 hover:bg-slate-800/40')
+              }
+              title={ec.help}
+            >
+              <input
+                type="checkbox"
+                checked={enabled}
+                onChange={(e) => toggle(ec.id, e.target.checked)}
+                disabled={muted}
+                className="accent-amber-400 h-4 w-4"
+              />
+              <span className="flex-1 text-sm text-slate-100 font-semibold truncate">
+                {ec.label}
+              </span>
+              <HelpDot />
+            </label>
+          );
+        })}
+      </div>
+    </fieldset>
+  );
+}
+
+/** Small (i) glyph that pairs with a `title=` tooltip on the parent. */
+function HelpDot() {
+  return (
+    <span
+      aria-hidden="true"
+      className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border border-slate-600 text-[9px] text-slate-500 leading-none"
+    >
+      i
+    </span>
+  );
+}
+
 function PayoutSourceSection({
   draft,
   locale,

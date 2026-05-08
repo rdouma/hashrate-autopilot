@@ -27,11 +27,6 @@ export class ConfigRepo {
       emergency_max_bid_sat_per_eh_day: _legacy1,
       below_floor_emergency_cap_after_minutes: _legacy2,
       hibernate_on_expensive_market: _legacy3,
-      quiet_hours_start: _legacy4,
-      quiet_hours_end: _legacy5,
-      quiet_hours_timezone: _legacy6,
-      confirmation_timeout_minutes: _legacy7,
-      telegram_chat_id: _legacy8,
       // #88: blob + mime are write-only via the dedicated multipart
       // route; the JSON config endpoint never sees them.
       block_found_sound_custom_blob: _audioBlob,
@@ -48,6 +43,12 @@ export class ConfigRepo {
         rest.show_effective_rate_on_price_chart === 1,
       show_share_log_on_hashrate_chart:
         rest.show_share_log_on_hashrate_chart === 1,
+      notifications_muted: rest.notifications_muted === 1,
+      // #106: stored as comma-separated TEXT; surface as string[].
+      // Empty string -> empty array (no opt-outs).
+      notification_disabled_event_classes: rest.notification_disabled_event_classes
+        ? rest.notification_disabled_event_classes.split(',').filter(Boolean)
+        : [],
       // Schema column is `TEXT NOT NULL DEFAULT 'off'`; the Zod enum
       // narrows valid values, but the row type is the broad SQL string.
       block_found_sound: rest.block_found_sound as AppConfig['block_found_sound'],
@@ -68,16 +69,15 @@ export class ConfigRepo {
       show_share_log_on_hashrate_chart: (validated.show_share_log_on_hashrate_chart
         ? 1
         : 0) as 0 | 1,
+      notifications_muted: (validated.notifications_muted ? 1 : 0) as 0 | 1,
+      // #106: comma-join the opt-out list back to TEXT.
+      notification_disabled_event_classes:
+        validated.notification_disabled_event_classes.join(','),
       // Legacy NOT NULL columns still in the DB - provide harmless defaults
       // so INSERT succeeds.
       emergency_max_bid_sat_per_eh_day: validated.max_bid_sat_per_eh_day,
       below_floor_emergency_cap_after_minutes: 9999,
       hibernate_on_expensive_market: 0 as 0 | 1,
-      quiet_hours_start: '00:00',
-      quiet_hours_end: '00:00',
-      quiet_hours_timezone: 'UTC',
-      confirmation_timeout_minutes: 15,
-      telegram_chat_id: '',
     };
     await this.db
       .insertInto('config')

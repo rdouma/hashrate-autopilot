@@ -250,9 +250,6 @@ export interface StatusResponse {
     binding_cap: 'fixed' | 'dynamic';
     bid_budget_sat: number;
     pool_url: string;
-    quiet_hours_start: string;
-    quiet_hours_end: string;
-    quiet_hours_timezone: string;
     effective_target_hashrate_ph: number;
     cheap_mode_active: boolean;
   };
@@ -290,13 +287,13 @@ export interface AppConfig {
   zero_hashrate_loud_alert_after_minutes: number;
   pool_outage_blip_tolerance_seconds: number;
   api_outage_alert_after_minutes: number;
-  quiet_hours_start: string;
-  quiet_hours_end: string;
-  quiet_hours_timezone: string;
-  confirmation_timeout_minutes: number;
   handover_window_minutes: number;
   btc_payout_address: string;
   telegram_chat_id: string;
+  telegram_bot_token: string;
+  notifications_muted: boolean;
+  notification_retry_interval_minutes: number;
+  notification_disabled_event_classes: string[];
   electrs_host: string | null;
   electrs_port: number | null;
   boot_mode: 'ALWAYS_DRY_RUN' | 'LAST_MODE' | 'ALWAYS_LIVE';
@@ -490,6 +487,31 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(params),
     }),
+  notificationsTest: (creds: { bot_token: string; chat_id: string }) =>
+    request<NotificationsTestResponse>('/api/notifications/test', {
+      method: 'POST',
+      body: JSON.stringify(creds),
+    }),
+  alertsList: (filters: AlertsListFilters = {}) => {
+    const qs = new URLSearchParams();
+    if (filters.since_ms !== undefined) qs.set('since_ms', String(filters.since_ms));
+    if (filters.severity) qs.set('severity', filters.severity);
+    if (filters.delivery_status) qs.set('delivery_status', filters.delivery_status);
+    if (filters.unacknowledged_only) qs.set('unacknowledged_only', 'true');
+    if (filters.limit !== undefined) qs.set('limit', String(filters.limit));
+    const q = qs.toString();
+    return request<AlertsListResponse>(`/api/alerts${q ? '?' + q : ''}`);
+  },
+  alertAcknowledge: (id: number) =>
+    request<{ ok: true; acknowledged_at_ms: number }>(`/api/alerts/${id}/acknowledge`, {
+      method: 'POST',
+      body: '{}',
+    }),
+  alertSnooze: (id: number, minutes: number) =>
+    request<{ ok: true; snoozed_until_ms: number }>(`/api/alerts/${id}/snooze`, {
+      method: 'POST',
+      body: JSON.stringify({ minutes }),
+    }),
   finance: () => request<FinanceResponse>('/api/finance'),
   financeRange: (range: ChartRange) =>
     request<FinanceRangeResponse>(
@@ -600,6 +622,52 @@ export interface ElectrsTestResponse {
   ok: boolean;
   genesis_version?: number | null;
   error?: string | null;
+}
+
+export interface NotificationsTestResponse {
+  ok: boolean;
+  error?: string | null;
+}
+
+export type AlertSeverity = 'INFO' | 'WARN' | 'LOUD';
+export type AlertDeliveryStatus =
+  | 'pending'
+  | 'sent'
+  | 'failed'
+  | 'muted'
+  | 'snoozed'
+  | 'gave_up';
+
+export interface AlertRow {
+  id: number;
+  created_at: number;
+  severity: AlertSeverity;
+  title: string;
+  body: string;
+  status: 'BUFFERED' | 'SENT' | 'FAILED';
+  sent_at: number | null;
+  event_class: string | null;
+  delivery_status: AlertDeliveryStatus;
+  delivery_attempts: number;
+  last_attempt_at_ms: number | null;
+  next_retry_at_ms: number | null;
+  snoozed_until_ms: number | null;
+  paired_alert_id: number | null;
+  delivery_meta_json: string | null;
+  acknowledged_at_ms: number | null;
+}
+
+export interface AlertsListFilters {
+  since_ms?: number;
+  severity?: AlertSeverity;
+  delivery_status?: AlertDeliveryStatus;
+  unacknowledged_only?: boolean;
+  limit?: number;
+}
+
+export interface AlertsListResponse {
+  alerts: AlertRow[];
+  unacknowledged_high_severity_count: number;
 }
 
 export interface FinanceRangeResponse {

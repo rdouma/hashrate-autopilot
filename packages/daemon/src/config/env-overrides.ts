@@ -163,6 +163,18 @@ const APP_CONFIG_ENV: {
     varName: 'BHA_BLOCK_FOUND_SOUND',
     coerce: asString,
   },
+  telegram_chat_id: { varName: 'BHA_TELEGRAM_CHAT_ID', coerce: asString },
+  telegram_bot_token: { varName: 'BHA_TELEGRAM_BOT_TOKEN', coerce: asString },
+  notifications_muted: { varName: 'BHA_NOTIFICATIONS_MUTED', coerce: asBoolean },
+  notification_retry_interval_minutes: {
+    varName: 'BHA_NOTIFICATION_RETRY_INTERVAL_MINUTES',
+    coerce: asInt,
+  },
+  notification_disabled_event_classes: {
+    varName: 'BHA_NOTIFICATION_DISABLED_EVENT_CLASSES',
+    // CSV: comma-separated event_class names. Empty string yields [].
+    coerce: (raw: string) => raw.split(',').map((s) => s.trim()).filter(Boolean),
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -175,10 +187,6 @@ const SECRETS_ENV: {
   braiins_owner_token: { varName: 'BHA_BRAIINS_OWNER_TOKEN', coerce: asString },
   braiins_read_only_token: { varName: 'BHA_BRAIINS_READ_ONLY_TOKEN', coerce: asString },
   telegram_bot_token: { varName: 'BHA_TELEGRAM_BOT_TOKEN', coerce: asString },
-  telegram_webhook_secret: {
-    varName: 'BHA_TELEGRAM_WEBHOOK_SECRET',
-    coerce: asString,
-  },
   bitcoind_rpc_url: { varName: 'BHA_BITCOIND_RPC_URL', coerce: asString },
   bitcoind_rpc_user: { varName: 'BHA_BITCOIND_RPC_USER', coerce: asString },
   bitcoind_rpc_password: { varName: 'BHA_BITCOIND_RPC_PASSWORD', coerce: asString },

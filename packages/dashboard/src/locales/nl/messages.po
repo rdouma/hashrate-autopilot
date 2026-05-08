@@ -14,6 +14,11 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. js-lingui-explicit-id
+#: src/pages/Config.tsx
+msgid "When on, alerts are still recorded on the /alerts page with status \"muted\" but nothing is sent to Telegram. Recovery messages also stay silent."
+msgstr "Indien ingeschakeld worden meldingen nog wel vastgelegd op de /alerts-pagina met status \"gedempt\", maar er gaat niets naar Telegram. Ook herstelberichten blijven stil."
+
+#. js-lingui-explicit-id
 #: src/lib/i18n.test.ts
 msgid "this-is-not-a-real-id-9876"
 msgstr ""
@@ -179,6 +184,22 @@ msgstr "0 = uitgeschakeld. Voorbeeld: 95 = schakel goedkope modus in wanneer de 
 msgid "0 = use the full available wallet balance each CREATE (clamped to 1 BTC - the Braiins per-bid hard cap). Any positive value pins every new bid to that exact amount regardless of balance."
 msgstr "0 = gebruik bij elke CREATE het volledige beschikbare wallet-saldo (afgekapt op 1 BTC - de harde Braiins-limiet per bod). Elke positieve waarde zet ieder nieuw bod precies op dat bedrag, ongeacht het saldo."
 
+#: src/pages/Alerts.tsx
+msgid "24h"
+msgstr "24u"
+
+#: src/pages/Alerts.tsx
+msgid "2h"
+msgstr "2u"
+
+#: src/pages/Alerts.tsx
+msgid "30m"
+msgstr "30m"
+
+#: src/pages/Config.tsx
+msgid "A bid in the account that the autopilot did not create. Already triggers auto-PAUSE."
+msgstr "Een bod in het account dat de autopilot niet zelf heeft aangemaakt. Triggert al een auto-PAUSE."
+
 #: src/pages/Config.tsx
 msgid "A bid is currently running (≈ {remainingSatStr} sat left). The next CREATE fires when it finishes - at that point the full available wallet balance (currently ≈ {resolvedSatStr} sat, capped at 1 BTC) will be used."
 msgstr "Er loopt nu een bod (≈ {remainingSatStr} sat over). De volgende CREATE volgt zodra dit afloopt - op dat moment wordt het volledige beschikbare wallet-saldo (nu ≈ {resolvedSatStr} sat, afgekapt op 1 BTC) gebruikt."
@@ -207,21 +228,22 @@ msgstr "Er loopt nu een bod. De volgende CREATE volgt zodra dit afloopt - op dat
 msgid "A few questions to get the daemon operational. Defaults work for typical home miners; tune later from the Config page."
 msgstr "Een paar vragen om de daemon werkend te krijgen. De standaardwaarden werken voor typische thuisminers; pas later aan via de Config-pagina."
 
-#: src/pages/Status.tsx
-msgid "acceptance ({rangeLbl})"
-msgstr "acceptatie ({rangeLbl})"
-
-#: src/pages/Status.tsx
-msgid "acceptance %"
-msgstr "acceptatie %"
-
 #: src/pages/Setup.tsx
 msgid "Access"
 msgstr "Toegang"
 
+#. placeholder {0}: formatAge(row.acknowledged_at_ms)
+#: src/pages/Alerts.tsx
+msgid "acknowledged {0}"
+msgstr "bevestigd {0}"
+
 #: src/pages/Status.tsx
 msgid "action mode blocks this"
 msgstr "actie-modus blokkeert dit"
+
+#: src/pages/Alerts.tsx
+msgid "actions"
+msgstr "acties"
 
 #: src/lib/labels.ts
 msgid "Active"
@@ -243,6 +265,15 @@ msgstr "Werkelijk verbruikte sat over de laatste 3 u, geschaald naar een 24u-tem
 msgid "After submit, the daemon writes everything to <0>state.db</0> and brings the controller online in-place. Boots in <1>DRY-RUN</1> mode; the dashboard signs you in automatically. Promote to LIVE from the Status page when you're ready."
 msgstr "Na indienen schrijft de daemon alles naar <0>state.db</0> en zet de controller direct online. Start in <1>DRY-RUN</1> modus; het dashboard logt je automatisch in. Schakel naar LIVE op de Status-pagina wanneer je klaar bent."
 
+#: src/components/Layout.tsx
+#: src/pages/Alerts.tsx
+msgid "Alerts"
+msgstr "Meldingen"
+
+#: src/pages/Alerts.tsx
+msgid "all severities"
+msgstr "alle ernst"
+
 #: src/pages/Config.tsx
 msgid "Always dry-run (safest)"
 msgstr "Altijd dry-run (veiligst)"
@@ -250,6 +281,10 @@ msgstr "Altijd dry-run (veiligst)"
 #: src/pages/Config.tsx
 msgid "Always live (for trusted deployments)"
 msgstr "Altijd live (voor vertrouwde installaties)"
+
+#: src/pages/Config.tsx
+msgid "Any active owned bid reports fee_rate_pct > 0."
+msgstr "Een actief eigen bod rapporteert fee_rate_pct > 0."
 
 #: src/pages/Status.tsx
 #: src/pages/Status.tsx
@@ -270,6 +305,10 @@ msgstr "API onbereikbaar ({0})"
 #: src/pages/Status.tsx
 msgid "At effective cap - desired fillable + overpay exceeds the ceiling."
 msgstr "Op effectief plafond - gewenste vulbaar + toeslag overschrijdt het maximum."
+
+#: src/pages/Alerts.tsx
+msgid "Audit trail for every notification the daemon recorded - sent, failed, muted, snoozed, or given-up. Configure the Telegram destination on Config → Notifications."
+msgstr "Auditspoor van elke melding die de daemon heeft vastgelegd - verzonden, mislukt, gedempt, gesnoozed of opgegeven. Configureer de Telegram-bestemming op Config → Meldingen."
 
 #: src/pages/Config.tsx
 msgid "auto-save"
@@ -369,6 +408,10 @@ msgstr "beste vraagprijs"
 msgid "best bid"
 msgstr "beste bod"
 
+#: src/pages/Config.tsx
+msgid "Beta-exit detected"
+msgstr "Beta-exit gedetecteerd"
+
 #. placeholder {0}: d.id_short
 #. placeholder {1}: d.status
 #: src/pages/Status.tsx
@@ -382,6 +425,10 @@ msgstr "Bod boven doel - Braiins-cooldown voor prijsverlaging actief."
 #: src/pages/Status.tsx
 msgid "Bid filling at {speed}."
 msgstr "Bod vult op {speed}."
+
+#: src/pages/Config.tsx
+msgid "Bid sustained-paused"
+msgstr "Bod aanhoudend gepauzeerd"
 
 #: src/pages/Status.tsx
 msgid "Bids"
@@ -491,6 +538,10 @@ msgstr "Braiins 10-min cooldown"
 msgid "Braiins API access"
 msgstr "Braiins API-toegang"
 
+#: src/pages/Config.tsx
+msgid "Braiins API unreachable"
+msgstr "Braiins API onbereikbaar"
+
 #: src/pages/Status.tsx
 msgid "Braiins API unreachable - waiting for connectivity."
 msgstr "Braiins API onbereikbaar - wacht op verbinding."
@@ -527,6 +578,14 @@ msgstr "budget"
 #: src/pages/Config.tsx
 msgid "Budget"
 msgstr "Budget"
+
+#: src/pages/Config.tsx
+msgid "Buyer-side gateway has been unreachable for the configured tolerance window."
+msgstr "Gateway aan buyer-zijde is onbereikbaar geweest gedurende het ingestelde tolerantie-venster."
+
+#: src/pages/Config.tsx
+msgid "Cadence between retries when an alert fails to deliver or the bad state persists. First attempt fires immediately; up to 4 retries follow at this cadence; the 5th carries a final \"giving up\" message and the notifier stays silent until recovery."
+msgstr "Tijd tussen herhaalde pogingen wanneer een melding niet aankomt of de slechte toestand aanhoudt. De eerste poging gaat direct uit; tot 4 herhalingen volgen op dit interval; de 5e bevat een laatste \"opgeven\"-bericht en daarna blijft de notifier stil tot herstel."
 
 #: src/pages/Status.tsx
 #: src/pages/Status.tsx
@@ -567,6 +626,10 @@ msgstr "wijzigingslog"
 #: src/pages/Config.tsx
 msgid "Chart smoothing"
 msgstr "Grafiek-smoothing"
+
+#: src/pages/Config.tsx
+msgid "Chat ID"
+msgstr "Chat-ID"
 
 #: src/pages/Config.tsx
 msgid "Cheap threshold"
@@ -762,16 +825,8 @@ msgid "Datum /umbrel-api HTTP poll."
 msgstr "Datum /umbrel-api HTTP-poll."
 
 #: src/pages/Status.tsx
-msgid "Datum gateway-side rejects over the chart-range window (currently {rangeLbl}): forward delta of the cumulative gateway reject counter, with bid resets / poll failures skipped. Compare with the next row - gateway > pool means Datum filtered work that never reached the pool (good); pool > gateway means the pool rejected work Datum thought was fine (stale-work signature)."
-msgstr "Datum gateway-zijde afwijzingen over het chart-bereik (nu {rangeLbl}): voorwaarts verschil van de cumulatieve gateway-afwijzingsteller, met bid-resets en gefaalde polls overgeslagen. Vergelijk met de regel hieronder — gateway > pool betekent dat Datum werk filterde dat nooit de pool bereikte (goed); pool > gateway betekent dat de pool werk afwees dat Datum prima vond (verouderd-werk signaal)."
-
-#: src/pages/Status.tsx
 msgid "datum hashrate"
 msgstr "datum hashrate"
-
-#: src/pages/Status.tsx
-msgid "datum rejects"
-msgstr "datum afwijzingen"
 
 #: src/pages/Config.tsx
 msgid "Datum stats API (optional)"
@@ -780,6 +835,10 @@ msgstr "Datum stats-API (optioneel)"
 #: src/pages/Status.tsx
 msgid "Datum stats not configured - set <0>datum_api_url</0> in Config to display connected workers and reported hashrate. See <1>docs/setup-datum-api.md</1>."
 msgstr "Datum stats niet geconfigureerd - stel <0>datum_api_url</0> in via Config om verbonden workers en gerapporteerde hashrate te tonen. Zie <1>docs/setup-datum-api.md</1>."
+
+#: src/pages/Config.tsx
+msgid "Datum stratum unreachable"
+msgstr "Datum stratum onbereikbaar"
 
 #: src/pages/Config.tsx
 msgid "Decision-log rows where the autopilot proposed at least one bid action. Rare (~10% of ticks) and high-value: this is the forensic record for \"why did the autopilot create / edit / cancel that bid?\" Cheap to keep long."
@@ -821,6 +880,14 @@ msgstr "geleverd (Braiins)"
 #: src/pages/Status.tsx
 msgid "delivered / cap"
 msgstr "geleverd / cap"
+
+#: src/pages/Config.tsx
+msgid "Delivered hashrate has been under minimum_floor_hashrate_ph for below_floor_alert_after_minutes."
+msgstr "Geleverde hashrate is gedurende below_floor_alert_after_minutes onder minimum_floor_hashrate_ph gebleven."
+
+#: src/pages/Alerts.tsx
+msgid "delivery"
+msgstr "aflevering"
 
 #: src/components/PriceChart.tsx
 msgid "delta"
@@ -931,6 +998,10 @@ msgstr "Effectief tarief {sign}{deltaFormatted} onder hashprice ({hashpricePrett
 msgid "Effective rate equals hashprice ({hashpricePretty}) - breaking even."
 msgstr "Effectief tarief gelijk aan hashprice ({hashpricePretty}) - break-even."
 
+#: src/pages/Config.tsx
+msgid "Effectively zero delivery for zero_hashrate_loud_alert_after_minutes."
+msgstr "Praktisch geen levering gedurende zero_hashrate_loud_alert_after_minutes."
+
 #: src/components/Bip110ScanCard.tsx
 msgid "elapsed"
 msgstr "verstreken"
@@ -1011,6 +1082,10 @@ msgstr "Haalt de BTC/USD spotprijs op van een publieke exchange-API. Schakelt ee
 msgid "fillable"
 msgstr "vulbaar"
 
+#: src/pages/Alerts.tsx
+msgid "filter:"
+msgstr "filter:"
+
 #: src/pages/Setup.tsx
 msgid "First-run setup"
 msgstr "Eerste-keer setup"
@@ -1070,10 +1145,6 @@ msgstr "Volledig wallet-saldo per bod. Momenteel ≈ {resolvedSatStr} sat (afgek
 msgid "Full wallet balance per bid. Currently ≈ {resolvedSatStr} sat."
 msgstr "Volledig wallet-saldo per bod. Momenteel ≈ {resolvedSatStr} sat."
 
-#: src/pages/Status.tsx
-msgid "gateway rejects ({rangeLbl})"
-msgstr "gateway-afwijzingen ({rangeLbl})"
-
 #: src/pages/Config.tsx
 msgid "genesis version"
 msgstr "genesis-versie"
@@ -1108,6 +1179,10 @@ msgstr "hashprice + max toeslag"
 #: src/components/HashrateChart.tsx
 msgid "Hashrate"
 msgstr "Hashrate"
+
+#: src/pages/Config.tsx
+msgid "Hashrate below floor"
+msgstr "Hashrate onder vloer"
 
 #: src/pages/Status.tsx
 msgid "Hashrate Ocean credits to our payout address (5-min sliding window). Sourced per-tick from /v1/user_hashrate.hashrate_300s. Compare against AVG BRAIINS / AVG DATUM at the top of the page; sustained gaps mean shares are getting lost somewhere in the Braiins -> Datum -> Ocean pipeline."
@@ -1188,6 +1263,10 @@ msgstr "onjuist wachtwoord"
 msgid "increase"
 msgstr "verhogen"
 
+#: src/pages/Alerts.tsx
+msgid "INFO"
+msgstr "INFO"
+
 #: src/pages/Status.tsx
 msgid "insufficient history"
 msgstr "onvoldoende geschiedenis"
@@ -1241,6 +1320,7 @@ msgstr "beslissing laden…"
 msgid "Loading or daemon restart required."
 msgstr "Laden of daemon-herstart vereist."
 
+#: src/pages/Alerts.tsx
 #: src/pages/Config.tsx
 #: src/pages/Status.tsx
 #: src/pages/Status.tsx
@@ -1255,13 +1335,25 @@ msgstr "Laden…"
 msgid "Log retention"
 msgstr "Logbewaring"
 
+#: src/pages/Alerts.tsx
+msgid "LOUD"
+msgstr "LOUD"
+
 #: src/components/PriceChart.tsx
 msgid "manual"
 msgstr "handmatig"
 
+#: src/pages/Alerts.tsx
+msgid "mark as seen"
+msgstr "als gezien markeren"
+
 #: src/components/PriceChart.tsx
 msgid "market at this tick"
 msgstr "markt op deze tick"
+
+#: src/pages/Config.tsx
+msgid "Marketplace API has been down for api_outage_alert_after_minutes."
+msgstr "De marketplace-API is gedurende api_outage_alert_after_minutes uit de lucht geweest."
 
 #: src/components/PriceChart.tsx
 #: src/components/PriceChart.tsx
@@ -1310,6 +1402,10 @@ msgid "Mining"
 msgstr "Mining"
 
 #: src/pages/Config.tsx
+msgid "minutes"
+msgstr "minuten"
+
+#: src/pages/Config.tsx
 msgid "MP3 / OGG / WAV / WebM, max 200 KB."
 msgstr "MP3 / OGG / WAV / WebM, max 200 KB."
 
@@ -1320,6 +1416,10 @@ msgstr "Moet bereikbaar zijn vanaf het publieke internet - Braiins controleert h
 #: src/pages/Setup.tsx
 msgid "must contain a period - without it shares are uncredited on Ocean"
 msgstr "moet een punt bevatten - zonder dat worden shares niet bijgeschreven op Ocean"
+
+#: src/pages/Config.tsx
+msgid "Mute all Telegram notifications"
+msgstr "Alle Telegram-meldingen dempen"
 
 #: src/pages/Status.tsx
 msgid "net"
@@ -1380,6 +1480,10 @@ msgstr "geen actief bod"
 msgid "no active bids"
 msgstr "geen actieve biedingen"
 
+#: src/pages/Alerts.tsx
+msgid "no alerts matching the filter."
+msgstr "geen meldingen die aan het filter voldoen."
+
 #: src/pages/Config.tsx
 msgid "No auto-prune; growing ~ {dailyStr}/day"
 msgstr "Geen automatische opruiming; groeit ~ {dailyStr}/dag"
@@ -1437,6 +1541,10 @@ msgstr "niet in LIVE-modus"
 #: src/components/Bip110ScanCard.tsx
 msgid "not reported"
 msgstr "niet gerapporteerd"
+
+#: src/pages/Config.tsx
+msgid "Notifications"
+msgstr "Meldingen"
 
 #: src/lib/format.ts
 msgid "now"
@@ -1501,6 +1609,10 @@ msgstr "Uit"
 msgid "OK"
 msgstr "OK"
 
+#: src/pages/Config.tsx
+msgid "OK · message delivered"
+msgstr "OK · bericht afgeleverd"
+
 #: src/pages/Status.tsx
 msgid "On target - bid at fillable + overpay."
 msgstr "Op doel - bod gelijk aan vulbaar + toeslag."
@@ -1520,6 +1632,10 @@ msgstr "Activeer goedkoop-modus alleen wanneer het rollende gemiddelde van beste
 #: src/components/HashrateChart.tsx
 msgid "open in block explorer →"
 msgstr "open in block explorer →"
+
+#: src/pages/Config.tsx
+msgid "Open Telegram and chat with <0>@BotFather</0>, send /newbot, follow the prompts; @BotFather replies with the token. Paste it here."
+msgstr "Open Telegram en start een chat met <0>@BotFather</0>, stuur /newbot en volg de stappen; @BotFather antwoordt met het token. Plak het hier."
 
 #: src/pages/Config.tsx
 msgid "Optional dynamic ceiling. On each tick the effective cap = min(Maximum, hashprice + this). Stops the autopilot from wildly overpaying when hashprice drops sharply and the fixed Maximum alone would still allow it. Set to 0 to disable."
@@ -1702,10 +1818,6 @@ msgstr "pool-geluk (24u)"
 msgid "pool luck (7d)"
 msgstr "pool-geluk (7d)"
 
-#: src/pages/Status.tsx
-msgid "pool rejects ({rangeLbl})"
-msgstr "pool-afwijzingen ({rangeLbl})"
-
 #: src/components/HashrateChart.tsx
 msgid "pool reward"
 msgstr "pool-beloning"
@@ -1723,10 +1835,6 @@ msgstr "pool-gebruikers"
 #: src/pages/Status.tsx
 msgid "pool workers"
 msgstr "pool-workers"
-
-#: src/pages/Status.tsx
-msgid "Pool-rejected shares the seller's rig reported over the same chart-range window (currently {rangeLbl}), relayed via Braiins. Compare with the row above: a sustained gap with pool > gateway is the signal Knots -> Datum -> Ocean is delivering stale work the pool rejects."
-msgstr "Pool-afgewezen shares die de rig van de verkoper rapporteerde over hetzelfde chart-range venster (momenteel {rangeLbl}), gerelayeerd via Braiins. Vergelijk met de rij hierboven: een aanhoudend verschil waarbij pool > gateway is het signaal dat Knots -> Datum -> Ocean stale work levert dat de pool afwijst."
 
 #: src/pages/Status.tsx
 msgid "port"
@@ -1756,6 +1864,10 @@ msgstr "Prijsbron"
 #: src/pages/Config.tsx
 msgid "Pricing"
 msgstr "Prijsstelling"
+
+#: src/pages/Config.tsx
+msgid "Primary owned bid carries a non-null last_pause_reason for the tolerance window."
+msgstr "Het primaire eigen bod draagt een niet-leeg last_pause_reason gedurende het tolerantie-venster."
 
 #: src/pages/Config.tsx
 #: src/pages/Status.tsx
@@ -1797,6 +1909,10 @@ msgstr "Projectie: gem. hashprice × gem. geleverd (rijen hierboven), beide gemi
 msgid "protocol"
 msgstr "protocol"
 
+#: src/pages/Config.tsx
+msgid "Push outage alerts (Datum unreachable, hashrate floor breach, wallet runway, etc.) to Telegram so the operator finds out within minutes, not hours. See the setup walkthrough for the @BotFather + @userinfobot steps."
+msgstr "Stuur uitvalmeldingen (Datum onbereikbaar, hashrate-vloer overschreden, wallet-runway, enz.) door naar Telegram zodat de operator het binnen minuten weet, niet uren. Zie de setup-walkthrough voor de @BotFather + @userinfobot stappen."
+
 #: src/components/HashrateChart.tsx
 msgid "range"
 msgstr "bereik"
@@ -1821,6 +1937,10 @@ msgstr "ontvangen (Datum)"
 #: src/components/HashrateChart.tsx
 msgid "received (Ocean)"
 msgstr "ontvangen (Ocean)"
+
+#: src/pages/Alerts.tsx
+msgid "recovery"
+msgstr "herstel"
 
 #: src/pages/Status.tsx
 msgid "Refresh the money panel now (auto-refreshes every 60s)."
@@ -1855,6 +1975,10 @@ msgstr "Laatste modus hervatten"
 #: src/components/Bip110ScanCard.tsx
 msgid "retarget window:"
 msgstr "herrekenvenster:"
+
+#: src/pages/Config.tsx
+msgid "Retry interval"
+msgstr "Herhaalinterval"
 
 #: src/pages/Config.tsx
 msgid "revert"
@@ -1977,9 +2101,9 @@ msgstr "Kies hashratemaat (1 EH = 1.000 PH = 1.000.000 TH)"
 msgid "Setting up…"
 msgstr "Bezig met instellen…"
 
-#: src/pages/Status.tsx
-msgid "Share acceptance over the chart-range window (currently {rangeLbl}): (shares accepted / shares submitted) × 100, capped at 100%. The seller's rig submits shares over stratum to YOUR Datum gateway, Datum responds accept/reject, and the result is what Braiins relays back as the counter - so this is a Datum-side number even though it's sourced via the Braiins API. Healthy baseline ≈ 99.95%; baseline ~0.05% rejection is normal. Sustained drops below ~99% point at Datum serving stale work, worker-identity misconfiguration, or pool difficulty too low. Cap at 100% absorbs Braiins's slight counter-sync jitter (the two cumulative counters land at slightly different times, which can read just over 100% on short windows; longer windows from the chart-range selector wash this out)."
-msgstr "Share-acceptatie over het chart-bereik (nu {rangeLbl}): (geaccepteerde shares / ingediende shares) × 100, gemaximeerd op 100%. De rig van de verkoper dient shares in via stratum bij JOUW Datum-gateway, Datum reageert met accepteren/afwijzen, en het resultaat wordt door Braiins teruggegeven als teller — dit is dus een Datum-zijde getal, ook al komt het via de Braiins API. Gezonde baseline ≈ 99,95%; ~0,05% afwijzing is normaal. Aanhoudende daling onder ~99% wijst op verouderd werk vanuit Datum, verkeerd geconfigureerde worker-identiteit, of te lage pool-moeilijkheidsgraad. De 100%-cap absorbeert lichte counter-sync-jitter van Braiins (de twee cumulatieve tellers landen op iets verschillende momenten, wat in korte vensters net boven 100% kan uitkomen; langere chart-bereiken middelen dit weg)."
+#: src/pages/Alerts.tsx
+msgid "severity"
+msgstr "ernst"
 
 #: src/components/HashrateChart.tsx
 #: src/pages/Status.tsx
@@ -2018,6 +2142,15 @@ msgstr "Signaleert BIP 110 (Reduced Data softfork)"
 msgid "signing in…"
 msgstr "bezig met aanmelden…"
 
+#. placeholder {0}: p.label()
+#: src/pages/Alerts.tsx
+msgid "snooze {0}"
+msgstr "snooze {0}"
+
+#: src/pages/Alerts.tsx
+msgid "snoozed until"
+msgstr "gesnoozed tot"
+
 #: src/pages/Config.tsx
 msgid "Sound"
 msgstr "Geluid"
@@ -2046,6 +2179,10 @@ msgstr "uitgegeven (autopilot)"
 #: src/pages/Status.tsx
 msgid "spent (whole account)"
 msgstr "uitgegeven (hele account)"
+
+#: src/pages/Config.tsx
+msgid "Start a chat with your bot, then send /start. Send any message to <0>@userinfobot</0> and copy the numeric Id back into this field. Test connection validates the values currently in the form, before saving."
+msgstr "Start een chat met je bot en stuur /start. Stuur daarna een willekeurig bericht naar <0>@userinfobot</0> en kopieer de numerieke Id terug in dit veld. Test connection valideert de waarden uit het formulier, vóór het opslaan."
 
 #: src/pages/Status.tsx
 msgid "status"
@@ -2102,6 +2239,11 @@ msgid "TCP probe of the Datum gateway's stratum port."
 msgstr "TCP-probe van de stratum-poort van de Datum-gateway."
 
 #: src/pages/Config.tsx
+msgid "Telegram bot token"
+msgstr "Telegram bot-token"
+
+#: src/pages/Config.tsx
+#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "Test connection"
 msgstr "Verbinding testen"
@@ -2110,6 +2252,7 @@ msgstr "Verbinding testen"
 msgid "Test sound"
 msgstr "Geluid testen"
 
+#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "Testing…"
@@ -2148,6 +2291,10 @@ msgstr "Tijd sinds Ocean het meest recente blok vond. Ocean's gemiddelde blok-vi
 msgid "tip"
 msgstr "tip"
 
+#: src/pages/Alerts.tsx
+msgid "title"
+msgstr "titel"
+
 #: src/pages/Status.tsx
 msgid "total"
 msgstr "totaal"
@@ -2164,6 +2311,10 @@ msgstr "Totaal aantal worker-verbindingen op Ocean (één adres kan veel workers
 msgid "Two append-only logs back the dashboard. tick_metrics powers every chart; decisions is a per-tick forensic log split by whether the autopilot proposed any action. Pruning runs hourly and on daemon boot. 0 on any field = keep forever."
 msgstr "Twee append-only logs voeden het dashboard. tick_metrics vormt de basis van elke grafiek; decisions is een forensisch logboek per tick, gesplitst op basis van of de autopilot een actie heeft voorgesteld. Opschonen gebeurt elk uur en bij het opstarten van de daemon. 0 in een veld = voor altijd bewaren."
 
+#: src/pages/Alerts.tsx
+msgid "unacknowledged only"
+msgstr "alleen onbevestigd"
+
 #: src/pages/Status.tsx
 msgid "unknown"
 msgstr "onbekend"
@@ -2171,6 +2322,10 @@ msgstr "onbekend"
 #: src/lib/labels.ts
 msgid "Unknown"
 msgstr "Onbekend"
+
+#: src/pages/Config.tsx
+msgid "Unknown bid detected"
+msgstr "Onbekend bod gedetecteerd"
 
 #: src/pages/Status.tsx
 msgid "Unknown bid(s) detected - next tick will PAUSE the autopilot."
@@ -2195,6 +2350,10 @@ msgstr "niet-opgeslagen wijzigingen"
 #: src/pages/Config.tsx
 msgid "unsaved changes…"
 msgstr "niet-opgeslagen wijzigingen…"
+
+#: src/pages/Config.tsx
+msgid "Untick any event type you don't want pushed. Disabled types skip the daemon entirely - no Telegram, no /alerts row, no retry ladder. Hover a row for the trigger condition."
+msgstr "Vink uit welk eventtype je niet wilt ontvangen. Uitgeschakelde types worden in de daemon volledig overgeslagen - geen Telegram, geen /alerts-regel, geen retry-ladder. Hover over een regel voor de trigger-conditie."
 
 #. placeholder {0}: formatAgePrecise(epochMs)
 #: src/pages/Status.tsx
@@ -2250,6 +2409,10 @@ msgstr "versie"
 msgid "Waiting for Ocean hashprice - trading is paused until the break-even reference is available."
 msgstr "Wacht op Ocean hashprice - trading is gepauzeerd tot de break-even-referentie beschikbaar is."
 
+#: src/pages/Alerts.tsx
+msgid "WARN"
+msgstr "WARN"
+
 #: src/pages/Setup.tsx
 msgid "What the controller aims for."
 msgstr "Waar de controller op richt."
@@ -2257,6 +2420,14 @@ msgstr "Waar de controller op richt."
 #: src/pages/Status.tsx
 msgid "What this last block earned us, estimated as block_reward * share_log_pct / 100. Uses the share_log recorded at the block's moment when our tick history covers it; falls back to the live share_log for older blocks."
 msgstr "Wat dit laatste blok ons opleverde, geschat als block_reward * share_log_pct / 100. Gebruikt de share_log opgeslagen op het moment van het blok wanneer onze tick-geschiedenis het dekt; valt terug op de live share_log voor oudere blokken."
+
+#: src/pages/Config.tsx
+msgid "What to send to Telegram"
+msgstr "Wat naar Telegram sturen"
+
+#: src/pages/Alerts.tsx
+msgid "when"
+msgstr "wanneer"
 
 #: src/pages/Config.tsx
 msgid "When the market is cheap (below the hashprice threshold), scale up to this target instead of the normal one. Set to 0 to disable."
@@ -2329,3 +2500,7 @@ msgstr "Hiermee log je na de setup in op het dashboard. Minimaal 8 tekens."
 #: src/pages/Setup.tsx
 msgid "Your address that receives Ocean TIDES payouts. The worker identity below is auto-derived from this."
 msgstr "Je adres dat Ocean TIDES-uitbetalingen ontvangt. De worker-identiteit hieronder wordt hier automatisch uit afgeleid."
+
+#: src/pages/Config.tsx
+msgid "Zero hashrate"
+msgstr "Geen hashrate"

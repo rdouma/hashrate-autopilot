@@ -35,6 +35,7 @@ import { createOceanClient } from './services/ocean.js';
 import { PayoutObserver } from './services/payout-observer.js';
 import { PoolHealthTracker } from './services/pool-health.js';
 import { closeDatabase, openDatabase, type DatabaseHandle } from './state/db.js';
+import { AlertsRepo } from './state/repos/alerts.js';
 import { BidEventsRepo } from './state/repos/bid_events.js';
 import { ClosedBidsCacheRepo } from './state/repos/closed_bids_cache.js';
 import { ConfigRepo } from './state/repos/config.js';
@@ -44,6 +45,9 @@ import { RuntimeStateRepo } from './state/repos/runtime_state.js';
 import { TickMetricsRepo } from './state/repos/tick_metrics.js';
 import { Controller } from './controller/tick.js';
 import { TickLoop } from './controller/loop.js';
+import { AlertEvaluator } from './services/alert-evaluator.js';
+import { AlertManager } from './services/alert-manager.js';
+import { TelegramSink } from './services/notifier.js';
 import type { TickResult } from './controller/tick.js';
 import { cheapestAskForDepth } from './controller/orderbook.js';
 import type { State } from './controller/types.js';
@@ -66,6 +70,7 @@ interface BootDeps {
   readonly decisionsRepo: DecisionsRepo;
   readonly tickMetricsRepo: TickMetricsRepo;
   readonly bidEventsRepo: BidEventsRepo;
+  readonly alertsRepo: AlertsRepo;
   readonly closedBidsCacheRepo: ClosedBidsCacheRepo;
   readonly secretsRepo: SecretsRepo;
   readonly secretsPath: string;
@@ -96,6 +101,7 @@ async function main(): Promise<void> {
     decisionsRepo: new DecisionsRepo(handle.db),
     tickMetricsRepo: new TickMetricsRepo(handle.db),
     bidEventsRepo: new BidEventsRepo(handle.db),
+    alertsRepo: new AlertsRepo(handle.db),
     closedBidsCacheRepo: new ClosedBidsCacheRepo(handle.db),
     secretsRepo: new SecretsRepo(handle.db),
     secretsPath,
@@ -221,6 +227,7 @@ async function bootOperational(
     decisionsRepo,
     tickMetricsRepo,
     bidEventsRepo,
+    alertsRepo,
     closedBidsCacheRepo,
     secretsPath,
     ageKeyPath,
@@ -430,10 +437,59 @@ async function bootOperational(
   // across daemon restarts (#11).
   await controller.hydrate();
 
+  // #100: Telegram notifier wiring. Sink credentials are re-read from
+  // the latest config snapshot on every send so live edits to bot
+  // token / chat id take effect on the next tick without a restart.
+  // Resolution: prefer config when non-empty, fall back to secrets.
+  const buildSink = () => {
+    const latestCfg = configRepo;
+    return new TelegramSink({
+      bot_token:
+        cfgRefHolder.value.telegram_bot_token ||
+        secrets.telegram_bot_token ||
+        '',
+      chat_id: cfgRefHolder.value.telegram_chat_id || '',
+    });
+    void latestCfg;
+  };
+  const cfgRefHolder = { value: cfg };
+  const dynamicSink = {
+    send: (body: string) => buildSink().send(body),
+    verify: () => buildSink().verify(),
+  };
+  const alertManager = new AlertManager({
+    alertsRepo,
+    sink: dynamicSink,
+    getConfig: () => ({
+      notifications_muted: cfgRefHolder.value.notifications_muted,
+      notification_retry_interval_minutes:
+        cfgRefHolder.value.notification_retry_interval_minutes,
+    }),
+  });
+  const alertEvaluator = new AlertEvaluator({ alertManager });
+  // Rebuild in-memory event state from the alerts table so a daemon
+  // restart while a bad state is still active does not fire a
+  // duplicate Telegram alert. See AlertEvaluator.hydrate JSDoc.
+  await alertEvaluator.hydrate(alertsRepo);
+
   const loop = new TickLoop({
     controller,
     intervalMs: DEFAULT_TICK_INTERVAL_MS,
-    onTick: (r: TickResult) => logTick(r),
+    onTick: (r: TickResult) => {
+      logTick(r);
+      // Refresh the config reference so the alert system sees live
+      // edits without a restart. tick.ts re-reads config on every
+      // tick into r.state.config.
+      cfgRefHolder.value = r.state.config;
+      // Fire-and-forget: alert evaluation must not block the tick
+      // loop. Errors are logged but never bubble up.
+      void alertEvaluator
+        .evaluate(r.state)
+        .catch((err) => log(`[alert-evaluator] ${(err as Error)?.message ?? err}`));
+      void alertManager
+        .processDueRetries()
+        .catch((err) => log(`[alert-retry] ${(err as Error)?.message ?? err}`));
+    },
     onError: (err) => log(`[tick] error: ${(err as Error)?.message ?? err}`),
   });
 
@@ -516,6 +572,7 @@ async function bootOperational(
     decisionsRepo,
     tickMetricsRepo,
     bidEventsRepo,
+    alertsRepo,
     payoutObserver,
     oceanClient,
     accountSpend,

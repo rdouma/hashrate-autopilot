@@ -157,6 +157,12 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
   happens daemon-side via your bitcoind RPC (`getblockheader`) or Electrs (`blockchain.block.header`) - no
   third-party API. A separate **BIP 110 scan card** on the Status page lets you scan the last N blocks
   (configurable up to 2016) and see every signaling block with timestamp, version bits, and explorer link.
+- **Telegram notifications** - LOUD alerts (Datum unreachable, hashrate below floor, Braiins API down,
+  unknown bid, sustained-paused, zero hashrate) and WARN alerts (beta-exit fees) push to a Telegram bot
+  with a 5-attempt retry ladder, paired recovery messages on state-clear, global mute toggle, and per-alert
+  snooze (30m / 2h / 24h). Setup walkthrough at [`docs/setup-telegram.md`](docs/setup-telegram.md). The
+  notifier is structured around a `NotificationSink` interface so a future Nostr / ntfy / email backend
+  can slot in without touching the event detectors. Audit trail at the dedicated `/alerts` page.
 - **Block-found audible cue** - optional sound when Ocean credits your address with a new pool block. Four
   bundled cues (cowbell, glass-drop-and-roll, two metallic clanks) plus custom MP3 / OGG / WAV / WebM
   upload up to 200 KB. Plays once per new block; the dashboard tab needs to be open.

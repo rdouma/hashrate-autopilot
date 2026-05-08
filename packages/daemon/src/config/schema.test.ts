@@ -10,7 +10,6 @@ const VALID_SECRETS = {
   braiins_owner_token: 'owner_xyz',
   braiins_read_only_token: 'reader_xyz',
   telegram_bot_token: '123:bot-token',
-  telegram_webhook_secret: 'webhook-secret',
   bitcoind_rpc_url: 'http://127.0.0.1:8332',
   bitcoind_rpc_user: 'rpcuser',
   bitcoind_rpc_password: 'rpcpass',
