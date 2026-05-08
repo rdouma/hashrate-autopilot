@@ -111,10 +111,24 @@ export class PayoutObserver {
       });
       const balance = await client.getBalance(address);
       const totalSat = balance.confirmed + balance.unconfirmed;
+      // Pull the per-UTXO list too so we can populate `reward_events`
+      // without relying on bitcoind. Cost is one extra Electrum
+      // call per scan against an instantly-indexed lookup. Listing
+      // failures are non-fatal: the balance snapshot has already
+      // been computed; reward_events just falls back to whatever
+      // it had before.
+      let unspents: Array<{ tx_hash: string; tx_pos: number; height: number; value: number }> = [];
+      try {
+        unspents = await client.listUnspent(address);
+      } catch (err) {
+        this.options.log?.(
+          `[payout] electrs listunspent failed: ${(err as Error).message}`,
+        );
+      }
       this.lastSnapshot = {
         address,
         total_unspent_sat: totalSat,
-        utxo_count: null,
+        utxo_count: unspents.length || null,
         scanned_block_height: null,
         checked_at: now(),
         duration_ms: now() - start,
@@ -122,11 +136,104 @@ export class PayoutObserver {
       };
       this.lastError = null;
       this.options.log?.(
-        `[payout] via electrs: ${address.slice(0, 12)}… balance=${totalSat} sat (${now() - start}ms)`,
+        `[payout] via electrs: ${address.slice(0, 12)}… balance=${totalSat} sat in ${unspents.length} outs (${now() - start}ms)`,
       );
+
+      // Insert any unspents we haven't already recorded into
+      // reward_events. The chart's paid_total_sat series reads
+      // straight from this table, so without this an electrs-only
+      // setup (no bitcoind RPC, e.g. Umbrel installs that didn't
+      // declare bitcoind as a dependency) had a flat-zero
+      // lifetime-earnings line.
+      if (this.options.db && unspents.length > 0 && client) {
+        try {
+          const inserted = await this.recordNewRewardEventsViaElectrs(
+            client,
+            unspents,
+            now(),
+          );
+          if (inserted > 0 && this.options.onRewardsChanged) {
+            await this.options.onRewardsChanged().catch((err) =>
+              this.options.log?.(
+                `[payout] onRewardsChanged failed: ${(err as Error).message}`,
+              ),
+            );
+          }
+        } catch (err) {
+          this.options.log?.(
+            `[payout] electrs reward_events write failed: ${(err as Error).message}`,
+          );
+        }
+      }
     } finally {
       client?.close();
     }
+  }
+
+  /**
+   * Electrs counterpart to recordNewRewardEvents. Same
+   * INSERT...ON CONFLICT DO NOTHING shape so duplicate (txid, vout)
+   * pairs are idempotently filtered by the UNIQUE index added in
+   * migration 0072. Block timestamp lookup goes through electrs's
+   * `blockchain.block.header` (parsed at byte offset 68 for the
+   * unix-epoch timestamp), cached per-height for the duration of
+   * this scan to keep the Electrum round-trip count down.
+   */
+  private async recordNewRewardEventsViaElectrs(
+    client: ElectrsClient,
+    unspents: Array<{ tx_hash: string; tx_pos: number; height: number; value: number }>,
+    fallbackDetectedAt: number,
+  ): Promise<number> {
+    const db = this.options.db;
+    if (!db) return 0;
+    if (unspents.length === 0) return 0;
+
+    // Unconfirmed outputs (height 0) don't have a block time yet.
+    // Skip them this scan; we'll pick them up next time once they
+    // confirm. Reward events are inherently ledger entries, not
+    // mempool blips.
+    const confirmed = unspents.filter((u) => u.height > 0);
+    if (confirmed.length === 0) return 0;
+
+    const uniqueHeights = [...new Set(confirmed.map((u) => u.height))];
+    const heightToTimeMs = new Map<number, number>();
+    for (const h of uniqueHeights) {
+      try {
+        const t = await client.getBlockTimeByHeight(h);
+        heightToTimeMs.set(h, t * 1000);
+      } catch (err) {
+        this.options.log?.(
+          `[payout] electrs block-time lookup for #${h} failed: ${(err as Error).message}`,
+        );
+      }
+    }
+
+    // We need the chain tip to compute confirmations. Without
+    // bitcoind handy, fall back to "max height + 1" - good enough
+    // for the row's confirmations field; only used cosmetically.
+    const tipHeight = Math.max(...uniqueHeights);
+
+    const result = await db
+      .insertInto('reward_events')
+      .values(
+        confirmed.map((u) => ({
+          txid: u.tx_hash,
+          vout: u.tx_pos,
+          block_height: u.height,
+          confirmations: Math.max(0, tipHeight - u.height + 1),
+          value_sat: u.value,
+          detected_at: heightToTimeMs.get(u.height) ?? fallbackDetectedAt,
+        })),
+      )
+      .onConflict((oc) => oc.columns(['txid', 'vout']).doNothing())
+      .executeTakeFirst();
+    const inserted = Number(result.numInsertedOrUpdatedRows ?? 0);
+    if (inserted > 0) {
+      this.options.log?.(
+        `[payout] recorded ${inserted} new reward_event row(s) via electrs (${confirmed.length} confirmed unspents at the payout address)`,
+      );
+    }
+    return inserted;
   }
 
   private async scanViaBitcoind(

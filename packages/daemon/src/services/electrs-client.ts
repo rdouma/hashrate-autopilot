@@ -28,8 +28,25 @@ export interface ElectrsBalance {
   readonly unconfirmed: number;
 }
 
+export interface ElectrsUnspent {
+  readonly tx_hash: string;
+  readonly tx_pos: number;
+  readonly height: number;
+  readonly value: number;
+}
+
 export interface ElectrsClient {
   getBalance(address: string): Promise<ElectrsBalance>;
+  /**
+   * Per-UTXO list at the given address. Used by the payout-observer
+   * to populate `reward_events` for the chart's `paid_total_sat`
+   * series on electrs-only setups (no bitcoind RPC available, e.g.
+   * Umbrel installs that didn't declare bitcoind as a dependency).
+   * `listunspent` doesn't expose a coinbase flag - we treat all
+   * outputs at the configured payout address as reward events,
+   * which is the right call for an Ocean-paying address.
+   */
+  listUnspent(address: string): Promise<ElectrsUnspent[]>;
   /**
    * Fetch the 4-byte version field from the block header at the
    * given height. Returns the parsed signed-int. Used to detect
@@ -38,6 +55,15 @@ export interface ElectrsClient {
    * as hex; the version sits in the first 4 bytes, little-endian.
    */
   getBlockVersionByHeight(height: number): Promise<number>;
+  /**
+   * Fetch the 4-byte unix timestamp from the block header at the
+   * given height (offset 68, little-endian uint32). Used by the
+   * payout-observer to stamp `reward_events.detected_at` with the
+   * actual on-chain time rather than wall-clock-of-scan, so the
+   * chart's lifetime-earnings line plots payouts at their real
+   * historical positions on first backfill.
+   */
+  getBlockTimeByHeight(height: number): Promise<number>;
   close(): void;
 }
 
@@ -129,6 +155,30 @@ export async function createElectrsClient(config: ElectrsConfig): Promise<Electr
       }
       const buf = Buffer.from(headerHex.slice(0, 8), 'hex');
       return buf.readInt32LE(0);
+    },
+    async getBlockTimeByHeight(height: number): Promise<number> {
+      const headerHex = await call<string>('blockchain.block.header', [height]);
+      // 80-byte header layout (Bitcoin core): version(4) + prev_hash(32)
+      // + merkle_root(32) + time(4) + bits(4) + nonce(4). Time field
+      // sits at byte offset 68, little-endian uint32 (unix epoch).
+      if (typeof headerHex !== 'string' || headerHex.length < 160) {
+        throw new Error(`Electrs RPC blockchain.block.header(${height}): malformed header`);
+      }
+      const buf = Buffer.from(headerHex.slice(0, 160), 'hex');
+      return buf.readUInt32LE(68);
+    },
+    async listUnspent(address: string): Promise<ElectrsUnspent[]> {
+      const scripthash = addressToScripthash(address);
+      const rows = await call<Array<{ tx_hash: string; tx_pos: number; height: number; value: number }>>(
+        'blockchain.scripthash.listunspent',
+        [scripthash],
+      );
+      return rows.map((r) => ({
+        tx_hash: String(r.tx_hash),
+        tx_pos: Number(r.tx_pos),
+        height: Number(r.height),
+        value: Number(r.value),
+      }));
     },
     close() {
       socket.destroy();

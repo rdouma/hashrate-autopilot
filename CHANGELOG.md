@@ -2,6 +2,12 @@
 
 ## 2026-05-08
 
+### `[Fix]` reward_events written via electrs (Umbrel hot-path) - v1.5.1 follow-up
+
+The "Electrs payout-observer now writes reward_events" fix that landed in v1.5.1 only worked when bitcoind RPC was ALSO configured - the side-scan I added requires `bitcoindClient`, which is null on Umbrel installs that haven't declared bitcoind as a dependency (the default for our app, since the autopilot doesn't strictly need bitcoind to bid). Operator deployed v1.5.1 to clarent (electrs-only, no bitcoind RPC) and reported the same flat-zero "paid earnings (lifetime)" line we thought we'd fixed.
+
+Replaced the gap with an electrs-native path. `ElectrsClient` grew two new methods: `listUnspent(address)` (per-UTXO via `blockchain.scripthash.listunspent`) and `getBlockTimeByHeight(height)` (parses the unix-timestamp out of byte offset 68 of the raw 80-byte block header). After the balance update, `scanViaElectrs` now calls `listUnspent` and inserts each new (txid, vout) into `reward_events` with `detected_at = block_time * 1000`, using the same `INSERT ... ON CONFLICT DO NOTHING` shape migration 0072's UNIQUE index enables. Failure to list unspents or look up a block time is non-fatal - the balance snapshot is unaffected. Bitcoind side-scan stays as a defensive fallback for setups that have both.
+
 ### `[Release]` v1.5.1
 
 Polish + bug-fix release on top of v1.5.0. Two weeks of operator-driven dashboard work, plus a couple of incident-driven fixes.
