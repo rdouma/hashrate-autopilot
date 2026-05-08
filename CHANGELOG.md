@@ -2,6 +2,10 @@
 
 ## 2026-05-08
 
+### `[Fix]` Time-based ocean_unpaid_sat cleanup, broader cutoff (#108 follow-up)
+
+The previous cleanup used the migration boundary (`0053_*` applied_at) as the cutoff, which left contaminated rows in place wherever the daemon had been running with the column already in place but Ocean was unreachable at tick time and the bad recompute filled the null. Operator caught this on the chart - a 4M-sat plateau in the historical region they never actually had. Switching to a value-based heuristic: find the latest tick where `ocean_unpaid_sat > 1.5M sats` (implausibly high for the project's 1 PH/s hobbyist target given Ocean's 1,048,576-sat payout threshold) and null everything at or before that timestamp. Idempotent across re-boots (post-cleanup the threshold-query returns null and the cleanup no-ops).
+
 ### `[Fix]` Revert ocean_unpaid_sat reconstruction; null out reconstructed values (#108 follow-up)
 
 The `ocean_unpaid_sat` historical reconstruction in build 262 was wrong. It used `pool_block.total_reward_sat × share_log_pct_at_block / 100` minus cumulative payouts, but `share_log_pct` is the operator's share at a specific tick - it varies as the operator's mining activity does, and using a nearest-known reading as fallback for past blocks wildly over-credits the operator on blocks before they were mining at full hashrate. The line on the chart was misleading garbage. Code reverts to leaving `ocean_unpaid_sat` alone (only Ocean's actual reading is the source of truth). One-shot cleanup nulls out any reconstructed values that the prior recompute wrote: every row whose tick_at predates the migration that introduced the column (`0053_tick_metrics_extended_capture.sql`). Post-column rows are left as-is (no marker to distinguish reconstructed from real, but those came online when Ocean integration did so contamination is bounded). Idempotent.
