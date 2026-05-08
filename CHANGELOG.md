@@ -2,6 +2,10 @@
 
 ## 2026-05-08
 
+### `[UI]` HashrateChart expand/collapse toggle (#105)
+
+Hashrate chart's title now carries the same expand/collapse toggle as the price chart, doubling chart height on click for closer reading of floor breaches and BIP 110 marker positions. Each chart's expand state is independent.
+
 ### `[UI]` Test sound button styled like Test connection (#104)
 
 Block-found notification's Test sound button now sits inline-right of the Sound select with the same yellow primary styling as the Telegram section's Test connection (which it tests is conceptually identical: validate the typed-but-unsaved value before saving). Old grey button on its own row below is gone. Help text moved to the standard sub-line below the row, with the "no save needed" line folded in.

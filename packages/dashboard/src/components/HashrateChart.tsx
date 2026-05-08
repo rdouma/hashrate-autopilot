@@ -203,6 +203,11 @@ export const HashrateChart = memo(function HashrateChart({
   const { intlLocale } = useLocale();
   const denomination = useDenomination();
   const [blockTip, setBlockTip] = useState<BlockTooltipState | null>(null);
+  // #105: parity with PriceChart - operator can double chart height
+  // for closer inspection of floor breaches / BIP 110 marker positions.
+  // State is local; PriceChart's expand toggle is independent.
+  const [expanded, setExpanded] = useState(false);
+  const chartHeight = expanded ? HEIGHT * 2 : HEIGHT;
 
   const onBlockEnter = useCallback(
     (block: OurBlockMarker) => (e: React.MouseEvent) => {
@@ -392,8 +397,8 @@ export const HashrateChart = memo(function HashrateChart({
       return PADDING.left + ((x - minX) / (maxX - minX)) * usable;
     };
     const yScale = (y: number): number => {
-      const usable = HEIGHT - PADDING.top - PADDING.bottom;
-      return HEIGHT - PADDING.bottom - ((y - yMin) / (yMax - yMin)) * usable;
+      const usable = chartHeight - PADDING.top - PADDING.bottom;
+      return chartHeight - PADDING.bottom - ((y - yMin) / (yMax - yMin)) * usable;
     };
 
     // Right-side Y-axis for the share_log overlay. niceYTicks gives a
@@ -423,11 +428,11 @@ export const HashrateChart = memo(function HashrateChart({
       shareLogYMax = shareLogYTicks[shareLogYTicks.length - 1] ?? 1;
     }
     const shareLogYScale = (y: number): number => {
-      const usable = HEIGHT - PADDING.top - PADDING.bottom;
+      const usable = chartHeight - PADDING.top - PADDING.bottom;
       const span = shareLogYMax - shareLogYMin;
-      if (span <= 0) return HEIGHT - PADDING.bottom;
+      if (span <= 0) return chartHeight - PADDING.bottom;
       return (
-        HEIGHT - PADDING.bottom - ((y - shareLogYMin) / span) * usable
+        chartHeight - PADDING.bottom - ((y - shareLogYMin) / span) * usable
       );
     };
 
@@ -528,6 +533,7 @@ export const HashrateChart = memo(function HashrateChart({
     rightAxisSeries,
     denomination,
     intlLocale,
+    chartHeight,
   ]);
 
   if (!chartData) {
@@ -550,9 +556,19 @@ export const HashrateChart = memo(function HashrateChart({
   return (
     <div className="bg-slate-900 border rounded-lg p-4 border-slate-800">
       <div className="flex items-center justify-between mb-2 gap-3 flex-wrap">
-        <h3 className="text-xs uppercase tracking-wider text-slate-100">
-          <Trans>Hashrate</Trans>
-        </h3>
+        <div className="flex items-center gap-2">
+          <h3 className="text-xs uppercase tracking-wider text-slate-100">
+            <Trans>Hashrate</Trans>
+          </h3>
+          <button
+            type="button"
+            onClick={() => setExpanded((e) => !e)}
+            className="text-[10px] uppercase tracking-wider text-slate-400 hover:text-slate-200 border border-slate-700 rounded px-1.5 py-0.5"
+            title={expanded ? t`Collapse to default height` : t`Expand to double height`}
+          >
+            {expanded ? t`collapse` : t`expand`}
+          </button>
+        </div>
         <div className="flex items-center gap-3 text-xs flex-wrap">
           <Legend color={COLOR_DELIVERED} label={t`delivered (Braiins)`} />
           {hasDatum && (
@@ -581,7 +597,7 @@ export const HashrateChart = memo(function HashrateChart({
         </div>
       </div>
       <svg
-        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+        viewBox={`0 0 ${WIDTH} ${chartHeight}`}
         preserveAspectRatio="xMidYMid meet"
         className="w-full h-auto"
       >
@@ -691,7 +707,7 @@ export const HashrateChart = memo(function HashrateChart({
                     x1={x}
                     x2={x}
                     y1={PADDING.top + 8}
-                    y2={HEIGHT - PADDING.bottom}
+                    y2={chartHeight - PADDING.bottom}
                     stroke={color}
                     strokeWidth={b.found_by_us ? '1.8' : '1'}
                     strokeDasharray={b.found_by_us ? '4 2' : '2 3'}
@@ -703,7 +719,7 @@ export const HashrateChart = memo(function HashrateChart({
                     x={x - 6}
                     y={PADDING.top - 9}
                     width={12}
-                    height={HEIGHT - PADDING.bottom - PADDING.top + 9}
+                    height={chartHeight - PADDING.bottom - PADDING.top + 9}
                     fill="transparent"
                   />
                   {/* Marker icon: crown for BIP-110-signaling blocks
@@ -749,8 +765,8 @@ export const HashrateChart = memo(function HashrateChart({
         <line
           x1={PADDING.left}
           x2={WIDTH - padRight}
-          y1={HEIGHT - PADDING.bottom}
-          y2={HEIGHT - PADDING.bottom}
+          y1={chartHeight - PADDING.bottom}
+          y2={chartHeight - PADDING.bottom}
           stroke="#334155"
           strokeWidth="1"
         />
@@ -762,14 +778,14 @@ export const HashrateChart = memo(function HashrateChart({
               <line
                 x1={x}
                 x2={x}
-                y1={HEIGHT - PADDING.bottom}
-                y2={HEIGHT - PADDING.bottom + 3}
+                y1={chartHeight - PADDING.bottom}
+                y2={chartHeight - PADDING.bottom + 3}
                 stroke="#475569"
                 strokeWidth="1"
               />
               <text
                 x={x}
-                y={HEIGHT - 8}
+                y={chartHeight - 8}
                 textAnchor="middle"
                 fontSize="10"
                 fill="#64748b"
@@ -783,24 +799,24 @@ export const HashrateChart = memo(function HashrateChart({
 
         <text
           x={14}
-          y={PADDING.top + (HEIGHT - PADDING.top - PADDING.bottom) / 2}
+          y={PADDING.top + (chartHeight - PADDING.top - PADDING.bottom) / 2}
           textAnchor="middle"
           fontSize="10"
           fill="#64748b"
           fontFamily="monospace"
-          transform={`rotate(-90 14 ${PADDING.top + (HEIGHT - PADDING.top - PADDING.bottom) / 2})`}
+          transform={`rotate(-90 14 ${PADDING.top + (chartHeight - PADDING.top - PADDING.bottom) / 2})`}
         >
           {denomination.hashrateSuffix}
         </text>
         {hasShareLog && rightAxis && (
           <text
             x={WIDTH - 14}
-            y={PADDING.top + (HEIGHT - PADDING.top - PADDING.bottom) / 2}
+            y={PADDING.top + (chartHeight - PADDING.top - PADDING.bottom) / 2}
             textAnchor="middle"
             fontSize="10"
             fill={rightAxis.stroke}
             fontFamily="monospace"
-            transform={`rotate(90 ${WIDTH - 14} ${PADDING.top + (HEIGHT - PADDING.top - PADDING.bottom) / 2})`}
+            transform={`rotate(90 ${WIDTH - 14} ${PADDING.top + (chartHeight - PADDING.top - PADDING.bottom) / 2})`}
           >
             {rightAxis.axisLabel}
           </text>
