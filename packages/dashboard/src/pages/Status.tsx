@@ -56,6 +56,17 @@ const RUN_MODES = ['DRY_RUN', 'LIVE', 'PAUSED'] as const;
 const CHART_RANGE_STORAGE_KEY = 'hashrate-chart-range';
 const STATUS_QUERY_KEY = ['status'] as const;
 
+// Frozen empties for chart props. Inline `?? []` allocates a fresh
+// array each render; both PriceChart and HashrateChart are wrapped
+// in `React.memo`, so the new reference forces them to recompute
+// on every parent render. Sharing module-level frozen sentinels
+// keeps the props referentially stable until the underlying query
+// data actually arrives.
+const EMPTY_METRIC_POINTS: readonly never[] = Object.freeze([]) as readonly never[];
+const EMPTY_BID_EVENTS: readonly never[] = Object.freeze([]) as readonly never[];
+const EMPTY_REWARD_EVENTS: readonly never[] = Object.freeze([]) as readonly never[];
+const EMPTY_OUR_BLOCKS: readonly never[] = Object.freeze([]) as readonly never[];
+
 function readStoredChartRange(): ChartRange {
   if (typeof window === 'undefined') return DEFAULT_CHART_RANGE;
   return parseChartRange(window.localStorage.getItem(CHART_RANGE_STORAGE_KEY)) ?? DEFAULT_CHART_RANGE;
@@ -307,10 +318,10 @@ export function Status() {
           </select>
         </div>
         <HashrateChart
-          points={metricsQuery.data?.points ?? []}
+          points={metricsQuery.data?.points ?? EMPTY_METRIC_POINTS}
           range={chartRange}
           onRangeChange={setChartRange}
-          ourBlocks={oceanQuery.data?.our_recent_blocks ?? []}
+          ourBlocks={oceanQuery.data?.our_recent_blocks ?? EMPTY_OUR_BLOCKS}
           blockExplorerTemplate={configQuery.data?.config?.block_explorer_url_template}
           shareLogPct={oceanQuery.data?.user?.share_log_pct ?? null}
           braiinsSmoothingMinutes={configQuery.data?.config?.braiins_hashrate_smoothing_minutes ?? 1}
@@ -338,8 +349,8 @@ export function Status() {
           </select>
         </div>
         <PriceChart
-          points={metricsQuery.data?.points ?? []}
-          events={bidEventsQuery.data?.events ?? []}
+          points={metricsQuery.data?.points ?? EMPTY_METRIC_POINTS}
+          events={bidEventsQuery.data?.events ?? EMPTY_BID_EVENTS}
           showEventKinds={CHART_RANGE_SPECS[chartRange].showEventKinds}
           maxOverpayVsHashpriceSatPerPhDay={s.config_summary.max_overpay_vs_hashprice_sat_per_ph_day}
           overpaySatPerPhDay={
@@ -349,8 +360,8 @@ export function Status() {
           }
           priceSmoothingMinutes={configQuery.data?.config?.braiins_price_smoothing_minutes ?? 1}
           rightAxisSeries={priceRightAxis}
-          rewardEvents={rewardEventsQuery.data?.events ?? []}
-          ourBlocks={oceanQuery.data?.our_recent_blocks ?? []}
+          rewardEvents={rewardEventsQuery.data?.events ?? EMPTY_REWARD_EVENTS}
+          ourBlocks={oceanQuery.data?.our_recent_blocks ?? EMPTY_OUR_BLOCKS}
           blockExplorerTemplate={configQuery.data?.config?.block_explorer_url_template}
           txExplorerTemplate={configQuery.data?.config?.block_explorer_tx_url_template}
           shareLogPct={oceanQuery.data?.user?.share_log_pct ?? null}

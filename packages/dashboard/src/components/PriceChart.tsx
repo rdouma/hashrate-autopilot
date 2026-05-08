@@ -1039,26 +1039,6 @@ export const PriceChart = memo(function PriceChart({
 
   const { pricePoints, minX, maxX, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, hashpricePath, fillablePath, fillableHasData, effectivePath, effectiveHasData, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents, rightAxis, hasRightAxis, rightAxisPath, rightYTicks, rightYScale, padRight } = chartData;
 
-  // Right-axis line value at an arbitrary timestamp - used to anchor
-  // pool-block / reward-event dots on top of the line. Walk the
-  // points array forward to the first tick at or after `ts`; if `ts`
-  // is past the last tick (markers more recent than any tick), fall
-  // back to the last non-null right-axis value.
-  const rightAxisValueAt = (ts: number): number | null => {
-    if (!rightAxis) return null;
-    for (let i = 0; i < points.length; i += 1) {
-      if (points[i]!.tick_at >= ts) {
-        const v = rightAxis.values[i];
-        return typeof v === 'number' && Number.isFinite(v) ? v : null;
-      }
-    }
-    for (let i = points.length - 1; i >= 0; i -= 1) {
-      const v = rightAxis.values[i];
-      if (typeof v === 'number' && Number.isFinite(v)) return v;
-    }
-    return null;
-  };
-
   // Which extra marker series to render based on right-axis choice.
   const showRewardMarkers =
     rightAxisSeries === 'paid_total_sat' ||
@@ -1066,6 +1046,102 @@ export const PriceChart = memo(function PriceChart({
   const showPoolBlockMarkers =
     rightAxisSeries === 'ocean_unpaid_sat' ||
     rightAxisSeries === 'lifetime_earnings_sat';
+
+  // Pre-computed (x, y) positions for marker dots, memoised so a
+  // parent re-render that doesn't change `points` / `rewardEvents` /
+  // `ourBlocks` / scales doesn't re-walk the points array per
+  // marker. The naive lookup was O(M*N) - one forward scan of the
+  // points per marker; this is O(N + M) by using `lastNonNullRightAxis`
+  // as a fallback for markers more recent than the last tick.
+  const visibleRewardMarkers = useMemo(() => {
+    if (!showRewardMarkers || !rightAxis) return [] as Array<{
+      reward: RewardEventView;
+      cx: number;
+      cy: number;
+    }>;
+    let lastNonNull: number | null = null;
+    for (let i = points.length - 1; i >= 0; i -= 1) {
+      const v = rightAxis.values[i];
+      if (typeof v === 'number' && Number.isFinite(v)) {
+        lastNonNull = v;
+        break;
+      }
+    }
+    const out: Array<{ reward: RewardEventView; cx: number; cy: number }> = [];
+    let cursor = 0;
+    for (const r of rewardEvents) {
+      if (r.reorged) continue;
+      if (r.detected_at < minX || r.detected_at > maxX) continue;
+      while (cursor < points.length && points[cursor]!.tick_at < r.detected_at) {
+        cursor += 1;
+      }
+      let v: number | null = null;
+      if (cursor < points.length) {
+        const c = rightAxis.values[cursor];
+        if (typeof c === 'number' && Number.isFinite(c)) v = c;
+      } else {
+        v = lastNonNull;
+      }
+      if (v === null) continue;
+      out.push({ reward: r, cx: xScale(r.detected_at), cy: rightYScale(v) });
+    }
+    return out;
+  }, [
+    showRewardMarkers,
+    rightAxis,
+    rewardEvents,
+    points,
+    minX,
+    maxX,
+    xScale,
+    rightYScale,
+  ]);
+
+  const visiblePoolBlockMarkers = useMemo(() => {
+    if (!showPoolBlockMarkers || !rightAxis) return [] as Array<{
+      block: OurBlockMarker;
+      cx: number;
+      cy: number;
+    }>;
+    let lastNonNull: number | null = null;
+    for (let i = points.length - 1; i >= 0; i -= 1) {
+      const v = rightAxis.values[i];
+      if (typeof v === 'number' && Number.isFinite(v)) {
+        lastNonNull = v;
+        break;
+      }
+    }
+    const out: Array<{ block: OurBlockMarker; cx: number; cy: number }> = [];
+    // ourBlocks comes from /api/ocean newest-first, so sort ASC so the
+    // two-pointer cursor walk lines up with `points` (also ASC).
+    const sortedBlocks = [...ourBlocks].sort((a, b) => a.timestamp_ms - b.timestamp_ms);
+    let cursor = 0;
+    for (const b of sortedBlocks) {
+      if (b.timestamp_ms < minX || b.timestamp_ms > maxX) continue;
+      while (cursor < points.length && points[cursor]!.tick_at < b.timestamp_ms) {
+        cursor += 1;
+      }
+      let v: number | null = null;
+      if (cursor < points.length) {
+        const c = rightAxis.values[cursor];
+        if (typeof c === 'number' && Number.isFinite(c)) v = c;
+      } else {
+        v = lastNonNull;
+      }
+      if (v === null) continue;
+      out.push({ block: b, cx: xScale(b.timestamp_ms), cy: rightYScale(v) });
+    }
+    return out;
+  }, [
+    showPoolBlockMarkers,
+    rightAxis,
+    ourBlocks,
+    points,
+    minX,
+    maxX,
+    xScale,
+    rightYScale,
+  ]);
 
   // Format Y-axis tick values via the denomination context so the
   // numbers track the currency + hashrate-unit toggle. The full
@@ -1406,82 +1482,51 @@ export const PriceChart = memo(function PriceChart({
             opens a pinned tooltip with payout date, sat amount, and
             block-explorer link. Only rendered when the right-axis
             series actually plots paid earnings. */}
-        {showRewardMarkers &&
-          rewardEvents
-            .filter(
-              (r) =>
-                !r.reorged && r.detected_at >= minX && r.detected_at <= maxX,
-            )
-            .map((r) => {
-              const v = rightAxisValueAt(r.detected_at);
-              if (v === null) return null;
-              const cx = xScale(r.detected_at);
-              const cy = rightYScale(v);
-              return (
-                <g
-                  key={`reward-${r.id}`}
-                  onMouseEnter={onRewardEnter(r)}
-                  onMouseLeave={onRewardLeave}
-                  onClick={onRewardClick(r)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <circle
-                    cx={cx}
-                    cy={cy}
-                    r="4.5"
-                    fill="#c084fc"
-                    stroke="#0f172a"
-                    strokeWidth="1.5"
-                  />
-                  <rect
-                    x={cx - 9}
-                    y={cy - 9}
-                    width="18"
-                    height="18"
-                    fill="transparent"
-                  />
-                </g>
-              );
-            })}
+        {visibleRewardMarkers.map(({ reward, cx, cy }) => (
+          <g
+            key={`reward-${reward.id}`}
+            onMouseEnter={onRewardEnter(reward)}
+            onMouseLeave={onRewardLeave}
+            onClick={onRewardClick(reward)}
+            style={{ cursor: 'pointer' }}
+          >
+            <circle
+              cx={cx}
+              cy={cy}
+              r="4.5"
+              fill="#c084fc"
+              stroke="#0f172a"
+              strokeWidth="1.5"
+            />
+            <rect x={cx - 9} y={cy - 9} width="18" height="18" fill="transparent" />
+          </g>
+        ))}
 
         {/* Pool-block dots on the right-axis line. Click opens the
             same rich tooltip the Hashrate chart uses (reward, our
             share, BIP-110 signal, explorer link). */}
-        {showPoolBlockMarkers &&
-          ourBlocks
-            .filter((b) => b.timestamp_ms >= minX && b.timestamp_ms <= maxX)
-            .map((b) => {
-              const v = rightAxisValueAt(b.timestamp_ms);
-              if (v === null) return null;
-              const cx = xScale(b.timestamp_ms);
-              const cy = rightYScale(v);
-              const fill = b.found_by_us ? '#fbbf24' : '#38bdf8';
-              return (
-                <g
-                  key={`pool-block-${b.block_hash || b.height}`}
-                  onMouseEnter={onPoolBlockEnter(b)}
-                  onMouseLeave={onPoolBlockLeave}
-                  onClick={onPoolBlockClick(b)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <circle
-                    cx={cx}
-                    cy={cy}
-                    r="4.5"
-                    fill={fill}
-                    stroke="#0f172a"
-                    strokeWidth="1.5"
-                  />
-                  <rect
-                    x={cx - 9}
-                    y={cy - 9}
-                    width="18"
-                    height="18"
-                    fill="transparent"
-                  />
-                </g>
-              );
-            })}
+        {visiblePoolBlockMarkers.map(({ block: b, cx, cy }) => {
+          const fill = b.found_by_us ? '#fbbf24' : '#38bdf8';
+          return (
+            <g
+              key={`pool-block-${b.block_hash || b.height}`}
+              onMouseEnter={onPoolBlockEnter(b)}
+              onMouseLeave={onPoolBlockLeave}
+              onClick={onPoolBlockClick(b)}
+              style={{ cursor: 'pointer' }}
+            >
+              <circle
+                cx={cx}
+                cy={cy}
+                r="4.5"
+                fill={fill}
+                stroke="#0f172a"
+                strokeWidth="1.5"
+              />
+              <rect x={cx - 9} y={cy - 9} width="18" height="18" fill="transparent" />
+            </g>
+          );
+        })}
       </svg>
 
       {poolBlockTip && (

@@ -1,7 +1,7 @@
 import { Trans, t } from '@lingui/macro';
 import { useLingui } from '@lingui/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 const UNACK_ONLY_STORAGE_KEY = 'braiins.alertsUnacknowledgedOnly';
 
@@ -69,7 +69,10 @@ export function Alerts() {
   });
 
   const alerts = query.data?.alerts ?? [];
-  const unackedCount = alerts.filter((a) => a.acknowledged_at_ms === null).length;
+  const unackedCount = useMemo(
+    () => alerts.filter((a) => a.acknowledged_at_ms === null).length,
+    [alerts],
+  );
 
   return (
     <div className="space-y-4">

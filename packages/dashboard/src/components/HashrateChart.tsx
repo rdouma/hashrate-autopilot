@@ -307,22 +307,28 @@ export const HashrateChart = memo(function HashrateChart({
   // ranges where the bucket spanning the retarget shows an
   // intermediate averaged value. The 0.5% threshold separates real
   // retargets from rounding noise.
+  //
+  // Single-pass O(N): a reverse pre-pass builds a lookup table of
+  // the next non-null difficulty value at or after each index, so
+  // the forward pass doesn't have to re-scan to find it.
   const difficultyRetargets = useMemo<RetargetEvent[]>(() => {
     if (rightAxisSeries !== 'network_difficulty') return [];
+    const n = points.length;
+    if (n === 0) return [];
+    const nextNonNull: Array<number | null> = new Array(n);
+    let trailing: number | null = null;
+    for (let i = n - 1; i >= 0; i -= 1) {
+      const d = points[i]!.network_difficulty;
+      if (typeof d === 'number' && Number.isFinite(d)) trailing = d;
+      nextNonNull[i] = trailing;
+    }
     const out: RetargetEvent[] = [];
     let prev: number | null = null;
-    for (let i = 0; i < points.length; i += 1) {
+    for (let i = 0; i < n; i += 1) {
       const d = points[i]!.network_difficulty;
       if (typeof d !== 'number' || !Number.isFinite(d)) continue;
       if (prev !== null && Math.abs(d - prev) / prev > 0.005) {
-        let next: number | null = null;
-        for (let j = i + 1; j < points.length; j += 1) {
-          const dn = points[j]!.network_difficulty;
-          if (typeof dn === 'number' && Number.isFinite(dn)) {
-            next = dn;
-            break;
-          }
-        }
+        const next = i + 1 < n ? nextNonNull[i + 1] ?? null : null;
         if (next === null || Math.abs(next - d) / d <= 0.005) {
           out.push({ tick_at: points[i]!.tick_at, difficulty: d, previous: prev });
         }
@@ -639,6 +645,25 @@ export const HashrateChart = memo(function HashrateChart({
 
   const { minX, maxX, xScale, yScale, deliveredPath, datumPath, hasDatum, oceanPath, hasOcean, targetPath, floorPath, yTicks, xTickInterval, xTicks, hasShareLog, shareLogPath, shareLogYTicks, shareLogYScale, padRight, rightAxis } = chartData;
 
+  // Pre-computed retarget marker positions. Filtered to the visible
+  // x-range and resolved to (cx, cy) once per (markers x scales)
+  // change so the SVG render path doesn't re-walk the array on
+  // every parent re-render.
+  const visibleRetargetMarkers = useMemo(() => {
+    if (rightAxisSeries !== 'network_difficulty') return [] as Array<{
+      event: RetargetEvent;
+      cx: number;
+      cy: number;
+    }>;
+    return difficultyRetargets
+      .filter((r) => r.tick_at >= minX && r.tick_at <= maxX)
+      .map((r) => ({
+        event: r,
+        cx: xScale(r.tick_at),
+        cy: shareLogYScale(r.difficulty),
+      }));
+  }, [difficultyRetargets, rightAxisSeries, minX, maxX, xScale, shareLogYScale]);
+
   return (
     <div className="bg-slate-900 border rounded-lg p-4 border-slate-800">
       <div className="flex items-center justify-between mb-2 gap-3 flex-wrap">
@@ -776,39 +801,26 @@ export const HashrateChart = memo(function HashrateChart({
           />
         )}
 
-        {rightAxisSeries === 'network_difficulty' &&
-          rightAxis &&
-          difficultyRetargets
-            .filter((r) => r.tick_at >= minX && r.tick_at <= maxX)
-            .map((r) => {
-              const cx = xScale(r.tick_at);
-              const cy = shareLogYScale(r.difficulty);
-              return (
-                <g
-                  key={`retarget-${r.tick_at}`}
-                  onMouseEnter={onRetargetEnter(r)}
-                  onMouseLeave={onRetargetLeave}
-                  onClick={onRetargetClick(r)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <circle
-                    cx={cx}
-                    cy={cy}
-                    r="4.5"
-                    fill={rightAxis.stroke}
-                    stroke="#0f172a"
-                    strokeWidth="1.5"
-                  />
-                  <rect
-                    x={cx - 9}
-                    y={cy - 9}
-                    width="18"
-                    height="18"
-                    fill="transparent"
-                  />
-                </g>
-              );
-            })}
+        {rightAxis &&
+          visibleRetargetMarkers.map(({ event, cx, cy }) => (
+            <g
+              key={`retarget-${event.tick_at}`}
+              onMouseEnter={onRetargetEnter(event)}
+              onMouseLeave={onRetargetLeave}
+              onClick={onRetargetClick(event)}
+              style={{ cursor: 'pointer' }}
+            >
+              <circle
+                cx={cx}
+                cy={cy}
+                r="4.5"
+                fill={rightAxis.stroke}
+                stroke="#0f172a"
+                strokeWidth="1.5"
+              />
+              <rect x={cx - 9} y={cy - 9} width="18" height="18" fill="transparent" />
+            </g>
+          ))}
 
         {ourBlocks
             .filter((b) => b.timestamp_ms >= minX && b.timestamp_ms <= maxX)

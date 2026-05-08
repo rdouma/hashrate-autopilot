@@ -228,7 +228,15 @@ export class TickMetricsRepo {
         // tick's unpaid in the bucket aligns both fields on
         // end-of-bucket semantics; the sum is stable across the
         // transition.
-        sql<number | null>`(SELECT ocean_unpaid_sat FROM tick_metrics t2 WHERE t2.tick_at / ${sql.lit(bucketMs)} = tick_metrics.tick_at / ${sql.lit(bucketMs)} ORDER BY t2.tick_at DESC LIMIT 1)`.as(
+        //
+        // Subquery uses range bounds derived from the bucket id so
+        // the predicate IS sargable on `idx_tick_metrics_tick_at`
+        // (range index lookup, NOT full scan). The earlier form
+        // `t2.tick_at / bucketMs = tick_metrics.tick_at / bucketMs`
+        // was non-sargable - SQLite couldn't use the index and ran
+        // a full scan per bucket, costing O(N) per group on long
+        // ranges (review punch-list 2026-05-08).
+        sql<number | null>`(SELECT ocean_unpaid_sat FROM tick_metrics t2 WHERE t2.tick_at >= (tick_metrics.tick_at / ${sql.lit(bucketMs)}) * ${sql.lit(bucketMs)} AND t2.tick_at < ((tick_metrics.tick_at / ${sql.lit(bucketMs)}) + 1) * ${sql.lit(bucketMs)} ORDER BY t2.tick_at DESC LIMIT 1)`.as(
           'ocean_unpaid_sat',
         ),
         // #102: paid_total_sat is monotonic - MAX gives the end-of-bucket

@@ -36,11 +36,17 @@ export async function registerConfigRoutes(
       const prev = await deps.configRepo.get().catch(() => null);
       await deps.configRepo.upsert(parsed.data);
       if (deps.onConfigSaved) {
-        // Best-effort - don't fail the save if a side-effect throws.
+        // Best-effort - don't fail the save if a side-effect throws,
+        // but log the error so an "I saved config but DDNS didn't
+        // move" report is correlatable against the daemon log.
         try {
           await deps.onConfigSaved(parsed.data, prev);
-        } catch {
-          // intentionally swallowed; the save itself succeeded
+        } catch (err) {
+          deps.log?.(
+            `[config] onConfigSaved threw: ${
+              err instanceof Error ? err.message : String(err)
+            }`,
+          );
         }
       }
       return { config: parsed.data };

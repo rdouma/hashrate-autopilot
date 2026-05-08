@@ -208,24 +208,13 @@ export class PayoutObserver {
     if (!db) return 0;
     const candidateOuts = result.unspents;
     if (candidateOuts.length === 0) return 0;
-    // Cheap one-shot query: pull existing (txid, vout) pairs we've
-    // already recorded so we only insert the deltas. The table is
-    // tiny in practice (one row per pool block paid to this address)
-    // so we don't need a per-row WHERE NOT EXISTS dance.
-    const existing = await db
-      .selectFrom('reward_events')
-      .select(['txid', 'vout'])
-      .execute();
-    const seen = new Set(existing.map((r) => `${r.txid}:${r.vout}`));
-    const newOnes = candidateOuts.filter((u) => !seen.has(`${u.txid}:${u.vout}`));
-    if (newOnes.length === 0) return 0;
 
     // Look up actual block timestamps (in ms since epoch) for each
     // unique block_height we're about to insert. Two batched RPC
     // round-trips: getblockhash by height, then getblockheader by
     // hash. Failure is non-fatal - rows with no mapping fall back to
     // fallbackDetectedAt.
-    const uniqueHeights = [...new Set(newOnes.map((u) => u.height))];
+    const uniqueHeights = [...new Set(candidateOuts.map((u) => u.height))];
     const heightToTimeMs = new Map<number, number>();
     try {
       const hashes = await this.options.client.batch<string>(
@@ -247,10 +236,15 @@ export class PayoutObserver {
       );
     }
 
-    await db
+    // Insert with ON CONFLICT DO NOTHING - migration 0072 promotes
+    // (txid, vout) to a UNIQUE index, so the database enforces
+    // dedup at write time. No more SELECT-then-filter scan of the
+    // whole table per scan, and no race window between SELECT and
+    // INSERT if two scans overlap.
+    const result_ = await db
       .insertInto('reward_events')
       .values(
-        newOnes.map((u) => ({
+        candidateOuts.map((u) => ({
           txid: u.txid,
           vout: u.vout,
           block_height: u.height,
@@ -259,11 +253,15 @@ export class PayoutObserver {
           detected_at: heightToTimeMs.get(u.height) ?? fallbackDetectedAt,
         })),
       )
-      .execute();
-    this.options.log?.(
-      `[payout] recorded ${newOnes.length} new reward_event row(s) (scantxoutset returned ${candidateOuts.length} unspents at the payout address)`,
-    );
-    return newOnes.length;
+      .onConflict((oc) => oc.columns(['txid', 'vout']).doNothing())
+      .executeTakeFirst();
+    const inserted = Number(result_.numInsertedOrUpdatedRows ?? 0);
+    if (inserted > 0) {
+      this.options.log?.(
+        `[payout] recorded ${inserted} new reward_event row(s) (scantxoutset returned ${candidateOuts.length} unspents at the payout address)`,
+      );
+    }
+    return inserted;
   }
 
   start(): void {

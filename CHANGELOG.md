@@ -2,6 +2,17 @@
 
 ## 2026-05-08
 
+### `[Perf]` Code-review pass: chart memoisation + sargable bucket subquery + reward_events UNIQUE
+
+Independent review of the marker / DDNS / chart-fix work that landed earlier today turned up a punch list of perf and correctness issues; this commit actions the ones with concrete cost. Six changes in one batch:
+
+1. **Chart props now use frozen empty sentinels** (`Status.tsx`). Inline `?? []` allocates a new array each render, which forces both `React.memo`-wrapped charts to re-run their entire `chartData` useMemo on every parent state change (range tick, expand toggle, run-mode mutation). Module-level `Object.freeze([])` constants give referentially stable fallbacks.
+2. **`PriceChart` marker positions are memoised** with a two-pointer cursor walk over points. The previous code re-walked `points` per marker on every render (O(M*N) where M=markers, N=points); now O(N+M) and skipped entirely when the relevant inputs haven't changed.
+3. **`HashrateChart` retarget detection is now single-pass O(N)** via a precomputed `nextNonNullIdx` reverse pass. The original sustained-value lookahead degraded to O(N²) on sparse series. The visible-marker resolution is also memoised.
+4. **Bucketed `ocean_unpaid_sat` subquery is sargable** (`tick_metrics.ts`). Original predicate `t2.tick_at / bucketMs = tick_metrics.tick_at / bucketMs` couldn't use `idx_tick_metrics_tick_at` and degenerated to a full scan per group. Rewritten as `t2.tick_at >= bucketStart AND t2.tick_at < bucketEnd` - SQLite EXPLAIN now confirms `SEARCH t2 USING INDEX (tick_at>? AND tick_at<?)`. Same verified output on the Wednesday-spike incident; orders of magnitude cheaper on 1y / 1m chart loads.
+5. **Migration 0072 promotes `(txid, vout)` on `reward_events` to a UNIQUE index**, and `payout-observer` switches to `INSERT ... ON CONFLICT DO NOTHING`. Drops the per-scan SELECT-then-filter dance (which read the entire table on every hourly bitcoind scan) and closes the race window between SELECT and INSERT for concurrent scans.
+6. **Smaller cleanups**: `Alerts.tsx` memoises `unackedCount`; `config.ts` no longer silently swallows `onConfigSaved` exceptions (now logged so "I saved config but DDNS didn't move" is correlatable against the daemon log).
+
 ### `[UI]` Alerts: "unacknowledged only" filter persists across reloads
 
 The checkbox was resetting on every page load. Now stored in localStorage (`braiins.alertsUnacknowledgedOnly`), same pattern as Status.tsx's chart range / right-axis preferences. Per-browser, per-operator.
