@@ -2,6 +2,10 @@
 
 ## 2026-05-08
 
+### `[Fix]` DDNS updates the moment you save the form, not 5 minutes later
+
+Operator switched DDNS provider to DuckDNS, updated the pool URL, and waited a full minute before the dashboard's "Resolves to:" line caught up - the periodic ticker doesn't run more often than that, so a config edit had to coast until the next natural tick (worst case ~5 min). PUT /api/config now snapshots the previous config before upsert and fires a new `onConfigSaved` callback the HTTP server's deps interface exposes; main.ts wires it to refresh the live `cfgRefHolder.value` immediately AND, when any DDNS-relevant field changed (`ddns_provider`, `ddns_hostname`, `ddns_username`, `ddns_credential`, `ddns_update_url`, `destination_pool_url`), kick `ddnsUpdater.tick()` once. Net effect: tap out of the hostname / credential / pool URL field, click save, and the DNS record updates within seconds rather than waiting on the next periodic poll.
+
 ### `[Feature]` Hashrate chart: difficulty retarget markers
 
 When the right-axis is set to **network difficulty**, the chart now renders a small dot at every detected retarget tick. Hover/click opens a tooltip with the retarget date, the new difficulty (in trillions), the previous epoch's difficulty, and the % change (red for harder, green for easier). Detection: per-tick step in `network_difficulty` larger than 0.5%, with a sustained-value check on the next non-null tick - filters out spurious detections on bucket-AVG-aggregated long ranges where the bucket spanning a retarget shows an intermediate averaged value. No explorer link (we don't carry block height per tick yet); the retarget heights are derivable client-side as multiples of 2016 if we want to add that later.

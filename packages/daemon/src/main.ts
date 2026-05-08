@@ -712,6 +712,30 @@ async function bootOperational(
     ageKeyPath,
     staticRoot: DASHBOARD_STATIC,
     log: (m) => log(`[http] ${m}`),
+    // React to dashboard config saves without waiting for the next
+    // controller tick (~1 min). Refresh the live config reference
+    // immediately so live-edited fields land in cfgRefHolder, then
+    // kick the DDNS updater when any DDNS-relevant field changed.
+    // Without this, a freshly-edited hostname / credential / pool
+    // URL took up to ~5 min to propagate to the actual DNS record.
+    onConfigSaved: (newCfg, prevCfg) => {
+      cfgRefHolder.value = newCfg;
+      const ddnsRelevant: ReadonlyArray<keyof typeof newCfg> = [
+        'ddns_provider',
+        'ddns_hostname',
+        'ddns_username',
+        'ddns_credential',
+        'ddns_update_url',
+        'destination_pool_url',
+      ];
+      const ddnsChanged =
+        prevCfg === null ||
+        ddnsRelevant.some((k) => prevCfg[k] !== newCfg[k]);
+      if (ddnsChanged) {
+        log('[ddns] config changed, kicking immediate tick');
+        void ddnsUpdater.tick();
+      }
+    },
   });
   const addr = await httpServer.start(HTTP_PORT, HTTP_HOST);
   log(`http: listening on ${addr} (dashboard password from secrets)`);

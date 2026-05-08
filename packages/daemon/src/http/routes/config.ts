@@ -30,7 +30,19 @@ export async function registerConfigRoutes(
             .join('\n'),
         };
       }
+      // Snapshot the previous config BEFORE upsert so the
+      // onConfigSaved callback can diff and decide what to kick
+      // (e.g. DDNS updater on hostname/credential change).
+      const prev = await deps.configRepo.get().catch(() => null);
       await deps.configRepo.upsert(parsed.data);
+      if (deps.onConfigSaved) {
+        // Best-effort - don't fail the save if a side-effect throws.
+        try {
+          await deps.onConfigSaved(parsed.data, prev);
+        } catch {
+          // intentionally swallowed; the save itself succeeded
+        }
+      }
       return { config: parsed.data };
     },
   );

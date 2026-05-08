@@ -90,6 +90,17 @@ export interface HttpServerDeps {
   readonly publicIpService: PublicIpService;
   /** #111: DDNS updater service. */
   readonly ddnsUpdater: DdnsUpdaterService;
+  /**
+   * Fires after a successful PUT /api/config. main.ts wires this to
+   * refresh the live config reference + kick the DDNS updater when
+   * any DDNS-relevant field changed, so edits to provider /
+   * hostname / credential propagate within a second instead of
+   * waiting up to ~5 min for the next periodic ticker fire.
+   */
+  readonly onConfigSaved?: (
+    newCfg: import('../config/schema.js').AppConfig,
+    prevCfg: import('../config/schema.js').AppConfig | null,
+  ) => void | Promise<void>;
   /** #113: Braiins client - used by the stale-URL cancel endpoint to call Braiins's cancelBid. */
   readonly braiinsClient: BraiinsClient;
   /** Sops/env secrets snapshot - fallback for empty `config` row fields. The BIP 110 scanner uses this to build a fresh client per request so saved Config edits take effect without a daemon restart. */
