@@ -35,6 +35,8 @@ type Section = {
   fields: FieldSpec[];
   /** Render this section in a half-width column so an adjacent `sideBySide` section can sit next to it. */
   sideBySide?: boolean;
+  /** Field grid column count at sm+ breakpoint. Defaults to 2. Use 3 for sections with three short related fields (e.g. chart-smoothing). */
+  columns?: 2 | 3;
 };
 
 type FieldSpec = (
@@ -291,6 +293,7 @@ function useSections(): Section[] {
         id: 'chart-smoothing',
         title: t`Chart smoothing`,
         description: t`Rolling-mean window applied to the hashrate chart. 1 = raw (no smoothing). Ocean is excluded - its /user_hashrate endpoint already returns a server-side 5-min average, so set these to 5 to line all three series up on the same cadence.`,
+        columns: 3,
         fields: [
           {
             key: 'braiins_hashrate_smoothing_minutes',
@@ -1022,9 +1025,12 @@ function SectionCard({
 }) {
   // In a side-by-side row each card is already half-width; use a single
   // column inside so the dropdown and its help text span the panel.
+  const cols = section.columns ?? 2;
   const gridCls = section.sideBySide
     ? 'grid grid-cols-1 gap-y-3'
-    : 'grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3';
+    : cols === 3
+      ? 'grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-3'
+      : 'grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3';
   return (
     <section className="bg-slate-900 border border-slate-800 rounded-lg p-4 h-full">
       <header className="mb-3">
@@ -1040,7 +1046,13 @@ function SectionCard({
         {section.fields.map((f) => (
           <div
             key={f.key as string}
-            className={!section.sideBySide && f.fullWidth ? 'sm:col-span-2' : ''}
+            className={
+              !section.sideBySide && f.fullWidth
+                ? cols === 3
+                  ? 'sm:col-span-3'
+                  : 'sm:col-span-2'
+                : ''
+            }
           >
             <Field spec={f} draft={draft} locale={locale} onChange={onChange} />
           </div>

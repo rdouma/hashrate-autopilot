@@ -51,7 +51,7 @@ import { Controller } from './controller/tick.js';
 import { TickLoop } from './controller/loop.js';
 import { AlertEvaluator } from './services/alert-evaluator.js';
 import { AlertManager } from './services/alert-manager.js';
-import { TelegramSink } from './services/notifier.js';
+import { TelegramSink, type SendOptions } from './services/notifier.js';
 import { TelegramReceiver } from './services/telegram-receiver.js';
 import { runOceanUnpaidCleanup } from './services/ocean-unpaid-cleanup.js';
 import { runPoolBlocksBackfill } from './services/pool-blocks-backfill.js';
@@ -507,8 +507,13 @@ async function bootOperational(
     void latestCfg;
   };
   const cfgRefHolder = { value: cfg };
+  // Forward `opts` through to the freshly-built sink so the
+  // alert-manager's alert_id + action_buttons (Mark as seen / Snooze)
+  // make it onto the outbound Telegram payload as reply_markup. The
+  // first cut of this wrapper dropped opts and inline keyboards
+  // silently disappeared; #109 buttons never rendered as a result.
   const dynamicSink = {
-    send: (body: string) => buildSink().send(body),
+    send: (body: string, opts?: SendOptions) => buildSink().send(body, opts),
     verify: () => buildSink().verify(),
   };
   const alertManager = new AlertManager({

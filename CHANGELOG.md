@@ -2,6 +2,14 @@
 
 ## 2026-05-08
 
+### `[Fix]` Telegram inline buttons (Mark as seen / Snooze 2h) actually render now (#109)
+
+The dynamic-sink wrapper in main.ts was dropping the `opts` argument when forwarding `send` to the freshly-built `TelegramSink`, so `alert_id` and `action_buttons` never reached the outbound payload. Telegram received `reply_markup: undefined` on every alert and rendered messages without buttons - which is why the operator never saw the Mark-as-seen / Snooze 2h affordance #109 was supposed to ship. Forwarding the opts through fixes it; new firings will now carry the inline keyboard, and tapping a button routes through the existing TelegramReceiver getUpdates loop to ack/snooze the row in the alerts table.
+
+### `[UI]` Chart smoothing: 3 columns instead of 2
+
+Rolling-mean inputs (Braiins delivered, Datum received, Braiins price) are three short related fields, so the 2-column layout left the third orphaned on its own row with empty space next to it. Bumped the section to 3 columns so all three line up on one row. New `columns?: 2 | 3` option on the Section type generalises this for future sections.
+
 ### `[Feature]` Telegram messages: optional per-instance label prefix
 
 Adds an optional `telegram_instance_label` config field. When set, the TelegramSink prefixes every outbound message body with `[<label>] ` (e.g. `[prod] Bid sustained-paused by Braiins...`) so an operator running multiple daemons against the same bot/chat can tell which instance fired a given alert. Lives on Config → Notifications, just below Chat ID, with a max length of 32 chars. Empty = no prefix (default, unchanged behaviour). Motivated today by an incident where a Telegram message arrived that the operator could not match to any row in the connected daemon's Alerts page - this gives every message a visible source so the question "which daemon said that?" is answerable from the chat alone. Migration 0070 adds the column. NL/ES translations included.
