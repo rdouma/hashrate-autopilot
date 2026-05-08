@@ -387,6 +387,67 @@ all three series on the same cadence.
 
 **All autopilot decisions are logged** with the input state that drove them, for post-hoc debugging.
 
+### 9.1 External notification channel (#100)
+
+The dashboard's `/alerts` page is the source of truth for the audit trail; Telegram is the
+external push channel that wakes the operator when the dashboard isn't being watched.
+
+**Channel:** Telegram only in v1.6+. The notifier is structured around a `NotificationSink`
+interface so a future Nostr / ntfy / email backend can be swapped in without touching the
+event detectors. Setup walkthrough at [`docs/setup-telegram.md`](setup-telegram.md).
+
+**Events that fire Telegram:**
+
+LOUD severity (7) - hard outages that need a phone alarm:
+
+1. **Datum stratum unreachable** for `pool_outage_blip_tolerance_seconds × 5` (the
+   2026-05-06 incident that motivated this issue).
+2. **Hashrate below floor** for `below_floor_alert_after_minutes`.
+3. **Zero hashrate** for `zero_hashrate_loud_alert_after_minutes`.
+4. **Braiins API unreachable** for `api_outage_alert_after_minutes`.
+5. **Wallet runway** below `wallet_runway_alert_days`.
+6. **Unknown bid detected** (already triggers daemon auto-PAUSE; now also rings Telegram).
+7. **Bid sustained-paused by Braiins** - primary owned bid carries a non-null
+   `last_pause_reason` for the pool-outage tolerance window. Catches the
+   Paused/Active oscillation hazard.
+
+WARN severity (2) - soft warnings that can wait for the next dashboard glance:
+
+8. **Beta-exit detected** - any active owned bid reports `fee_rate_pct > 0`.
+9. **1h-rolling acceptance ratio** below 98% (re-instated from the cancellation in #90).
+
+INFO severity - dashboard-only, never Telegram:
+
+- Ocean own-found block (gold cube on chart already covers).
+- On-chain payout received (P&L panel already covers).
+
+**Recovery messages**: paired with each fired LOUD or WARN. INFO severity. Body example:
+`Datum gateway reachable again - was down 22m.` Includes a `paired_alert_id` FK to the
+originating alert so the dashboard groups them visually on `/alerts`.
+
+**Throttling (per state-transition into bad state):**
+
+1. Initial alert fires immediately on threshold crossing (attempt #1).
+2. Up to 4 retries while state is still bad. Cadence configurable via
+   `notification_retry_interval_minutes` (default 30 min).
+3. Final "giving up" message on attempt #5: `…still bad after 2h. No further notifications
+   until recovery.`
+4. Silence until either (a) state clears → recovery message fires, or
+   (b) state transitions clear-then-bad-again → start the ladder over with attempt #1.
+
+Total: at most 5 alert messages per outage event + 1 recovery message.
+
+**Mute and snooze:**
+
+- **Global mute** (`notifications_muted` config flag): silences all Telegram POSTs;
+  alerts table still records every row with `delivery_status = 'muted'` for the audit
+  trail.
+- **Per-alert snooze**: inline action on the `/alerts` page row for any active alert.
+  Presets: 30m / 2h / 24h. While snoozed, retries record as `delivery_status = 'snoozed'`
+  instead of POSTing. Recovery messages bypass snooze.
+- **No quiet-hours config** - cancelled in v1.1 spec rewrite. Mute-on-demand replaces the
+  use case.
+
 ## 10. Ownership model
 
 The Braiins OpenAPI spec does not expose a `label` / `tag` / `metadata` field on `SpotPlaceBidRequest` or

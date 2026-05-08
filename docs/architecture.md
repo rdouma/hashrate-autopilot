@@ -96,6 +96,9 @@ hashrate-autopilot/
 │   │   │   ├── hashprice-cache.ts  (in-memory hashprice cache, fed from Ocean)
 │   │   │   ├── btc-price.ts        (BTC/USD oracle - CoinGecko / Coinbase / Bitstamp / Kraken)
 │   │   │   ├── account-spend.ts    (whole-account spend ledger from /v1/account/transaction)
+│   │   │   ├── notifier.ts         (#100 - NotificationSink interface + TelegramSink)
+│   │   │   ├── alert-manager.ts    (#100 - alerts table writer; retry ladder; recovery pairing)
+│   │   │   ├── alert-evaluator.ts  (#100 - per-tick state-diff that detects transitions)
 │   │   │   └── retention.ts        (hourly pruner for tick_metrics + decisions)
 │   │   ├── src/controller/
 │   │   │   ├── loop.ts             (tick driver)
@@ -109,11 +112,11 @@ hashrate-autopilot/
 │   │       └── routes/             (status, config, decisions, actions, operator, metrics, run-mode,
 │   │                                finance, stats, storage-estimate, bid-events, ocean, payouts, btc-price,
 │   │                                bip110-scan, bitcoind-test, electrs-test, block-found-sound,
-│   │                                reward-events)
+│   │                                reward-events, alerts, notifications-test)
 │   │
 │   └── dashboard/                  React SPA
 │       ├── src/main.tsx
-│       ├── src/pages/              (Status, Config, Setup, Login)
+│       ├── src/pages/              (Status, Alerts, Config, Setup, Login)
 │       ├── src/components/
 │       ├── src/lib/                (api, auth, format, labels, locale)
 │       └── vite.config.ts
@@ -377,14 +380,33 @@ CREATE TABLE reward_events (
   UNIQUE (txid, vout)
 );
 
--- Alerts (dashboard-local; no external delivery channel)
+-- Alerts. v1.6 (#100) added external delivery via Telegram; the
+-- columns below cover both the v1.0 audit trail and the channel-
+-- agnostic delivery state added in migration 0062. Channel-specific
+-- identifiers (Telegram message_id today; future channels later)
+-- are JSON-blob'd into delivery_meta_json so swapping NotificationSink
+-- backends doesn't need another schema bump.
 CREATE TABLE alerts (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   created_at INTEGER NOT NULL,
-  severity TEXT NOT NULL,    -- 'INFO' | 'WARN' | 'LOUD'
+  severity TEXT NOT NULL,                    -- 'INFO' | 'WARN' | 'LOUD'
   title TEXT NOT NULL,
   body TEXT NOT NULL,
-  acknowledged_at INTEGER
+  status TEXT NOT NULL,                      -- legacy: 'BUFFERED' | 'SENT' | 'FAILED'
+  sent_at INTEGER,
+  -- #100 delivery state, channel-agnostic:
+  event_class TEXT,                          -- e.g. 'datum_unreachable'
+  delivery_status TEXT NOT NULL DEFAULT 'pending',
+                                             -- 'pending' | 'sent' | 'failed' |
+                                             -- 'muted' | 'snoozed' | 'gave_up'
+  delivery_attempts INTEGER NOT NULL DEFAULT 0,
+  last_attempt_at_ms INTEGER,
+  next_retry_at_ms INTEGER,                  -- per-tick retry scheduler reads this
+  snoozed_until_ms INTEGER,
+  paired_alert_id INTEGER REFERENCES alerts(id),
+                                             -- recovery row -> originating alert
+  delivery_meta_json TEXT,                   -- {message_id: ...} for Telegram
+  acknowledged_at_ms INTEGER
 );
 
 -- Cached market settings and fee schedule
