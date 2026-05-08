@@ -210,16 +210,27 @@ export class TickMetricsRepo {
         sql<number | null>`MAX(primary_bid_consumed_sat)`.as('primary_bid_consumed_sat'),
         // #93 secondary-axis series: simple AVG over the bucket. None
         // of these are derivative or cumulative, so the average reads
-        // cleanly. ocean_unpaid_sat IS cumulative-then-resets-on-payout,
-        // but a plain AVG within a bucket still tracks the climb; the
-        // sharp drop on payout shows up at bucket boundaries.
+        // cleanly.
         sql<number | null>`AVG(network_difficulty)`.as('network_difficulty'),
         sql<number | null>`AVG(pool_hashrate_ph)`.as('pool_hashrate_ph'),
         sql<number | null>`AVG(estimated_block_reward_sat)`.as(
           'estimated_block_reward_sat',
         ),
         sql<number | null>`AVG(btc_usd_price)`.as('btc_usd_price'),
-        sql<number | null>`AVG(ocean_unpaid_sat)`.as('ocean_unpaid_sat'),
+        // ocean_unpaid_sat: end-of-bucket value, NOT a plain AVG.
+        // Operator caught a phantom upward spike on the lifetime
+        // (paid + unpaid) line at the moment of an on-chain payout
+        // (2026-05-08 follow-up): within a payout-transition bucket
+        // unpaid drops to 0 mid-bucket and paid_total_sat (MAX) jumps
+        // up by the payout amount. AVG(unpaid) still smears the
+        // pre-zero positive values into the bucket, so MAX(paid) +
+        // AVG(unpaid) double-counts the payout. Using the latest
+        // tick's unpaid in the bucket aligns both fields on
+        // end-of-bucket semantics; the sum is stable across the
+        // transition.
+        sql<number | null>`(SELECT ocean_unpaid_sat FROM tick_metrics t2 WHERE t2.tick_at / ${sql.lit(bucketMs)} = tick_metrics.tick_at / ${sql.lit(bucketMs)} ORDER BY t2.tick_at DESC LIMIT 1)`.as(
+          'ocean_unpaid_sat',
+        ),
         // #102: paid_total_sat is monotonic - MAX gives the end-of-bucket
         // value so cumulative-line shape is preserved through bucketing.
         sql<number | null>`MAX(paid_total_sat)`.as('paid_total_sat'),
