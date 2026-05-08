@@ -2,6 +2,10 @@
 
 ## 2026-05-08
 
+### `[UI]` Alerts: "unacknowledged only" filter persists across reloads
+
+The checkbox was resetting on every page load. Now stored in localStorage (`braiins.alertsUnacknowledgedOnly`), same pattern as Status.tsx's chart range / right-axis preferences. Per-browser, per-operator.
+
 ### `[Fix]` DDNS updates the moment you save the form, not 5 minutes later
 
 Operator switched DDNS provider to DuckDNS, updated the pool URL, and waited a full minute before the dashboard's "Resolves to:" line caught up - the periodic ticker doesn't run more often than that, so a config edit had to coast until the next natural tick (worst case ~5 min). PUT /api/config now snapshots the previous config before upsert and fires a new `onConfigSaved` callback the HTTP server's deps interface exposes; main.ts wires it to refresh the live `cfgRefHolder.value` immediately AND, when any DDNS-relevant field changed (`ddns_provider`, `ddns_hostname`, `ddns_username`, `ddns_credential`, `ddns_update_url`, `destination_pool_url`), kick `ddnsUpdater.tick()` once. Net effect: tap out of the hostname / credential / pool URL field, click save, and the DNS record updates within seconds rather than waiting on the next periodic poll.

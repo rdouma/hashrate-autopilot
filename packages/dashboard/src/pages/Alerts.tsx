@@ -1,7 +1,9 @@
 import { Trans, t } from '@lingui/macro';
 import { useLingui } from '@lingui/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+
+const UNACK_ONLY_STORAGE_KEY = 'braiins.alertsUnacknowledgedOnly';
 
 import {
   api,
@@ -20,7 +22,17 @@ export function Alerts() {
   const qc = useQueryClient();
   const { i18n } = useLingui();
   void i18n;
-  const [unackOnly, setUnackOnly] = useState(false);
+  // Persist the filter checkbox so an operator-set preference
+  // survives a page reload. Sibling pattern to Status.tsx's chart
+  // range / right-axis preferences. localStorage is fine here -
+  // each operator's browser has its own filter intent.
+  const [unackOnly, setUnackOnly] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem(UNACK_ONLY_STORAGE_KEY) === '1';
+  });
+  useEffect(() => {
+    window.localStorage.setItem(UNACK_ONLY_STORAGE_KEY, unackOnly ? '1' : '0');
+  }, [unackOnly]);
 
   const filters: Parameters<typeof api.alertsList>[0] = { limit: 200 };
   if (unackOnly) filters.unacknowledged_only = true;
