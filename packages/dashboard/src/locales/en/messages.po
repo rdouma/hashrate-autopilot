@@ -1431,6 +1431,11 @@ msgstr "Network's break-even rate at current difficulty + block reward: (block_r
 msgid "new speed"
 msgstr "new speed"
 
+#. placeholder {0}: buildInfo.data.build
+#: src/components/Layout.tsx
+msgid "New version available (build {__BUILD_NUMBER__} → {0})."
+msgstr "New version available (build {__BUILD_NUMBER__} → {0})."
+
 #: src/pages/Setup.tsx
 #: src/pages/Setup.tsx
 msgid "Next →"
@@ -1925,6 +1930,10 @@ msgstr "received (Ocean)"
 #: src/pages/Alerts.tsx
 msgid "recovery"
 msgstr "recovery"
+
+#: src/components/Layout.tsx
+msgid "Refresh"
+msgstr "Refresh"
 
 #: src/pages/Status.tsx
 msgid "Refresh the money panel now (auto-refreshes every 60s)."

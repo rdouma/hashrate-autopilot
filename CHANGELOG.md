@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-05-08
+
+### `[UI]` Stale-bundle banner after deploy (#103)
+
+Open dashboard tab no longer keeps running yesterday's JS forever after `./scripts/deploy.sh` lands a new build. The dashboard now polls `/api/build` every minute and shows an amber "New version available (build N → M). Refresh." banner at the top when the daemon's build outranks the embedded one. Click reloads. Same `BUILD_NUMBER` source-of-truth on both sides; no service worker, no PWA. Translated for en + nl + es.
+
 ## 2026-05-07
 
 ### `[Feature]` Per-event-class Telegram subscription (#106)

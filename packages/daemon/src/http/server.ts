@@ -39,6 +39,7 @@ import type { PayoutObserver } from '../services/payout-observer.js';
 import { registerActionRoutes } from './routes/actions.js';
 import { registerAlertsRoutes } from './routes/alerts.js';
 import { registerBidEventsRoute } from './routes/bid-events.js';
+import { registerBuildRoute } from './routes/build.js';
 import { registerBip110ScanRoute } from './routes/bip110-scan.js';
 import { registerBitcoindTestRoute } from './routes/bitcoind-test.js';
 import { registerElectrsTestRoute } from './routes/electrs-test.js';
@@ -133,6 +134,7 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<HttpServer
   // boot phases.
   app.get('/api/health', async () => ({ status: 'ok', mode: 'OPERATIONAL' }));
 
+  await registerBuildRoute(app);
   await registerStatusRoute(app, deps);
   await registerDecisionsRoutes(app, deps);
   await registerConfigRoutes(app, deps);

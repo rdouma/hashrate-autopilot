@@ -55,6 +55,18 @@ export function Layout() {
   });
   const unreadCount = alertsHead.data?.unacknowledged_high_severity_count ?? 0;
 
+  // #103: poll the daemon's running build number and surface a
+  // banner when the dashboard's embedded copy lags behind. Without
+  // this an open tab keeps running stale code forever after deploy
+  // because client-side routing never re-fetches the HTML shell.
+  const buildInfo = useQuery({
+    queryKey: ['build-info'],
+    queryFn: api.build,
+    refetchInterval: 60_000,
+  });
+  const newBuildAvailable =
+    buildInfo.data && buildInfo.data.build > __BUILD_NUMBER__;
+
   // Audible block-found cue (#88). Reads the operator's choice from
   // the live config; pollster lives inside the hook.
   const config = useQuery({
@@ -72,6 +84,21 @@ export function Layout() {
 
   return (
     <div className="min-h-full flex flex-col">
+      {newBuildAvailable && buildInfo.data && (
+        <button
+          onClick={() => window.location.reload()}
+          className="bg-amber-400 text-slate-900 text-sm py-2 px-4 text-center hover:bg-amber-300 transition cursor-pointer flex items-center justify-center gap-2"
+        >
+          <span>
+            <Trans>
+              New version available (build {__BUILD_NUMBER__} → {buildInfo.data.build}).
+            </Trans>
+          </span>
+          <span className="font-semibold underline">
+            <Trans>Refresh</Trans>
+          </span>
+        </button>
+      )}
       {/* Top bar: brand on the left, nav tabs in the middle, run-mode +
           balance + locale + sign-out on the right. Replaces the old
           left sidebar - the dashboard is dense enough that giving up

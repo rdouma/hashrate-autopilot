@@ -1431,6 +1431,11 @@ msgstr "De break-even rate van het netwerk bij de huidige moeilijkheidsgraad + b
 msgid "new speed"
 msgstr "nieuwe snelheid"
 
+#. placeholder {0}: buildInfo.data.build
+#: src/components/Layout.tsx
+msgid "New version available (build {__BUILD_NUMBER__} → {0})."
+msgstr "Nieuwe versie beschikbaar (build {__BUILD_NUMBER__} → {0})."
+
 #: src/pages/Setup.tsx
 #: src/pages/Setup.tsx
 msgid "Next →"
@@ -1925,6 +1930,10 @@ msgstr "ontvangen (Ocean)"
 #: src/pages/Alerts.tsx
 msgid "recovery"
 msgstr "herstel"
+
+#: src/components/Layout.tsx
+msgid "Refresh"
+msgstr "Vernieuwen"
 
 #: src/pages/Status.tsx
 msgid "Refresh the money panel now (auto-refreshes every 60s)."

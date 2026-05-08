@@ -1431,6 +1431,11 @@ msgstr "Tasa de equilibrio de la red a la dificultad y recompensa de bloque actu
 msgid "new speed"
 msgstr "nueva velocidad"
 
+#. placeholder {0}: buildInfo.data.build
+#: src/components/Layout.tsx
+msgid "New version available (build {__BUILD_NUMBER__} → {0})."
+msgstr "Nueva versión disponible (build {__BUILD_NUMBER__} → {0})."
+
 #: src/pages/Setup.tsx
 #: src/pages/Setup.tsx
 msgid "Next →"
@@ -1925,6 +1930,10 @@ msgstr "recibido (Ocean)"
 #: src/pages/Alerts.tsx
 msgid "recovery"
 msgstr "recuperación"
+
+#: src/components/Layout.tsx
+msgid "Refresh"
+msgstr "Recargar"
 
 #: src/pages/Status.tsx
 msgid "Refresh the money panel now (auto-refreshes every 60s)."

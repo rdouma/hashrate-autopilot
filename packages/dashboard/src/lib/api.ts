@@ -492,6 +492,7 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(creds),
     }),
+  build: () => request<BuildInfoResponse>('/api/build'),
   alertsList: (filters: AlertsListFilters = {}) => {
     const qs = new URLSearchParams();
     if (filters.since_ms !== undefined) qs.set('since_ms', String(filters.since_ms));
@@ -627,6 +628,12 @@ export interface ElectrsTestResponse {
 export interface NotificationsTestResponse {
   ok: boolean;
   error?: string | null;
+}
+
+export interface BuildInfoResponse {
+  build: number;
+  hash: string;
+  version: string;
 }
 
 export type AlertSeverity = 'INFO' | 'WARN' | 'LOUD';
