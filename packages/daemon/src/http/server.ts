@@ -193,7 +193,10 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<HttpServer
     publicIpService: deps.publicIpService,
     ddnsUpdater: deps.ddnsUpdater,
   });
-  await registerDdnsTestRoute(app);
+  await registerDdnsTestRoute(app, {
+    ddnsUpdater: deps.ddnsUpdater,
+    publicIpService: deps.publicIpService,
+  });
   await registerPoolUrlTestRoute(app);
   await registerDatumTestRoute(app);
   await registerStaleUrlsRoute(app, {

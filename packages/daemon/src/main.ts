@@ -634,13 +634,30 @@ async function bootOperational(
   // (cheap, used for the diagnostics card too); the updater is a no-op
   // until the operator configures `ddns_provider` etc. on the Config
   // page.
-  const publicIpService = new PublicIpService({ log: (m) => log(m) });
+  // Lazy ref so the publicIp -> ddnsUpdater wiring can be set up
+  // before the updater is constructed below. publicIp's onIpChange
+  // handler reads through this ref at fire time, so it sees the
+  // updater instance once it exists. Avoids a circular construction
+  // between the two services.
+  const ddnsUpdaterRef: { value: DdnsUpdaterService | null } = { value: null };
+  const publicIpService = new PublicIpService({
+    log: (m) => log(m),
+    onIpChange: () => {
+      // Force an immediate DDNS push as soon as we observe an IP
+      // rotation - addresses #114 where a real ISP rotation left the
+      // old IP live in DNS for ~27 min while two 5-min pollers waited
+      // out their natural cadences.
+      const u = ddnsUpdaterRef.value;
+      if (u) void u.tick();
+    },
+  });
   publicIpService.start();
   const ddnsUpdater = new DdnsUpdaterService({
     cfgRef: cfgRefHolder,
     publicIp: publicIpService,
     log: (m) => log(m),
   });
+  ddnsUpdaterRef.value = ddnsUpdater;
   ddnsUpdater.start();
 
   // HTTP server (dashboard API + static).

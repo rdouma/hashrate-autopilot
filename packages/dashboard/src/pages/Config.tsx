@@ -2875,6 +2875,11 @@ function DdnsSection({
           </span>
           <span className="text-slate-100">
             {r?.daemon_public_ip ?? <span className="text-slate-500">—</span>}
+            {r?.daemon_public_ip_checked_at && (
+              <span className="text-slate-500 ml-2">
+                <Trans>(checked {formatAge(r.daemon_public_ip_checked_at)})</Trans>
+              </span>
+            )}
             {r?.daemon_public_ip_error && (
               <span className="text-red-400 ml-2">({r.daemon_public_ip_error})</span>
             )}

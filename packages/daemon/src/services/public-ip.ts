@@ -34,6 +34,15 @@ export interface PublicIpServiceOptions {
   /** Per-request timeout. Defaults to 5 s. */
   readonly timeoutMs?: number;
   readonly log?: (msg: string) => void;
+  /**
+   * Fires when a refresh observes the public IP rotating from one
+   * non-null value to a different non-null value. Initial detection
+   * (null -> first IP) does NOT fire - that's not a rotation, and the
+   * DDNS updater's first tick is already scheduled separately. Lets
+   * downstream services (DDNS updater) react immediately to ISP IP
+   * rotation rather than waiting up to 5 min for their next tick.
+   */
+  readonly onIpChange?: (newIp: string, oldIp: string) => void;
 }
 
 export class PublicIpService {
@@ -77,7 +86,17 @@ export class PublicIpService {
         };
         return this.snapshot;
       }
+      const previousIp = this.snapshot.ip;
       this.snapshot = { ip: text, checked_at: Date.now(), error: null };
+      if (previousIp !== null && previousIp !== text) {
+        this.options.log?.(`[public-ip] IP changed: ${previousIp} -> ${text}`);
+        try {
+          this.options.onIpChange?.(text, previousIp);
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          this.options.log?.(`[public-ip] onIpChange handler errored: ${msg}`);
+        }
+      }
       return this.snapshot;
     } catch (err) {
       this.snapshot = {

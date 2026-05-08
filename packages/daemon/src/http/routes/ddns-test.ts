@@ -14,8 +14,16 @@
 
 import type { FastifyInstance } from 'fastify';
 
+import type { DdnsUpdaterService } from '../../services/ddns-updater.js';
+import type { PublicIpService } from '../../services/public-ip.js';
+
 const NOIP_UPDATE_URL = 'https://dynupdate.no-ip.com/nic/update';
 const USER_AGENT = 'hashrate-autopilot/1.0';
+
+export interface DdnsTestRouteDeps {
+  readonly ddnsUpdater: DdnsUpdaterService;
+  readonly publicIpService: PublicIpService;
+}
 
 export interface DdnsTestRequest {
   provider?: string;
@@ -34,7 +42,10 @@ export interface DdnsTestResponse {
   error?: string;
 }
 
-export async function registerDdnsTestRoute(app: FastifyInstance): Promise<void> {
+export async function registerDdnsTestRoute(
+  app: FastifyInstance,
+  deps: DdnsTestRouteDeps,
+): Promise<void> {
   app.post<{ Body?: DdnsTestRequest }>(
     '/api/ddns/test',
     async (req): Promise<DdnsTestResponse> => {
@@ -75,9 +86,20 @@ export async function registerDdnsTestRoute(app: FastifyInstance): Promise<void>
           const status = parts[0] ?? '';
           const ip = parts[1] ?? '';
           const happy = status === 'good' || status === 'nochg';
-          return happy
-            ? { ok: true, status, ip, raw }
-            : { ok: false, status, raw, error: raw || `HTTP ${resp.status}` };
+          if (happy) {
+            const recordedIp = ip || deps.publicIpService.getSnapshot().ip || '';
+            if (recordedIp) {
+              deps.ddnsUpdater.recordExternalPush({
+                provider: 'noip',
+                hostname,
+                ip: recordedIp,
+                status,
+                now: Date.now(),
+              });
+            }
+            return { ok: true, status, ip, raw };
+          }
+          return { ok: false, status, raw, error: raw || `HTTP ${resp.status}` };
         }
         if (provider === 'dyndns2') {
           const sep = updateUrl.includes('?') ? '&' : '?';
@@ -95,9 +117,20 @@ export async function registerDdnsTestRoute(app: FastifyInstance): Promise<void>
           const status = parts[0] ?? '';
           const ip = parts[1] ?? '';
           const happy = status === 'good' || status === 'nochg';
-          return happy
-            ? { ok: true, status, ip, raw }
-            : { ok: false, status, raw, error: raw || `HTTP ${resp.status}` };
+          if (happy) {
+            const recordedIp = ip || deps.publicIpService.getSnapshot().ip || '';
+            if (recordedIp) {
+              deps.ddnsUpdater.recordExternalPush({
+                provider: 'dyndns2',
+                hostname,
+                ip: recordedIp,
+                status,
+                now: Date.now(),
+              });
+            }
+            return { ok: true, status, ip, raw };
+          }
+          return { ok: false, status, raw, error: raw || `HTTP ${resp.status}` };
         }
         if (provider === 'duckdns') {
           // DuckDNS expects bare subdomain, no `ip=` (their server uses the source IP).
@@ -109,9 +142,20 @@ export async function registerDdnsTestRoute(app: FastifyInstance): Promise<void>
           });
           const raw = (await resp.text()).trim();
           const happy = raw === 'OK';
-          return happy
-            ? { ok: true, status: 'good', raw }
-            : { ok: false, status: raw || 'KO', raw, error: raw || `HTTP ${resp.status}` };
+          if (happy) {
+            const recordedIp = deps.publicIpService.getSnapshot().ip || '';
+            if (recordedIp) {
+              deps.ddnsUpdater.recordExternalPush({
+                provider: 'duckdns',
+                hostname,
+                ip: recordedIp,
+                status: 'good',
+                now: Date.now(),
+              });
+            }
+            return { ok: true, status: 'good', raw };
+          }
+          return { ok: false, status: raw || 'KO', raw, error: raw || `HTTP ${resp.status}` };
         }
         return { ok: false, error: `provider '${provider}' is not supported` };
       } catch (err) {

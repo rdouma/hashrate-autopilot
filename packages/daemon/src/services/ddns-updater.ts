@@ -85,6 +85,38 @@ export class DdnsUpdaterService {
   }
 
   /**
+   * Record the result of an out-of-band successful push (e.g. the
+   * Test connection button). Without this, the in-memory snapshot
+   * keeps showing the previous periodic-tick result, so the operator
+   * sees stale "Last successful push: <old IP> 27m ago" right after a
+   * successful manual test - which prompted #114.
+   *
+   * Only call on happy responses (`good` / `nochg` / `OK`). Failures
+   * stay invisible to the periodic snapshot - we don't want a
+   * misconfigured-test typo to clobber the last known good push
+   * history.
+   */
+  recordExternalPush(args: {
+    provider: string;
+    hostname: string;
+    ip: string;
+    status: string;
+    now: number;
+  }): void {
+    const { provider, hostname, ip, status, now } = args;
+    this.snapshot = {
+      enabled: true,
+      provider,
+      hostname,
+      last_status: status,
+      last_pushed_ip: ip,
+      last_pushed_at: now,
+      last_attempted_at: now,
+      last_error: null,
+    };
+  }
+
+  /**
    * One iteration. Reads live config, decides whether to push, and
    * updates the snapshot. Never throws.
    */

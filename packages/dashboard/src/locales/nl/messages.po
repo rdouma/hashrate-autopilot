@@ -47,6 +47,11 @@ msgstr "(Braiins kan een exit fee inhouden)"
 msgid "(cheap mode)"
 msgstr "(goedkoop-modus)"
 
+#. placeholder {0}: formatAge(r.daemon_public_ip_checked_at)
+#: src/pages/Config.tsx
+msgid "(checked {0})"
+msgstr "(gecontroleerd {0})"
+
 #: src/pages/Config.tsx
 msgid "(no push attempted yet)"
 msgstr "(nog geen update verstuurd)"
