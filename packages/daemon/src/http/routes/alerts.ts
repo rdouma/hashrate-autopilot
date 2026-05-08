@@ -46,6 +46,13 @@ export interface AcknowledgeResponse {
   acknowledged_at_ms: number;
 }
 
+export interface AcknowledgeAllResponse {
+  ok: boolean;
+  acknowledged_at_ms: number;
+  /** Number of rows transitioned from unacknowledged to acknowledged. */
+  count: number;
+}
+
 const VALID_SEVERITIES: ReadonlySet<AlertSeverity> = new Set(['INFO', 'WARN', 'LOUD']);
 const VALID_DELIVERY: ReadonlySet<AlertDeliveryStatus> = new Set([
   'pending',
@@ -105,6 +112,15 @@ export async function registerAlertsRoutes(
       const now = Date.now();
       await deps.alertsRepo.markAcknowledged(id, now);
       return { ok: true, acknowledged_at_ms: now };
+    },
+  );
+
+  app.post(
+    '/api/alerts/acknowledge-all',
+    async (): Promise<AcknowledgeAllResponse> => {
+      const now = Date.now();
+      const count = await deps.alertsRepo.markAllAcknowledged(now);
+      return { ok: true, acknowledged_at_ms: now, count };
     },
   );
 

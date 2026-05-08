@@ -1475,6 +1475,10 @@ msgid "manual"
 msgstr "handmatig"
 
 #: src/pages/Alerts.tsx
+msgid "mark all as seen ({unackedCount})"
+msgstr "alles markeren als gezien ({unackedCount})"
+
+#: src/pages/Alerts.tsx
 msgid "mark as seen"
 msgstr "als gezien markeren"
 
@@ -1485,6 +1489,10 @@ msgstr "markt op deze tick"
 #: src/pages/Config.tsx
 msgid "Marketplace API has been down for api_outage_alert_after_minutes."
 msgstr "De marketplace-API is gedurende api_outage_alert_after_minutes uit de lucht geweest."
+
+#: src/pages/Alerts.tsx
+msgid "marking…"
+msgstr "bezig…"
 
 #: src/pages/Config.tsx
 msgid "Match - hostname is pointing at this box."

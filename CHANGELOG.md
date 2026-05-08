@@ -2,6 +2,10 @@
 
 ## 2026-05-08
 
+### `[Feature]` Alerts: "mark all as seen" bulk button
+
+Operator returning to the dashboard with N pending notifications wanted a single click to clear them rather than chasing the row-level button N times. New button next to the "unacknowledged only" filter on the Alerts page; shows the current unack count. Server-side: new `POST /api/alerts/acknowledge-all` endpoint and `markAllAcknowledged()` repo method that bulk-update every row where `acknowledged_at_ms IS NULL`. Disabled when there's nothing to ack. NL/ES translated.
+
 ### `[Fix]` On-chain payout dot: deep-link to the transaction, not the block
 
 Operator clicked the new on-chain payout dot's "open in block explorer" link and got `http://umbrel:3006/block/{hash}` rendered verbatim - the `{hash}` placeholder wasn't being substituted, and the link was pointing at a block instead of the transaction. Two issues at once: reward_events rows don't carry a block hash (only block height + txid), and explorers don't follow a clean `/block/{hash}` ↔ `/tx/{txid}` replacement (blockchair uses `/transaction/`, btc.com uses `/btc/transaction/`), so we can't auto-derive a tx URL from the block URL. New config field `block_explorer_tx_url_template` with `{txid}` and `{hash}` placeholders. Migration 0071 derives the value from the operator's existing block template via known-preset matching, falling back to a `/block/{hash}` → `/tx/{txid}` string replacement (which catches local-Umbrel mempool variants - the exact case that triggered the original report). Config UI's preset buttons now set both block + tx templates atomically; a new "Transaction URL template" input below the block one lets operators override for custom self-hosted explorers. The `applyExplorerTemplate` helper grew a `txid` placeholder. Reward-event tooltip uses the new tx template.

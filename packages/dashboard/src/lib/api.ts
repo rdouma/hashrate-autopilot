@@ -616,6 +616,11 @@ export const api = {
       method: 'POST',
       body: '{}',
     }),
+  alertAcknowledgeAll: () =>
+    request<{ ok: true; acknowledged_at_ms: number; count: number }>(
+      '/api/alerts/acknowledge-all',
+      { method: 'POST', body: '{}' },
+    ),
   alertSnooze: (id: number, minutes: number) =>
     request<{ ok: true; snoozed_until_ms: number }>(`/api/alerts/${id}/snooze`, {
       method: 'POST',

@@ -51,7 +51,13 @@ export function Alerts() {
     onSuccess: invalidateAll,
   });
 
+  const ackAll = useMutation({
+    mutationFn: () => api.alertAcknowledgeAll(),
+    onSuccess: invalidateAll,
+  });
+
   const alerts = query.data?.alerts ?? [];
+  const unackedCount = alerts.filter((a) => a.acknowledged_at_ms === null).length;
 
   return (
     <div className="space-y-4">
@@ -68,7 +74,7 @@ export function Alerts() {
         </p>
       </header>
 
-      <section className="flex flex-wrap items-center gap-2">
+      <section className="flex flex-wrap items-center gap-3">
         <label className="flex items-center gap-1.5 text-xs text-slate-300">
           <input
             type="checkbox"
@@ -78,6 +84,18 @@ export function Alerts() {
           />
           <Trans>unacknowledged only</Trans>
         </label>
+        <button
+          type="button"
+          onClick={() => ackAll.mutate()}
+          disabled={ackAll.isPending || unackedCount === 0}
+          className="px-2 py-1 text-xs text-slate-300 border border-slate-700 rounded hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {ackAll.isPending ? (
+            <Trans>marking…</Trans>
+          ) : (
+            <Trans>mark all as seen ({unackedCount})</Trans>
+          )}
+        </button>
       </section>
 
       {query.isPending && (

@@ -144,6 +144,23 @@ export class AlertsRepo {
       .execute();
   }
 
+  /**
+   * Bulk-acknowledge every alert that doesn't already carry an
+   * `acknowledged_at_ms`. Powers the Alerts page's "mark all as
+   * seen" button - operator returns to the dashboard with N pending
+   * notifications and wants to clear them in a single click rather
+   * than chasing the row-level button N times. Returns the number
+   * of rows updated so the dashboard can show a brief confirmation.
+   */
+  async markAllAcknowledged(atMs: number): Promise<number> {
+    const result = await this.db
+      .updateTable('alerts')
+      .set({ acknowledged_at_ms: atMs })
+      .where('acknowledged_at_ms', 'is', null)
+      .executeTakeFirst();
+    return Number(result.numUpdatedRows ?? 0);
+  }
+
   async snooze(id: number, untilMs: number): Promise<void> {
     await this.db
       .updateTable('alerts')
