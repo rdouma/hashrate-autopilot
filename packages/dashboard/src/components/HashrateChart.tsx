@@ -628,6 +628,28 @@ export const HashrateChart = memo(function HashrateChart({
     chartHeight,
   ]);
 
+  // Pre-computed retarget marker positions. Filtered to the visible
+  // x-range and resolved to (cx, cy) once per (markers x scales)
+  // change so the SVG render path doesn't re-walk the array on
+  // every parent re-render.
+  //
+  // MUST sit above the `if (!chartData)` early return below: React
+  // requires hook-call order to be stable across renders, and on
+  // first paint chartData can be null. The callback handles the
+  // null case internally.
+  const visibleRetargetMarkers = useMemo(() => {
+    const empty: Array<{ event: RetargetEvent; cx: number; cy: number }> = [];
+    if (!chartData || rightAxisSeries !== 'network_difficulty') return empty;
+    const { minX, maxX, xScale, shareLogYScale } = chartData;
+    return difficultyRetargets
+      .filter((r) => r.tick_at >= minX && r.tick_at <= maxX)
+      .map((r) => ({
+        event: r,
+        cx: xScale(r.tick_at),
+        cy: shareLogYScale(r.difficulty),
+      }));
+  }, [chartData, difficultyRetargets, rightAxisSeries]);
+
   if (!chartData) {
     return (
       <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
@@ -644,25 +666,6 @@ export const HashrateChart = memo(function HashrateChart({
   }
 
   const { minX, maxX, xScale, yScale, deliveredPath, datumPath, hasDatum, oceanPath, hasOcean, targetPath, floorPath, yTicks, xTickInterval, xTicks, hasShareLog, shareLogPath, shareLogYTicks, shareLogYScale, padRight, rightAxis } = chartData;
-
-  // Pre-computed retarget marker positions. Filtered to the visible
-  // x-range and resolved to (cx, cy) once per (markers x scales)
-  // change so the SVG render path doesn't re-walk the array on
-  // every parent re-render.
-  const visibleRetargetMarkers = useMemo(() => {
-    if (rightAxisSeries !== 'network_difficulty') return [] as Array<{
-      event: RetargetEvent;
-      cx: number;
-      cy: number;
-    }>;
-    return difficultyRetargets
-      .filter((r) => r.tick_at >= minX && r.tick_at <= maxX)
-      .map((r) => ({
-        event: r,
-        cx: xScale(r.tick_at),
-        cy: shareLogYScale(r.difficulty),
-      }));
-  }, [difficultyRetargets, rightAxisSeries, minX, maxX, xScale, shareLogYScale]);
 
   return (
     <div className="bg-slate-900 border rounded-lg p-4 border-slate-800">

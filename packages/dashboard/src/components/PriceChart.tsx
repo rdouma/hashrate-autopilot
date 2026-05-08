@@ -1026,19 +1026,6 @@ export const PriceChart = memo(function PriceChart({
     };
   }, [tooltip?.pinned]);
 
-  if (!chartData) {
-    return (
-      <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
-        <h3 className="text-xs uppercase tracking-wider text-slate-100"><Trans>Price</Trans></h3>
-        <div className="mt-4 text-sm text-slate-500">
-          <Trans>Not enough data in this range yet.</Trans>
-        </div>
-      </div>
-    );
-  }
-
-  const { pricePoints, minX, maxX, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, hashpricePath, fillablePath, fillableHasData, effectivePath, effectiveHasData, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents, rightAxis, hasRightAxis, rightAxisPath, rightYTicks, rightYScale, padRight } = chartData;
-
   // Which extra marker series to render based on right-axis choice.
   const showRewardMarkers =
     rightAxisSeries === 'paid_total_sat' ||
@@ -1051,14 +1038,16 @@ export const PriceChart = memo(function PriceChart({
   // parent re-render that doesn't change `points` / `rewardEvents` /
   // `ourBlocks` / scales doesn't re-walk the points array per
   // marker. The naive lookup was O(M*N) - one forward scan of the
-  // points per marker; this is O(N + M) by using `lastNonNullRightAxis`
-  // as a fallback for markers more recent than the last tick.
+  // points per marker; this is O(N + M) using a shared cursor walk.
+  //
+  // These useMemos MUST sit above the `if (!chartData)` early
+  // return below: React requires hook-call order to be stable
+  // across renders, and on first paint chartData can be null.
+  // Each callback handles the null case internally.
   const visibleRewardMarkers = useMemo(() => {
-    if (!showRewardMarkers || !rightAxis) return [] as Array<{
-      reward: RewardEventView;
-      cx: number;
-      cy: number;
-    }>;
+    const empty: Array<{ reward: RewardEventView; cx: number; cy: number }> = [];
+    if (!chartData || !showRewardMarkers || !chartData.rightAxis) return empty;
+    const { minX, maxX, xScale, rightYScale, rightAxis } = chartData;
     let lastNonNull: number | null = null;
     for (let i = points.length - 1; i >= 0; i -= 1) {
       const v = rightAxis.values[i];
@@ -1086,23 +1075,12 @@ export const PriceChart = memo(function PriceChart({
       out.push({ reward: r, cx: xScale(r.detected_at), cy: rightYScale(v) });
     }
     return out;
-  }, [
-    showRewardMarkers,
-    rightAxis,
-    rewardEvents,
-    points,
-    minX,
-    maxX,
-    xScale,
-    rightYScale,
-  ]);
+  }, [chartData, showRewardMarkers, rewardEvents, points]);
 
   const visiblePoolBlockMarkers = useMemo(() => {
-    if (!showPoolBlockMarkers || !rightAxis) return [] as Array<{
-      block: OurBlockMarker;
-      cx: number;
-      cy: number;
-    }>;
+    const empty: Array<{ block: OurBlockMarker; cx: number; cy: number }> = [];
+    if (!chartData || !showPoolBlockMarkers || !chartData.rightAxis) return empty;
+    const { minX, maxX, xScale, rightYScale, rightAxis } = chartData;
     let lastNonNull: number | null = null;
     for (let i = points.length - 1; i >= 0; i -= 1) {
       const v = rightAxis.values[i];
@@ -1132,16 +1110,20 @@ export const PriceChart = memo(function PriceChart({
       out.push({ block: b, cx: xScale(b.timestamp_ms), cy: rightYScale(v) });
     }
     return out;
-  }, [
-    showPoolBlockMarkers,
-    rightAxis,
-    ourBlocks,
-    points,
-    minX,
-    maxX,
-    xScale,
-    rightYScale,
-  ]);
+  }, [chartData, showPoolBlockMarkers, ourBlocks, points]);
+
+  if (!chartData) {
+    return (
+      <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
+        <h3 className="text-xs uppercase tracking-wider text-slate-100"><Trans>Price</Trans></h3>
+        <div className="mt-4 text-sm text-slate-500">
+          <Trans>Not enough data in this range yet.</Trans>
+        </div>
+      </div>
+    );
+  }
+
+  const { pricePoints, minX, maxX, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, hashpricePath, fillablePath, fillableHasData, effectivePath, effectiveHasData, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents, rightAxis, hasRightAxis, rightAxisPath, rightYTicks, rightYScale, padRight } = chartData;
 
   // Format Y-axis tick values via the denomination context so the
   // numbers track the currency + hashrate-unit toggle. The full

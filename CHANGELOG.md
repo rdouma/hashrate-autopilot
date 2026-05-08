@@ -2,6 +2,10 @@
 
 ## 2026-05-08
 
+### `[Fix]` Charts: blank dashboard caused by hook-order violation in build 286
+
+Operator pulled build 286 and got a fully-black dashboard with three React error #310s in the console ("Rendered more hooks than during the previous render"). The new `useMemo` hooks I added in the perf-review commit (`visibleRewardMarkers`, `visiblePoolBlockMarkers`, `visibleRetargetMarkers`) were placed AFTER the `if (!chartData) return …` early return — so on the first render with no data the hooks didn't run, and on the second render with data they did, breaking React's hook-order invariant. Moved all three above the early return; each callback now handles `chartData === null` internally and returns the empty array.
+
 ### `[Perf]` Code-review pass: chart memoisation + sargable bucket subquery + reward_events UNIQUE
 
 Independent review of the marker / DDNS / chart-fix work that landed earlier today turned up a punch list of perf and correctness issues; this commit actions the ones with concrete cost. Six changes in one batch:
