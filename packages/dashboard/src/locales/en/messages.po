@@ -924,6 +924,10 @@ msgid "Datum stratum unreachable"
 msgstr "Datum stratum unreachable"
 
 #: src/pages/Config.tsx
+msgid "days"
+msgstr "days"
+
+#: src/pages/Config.tsx
 msgid "Decision-log rows where the autopilot proposed at least one bid action. Rare (~10% of ticks) and high-value: this is the forensic record for \"why did the autopilot create / edit / cancel that bid?\" Cheap to keep long."
 msgstr "Decision-log rows where the autopilot proposed at least one bid action. Rare (~10% of ticks) and high-value: this is the forensic record for \"why did the autopilot create / edit / cancel that bid?\" Cheap to keep long."
 
@@ -1191,6 +1195,10 @@ msgstr "Fetches the BTC/USD spot price from a public exchange API. Enables a sat
 #: src/components/PriceChart.tsx
 msgid "fillable"
 msgstr "fillable"
+
+#: src/pages/Config.tsx
+msgid "Fire a LOUD alert when the available Braiins balance, divided by the trailing-3h burn rate, drops below this many days. <0>0 disables the alert entirely</0> - useful right after setup before the wallet is funded, or for an operator who tops the wallet up on a fixed schedule and doesn't want runway notifications."
+msgstr "Fire a LOUD alert when the available Braiins balance, divided by the trailing-3h burn rate, drops below this many days. <0>0 disables the alert entirely</0> - useful right after setup before the wallet is funded, or for an operator who tops the wallet up on a fixed schedule and doesn't want runway notifications."
 
 #: src/pages/Setup.tsx
 msgid "First-run setup"
@@ -2701,6 +2709,11 @@ msgstr "version"
 #: src/pages/Status.tsx
 msgid "Waiting for Ocean hashprice - trading is paused until the break-even reference is available."
 msgstr "Waiting for Ocean hashprice - trading is paused until the break-even reference is available."
+
+#: src/pages/Config.tsx
+#: src/pages/Config.tsx
+msgid "Wallet runway alert threshold"
+msgstr "Wallet runway alert threshold"
 
 #: src/pages/Setup.tsx
 msgid "What the controller aims for."

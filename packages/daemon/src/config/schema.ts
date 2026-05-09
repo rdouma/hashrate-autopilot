@@ -93,8 +93,11 @@ export const AppConfigSchema = z.object({
   // See issue #40.
   bid_budget_sat: nonNegativeInt,
 
-  // Alerting thresholds (SPEC §9)
-  wallet_runway_alert_days: positiveInt,
+  // Alerting thresholds (SPEC §9). wallet_runway_alert_days = 0
+  // disables the wallet-runway notification end-to-end (no transition
+  // arming, no Telegram POST, no alert row); cleaner than digging
+  // into the per-class opt-out for the same effect. #116.
+  wallet_runway_alert_days: nonNegativeInt,
   below_floor_alert_after_minutes: positiveInt,
   zero_hashrate_loud_alert_after_minutes: positiveInt,
   pool_outage_blip_tolerance_seconds: nonNegativeInt,
@@ -381,7 +384,10 @@ export const APP_CONFIG_DEFAULTS: Omit<
 
   bid_budget_sat: 0, // 0 = use full wallet balance per CREATE (#40)
 
-  wallet_runway_alert_days: 3,
+  // 0 = disabled. Default off so a fresh install with low (or
+  // not-yet-funded) Braiins balance doesn't immediately fire a LOUD
+  // Telegram alert the moment the operator finishes the wizard. #116.
+  wallet_runway_alert_days: 0,
   below_floor_alert_after_minutes: 10,
   zero_hashrate_loud_alert_after_minutes: 15,
   pool_outage_blip_tolerance_seconds: 120,

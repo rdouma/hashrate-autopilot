@@ -924,6 +924,10 @@ msgid "Datum stratum unreachable"
 msgstr "Datum stratum onbereikbaar"
 
 #: src/pages/Config.tsx
+msgid "days"
+msgstr ""
+
+#: src/pages/Config.tsx
 msgid "Decision-log rows where the autopilot proposed at least one bid action. Rare (~10% of ticks) and high-value: this is the forensic record for \"why did the autopilot create / edit / cancel that bid?\" Cheap to keep long."
 msgstr "Rijen in het beslissingenlogboek waar de autopilot ten minste één bidactie voorstelde. Zeldzaam (~10% van de ticks) en waardevol: dit is het forensische dossier voor \"waarom maakte/bewerkte/annuleerde de autopilot dat bod?\" Goedkoop om lang te bewaren."
 
@@ -1191,6 +1195,10 @@ msgstr "Haalt de BTC/USD spotprijs op van een publieke exchange-API. Schakelt ee
 #: src/components/PriceChart.tsx
 msgid "fillable"
 msgstr "vulbaar"
+
+#: src/pages/Config.tsx
+msgid "Fire a LOUD alert when the available Braiins balance, divided by the trailing-3h burn rate, drops below this many days. <0>0 disables the alert entirely</0> - useful right after setup before the wallet is funded, or for an operator who tops the wallet up on a fixed schedule and doesn't want runway notifications."
+msgstr "Stuurt een LOUD-melding wanneer het beschikbare Braiins-saldo, gedeeld door het verbruiktempo van de afgelopen 3 uur, onder dit aantal dagen zakt. <0>0 schakelt de melding volledig uit</0> - handig direct na de setup voordat de wallet is gevuld, of voor een operator die de wallet op een vast schema bijvult en geen runway-meldingen wil."
 
 #: src/pages/Setup.tsx
 msgid "First-run setup"
@@ -2701,6 +2709,11 @@ msgstr "versie"
 #: src/pages/Status.tsx
 msgid "Waiting for Ocean hashprice - trading is paused until the break-even reference is available."
 msgstr "Wacht op Ocean hashprice - trading is gepauzeerd tot de break-even-referentie beschikbaar is."
+
+#: src/pages/Config.tsx
+#: src/pages/Config.tsx
+msgid "Wallet runway alert threshold"
+msgstr "Drempel voor wallet-runway-melding"
 
 #: src/pages/Setup.tsx
 msgid "What the controller aims for."

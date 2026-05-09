@@ -567,7 +567,7 @@ async function bootOperational(
         cfgRefHolder.value.notification_retry_interval_minutes,
     }),
   });
-  const alertEvaluator = new AlertEvaluator({ alertManager });
+  const alertEvaluator = new AlertEvaluator({ alertManager, tickMetricsRepo });
   // Rebuild in-memory event state from the alerts table so a daemon
   // restart while a bad state is still active does not fire a
   // duplicate Telegram alert. See AlertEvaluator.hydrate JSDoc.

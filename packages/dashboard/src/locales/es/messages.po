@@ -924,6 +924,10 @@ msgid "Datum stratum unreachable"
 msgstr "Datum stratum inalcanzable"
 
 #: src/pages/Config.tsx
+msgid "days"
+msgstr ""
+
+#: src/pages/Config.tsx
 msgid "Decision-log rows where the autopilot proposed at least one bid action. Rare (~10% of ticks) and high-value: this is the forensic record for \"why did the autopilot create / edit / cancel that bid?\" Cheap to keep long."
 msgstr "Filas del registro de decisiones donde el autopilot propuso al menos una acción de puja. Raras (~10% de los ticks) y de alto valor: este es el registro forense de \"¿por qué el autopilot creó / editó / canceló esa puja?\" Barato de mantener mucho tiempo."
 
@@ -1191,6 +1195,10 @@ msgstr "Obtiene el precio spot BTC/USD desde una API pública de exchange. Habil
 #: src/components/PriceChart.tsx
 msgid "fillable"
 msgstr "rellenable"
+
+#: src/pages/Config.tsx
+msgid "Fire a LOUD alert when the available Braiins balance, divided by the trailing-3h burn rate, drops below this many days. <0>0 disables the alert entirely</0> - useful right after setup before the wallet is funded, or for an operator who tops the wallet up on a fixed schedule and doesn't want runway notifications."
+msgstr "Dispara una alerta LOUD cuando el saldo disponible de Braiins, dividido entre el ritmo de gasto de las últimas 3 horas, cae por debajo de este número de días. <0>0 desactiva la alerta por completo</0> - útil justo después de la configuración inicial antes de fondear el monedero, o para un operador que recarga el monedero en un horario fijo y no quiere notificaciones de autonomía."
 
 #: src/pages/Setup.tsx
 msgid "First-run setup"
@@ -2701,6 +2709,11 @@ msgstr "versión"
 #: src/pages/Status.tsx
 msgid "Waiting for Ocean hashprice - trading is paused until the break-even reference is available."
 msgstr "Esperando el hashprice de Ocean - el trading está en pausa hasta que la referencia break-even esté disponible."
+
+#: src/pages/Config.tsx
+#: src/pages/Config.tsx
+msgid "Wallet runway alert threshold"
+msgstr "Umbral de aviso de autonomía del monedero"
 
 #: src/pages/Setup.tsx
 msgid "What the controller aims for."

@@ -36,7 +36,10 @@
 
 import type { AlertManager } from './alert-manager.js';
 import type { AlertsRepo } from '../state/repos/alerts.js';
+import type { TickMetricsRepo } from '../state/repos/tick_metrics.js';
 import type { State } from '../controller/types.js';
+
+const HOURS_3_MS = 3 * 60 * 60 * 1000;
 
 interface EventState {
   readonly bad_since_ms: number | null;
@@ -48,6 +51,13 @@ const INITIAL: EventState = { bad_since_ms: null, active_alert_id: null };
 
 export interface AlertEvaluatorOptions {
   readonly alertManager: AlertManager;
+  /**
+   * Optional. When provided, the wallet_runway detector queries it
+   * for the trailing-3h actual-spend total to compute runway days.
+   * Without it the detector short-circuits to "no signal" - safe
+   * default; the alert just doesn't fire.
+   */
+  readonly tickMetricsRepo?: TickMetricsRepo;
   /** Override clock for tests. */
   readonly now?: () => number;
 }
@@ -60,12 +70,15 @@ export class AlertEvaluator {
   private unknown_bid: EventState = INITIAL;
   private sustained_paused: EventState = INITIAL;
   private beta_exit: EventState = INITIAL;
+  private wallet_runway: EventState = INITIAL;
 
   private readonly alertManager: AlertManager;
+  private readonly tickMetricsRepo: TickMetricsRepo | null;
   private readonly now: () => number;
 
   constructor(opts: AlertEvaluatorOptions) {
     this.alertManager = opts.alertManager;
+    this.tickMetricsRepo = opts.tickMetricsRepo ?? null;
     this.now = opts.now ?? (() => Date.now());
   }
 
@@ -93,6 +106,7 @@ export class AlertEvaluator {
       ['unknown_bid', (s) => { this.unknown_bid = s; }],
       ['sustained_paused', (s) => { this.sustained_paused = s; }],
       ['beta_exit', (s) => { this.beta_exit = s; }],
+      ['wallet_runway', (s) => { this.wallet_runway = s; }],
     ];
     for (const [cls, setter] of classes) {
       const open = await alertsRepo.findOpenAlert(cls);
@@ -116,9 +130,9 @@ export class AlertEvaluator {
     await this.evaluateUnknownBid(state, disabled);
     await this.evaluateSustainedPaused(state, disabled);
     await this.evaluateBetaExit(state, disabled);
-    // TODO(#100): wallet_runway needs daily-burn input; low_acceptance
-    //   needs an acceptance-ratio series in tick_metrics. Both are
-    //   scoped for a small follow-up commit.
+    await this.evaluateWalletRunway(state, disabled);
+    // TODO(#100): low_acceptance still needs an acceptance-ratio series
+    //   in tick_metrics. Scoped for a separate commit.
   }
 
   private async evaluateDatumUnreachable(state: State, disabledClasses: ReadonlySet<string>): Promise<void> {
@@ -269,6 +283,71 @@ export class AlertEvaluator {
       },
       bodyForRecovery: () =>
         `Active bids are back to fee_rate_pct = 0. Either Braiins reverted, or all fee-bearing bids settled.`,
+    });
+  }
+
+  /**
+   * #116: wallet runway. Fires LOUD when the operator's available
+   * Braiins balance, divided by the trailing-3h actual-spend rate
+   * (extrapolated to a per-day figure), drops below the configured
+   * threshold.
+   *
+   * Disabled paths - none of these arm a timer or write a row:
+   * - `wallet_runway_alert_days = 0` (operator's intent: off).
+   * - tickMetricsRepo not injected.
+   * - balance unavailable (Braiins API was down this tick).
+   * - trailing-3h spend null or 0 (autopilot paused / DRY_RUN /
+   *   nothing has been delivered yet, so runway is effectively
+   *   infinite). The dashboard already renders "insufficient
+   *   history" in this case; the alert mirrors that semantic.
+   *
+   * Threshold semantics use the same one-tick-debounce shape as
+   * unknown_bid / beta_exit: thresholdMs = 0, fires on the first
+   * tick where runway < threshold. Recovery fires when runway
+   * crosses back above the same threshold.
+   */
+  private async evaluateWalletRunway(state: State, disabledClasses: ReadonlySet<string>): Promise<void> {
+    const thresholdDays = state.config.wallet_runway_alert_days;
+    if (thresholdDays === 0 || !this.tickMetricsRepo) {
+      this.wallet_runway = INITIAL;
+      return;
+    }
+    const balanceSat =
+      state.balance?.accounts?.[0]?.available_balance_sat ?? null;
+    if (balanceSat === null) {
+      // Braiins API down this tick - skip; the api_unreachable
+      // detector covers the underlying failure already.
+      return;
+    }
+    const sinceMs = this.now() - HOURS_3_MS;
+    let spend3hSat: number | null = null;
+    try {
+      spend3hSat = await this.tickMetricsRepo.actualSpendSatSince(sinceMs);
+    } catch {
+      // Query failure: fall through; runway treated as unknown.
+      spend3hSat = null;
+    }
+    if (spend3hSat === null || spend3hSat <= 0) {
+      // No measurable burn -> runway is effectively infinite. No
+      // transition (no firing, no recovery).
+      return;
+    }
+    const burnPerDaySat = spend3hSat * 8; // 3h -> 24h
+    const runwayDays = balanceSat / burnPerDaySat;
+    const isBad = runwayDays < thresholdDays;
+
+    this.wallet_runway = await this.runTransition({
+      event_class: 'wallet_runway',
+      severity: 'LOUD',
+      isBad,
+      thresholdMs: 0,
+      currentState: this.wallet_runway,
+      disabledClasses,
+      title: `Wallet runway ${runwayDays.toFixed(1)} days (below ${thresholdDays.toFixed(1)} day threshold)`,
+      bodyForFiring: () =>
+        `Available Braiins balance is ${balanceSat.toLocaleString('en-US')} sat; trailing-3h burn is ${Math.round(burnPerDaySat).toLocaleString('en-US')} sat/day. At that rate the wallet hits zero in ${runwayDays.toFixed(1)} days, below the configured ${thresholdDays}-day threshold. Top up the Braiins wallet or lower the bid; without a top-up, bids will start cancelling for insufficient funds.`,
+      bodyForRecovery: () =>
+        `Wallet runway back above threshold: ${runwayDays.toFixed(1)} days (threshold ${thresholdDays}). Likely a top-up landed or the burn rate dropped.`,
     });
   }
 

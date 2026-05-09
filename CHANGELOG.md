@@ -2,6 +2,10 @@
 
 ## 2026-05-08
 
+### `[Feature]` Wallet-runway Telegram alert wired up; default 0 = off (#116)
+
+The `wallet_runway_alert_days` config field has been in the schema since #100 but the matching detector in the alert evaluator was a TODO. Wired now: per tick, the evaluator computes `available_balance_sat / (trailing-3h burn × 8)` and fires a LOUD Telegram alert (with paired recovery) when runway drops below the configured threshold. Detector is gated end-to-end on `wallet_runway_alert_days = 0` (no transition arming, no Telegram POST, no alert row), so operators can disable runway alerts without digging into the per-class opt-out. Field type relaxed from `positiveInt` to `nonNegativeInt`. Default flipped from 3 to 0 so a fresh install with an unfunded wallet doesn't immediately fire a LOUD alert mid-wizard - operator caught this as a footgun. New Notifications-tab input lets operators set / disable the threshold from the dashboard. NL/ES translations included. Tick-metrics repo now passed into AlertEvaluator so the burn-rate query lives next to its only consumer.
+
 ### `[Infra]` `scripts/deploy-systemd.sh` for systemd-managed bare-metal boxes
 
 Variant of `scripts/deploy.sh` that calls `sudo systemctl restart hashrate-autopilot` instead of the PID-file-based `scripts/restart.sh`. Same pull / install / build / test pipeline, drop-in replacement on boxes that auto-start the daemon as a systemd unit (see C.5). Plain `deploy.sh` is the wrong choice on those boxes since it'd either no-op (no PID file) or fight systemd.

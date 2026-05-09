@@ -733,7 +733,7 @@ function ConfigTabsAndContent({
     },
     notifications: {
       title: t`Notifications`,
-      labels: [t`Telegram bot token`, t`Chat ID`, t`Instance label (optional)`, t`Mute all Telegram notifications`, t`Retry interval`],
+      labels: [t`Telegram bot token`, t`Chat ID`, t`Instance label (optional)`, t`Mute all Telegram notifications`, t`Retry interval`, t`Wallet runway alert threshold`],
     },
   };
 
@@ -1708,6 +1708,34 @@ function NotificationsSection({
               state persists. First attempt fires immediately; up to 4 retries
               follow at this cadence; the 5th carries a final "giving up" message
               and the notifier stays silent until recovery.
+            </Trans>
+          </span>
+        </label>
+
+        <label className="block">
+          <span className="block text-sm text-slate-300 mb-1">
+            <Trans>Wallet runway alert threshold</Trans>
+          </span>
+          <div className="flex items-center gap-2">
+            <NumberField
+              value={draft.wallet_runway_alert_days}
+              onChange={(n) => onChange('wallet_runway_alert_days', (n ?? 0) as never)}
+              step="integer"
+              locale={locale}
+              noGrouping
+              className="w-32"
+            />
+            <span className="text-xs text-slate-500">
+              <Trans>days</Trans>
+            </span>
+          </div>
+          <span className="block text-xs text-slate-500 mt-1">
+            <Trans>
+              Fire a LOUD alert when the available Braiins balance, divided by
+              the trailing-3h burn rate, drops below this many days. <b>0 disables
+              the alert entirely</b> - useful right after setup before the wallet
+              is funded, or for an operator who tops the wallet up on a fixed
+              schedule and doesn't want runway notifications.
             </Trans>
           </span>
         </label>
