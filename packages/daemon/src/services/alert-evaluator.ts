@@ -196,6 +196,7 @@ export class AlertEvaluator {
       currentState: this.datum_unreachable,
       disabledClasses,
       title: 'Datum stratum unreachable',
+      titleForRecovery: 'Datum stratum reachable',
       bodyForFiring: (durMs) =>
         `Datum gateway has been unreachable for ${formatDuration(durMs)}. Buyer-side hashrate cannot reach Ocean - shares are not crediting.`,
       bodyForRecovery: (durMs) =>
@@ -214,6 +215,7 @@ export class AlertEvaluator {
       currentState: this.hashrate_below_floor,
       disabledClasses,
       title: 'Hashrate below floor',
+      titleForRecovery: 'Hashrate above floor',
       bodyForFiring: (durMs) =>
         `Delivered hashrate has been below the configured floor for ${formatDuration(durMs)}. Current: ${state.actual_hashrate.total_ph.toFixed(2)} PH/s; floor: ${state.config.minimum_floor_hashrate_ph.toFixed(2)} PH/s.`,
       bodyForRecovery: (durMs) =>
@@ -233,6 +235,7 @@ export class AlertEvaluator {
       currentState: this.zero_hashrate,
       disabledClasses,
       title: 'Zero hashrate',
+      titleForRecovery: 'Hashrate flowing again',
       bodyForFiring: (durMs) =>
         `No hashrate delivered for ${formatDuration(durMs)}. Likely the upstream marketplace stopped routing - check the active bid and fee state.`,
       bodyForRecovery: (durMs) =>
@@ -252,6 +255,7 @@ export class AlertEvaluator {
       currentState: this.api_unreachable,
       disabledClasses,
       title: 'Braiins API unreachable',
+      titleForRecovery: 'Braiins API reachable',
       bodyForFiring: (durMs) =>
         `The Braiins marketplace API has been unreachable for ${formatDuration(durMs)}. The autopilot cannot read orderbook / balance / fee data and is making no decisions until it recovers.`,
       bodyForRecovery: (durMs) =>
@@ -271,6 +275,7 @@ export class AlertEvaluator {
       currentState: this.unknown_bid,
       disabledClasses,
       title: 'Unknown bid detected',
+      titleForRecovery: 'Account clean (no unknown bids)',
       bodyForFiring: () => {
         const ids = state.unknown_bids.map((b) => b.braiins_order_id).join(', ');
         return `${state.unknown_bids.length} bid(s) in the Braiins account that the autopilot did not create: ${ids}. Daemon auto-paused per the unknown-order rule. Inspect via the Braiins dashboard before resuming LIVE.`;
@@ -298,10 +303,11 @@ export class AlertEvaluator {
       currentState: this.sustained_paused,
       disabledClasses,
       title: 'Bid sustained-paused by Braiins',
+      titleForRecovery: 'Bid active again',
       bodyForFiring: (durMs) =>
         `Primary owned bid has been Paused by Braiins for ${formatDuration(durMs)} (last_pause_reason: ${primary?.last_pause_reason ?? 'unknown'}). Likely the Paused/Active oscillation hazard - check the destination pool / Datum gateway and consider a manual edit.`,
       bodyForRecovery: (durMs) =>
-        `Primary bid no longer flagged Paused - was paused for ${formatDuration(durMs)}.`,
+        `Primary bid no longer flagged Paused - was paused for ${formatDuration(durMs)}. (If the bid flips back to Paused right away, that's the documented Paused/Active oscillation hazard - Braiins toggles the flag while still routing hashrate.)`,
     });
   }
 
@@ -321,6 +327,7 @@ export class AlertEvaluator {
       currentState: this.beta_exit,
       disabledClasses,
       title: 'Braiins beta-exit fees detected',
+      titleForRecovery: 'Braiins beta-exit fees cleared',
       bodyForFiring: () => {
         const sample = state.owned_bids.find((b) => (b.fee_rate_pct ?? 0) > 0);
         return `Braiins is now charging a non-zero fee on at least one active bid (fee_rate_pct: ${sample?.fee_rate_pct ?? 'unknown'}%). The marketplace appears to have exited beta - re-evaluate the cost model and consider the documented beta-exit handling steps.`;
@@ -534,13 +541,21 @@ export class AlertEvaluator {
     }
 
     // Recovery: pair an INFO row to the previously-fired alert.
+    // Recovery title MUST be a positive statement of the new state
+    // (e.g. "Bid active again"), NOT the firing title with a tick
+    // mark in front of it. Operator was specific: "the title should
+    // be immediately clear what it is, not a negation of what it was."
+    // Every caller now provides `titleForRecovery`; the legacy
+    // prepend-and-replace fallback is gone.
+    if (!args.titleForRecovery) {
+      throw new Error(
+        `recoverable detector "${args.event_class}" must supply titleForRecovery`,
+      );
+    }
     const wasBadFor = nowMs - (args.currentState.bad_since_ms ?? nowMs);
-    const recoveryTitle = args.titleForRecovery
-      ? `✓ ${args.titleForRecovery}`
-      : args.title.replace(/^/, '✓ ').replace('Datum stratum unreachable', 'Datum reachable');
     await this.alertManager.recordAlert({
       severity: 'INFO',
-      title: recoveryTitle,
+      title: args.titleForRecovery,
       body: args.bodyForRecovery(wasBadFor),
       event_class: args.event_class + '_recovery',
       paired_alert_id: args.currentState.active_alert_id,

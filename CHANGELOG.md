@@ -2,6 +2,21 @@
 
 ## 2026-05-09
 
+### `[Fix]` Recovery alert titles read positive ("Bid active again", not "✓ Bid sustained-paused")
+
+Recovery messages were rendering the firing title with a `✓` in front of it: "✓ Bid sustained-paused by Braiins" announced that the bid was no longer paused, which inverts what the title plainly says. Operator was specific: "the title should be immediately clear what it is, not a negation of what it was." Every detector now supplies a `titleForRecovery`. New phrasings:
+
+- `datum_unreachable` → **Datum stratum reachable**
+- `hashrate_below_floor` → **Hashrate above floor**
+- `zero_hashrate` → **Hashrate flowing again**
+- `api_unreachable` → **Braiins API reachable**
+- `unknown_bid` → **Account clean (no unknown bids)**
+- `sustained_paused` → **Bid active again**
+- `beta_exit` → **Braiins beta-exit fees cleared**
+- `wallet_runway` → already said "above N day threshold" since #116
+
+The Telegram render still adds `✅ [RESOLVED]` as a prefix (from `formatTelegramBody`), so the operator sees a clean "✅ [RESOLVED] Bid active again" instead of "✅ [RESOLVED] ✓ Bid sustained-paused by Braiins". The alerts-page row simply shows the new positive title; the prepend-and-replace fallback in `runTransition` is gone (it now throws when a detector forgets to provide the recovery title). The `sustained_paused` body also now flags the documented Paused/Active oscillation hazard so a re-fire right after the recovery doesn't read as a bug.
+
 ### `[Feature]` Cap chart markers; hide EDIT_PRICE first when count exceeds the cap (#123)
 
 At low-overpay settings the controller's edit-price deadband is `overpay/5`, so EDIT_PRICE markers fire every couple of minutes and on a 24h chart that's hundreds of yellow dots drowning out the rare CREATE / EDIT_SPEED / CANCEL markers. New `chart_max_markers` config knob (Config → Display & Logging) caps how many markers the dashboard renders on the price chart. When over the cap, EDIT_PRICE markers are hidden first because they're the noisy ones; CREATE / EDIT_SPEED / CANCEL stay since they're load-bearing for diagnosing autopilot behaviour. If even after dropping EDIT_PRICE the count still exceeds the cap, all markers are hidden. Default 0 = no count-based filter (the existing per-range rule that hides markers entirely on 1w / 1m / 1y / All still applies). The chart legend shows a small italic hint when suppression triggers (e.g. "143 edit-price markers hidden (cap)") so the operator knows the rule fired. Migration 0078 adds the column. NL/ES translations included.
