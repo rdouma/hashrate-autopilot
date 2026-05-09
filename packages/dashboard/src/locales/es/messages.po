@@ -77,6 +77,14 @@ msgstr "hace {hours}h"
 msgid "{label} DOWN"
 msgstr "{label} CAÍDO"
 
+#: src/components/PriceChart.tsx
+msgid "{markersHiddenCount} edit-price markers hidden (cap)"
+msgstr "{markersHiddenCount} marcadores edit-price ocultos (tope)"
+
+#: src/components/PriceChart.tsx
+msgid "{markersHiddenCount} markers hidden (cap)"
+msgstr "{markersHiddenCount} marcadores ocultos (tope)"
+
 #: src/lib/format.ts
 msgid "{minutes}m ago"
 msgstr "hace {minutes}m"
@@ -288,6 +296,10 @@ msgstr "Tras enviar, el daemon escribe todo en <0>state.db</0> y pone el control
 msgid "Alerts"
 msgstr "Alertas"
 
+#: src/components/PriceChart.tsx
+msgid "All markers were hidden because the count exceeded the configured chart-marker cap even after dropping EDIT_PRICE. Adjust the cap on Config → Display & Logging."
+msgstr "Se ocultaron todos los marcadores porque la cantidad superó el tope configurado incluso tras quitar EDIT_PRICE. Ajusta el tope en Config → Display & Logging."
+
 #: src/pages/Config.tsx
 msgid "Always dry-run (safest)"
 msgstr "Siempre dry-run (más seguro)"
@@ -459,6 +471,10 @@ msgstr "Oferta llenando a {speed}."
 #: src/pages/Config.tsx
 msgid "Bid sustained-paused"
 msgstr "Puja con pausa sostenida"
+
+#: src/pages/Config.tsx
+msgid "Bid-event markers (CREATE / EDIT_PRICE / EDIT_SPEED / CANCEL) on the price chart. The dashboard already hides them on long ranges (1w / 1m / 1y / All) where individual markers lose meaning; the cap below adds a count-based rule on top of that."
+msgstr "Marcadores de eventos de oferta (CREATE / EDIT_PRICE / EDIT_SPEED / CANCEL) en la gráfica de precios. El panel ya los oculta en rangos largos (1w / 1m / 1y / Todo) donde los marcadores individuales pierden sentido; el tope inferior añade una regla por cantidad encima."
 
 #: src/components/StaleUrlBanner.tsx
 msgid "Bid:"
@@ -692,6 +708,10 @@ msgstr ""
 #: src/components/Layout.tsx
 msgid "changelog"
 msgstr "registro de cambios"
+
+#: src/pages/Config.tsx
+msgid "Chart markers"
+msgstr "Marcadores de la gráfica"
 
 #: src/pages/Config.tsx
 msgid "Chart smoothing"
@@ -1093,6 +1113,10 @@ msgstr "Editar velocidad"
 #: src/components/PriceChart.tsx
 msgid "EDIT SPEED"
 msgstr "EDIT SPEED"
+
+#: src/components/PriceChart.tsx
+msgid "Edit-price markers were hidden because the count exceeded the configured chart-marker cap. CREATE / EDIT_SPEED / CANCEL markers still render. Adjust the cap on Config → Display & Logging."
+msgstr "Los marcadores edit-price se ocultaron porque la cantidad superó el tope configurado. Los marcadores CREATE / EDIT_SPEED / CANCEL siguen renderizándose. Ajusta el tope en Config → Display & Logging."
 
 #: src/components/PriceChart.tsx
 msgid "effective"
@@ -1558,6 +1582,10 @@ msgstr "Oferta máxima"
 #: src/pages/Status.tsx
 msgid "max bid (binding)"
 msgstr "oferta máxima (vinculante)"
+
+#: src/pages/Config.tsx
+msgid "Max markers shown"
+msgstr "Máx. de marcadores mostrados"
 
 #: src/pages/Status.tsx
 msgid "max over hashprice"
@@ -2803,6 +2831,10 @@ msgstr "Qué enviar a Telegram"
 #: src/pages/Alerts.tsx
 msgid "when"
 msgstr "cuándo"
+
+#: src/pages/Config.tsx
+msgid "When more than this many markers would render on the price chart, the dashboard hides EDIT_PRICE markers first (CREATE / EDIT_SPEED / CANCEL stay because they're rare and diagnostic). If even after hiding EDIT_PRICE the count still exceeds the cap, all markers are hidden. 0 = no count-based filter (all markers render subject to the existing per-range rule). Useful at low-overpay settings where EDIT_PRICE fires every couple of minutes and clutters the chart."
+msgstr "Cuando se renderizarían más marcadores de los aquí indicados en la gráfica de precios, el panel oculta primero los marcadores EDIT_PRICE (CREATE / EDIT_SPEED / CANCEL se mantienen porque son raros y diagnósticos). Si incluso tras quitar EDIT_PRICE el total sigue por encima del tope, se ocultan todos los marcadores. 0 = sin filtro por cantidad (todos los marcadores se muestran sujetos a la regla por rango existente). Útil con overpay bajo donde EDIT_PRICE se dispara cada pocos minutos y satura la gráfica."
 
 #: src/pages/Config.tsx
 msgid "When the market is cheap (below the hashprice threshold), scale up to this target instead of the normal one. Set to 0 to disable."

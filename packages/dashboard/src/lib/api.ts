@@ -317,6 +317,7 @@ export interface AppConfig {
   decisions_uneventful_retention_days: number;
   decisions_eventful_retention_days: number;
   alerts_retention_days: number;
+  chart_max_markers: number;
   datum_api_url: string | null;
   block_explorer_url_template: string;
   block_explorer_tx_url_template: string;

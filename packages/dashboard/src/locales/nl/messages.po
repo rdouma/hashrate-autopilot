@@ -77,6 +77,14 @@ msgstr "{hours}u geleden"
 msgid "{label} DOWN"
 msgstr "{label} OFFLINE"
 
+#: src/components/PriceChart.tsx
+msgid "{markersHiddenCount} edit-price markers hidden (cap)"
+msgstr "{markersHiddenCount} edit-price-markers verborgen (limiet)"
+
+#: src/components/PriceChart.tsx
+msgid "{markersHiddenCount} markers hidden (cap)"
+msgstr "{markersHiddenCount} markers verborgen (limiet)"
+
 #: src/lib/format.ts
 msgid "{minutes}m ago"
 msgstr "{minutes}m geleden"
@@ -288,6 +296,10 @@ msgstr "Na indienen schrijft de daemon alles naar <0>state.db</0> en zet de cont
 msgid "Alerts"
 msgstr "Meldingen"
 
+#: src/components/PriceChart.tsx
+msgid "All markers were hidden because the count exceeded the configured chart-marker cap even after dropping EDIT_PRICE. Adjust the cap on Config → Display & Logging."
+msgstr "Alle markers zijn verborgen omdat het aantal zelfs na het weglaten van EDIT_PRICE de ingestelde grafiek-markerlimiet overschreed. Pas de limiet aan op Config → Display & Logging."
+
 #: src/pages/Config.tsx
 msgid "Always dry-run (safest)"
 msgstr "Altijd dry-run (veiligst)"
@@ -459,6 +471,10 @@ msgstr "Bod vult op {speed}."
 #: src/pages/Config.tsx
 msgid "Bid sustained-paused"
 msgstr "Bod aanhoudend gepauzeerd"
+
+#: src/pages/Config.tsx
+msgid "Bid-event markers (CREATE / EDIT_PRICE / EDIT_SPEED / CANCEL) on the price chart. The dashboard already hides them on long ranges (1w / 1m / 1y / All) where individual markers lose meaning; the cap below adds a count-based rule on top of that."
+msgstr "Bid-event-markers (CREATE / EDIT_PRICE / EDIT_SPEED / CANCEL) op de prijsgrafiek. Het dashboard verbergt ze al op langere bereiken (1w / 1m / 1y / Alles) waar individuele markers betekenisloos worden; de onderstaande limiet voegt daar een aantals-gebaseerde regel bovenop."
 
 #: src/components/StaleUrlBanner.tsx
 msgid "Bid:"
@@ -692,6 +708,10 @@ msgstr ""
 #: src/components/Layout.tsx
 msgid "changelog"
 msgstr "wijzigingslog"
+
+#: src/pages/Config.tsx
+msgid "Chart markers"
+msgstr "Grafiek-markers"
 
 #: src/pages/Config.tsx
 msgid "Chart smoothing"
@@ -1093,6 +1113,10 @@ msgstr "Snelheid aanpassen"
 #: src/components/PriceChart.tsx
 msgid "EDIT SPEED"
 msgstr "SNELHEID AANPASSEN"
+
+#: src/components/PriceChart.tsx
+msgid "Edit-price markers were hidden because the count exceeded the configured chart-marker cap. CREATE / EDIT_SPEED / CANCEL markers still render. Adjust the cap on Config → Display & Logging."
+msgstr "Edit-price-markers zijn verborgen omdat het aantal de ingestelde grafiek-markerlimiet overschreed. CREATE / EDIT_SPEED / CANCEL-markers worden nog steeds getekend. Pas de limiet aan op Config → Display & Logging."
 
 #: src/components/PriceChart.tsx
 msgid "effective"
@@ -1558,6 +1582,10 @@ msgstr "Max bod"
 #: src/pages/Status.tsx
 msgid "max bid (binding)"
 msgstr "max bod (bindend)"
+
+#: src/pages/Config.tsx
+msgid "Max markers shown"
+msgstr "Max getoonde markers"
 
 #: src/pages/Status.tsx
 msgid "max over hashprice"
@@ -2803,6 +2831,10 @@ msgstr "Wat naar Telegram sturen"
 #: src/pages/Alerts.tsx
 msgid "when"
 msgstr "wanneer"
+
+#: src/pages/Config.tsx
+msgid "When more than this many markers would render on the price chart, the dashboard hides EDIT_PRICE markers first (CREATE / EDIT_SPEED / CANCEL stay because they're rare and diagnostic). If even after hiding EDIT_PRICE the count still exceeds the cap, all markers are hidden. 0 = no count-based filter (all markers render subject to the existing per-range rule). Useful at low-overpay settings where EDIT_PRICE fires every couple of minutes and clutters the chart."
+msgstr "Wanneer er meer dan dit aantal markers op de prijsgrafiek zou worden getekend, verbergt het dashboard eerst EDIT_PRICE-markers (CREATE / EDIT_SPEED / CANCEL blijven staan omdat die zeldzaam en diagnostisch zijn). Als het aantal ook na het weglaten van EDIT_PRICE nog boven de limiet ligt, worden alle markers verborgen. 0 = geen aantals-gebaseerde filter (alle markers renderen, onder de bestaande per-bereik-regel). Nuttig bij lage overpay-instellingen waar EDIT_PRICE elke paar minuten afgaat en de grafiek vol zet."
 
 #: src/pages/Config.tsx
 msgid "When the market is cheap (below the hashprice threshold), scale up to this target instead of the normal one. Set to 0 to disable."

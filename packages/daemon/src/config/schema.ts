@@ -195,6 +195,13 @@ export const AppConfigSchema = z.object({
   decisions_eventful_retention_days: nonNegativeInt.default(0),
   alerts_retention_days: nonNegativeInt.default(0),
 
+  // #123: count-based marker suppression on the price chart. 0 = no
+  // count-based filter (existing per-range showEventKinds rule still
+  // applies). When > 0 and the visible event count exceeds this, the
+  // dashboard hides EDIT_PRICE markers first; if still over after
+  // that, hides everything.
+  chart_max_markers: nonNegativeInt.default(0),
+
   // Optional Datum Gateway stats API (issue #19). When set, the daemon
   // polls {datum_api_url}/umbrel-api each tick to record Datum's view
   // of connection count and hashrate. Integration is informational
@@ -438,6 +445,7 @@ export const APP_CONFIG_DEFAULTS: Omit<
   decisions_uneventful_retention_days: 7,
   decisions_eventful_retention_days: 0,
   alerts_retention_days: 0,
+  chart_max_markers: 0,
 
   datum_api_url: null,
 

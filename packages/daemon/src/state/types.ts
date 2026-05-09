@@ -65,6 +65,7 @@ export interface ConfigTable {
   decisions_uneventful_retention_days: number;
   decisions_eventful_retention_days: number;
   alerts_retention_days: number;
+  chart_max_markers: number;
   datum_api_url: string | null;
   max_overpay_vs_hashprice_sat_per_eh_day: number | null;
   overpay_sat_per_eh_day: number;

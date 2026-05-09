@@ -2,6 +2,10 @@
 
 ## 2026-05-09
 
+### `[Feature]` Cap chart markers; hide EDIT_PRICE first when count exceeds the cap (#123)
+
+At low-overpay settings the controller's edit-price deadband is `overpay/5`, so EDIT_PRICE markers fire every couple of minutes and on a 24h chart that's hundreds of yellow dots drowning out the rare CREATE / EDIT_SPEED / CANCEL markers. New `chart_max_markers` config knob (Config → Display & Logging) caps how many markers the dashboard renders on the price chart. When over the cap, EDIT_PRICE markers are hidden first because they're the noisy ones; CREATE / EDIT_SPEED / CANCEL stay since they're load-bearing for diagnosing autopilot behaviour. If even after dropping EDIT_PRICE the count still exceeds the cap, all markers are hidden. Default 0 = no count-based filter (the existing per-range rule that hides markers entirely on 1w / 1m / 1y / All still applies). The chart legend shows a small italic hint when suppression triggers (e.g. "143 edit-price markers hidden (cap)") so the operator knows the rule fired. Migration 0078 adds the column. NL/ES translations included.
+
 ### `[Docs]` Overpay help text: drop "300 is reasonable", explain the edit-deadband trade-off
 
 The Overpay above fillable help text on Config -> Strategy -> Pricing prescribed "300 sat/PH/day is a reasonable starting point". Operator is now running successfully at 10 sat/PH/day and finds the prescription misleading. Replaced with a more honest framing: lower overpay is fine on a stable market, and the trade-off is mainly about edit cadence — the controller's edit-price deadband is `overpay/5`, so a 10-sat overpay results in a 2-sat deadband and a small-deadband bid that adjusts more often. "It works fine, just noisier." NL/ES translations adjusted.

@@ -375,6 +375,21 @@ function useSections(): Section[] {
         ],
       },
       {
+        id: 'chart-markers',
+        title: t`Chart markers`,
+        description: t`Bid-event markers (CREATE / EDIT_PRICE / EDIT_SPEED / CANCEL) on the price chart. The dashboard already hides them on long ranges (1w / 1m / 1y / All) where individual markers lose meaning; the cap below adds a count-based rule on top of that.`,
+        fields: [
+          {
+            key: 'chart_max_markers',
+            label: t`Max markers shown`,
+            kind: 'integer',
+            unit: 'markers',
+            fullWidth: true,
+            help: t`When more than this many markers would render on the price chart, the dashboard hides EDIT_PRICE markers first (CREATE / EDIT_SPEED / CANCEL stay because they're rare and diagnostic). If even after hiding EDIT_PRICE the count still exceeds the cap, all markers are hidden. 0 = no count-based filter (all markers render subject to the existing per-range rule). Useful at low-overpay settings where EDIT_PRICE fires every couple of minutes and clutters the chart.`,
+          },
+        ],
+      },
+      {
         id: 'log-retention',
         title: t`Log retention`,
         description: t`Three append-only logs back the dashboard: tick_metrics powers every chart, decisions is a per-tick forensic log split by whether the autopilot proposed any action, and alerts is the Telegram notification history. Pruning runs hourly and on daemon boot. 0 on any field = keep forever.`,
@@ -689,7 +704,7 @@ const TAB_SECTIONS: Record<TabId, readonly string[]> = {
   strategy: ['hashrate-targets', 'pricing', 'budget', 'daemon-startup'],
   pool: ['pool-destination', 'ddns', 'payout-source', 'profit-and-loss', 'btc-price-oracle'],
   notifications: ['notifications', 'block-found-sound'],
-  display: ['block-explorer', 'chart-smoothing', 'log-retention'],
+  display: ['block-explorer', 'chart-smoothing', 'chart-markers', 'log-retention'],
 };
 
 function isTabId(s: string | null): s is TabId {

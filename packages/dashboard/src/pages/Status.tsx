@@ -251,6 +251,37 @@ export function Status() {
   // see research.md §0.9). Backend field remains in case Braiins
   // changes policy. The endpoint still exists for future use.
 
+  // #123: count-based marker suppression. The dashboard already
+  // hides markers entirely on long ranges via the showEventKinds
+  // per-range rule; this layers a global cap on top so low-overpay
+  // settings (where EDIT_PRICE fires every couple of minutes)
+  // don't make the chart unreadable on shorter ranges. Hide
+  // EDIT_PRICE first; if still over, hide everything.
+  const { visibleBidEvents, markersHiddenKind, markersHiddenCount } = useMemo(() => {
+    const events = bidEventsQuery.data?.events ?? EMPTY_BID_EVENTS;
+    const cap = configQuery.data?.config?.chart_max_markers ?? 0;
+    if (cap <= 0 || events.length <= cap) {
+      return {
+        visibleBidEvents: events,
+        markersHiddenKind: null as null | 'edit_price' | 'all',
+        markersHiddenCount: 0,
+      };
+    }
+    const withoutEditPrice = events.filter((e) => e.kind !== 'EDIT_PRICE');
+    if (withoutEditPrice.length <= cap) {
+      return {
+        visibleBidEvents: withoutEditPrice,
+        markersHiddenKind: 'edit_price' as const,
+        markersHiddenCount: events.length - withoutEditPrice.length,
+      };
+    }
+    return {
+      visibleBidEvents: EMPTY_BID_EVENTS,
+      markersHiddenKind: 'all' as const,
+      markersHiddenCount: events.length,
+    };
+  }, [bidEventsQuery.data?.events, configQuery.data?.config?.chart_max_markers]);
+
   if (query.isError && query.error instanceof UnauthorizedError) {
     navigate('/login');
     return null;
@@ -350,7 +381,9 @@ export function Status() {
         </div>
         <PriceChart
           points={metricsQuery.data?.points ?? EMPTY_METRIC_POINTS}
-          events={bidEventsQuery.data?.events ?? EMPTY_BID_EVENTS}
+          events={visibleBidEvents}
+          markersHiddenKind={markersHiddenKind}
+          markersHiddenCount={markersHiddenCount}
           showEventKinds={CHART_RANGE_SPECS[chartRange].showEventKinds}
           maxOverpayVsHashpriceSatPerPhDay={s.config_summary.max_overpay_vs_hashprice_sat_per_ph_day}
           overpaySatPerPhDay={

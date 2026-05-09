@@ -198,6 +198,8 @@ export const PriceChart = memo(function PriceChart({
   blockExplorerTemplate,
   txExplorerTemplate,
   shareLogPct = null,
+  markersHiddenKind = null,
+  markersHiddenCount = 0,
 }: {
   points: readonly MetricPoint[];
   events?: readonly BidEventView[];
@@ -268,6 +270,17 @@ export const PriceChart = memo(function PriceChart({
   txExplorerTemplate?: string;
   /** Live share_log %, used by the pool-block tooltip when there's no per-block historical capture. */
   shareLogPct?: number | null;
+  /**
+   * #123: when the dashboard's count-based marker filter has dropped
+   * markers from the visible list, this carries the kind of drop
+   * (`'edit_price'` = EDIT_PRICE-only suppression, the chart still
+   * shows CREATE / EDIT_SPEED / CANCEL; `'all'` = even after hiding
+   * EDIT_PRICE the count was over the cap, so everything's hidden).
+   * Null = no count-based filter triggered.
+   */
+  markersHiddenKind?: null | 'edit_price' | 'all';
+  /** #123: how many markers were dropped (for the inline hint text). */
+  markersHiddenCount?: number;
 }) {
   const { i18n } = useLingui();
   void i18n;
@@ -1198,6 +1211,22 @@ export const PriceChart = memo(function PriceChart({
             <Legend color={rightAxis.stroke} label={rightAxis.axisLabel} />
           )}
           {showEventKinds.length > 0 && <EventLegend kinds={showEventKinds} />}
+          {markersHiddenKind === 'edit_price' && markersHiddenCount > 0 && (
+            <span
+              className="text-[10px] text-slate-500 italic"
+              title={t`Edit-price markers were hidden because the count exceeded the configured chart-marker cap. CREATE / EDIT_SPEED / CANCEL markers still render. Adjust the cap on Config → Display & Logging.`}
+            >
+              <Trans>{markersHiddenCount} edit-price markers hidden (cap)</Trans>
+            </span>
+          )}
+          {markersHiddenKind === 'all' && markersHiddenCount > 0 && (
+            <span
+              className="text-[10px] text-slate-500 italic"
+              title={t`All markers were hidden because the count exceeded the configured chart-marker cap even after dropping EDIT_PRICE. Adjust the cap on Config → Display & Logging.`}
+            >
+              <Trans>{markersHiddenCount} markers hidden (cap)</Trans>
+            </span>
+          )}
         </div>
       </div>
       <svg
