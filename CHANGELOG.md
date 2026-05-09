@@ -2,6 +2,10 @@
 
 ## 2026-05-09
 
+### `[Feature]` Pool-luck step markers + tooltips on the Hashrate chart (#128)
+
+When the right axis is `pool luck (24h)` or `pool luck (7d)`, the line steps up when a block enters the rolling window (numerator +1) and steps down when an old block ages out the tail (numerator -1). The dashboard now renders a small purple circle at every step and a hover/click tooltip that explains *which* block caused the change. Tooltip carries the direction (`POOL LUCK +` / `POOL LUCK -`), the block height + timestamp, the rolling-Nh from→to delta on the luck value, the pool reward, BIP-110 signal, and a click-through to the configured block explorer (works for both directions — even the aged-out block is still useful to verify on-chain). Operator: "I'm talking about these points that you draw, but there's currently no tooltip... oh, wait, this is what happened." Markers fall away automatically when the right axis is set to anything other than the two pool-luck variants. EN/NL/ES translated.
+
 ### `[Infra]` Remove snooze entirely
 
 Operator's call: "actually, just remove the whole concept of a snooze. It's utter bullshit. I think it's over the top." The event-class state machine already silences re-fires while a bad state is open (active_alert_id pins the event class until recovery), so the manual "shut up about this" knob bought no operator value beyond surface area. Pulled out:

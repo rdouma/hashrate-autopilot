@@ -227,6 +227,10 @@ export const HashrateChart = memo(function HashrateChart({
   // detected retarget tick with a tooltip showing the new difficulty
   // and the % change vs the previous epoch.
   const [retargetTip, setRetargetTip] = useState<RetargetTooltipState | null>(null);
+  // #128: pool-luck step markers + tooltips. State is local to this
+  // chart; the marker only renders when the right axis is one of the
+  // pool-luck variants (otherwise the line itself isn't drawn).
+  const [stepTip, setStepTip] = useState<PoolLuckStepTooltipState | null>(null);
   // #105: parity with PriceChart - operator can double chart height
   // for closer inspection of floor breaches / BIP 110 marker positions.
   // State is local; PriceChart's expand toggle is independent.
@@ -275,6 +279,27 @@ export const HashrateChart = memo(function HashrateChart({
   );
   const closeRetargetTip = useCallback(() => setRetargetTip(null), []);
 
+  const onStepEnter = useCallback(
+    (event: PoolLuckStepEvent) => (e: React.MouseEvent) => {
+      setStepTip((prev) => {
+        if (prev?.pinned) return prev;
+        return { event, x: e.clientX, y: e.clientY, pinned: false };
+      });
+    },
+    [],
+  );
+  const onStepLeave = useCallback(() => {
+    setStepTip((prev) => (prev?.pinned ? prev : null));
+  }, []);
+  const onStepClick = useCallback(
+    (event: PoolLuckStepEvent) => (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setStepTip({ event, x: e.clientX, y: e.clientY, pinned: true });
+    },
+    [],
+  );
+  const closeStepTip = useCallback(() => setStepTip(null), []);
+
   useEffect(() => {
     if (!retargetTip?.pinned) return;
     const onDocClick = (ev: MouseEvent) => {
@@ -308,6 +333,24 @@ export const HashrateChart = memo(function HashrateChart({
     document.addEventListener('mousedown', onDocClick);
     return () => document.removeEventListener('mousedown', onDocClick);
   }, [blockTip?.pinned]);
+
+  useEffect(() => {
+    if (!stepTip?.pinned) return;
+    const onDocClick = (ev: MouseEvent) => {
+      const target = ev.target as Node | null;
+      if (
+        target &&
+        document
+          .getElementById('hashrate-chart-pinned-luckstep-tooltip')
+          ?.contains(target)
+      ) {
+        return;
+      }
+      setStepTip(null);
+    };
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [stepTip?.pinned]);
 
   // Detect retarget points where `network_difficulty` steps. The
   // sustained-check filter (current matches the next non-null tick)
@@ -658,6 +701,70 @@ export const HashrateChart = memo(function HashrateChart({
       }));
   }, [chartData, difficultyRetargets, rightAxisSeries]);
 
+  // #128: pool-luck step markers. Each pool block generates two
+  // events:
+  //   - 'in'  at  block.timestamp_ms (the moment the pool found it -
+  //          numerator goes from N to N+1, line steps up)
+  //   - 'out' at  block.timestamp_ms + windowMs (the moment it ages
+  //          out of the rolling window - line steps down)
+  // The marker positions on the new value (post-step), found by
+  // scanning `points` for the first tick at-or-after the event time
+  // and reading its persisted pool_luck column. Skips the event when
+  // we have no point that close (predates our tick history; the line
+  // wouldn't be drawn there either).
+  const visibleLuckStepMarkers = useMemo(() => {
+    const empty: Array<{
+      event: PoolLuckStepEvent;
+      cx: number;
+      cy: number;
+    }> = [];
+    if (!chartData) return empty;
+    if (
+      rightAxisSeries !== 'pool_luck_24h' &&
+      rightAxisSeries !== 'pool_luck_7d'
+    ) {
+      return empty;
+    }
+    const isDay = rightAxisSeries === 'pool_luck_24h';
+    const windowMs = isDay ? 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000;
+    const { minX, maxX, xScale, shareLogYScale } = chartData;
+    const out: typeof empty = [];
+    for (const block of ourBlocks) {
+      for (const kind of ['in', 'out'] as const) {
+        const t =
+          kind === 'in' ? block.timestamp_ms : block.timestamp_ms + windowMs;
+        if (t < minX || t > maxX) continue;
+        // Locate the tick straddling the event for the post-step
+        // value. Linear scan is fine - chart point counts are small
+        // and we typically have a handful of blocks.
+        let afterIdx = -1;
+        for (let i = 0; i < points.length; i++) {
+          if (points[i]!.tick_at >= t) {
+            afterIdx = i;
+            break;
+          }
+        }
+        if (afterIdx < 0) continue;
+        const after = points[afterIdx]!;
+        const before = afterIdx > 0 ? points[afterIdx - 1]! : null;
+        const luckAfter = isDay ? after.pool_luck_24h : after.pool_luck_7d;
+        const luckBefore =
+          before === null
+            ? null
+            : isDay
+              ? before.pool_luck_24h
+              : before.pool_luck_7d;
+        if (luckAfter === null) continue;
+        out.push({
+          event: { kind, t, block, luckBefore, luckAfter, windowMs },
+          cx: xScale(t),
+          cy: shareLogYScale(luckAfter),
+        });
+      }
+    }
+    return out;
+  }, [chartData, ourBlocks, points, rightAxisSeries]);
+
   if (!chartData) {
     return (
       <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
@@ -833,6 +940,31 @@ export const HashrateChart = memo(function HashrateChart({
             </g>
           ))}
 
+        {/* #128: pool-luck step markers. Same colour as the line so
+            they read as "events on this curve". Both 'in' and 'out'
+            kinds use the same shape per operator preference; the
+            tooltip tells direction. */}
+        {rightAxis &&
+          visibleLuckStepMarkers.map(({ event, cx, cy }) => (
+            <g
+              key={`luckstep-${event.kind}-${event.block.height}`}
+              onMouseEnter={onStepEnter(event)}
+              onMouseLeave={onStepLeave}
+              onClick={onStepClick(event)}
+              style={{ cursor: 'pointer' }}
+            >
+              <circle
+                cx={cx}
+                cy={cy}
+                r="3.5"
+                fill={rightAxis.stroke}
+                stroke="#0f172a"
+                strokeWidth="1.2"
+              />
+              <rect x={cx - 7} y={cy - 7} width="14" height="14" fill="transparent" />
+            </g>
+          ))}
+
         {ourBlocks
             .filter((b) => b.timestamp_ms >= minX && b.timestamp_ms <= maxX)
             .map((b) => {
@@ -997,6 +1129,14 @@ export const HashrateChart = memo(function HashrateChart({
           locale={intlLocale}
           dateTimeLocale={dateTimeLocale}
           onClose={closeRetargetTip}
+        />
+      )}
+      {stepTip && (
+        <PoolLuckStepTooltip
+          tip={stepTip}
+          explorerTemplate={blockExplorerTemplate ?? ''}
+          locale={intlLocale}
+          onClose={closeStepTip}
         />
       )}
     </div>
@@ -1352,6 +1492,153 @@ function RangePicker({
           </button>
         );
       })}
+    </div>
+  );
+}
+
+// #128: pool-luck step marker types + tooltip.
+//
+// Each pool block produces two step events on the pool-luck line:
+//   - 'in':  numerator +1 the moment the block lands (line jumps up)
+//   - 'out': numerator -1 when the block ages out of the rolling
+//            window (line steps down, `windowMs` later)
+
+interface PoolLuckStepEvent {
+  readonly kind: 'in' | 'out';
+  /** Timestamp of the step. For 'in' = block.timestamp_ms; for 'out' = block.timestamp_ms + windowMs. */
+  readonly t: number;
+  readonly block: OurBlockMarker;
+  /** Pool-luck value at the tick immediately before the step. Null if the chart's tick history starts after the step. */
+  readonly luckBefore: number | null;
+  /** Pool-luck value at the first tick at-or-after the step. */
+  readonly luckAfter: number;
+  /** Window the active right-axis is using (24h or 7d), in ms. Surfaced for the tooltip's "rolling 24h" / "rolling 7d" descriptor. */
+  readonly windowMs: number;
+}
+
+interface PoolLuckStepTooltipState {
+  readonly event: PoolLuckStepEvent;
+  readonly x: number;
+  readonly y: number;
+  readonly pinned: boolean;
+}
+
+function PoolLuckStepTooltip({
+  tip,
+  explorerTemplate,
+  locale,
+  onClose,
+}: {
+  tip: PoolLuckStepTooltipState;
+  explorerTemplate: string;
+  locale: string | undefined;
+  onClose: () => void;
+}) {
+  const { i18n } = useLingui();
+  void i18n;
+  const { event, pinned } = tip;
+  const { kind, block, luckBefore, luckAfter, windowMs } = event;
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [pos, setPos] = useState<{ left: number; top: number; ready: boolean }>({
+    left: tip.x + 12,
+    top: tip.y + 12,
+    ready: false,
+  });
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const margin = 8;
+    let left = tip.x + 12;
+    let top = tip.y + 12;
+    if (left + rect.width > window.innerWidth - margin) left = tip.x - rect.width - 12;
+    if (top + rect.height > window.innerHeight - margin) top = tip.y - rect.height - 12;
+    if (left < margin) left = margin;
+    if (top < margin) top = margin;
+    setPos({ left, top, ready: true });
+  }, [tip.x, tip.y, event.kind, block.height]);
+
+  const url = applyExplorerTemplate(explorerTemplate, block);
+  const rewardBtc = block.total_reward_sat / 1e8;
+  const isDay = windowMs <= 24 * 60 * 60 * 1000;
+  const windowLabel = isDay ? '24h' : '7d';
+  const headerLabel =
+    kind === 'in' ? t`POOL LUCK +` : t`POOL LUCK -`;
+  const directionText =
+    kind === 'in'
+      ? t`Block landed - the rolling-${windowLabel} numerator went from ${
+          luckBefore === null ? '-' : `${luckBefore.toFixed(2)}×`
+        } to ${luckAfter.toFixed(2)}×.`
+      : t`Block aged out of the rolling-${windowLabel} window - numerator dropped, line stepped down to ${luckAfter.toFixed(2)}×.`;
+
+  return (
+    <div
+      ref={ref}
+      id={pinned ? 'hashrate-chart-pinned-luckstep-tooltip' : undefined}
+      className={`fixed z-50 bg-slate-950 border rounded-lg shadow-lg p-3 text-xs whitespace-nowrap ${pinned ? 'border-slate-500 pointer-events-auto' : 'border-slate-700 pointer-events-none'} ${pos.ready ? '' : 'invisible'}`}
+      style={{ left: pos.left, top: pos.top }}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <span className="font-semibold uppercase tracking-wider text-violet-300">
+          {headerLabel} #{block.height.toLocaleString(locale)}
+        </span>
+        {pinned && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t`close`}
+            className="text-slate-500 hover:text-slate-200 leading-none text-base -mt-0.5 -mr-0.5"
+          >
+            ×
+          </button>
+        )}
+      </div>
+      <div className="text-slate-300 mt-1 whitespace-normal max-w-xs">
+        {directionText}
+      </div>
+      <div className="text-slate-500 mt-2 text-[11px]">
+        <Trans>block found:</Trans> {formatTimestamp(block.timestamp_ms, locale)}
+      </div>
+      <div className="text-slate-500 text-[10px]">
+        {formatTimestampUtc(block.timestamp_ms)}
+      </div>
+      {kind === 'out' && (
+        <div className="text-slate-500 mt-1 text-[11px]">
+          <Trans>aged out:</Trans>{' '}
+          {formatTimestamp(block.timestamp_ms + windowMs, locale)}
+        </div>
+      )}
+      <div className="mt-2 space-y-0.5 text-slate-300">
+        <BtcRow label={t`pool reward`} btc={rewardBtc} locale={locale} />
+      </div>
+      {block.signals_bip110 === true && (
+        <div className="mt-2 pt-2 border-t border-slate-800 text-amber-300 text-[11px]">
+          <Trans>Signaling BIP 110</Trans>
+        </div>
+      )}
+      {block.found_by_us && (
+        <div className="mt-2 pt-2 border-t border-slate-800 text-amber-300 text-[11px]">
+          <Trans>Found by us</Trans>
+        </div>
+      )}
+      {pinned && (
+        <div className="mt-3 pt-2 border-t border-slate-800 flex items-center justify-between gap-3">
+          <span className="text-[10px] text-slate-500">
+            <Trans>click outside to close</Trans>
+          </span>
+          {url && (
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-amber-400 hover:underline text-[11px]"
+            >
+              <Trans>open in explorer</Trans>
+            </a>
+          )}
+        </div>
+      )}
     </div>
   );
 }

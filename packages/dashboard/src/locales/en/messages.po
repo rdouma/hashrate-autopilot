@@ -205,18 +205,6 @@ msgstr "0 = disabled. Example: 95 = activate cheap mode when the best ask on the
 msgid "0 = use the full available wallet balance each CREATE (clamped to 1 BTC - the Braiins per-bid hard cap). Any positive value pins every new bid to that exact amount regardless of balance."
 msgstr "0 = use the full available wallet balance each CREATE (clamped to 1 BTC - the Braiins per-bid hard cap). Any positive value pins every new bid to that exact amount regardless of balance."
 
-#: src/pages/Alerts.tsx
-msgid "24h"
-msgstr "24h"
-
-#: src/pages/Alerts.tsx
-msgid "2h"
-msgstr "2h"
-
-#: src/pages/Alerts.tsx
-msgid "30m"
-msgstr "30m"
-
 #: src/pages/Config.tsx
 msgid "A bid in the account that the autopilot did not create. Already triggers auto-PAUSE."
 msgstr "A bid in the account that the autopilot did not create. Already triggers auto-PAUSE."
@@ -289,6 +277,10 @@ msgstr "Actual sat consumed over the last 3 h, scaled to a 24h rate. Uses Braiin
 #: src/pages/Setup.tsx
 msgid "After submit, the daemon writes everything to <0>state.db</0> and brings the controller online in-place. Boots in <1>DRY-RUN</1> mode; the dashboard signs you in automatically. Promote to LIVE from the Status page when you're ready."
 msgstr "After submit, the daemon writes everything to <0>state.db</0> and brings the controller online in-place. Boots in <1>DRY-RUN</1> mode; the dashboard signs you in automatically. Promote to LIVE from the Status page when you're ready."
+
+#: src/components/HashrateChart.tsx
+msgid "aged out:"
+msgstr "aged out:"
 
 #: src/components/Layout.tsx
 #: src/pages/Alerts.tsx
@@ -530,9 +522,24 @@ msgstr "bitcoind RPC is not configured on the daemon. Set BHA_BITCOIND_RPC_URL /
 msgid "block"
 msgstr "block"
 
+#. placeholder {0}: luckAfter.toFixed(2)
+#: src/components/HashrateChart.tsx
+msgid "Block aged out of the rolling-{windowLabel} window - numerator dropped, line stepped down to {0}×."
+msgstr "Block aged out of the rolling-{windowLabel} window - numerator dropped, line stepped down to {0}×."
+
 #: src/pages/Config.tsx
 msgid "Block explorer"
 msgstr "Block explorer"
+
+#: src/components/HashrateChart.tsx
+msgid "block found:"
+msgstr "block found:"
+
+#. placeholder {0}: luckBefore === null ? '-' : `${luckBefore.toFixed(2)}×`
+#. placeholder {1}: luckAfter.toFixed(2)
+#: src/components/HashrateChart.tsx
+msgid "Block landed - the rolling-{windowLabel} numerator went from {0} to {1}×."
+msgstr "Block landed - the rolling-{windowLabel} numerator went from {0} to {1}×."
 
 #: src/pages/Status.tsx
 msgid "block reward"
@@ -738,10 +745,12 @@ msgstr "Cheap-mode target"
 msgid "Choose file…"
 msgstr "Choose file…"
 
+#: src/components/HashrateChart.tsx
 #: src/components/PriceChart.tsx
 msgid "click outside to close"
 msgstr "click outside to close"
 
+#: src/components/HashrateChart.tsx
 #: src/components/HashrateChart.tsx
 #: src/components/HashrateChart.tsx
 #: src/components/PriceChart.tsx
@@ -1267,6 +1276,10 @@ msgstr "found"
 #: src/components/HashrateChart.tsx
 msgid "found by us"
 msgstr "found by us"
+
+#: src/components/HashrateChart.tsx
+msgid "Found by us"
+msgstr "Found by us"
 
 #: src/components/HashrateChart.tsx
 msgid "FOUND BY US"
@@ -1916,6 +1929,10 @@ msgstr "Only engage cheap-mode when the rolling average of best-ask vs hashprice
 msgid "open in block explorer →"
 msgstr "open in block explorer →"
 
+#: src/components/HashrateChart.tsx
+msgid "open in explorer"
+msgstr "open in explorer"
+
 #: src/pages/Config.tsx
 msgid "Open Telegram and chat with <0>@BotFather</0>, send /newbot, follow the prompts; @BotFather replies with the token. Paste it here."
 msgstr "Open Telegram and chat with <0>@BotFather</0>, send /newbot, follow the prompts; @BotFather replies with the token. Paste it here."
@@ -2109,6 +2126,10 @@ msgstr "Pool destination (where Braiins delivers)"
 msgid "pool hashrate"
 msgstr "pool hashrate"
 
+#: src/components/HashrateChart.tsx
+msgid "POOL LUCK -"
+msgstr "POOL LUCK -"
+
 #: src/pages/Status.tsx
 msgid "pool luck (24h)"
 msgstr "pool luck (24h)"
@@ -2117,6 +2138,11 @@ msgstr "pool luck (24h)"
 msgid "pool luck (7d)"
 msgstr "pool luck (7d)"
 
+#: src/components/HashrateChart.tsx
+msgid "POOL LUCK +"
+msgstr "POOL LUCK +"
+
+#: src/components/HashrateChart.tsx
 #: src/components/HashrateChart.tsx
 msgid "pool reward"
 msgstr "pool reward"
@@ -2483,21 +2509,16 @@ msgid "signaling"
 msgstr "signaling"
 
 #: src/components/HashrateChart.tsx
+msgid "Signaling BIP 110"
+msgstr "Signaling BIP 110"
+
+#: src/components/HashrateChart.tsx
 msgid "Signaling BIP 110 (Reduced Data soft fork)"
 msgstr "Signaling BIP 110 (Reduced Data soft fork)"
 
 #: src/pages/Login.tsx
 msgid "signing in…"
 msgstr "signing in…"
-
-#. placeholder {0}: p.label()
-#: src/pages/Alerts.tsx
-msgid "snooze {0}"
-msgstr "snooze {0}"
-
-#: src/pages/Alerts.tsx
-msgid "snoozed until"
-msgstr "snoozed until"
 
 #: src/pages/Config.tsx
 msgid "Sound"

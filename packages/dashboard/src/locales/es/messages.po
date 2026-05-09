@@ -205,18 +205,6 @@ msgstr "0 = desactivado. Ejemplo: 95 = activar el modo barato cuando la mejor as
 msgid "0 = use the full available wallet balance each CREATE (clamped to 1 BTC - the Braiins per-bid hard cap). Any positive value pins every new bid to that exact amount regardless of balance."
 msgstr "0 = usar todo el saldo disponible del wallet en cada CREATE (limitado a 1 BTC - el tope duro por oferta de Braiins). Cualquier valor positivo fija cada nueva oferta a esa cantidad exacta sin importar el saldo."
 
-#: src/pages/Alerts.tsx
-msgid "24h"
-msgstr "24h"
-
-#: src/pages/Alerts.tsx
-msgid "2h"
-msgstr "2h"
-
-#: src/pages/Alerts.tsx
-msgid "30m"
-msgstr "30m"
-
 #: src/pages/Config.tsx
 msgid "A bid in the account that the autopilot did not create. Already triggers auto-PAUSE."
 msgstr "Una puja en la cuenta que el autopilot no creó. Ya provoca auto-PAUSE."
@@ -289,6 +277,10 @@ msgstr "Sats realmente consumidos en las últimas 3 h, escalado a una tasa de 24
 #: src/pages/Setup.tsx
 msgid "After submit, the daemon writes everything to <0>state.db</0> and brings the controller online in-place. Boots in <1>DRY-RUN</1> mode; the dashboard signs you in automatically. Promote to LIVE from the Status page when you're ready."
 msgstr "Tras enviar, el daemon escribe todo en <0>state.db</0> y pone el controlador en línea en el sitio. Arranca en modo <1>DRY-RUN</1>; el panel te conecta automáticamente. Cambia a LIVE desde la página Status cuando estés listo."
+
+#: src/components/HashrateChart.tsx
+msgid "aged out:"
+msgstr "fuera de ventana:"
 
 #: src/components/Layout.tsx
 #: src/pages/Alerts.tsx
@@ -530,9 +522,24 @@ msgstr "bitcoind RPC no está configurado en el daemon. Defina BHA_BITCOIND_RPC_
 msgid "block"
 msgstr "bloque"
 
+#. placeholder {0}: luckAfter.toFixed(2)
+#: src/components/HashrateChart.tsx
+msgid "Block aged out of the rolling-{windowLabel} window - numerator dropped, line stepped down to {0}×."
+msgstr ""
+
 #: src/pages/Config.tsx
 msgid "Block explorer"
 msgstr "Explorador de bloques"
+
+#: src/components/HashrateChart.tsx
+msgid "block found:"
+msgstr "bloque encontrado:"
+
+#. placeholder {0}: luckBefore === null ? '-' : `${luckBefore.toFixed(2)}×`
+#. placeholder {1}: luckAfter.toFixed(2)
+#: src/components/HashrateChart.tsx
+msgid "Block landed - the rolling-{windowLabel} numerator went from {0} to {1}×."
+msgstr ""
 
 #: src/pages/Status.tsx
 msgid "block reward"
@@ -738,10 +745,12 @@ msgstr "Objetivo en modo barato"
 msgid "Choose file…"
 msgstr "Elegir archivo…"
 
+#: src/components/HashrateChart.tsx
 #: src/components/PriceChart.tsx
 msgid "click outside to close"
 msgstr "haz clic fuera para cerrar"
 
+#: src/components/HashrateChart.tsx
 #: src/components/HashrateChart.tsx
 #: src/components/HashrateChart.tsx
 #: src/components/PriceChart.tsx
@@ -1267,6 +1276,10 @@ msgstr "encontrados"
 #: src/components/HashrateChart.tsx
 msgid "found by us"
 msgstr "encontrado por nosotros"
+
+#: src/components/HashrateChart.tsx
+msgid "Found by us"
+msgstr "Encontrado por nosotros"
 
 #: src/components/HashrateChart.tsx
 msgid "FOUND BY US"
@@ -1916,6 +1929,10 @@ msgstr "Activa el modo barato solo cuando el promedio móvil del mejor precio de
 msgid "open in block explorer →"
 msgstr "abrir en explorador de bloques →"
 
+#: src/components/HashrateChart.tsx
+msgid "open in explorer"
+msgstr "abrir en el explorador"
+
 #: src/pages/Config.tsx
 msgid "Open Telegram and chat with <0>@BotFather</0>, send /newbot, follow the prompts; @BotFather replies with the token. Paste it here."
 msgstr "Abre Telegram y conversa con <0>@BotFather</0>, envía /newbot y sigue los pasos; @BotFather responde con el token. Pégalo aquí."
@@ -2109,6 +2126,10 @@ msgstr "Destino del pool (a donde entrega Braiins)"
 msgid "pool hashrate"
 msgstr "hashrate del pool"
 
+#: src/components/HashrateChart.tsx
+msgid "POOL LUCK -"
+msgstr "POOL LUCK -"
+
 #: src/pages/Status.tsx
 msgid "pool luck (24h)"
 msgstr "suerte del pool (24h)"
@@ -2117,6 +2138,11 @@ msgstr "suerte del pool (24h)"
 msgid "pool luck (7d)"
 msgstr "suerte del pool (7d)"
 
+#: src/components/HashrateChart.tsx
+msgid "POOL LUCK +"
+msgstr "POOL LUCK +"
+
+#: src/components/HashrateChart.tsx
 #: src/components/HashrateChart.tsx
 msgid "pool reward"
 msgstr "recompensa del pool"
@@ -2483,21 +2509,16 @@ msgid "signaling"
 msgstr "señalizando"
 
 #: src/components/HashrateChart.tsx
+msgid "Signaling BIP 110"
+msgstr "Señaliza BIP 110"
+
+#: src/components/HashrateChart.tsx
 msgid "Signaling BIP 110 (Reduced Data soft fork)"
 msgstr "Señaliza BIP 110 (soft fork de Reduced Data)"
 
 #: src/pages/Login.tsx
 msgid "signing in…"
 msgstr "iniciando sesión…"
-
-#. placeholder {0}: p.label()
-#: src/pages/Alerts.tsx
-msgid "snooze {0}"
-msgstr "posponer {0}"
-
-#: src/pages/Alerts.tsx
-msgid "snoozed until"
-msgstr "pospuesto hasta"
 
 #: src/pages/Config.tsx
 msgid "Sound"
