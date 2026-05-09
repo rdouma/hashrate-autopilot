@@ -1918,10 +1918,14 @@ function EventClassSubscriptions({
               onChange={(n) =>
                 onChange(
                   'wallet_runway_alert_days',
-                  (n && n > 0 ? n : 1) as never,
+                  // Coerce non-positive entries to a small positive
+                  // value so the runway tile stays "on" once the
+                  // operator ticked it. 0 disables; the toggle
+                  // already drives that.
+                  (n && n > 0 ? n : 0.5) as never,
                 )
               }
-              step="integer"
+              step="any"
               locale={locale}
               noGrouping
               disabled={!runwayOn || muted}

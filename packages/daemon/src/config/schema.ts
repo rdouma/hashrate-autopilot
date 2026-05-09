@@ -97,7 +97,10 @@ export const AppConfigSchema = z.object({
   // disables the wallet-runway notification end-to-end (no transition
   // arming, no Telegram POST, no alert row); cleaner than digging
   // into the per-class opt-out for the same effect. #116.
-  wallet_runway_alert_days: nonNegativeInt,
+  // Fractional values allowed (e.g. 4.1 days) - the burn rate is
+  // a continuous quantity and operators reasonably want sub-day
+  // resolution near the threshold. 0 still disables.
+  wallet_runway_alert_days: z.number().nonnegative(),
   below_floor_alert_after_minutes: positiveInt,
   zero_hashrate_loud_alert_after_minutes: positiveInt,
   pool_outage_blip_tolerance_seconds: nonNegativeInt,

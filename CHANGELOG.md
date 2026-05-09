@@ -2,6 +2,10 @@
 
 ## 2026-05-09
 
+### `[Fix]` Wallet runway threshold accepts fractional days
+
+The runway-tile days input was integer-only; the schema typed it as `nonNegativeInt`. Operator wanted to set 4.1 days and got rejected. Burn rate is a continuous quantity so sub-day resolution is reasonable. Schema relaxed to `z.number().nonnegative()`; the NumberField now uses `step="any"`. 0 still disables. The "if you toggle on" default was a coerced 1; now coerces to 0.5 if the operator types 0 by accident with the tile checked.
+
 ### `[Feature]` Dashboard ack/snooze edits the Telegram message too
 
 When the operator clicked "Mark as seen" on the /alerts page (or "mark all as seen", or one of the snooze presets), the dashboard updated the row but the Telegram message that originally fired the alert still had its inline keyboard and no acknowledgement footer. Operator: "can it be that if I do it on the site, that it gets marked in Telegram too?" Yes, Telegram bot API supports it. Added `TelegramSink.editMessage(message_id, html_text)` and wired the three /api/alerts mutate endpoints (single ack, ack-all, snooze) to call it on every row that was delivered to Telegram. Strips the inline keyboard and appends a small italic footer ("✓ acknowledged · 2026-05-09T13:14:15Z" or "⏸ snoozed 30m · ..."). Best-effort: edit failures are logged, never block the HTTP response. The "message is not modified" 400 (which Telegram returns when the new text matches the old, e.g. on a double-ack) is silently swallowed.
