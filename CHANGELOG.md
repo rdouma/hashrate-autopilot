@@ -2,6 +2,16 @@
 
 ## 2026-05-09
 
+### `[UI]` Pricing section: hand-built two-column layout, fill-rate slider, lookback caveat (#118 follow-up)
+
+Three operator-driven follow-ups to yesterday's overpay-tuning helper:
+
+1. **Layout reshuffle.** The first cut left the Pricing fields in single-column source order with the helper card inline below the Overpay field, ignoring the layout the issue body laid out. Replaced with a hand-built 2x2 grid: row 1 has Overpay above fillable on the left and the Recommended helper on the right; row 2 has Maximum on the left and Max premium over hashprice on the right. Both ceiling fields now share a row at the bottom as the operator originally specified.
+2. **Fill-rate slider.** The helper's recommendation is based on a percentile of the gap distribution. p95 reads as "fill 95% of the time"; lower percentiles trade fill rate for premium savings. The new slider (50% - 99%, 1-percentage-point steps) lets the operator drag through the trade space and watch the recommendation + projected savings update live. Backend: `/api/overpay-tuning?percentile=0.85` accepts the slider value and returns the recommendation at that percentile (clamped to [0.5, 0.99]).
+3. **Lookback caveat.** The 7-day window is dominated by whatever overpay the operator was running historically. If they edit the value just now, the recommendation still reflects the old gap distribution until the window catches up. Added a small italic note to the helper that calls this out, so a recent edit doesn't read as a bug.
+
+EN/NL/ES translations for the three new strings (fill rate target / matches your current value / Note: the recommendation is based on...).
+
 ### `[Feature]` Alerts retention knob + flip retention defaults to 'keep forever' (#119)
 
 `alerts_retention_days` joins `tick_metrics_retention_days` / `decisions_uneventful_retention_days` / `decisions_eventful_retention_days` as the fourth retention knob; the hourly `RetentionService` now prunes the alerts table by `created_at` when the value is > 0. Pruning is gated on terminal `delivery_status` (`sent` / `failed` / `gave_up` / `muted`) so a still-retrying row from a long outage is never dropped on age alone. Defaults flipped: `tick_metrics` and `decisions_eventful` now default to **0 = keep forever** (previously 365); `decisions_uneventful` keeps its 7-day default because the heavy JSON state snapshots are the actual disk-bloat lever. Migration 0076 adds the column. Storage-estimate route + Config UI both gain the new knob with the per-day / at-N-days projection identical to the existing fields.

@@ -611,7 +611,12 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ event_class }),
     }),
-  overpayTuning: () => request<OverpayTuningResponse>('/api/overpay-tuning'),
+  overpayTuning: (percentile?: number) =>
+    request<OverpayTuningResponse>(
+      percentile !== undefined
+        ? `/api/overpay-tuning?percentile=${encodeURIComponent(percentile)}`
+        : '/api/overpay-tuning',
+    ),
   build: () => request<BuildInfoResponse>('/api/build'),
   alertsList: (filters: AlertsListFilters = {}) => {
     const qs = new URLSearchParams();
@@ -816,6 +821,7 @@ export interface OverpayTuningResponse {
   recommended_sat_per_eh_day: number | null;
   status: 'ready' | 'insufficient_history';
   window_days: number;
+  percentile: number;
   eligible_ticks: number;
   capped_ticks: number;
   under_fillable_ticks: number;

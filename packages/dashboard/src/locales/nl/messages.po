@@ -1213,6 +1213,10 @@ msgstr "fees"
 msgid "Fetches the BTC/USD spot price from a public exchange API. Enables a sats/USD denomination toggle in the dashboard header. No API key required - uses unauthenticated public endpoints."
 msgstr "Haalt de BTC/USD spotprijs op van een publieke exchange-API. Schakelt een sats/USD eenheid-wisselaar in de dashboard-header in. Geen API-sleutel nodig - gebruikt niet-geauthenticeerde publieke endpoints."
 
+#: src/pages/Config.tsx
+msgid "fill rate target"
+msgstr "doel-vulpercentage"
+
 #: src/components/PriceChart.tsx
 #: src/components/PriceChart.tsx
 msgid "fillable"
@@ -1506,6 +1510,7 @@ msgstr "Laden of daemon-herstart vereist."
 #: src/pages/Alerts.tsx
 #: src/pages/Alerts.tsx
 #: src/pages/Config.tsx
+#: src/pages/Config.tsx
 #: src/pages/Status.tsx
 #: src/pages/Status.tsx
 msgid "loading…"
@@ -1546,6 +1551,10 @@ msgstr "bezig…"
 #: src/pages/Config.tsx
 msgid "Match - hostname is pointing at this box."
 msgstr "Komt overeen - hostnaam wijst naar deze machine."
+
+#: src/pages/Config.tsx
+msgid "matches your current value"
+msgstr "komt overeen met je huidige waarde"
 
 #: src/components/PriceChart.tsx
 #: src/components/PriceChart.tsx
@@ -1753,6 +1762,11 @@ msgstr "niet in LIVE-modus"
 #: src/components/Bip110ScanCard.tsx
 msgid "not reported"
 msgstr "niet gerapporteerd"
+
+#. placeholder {0}: data.window_days
+#: src/pages/Config.tsx
+msgid "Note: the recommendation is based on the gap distribution over the last {0} days. If you changed your overpay recently, the figures still reflect the previous setting until the window catches up."
+msgstr "Opmerking: de aanbeveling is gebaseerd op de gap-verdeling over de laatste {0} dagen. Als je je overpay onlangs hebt aangepast, weerspiegelen de cijfers nog steeds de vorige instelling totdat het venster bijgewerkt is."
 
 #: src/pages/Config.tsx
 #: src/pages/Config.tsx
@@ -1965,9 +1979,10 @@ msgstr "Eigenaars-token"
 #. placeholder {0}: data.eligible_ticks
 #. placeholder {1}: data.capped_ticks
 #. placeholder {2}: data.under_fillable_ticks
+#. placeholder {3}: data.window_days
 #: src/pages/Config.tsx
-msgid "p95 of bid - fillable across {0} tracking ticks ({1} capped, {2} under fillable excluded). At this overpay you would have filled 95% of the time."
-msgstr "p95 van bod - fillable over {0} tracking-ticks ({1} gecapped, {2} onder fillable uitgesloten). Bij deze overpay zou je 95% van de tijd gevuld zijn."
+msgid "p{percentilePct} of bid - fillable across {0} tracking ticks ({1} capped, {2} under fillable excluded). At this overpay you would have filled {percentilePct}% of the time over the last {3} days."
+msgstr "p{percentilePct} van bod - fillable over {0} tracking-ticks ({1} gecapped, {2} onder fillable uitgesloten). Bij deze overpay zou je {percentilePct}% van de tijd gevuld zijn over de laatste {3} dagen."
 
 #: src/pages/Status.tsx
 msgid "paid earnings (lifetime)"
@@ -2236,6 +2251,10 @@ msgstr "ontvangen (Ocean)"
 #: src/pages/Config.tsx
 msgid "Recommended (last {0}d)"
 msgstr "Aanbevolen (laatste {0}d)"
+
+#: src/pages/Config.tsx
+msgid "Recommended (last 7d)"
+msgstr "Aanbevolen (laatste 7d)"
 
 #: src/components/Layout.tsx
 msgid "Refresh"
@@ -2885,10 +2904,6 @@ msgstr "Hiermee log je na de setup in op het dashboard. Minimaal 8 tekens."
 #: src/pages/Setup.tsx
 msgid "Your address that receives Ocean TIDES payouts. The worker identity below is auto-derived from this."
 msgstr "Je adres dat Ocean TIDES-uitbetalingen ontvangt. De worker-identiteit hieronder wordt hier automatisch uit afgeleid."
-
-#: src/pages/Config.tsx
-msgid "your overpay already matches the recommendation"
-msgstr "je overpay komt al overeen met de aanbeveling"
 
 #: src/pages/Config.tsx
 msgid "Zero hashrate"

@@ -1096,22 +1096,36 @@ function SectionCard({
           <LogRetentionTotalHint draft={draft} locale={locale} />
         )}
       </header>
-      <div className={gridCls}>
-        {section.fields.map((f) => (
-          <div
-            key={f.key as string}
-            className={
-              !section.sideBySide && f.fullWidth
-                ? cols === 3
-                  ? 'sm:col-span-3'
-                  : 'sm:col-span-2'
-                : ''
-            }
-          >
-            <Field spec={f} draft={draft} locale={locale} onChange={onChange} />
-          </div>
-        ))}
-      </div>
+      {section.id === 'pricing' ? (
+        // #118: hand-built two-column layout per operator request.
+        // Row 1: Overpay above fillable (left) + Recommended helper (right).
+        // Row 2: Maximum (left) + Max premium over hashprice (right).
+        // Forces the helper next to the field it recommends a value
+        // for, and groups the two ceiling fields on the bottom row.
+        <PricingSectionGrid
+          fields={section.fields}
+          draft={draft}
+          locale={locale}
+          onChange={onChange}
+        />
+      ) : (
+        <div className={gridCls}>
+          {section.fields.map((f) => (
+            <div
+              key={f.key as string}
+              className={
+                !section.sideBySide && f.fullWidth
+                  ? cols === 3
+                    ? 'sm:col-span-3'
+                    : 'sm:col-span-2'
+                  : ''
+              }
+            >
+              <Field spec={f} draft={draft} locale={locale} onChange={onChange} />
+            </div>
+          ))}
+        </div>
+      )}
       {section.id === 'block-found-sound' && (
         <BlockFoundSoundExtras draft={draft} onChange={onChange} />
       )}
@@ -2079,45 +2093,85 @@ function OverpayTuningHelper({
   const { i18n } = useLingui();
   void i18n;
   const { intlLocale } = useLocale();
+  // Slider state: 50%-99% in 1-pp steps. Default 95 = "fill 95% of
+  // the time", matching the original recommendation. The operator
+  // can drag it left to trade fill rate for premium savings, or
+  // right to be more conservative.
+  const [percentilePct, setPercentilePct] = useState(95);
   const tuning = useQuery({
-    queryKey: ['overpay-tuning'],
-    queryFn: api.overpayTuning,
+    queryKey: ['overpay-tuning', percentilePct],
+    queryFn: () => api.overpayTuning(percentilePct / 100),
     refetchInterval: 60_000,
   });
 
-  if (tuning.isPending || !tuning.data) {
-    return null;
-  }
-  const data = tuning.data;
-  // Display in PH/day always; sat/EH/day -> sat/PH/day = /1000.
   const formatPh = (sat: number | null) =>
     sat === null
       ? '-'
       : `${formatNumber(Math.round(sat / 1000), {}, intlLocale)} sat/PH/day`;
 
+  // Slider is rendered identically across both states (ready /
+  // insufficient_history) so the operator can still drag it while
+  // waiting for enough data.
+  const slider = (
+    <div className="mt-2">
+      <div className="flex items-baseline justify-between text-[11px] text-slate-400">
+        <Trans>fill rate target</Trans>
+        <span className="font-mono tabular-nums text-amber-200">
+          {percentilePct}%
+        </span>
+      </div>
+      <input
+        type="range"
+        min={50}
+        max={99}
+        step={1}
+        value={percentilePct}
+        onChange={(e) => setPercentilePct(Number(e.target.value))}
+        className="w-full accent-amber-400"
+      />
+      <div className="flex justify-between text-[10px] text-slate-500">
+        <span>50%</span>
+        <span>99%</span>
+      </div>
+    </div>
+  );
+
+  if (tuning.isPending || !tuning.data) {
+    return (
+      <div className="p-3 rounded border border-amber-400/40 bg-amber-400/5 text-xs h-full">
+        <div className="font-semibold text-amber-300">
+          <Trans>Recommended (last 7d)</Trans>
+        </div>
+        <p className="mt-1 text-slate-500"><Trans>loading…</Trans></p>
+      </div>
+    );
+  }
+  const data = tuning.data;
+
   if (data.status === 'insufficient_history') {
     return (
-      <div className="mt-2 p-2 rounded border border-slate-800 bg-slate-900/40 text-xs text-slate-400">
+      <div className="p-3 rounded border border-slate-800 bg-slate-900/40 text-xs text-slate-400 h-full">
         <div className="font-semibold text-slate-300">
           <Trans>Recommended (last {data.window_days}d)</Trans>
         </div>
-        <p className="mt-0.5 text-slate-500">
+        <p className="mt-1 text-slate-500">
           <Trans>
             Insufficient history ({data.eligible_ticks} of ~500 tracking ticks
             needed). Come back after the daemon has been running ~8h or so.
           </Trans>
         </p>
+        {slider}
       </div>
     );
   }
 
-  // Recommendation matches current within 5% - hide Apply.
+  // Recommendation matches current within 5% - disable Apply.
   const recommended = data.recommended_sat_per_eh_day ?? 0;
   const tolerance = Math.max(currentSatPerEhDay * 0.05, 1000);
   const matchesCurrent = Math.abs(recommended - currentSatPerEhDay) <= tolerance;
 
   return (
-    <div className="mt-2 p-2 rounded border border-amber-400/40 bg-amber-400/5 text-xs">
+    <div className="p-3 rounded border border-amber-400/40 bg-amber-400/5 text-xs h-full flex flex-col">
       <div className="flex items-baseline justify-between gap-2">
         <div className="font-semibold text-amber-300">
           <Trans>Recommended (last {data.window_days}d)</Trans>
@@ -2126,23 +2180,36 @@ function OverpayTuningHelper({
           {formatPh(recommended)}
         </div>
       </div>
-      <p className="mt-0.5 text-slate-400">
+      <p className="mt-1 text-slate-400">
         <Trans>
-          p95 of bid - fillable across {data.eligible_ticks} tracking ticks
-          ({data.capped_ticks} capped, {data.under_fillable_ticks} under
-          fillable excluded). At this overpay you would have filled 95% of
-          the time.
+          p{percentilePct} of bid - fillable across {data.eligible_ticks} tracking
+          ticks ({data.capped_ticks} capped, {data.under_fillable_ticks} under
+          fillable excluded). At this overpay you would have filled {percentilePct}%
+          of the time over the last {data.window_days} days.
         </Trans>
       </p>
       {data.estimated_30d_savings_sat !== null &&
         data.estimated_30d_savings_sat > 0 && (
-          <p className="mt-0.5 text-slate-400">
+          <p className="mt-1 text-slate-400">
             <Trans>
               Estimated 30-day savings vs your current value:{' '}
               {formatNumber(data.estimated_30d_savings_sat, {}, intlLocale)} sat.
             </Trans>
           </p>
         )}
+      {slider}
+      {/* The 7d window is dominated by whatever overpay the operator
+          ran historically; if you JUST changed it the recommendation
+          still reflects the old setting until the window catches up.
+          Surface this so a recent edit doesn't read as a bug. */}
+      <p className="mt-2 text-[10px] text-slate-500 italic">
+        <Trans>
+          Note: the recommendation is based on the gap distribution over the
+          last {data.window_days} days. If you changed your overpay recently,
+          the figures still reflect the previous setting until the window
+          catches up.
+        </Trans>
+      </p>
       <div className="mt-2 flex items-center gap-2">
         <button
           type="button"
@@ -2154,10 +2221,53 @@ function OverpayTuningHelper({
         </button>
         {matchesCurrent && (
           <span className="text-[11px] text-slate-500">
-            <Trans>your overpay already matches the recommendation</Trans>
+            <Trans>matches your current value</Trans>
           </span>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * #118: hand-built layout for the Pricing section. Operator request:
+ *
+ *   Row 1:  Overpay above fillable    │  Recommended (helper card)
+ *   Row 2:  Maximum                   │  Max premium over hashprice
+ *
+ * The default `SectionCard` grid would place fields in source order
+ * (overpay / maximum / max-premium) with no helper card slot. The
+ * helper sits where the operator wants it — adjacent to the field
+ * it recommends a value for — and the two ceiling fields share the
+ * bottom row.
+ */
+function PricingSectionGrid({
+  fields,
+  draft,
+  locale,
+  onChange,
+}: {
+  fields: FieldSpec[];
+  draft: AppConfig;
+  locale: string | undefined;
+  onChange: <K extends keyof AppConfig>(k: K, v: AppConfig[K]) => void;
+}) {
+  const overpay = fields.find((f) => f.key === 'overpay_sat_per_eh_day');
+  const maxBid = fields.find((f) => f.key === 'max_bid_sat_per_eh_day');
+  const maxOverpay = fields.find(
+    (f) => f.key === 'max_overpay_vs_hashprice_sat_per_eh_day',
+  );
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 items-start">
+      {overpay && <Field spec={overpay} draft={draft} locale={locale} onChange={onChange} />}
+      <OverpayTuningHelper
+        currentSatPerEhDay={draft.overpay_sat_per_eh_day}
+        onApply={(v) => onChange('overpay_sat_per_eh_day', v as never)}
+      />
+      {maxBid && <Field spec={maxBid} draft={draft} locale={locale} onChange={onChange} />}
+      {maxOverpay && (
+        <Field spec={maxOverpay} draft={draft} locale={locale} onChange={onChange} />
+      )}
     </div>
   );
 }
@@ -2888,12 +2998,6 @@ function Field({
           suffix={suffix}
         />
         {spec.help && <span className="block text-xs text-slate-500 mt-1">{spec.help}</span>}
-        {spec.key === 'overpay_sat_per_eh_day' && (
-          <OverpayTuningHelper
-            currentSatPerEhDay={raw ?? 0}
-            onApply={(v) => onChange(spec.key, v as never)}
-          />
-        )}
       </label>
     );
   }

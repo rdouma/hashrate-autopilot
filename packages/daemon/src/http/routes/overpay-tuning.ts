@@ -48,6 +48,12 @@ const TICK_SIZE_SAT_PER_EH_DAY = 1_000;
 /** Below this many tracking-regime ticks, the percentile is too noisy
  *  to recommend on. ~8 hours of 1-minute ticks. */
 const MIN_TRACKING_TICKS = 500;
+/** Default percentile when the request omits the param. p95 reads as
+ *  "you would have filled 95% of the time at this overpay." */
+const DEFAULT_PERCENTILE = 0.95;
+/** Clamp the requested percentile to a sensible range. */
+const MIN_PERCENTILE = 0.5;
+const MAX_PERCENTILE = 0.99;
 /** ~5 sat/PH/day fudge so a tick rounding artifact (bid 1-2 sat
  *  under the cap) isn't classified 'capped' and excluded. */
 const CAP_DETECTION_TOLERANCE_SAT_PER_EH_DAY = 5_000;
@@ -59,6 +65,8 @@ export interface OverpayTuningResponse {
   readonly recommended_sat_per_eh_day: number | null;
   readonly status: 'ready' | 'insufficient_history';
   readonly window_days: number;
+  /** Percentile actually used (request value clamped to [0.5, 0.99]). */
+  readonly percentile: number;
   readonly eligible_ticks: number;
   readonly capped_ticks: number;
   readonly under_fillable_ticks: number;
@@ -87,10 +95,21 @@ export async function registerOverpayTuningRoute(
   app: FastifyInstance,
   deps: OverpayTuningDeps,
 ): Promise<void> {
-  app.get('/api/overpay-tuning', async (): Promise<OverpayTuningResponse> => {
+  app.get<{ Querystring: { percentile?: string } }>(
+    '/api/overpay-tuning',
+    async (req): Promise<OverpayTuningResponse> => {
     const cfg = await deps.configRepo.get();
     const current = cfg?.overpay_sat_per_eh_day ?? 0;
     const maxOverpay = cfg?.max_overpay_vs_hashprice_sat_per_eh_day ?? null;
+
+    // #118 follow-up: operator picks the percentile via a slider on
+    // the helper card. p95 = "fill 95% of the time"; p50 = "fill
+    // half the time but pay way less premium". Clamped to a sane
+    // range so a typo can't return a one-tick outlier.
+    const requestedPct = Number.parseFloat(req.query.percentile ?? '');
+    const percentile = Number.isFinite(requestedPct)
+      ? Math.max(MIN_PERCENTILE, Math.min(MAX_PERCENTILE, requestedPct))
+      : DEFAULT_PERCENTILE;
 
     const sinceMs = Date.now() - SAMPLE_DAYS * DAY_MS;
     const rowsRes = await sql<TickRow>`
@@ -138,6 +157,7 @@ export async function registerOverpayTuningRoute(
         recommended_sat_per_eh_day: null,
         status: 'insufficient_history',
         window_days: SAMPLE_DAYS,
+        percentile,
         eligible_ticks: tracking.length,
         capped_ticks: cappedTicks,
         under_fillable_ticks: underTicks,
@@ -147,17 +167,17 @@ export async function registerOverpayTuningRoute(
       };
     }
 
-    // p95 of the gap. Sort ascending, pick element at index
-    // ceil(0.95 * n) - 1 (clamped). Cheap and portable; SQLite
-    // doesn't ship PERCENTILE_CONT reliably across builds.
+    // Pick the percentile element from the sorted gap distribution.
+    // Cheap and portable; SQLite doesn't ship PERCENTILE_CONT
+    // reliably across builds.
     const gaps = tracking.map((r) => r.bid - r.fillable).sort((a, b) => a - b);
-    const p95Index = Math.min(
+    const pIndex = Math.min(
       gaps.length - 1,
-      Math.max(0, Math.ceil(0.95 * gaps.length) - 1),
+      Math.max(0, Math.ceil(percentile * gaps.length) - 1),
     );
-    const p95 = gaps[p95Index] ?? 0;
+    const pValue = gaps[pIndex] ?? 0;
     // Round up to the next 1_000 sat/EH/day so the value is presentable.
-    const roundedUp = Math.ceil(p95 / 1_000) * 1_000;
+    const roundedUp = Math.ceil(pValue / 1_000) * 1_000;
     const recommended = Math.max(roundedUp, TICK_SIZE_SAT_PER_EH_DAY);
 
     // Counterfactual savings: for each tracking row, compute the
@@ -187,6 +207,7 @@ export async function registerOverpayTuningRoute(
       recommended_sat_per_eh_day: recommended,
       status: 'ready',
       window_days: SAMPLE_DAYS,
+      percentile,
       eligible_ticks: tracking.length,
       capped_ticks: cappedTicks,
       under_fillable_ticks: underTicks,
@@ -194,5 +215,6 @@ export async function registerOverpayTuningRoute(
       estimated_30d_savings_sat,
       floor_sat_per_eh_day: TICK_SIZE_SAT_PER_EH_DAY,
     };
-  });
+    },
+  );
 }
