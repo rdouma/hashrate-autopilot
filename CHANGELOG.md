@@ -2,6 +2,10 @@
 
 ## 2026-05-09
 
+### `[UI]` Notifications: master toggle reads positive, runway days input narrower
+
+Two more operator-driven UX corrections to the Notifications tab. (1) The "Mute all Telegram notifications" master toggle is renamed to "Send messages to Telegram" with inverted polarity (checked = send, unchecked = silence). The events list now visually nests under it as children: indented with a left border so the parent/child relationship is obvious. Operator: "I find it more logical if it would say send messages to Telegram and then indent it below everything." Same underlying `notifications_muted` boolean field, just inverted at the UI layer. (2) The runway-tile days input is now visually constrained to ~3 digits + spinner. The previous w-14 className was being overridden by NumberField's internal `flex-1` wrapper + input `w-full`; wrapped in an outer `w-16 flex-none` div to box the field independent of NumberField's internals. NL/ES translations adjusted ("Stuur berichten naar Telegram" / "Enviar mensajes a Telegram").
+
 ### `[Feature]` Telegram alerts get severity prefix, every message ack-able
 
 Operator-driven rework of how alerts read in Telegram. Three coordinated changes:

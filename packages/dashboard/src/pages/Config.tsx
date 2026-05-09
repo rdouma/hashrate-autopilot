@@ -733,7 +733,7 @@ function ConfigTabsAndContent({
     },
     notifications: {
       title: t`Notifications`,
-      labels: [t`Telegram bot token`, t`Chat ID`, t`Instance label (optional)`, t`Mute all Telegram notifications`, t`Retry interval`, t`Wallet runway below`, t`Ocean pool-block credited`],
+      labels: [t`Telegram bot token`, t`Chat ID`, t`Instance label (optional)`, t`Send messages to Telegram`, t`Retry interval`, t`Wallet runway below`, t`Ocean pool-block credited`],
     },
   };
 
@@ -1769,8 +1769,8 @@ function EventClassSubscriptions({
     );
   };
 
-  const muteHelp = i18n._(
-    'When on, alerts are still recorded on the /alerts page with status "muted" but nothing is sent to Telegram. Recovery messages also stay silent.',
+  const sendHelp = i18n._(
+    'When off, alerts are still recorded on the /alerts page with status "muted" but nothing is sent to Telegram. Recovery messages also stay silent.',
   );
 
   const muted = draft.notifications_muted;
@@ -1856,20 +1856,27 @@ function EventClassSubscriptions({
           // <label>'s checkbox toggle.
           onClick={(e) => e.preventDefault()}
         >
-          <NumberField
-            value={draft.wallet_runway_alert_days}
-            onChange={(n) =>
-              onChange(
-                'wallet_runway_alert_days',
-                (n && n > 0 ? n : 1) as never,
-              )
-            }
-            step="integer"
-            locale={locale}
-            noGrouping
-            disabled={!runwayOn || muted}
-            className="w-14"
-          />
+          {/* Wrap NumberField in a fixed-width, flex-none div so the
+              field doesn't stretch under the parent flex layout.
+              NumberField's own wrapper carries `flex-1` and the input
+              has `w-full`, which together would fill the remaining row
+              width regardless of any width passed via className. The
+              w-16 wrapper boxes it to ~3 digits + spinner chrome. */}
+          <div className="w-16 flex-none">
+            <NumberField
+              value={draft.wallet_runway_alert_days}
+              onChange={(n) =>
+                onChange(
+                  'wallet_runway_alert_days',
+                  (n && n > 0 ? n : 1) as never,
+                )
+              }
+              step="integer"
+              locale={locale}
+              noGrouping
+              disabled={!runwayOn || muted}
+            />
+          </div>
           <Trans>days</Trans>
         </span>
       ),
@@ -1934,40 +1941,44 @@ function EventClassSubscriptions({
         <Trans>What to send to Telegram</Trans>
       </legend>
 
-      {/* Global kill-switch sits at the top of the cluster - it's the
-          override that silences everything below regardless of the
-          per-event ticks. */}
-      <label
-        className="flex items-center gap-2 p-2 mb-2 rounded border border-slate-800 hover:bg-slate-800/40 cursor-pointer"
-        title={muteHelp}
-      >
+      {/* Master toggle (positive polarity: checked = send, unchecked
+          = silence). The events below are visually nested as
+          children: indented + left-border, and greyed out when the
+          master is off. Operator preferred this over the previous
+          "Mute all Telegram notifications" framing because the
+          parent reads as the enabling control rather than a global
+          kill-switch you have to mentally invert. */}
+      <label className="flex items-start gap-2 p-2 rounded cursor-pointer">
         <input
           type="checkbox"
-          checked={draft.notifications_muted}
-          onChange={(e) => onChange('notifications_muted', e.target.checked as never)}
-          className="accent-amber-400 h-4 w-4"
+          checked={!draft.notifications_muted}
+          onChange={(e) => onChange('notifications_muted', !e.target.checked as never)}
+          className="accent-amber-400 h-4 w-4 mt-0.5"
         />
-        <span className="text-sm text-slate-100 font-semibold">
-          <Trans>Mute all Telegram notifications</Trans>
+        <span className="flex-1">
+          <span className="text-sm text-slate-100 font-semibold">
+            <Trans>Send messages to Telegram</Trans>
+          </span>
+          <p className="text-xs text-slate-500 mt-0.5">{sendHelp}</p>
         </span>
-        <HelpDot />
       </label>
 
-      <p className="text-xs text-slate-500 mb-1">
-        <Trans>
-          Tick any event type you want pushed. Untouched types skip the
-          daemon entirely - no Telegram, no /alerts row, no retry ladder.
-          Hover a row for the trigger condition.
-        </Trans>
-      </p>
+      <div className="ml-6 pl-3 border-l border-slate-800 mt-1">
+        <p className="text-xs text-slate-500 mb-1">
+          <Trans>
+            Tick any event type you want pushed. Untouched types skip the
+            daemon entirely - no Telegram, no /alerts row, no retry ladder.
+          </Trans>
+        </p>
 
-      <div className="flex flex-col gap-1">
-        {sectionHeader(t`Datum`)}
-        {datumTiles.map(renderTile)}
-        {sectionHeader(t`Braiins marketplace`)}
-        {braiinsTiles.map(renderTile)}
-        {sectionHeader(t`Ocean`)}
-        {oceanTiles.map(renderTile)}
+        <div className="flex flex-col gap-1">
+          {sectionHeader(t`Datum`)}
+          {datumTiles.map(renderTile)}
+          {sectionHeader(t`Braiins marketplace`)}
+          {braiinsTiles.map(renderTile)}
+          {sectionHeader(t`Ocean`)}
+          {oceanTiles.map(renderTile)}
+        </div>
       </div>
     </fieldset>
   );

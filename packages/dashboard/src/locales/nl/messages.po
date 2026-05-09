@@ -14,14 +14,14 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. js-lingui-explicit-id
+#: src/pages/Config.tsx
+msgid "When off, alerts are still recorded on the /alerts page with status \"muted\" but nothing is sent to Telegram. Recovery messages also stay silent."
+msgstr "Wanneer uit, worden alerts nog wel op de /alerts-pagina vastgelegd met status \"muted\", maar niets wordt naar Telegram verstuurd. Herstelberichten blijven ook stil."
+
+#. js-lingui-explicit-id
 #: src/lib/i18n.test.ts
 msgid "this-is-not-a-real-id-9876"
 msgstr ""
-
-#. js-lingui-explicit-id
-#: src/pages/Config.tsx
-msgid "When on, alerts are still recorded on the /alerts page with status \"muted\" but nothing is sent to Telegram. Recovery messages also stay silent."
-msgstr "Indien ingeschakeld worden meldingen nog wel vastgelegd op de /alerts-pagina met status \"gedempt\", maar er gaat niets naar Telegram. Ook herstelberichten blijven stil."
 
 #: src/components/PriceChart.tsx
 msgid "- (not recorded this tick)"
@@ -1593,11 +1593,6 @@ msgstr "Moet bereikbaar zijn vanaf het publieke internet - Braiins controleert h
 msgid "must contain a period - without it shares are uncredited on Ocean"
 msgstr "moet een punt bevatten - zonder dat worden shares niet bijgeschreven op Ocean"
 
-#: src/pages/Config.tsx
-#: src/pages/Config.tsx
-msgid "Mute all Telegram notifications"
-msgstr "Alle Telegram-meldingen dempen"
-
 #: src/pages/Status.tsx
 msgid "net"
 msgstr "netto"
@@ -2381,6 +2376,11 @@ msgstr "Kies weergavevaluta"
 msgid "Select hashrate unit (1 EH = 1,000 PH = 1,000,000 TH)"
 msgstr "Kies hashratemaat (1 EH = 1.000 PH = 1.000.000 TH)"
 
+#: src/pages/Config.tsx
+#: src/pages/Config.tsx
+msgid "Send messages to Telegram"
+msgstr "Stuur berichten naar Telegram"
+
 #: src/pages/Setup.tsx
 msgid "Setting up…"
 msgstr "Bezig met instellen…"
@@ -2576,8 +2576,8 @@ msgid "The provider's dyndns2-compatible update endpoint. Examples: Dynu uses ht
 msgstr "Het dyndns2-compatibele update-endpoint van de provider. Voorbeelden: Dynu gebruikt https://api.dynu.com/nic/update; FreeDNS / afraid.org gebruikt https://freedns.afraid.org/nic/update; veel zelf-gehoste DDNS-scripts spreken hetzelfde protocol."
 
 #: src/pages/Config.tsx
-msgid "Tick any event type you want pushed. Untouched types skip the daemon entirely - no Telegram, no /alerts row, no retry ladder. Hover a row for the trigger condition."
-msgstr "Vink elk type gebeurtenis aan dat je wilt ontvangen. Niet aangevinkte types slaan de daemon volledig over - geen Telegram, geen /alerts-regel, geen retry-ladder. Beweeg over een regel voor de triggervoorwaarde."
+msgid "Tick any event type you want pushed. Untouched types skip the daemon entirely - no Telegram, no /alerts row, no retry ladder."
+msgstr "Vink elk type gebeurtenis aan dat je wilt ontvangen. Niet aangevinkte types slaan de daemon volledig over - geen Telegram, geen /alerts-regel, geen retry-ladder."
 
 #. placeholder {0}: tickResult.error
 #: src/pages/Status.tsx

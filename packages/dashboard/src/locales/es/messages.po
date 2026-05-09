@@ -14,14 +14,14 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. js-lingui-explicit-id
+#: src/pages/Config.tsx
+msgid "When off, alerts are still recorded on the /alerts page with status \"muted\" but nothing is sent to Telegram. Recovery messages also stay silent."
+msgstr "Cuando está desactivado, las alertas siguen registrándose en la página /alerts con estado \"muted\" pero no se envía nada a Telegram. Los mensajes de recuperación también permanecen en silencio."
+
+#. js-lingui-explicit-id
 #: src/lib/i18n.test.ts
 msgid "this-is-not-a-real-id-9876"
 msgstr ""
-
-#. js-lingui-explicit-id
-#: src/pages/Config.tsx
-msgid "When on, alerts are still recorded on the /alerts page with status \"muted\" but nothing is sent to Telegram. Recovery messages also stay silent."
-msgstr "Cuando está activo, las alertas se siguen registrando en la página /alerts con estado \"silenciado\", pero no se envía nada a Telegram. Los mensajes de recuperación también permanecen en silencio."
 
 #: src/components/PriceChart.tsx
 msgid "- (not recorded this tick)"
@@ -1593,11 +1593,6 @@ msgstr "Debe ser accesible desde internet público - Braiins lo verifica."
 msgid "must contain a period - without it shares are uncredited on Ocean"
 msgstr "debe contener un punto - sin él las shares no se acreditan en Ocean"
 
-#: src/pages/Config.tsx
-#: src/pages/Config.tsx
-msgid "Mute all Telegram notifications"
-msgstr "Silenciar todas las notificaciones de Telegram"
-
 #: src/pages/Status.tsx
 msgid "net"
 msgstr "neto"
@@ -2381,6 +2376,11 @@ msgstr "Elige moneda de visualización"
 msgid "Select hashrate unit (1 EH = 1,000 PH = 1,000,000 TH)"
 msgstr "Elige unidad de hashrate (1 EH = 1.000 PH = 1.000.000 TH)"
 
+#: src/pages/Config.tsx
+#: src/pages/Config.tsx
+msgid "Send messages to Telegram"
+msgstr "Enviar mensajes a Telegram"
+
 #: src/pages/Setup.tsx
 msgid "Setting up…"
 msgstr "Configurando…"
@@ -2576,8 +2576,8 @@ msgid "The provider's dyndns2-compatible update endpoint. Examples: Dynu uses ht
 msgstr "El endpoint de actualización compatible con dyndns2 del proveedor. Ejemplos: Dynu usa https://api.dynu.com/nic/update; FreeDNS / afraid.org usa https://freedns.afraid.org/nic/update; muchos scripts DDNS auto-alojados hablan el mismo protocolo."
 
 #: src/pages/Config.tsx
-msgid "Tick any event type you want pushed. Untouched types skip the daemon entirely - no Telegram, no /alerts row, no retry ladder. Hover a row for the trigger condition."
-msgstr "Marca el tipo de evento que quieras recibir. Los tipos sin marcar se omiten por completo en el daemon - sin Telegram, sin fila en /alerts, sin escalado de reintentos. Pasa el cursor sobre una fila para ver la condición que la dispara."
+msgid "Tick any event type you want pushed. Untouched types skip the daemon entirely - no Telegram, no /alerts row, no retry ladder."
+msgstr "Marca el tipo de evento que quieras recibir. Los tipos sin marcar se omiten por completo en el daemon - sin Telegram, sin fila en /alerts, sin escalado de reintentos."
 
 #. placeholder {0}: tickResult.error
 #: src/pages/Status.tsx
