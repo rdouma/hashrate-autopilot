@@ -1799,6 +1799,10 @@ msgid "Off"
 msgstr "Apagado"
 
 #: src/pages/Config.tsx
+msgid "Off by default. When on, every pool block Ocean credits to your payout address (i.e. every TIDES credit while you have shares in the reward window) sends a small INFO message: block height, your share %, your credit, and progress toward the next on-chain payout. The audible cue and chart marker still fire independently."
+msgstr "Desactivado por defecto. Cuando está activado, cada bloque del pool que Ocean acredita a tu dirección de pago (es decir, cada acreditación TIDES mientras tienes shares en la ventana de recompensa) envía un mensaje INFO breve: altura del bloque, tu porcentaje de shares, tu crédito y el progreso hacia el siguiente pago on-chain. El aviso sonoro y el marcador de la gráfica siguen funcionando de forma independiente."
+
+#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "OK"
@@ -2517,6 +2521,11 @@ msgstr "Token del bot de Telegram"
 #: src/pages/Config.tsx
 msgid "Telegram notifications"
 msgstr "Notificaciones de Telegram"
+
+#: src/pages/Config.tsx
+#: src/pages/Config.tsx
+msgid "Telegram on every Ocean pool-block credit"
+msgstr "Telegram en cada acreditación de bloque del pool Ocean"
 
 #: src/pages/Config.tsx
 #: src/pages/Config.tsx

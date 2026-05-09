@@ -98,6 +98,7 @@ describe('openDatabase - migrations', () => {
       '0070_telegram_instance_label.sql',
       '0071_block_explorer_tx_url_template.sql',
       '0072_reward_events_txid_vout_unique.sql',
+      '0073_notify_on_pool_block_credit.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });

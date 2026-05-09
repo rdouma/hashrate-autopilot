@@ -44,6 +44,7 @@ export class ConfigRepo {
       show_share_log_on_hashrate_chart:
         rest.show_share_log_on_hashrate_chart === 1,
       notifications_muted: rest.notifications_muted === 1,
+      notify_on_pool_block_credit: rest.notify_on_pool_block_credit === 1,
       // #106: stored as comma-separated TEXT; surface as string[].
       // Empty string -> empty array (no opt-outs).
       notification_disabled_event_classes: rest.notification_disabled_event_classes
@@ -72,6 +73,7 @@ export class ConfigRepo {
         ? 1
         : 0) as 0 | 1,
       notifications_muted: (validated.notifications_muted ? 1 : 0) as 0 | 1,
+      notify_on_pool_block_credit: (validated.notify_on_pool_block_credit ? 1 : 0) as 0 | 1,
       // #106: comma-join the opt-out list back to TEXT.
       notification_disabled_event_classes:
         validated.notification_disabled_event_classes.join(','),

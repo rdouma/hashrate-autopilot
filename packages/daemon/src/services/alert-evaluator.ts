@@ -36,10 +36,23 @@
 
 import type { AlertManager } from './alert-manager.js';
 import type { AlertsRepo } from '../state/repos/alerts.js';
+import type { PoolBlocksRepo } from '../state/repos/pool_blocks.js';
 import type { TickMetricsRepo } from '../state/repos/tick_metrics.js';
 import type { State } from '../controller/types.js';
 
 const HOURS_3_MS = 3 * 60 * 60 * 1000;
+// Ocean's on-chain payout threshold per the TIDES + payouts mechanic.
+// Earnings accumulate at the pool until they cross 2^20 sat (=
+// 1,048,576 sat = 0.01048576 BTC); the next pool block then settles
+// the operator on-chain. Hard-coded constant - Ocean publishes this
+// in their docs and it hasn't changed.
+const OCEAN_PAYOUT_THRESHOLD_SAT = 1_048_576;
+// nearest-tick lookup tolerance for share_log_pct: a block's
+// share_log is read from the closest tick within this window. 30 min
+// is generous enough for Ocean's 5-min share cadence + occasional
+// daemon restarts to still resolve, narrow enough to prefer a recent
+// tick over a stale one.
+const SHARE_LOG_AT_BLOCK_TOLERANCE_MS = 30 * 60 * 1000;
 
 interface EventState {
   readonly bad_since_ms: number | null;
@@ -53,11 +66,20 @@ export interface AlertEvaluatorOptions {
   readonly alertManager: AlertManager;
   /**
    * Optional. When provided, the wallet_runway detector queries it
-   * for the trailing-3h actual-spend total to compute runway days.
-   * Without it the detector short-circuits to "no signal" - safe
-   * default; the alert just doesn't fire.
+   * for the trailing-3h actual-spend total to compute runway days,
+   * and the pool_block_credited detector uses
+   * `nearestShareLogPct(blockTime)` to estimate our share at the
+   * block's moment. Without it both detectors short-circuit safely.
    */
   readonly tickMetricsRepo?: TickMetricsRepo;
+  /**
+   * Optional. Drives the #117 pool-block-credited celebration: the
+   * evaluator hydrates a `lastNotifiedBlockHeight` watermark from
+   * `maxHeight()` at boot so the boot-time backfill doesn't fire a
+   * Telegram message for every historical block, then fires once
+   * per new row above the watermark.
+   */
+  readonly poolBlocksRepo?: PoolBlocksRepo;
   /** Override clock for tests. */
   readonly now?: () => number;
 }
@@ -71,14 +93,24 @@ export class AlertEvaluator {
   private sustained_paused: EventState = INITIAL;
   private beta_exit: EventState = INITIAL;
   private wallet_runway: EventState = INITIAL;
+  /**
+   * #117: highest pool-block height we've already considered for
+   * the celebratory Telegram. Hydrated at boot from
+   * `poolBlocksRepo.maxHeight()` so the boot-time backfill of
+   * historical blocks doesn't fire a flood of "you got paid"
+   * messages for past credits. Updated as we walk new rows.
+   */
+  private lastNotifiedBlockHeight: number | null = null;
 
   private readonly alertManager: AlertManager;
   private readonly tickMetricsRepo: TickMetricsRepo | null;
+  private readonly poolBlocksRepo: PoolBlocksRepo | null;
   private readonly now: () => number;
 
   constructor(opts: AlertEvaluatorOptions) {
     this.alertManager = opts.alertManager;
     this.tickMetricsRepo = opts.tickMetricsRepo ?? null;
+    this.poolBlocksRepo = opts.poolBlocksRepo ?? null;
     this.now = opts.now ?? (() => Date.now());
   }
 
@@ -114,6 +146,15 @@ export class AlertEvaluator {
         setter({ bad_since_ms: open.created_at, active_alert_id: open.id });
       }
     }
+    // #117: silently baseline the pool-block watermark from whatever
+    // is currently in the table. Anything below this height is
+    // treated as already-known and won't fire a celebration. New
+    // rows from the per-tick Ocean poll will exceed this and fire.
+    if (this.poolBlocksRepo) {
+      this.lastNotifiedBlockHeight = await this.poolBlocksRepo
+        .maxHeight()
+        .catch(() => null);
+    }
   }
 
   /**
@@ -131,6 +172,7 @@ export class AlertEvaluator {
     await this.evaluateSustainedPaused(state, disabled);
     await this.evaluateBetaExit(state, disabled);
     await this.evaluateWalletRunway(state, disabled);
+    await this.evaluatePoolBlockCredited(state, disabled);
     // TODO(#100): low_acceptance still needs an acceptance-ratio series
     //   in tick_metrics. Scoped for a separate commit.
   }
@@ -349,6 +391,80 @@ export class AlertEvaluator {
       bodyForRecovery: () =>
         `Wallet runway back above threshold: ${runwayDays.toFixed(1)} days (threshold ${thresholdDays}). Likely a top-up landed or the burn rate dropped.`,
     });
+  }
+
+  /**
+   * #117: celebratory INFO message at every Ocean pool-block credit.
+   * Fires at most once per unique block height. Silently ignores
+   * blocks at or below the boot-time watermark - that's the
+   * equivalent of the audible cue's silent-baseline pattern, so
+   * upgrading a long-running install doesn't replay every
+   * historical block as a notification.
+   *
+   * Disabled paths - all silent, no row written, no Telegram POST:
+   * - `notify_on_pool_block_credit === false` (default).
+   * - `pool_block_credited` in `notification_disabled_event_classes`
+   *   (the per-class master mute, in case the operator wants both
+   *   knobs and the per-class is unchecked).
+   * - poolBlocksRepo not injected (tests, mostly).
+   *
+   * Severity = INFO. No retry ladder, no inline buttons - this is
+   * a "good news, no action required" message; treating it as a
+   * normal alert with retries would be obnoxious if Telegram
+   * blipped during a block flurry.
+   */
+  private async evaluatePoolBlockCredited(state: State, disabledClasses: ReadonlySet<string>): Promise<void> {
+    if (!state.config.notify_on_pool_block_credit) return;
+    if (disabledClasses.has('pool_block_credited')) return;
+    const repo = this.poolBlocksRepo;
+    if (!repo) return;
+    // First evaluator pass after a fresh boot where hydrate() didn't
+    // run for any reason: baseline silently from the current max
+    // before processing. Same intent as hydrate's call - the
+    // explicit-baseline guard means a never-hydrated evaluator
+    // can't accidentally flood on its first tick.
+    if (this.lastNotifiedBlockHeight === null) {
+      this.lastNotifiedBlockHeight = await repo.maxHeight().catch(() => null);
+      if (this.lastNotifiedBlockHeight === null) {
+        // Table genuinely empty - mark with -1 so the first ever
+        // block we see fires.
+        this.lastNotifiedBlockHeight = -1;
+      }
+      return;
+    }
+    const newBlocks = await repo
+      .sinceHeight(this.lastNotifiedBlockHeight)
+      .catch(() => [] as Awaited<ReturnType<typeof repo.sinceHeight>>);
+    if (newBlocks.length === 0) return;
+
+    const unpaidSat = state.ocean_unpaid_sat;
+    for (const blk of newBlocks) {
+      const sharePct = this.tickMetricsRepo
+        ? await this.tickMetricsRepo
+            .nearestShareLogPct(blk.timestamp_ms, SHARE_LOG_AT_BLOCK_TOLERANCE_MS)
+            .catch(() => null)
+        : null;
+      const ourCreditSat =
+        sharePct !== null && sharePct > 0
+          ? Math.round((blk.total_reward_sat * sharePct) / 100)
+          : null;
+      const heightStr = blk.height.toLocaleString('en-US');
+      const rewardBtc = (blk.total_reward_sat / 1e8).toFixed(8);
+      const sharePctStr = sharePct !== null ? `${sharePct.toFixed(4)}%` : 'unknown';
+      const creditStr =
+        ourCreditSat !== null ? `~${ourCreditSat.toLocaleString('en-US')} sat` : 'unknown (no nearby tick captured share_log)';
+      const unpaidStr =
+        unpaidSat !== null
+          ? `${unpaidSat.toLocaleString('en-US')} sat (${((unpaidSat / OCEAN_PAYOUT_THRESHOLD_SAT) * 100).toFixed(1)}% of ${OCEAN_PAYOUT_THRESHOLD_SAT.toLocaleString('en-US')}-sat payout)`
+          : 'unknown';
+      await this.alertManager.recordAlert({
+        severity: 'INFO',
+        title: `Pool block credited - #${heightStr}`,
+        body: `Ocean found pool block #${heightStr} (reward ${rewardBtc} BTC). Your share: ${sharePctStr} -> ${creditStr}. Unpaid total: ${unpaidStr}.`,
+        event_class: 'pool_block_credited',
+      });
+      this.lastNotifiedBlockHeight = blk.height;
+    }
   }
 
   // ---------------------------------------------------------------

@@ -45,6 +45,8 @@ export interface ConfigTable {
   notification_retry_interval_minutes: number;
   /** #106: comma-separated event_class names the operator has opted out of. */
   notification_disabled_event_classes: string;
+  /** #117: opt-in INFO message at every Ocean pool-block credit (TIDES). Off by default. */
+  notify_on_pool_block_credit: 0 | 1;
   /** @deprecated Legacy column - kept for NOT NULL; ignored by the app. */
   hibernate_on_expensive_market: 0 | 1;
   electrs_host: string | null;

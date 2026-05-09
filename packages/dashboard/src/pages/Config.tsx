@@ -733,7 +733,7 @@ function ConfigTabsAndContent({
     },
     notifications: {
       title: t`Notifications`,
-      labels: [t`Telegram bot token`, t`Chat ID`, t`Instance label (optional)`, t`Mute all Telegram notifications`, t`Retry interval`, t`Wallet runway alert threshold`],
+      labels: [t`Telegram bot token`, t`Chat ID`, t`Instance label (optional)`, t`Mute all Telegram notifications`, t`Retry interval`, t`Wallet runway alert threshold`, t`Telegram on every Ocean pool-block credit`],
     },
   };
 
@@ -1737,6 +1737,27 @@ function NotificationsSection({
               is funded, or for an operator who tops the wallet up on a fixed
               schedule and doesn't want runway notifications.
             </Trans>
+          </span>
+        </label>
+
+        <label className="flex items-start gap-2 pt-1">
+          <input
+            type="checkbox"
+            checked={draft.notify_on_pool_block_credit}
+            onChange={(e) => onChange('notify_on_pool_block_credit', e.target.checked as never)}
+            className="accent-amber-400 h-4 w-4 mt-0.5"
+          />
+          <span className="text-sm text-slate-300">
+            <Trans>Telegram on every Ocean pool-block credit</Trans>
+            <span className="block text-xs text-slate-500 mt-0.5">
+              <Trans>
+                Off by default. When on, every pool block Ocean credits to your
+                payout address (i.e. every TIDES credit while you have shares in
+                the reward window) sends a small INFO message: block height, your
+                share %, your credit, and progress toward the next on-chain payout.
+                The audible cue and chart marker still fire independently.
+              </Trans>
+            </span>
           </span>
         </label>
 

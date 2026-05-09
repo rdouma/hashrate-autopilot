@@ -118,6 +118,38 @@ export class PoolBlocksRepo {
   }
 
   /**
+   * Highest block height in the table, or null when empty. Used at
+   * boot by the alert evaluator's `pool_block_credited` baseline:
+   * hydrate `lastNotifiedHeight` from this so the boot-time backfill
+   * doesn't fire a Telegram celebration for every historical block
+   * the table just got populated with.
+   */
+  async maxHeight(): Promise<number | null> {
+    const row = await this.db
+      .selectFrom('pool_blocks')
+      .select('height')
+      .orderBy('height', 'desc')
+      .limit(1)
+      .executeTakeFirst();
+    return row ? row.height : null;
+  }
+
+  /**
+   * Blocks with `height > sinceHeight`, oldest first. Drives the
+   * alert evaluator's pool-block-credited celebration: each tick the
+   * evaluator pulls everything above its last-notified watermark and
+   * fires once per row.
+   */
+  async sinceHeight(sinceHeight: number): Promise<PoolBlocksTable[]> {
+    return this.db
+      .selectFrom('pool_blocks')
+      .selectAll()
+      .where('height', '>', sinceHeight)
+      .orderBy('height', 'asc')
+      .execute() as Promise<PoolBlocksTable[]>;
+  }
+
+  /**
    * Block timestamps with `startMs <= timestamp_ms <= endMs`, newest
    * first. Past-tick variant of `timestampsSince` for the recompute.
    */

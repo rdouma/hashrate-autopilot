@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-05-09
+
+### `[Feature]` Telegram celebration on every Ocean pool-block credit (#117)
+
+Off-by-default INFO Telegram message at every TIDES credit (every pool block where shares in our reward window get us a slice of the coinbase). Body contains block height, total reward, our share log %, our credit in sat, and unpaid-total progress toward the 1,048,576-sat on-chain payout threshold. New `notify_on_pool_block_credit` boolean config field with matching toggle on the Notifications tab; daemon-side migration 0073 adds the column. The evaluator hydrates a `lastNotifiedBlockHeight` watermark from `pool_blocks.maxHeight()` at boot so a fresh install / long-running install upgrading does not flood Telegram with every historical credit. Severity is INFO so no retry ladder and no inline ack/snooze buttons - this is a "good news" message, not an action item. NL/ES translations included. The audible cue and the chart marker still fire independently of this toggle.
+
 ## 2026-05-08
 
 ### `[UI]` Hashrate chart: crown reserved for own blocks, BIP 110 gets a yellow cube (#115)

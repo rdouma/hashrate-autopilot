@@ -324,6 +324,15 @@ export const AppConfigSchema = z.object({
   // default to enabled without a migration.
   notification_disabled_event_classes: z.array(z.string()).default([]),
 
+  // #117: opt-in INFO Telegram message at every Ocean pool-block
+  // credit (TIDES). Off by default - the audible cue + chart marker
+  // already exist, and not every operator wants a phone buzz on
+  // every block. Separate boolean rather than a notification_disabled
+  // entry because new event classes default to enabled per #106's
+  // design; a dedicated toggle keeps "off by default" load-bearing
+  // even if the operator later un-mutes everything globally.
+  notify_on_pool_block_credit: z.boolean().default(false),
+
   // #111: daemon-managed DDNS updater. When ddns_provider is non-empty
   // the daemon pushes the current public IP to the configured DDNS
   // provider every 5 minutes (and forces a heartbeat at least hourly,
@@ -437,6 +446,7 @@ export const APP_CONFIG_DEFAULTS: Omit<
   notifications_muted: false,
   notification_retry_interval_minutes: 30,
   notification_disabled_event_classes: [],
+  notify_on_pool_block_credit: false,
 
   ddns_provider: '',
   ddns_hostname: '',

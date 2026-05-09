@@ -180,6 +180,10 @@ const APP_CONFIG_ENV: {
     // CSV: comma-separated event_class names. Empty string yields [].
     coerce: (raw: string) => raw.split(',').map((s) => s.trim()).filter(Boolean),
   },
+  notify_on_pool_block_credit: {
+    varName: 'BHA_NOTIFY_ON_POOL_BLOCK_CREDIT',
+    coerce: asBoolean,
+  },
   ddns_provider: { varName: 'BHA_DDNS_PROVIDER', coerce: asString },
   ddns_hostname: { varName: 'BHA_DDNS_HOSTNAME', coerce: asString },
   ddns_username: { varName: 'BHA_DDNS_USERNAME', coerce: asString },
