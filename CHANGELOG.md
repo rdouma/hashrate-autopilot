@@ -2,6 +2,14 @@
 
 ## 2026-05-09
 
+### `[Infra]` Remove overpay-tuning helper (#118 cancelled)
+
+The recommendation card on Config -> Strategy -> Pricing is gone, along with the `/api/overpay-tuning` route, the bucket-curve viz, the percentile/fill-rate slider, and the bucket-storage logic on the daemon. After several rounds of methodology iteration (p95-of-gap → bucketed delivery vs gap → trust-threshold tweak + inline chart) the recommendation kept landing on the same value (100 sat/PH/day) regardless of slider position on the operator's data, because their delivery curve is empirically flat above target across all gap buckets. Operator's call: not worth the maintenance surface for the value delivered.
+
+Pricing section reverts to its pre-#118 layout: Overpay above fillable, Maximum, Max premium over hashprice as three fields in the default 2-column grid (overpay top-left, maximum top-right, max premium bottom-left, half-width). Issue #118 stays open with a `cancelled` label so the rationale is preserved in the issue thread.
+
+`BUILD_NUMBER` 306 → 307.
+
 ### `[Fix]` Overpay-tuning: lower bucket trust threshold + inline delivery curve (#118 follow-up)
 
 The slider on the overpay-tuning helper had no visible effect on the operator's data: dragging from 50% to 100% returned the same recommendation (100 sat/PH/day) every time. Two reasons; both addressed.

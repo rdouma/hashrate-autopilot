@@ -320,10 +320,6 @@ msgstr "API accesible"
 msgid "API unreachable ({0})"
 msgstr "API inaccesible ({0})"
 
-#: src/pages/Config.tsx
-msgid "Apply"
-msgstr "Aplicar"
-
 #: src/pages/Status.tsx
 msgid "At effective cap - desired fillable + overpay exceeds the ceiling."
 msgstr "En el límite efectivo - el rellenable + sobrepago deseado supera el techo."
@@ -335,13 +331,6 @@ msgstr ""
 #: src/pages/Config.tsx
 msgid "At least one placeholder ({txid} or {hash}) is required. Auto-populated when you click a preset above; override here for custom self-hosted explorers (e.g. http://umbrel.local:3006/tx/{txid})."
 msgstr ""
-
-#. placeholder {0}: formatNumber( Math.round(((recommendedBucket.avg_delivered_ph ?? 0) / targetPh) * 100), {}, intlLocale, )
-#. placeholder {1}: formatNumber(targetPh, { maximumFractionDigits: 2 }, intlLocale)
-#. placeholder {2}: recommendedBucket.tick_count
-#: src/pages/Config.tsx
-msgid "At this overpay, the daemon delivered {0}% of your {1} PH/s target on average ({2} ticks). Drag the slider to trade fill rate for premium savings."
-msgstr "Con este overpay, el daemon entregó en promedio el {0}% de tu objetivo de {1} PH/s ({2} ticks). Desliza el control para intercambiar tasa de relleno por ahorro de premium."
 
 #: src/pages/Alerts.tsx
 msgid "Audit trail for every notification the daemon recorded - sent, failed, muted, snoozed, or given-up. Configure the Telegram destination on Config → Notifications."
@@ -1000,10 +989,6 @@ msgstr "La hashrate entregada ha estado por debajo de minimum_floor_hashrate_ph 
 msgid "delivery"
 msgstr "entrega"
 
-#: src/pages/Config.tsx
-msgid "delivery vs. overpay gap"
-msgstr "entrega vs. gap de overpay"
-
 #: src/components/PriceChart.tsx
 msgid "delta"
 msgstr "delta"
@@ -1172,11 +1157,6 @@ msgstr "Host de Electrs"
 msgid "Escalation in"
 msgstr "Escalada en"
 
-#. placeholder {0}: formatNumber( recommendedBucket.hypothetical_30d_savings_sat, {}, intlLocale, )
-#: src/pages/Config.tsx
-msgid "Estimated 30-day savings vs your current value: {0} sat."
-msgstr "Ahorro estimado en 30 días frente a tu valor actual: {0} sat."
-
 #: src/pages/Config.tsx
 msgid "Estimated cap at current settings: ~ {totalStr} (logs only, indexes excluded). Logs grow ~ {dailyStr}/day."
 msgstr "Tope estimado con la configuración actual: ~ {totalStr} (solo logs, sin índices). Los logs crecen ~ {dailyStr}/día."
@@ -1227,10 +1207,6 @@ msgstr "fees"
 #: src/pages/Config.tsx
 msgid "Fetches the BTC/USD spot price from a public exchange API. Enables a sats/USD denomination toggle in the dashboard header. No API key required - uses unauthenticated public endpoints."
 msgstr "Obtiene el precio spot BTC/USD desde una API pública de exchange. Habilita un toggle de denominación sats/USD en la cabecera del panel. No requiere API key - usa endpoints públicos sin autenticación."
-
-#: src/pages/Config.tsx
-msgid "fill rate target"
-msgstr "objetivo de tasa de relleno"
 
 #: src/components/PriceChart.tsx
 #: src/components/PriceChart.tsx
@@ -1440,11 +1416,6 @@ msgstr "Etiqueta de instancia (opcional)"
 msgid "insufficient history"
 msgstr "histórico insuficiente"
 
-#. placeholder {0}: data.eligible_ticks
-#: src/pages/Config.tsx
-msgid "Insufficient history ({0} of ~500 tracking ticks needed). Come back after the daemon has been running ~8h or so."
-msgstr "Histórico insuficiente ({0} de los ~500 ticks de tracking necesarios). Vuelve cuando el daemon lleve unas 8 horas en marcha."
-
 #: src/lib/format.ts
 msgid "just now"
 msgstr "ahora mismo"
@@ -1533,7 +1504,6 @@ msgstr "Cargando o se requiere reiniciar el daemon."
 #: src/pages/Alerts.tsx
 #: src/pages/Alerts.tsx
 #: src/pages/Config.tsx
-#: src/pages/Config.tsx
 #: src/pages/Status.tsx
 #: src/pages/Status.tsx
 msgid "loading…"
@@ -1574,10 +1544,6 @@ msgstr "marcando…"
 #: src/pages/Config.tsx
 msgid "Match - hostname is pointing at this box."
 msgstr "Coinciden - el nombre de host apunta a esta máquina."
-
-#: src/pages/Config.tsx
-msgid "matches your current value"
-msgstr "coincide con tu valor actual"
 
 #: src/components/PriceChart.tsx
 #: src/components/PriceChart.tsx
@@ -1789,11 +1755,6 @@ msgstr "no está en modo LIVE"
 #: src/components/Bip110ScanCard.tsx
 msgid "not reported"
 msgstr "no reportado"
-
-#. placeholder {0}: data.window_days
-#: src/pages/Config.tsx
-msgid "Note: the recommendation is based on the empirical delivery vs. gap curve over the last {0} days. If you changed your overpay recently, the bucket coverage still reflects the previous setting until the window catches up."
-msgstr "Nota: la recomendación se basa en la curva empírica de entrega frente a gap durante los últimos {0} días. Si has cambiado tu overpay recientemente, la cobertura por buckets todavía refleja el ajuste anterior hasta que la ventana se ponga al día."
 
 #: src/pages/Config.tsx
 #: src/pages/Config.tsx
@@ -2264,16 +2225,6 @@ msgstr "recibido (Datum)"
 #: src/components/HashrateChart.tsx
 msgid "received (Ocean)"
 msgstr "recibido (Ocean)"
-
-#. placeholder {0}: data.window_days
-#: src/pages/Config.tsx
-#: src/pages/Config.tsx
-msgid "Recommended (last {0}d)"
-msgstr "Recomendado (últimos {0}d)"
-
-#: src/pages/Config.tsx
-msgid "Recommended (last 7d)"
-msgstr "Recomendado (últimos 7d)"
 
 #: src/components/Layout.tsx
 msgid "Refresh"

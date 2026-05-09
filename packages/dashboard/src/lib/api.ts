@@ -611,7 +611,6 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ event_class }),
     }),
-  overpayTuning: () => request<OverpayTuningResponse>('/api/overpay-tuning'),
   build: () => request<BuildInfoResponse>('/api/build'),
   alertsList: (filters: AlertsListFilters = {}) => {
     const qs = new URLSearchParams();
@@ -809,27 +808,6 @@ export interface AlertsListResponse {
   total_count: number;
   /** #121: are there older rows past the returned page? */
   has_more: boolean;
-}
-
-export interface OverpayTuningBucket {
-  gap_lower_sat_per_eh_day: number;
-  gap_upper_sat_per_eh_day: number | null;
-  tick_count: number;
-  avg_delivered_ph: number | null;
-  hypothetical_30d_savings_sat: number;
-}
-
-export interface OverpayTuningResponse {
-  current_sat_per_eh_day: number;
-  target_hashrate_ph: number;
-  status: 'ready' | 'insufficient_history';
-  window_days: number;
-  eligible_ticks: number;
-  capped_ticks: number;
-  under_fillable_ticks: number;
-  total_ticks: number;
-  buckets: OverpayTuningBucket[];
-  floor_sat_per_eh_day: number;
 }
 
 export interface FinanceRangeResponse {
