@@ -2,6 +2,10 @@
 
 ## 2026-05-09
 
+### `[Fix]` Test message on the Notifications tab now follows `notification_locale` (#131 follow-up)
+
+The Test button next to each event-class tile was rendering hard-coded English samples even when the operator had set `notification_locale = nl` (or `es`). Operator caught it: "I pressed a test message, but I had the language set in Dutch, but I got an English test message." Refactored `notifications-test-event.ts`'s SAMPLE_BUILDERS to be locale-aware - each builder now reads its title + body from the same `getAlertCopy(locale)` catalog the live alert path uses, fed with synthetic-but-plausible args (12m durations, 0.50 / 1.00 PH/s, fee_pct 1.5%, etc). Severity prefix is also locale-aware via `formatTelegramBody(..., locale)`. Net: the Test button now previews exactly what the real alert will look like, in the language the operator picked. Removed the `[SAMPLE]` body-prefix hedge - the `[TEST]` title prefix already disambiguates from a real fired alert in chat history.
+
 ### `[Fix]` Hashrate chart: pool-block click anchor scoped to the icon, not the whole vertical line
 
 The click hit-target for a pool-block marker spanned the entire chart height (a 12px-wide transparent rect from the icon down to the x-axis), so a click anywhere along the dashed vertical line opened the pool-block popup. On the 7-day range that overlapped neighbouring blocks' columns and felt arbitrary - the operator clicked on what looked like empty chart space and got a popup for a block they weren't looking at. Hit-target shrunk to a 16x16 box centered on the icon at the top of the line; the dashed line itself is now decoration only (`pointer-events="none"`). Click the crown / cube to open the popup.
