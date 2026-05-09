@@ -379,13 +379,24 @@ function useSections(): Section[] {
         title: t`Log retention`,
         description: t`Three append-only logs back the dashboard: tick_metrics powers every chart, decisions is a per-tick forensic log split by whether the autopilot proposed any action, and alerts is the Telegram notification history. Pruning runs hourly and on daemon boot. 0 on any field = keep forever.`,
         fields: [
+          // 2x2 layout per operator request:
+          //   Row 1:  Tick metrics              │  Alerts
+          //   Row 2:  Decisions - uneventful    │  Decisions - eventful
+          // Tick metrics was previously full-width, leaving Alerts
+          // alone on a row by itself.
           {
             key: 'tick_metrics_retention_days',
             label: t`Tick metrics`,
             kind: 'integer',
             unit: 'days',
-            fullWidth: true,
             help: t`Compact numeric time series - one row per tick (~1,440/day) with hashrate, prices, share-log %, spend. This is what backs the Hashrate / Price / Overpay charts, so set it to the longest range you want to be able to chart. Cheap on disk: a year is ~525k small rows. Default 0 = keep forever.`,
+          },
+          {
+            key: 'alerts_retention_days',
+            label: t`Alerts`,
+            kind: 'integer',
+            unit: 'days',
+            help: t`Telegram notification history. Small rows (just title + body strings); the in-flight retry ladder is preserved regardless of this setting - only resolved alerts (sent / failed / muted / gave_up) are eligible for pruning. Default 0 = keep forever.`,
           },
           {
             key: 'decisions_uneventful_retention_days',
@@ -400,13 +411,6 @@ function useSections(): Section[] {
             kind: 'integer',
             unit: 'days',
             help: t`Decision-log rows where the autopilot proposed at least one bid action. Rare (~10% of ticks) and high-value: this is the forensic record for "why did the autopilot create / edit / cancel that bid?" Cheap to keep long. Default 0 = keep forever.`,
-          },
-          {
-            key: 'alerts_retention_days',
-            label: t`Alerts`,
-            kind: 'integer',
-            unit: 'days',
-            help: t`Telegram notification history. Small rows (just title + body strings); the in-flight retry ladder is preserved regardless of this setting - only resolved alerts (sent / failed / muted / gave_up) are eligible for pruning. Default 0 = keep forever.`,
           },
         ],
       },

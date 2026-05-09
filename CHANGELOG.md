@@ -2,6 +2,10 @@
 
 ## 2026-05-09
 
+### `[UI]` Log retention: 2x2 grid (Tick metrics / Alerts / Decisions uneventful / Decisions eventful)
+
+The Tick metrics field was full-width which left Alerts alone on a row by itself, with the two Decisions fields paired in the middle. Operator preferred a uniform 2x2: row 1 has Tick metrics + Alerts, row 2 has Decisions uneventful + Decisions eventful. Removed `fullWidth: true` from the Tick metrics spec and reordered the field array so Alerts is the second entry (placing it in the right cell of row 1).
+
 ### `[Fix]` Overpay-tuning helper: bucket-based delivery curve, instant slider, no more "297 at p55" (#118 follow-up)
 
 Two real bugs in yesterday's slider+lookback build:
