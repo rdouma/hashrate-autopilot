@@ -1826,6 +1826,37 @@ function EventClassSubscriptions({
   const muted = draft.notifications_muted;
   const runwayOn = draft.wallet_runway_alert_days > 0;
 
+  // #134 follow-up: inline minute-input shape, mirroring the
+  // wallet-runway tile's "below N days" pattern. Used by every
+  // timer-driven event so the operator edits the threshold inline
+  // on the tile rather than hunting for a separate config variable.
+  const minutesInput = <K extends keyof AppConfig>(
+    field: K,
+    enabled: boolean,
+  ): React.ReactNode => (
+    <span
+      className={
+        'flex items-center gap-2 text-sm font-semibold whitespace-nowrap ' +
+        (enabled ? 'text-slate-100' : 'text-slate-500')
+      }
+      onClick={(e) => e.preventDefault()}
+    >
+      <div className="w-16 flex-none">
+        <NumberField
+          value={(draft[field] as number) ?? 0}
+          onChange={(n) =>
+            onChange(field, (n && n > 0 ? Math.round(n) : 1) as never)
+          }
+          step="integer"
+          locale={locale}
+          noGrouping
+          disabled={!enabled || muted}
+        />
+      </div>
+      <Trans>minutes</Trans>
+    </span>
+  );
+
   const datumTiles: Tile[] = [
     {
       id: 'datum_unreachable',
@@ -1839,24 +1870,27 @@ function EventClassSubscriptions({
   const braiinsTiles: Tile[] = [
     {
       id: 'hashrate_below_floor',
-      label: t`Hashrate below floor`,
-      help: t`Delivered hashrate has been under minimum_floor_hashrate_ph for below_floor_alert_after_minutes.`,
+      label: t`Hashrate below floor for`,
+      help: t`Delivered hashrate has been under your floor for at least this many minutes.`,
       enabled: !disabled.has('hashrate_below_floor'),
       setEnabled: (n) => toggleClass('hashrate_below_floor', n),
+      extra: minutesInput('below_floor_alert_after_minutes', !disabled.has('hashrate_below_floor')),
     },
     {
       id: 'zero_hashrate',
-      label: t`Zero hashrate`,
-      help: t`Effectively zero delivery for zero_hashrate_loud_alert_after_minutes.`,
+      label: t`Zero hashrate for`,
+      help: t`Effectively zero delivery for at least this many minutes.`,
       enabled: !disabled.has('zero_hashrate'),
       setEnabled: (n) => toggleClass('zero_hashrate', n),
+      extra: minutesInput('zero_hashrate_loud_alert_after_minutes', !disabled.has('zero_hashrate')),
     },
     {
       id: 'api_unreachable',
-      label: t`Braiins API unreachable`,
-      help: t`Marketplace API has been down for api_outage_alert_after_minutes.`,
+      label: t`Braiins API unreachable for`,
+      help: t`Marketplace API has been unreachable for at least this many minutes.`,
       enabled: !disabled.has('api_unreachable'),
       setEnabled: (n) => toggleClass('api_unreachable', n),
+      extra: minutesInput('api_outage_alert_after_minutes', !disabled.has('api_unreachable')),
     },
     {
       id: 'unknown_bid',

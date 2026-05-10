@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-05-10
+
+### `[UI]` Notifications tab: inline minute thresholds on timer-driven events
+
+The Notifications tab tiles for `hashrate_below_floor`, `zero_hashrate`, and `api_unreachable` were exposing raw config-field names in their help text (`below_floor_alert_after_minutes`, `zero_hashrate_loud_alert_after_minutes`, `api_outage_alert_after_minutes`) instead of letting the operator edit the threshold inline. Refactored to mirror the wallet-runway tile's pattern: each tile's label is now an active sentence ending with "for", followed by an inline number input + "minutes" suffix. Help text rewritten in plain English, no more variable-name leaks. Underlying schema fields unchanged. NL / ES translations included for the new sentence fragments.
+
 ## 2026-05-09
 
 ### `[UI]` Sticky upgrade banner + Alerts polish (#134 follow-ups)

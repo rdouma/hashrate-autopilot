@@ -604,13 +604,13 @@ msgstr "Braiins 10-min cooldown"
 msgid "Braiins API access"
 msgstr "Braiins API-toegang"
 
-#: src/pages/Config.tsx
-msgid "Braiins API unreachable"
-msgstr "Braiins API onbereikbaar"
-
 #: src/pages/Status.tsx
 msgid "Braiins API unreachable - waiting for connectivity."
 msgstr "Braiins API onbereikbaar - wacht op verbinding."
+
+#: src/pages/Config.tsx
+msgid "Braiins API unreachable for"
+msgstr "Braiins API onbereikbaar gedurende"
 
 #: src/pages/Config.tsx
 msgid "Braiins deposit lifecycle"
@@ -1011,8 +1011,8 @@ msgid "delivered / cap"
 msgstr "geleverd / cap"
 
 #: src/pages/Config.tsx
-msgid "Delivered hashrate has been under minimum_floor_hashrate_ph for below_floor_alert_after_minutes."
-msgstr "Geleverde hashrate is gedurende below_floor_alert_after_minutes onder minimum_floor_hashrate_ph gebleven."
+msgid "Delivered hashrate has been under your floor for at least this many minutes."
+msgstr "Geleverde hashrate ligt al ten minste dit aantal minuten onder je vloer."
 
 #: src/components/PriceChart.tsx
 msgid "delta"
@@ -1153,8 +1153,8 @@ msgid "Effective rate equals hashprice ({hashpricePretty}) - breaking even."
 msgstr "Effectief tarief gelijk aan hashprice ({hashpricePretty}) - break-even."
 
 #: src/pages/Config.tsx
-msgid "Effectively zero delivery for zero_hashrate_loud_alert_after_minutes."
-msgstr "Praktisch geen levering gedurende zero_hashrate_loud_alert_after_minutes."
+msgid "Effectively zero delivery for at least this many minutes."
+msgstr "Praktisch geen levering gedurende ten minste dit aantal minuten."
 
 #: src/components/Bip110ScanCard.tsx
 msgid "elapsed"
@@ -1345,8 +1345,8 @@ msgid "Hashrate"
 msgstr "Hashrate"
 
 #: src/pages/Config.tsx
-msgid "Hashrate below floor"
-msgstr "Hashrate onder vloer"
+msgid "Hashrate below floor for"
+msgstr "Hashrate onder de vloer gedurende"
 
 #: src/pages/Status.tsx
 msgid "Hashrate Ocean credits to our payout address (5-min sliding window). Sourced per-tick from /v1/user_hashrate.hashrate_300s. Compare against AVG BRAIINS / AVG DATUM at the top of the page; sustained gaps mean shares are getting lost somewhere in the Braiins -> Datum -> Ocean pipeline."
@@ -1584,8 +1584,8 @@ msgid "market at this tick"
 msgstr "markt op deze tick"
 
 #: src/pages/Config.tsx
-msgid "Marketplace API has been down for api_outage_alert_after_minutes."
-msgstr "De marketplace-API is gedurende api_outage_alert_after_minutes uit de lucht geweest."
+msgid "Marketplace API has been unreachable for at least this many minutes."
+msgstr "Marketplace-API is al ten minste dit aantal minuten onbereikbaar."
 
 #: src/pages/Alerts.tsx
 msgid "marking…"
@@ -1649,6 +1649,7 @@ msgstr "Minimum-ondergrens"
 msgid "Mining"
 msgstr "Mining"
 
+#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "minutes"
 msgstr "minuten"
@@ -2973,5 +2974,5 @@ msgid "Your address that receives Ocean TIDES payouts. The worker identity below
 msgstr "Je adres dat Ocean TIDES-uitbetalingen ontvangt. De worker-identiteit hieronder wordt hier automatisch uit afgeleid."
 
 #: src/pages/Config.tsx
-msgid "Zero hashrate"
-msgstr "Geen hashrate"
+msgid "Zero hashrate for"
+msgstr "Geen hashrate gedurende"
