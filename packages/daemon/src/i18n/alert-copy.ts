@@ -183,7 +183,7 @@ const EN: AlertCopy = {
 
   braiins_deposit_detected_title: () => 'Braiins deposit detected',
   braiins_deposit_detected_body: ({ amount, address_short }) =>
-    `Braiins detected a deposit of ${amount}${address_short ? ` to ${address_short}...` : ''}. Awaiting compliance screening (typically 3 confirmations + up to 48h before the funds become spendable).`,
+    `Braiins detected a deposit of ${amount}${address_short ? ` to ${address_short}...` : ''}. Funds normally clear after 3 confirmations and become spendable on the Braiins marketplace. In rare cases a compliance screening kicks in, which can add up to 48h before they're spendable.`,
   braiins_deposit_available_title: () => 'Braiins deposit available',
   braiins_deposit_available_body: ({ amount }) =>
     `Braiins compliance cleared a deposit of ${amount} - the funds are now spendable on the Braiins marketplace.`,
@@ -264,7 +264,7 @@ const NL: AlertCopy = {
 
   braiins_deposit_detected_title: () => 'Braiins deposit gedetecteerd',
   braiins_deposit_detected_body: ({ amount, address_short }) =>
-    `Braiins heeft een deposit van ${amount} gedetecteerd${address_short ? ` op ${address_short}...` : ''}. Wacht op compliance screening (typisch 3 confirmaties + tot 48u voordat de funds spendeerbaar zijn).`,
+    `Braiins heeft een deposit van ${amount} gedetecteerd${address_short ? ` op ${address_short}...` : ''}. Funds worden doorgaans spendeerbaar na 3 confirmaties. In zeldzame gevallen wordt er een compliance screening getriggered, wat tot 48u extra kan duren voordat de funds spendeerbaar zijn.`,
   braiins_deposit_available_title: () => 'Braiins deposit beschikbaar',
   braiins_deposit_available_body: ({ amount }) =>
     `Braiins compliance heeft een deposit van ${amount} goedgekeurd - de funds zijn nu spendeerbaar op de Braiins marketplace.`,
@@ -345,7 +345,7 @@ const ES: AlertCopy = {
 
   braiins_deposit_detected_title: () => 'Depósito en Braiins detectado',
   braiins_deposit_detected_body: ({ amount, address_short }) =>
-    `Braiins ha detectado un depósito de ${amount}${address_short ? ` a ${address_short}...` : ''}. A la espera del cumplimiento (típicamente 3 confirmaciones + hasta 48h antes de que los fondos sean gastables).`,
+    `Braiins ha detectado un depósito de ${amount}${address_short ? ` a ${address_short}...` : ''}. Los fondos suelen ser gastables tras 3 confirmaciones. En casos raros se activa una verificación de cumplimiento, que puede añadir hasta 48h antes de que sean gastables.`,
   braiins_deposit_available_title: () => 'Depósito en Braiins disponible',
   braiins_deposit_available_body: ({ amount }) =>
     `El cumplimiento de Braiins aprobó un depósito de ${amount} - los fondos ya son gastables en el marketplace de Braiins.`,

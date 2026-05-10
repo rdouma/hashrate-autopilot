@@ -2,6 +2,10 @@
 
 ## 2026-05-10
 
+### `[Fix]` Telegram: deposit-detected message reframes compliance screening as the edge case (#140)
+
+The body used to read "Wacht op compliance screening (typisch 3 confirmaties + tot 48u voordat de funds spendeerbaar zijn)" -- which implied compliance screening was the typical path and 48h was the typical wait. Empirically the typical path is just 3 confirmations and the funds clear; compliance screening is a possible extra step on flagged deposits that *can* add up to 48h on top. Rewrote the EN/NL/ES bodies to lead with the typical case (`Funds normally clear after 3 confirmations`) and mention compliance screening as a conditional add-on (`In rare cases a compliance screening kicks in, which can add up to 48h before they're spendable`). The two sibling lifecycle messages (`braiins_deposit_available`, `braiins_deposit_returned`) are unchanged -- they correctly describe their own outcomes. NL ("In zeldzame gevallen...") and ES ("En casos raros...") translations included.
+
 ### `[UI]` Alerts page: split OPEN into OPEN + ACKNOWLEDGED (#139)
 
 Acked-but-not-recovered events used to stay in the OPEN bucket forever - INFO one-shots like `pool_block_credited` have no recovery semantics, so the recovery-pair-only bucket rule pinned them as OPEN even after the operator acked from Telegram. Split the bucket into three: OPEN (firing, not acked, not recovered) → ACKNOWLEDGED (acked, no recovery yet) → RESOLVED (recovery pair exists). The `OPEN (n)` heading counter now reflects only the "needs my attention" set; ACKNOWLEDGED gets its own slate-coloured section between OPEN and RESOLVED. Card-header right-side pill renders `OPEN · {age}` (amber) / `ACKNOWLEDGED · {age}` (slate) / `RESOLVED` (emerald) per bucket. Default expand-state: OPEN expanded, ACKNOWLEDGED + RESOLVED collapsed. Pure dashboard-side derivation from existing `acknowledged_at_ms` + `paired_alert_id` fields - no daemon change, no migration. NL ("Bevestigd") and ES ("Confirmado") translations included.
