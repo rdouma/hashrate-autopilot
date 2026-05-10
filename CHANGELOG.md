@@ -2,6 +2,10 @@
 
 ## 2026-05-09
 
+### `[UI]` Alerts page: event-grouped view with Open / Resolved sections (#134)
+
+The Alerts page was a flat row list - each firing got one row, each recovery got a separate row, the operator visually paired them by matching titles. Restructured into an event-grouped view: each event renders as a card with a header (severity badge + firing title + status pill) and two collapsible entries underneath (Fired + Resolved). Open events sit pinned at the top in their own section; resolved events sit below. Open events render expanded by default; resolved events render collapsed (click the chevron to expand). Per-card expand toggle is component-local React state, no localStorage. Grouping is purely client-side - the existing `/api/alerts` cursor-pagination contract didn't change. The "mark all as seen" + unack-only filter + "load older" pagination all still work at the event level. NL / ES translations included for the new section labels.
+
 ### `[Fix]` Deposit detection: pivot to tick_metrics deltas, drop the on-chain endpoint dependency (#132 + #133)
 
 The `BraiinsDepositWatcherService` shipped in #130 was polling `/v1/account/transaction/on-chain` and writing to a per-tx_id idempotency table; in practice that endpoint produced zero rows in the operator's setup despite a real 500k-sat deposit landing on the account. Migration 0080's table sat empty; no `[deposits]` log lines anywhere. The signal was actually trivially visible from `tick_metrics.braiins_total_deposited_sat` (which the daemon writes every minute) - just compare adjacent ticks.

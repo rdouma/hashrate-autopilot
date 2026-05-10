@@ -250,10 +250,6 @@ msgstr "acknowledged {0}"
 msgid "action mode blocks this"
 msgstr "action mode blocks this"
 
-#: src/pages/Alerts.tsx
-msgid "actions"
-msgstr "actions"
-
 #: src/lib/labels.ts
 msgid "Active"
 msgstr "Active"
@@ -1018,10 +1014,6 @@ msgstr "delivered / cap"
 msgid "Delivered hashrate has been under minimum_floor_hashrate_ph for below_floor_alert_after_minutes."
 msgstr "Delivered hashrate has been under minimum_floor_hashrate_ph for below_floor_alert_after_minutes."
 
-#: src/pages/Alerts.tsx
-msgid "delivery"
-msgstr "delivery"
-
 #: src/components/PriceChart.tsx
 msgid "delta"
 msgstr "delta"
@@ -1249,6 +1241,10 @@ msgstr "Fetches the BTC/USD spot price from a public exchange API. Enables a sat
 #: src/components/PriceChart.tsx
 msgid "fillable"
 msgstr "fillable"
+
+#: src/pages/Alerts.tsx
+msgid "fired"
+msgstr "fired"
 
 #: src/pages/Setup.tsx
 msgid "First-run setup"
@@ -1945,6 +1941,16 @@ msgstr "On-chain payouts"
 msgid "Only engage cheap-mode when the rolling average of best-ask vs hashprice over this many minutes is below the threshold. Avoids flapping on single-tick market spikes. 0 = evaluate per tick (legacy). Requires ≥5 samples in the window before honouring it; below that falls back to the spot check."
 msgstr "Only engage cheap-mode when the rolling average of best-ask vs hashprice over this many minutes is below the threshold. Avoids flapping on single-tick market spikes. 0 = evaluate per tick (legacy). Requires ≥5 samples in the window before honouring it; below that falls back to the spot check."
 
+#. placeholder {0}: formatAge(firing.created_at)
+#: src/pages/Alerts.tsx
+msgid "open · {0}"
+msgstr "open · {0}"
+
+#. placeholder {0}: open.length
+#: src/pages/Alerts.tsx
+msgid "Open ({0})"
+msgstr "Open ({0})"
+
 #: src/components/HashrateChart.tsx
 #: src/components/PriceChart.tsx
 msgid "open in block explorer →"
@@ -2332,8 +2338,15 @@ msgid "Replace file…"
 msgstr "Replace file…"
 
 #: src/pages/Alerts.tsx
+#: src/pages/Alerts.tsx
+#: src/pages/Alerts.tsx
 msgid "resolved"
 msgstr "resolved"
+
+#. placeholder {0}: resolved.length
+#: src/pages/Alerts.tsx
+msgid "Resolved ({0})"
+msgstr "Resolved ({0})"
 
 #: src/pages/Config.tsx
 msgid "Resolves to:"
@@ -2726,10 +2739,6 @@ msgstr "Time since Ocean found its most recent block. Ocean's average block-find
 msgid "tip"
 msgstr "tip"
 
-#: src/pages/Alerts.tsx
-msgid "title"
-msgstr "title"
-
 #: src/pages/Status.tsx
 msgid "total"
 msgstr "total"
@@ -2866,6 +2875,11 @@ msgstr "Wallet runway below"
 msgid "warning"
 msgstr "warning"
 
+#. placeholder {0}: formatAge(Date.now() - durationOpenMs)
+#: src/pages/Alerts.tsx
+msgid "was open for {0}"
+msgstr "was open for {0}"
+
 #: src/pages/Setup.tsx
 msgid "What the controller aims for."
 msgstr "What the controller aims for."
@@ -2877,10 +2891,6 @@ msgstr "What this last block earned us, estimated as block_reward * share_log_pc
 #: src/pages/Config.tsx
 msgid "What to send to Telegram"
 msgstr "What to send to Telegram"
-
-#: src/pages/Alerts.tsx
-msgid "when"
-msgstr "when"
 
 #: src/pages/Config.tsx
 msgid "When more than this many markers would render on the price chart, the dashboard hides EDIT_PRICE markers first (CREATE / EDIT_SPEED / CANCEL stay because they're rare and diagnostic). If even after hiding EDIT_PRICE the count still exceeds the cap, all markers are hidden. 0 = no count-based filter (all markers render subject to the existing per-range rule). Useful at low-overpay settings where EDIT_PRICE fires every couple of minutes and clutters the chart."

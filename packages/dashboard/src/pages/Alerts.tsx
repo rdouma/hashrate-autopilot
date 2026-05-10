@@ -190,35 +190,10 @@ export function Alerts() {
       )}
 
       {alerts.length > 0 && (
-        <div className="bg-slate-900 border border-slate-800 rounded-lg overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-800/40 text-slate-400 text-xs uppercase tracking-wider">
-              <tr>
-                <th className="text-left px-3 py-2 font-normal">
-                  <Trans>when</Trans>
-                </th>
-                <th className="text-left px-3 py-2 font-normal">
-                  <Trans>title</Trans>
-                </th>
-                <th className="text-left px-3 py-2 font-normal">
-                  <Trans>delivery</Trans>
-                </th>
-                <th className="text-right px-3 py-2 font-normal">
-                  <Trans>actions</Trans>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {alerts.map((row) => (
-                <AlertRow
-                  key={row.id}
-                  row={row}
-                  onAcknowledge={() => ack.mutate(row.id)}
-                />
-              )) /* AlertRow uses useLocale internally for the absolute timestamp formatting. */}
-            </tbody>
-          </table>
-        </div>
+        <EventGroupedView
+          alerts={alerts}
+          onAcknowledge={(id) => ack.mutate(id)}
+        />
       )}
 
       {hasMore && (
@@ -237,48 +212,248 @@ export function Alerts() {
   );
 }
 
-function AlertRow({
-  row,
+/**
+ * #134: event-grouped view. An "event" is a firing AlertRow plus
+ * (optionally) its recovery row joined via paired_alert_id. INFO-only
+ * rows without a recovery render as a single-entry event so the page
+ * stays homogeneous - one card per event group, even when the group
+ * has only one entry.
+ *
+ * Open events (no recovery yet) sit pinned at the top; resolved events
+ * sit below. Both sections sort newest-first.
+ *
+ * Open events render expanded by default (the operator immediately
+ * sees what's currently wrong); resolved events render collapsed
+ * (header only). The chevron on each header toggles state per-card,
+ * stored in component-local React state.
+ */
+interface AlertEventGroup {
+  firing: AlertRow;
+  recovery: AlertRow | null;
+}
+
+function groupIntoEvents(alerts: AlertRow[]): AlertEventGroup[] {
+  // Build lookup: firing_id -> recovery row.
+  const recoveryByFiringId = new Map<number, AlertRow>();
+  for (const row of alerts) {
+    if (row.paired_alert_id !== null) {
+      recoveryByFiringId.set(row.paired_alert_id, row);
+    }
+  }
+  // Walk firings in source order (newest first by created_at).
+  const groups: AlertEventGroup[] = [];
+  for (const row of alerts) {
+    if (row.paired_alert_id !== null) continue; // recovery row, attached to a firing
+    groups.push({
+      firing: row,
+      recovery: recoveryByFiringId.get(row.id) ?? null,
+    });
+  }
+  return groups;
+}
+
+function EventGroupedView({
+  alerts,
   onAcknowledge,
 }: {
-  row: AlertRow;
+  alerts: AlertRow[];
+  onAcknowledge: (id: number) => void;
+}) {
+  const groups = useMemo(() => groupIntoEvents(alerts), [alerts]);
+  const open = useMemo(() => groups.filter((g) => g.recovery === null), [groups]);
+  const resolved = useMemo(() => groups.filter((g) => g.recovery !== null), [groups]);
+
+  // Per-card expand/collapse override. Default state is computed at
+  // render time: open events expanded, resolved collapsed. The set
+  // tracks IDs that have been TOGGLED away from their default; an
+  // empty set means everyone is at their default.
+  const [toggled, setToggled] = useState<Set<number>>(() => new Set());
+  const toggle = (id: number) =>
+    setToggled((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  return (
+    <div className="space-y-4">
+      {open.length > 0 && (
+        <section>
+          <h2 className="text-xs uppercase tracking-wider text-amber-400 mb-2">
+            <Trans>Open ({open.length})</Trans>
+          </h2>
+          <div className="space-y-2">
+            {open.map((g) => (
+              <EventCard
+                key={g.firing.id}
+                group={g}
+                expandedDefault={true}
+                isToggled={toggled.has(g.firing.id)}
+                onToggle={() => toggle(g.firing.id)}
+                onAcknowledge={() => onAcknowledge(g.firing.id)}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {resolved.length > 0 && (
+        <section>
+          <h2 className="text-xs uppercase tracking-wider text-slate-500 mb-2">
+            <Trans>Resolved ({resolved.length})</Trans>
+          </h2>
+          <div className="space-y-2">
+            {resolved.map((g) => (
+              <EventCard
+                key={g.firing.id}
+                group={g}
+                expandedDefault={false}
+                isToggled={toggled.has(g.firing.id)}
+                onToggle={() => toggle(g.firing.id)}
+                onAcknowledge={() => onAcknowledge(g.firing.id)}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
+
+function EventCard({
+  group,
+  expandedDefault,
+  isToggled,
+  onToggle,
+  onAcknowledge,
+}: {
+  group: AlertEventGroup;
+  expandedDefault: boolean;
+  isToggled: boolean;
+  onToggle: () => void;
   onAcknowledge: () => void;
 }) {
-  // Mirror the Status page's bids-card timestamp pattern: absolute
-  // datetime in the operator's regional format on top, relative age
-  // muted underneath. Operator wanted both visible at a glance.
   const { intlLocale } = useLocale();
+  const expanded = isToggled ? !expandedDefault : expandedDefault;
+  const { firing, recovery } = group;
+  const durationOpenMs =
+    (recovery?.created_at ?? Date.now()) - firing.created_at;
   return (
-    <tr className="border-t border-slate-800 align-top">
-      <td className="px-3 py-2 text-xs whitespace-nowrap">
-        <div className="text-slate-300">{formatTimestamp(row.created_at, intlLocale)}</div>
-        <div className="text-slate-500 text-[10px] mt-0.5">{formatAge(row.created_at)}</div>
-      </td>
-      <td className="px-3 py-2">
-        <div className="flex items-center gap-2">
-          <SeverityBadge severity={row.severity} isRecovery={row.paired_alert_id !== null} />
-          <div className="text-slate-200">{row.title}</div>
+    <div className="bg-slate-900 border border-slate-800 rounded-lg overflow-hidden">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full flex items-start gap-3 px-3 py-2 text-left hover:bg-slate-800/40"
+      >
+        <span className="text-slate-500 text-xs mt-0.5 select-none w-3">
+          {expanded ? '▾' : '▸'}
+        </span>
+        <SeverityBadge severity={firing.severity} isRecovery={false} />
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+            <span className="text-sm text-slate-100">{firing.title}</span>
+            <span className="text-xs text-slate-500 whitespace-nowrap">
+              {formatTimestamp(firing.created_at, intlLocale)}
+            </span>
+            <span className="text-[10px] text-slate-500 whitespace-nowrap">
+              {formatAge(firing.created_at)}
+            </span>
+          </div>
         </div>
-        <div className="text-xs text-slate-500 mt-0.5 break-words max-w-xl">{row.body}</div>
-      </td>
-      <td className="px-3 py-2">
-        <DeliveryBadge status={row.delivery_status} attempts={row.delivery_attempts} />
-      </td>
-      <td className="px-3 py-2 text-right whitespace-nowrap">
-        {row.acknowledged_at_ms === null ? (
+        <span
+          className={
+            'text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border whitespace-nowrap mt-0.5 ' +
+            (recovery
+              ? 'bg-emerald-900/30 border-emerald-800 text-emerald-300'
+              : 'bg-amber-900/30 border-amber-700 text-amber-300')
+          }
+        >
+          {recovery ? (
+            <Trans>resolved</Trans>
+          ) : (
+            <Trans>open · {formatAge(firing.created_at)}</Trans>
+          )}
+        </span>
+      </button>
+
+      {expanded && (
+        <div className="border-t border-slate-800 px-3 py-2 space-y-2 bg-slate-950/40">
+          <EntryRow
+            kind="fired"
+            row={firing}
+            timestampLabel={formatTimestamp(firing.created_at, intlLocale)}
+            ageLabel={formatAge(firing.created_at)}
+            onAcknowledge={onAcknowledge}
+          />
+          {recovery && (
+            <EntryRow
+              kind="resolved"
+              row={recovery}
+              timestampLabel={formatTimestamp(recovery.created_at, intlLocale)}
+              ageLabel={formatAge(recovery.created_at)}
+              durationOpenMs={durationOpenMs}
+              onAcknowledge={() => {}}
+            />
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EntryRow({
+  kind,
+  row,
+  timestampLabel,
+  ageLabel,
+  durationOpenMs,
+  onAcknowledge,
+}: {
+  kind: 'fired' | 'resolved';
+  row: AlertRow;
+  timestampLabel: string;
+  ageLabel: string;
+  durationOpenMs?: number;
+  onAcknowledge: () => void;
+}) {
+  return (
+    <div className="flex items-start gap-3 text-sm">
+      <span className="text-[10px] uppercase tracking-wider text-slate-500 w-16 shrink-0 mt-0.5">
+        {kind === 'fired' ? <Trans>fired</Trans> : <Trans>resolved</Trans>}
+      </span>
+      <div className="flex-1 min-w-0">
+        <div className="text-xs text-slate-500">
+          {timestampLabel} · {ageLabel}
+          {kind === 'resolved' && durationOpenMs !== undefined && (
+            <>
+              {' · '}
+              <Trans>was open for {formatAge(Date.now() - durationOpenMs)}</Trans>
+            </>
+          )}
+        </div>
+        <div className="text-xs text-slate-300 mt-0.5 break-words max-w-2xl">{row.body}</div>
+        <div className="mt-1">
+          <DeliveryBadge status={row.delivery_status} attempts={row.delivery_attempts} />
+        </div>
+      </div>
+      <div className="text-right whitespace-nowrap shrink-0">
+        {kind === 'fired' && row.acknowledged_at_ms === null && (
           <button
+            type="button"
             onClick={onAcknowledge}
             className="px-2 py-1 text-xs text-slate-300 border border-slate-700 rounded hover:bg-slate-800"
           >
             <Trans>mark as seen</Trans>
           </button>
-        ) : (
+        )}
+        {kind === 'fired' && row.acknowledged_at_ms !== null && (
           <span className="text-[10px] text-slate-500">
             <Trans>acknowledged {formatAge(row.acknowledged_at_ms)}</Trans>
           </span>
         )}
-      </td>
-    </tr>
+      </div>
+    </div>
   );
 }
 
