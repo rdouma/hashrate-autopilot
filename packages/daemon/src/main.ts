@@ -39,6 +39,7 @@ import { DdnsUpdaterService } from './services/ddns-updater.js';
 import { closeDatabase, openDatabase, type DatabaseHandle } from './state/db.js';
 import { AlertsRepo } from './state/repos/alerts.js';
 import { BidEventsRepo } from './state/repos/bid_events.js';
+import { BraiinsDepositsRepo } from './state/repos/braiins_deposits.js';
 import { ClosedBidsCacheRepo } from './state/repos/closed_bids_cache.js';
 import { ConfigRepo } from './state/repos/config.js';
 import { PoolBlocksRepo } from './state/repos/pool_blocks.js';
@@ -51,6 +52,7 @@ import { Controller } from './controller/tick.js';
 import { TickLoop } from './controller/loop.js';
 import { AlertEvaluator } from './services/alert-evaluator.js';
 import { AlertManager } from './services/alert-manager.js';
+import { BraiinsDepositWatcherService } from './services/braiins-deposit-watcher.js';
 import { TelegramSink, type SendOptions } from './services/notifier.js';
 import { TelegramReceiver } from './services/telegram-receiver.js';
 import { runOceanUnpaidCleanup } from './services/ocean-unpaid-cleanup.js';
@@ -715,14 +717,23 @@ async function bootOperational(
   ddnsUpdaterRef.value = ddnsUpdater;
   ddnsUpdater.start();
 
-  // #132: Braiins-deposit detection moved into AlertEvaluator's
-  // per-tick path (it reads `state.braiins_total_deposited_sat`
-  // deltas). The pre-#132 standalone BraiinsDepositWatcherService +
-  // braiins_deposits table + on-chain-transactions polling are
-  // retired - the on-chain endpoint was producing zero rows in
-  // practice. The migration's table stays as harmless dead weight,
-  // matching the legacy-column precedent
-  // (hibernate_on_expensive_market etc).
+  // #141: Braiins on-chain deposit lifecycle watcher restored. The
+  // #132 pivot to total_deposited_sat-deltas conflated Detected and
+  // Available (operator's empirical 12-min gap on a real test deposit
+  // disproved the assumption). The lifecycle endpoint
+  // /v1/account/transaction/on-chain DOES expose the distinction via
+  // the deposit_status enum + return_tx_id; the watcher polls it on
+  // its own 60s cadence, fires Detected / Available / Returned, and
+  // logs every status transition for empirical enum-mapping tuning.
+  const braiinsDepositsRepo = new BraiinsDepositsRepo(handle.db);
+  const braiinsDepositWatcher = new BraiinsDepositWatcherService({
+    cfgRef: cfgRefHolder,
+    braiinsClient,
+    depositsRepo: braiinsDepositsRepo,
+    alertManager,
+    log: (m) => log(m),
+  });
+  braiinsDepositWatcher.start();
 
   // HTTP server (dashboard API + static).
   const httpServer = await createHttpServer({
@@ -805,6 +816,7 @@ async function bootOperational(
     btcPriceRefresher.stop();
     publicIpService.stop();
     ddnsUpdater.stop();
+    braiinsDepositWatcher.stop();
     await telegramReceiver.stop();
     await loop.stop();
     try {

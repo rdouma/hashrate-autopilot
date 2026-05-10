@@ -67,20 +67,6 @@ function copyFor(state: State): ReturnType<typeof getAlertCopy> {
   return getAlertCopy(state.config.notification_locale);
 }
 
-/**
- * #132: render a sat amount as the same "0.01000000 BTC (1,000,000
- * sat)" shape the deposit-watcher used. Above 1 BTC threshold it
- * leads with BTC; below it stays in sat for legibility on small
- * deposits (~10k-100k sat tipping deposits).
- */
-const SAT_PER_BTC = 100_000_000;
-function formatSatAsBtc(sat: number): string {
-  if (sat >= SAT_PER_BTC) {
-    return `${(sat / SAT_PER_BTC).toFixed(8)} BTC (${sat.toLocaleString('en-US')} sat)`;
-  }
-  return `${sat.toLocaleString('en-US')} sat`;
-}
-
 interface EventState {
   readonly bad_since_ms: number | null;
   /** id of the currently-open alert row, set on the first ping. */
@@ -135,18 +121,6 @@ export class AlertEvaluator {
    * messages for past credits. Updated as we walk new rows.
    */
   private lastNotifiedBlockHeight: number | null = null;
-  /**
-   * #132: baseline for braiins_total_deposited_sat. The detector
-   * fires `braiins_deposit_detected` whenever the current tick's
-   * `state.braiins_total_deposited_sat` exceeds this baseline. Lazily
-   * hydrated from `tickMetricsRepo.latestBraiinsTotalDeposited()` on
-   * the first tick so a daemon restart does NOT replay every
-   * historical deposit, while still catching deposits that landed
-   * during a daemon-offline gap (latest tick_metrics row reflects
-   * the pre-gap balance; the post-gap live balance is higher; the
-   * delta fires).
-   */
-  private lastNotifiedTotalDepositedSat: number | null = null;
 
   private readonly alertManager: AlertManager;
   private readonly tickMetricsRepo: TickMetricsRepo | null;
@@ -221,7 +195,11 @@ export class AlertEvaluator {
     await this.evaluateBetaExit(state, disabled);
     await this.evaluateWalletRunway(state, disabled);
     await this.evaluatePoolBlockCredited(state, disabled);
-    await this.evaluateBraiinsDeposit(state, disabled);
+    // #141: Braiins-deposit detection lives in the standalone
+    // BraiinsDepositWatcherService (on-chain-endpoint poll), not on
+    // the per-tick path. The #132 balance-delta detector that used
+    // to live here was removed in #141 because it conflated Detected
+    // and Available.
     // TODO(#100): low_acceptance still needs an acceptance-ratio series
     //   in tick_metrics. Scoped for a separate commit.
   }
@@ -567,119 +545,6 @@ export class AlertEvaluator {
       });
       this.lastNotifiedBlockHeight = blk.height;
     }
-  }
-
-  /**
-   * #132: Braiins deposit detection via tick_metrics deltas.
-   *
-   * The earlier implementation polled `/v1/account/transaction/on-chain`
-   * via a separate watcher service, but that endpoint produced zero
-   * rows in the operator's setup despite a real 500k-sat deposit
-   * landing on the account. Replaced with a far simpler signal: the
-   * delta of `state.braiins_total_deposited_sat` between consecutive
-   * ticks. When current > baseline, a deposit happened (amount =
-   * delta). Drops the dependence on the on-chain endpoint, the
-   * undocumented DepositStatus enum mapping, and the per-deposit
-   * tx_id-keyed table. The `Available` and `Returned` lifecycle
-   * variants from #130 collapse into a single `braiins_deposit_detected`
-   * event - balance only goes up once funds are spendable on Braiins,
-   * so "Detected" and "Available" are the same moment from the
-   * operator's perspective.
-   *
-   * Disabled paths - all silent, no row written, no Telegram POST:
-   *   - `notify_on_braiins_deposit === false` (default).
-   *   - `braiins_deposit_detected` in `notification_disabled_event_classes`.
-   *   - `state.braiins_total_deposited_sat` is null (Braiins API was
-   *     unreachable this tick).
-   *   - First post-boot tick: silently set baseline to the latest
-   *     persisted value and return. After that, subsequent ticks
-   *     compare against the in-memory baseline.
-   *
-   * Severity = INFO. No retry ladder; deposits are good news.
-   *
-   * Severity-of-decrement: a balance going DOWN is unusual (Braiins
-   * doesn't currently support withdrawals). Don't fire an alert -
-   * just log it for forensic visibility, and update the baseline so
-   * the next increment fires correctly.
-   */
-  private async evaluateBraiinsDeposit(state: State, disabledClasses: ReadonlySet<string>): Promise<void> {
-    const total = state.braiins_total_deposited_sat;
-    // Loose null check: test fixtures often omit the field entirely
-    // (so it reads as undefined), and the live observe path explicitly
-    // sets null when Braiins API was unreachable this tick. Both are
-    // "no signal, skip."
-    if (total == null) {
-      this.log('[deposits] tick: balance=null (Braiins API unavailable this tick); skipping');
-      return;
-    }
-    const muted = !state.config.notify_on_braiins_deposit;
-    const classDisabled = disabledClasses.has('braiins_deposit_detected');
-
-    // Lazy baseline hydration on first tick. We prefer the persisted
-    // tick_metrics value over the live state so a daemon restart that
-    // bridges a deposit (offline gap) still detects it on the first
-    // post-restart tick.
-    if (this.lastNotifiedTotalDepositedSat === null) {
-      const persisted = this.tickMetricsRepo
-        ? await this.tickMetricsRepo.latestBraiinsTotalDeposited().catch(() => null)
-        : null;
-      // Persisted may genuinely be null on a fresh install. In that
-      // case the current live total IS the baseline (no historical
-      // ground truth to compare against).
-      this.lastNotifiedTotalDepositedSat = persisted ?? total;
-      this.log(
-        `[deposits] tick: baseline hydrated to ${this.lastNotifiedTotalDepositedSat.toLocaleString('en-US')} sat (${persisted === null ? 'fresh install' : 'from latest tick_metrics'}); current=${total.toLocaleString('en-US')}`,
-      );
-      return;
-    }
-
-    const baseline = this.lastNotifiedTotalDepositedSat;
-    if (total === baseline) {
-      this.log(`[deposits] tick: balance=${total.toLocaleString('en-US')} sat (no change)`);
-      return;
-    }
-
-    if (total < baseline) {
-      // Rare but documented: Braiins compliance returned a deposit, or
-      // the operator-visible withdrawal feature landed. Don't fire
-      // (operator picked Detected-only in #132); update the baseline.
-      const dec = baseline - total;
-      this.log(
-        `[deposits] tick: balance=${total.toLocaleString('en-US')} sat (DECREASED by ${dec.toLocaleString('en-US')} sat from ${baseline.toLocaleString('en-US')}; not firing - operator opted out of Returned events in #132)`,
-      );
-      this.lastNotifiedTotalDepositedSat = total;
-      return;
-    }
-
-    // total > baseline: deposit detected. Even when the operator has
-    // muted notifications or per-class-disabled this event, advance
-    // the baseline so the NEXT real deposit (when they toggle on)
-    // doesn't replay the silent-period delta.
-    const deltaSat = total - baseline;
-    this.lastNotifiedTotalDepositedSat = total;
-
-    if (muted || classDisabled) {
-      this.log(
-        `[deposits] tick: balance=${total.toLocaleString('en-US')} sat (+${deltaSat.toLocaleString('en-US')} sat, ${muted ? 'master-toggle off' : 'class-disabled'} - silent absorb)`,
-      );
-      return;
-    }
-    this.log(
-      `[deposits] tick: balance=${total.toLocaleString('en-US')} sat (+${deltaSat.toLocaleString('en-US')} sat - firing braiins_deposit_detected)`,
-    );
-
-    const amount = formatSatAsBtc(deltaSat);
-    const copy = copyFor(state);
-    await this.alertManager.recordAlert({
-      severity: 'INFO',
-      title: copy.braiins_deposit_detected_title(),
-      // The catalog string accepts an `address_short` slot; with this
-      // signal source we don't have an address (the on-chain endpoint
-      // was the only source for it). Pass null - the catalog handles
-      // the no-address case cleanly.
-      body: copy.braiins_deposit_detected_body({ amount, address_short: null }),
-      event_class: 'braiins_deposit_detected',
-    });
   }
 
   // ---------------------------------------------------------------

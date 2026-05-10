@@ -87,6 +87,15 @@ export class BraiinsDepositsRepo {
     return row;
   }
 
+  /** Row count - used by the watcher to detect fresh-install state. */
+  async countAll(): Promise<number> {
+    const row = await this.db
+      .selectFrom('braiins_deposits')
+      .select((eb) => eb.fn.countAll<number>().as('n'))
+      .executeTakeFirst();
+    return Number(row?.n ?? 0);
+  }
+
   async findByTxId(tx_id: string): Promise<BraiinsDepositRow | null> {
     const row = await this.db
       .selectFrom('braiins_deposits')

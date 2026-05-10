@@ -138,12 +138,10 @@ const SAMPLE_BUILDERS: Record<string, (locale: string | null | undefined) => Sam
       is_recovery: false,
     };
   },
-  // #130 + #132: deposit detection. The lifecycle variants
-  // (Available / Returned) collapsed into a single Detected event in
-  // #132 when the source pivoted from the on-chain endpoint to
-  // tick_metrics deltas - the balance only goes up once the funds
-  // are spendable, so Detected and Available are the same moment in
-  // operator-time. Test message previews exactly that.
+  // #141: lifecycle restored. The dashboard's single tile keyed
+  // `braiins_deposit` test-button still previews the Detected
+  // message; the per-class _available / _returned keys are exposed
+  // here so an operator can probe each leg via the API directly.
   braiins_deposit: (locale) => {
     const c = getAlertCopy(locale);
     return {
@@ -152,6 +150,29 @@ const SAMPLE_BUILDERS: Record<string, (locale: string | null | undefined) => Sam
       body: c.braiins_deposit_detected_body({
         amount: '0.01000000 BTC (1,000,000 sat)',
         address_short: null,
+      }),
+      is_recovery: false,
+    };
+  },
+  braiins_deposit_available: (locale) => {
+    const c = getAlertCopy(locale);
+    return {
+      severity: 'INFO',
+      title: c.braiins_deposit_available_title(),
+      body: c.braiins_deposit_available_body({
+        amount: '0.01000000 BTC (1,000,000 sat)',
+      }),
+      is_recovery: false,
+    };
+  },
+  braiins_deposit_returned: (locale) => {
+    const c = getAlertCopy(locale);
+    return {
+      severity: 'IMPORTANT',
+      title: c.braiins_deposit_returned_title(),
+      body: c.braiins_deposit_returned_body({
+        amount: '0.01000000 BTC (1,000,000 sat)',
+        return_tx_short: 'a1b2c3d4...e5f6g7h8',
       }),
       is_recovery: false,
     };
