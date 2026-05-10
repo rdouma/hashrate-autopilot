@@ -101,6 +101,14 @@ const APP_CONFIG_ENV: {
     varName: 'BHA_POOL_OUTAGE_BLIP_TOLERANCE_SECONDS',
     coerce: asInt,
   },
+  datum_unreachable_alert_after_minutes: {
+    varName: 'BHA_DATUM_UNREACHABLE_ALERT_AFTER_MINUTES',
+    coerce: asInt,
+  },
+  sustained_paused_alert_after_minutes: {
+    varName: 'BHA_SUSTAINED_PAUSED_ALERT_AFTER_MINUTES',
+    coerce: asInt,
+  },
   api_outage_alert_after_minutes: {
     varName: 'BHA_API_OUTAGE_ALERT_AFTER_MINUTES',
     coerce: asInt,

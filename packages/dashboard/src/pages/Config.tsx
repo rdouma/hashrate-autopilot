@@ -1860,10 +1860,14 @@ function EventClassSubscriptions({
   const datumTiles: Tile[] = [
     {
       id: 'datum_unreachable',
-      label: t`Datum stratum unreachable`,
-      help: t`Buyer-side gateway has been unreachable for the configured tolerance window.`,
+      label: t`Datum stratum unreachable for`,
+      help: t`Buyer-side gateway has been unreachable for at least this many minutes.`,
       enabled: !disabled.has('datum_unreachable'),
       setEnabled: (n) => toggleClass('datum_unreachable', n),
+      extra: minutesInput(
+        'datum_unreachable_alert_after_minutes',
+        !disabled.has('datum_unreachable'),
+      ),
     },
   ];
 
@@ -1901,10 +1905,14 @@ function EventClassSubscriptions({
     },
     {
       id: 'sustained_paused',
-      label: t`Bid sustained-paused`,
-      help: t`Primary owned bid carries a non-null last_pause_reason for the tolerance window.`,
+      label: t`Bid sustained-paused for`,
+      help: t`Primary owned bid has been Paused by Braiins for at least this many minutes.`,
       enabled: !disabled.has('sustained_paused'),
       setEnabled: (n) => toggleClass('sustained_paused', n),
+      extra: minutesInput(
+        'sustained_paused_alert_after_minutes',
+        !disabled.has('sustained_paused'),
+      ),
     },
     {
       id: 'beta_exit',

@@ -104,6 +104,13 @@ export const AppConfigSchema = z.object({
   below_floor_alert_after_minutes: positiveInt,
   zero_hashrate_loud_alert_after_minutes: positiveInt,
   pool_outage_blip_tolerance_seconds: nonNegativeInt,
+  // #135: dedicated alert thresholds, split out from
+  // pool_outage_blip_tolerance_seconds × 5. The dashboard's
+  // reachability pill keeps using the blip tolerance; these two are
+  // strictly the Telegram-alert thresholds and are tunable
+  // independently per detector.
+  datum_unreachable_alert_after_minutes: positiveInt.default(10),
+  sustained_paused_alert_after_minutes: positiveInt.default(10),
   api_outage_alert_after_minutes: positiveInt,
 
   handover_window_minutes: positiveInt,
@@ -440,6 +447,8 @@ export const APP_CONFIG_DEFAULTS: Omit<
   below_floor_alert_after_minutes: 10,
   zero_hashrate_loud_alert_after_minutes: 15,
   pool_outage_blip_tolerance_seconds: 120,
+  datum_unreachable_alert_after_minutes: 10,
+  sustained_paused_alert_after_minutes: 10,
   api_outage_alert_after_minutes: 10,
 
   handover_window_minutes: 30,

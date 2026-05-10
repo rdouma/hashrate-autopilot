@@ -233,8 +233,9 @@ export class AlertEvaluator {
       return;
     }
     const isBad = !state.datum.reachable;
-    const thresholdMs =
-      state.config.pool_outage_blip_tolerance_seconds * 5 * 1000;
+    // #135: dedicated alert threshold (was
+    // pool_outage_blip_tolerance_seconds × 5).
+    const thresholdMs = state.config.datum_unreachable_alert_after_minutes * 60_000;
     this.datum_unreachable = await this.runTransition({
       event_class: 'datum_unreachable',
       severity: 'IMPORTANT',
@@ -354,8 +355,9 @@ export class AlertEvaluator {
     // tightened here too.
     const primary = state.owned_bids.find((b) => b.status !== 'BID_STATUS_FULFILLED');
     const isBad = primary?.status === 'BID_STATUS_PAUSED';
-    const thresholdMs =
-      state.config.pool_outage_blip_tolerance_seconds * 5 * 1000;
+    // #135: dedicated alert threshold (was
+    // pool_outage_blip_tolerance_seconds × 5).
+    const thresholdMs = state.config.sustained_paused_alert_after_minutes * 60_000;
     this.sustained_paused = await this.runTransition({
       event_class: 'sustained_paused',
       severity: 'IMPORTANT',

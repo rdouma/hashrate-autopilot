@@ -2,6 +2,10 @@
 
 ## 2026-05-10
 
+### `[Feature]` Split datum_unreachable + sustained_paused alert thresholds out from pool_outage_blip_tolerance_seconds × 5 (#135)
+
+The `datum_unreachable` and `sustained_paused` detectors used to derive their alert threshold from `pool_outage_blip_tolerance_seconds × 5` - one shared knob for two unrelated decisions (dashboard reachability-pill blip tolerance vs Telegram alert threshold). Migration 0082 adds dedicated `datum_unreachable_alert_after_minutes` + `sustained_paused_alert_after_minutes` config columns; defaults derived per-row from each operator's existing blip tolerance × 5 / 60 (rounded to int minutes), so post-upgrade behaviour is unchanged. AlertEvaluator's two detectors now read the new fields directly. Notifications-tab tiles for both events get the inline-minute-input treatment that the other timer-driven tiles already have, so the operator can tune them independently. `pool_outage_blip_tolerance_seconds` keeps its unchanged meaning (dashboard pill) and is no longer multiplied anywhere. NL / ES translations included.
+
 ### `[UI]` Notifications tab: inline minute thresholds on timer-driven events
 
 The Notifications tab tiles for `hashrate_below_floor`, `zero_hashrate`, and `api_unreachable` were exposing raw config-field names in their help text (`below_floor_alert_after_minutes`, `zero_hashrate_loud_alert_after_minutes`, `api_outage_alert_after_minutes`) instead of letting the operator edit the threshold inline. Refactored to mirror the wallet-runway tile's pattern: each tile's label is now an active sentence ending with "for", followed by an inline number input + "minutes" suffix. Help text rewritten in plain English, no more variable-name leaks. Underlying schema fields unchanged. NL / ES translations included for the new sentence fragments.

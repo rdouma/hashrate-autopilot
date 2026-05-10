@@ -457,8 +457,8 @@ msgid "Bid filling at {speed}."
 msgstr "Bod vult op {speed}."
 
 #: src/pages/Config.tsx
-msgid "Bid sustained-paused"
-msgstr "Bod aanhoudend gepauzeerd"
+msgid "Bid sustained-paused for"
+msgstr "Bid aanhoudend Paused gedurende"
 
 #: src/pages/Config.tsx
 msgid "Bid-event markers (CREATE / EDIT_PRICE / EDIT_SPEED / CANCEL) on the price chart. The dashboard already hides them on long ranges (1w / 1m / 1y / All) where individual markers lose meaning; the cap below adds a count-based rule on top of that."
@@ -658,8 +658,8 @@ msgid "Budget"
 msgstr "Budget"
 
 #: src/pages/Config.tsx
-msgid "Buyer-side gateway has been unreachable for the configured tolerance window."
-msgstr "Gateway aan buyer-zijde is onbereikbaar geweest gedurende het ingestelde tolerantie-venster."
+msgid "Buyer-side gateway has been unreachable for at least this many minutes."
+msgstr "Gateway aan de koperskant is al ten minste dit aantal minuten onbereikbaar."
 
 #: src/pages/Config.tsx
 msgid "Cadence between retries when an alert fails to deliver or the bad state persists. First attempt fires immediately; up to 4 retries follow at this cadence; the 5th carries a final \"giving up\" message and the notifier stays silent until recovery."
@@ -962,8 +962,8 @@ msgid "Datum stats not configured - set <0>datum_api_url</0> in Config to displa
 msgstr "Datum stats niet geconfigureerd - stel <0>datum_api_url</0> in via Config om verbonden workers en gerapporteerde hashrate te tonen. Zie <1>docs/setup-datum-api.md</1>."
 
 #: src/pages/Config.tsx
-msgid "Datum stratum unreachable"
-msgstr "Datum stratum onbereikbaar"
+msgid "Datum stratum unreachable for"
+msgstr "Datum stratum onbereikbaar gedurende"
 
 #: src/pages/Config.tsx
 msgid "days"
@@ -2227,8 +2227,8 @@ msgid "Pricing"
 msgstr "Prijsstelling"
 
 #: src/pages/Config.tsx
-msgid "Primary owned bid carries a non-null last_pause_reason for the tolerance window."
-msgstr "Het primaire eigen bod draagt een niet-leeg last_pause_reason gedurende het tolerantie-venster."
+msgid "Primary owned bid has been Paused by Braiins for at least this many minutes."
+msgstr "Primaire bid staat al ten minste dit aantal minuten op Paused bij Braiins."
 
 #: src/pages/Config.tsx
 #: src/pages/Status.tsx

@@ -30,6 +30,10 @@ export interface ConfigTable {
   below_floor_emergency_cap_after_minutes: number;
   zero_hashrate_loud_alert_after_minutes: number;
   pool_outage_blip_tolerance_seconds: number;
+  /** #135: dedicated minute threshold for the datum_unreachable alert (was pool_outage_blip_tolerance_seconds × 5). */
+  datum_unreachable_alert_after_minutes: number;
+  /** #135: dedicated minute threshold for the sustained_paused alert (was pool_outage_blip_tolerance_seconds × 5). */
+  sustained_paused_alert_after_minutes: number;
   api_outage_alert_after_minutes: number;
   handover_window_minutes: number;
   btc_payout_address: string;

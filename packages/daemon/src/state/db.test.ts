@@ -107,6 +107,7 @@ describe('openDatabase - migrations', () => {
       '0079_rename_error_severity_to_important.sql',
       '0080_braiins_deposits.sql',
       '0081_notification_locale.sql',
+      '0082_split_outage_thresholds.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });

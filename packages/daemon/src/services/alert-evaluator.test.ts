@@ -24,7 +24,11 @@ function makeState(overrides: Partial<State>): State {
   const base = {
     tick_at: 0,
     config: {
-      pool_outage_blip_tolerance_seconds: 60, // → threshold = 60*5 = 300s = 5m
+      pool_outage_blip_tolerance_seconds: 60,
+      // #135: dedicated alert thresholds (was derived from
+      // pool_outage_blip_tolerance_seconds × 5).
+      datum_unreachable_alert_after_minutes: 5,
+      sustained_paused_alert_after_minutes: 5,
       below_floor_alert_after_minutes: 10,
       zero_hashrate_loud_alert_after_minutes: 15,
       api_outage_alert_after_minutes: 10,

@@ -457,8 +457,8 @@ msgid "Bid filling at {speed}."
 msgstr "Oferta llenando a {speed}."
 
 #: src/pages/Config.tsx
-msgid "Bid sustained-paused"
-msgstr "Puja con pausa sostenida"
+msgid "Bid sustained-paused for"
+msgstr "Oferta sostenidamente Paused durante"
 
 #: src/pages/Config.tsx
 msgid "Bid-event markers (CREATE / EDIT_PRICE / EDIT_SPEED / CANCEL) on the price chart. The dashboard already hides them on long ranges (1w / 1m / 1y / All) where individual markers lose meaning; the cap below adds a count-based rule on top of that."
@@ -658,8 +658,8 @@ msgid "Budget"
 msgstr "Presupuesto"
 
 #: src/pages/Config.tsx
-msgid "Buyer-side gateway has been unreachable for the configured tolerance window."
-msgstr "El gateway del lado del comprador ha estado inalcanzable durante la ventana de tolerancia configurada."
+msgid "Buyer-side gateway has been unreachable for at least this many minutes."
+msgstr "La gateway del comprador lleva al menos este número de minutos sin ser accesible."
 
 #: src/pages/Config.tsx
 msgid "Cadence between retries when an alert fails to deliver or the bad state persists. First attempt fires immediately; up to 4 retries follow at this cadence; the 5th carries a final \"giving up\" message and the notifier stays silent until recovery."
@@ -962,8 +962,8 @@ msgid "Datum stats not configured - set <0>datum_api_url</0> in Config to displa
 msgstr "Estadísticas de Datum no configuradas - ajusta <0>datum_api_url</0> en Config para mostrar workers conectados y hashrate reportado. Ver <1>docs/setup-datum-api.md</1>."
 
 #: src/pages/Config.tsx
-msgid "Datum stratum unreachable"
-msgstr "Datum stratum inalcanzable"
+msgid "Datum stratum unreachable for"
+msgstr "Stratum de Datum no accesible durante"
 
 #: src/pages/Config.tsx
 msgid "days"
@@ -2227,8 +2227,8 @@ msgid "Pricing"
 msgstr "Precios"
 
 #: src/pages/Config.tsx
-msgid "Primary owned bid carries a non-null last_pause_reason for the tolerance window."
-msgstr "La puja propia principal lleva un last_pause_reason no nulo durante la ventana de tolerancia."
+msgid "Primary owned bid has been Paused by Braiins for at least this many minutes."
+msgstr "La oferta primaria lleva al menos este número de minutos en Paused por Braiins."
 
 #: src/pages/Config.tsx
 #: src/pages/Status.tsx

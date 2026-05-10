@@ -291,6 +291,8 @@ export interface AppConfig {
   below_floor_alert_after_minutes: number;
   zero_hashrate_loud_alert_after_minutes: number;
   pool_outage_blip_tolerance_seconds: number;
+  datum_unreachable_alert_after_minutes: number;
+  sustained_paused_alert_after_minutes: number;
   api_outage_alert_after_minutes: number;
   handover_window_minutes: number;
   btc_payout_address: string;

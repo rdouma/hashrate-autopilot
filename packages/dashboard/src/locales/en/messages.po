@@ -457,8 +457,8 @@ msgid "Bid filling at {speed}."
 msgstr "Bid filling at {speed}."
 
 #: src/pages/Config.tsx
-msgid "Bid sustained-paused"
-msgstr "Bid sustained-paused"
+msgid "Bid sustained-paused for"
+msgstr "Bid sustained-paused for"
 
 #: src/pages/Config.tsx
 msgid "Bid-event markers (CREATE / EDIT_PRICE / EDIT_SPEED / CANCEL) on the price chart. The dashboard already hides them on long ranges (1w / 1m / 1y / All) where individual markers lose meaning; the cap below adds a count-based rule on top of that."
@@ -658,8 +658,8 @@ msgid "Budget"
 msgstr "Budget"
 
 #: src/pages/Config.tsx
-msgid "Buyer-side gateway has been unreachable for the configured tolerance window."
-msgstr "Buyer-side gateway has been unreachable for the configured tolerance window."
+msgid "Buyer-side gateway has been unreachable for at least this many minutes."
+msgstr "Buyer-side gateway has been unreachable for at least this many minutes."
 
 #: src/pages/Config.tsx
 msgid "Cadence between retries when an alert fails to deliver or the bad state persists. First attempt fires immediately; up to 4 retries follow at this cadence; the 5th carries a final \"giving up\" message and the notifier stays silent until recovery."
@@ -962,8 +962,8 @@ msgid "Datum stats not configured - set <0>datum_api_url</0> in Config to displa
 msgstr "Datum stats not configured - set <0>datum_api_url</0> in Config to display connected workers and reported hashrate. See <1>docs/setup-datum-api.md</1>."
 
 #: src/pages/Config.tsx
-msgid "Datum stratum unreachable"
-msgstr "Datum stratum unreachable"
+msgid "Datum stratum unreachable for"
+msgstr "Datum stratum unreachable for"
 
 #: src/pages/Config.tsx
 msgid "days"
@@ -2227,8 +2227,8 @@ msgid "Pricing"
 msgstr "Pricing"
 
 #: src/pages/Config.tsx
-msgid "Primary owned bid carries a non-null last_pause_reason for the tolerance window."
-msgstr "Primary owned bid carries a non-null last_pause_reason for the tolerance window."
+msgid "Primary owned bid has been Paused by Braiins for at least this many minutes."
+msgstr "Primary owned bid has been Paused by Braiins for at least this many minutes."
 
 #: src/pages/Config.tsx
 #: src/pages/Status.tsx
