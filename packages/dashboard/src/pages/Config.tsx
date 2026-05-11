@@ -973,7 +973,12 @@ function ConfigTabsAndContent({
             sections in this tab. Used to render above the tabs as a
             standalone card; consolidated here so the tab is self-
             contained. */}
-        {activeTab === 'display' && <DisplaySettingsSection />}
+        {activeTab === 'display' && (
+          <>
+            <DisplaySettingsSection />
+            <SoloMinersSection draft={draft} onChange={onChange} />
+          </>
+        )}
         {body}
       </div>
     </div>
@@ -1714,6 +1719,335 @@ function numberLocaleLabel(code: string, sample: string): string {
 function dateLayoutLabel(layout: DateLayout, sampleMs: number, uiLocale: string): string {
   if (layout === 'system') return t`system default`;
   return formatTimestampSample(sampleMs, uiLocale, layout);
+}
+
+/**
+ * #149: Solo-mining section. Houses the master toggle plus the
+ * operator-curated list of Bitaxe / AxeOS devices. When the master
+ * toggle is off only the toggle + a one-line blurb render - the
+ * device list, add-form, and threshold inputs only appear once the
+ * feature is opted in. The toggle stays discoverable so operators
+ * can find the feature; everything behind it is gated.
+ *
+ * Live snapshot of per-device readings comes from /api/solo-miners
+ * (in-memory poller cache), refreshed on a 5s interval so adding
+ * an IP and waiting one tick shows live values without a page reload.
+ */
+function SoloMinersSection({
+  draft,
+  onChange,
+}: {
+  draft: AppConfig;
+  onChange: <K extends keyof AppConfig>(k: K, v: AppConfig[K]) => void;
+}) {
+  const { i18n } = useLingui();
+  void i18n;
+  const qc = useQueryClient();
+  const enabled = draft.solo_mining_enabled;
+
+  const list = useQuery({
+    queryKey: ['solo-miners'],
+    queryFn: api.soloMiners,
+    refetchInterval: 5_000,
+    // Keep the previous payload visible while the next refetch is in
+    // flight so the list doesn't blank-out every 5s.
+    placeholderData: (prev) => prev,
+    enabled,
+  });
+
+  const [newLabel, setNewLabel] = useState('');
+  const [newIp, setNewIp] = useState('');
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const createMutation = useMutation({
+    mutationFn: () => api.createSoloMiner({ label: newLabel.trim(), ip: newIp.trim() }),
+    onSuccess: (resp) => {
+      if (resp.ok) {
+        setNewLabel('');
+        setNewIp('');
+        setFormError(null);
+        qc.invalidateQueries({ queryKey: ['solo-miners'] });
+      } else {
+        setFormError(resp.error ?? 'Unknown error');
+      }
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (args: { id: number; body: Parameters<typeof api.updateSoloMiner>[1] }) =>
+      api.updateSoloMiner(args.id, args.body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['solo-miners'] }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => api.deleteSoloMiner(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['solo-miners'] }),
+  });
+
+  return (
+    <section className="bg-slate-900 border border-slate-800 rounded-lg p-4">
+      <header className="mb-3">
+        <h3 className="text-sm uppercase tracking-wider text-amber-400">
+          <Trans>Solo miners (Bitaxe / AxeOS)</Trans>
+        </h3>
+        <p className="text-xs text-slate-500 mt-1">
+          <Trans>
+            Monitor a fleet of home Bitaxe / Nerdaxe / ESP-Miner units alongside the autopilot's
+            rented Braiins hashrate. The daemon polls each device's /api/system/info every tick;
+            hashrate, temperature, power draw, and share rates surface on the Status page.
+          </Trans>
+        </p>
+      </header>
+
+      <label className="flex items-center gap-2 text-sm text-slate-200">
+        <input
+          type="checkbox"
+          checked={enabled}
+          onChange={(e) => onChange('solo_mining_enabled', e.target.checked)}
+          className="accent-amber-400 h-4 w-4"
+        />
+        <Trans>Enable solo-mining monitoring</Trans>
+      </label>
+
+      {enabled && (
+        <div className="mt-4 space-y-4">
+          <div>
+            <h4 className="text-xs uppercase tracking-wider text-slate-400 mb-2">
+              <Trans>Devices</Trans>
+            </h4>
+            {list.isPending && (
+              <div className="text-xs text-slate-500"><Trans>loading…</Trans></div>
+            )}
+            {list.data && list.data.devices.length === 0 && (
+              <div className="text-xs text-slate-500 italic">
+                <Trans>No devices yet. Add one below.</Trans>
+              </div>
+            )}
+            {list.data && list.data.devices.length > 0 && (
+              <table className="w-full text-xs">
+                <thead className="text-slate-500 uppercase tracking-wider">
+                  <tr>
+                    <th className="text-left font-normal py-1 pr-3"><Trans>Label</Trans></th>
+                    <th className="text-left font-normal py-1 pr-3"><Trans>IP / host</Trans></th>
+                    <th className="text-left font-normal py-1 pr-3"><Trans>Enabled</Trans></th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody className="text-slate-200">
+                  {list.data.devices.map((d) => (
+                    <SoloMinerRow
+                      key={d.id}
+                      device={d}
+                      onSave={(body) => updateMutation.mutate({ id: d.id, body })}
+                      onDelete={() => deleteMutation.mutate(d.id)}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          <div className="border-t border-slate-800 pt-3 space-y-2">
+            <h4 className="text-xs uppercase tracking-wider text-slate-400">
+              <Trans>Add device</Trans>
+            </h4>
+            <div className="flex flex-wrap gap-2 items-end">
+              <label className="block flex-1 min-w-[12rem]">
+                <span className="block text-[11px] text-slate-500 mb-0.5">
+                  <Trans>Label</Trans>
+                </span>
+                <input
+                  type="text"
+                  value={newLabel}
+                  onChange={(e) => setNewLabel(e.target.value)}
+                  placeholder="Bedroom Gamma"
+                  className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm"
+                />
+              </label>
+              <label className="block flex-1 min-w-[12rem]">
+                <span className="block text-[11px] text-slate-500 mb-0.5">
+                  <Trans>IP / host</Trans>
+                </span>
+                <input
+                  type="text"
+                  value={newIp}
+                  onChange={(e) => setNewIp(e.target.value)}
+                  placeholder="192.168.1.127"
+                  className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm font-mono"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => createMutation.mutate()}
+                disabled={createMutation.isPending || !newLabel.trim() || !newIp.trim()}
+                className="px-3 py-1 text-sm bg-amber-500/20 border border-amber-500 text-amber-200 rounded hover:bg-amber-500/30 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {createMutation.isPending ? <Trans>adding…</Trans> : <Trans>Add</Trans>}
+              </button>
+            </div>
+            {formError && (
+              <div className="text-xs text-red-400">{formError}</div>
+            )}
+          </div>
+
+          <SoloThresholdInputs draft={draft} onChange={onChange} />
+        </div>
+      )}
+    </section>
+  );
+}
+
+function SoloMinerRow({
+  device,
+  onSave,
+  onDelete,
+}: {
+  device: import('../lib/api').SoloMinerDevice;
+  onSave: (body: { label?: string; ip?: string; enabled?: boolean }) => void;
+  onDelete: () => void;
+}) {
+  const [label, setLabel] = useState(device.label);
+  const [ip, setIp] = useState(device.ip);
+  const dirty = label !== device.label || ip !== device.ip;
+  return (
+    <tr className="border-t border-slate-800">
+      <td className="py-1 pr-3">
+        <input
+          type="text"
+          value={label}
+          onChange={(e) => setLabel(e.target.value)}
+          className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-0.5 text-xs"
+        />
+      </td>
+      <td className="py-1 pr-3">
+        <input
+          type="text"
+          value={ip}
+          onChange={(e) => setIp(e.target.value)}
+          className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-0.5 text-xs font-mono"
+        />
+      </td>
+      <td className="py-1 pr-3">
+        <input
+          type="checkbox"
+          checked={device.enabled}
+          onChange={(e) => onSave({ enabled: e.target.checked })}
+          className="accent-amber-400 h-3.5 w-3.5"
+        />
+      </td>
+      <td className="py-1 text-right space-x-1">
+        {dirty && (
+          <button
+            type="button"
+            onClick={() => onSave({ label: label.trim(), ip: ip.trim() })}
+            className="px-2 py-0.5 text-[11px] text-amber-300 border border-amber-700 rounded hover:bg-amber-500/10"
+          >
+            <Trans>save</Trans>
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => {
+            if (confirm(`Remove ${device.label}?`)) onDelete();
+          }}
+          className="px-2 py-0.5 text-[11px] text-slate-400 border border-slate-700 rounded hover:bg-slate-800"
+        >
+          <Trans>remove</Trans>
+        </button>
+      </td>
+    </tr>
+  );
+}
+
+function SoloThresholdInputs({
+  draft,
+  onChange,
+}: {
+  draft: AppConfig;
+  onChange: <K extends keyof AppConfig>(k: K, v: AppConfig[K]) => void;
+}) {
+  return (
+    <div className="border-t border-slate-800 pt-3 space-y-2">
+      <h4 className="text-xs uppercase tracking-wider text-slate-400">
+        <Trans>Alert thresholds</Trans>
+      </h4>
+      <p className="text-[11px] text-slate-500">
+        <Trans>
+          Per-event-class opt-outs live on the Notifications tab. Per-ASIC-model thermal
+          ceilings are picked automatically; the override below applies a single global
+          ceiling across every device.
+        </Trans>
+      </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <SoloThresholdField
+          label={t`Overheating ceiling (°C, 0 = auto per model)`}
+          help={t`Default 0 uses per-ASIC-model lookup (BM1370 = 68 °C, BM1368/BM1366 = 70 °C, BM1397 = 75 °C, fallback 70 °C). Any non-zero value here overrides all of them.`}
+        >
+          <NumberField
+            value={draft.solo_overheating_threshold_celsius}
+            onChange={(v) => onChange('solo_overheating_threshold_celsius', v)}
+            min={0}
+            max={150}
+            step="integer"
+          />
+        </SoloThresholdField>
+        <SoloThresholdField
+          label={t`Zero-hashrate alert after (minutes)`}
+          help={t`Consecutive minutes a device must report 0 hashrate (or be unreachable) before the alert fires.`}
+        >
+          <NumberField
+            value={draft.solo_zero_hashrate_alert_after_minutes}
+            onChange={(v) => onChange('solo_zero_hashrate_alert_after_minutes', v)}
+            min={1}
+            max={60}
+            step="integer"
+          />
+        </SoloThresholdField>
+        <SoloThresholdField
+          label={t`Share-rejection threshold (%)`}
+          help={t`Rolling-window rejection rate above which the alert fires. Default 10 %.`}
+        >
+          <NumberField
+            value={draft.solo_share_rejection_threshold_pct}
+            onChange={(v) => onChange('solo_share_rejection_threshold_pct', v)}
+            min={0}
+            max={100}
+            step="any"
+          />
+        </SoloThresholdField>
+        <SoloThresholdField
+          label={t`Share-rejection window (minutes)`}
+          help={t`Window over which the rejection rate is computed.`}
+        >
+          <NumberField
+            value={draft.solo_share_rejection_window_minutes}
+            onChange={(v) => onChange('solo_share_rejection_window_minutes', v)}
+            min={5}
+            max={1440}
+            step="integer"
+          />
+        </SoloThresholdField>
+      </div>
+    </div>
+  );
+}
+
+function SoloThresholdField({
+  label,
+  help,
+  children,
+}: {
+  label: string;
+  help: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="block">
+      <span className="block text-xs text-slate-300 mb-1">{label}</span>
+      <div className="max-w-[200px]">{children}</div>
+      <span className="block text-[11px] text-slate-500 mt-1">{help}</span>
+    </label>
+  );
 }
 
 /**

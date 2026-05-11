@@ -40,6 +40,8 @@ import { closeDatabase, openDatabase, type DatabaseHandle } from './state/db.js'
 import { AlertsRepo } from './state/repos/alerts.js';
 import { BidEventsRepo } from './state/repos/bid_events.js';
 import { BraiinsDepositsRepo } from './state/repos/braiins_deposits.js';
+import { SoloMinersRepo } from './state/repos/solo_miners.js';
+import { AxeOSPoller } from './services/axeos-poller.js';
 import { ClosedBidsCacheRepo } from './state/repos/closed_bids_cache.js';
 import { ConfigRepo } from './state/repos/config.js';
 import { PoolBlocksRepo } from './state/repos/pool_blocks.js';
@@ -595,6 +597,19 @@ async function bootOperational(
   });
   telegramReceiver.start();
 
+  // #149: solo-mining monitoring (Bitaxe / AxeOS). Gated by the
+  // master toggle `solo_mining_enabled` (default false); the poller
+  // idles entirely when off so operators with no Bitaxes pay no
+  // per-tick cost. Driven from the main loop's tick below rather than
+  // its own setInterval - same cadence + per-tick ordering as the
+  // rest of the metric pipeline.
+  const soloMinersRepo = new SoloMinersRepo(handle.db);
+  const axeOSPoller = new AxeOSPoller({
+    cfgRef: cfgRefHolder,
+    repo: soloMinersRepo,
+    log: (m) => log(m),
+  });
+
   const loop = new TickLoop({
     controller,
     intervalMs: DEFAULT_TICK_INTERVAL_MS,
@@ -612,6 +627,12 @@ async function bootOperational(
       void alertManager
         .processDueRetries()
         .catch((err) => log(`[alert-retry] ${(err as Error)?.message ?? err}`));
+      // #149: AxeOS poll for the operator's solo-mining devices. No-op
+      // when `solo_mining_enabled` is false. Fire-and-forget like the
+      // others above so a slow Bitaxe doesn't drag the tick loop.
+      void axeOSPoller
+        .tick()
+        .catch((err) => log(`[axeos-poller] ${(err as Error)?.message ?? err}`));
     },
     onError: (err) => log(`[tick] error: ${(err as Error)?.message ?? err}`),
   });
@@ -755,6 +776,8 @@ async function bootOperational(
     bitcoindClient,
     publicIpService,
     ddnsUpdater,
+    soloMinersRepo,
+    axeOSPoller,
     braiinsClient,
     secrets: {
       bitcoind_rpc_url: secrets.bitcoind_rpc_url ?? '',

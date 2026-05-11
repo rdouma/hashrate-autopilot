@@ -66,6 +66,9 @@ import { registerStaleUrlsRoute } from './routes/stale-urls.js';
 import type { BraiinsClient } from '@braiins-hashrate/braiins-client';
 import type { PublicIpService } from '../services/public-ip.js';
 import type { DdnsUpdaterService } from '../services/ddns-updater.js';
+import type { AxeOSPoller } from '../services/axeos-poller.js';
+import type { SoloMinersRepo } from '../state/repos/solo_miners.js';
+import { registerSoloMinersRoute } from './routes/solo-miners.js';
 
 export interface HttpServerDeps {
   readonly controller: Controller;
@@ -90,6 +93,10 @@ export interface HttpServerDeps {
   readonly publicIpService: PublicIpService;
   /** #111: DDNS updater service. */
   readonly ddnsUpdater: DdnsUpdaterService;
+  /** #149: solo-mining devices repository. */
+  readonly soloMinersRepo: SoloMinersRepo;
+  /** #149: AxeOS poller - exposes the in-memory live snapshot used by the Solo miners card. */
+  readonly axeOSPoller: AxeOSPoller;
   /**
    * Fires after a successful PUT /api/config. main.ts wires this to
    * refresh the live config reference + kick the DDNS updater when
@@ -217,6 +224,10 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<HttpServer
     configRepo: deps.configRepo,
     ownedBidsRepo: deps.ownedBidsRepo,
     braiinsClient: deps.braiinsClient,
+  });
+  await registerSoloMinersRoute(app, {
+    soloMinersRepo: deps.soloMinersRepo,
+    axeOSPoller: deps.axeOSPoller,
   });
 
   // Serve built dashboard if present.

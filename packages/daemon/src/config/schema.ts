@@ -397,6 +397,28 @@ export const AppConfigSchema = z.object({
   // https://api.dynu.com/nic/update or https://freedns.afraid.org/nic/update.
   // Empty when provider is not 'dyndns2'.
   ddns_update_url: z.string().default(''),
+  // #149: solo-mining monitoring (Bitaxe / AxeOS).
+  // Off by default - operator opts in via the Config -> Solo miners
+  // master toggle. With this flag false the daemon does not poll
+  // AxeOS at all and the entire feature surface is hidden from
+  // the dashboard.
+  solo_mining_enabled: z.boolean().default(false),
+  // Global overheating ceiling override. 0 = use the per-ASIC-model
+  // lookup table baked into the alert evaluator (BM1370=68, BM1368=70,
+  // BM1366=70, BM1397=75, fallback=70). Non-zero = a single global
+  // operator override that wins for every device regardless of model.
+  // Per-device overrides are out of scope for v1.
+  solo_overheating_threshold_celsius: z.number().int().nonnegative().default(0),
+  // Consecutive bad-minutes before the solo_zero_hashrate alert fires.
+  // "Bad" = hashRate_1m == 0 OR device unreachable.
+  solo_zero_hashrate_alert_after_minutes: z.number().int().positive().default(5),
+  // Share-rejection rate threshold (percent). Triggers solo_share_rejection
+  // when Δrejected / (Δrejected + Δaccepted) over the rolling window
+  // exceeds this value.
+  solo_share_rejection_threshold_pct: z.number().nonnegative().default(10),
+  // Rolling-window size in minutes over which solo share rejection
+  // rate is computed.
+  solo_share_rejection_window_minutes: z.number().int().positive().default(60),
 });
 
 export type AppConfig = z.infer<typeof AppConfigSchema>;
@@ -506,4 +528,10 @@ export const APP_CONFIG_DEFAULTS: Omit<
   ddns_username: '',
   ddns_credential: '',
   ddns_update_url: '',
+
+  solo_mining_enabled: false,
+  solo_overheating_threshold_celsius: 0,
+  solo_zero_hashrate_alert_after_minutes: 5,
+  solo_share_rejection_threshold_pct: 10,
+  solo_share_rejection_window_minutes: 60,
 };

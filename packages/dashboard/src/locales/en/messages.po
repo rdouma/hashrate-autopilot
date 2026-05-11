@@ -256,6 +256,10 @@ msgstr "acknowledged {0}"
 msgid "action mode blocks this"
 msgstr "action mode blocks this"
 
+#: src/components/SoloMinersCard.tsx
+msgid "active"
+msgstr "active"
+
 #: src/lib/labels.ts
 msgid "Active"
 msgstr "Active"
@@ -276,6 +280,18 @@ msgstr "Actual sat consumed across the selected range, scaled to a 24h rate. Der
 msgid "Actual sat consumed over the last 3 h, scaled to a 24h rate. Uses Braiins’s authoritative primary_bid_consumed_sat counter, not a bid × delivered model. Fallback used when the selected range has fewer than ~5 ticks."
 msgstr "Actual sat consumed over the last 3 h, scaled to a 24h rate. Uses Braiins’s authoritative primary_bid_consumed_sat counter, not a bid × delivered model. Fallback used when the selected range has fewer than ~5 ticks."
 
+#: src/pages/Config.tsx
+msgid "Add"
+msgstr "Add"
+
+#: src/pages/Config.tsx
+msgid "Add device"
+msgstr "Add device"
+
+#: src/pages/Config.tsx
+msgid "adding…"
+msgstr "adding…"
+
 #: src/pages/Setup.tsx
 msgid "After submit, the daemon writes everything to <0>state.db</0> and brings the controller online in-place. Boots in <1>DRY-RUN</1> mode; the dashboard signs you in automatically. Promote to LIVE from the Status page when you're ready."
 msgstr "After submit, the daemon writes everything to <0>state.db</0> and brings the controller online in-place. Boots in <1>DRY-RUN</1> mode; the dashboard signs you in automatically. Promote to LIVE from the Status page when you're ready."
@@ -283,6 +299,10 @@ msgstr "After submit, the daemon writes everything to <0>state.db</0> and brings
 #: src/components/HashrateChart.tsx
 msgid "aged out:"
 msgstr "aged out:"
+
+#: src/pages/Config.tsx
+msgid "Alert thresholds"
+msgstr "Alert thresholds"
 
 #: src/components/Layout.tsx
 #: src/pages/Alerts.tsx
@@ -823,6 +843,10 @@ msgid "Connecting to daemon…"
 msgstr "Connecting to daemon…"
 
 #: src/pages/Config.tsx
+msgid "Consecutive minutes a device must report 0 hashrate (or be unreachable) before the alert fires."
+msgstr "Consecutive minutes a device must report 0 hashrate (or be unreachable) before the alert fires."
+
+#: src/pages/Config.tsx
 msgid "Controls how the P&L panel computes the \"spent\" figure that feeds the net result."
 msgstr "Controls how the P&L panel computes the \"spent\" figure that feeds the net result."
 
@@ -1004,6 +1028,10 @@ msgid "decrease"
 msgstr "decrease"
 
 #: src/pages/Config.tsx
+msgid "Default 0 uses per-ASIC-model lookup (BM1370 = 68 °C, BM1368/BM1366 = 70 °C, BM1397 = 75 °C, fallback 70 °C). Any non-zero value here overrides all of them."
+msgstr "Default 0 uses per-ASIC-model lookup (BM1370 = 68 °C, BM1368/BM1366 = 70 °C, BM1397 = 75 °C, fallback 70 °C). Any non-zero value here overrides all of them."
+
+#: src/pages/Config.tsx
 msgid "Default 50001."
 msgstr "Default 50001."
 
@@ -1039,6 +1067,14 @@ msgstr "denomination"
 #: src/components/Bip110ScanCard.tsx
 msgid "deployment"
 msgstr "deployment"
+
+#: src/components/SoloMinersCard.tsx
+msgid "Device"
+msgstr "Device"
+
+#: src/pages/Config.tsx
+msgid "Devices"
+msgstr "Devices"
 
 #: src/components/HashrateChart.tsx
 msgid "DIFFICULTY RETARGET"
@@ -1204,6 +1240,14 @@ msgstr "Electrs host"
 msgid "Enable cheap mode"
 msgstr "Enable cheap mode"
 
+#: src/pages/Config.tsx
+msgid "Enable solo-mining monitoring"
+msgstr "Enable solo-mining monitoring"
+
+#: src/pages/Config.tsx
+msgid "Enabled"
+msgstr "Enabled"
+
 #: src/pages/Status.tsx
 msgid "Escalation in"
 msgstr "Escalation in"
@@ -1275,6 +1319,10 @@ msgstr "fired"
 #: src/pages/Setup.tsx
 msgid "First-run setup"
 msgstr "First-run setup"
+
+#: src/components/SoloMinersCard.tsx
+msgid "Fleet"
+msgstr "Fleet"
 
 #: src/components/HashrateChart.tsx
 #: src/pages/Status.tsx
@@ -1367,6 +1415,7 @@ msgstr "hashprice + max overpay"
 
 #: src/components/HashrateChart.tsx
 #: src/components/HashrateChart.tsx
+#: src/components/SoloMinersCard.tsx
 msgid "Hashrate"
 msgstr "Hashrate"
 
@@ -1495,6 +1544,11 @@ msgstr "Instance label (optional)"
 msgid "insufficient history"
 msgstr "insufficient history"
 
+#: src/pages/Config.tsx
+#: src/pages/Config.tsx
+msgid "IP / host"
+msgstr "IP / host"
+
 #: src/lib/format.ts
 msgid "just now"
 msgstr "just now"
@@ -1510,6 +1564,11 @@ msgstr "Keep the Pool URL's hostname pointed at this box's current public IP. Re
 #: src/pages/Config.tsx
 msgid "Keep whatever run mode was active before the restart. PAUSED is demoted to DRY_RUN."
 msgstr "Keep whatever run mode was active before the restart. PAUSED is demoted to DRY_RUN."
+
+#: src/pages/Config.tsx
+#: src/pages/Config.tsx
+msgid "Label"
+msgstr "Label"
 
 #: src/components/Layout.tsx
 msgid "language"
@@ -1587,6 +1646,7 @@ msgstr "Loading or daemon restart required."
 
 #: src/pages/Alerts.tsx
 #: src/pages/Alerts.tsx
+#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 #: src/pages/Status.tsx
 #: src/pages/Status.tsx
@@ -1693,6 +1753,10 @@ msgid "Mismatch. If your daemon and Datum Gateway are on the same home network, 
 msgstr "Mismatch. If your daemon and Datum Gateway are on the same home network, these should match. Usually this means your DDNS hasn't updated since the ISP changed your public IP - configure DDNS below to fix it."
 
 #: src/pages/Config.tsx
+msgid "Monitor a fleet of home Bitaxe / Nerdaxe / ESP-Miner units alongside the autopilot's rented Braiins hashrate. The daemon polls each device's /api/system/info every tick; hashrate, temperature, power draw, and share rates surface on the Status page."
+msgstr "Monitor a fleet of home Bitaxe / Nerdaxe / ESP-Miner units alongside the autopilot's rented Braiins hashrate. The daemon polls each device's /api/system/info every tick; hashrate, temperature, power draw, and share rates surface on the Status page."
+
+#: src/pages/Config.tsx
 msgid "MP3 / OGG / WAV / WebM, max 200 KB."
 msgstr "MP3 / OGG / WAV / WebM, max 200 KB."
 
@@ -1790,6 +1854,10 @@ msgstr "no bids on this account"
 #: src/pages/Config.tsx
 msgid "no change needed"
 msgstr "no change needed"
+
+#: src/pages/Config.tsx
+msgid "No devices yet. Add one below."
+msgstr "No devices yet. Add one below."
 
 #: src/pages/Status.tsx
 msgid "No hashrate available on the market right now."
@@ -2053,6 +2121,10 @@ msgstr "Our unpaid balance ({0}) has already crossed the payout threshold ({1} �
 msgid "overdue {overdueFormatted}"
 msgstr "overdue {overdueFormatted}"
 
+#: src/pages/Config.tsx
+msgid "Overheating ceiling (°C, 0 = auto per model)"
+msgstr "Overheating ceiling (°C, 0 = auto per model)"
+
 #: src/components/PriceChart.tsx
 msgid "overpay"
 msgstr "overpay"
@@ -2141,6 +2213,10 @@ msgid "Per-bid budget"
 msgstr "Per-bid budget"
 
 #: src/pages/Config.tsx
+msgid "Per-event-class opt-outs live on the Notifications tab. Per-ASIC-model thermal ceilings are picked automatically; the override below applies a single global ceiling across every device."
+msgstr "Per-event-class opt-outs live on the Notifications tab. Per-ASIC-model thermal ceilings are picked automatically; the override below applies a single global ceiling across every device."
+
+#: src/pages/Config.tsx
 msgid "Per-hostname DDNS Key user, not your account login."
 msgstr "Per-hostname DDNS Key user, not your account login."
 
@@ -2151,6 +2227,10 @@ msgstr "Per-tick bid = fillable_ask + this. Braiins matches pay-your-bid, so thi
 #: src/pages/Config.tsx
 msgid "Play a sound when a new pool block is detected paying our payout address. Off by default. Pick one of the bundled cues, upload your own, or leave it disabled. The cue fires once per new reward_events row; the dashboard tab needs to be open."
 msgstr "Play a sound when a new pool block is detected paying our payout address. Off by default. Pick one of the bundled cues, upload your own, or leave it disabled. The cue fires once per new reward_events row; the dashboard tab needs to be open."
+
+#: src/components/SoloMinersCard.tsx
+msgid "Polled"
+msgstr "Polled"
 
 #: src/pages/Config.tsx
 msgid "Polled every 5 minutes. The daemon never makes decisions based on fiat price - this is purely a display convenience. Set to \"Disabled\" if you want a sats-only dashboard."
@@ -2239,6 +2319,10 @@ msgstr "port"
 #: src/pages/Setup.tsx
 msgid "Port"
 msgstr "Port"
+
+#: src/components/SoloMinersCard.tsx
+msgid "Power"
+msgstr "Power"
 
 #: src/components/HashrateChart.tsx
 msgid "previous"
@@ -2368,9 +2452,17 @@ msgstr "refreshing…"
 msgid "Refundable on cancel:"
 msgstr "Refundable on cancel:"
 
+#: src/components/SoloMinersCard.tsx
+msgid "Rejected"
+msgstr "Rejected"
+
 #: src/pages/Login.tsx
 msgid "Remember me on this device"
 msgstr "Remember me on this device"
+
+#: src/pages/Config.tsx
+msgid "remove"
+msgstr "remove"
 
 #: src/pages/Config.tsx
 msgid "Replace file…"
@@ -2432,6 +2524,10 @@ msgid "Rolling-mean window for the Price chart's `our bid` and `effective` lines
 msgstr "Rolling-mean window for the Price chart's `our bid` and `effective` lines. Useful when the effective line is noisy at tick resolution. Hashprice / max bid are not smoothed - they're market-wide signals."
 
 #: src/pages/Config.tsx
+msgid "Rolling-window rejection rate above which the alert fires. Default 10 %."
+msgstr "Rolling-window rejection rate above which the alert fires. Default 10 %."
+
+#: src/pages/Config.tsx
 #: src/pages/Setup.tsx
 msgid "RPC password"
 msgstr "RPC password"
@@ -2476,6 +2572,7 @@ msgstr "sats"
 msgid "Sats accrued to our wallet on Ocean since the last on-chain payout. Climbs continuously between payouts; drops to zero when a payout is sent (Ocean pays out when this passes the threshold, ~0.01 BTC by default)."
 msgstr "Sats accrued to our wallet on Ocean since the last on-chain payout. Climbs continuously between payouts; drops to zero when a payout is sent (Ocean pays out when this passes the threshold, ~0.01 BTC by default)."
 
+#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "save"
 msgstr "save"
@@ -2564,6 +2661,14 @@ msgstr "share log"
 msgid "share_log %"
 msgstr "share_log %"
 
+#: src/pages/Config.tsx
+msgid "Share-rejection threshold (%)"
+msgstr "Share-rejection threshold (%)"
+
+#: src/pages/Config.tsx
+msgid "Share-rejection window (minutes)"
+msgstr "Share-rejection window (minutes)"
+
 #: src/pages/Setup.tsx
 msgid "Show"
 msgstr "Show"
@@ -2601,6 +2706,19 @@ msgstr "Signaling BIP 110 (Reduced Data soft fork)"
 #: src/pages/Login.tsx
 msgid "signing in…"
 msgstr "signing in…"
+
+#: src/components/SoloMinersCard.tsx
+#: src/components/SoloMinersCard.tsx
+msgid "Solo miners"
+msgstr "Solo miners"
+
+#: src/pages/Config.tsx
+msgid "Solo miners (Bitaxe / AxeOS)"
+msgstr "Solo miners (Bitaxe / AxeOS)"
+
+#: src/components/SoloMinersCard.tsx
+msgid "Solo-mining monitoring is enabled but no devices have been added yet. Add a Bitaxe IP on Config → Display & Logging → Solo miners."
+msgstr "Solo-mining monitoring is enabled but no devices have been added yet. Add a Bitaxe IP on Config → Display & Logging → Solo miners."
 
 #: src/pages/Config.tsx
 msgid "Sound"
@@ -2714,6 +2832,10 @@ msgstr "Telegram notification history. Small rows (just title + body strings); t
 #: src/pages/Config.tsx
 msgid "Telegram notifications"
 msgstr "Telegram notifications"
+
+#: src/components/SoloMinersCard.tsx
+msgid "Temp"
+msgstr "Temp"
 
 #: src/pages/Config.tsx
 msgid "Test"
@@ -2844,6 +2966,15 @@ msgstr "unpaid earnings"
 msgid "unpaid earnings (Ocean)"
 msgstr "unpaid earnings (Ocean)"
 
+#: src/components/SoloMinersCard.tsx
+msgid "unreachable"
+msgstr "unreachable"
+
+#. placeholder {0}: entry.error
+#: src/components/SoloMinersCard.tsx
+msgid "unreachable: {0}"
+msgstr "unreachable: {0}"
+
 #: src/pages/Config.tsx
 msgid "unsaved changes"
 msgstr "unsaved changes"
@@ -2882,6 +3013,10 @@ msgstr "Uploading…"
 msgid "uptime"
 msgstr "uptime"
 
+#: src/components/SoloMinersCard.tsx
+msgid "Uptime"
+msgstr "Uptime"
+
 #: src/pages/Config.tsx
 msgid "Used by the on-chain payout balance check (when \"Bitcoin Core RPC\" is selected as the backend above), AND by the <0>BIP 110</0> yellow-cube marker on the Hashrate chart and the BIP 110 scan card on Status - those last two call bitcoind regardless of which payout backend is selected. The Test button below validates the values currently in the form, before saving."
 msgstr "Used by the on-chain payout balance check (when \"Bitcoin Core RPC\" is selected as the backend above), AND by the <0>BIP 110</0> yellow-cube marker on the Hashrate chart and the BIP 110 scan card on Status - those last two call bitcoind regardless of which payout backend is selected. The Test button below validates the values currently in the form, before saving."
@@ -2914,6 +3049,10 @@ msgstr "v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
 #: src/components/Bip110ScanCard.tsx
 msgid "version"
 msgstr "version"
+
+#: src/components/SoloMinersCard.tsx
+msgid "VR temp"
+msgstr "VR temp"
 
 #: src/pages/Status.tsx
 msgid "Waiting for Ocean hashprice - trading is paused until the break-even reference is available."
@@ -2999,6 +3138,10 @@ msgstr "Will place a CREATE_BID at {target} on the next tick."
 msgid "Will raise to {target} in ~{0} min (current {current})."
 msgstr "Will raise to {target} in ~{0} min (current {current})."
 
+#: src/pages/Config.tsx
+msgid "Window over which the rejection rate is computed."
+msgstr "Window over which the rejection rate is computed."
+
 #: src/pages/Status.tsx
 msgid "Wipe the local terminal-bid cache and re-paginate every bid from Braiins on the next refresh? This is safe but slower than a normal refresh."
 msgstr "Wipe the local terminal-bid cache and re-paginate every bid from Braiins on the next refresh? This is safe but slower than a normal refresh."
@@ -3032,3 +3175,7 @@ msgstr "Your address that receives Ocean TIDES payouts. The worker identity belo
 #: src/pages/Config.tsx
 msgid "Zero hashrate for"
 msgstr "Zero hashrate for"
+
+#: src/pages/Config.tsx
+msgid "Zero-hashrate alert after (minutes)"
+msgstr "Zero-hashrate alert after (minutes)"

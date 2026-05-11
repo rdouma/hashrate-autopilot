@@ -347,10 +347,69 @@ export interface AppConfig {
   ddns_username: string;
   ddns_credential: string;
   ddns_update_url: string;
+  // #149: solo-mining monitoring (Bitaxe / AxeOS).
+  solo_mining_enabled: boolean;
+  solo_overheating_threshold_celsius: number;
+  solo_zero_hashrate_alert_after_minutes: number;
+  solo_share_rejection_threshold_pct: number;
+  solo_share_rejection_window_minutes: number;
 }
 
 export interface ConfigResponse {
   config: AppConfig;
+}
+
+// #149: solo-mining monitoring (Bitaxe / AxeOS / Nerdaxe). The
+// daemon polls each enabled device every tick when the master
+// toggle is on; the dashboard reads the resulting in-memory snapshot
+// here to render the Status card + chart series.
+
+export interface SoloMinerDevice {
+  id: number;
+  label: string;
+  ip: string;
+  enabled: boolean;
+  sort_order: number;
+  created_at: number;
+  updated_at: number;
+}
+
+export interface SoloMinerSnapshotEntry {
+  device: SoloMinerDevice;
+  last_polled_at: number;
+  reachable: boolean;
+  hashrate_1m_ghs: number | null;
+  hashrate_10m_ghs: number | null;
+  hashrate_1h_ghs: number | null;
+  expected_hashrate_ghs: number | null;
+  temp_c: number | null;
+  vr_temp_c: number | null;
+  power_w: number | null;
+  voltage_v: number | null;
+  current_a: number | null;
+  shares_accepted: number | null;
+  shares_rejected: number | null;
+  uptime_seconds: number | null;
+  asic_model: string | null;
+  version: string | null;
+  stratum_url: string | null;
+  stratum_port: number | null;
+  stratum_user: string | null;
+  error: string | null;
+}
+
+export interface SoloMinersResponse {
+  devices: SoloMinerDevice[];
+  snapshot: {
+    enabled: boolean;
+    entries: SoloMinerSnapshotEntry[];
+  };
+}
+
+export interface SoloMinerMutationResponse {
+  ok: boolean;
+  device?: SoloMinerDevice;
+  error?: string;
 }
 
 // #111: DDNS + public IP diagnostics for the dashboard.
@@ -561,6 +620,23 @@ export const api = {
   },
   btcPrice: () => request<BtcPriceResponse>('/api/btc-price'),
   ddns: () => request<DdnsRouteResponse>('/api/ddns'),
+  // #149: solo-mining device list + live AxeOS snapshot.
+  soloMiners: () => request<SoloMinersResponse>('/api/solo-miners'),
+  createSoloMiner: (body: { label: string; ip: string; enabled?: boolean }) =>
+    request<SoloMinerMutationResponse>('/api/solo-miners', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  updateSoloMiner: (
+    id: number,
+    body: { label?: string; ip?: string; enabled?: boolean; sort_order?: number },
+  ) =>
+    request<SoloMinerMutationResponse>(`/api/solo-miners/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  deleteSoloMiner: (id: number) =>
+    request<{ ok: boolean }>(`/api/solo-miners/${id}`, { method: 'DELETE' }),
   staleUrls: () => request<StaleUrlsResponse>('/api/stale-urls'),
   cancelStaleUrlBid: (bidId: string) =>
     request<{ ok: boolean; error?: string }>('/api/stale-urls/cancel', {

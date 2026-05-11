@@ -57,6 +57,8 @@ export class ConfigRepo {
       block_found_sound: rest.block_found_sound as AppConfig['block_found_sound'],
       // #111: SQL column is broad TEXT; Zod narrows to '' | 'noip'.
       ddns_provider: rest.ddns_provider as AppConfig['ddns_provider'],
+      // #149: master toggle stored as 0/1, surfaced as boolean.
+      solo_mining_enabled: rest.solo_mining_enabled === 1,
     };
   }
 
@@ -81,6 +83,8 @@ export class ConfigRepo {
       // #106: comma-join the opt-out list back to TEXT.
       notification_disabled_event_classes:
         validated.notification_disabled_event_classes.join(','),
+      // #149: master toggle stored as 0/1.
+      solo_mining_enabled: (validated.solo_mining_enabled ? 1 : 0) as 0 | 1,
       // Legacy NOT NULL columns still in the DB - provide harmless defaults
       // so INSERT succeeds.
       emergency_max_bid_sat_per_eh_day: validated.max_bid_sat_per_eh_day,

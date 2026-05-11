@@ -213,6 +213,23 @@ const APP_CONFIG_ENV: {
   ddns_username: { varName: 'BHA_DDNS_USERNAME', coerce: asString },
   ddns_credential: { varName: 'BHA_DDNS_CREDENTIAL', coerce: asString },
   ddns_update_url: { varName: 'BHA_DDNS_UPDATE_URL', coerce: asString },
+  solo_mining_enabled: { varName: 'BHA_SOLO_MINING_ENABLED', coerce: asBoolean },
+  solo_overheating_threshold_celsius: {
+    varName: 'BHA_SOLO_OVERHEATING_THRESHOLD_CELSIUS',
+    coerce: asInt,
+  },
+  solo_zero_hashrate_alert_after_minutes: {
+    varName: 'BHA_SOLO_ZERO_HASHRATE_ALERT_AFTER_MINUTES',
+    coerce: asInt,
+  },
+  solo_share_rejection_threshold_pct: {
+    varName: 'BHA_SOLO_SHARE_REJECTION_THRESHOLD_PCT',
+    coerce: asNumber,
+  },
+  solo_share_rejection_window_minutes: {
+    varName: 'BHA_SOLO_SHARE_REJECTION_WINDOW_MINUTES',
+    coerce: asInt,
+  },
 };
 
 // ---------------------------------------------------------------------------

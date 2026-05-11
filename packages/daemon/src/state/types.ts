@@ -103,6 +103,16 @@ export interface ConfigTable {
   ddns_credential: string;
   /** #111: dyndns2 update endpoint URL (only used when provider = 'dyndns2'). */
   ddns_update_url: string;
+  /** #149: master toggle for solo-mining monitoring (Bitaxe / AxeOS). 0 = feature dormant (no polling, hidden UI surface). */
+  solo_mining_enabled: 0 | 1;
+  /** #149: global override for the overheating ceiling. 0 = use per-ASIC-model lookup; non-zero = override wins for every device. */
+  solo_overheating_threshold_celsius: number;
+  /** #149: zero-hashrate / unreachable alert threshold (consecutive bad minutes). */
+  solo_zero_hashrate_alert_after_minutes: number;
+  /** #149: share-rejection alert threshold (%). */
+  solo_share_rejection_threshold_pct: number;
+  /** #149: rolling window in minutes over which share-rejection rate is computed. */
+  solo_share_rejection_window_minutes: number;
   updated_at: number;
 }
 
@@ -477,6 +487,52 @@ export interface BraiinsDepositsTable {
   notified_returned: 0 | 1;
 }
 
+/**
+ * #149: operator-managed list of solo-mining devices (Bitaxe /
+ * Nerdaxe / any ESP-Miner fork). The daemon polls each enabled
+ * device's `/api/system/info` every tick when the
+ * `config.solo_mining_enabled` master toggle is on.
+ */
+export interface SoloMinersTable {
+  id: Generated<number>;
+  label: string;
+  ip: string;
+  enabled: Generated<0 | 1>;
+  sort_order: Generated<number>;
+  created_at: number;
+  updated_at: number;
+}
+
+/**
+ * #149: one row per (device, tick). AxeOS's API only exposes a live
+ * snapshot, so the daemon persists a rolling history itself for
+ * chart back-fill + alert delta computation. Pruned via the same
+ * retention service that purges `tick_metrics`.
+ */
+export interface SoloMinerSamplesTable {
+  device_id: number;
+  tick_at: number;
+  /** 1 = HTTP succeeded; 0 = timeout / refused / non-2xx. All other columns may be null when 0. */
+  reachable: 0 | 1;
+  hashrate_1m_ghs: number | null;
+  hashrate_10m_ghs: number | null;
+  hashrate_1h_ghs: number | null;
+  expected_hashrate_ghs: number | null;
+  temp_c: number | null;
+  vr_temp_c: number | null;
+  power_w: number | null;
+  voltage_v: number | null;
+  current_a: number | null;
+  shares_accepted: number | null;
+  shares_rejected: number | null;
+  uptime_seconds: number | null;
+  asic_model: string | null;
+  version: string | null;
+  stratum_url: string | null;
+  stratum_port: number | null;
+  stratum_user: string | null;
+}
+
 export interface Database {
   config: ConfigTable;
   pool_blocks: PoolBlocksTable;
@@ -495,6 +551,8 @@ export interface Database {
   secrets: SecretsTable;
   block_version_cache: BlockVersionCacheTable;
   braiins_deposits: BraiinsDepositsTable;
+  solo_miners: SoloMinersTable;
+  solo_miner_samples: SoloMinerSamplesTable;
   _migrations: MigrationsTable;
 }
 

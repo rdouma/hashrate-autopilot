@@ -256,6 +256,10 @@ msgstr "confirmado {0}"
 msgid "action mode blocks this"
 msgstr "el modo de acción bloquea esto"
 
+#: src/components/SoloMinersCard.tsx
+msgid "active"
+msgstr "activo"
+
 #: src/lib/labels.ts
 msgid "Active"
 msgstr "Activa"
@@ -276,6 +280,18 @@ msgstr "Sats realmente consumidos en el rango seleccionado, escalado a una tasa 
 msgid "Actual sat consumed over the last 3 h, scaled to a 24h rate. Uses Braiins’s authoritative primary_bid_consumed_sat counter, not a bid × delivered model. Fallback used when the selected range has fewer than ~5 ticks."
 msgstr "Sats realmente consumidos en las últimas 3 h, escalado a una tasa de 24h. Usa el contador autoritativo primary_bid_consumed_sat de Braiins, no un modelo bid × entregado. Se usa como respaldo cuando el rango seleccionado tiene menos de ~5 ticks."
 
+#: src/pages/Config.tsx
+msgid "Add"
+msgstr "Anadir"
+
+#: src/pages/Config.tsx
+msgid "Add device"
+msgstr "Anadir dispositivo"
+
+#: src/pages/Config.tsx
+msgid "adding…"
+msgstr "anadiendo…"
+
 #: src/pages/Setup.tsx
 msgid "After submit, the daemon writes everything to <0>state.db</0> and brings the controller online in-place. Boots in <1>DRY-RUN</1> mode; the dashboard signs you in automatically. Promote to LIVE from the Status page when you're ready."
 msgstr "Tras enviar, el daemon escribe todo en <0>state.db</0> y pone el controlador en línea en el sitio. Arranca en modo <1>DRY-RUN</1>; el panel te conecta automáticamente. Cambia a LIVE desde la página Status cuando estés listo."
@@ -283,6 +299,10 @@ msgstr "Tras enviar, el daemon escribe todo en <0>state.db</0> y pone el control
 #: src/components/HashrateChart.tsx
 msgid "aged out:"
 msgstr "fuera de ventana:"
+
+#: src/pages/Config.tsx
+msgid "Alert thresholds"
+msgstr "Umbrales de alerta"
 
 #: src/components/Layout.tsx
 #: src/pages/Alerts.tsx
@@ -823,6 +843,10 @@ msgid "Connecting to daemon…"
 msgstr "Conectando al daemon…"
 
 #: src/pages/Config.tsx
+msgid "Consecutive minutes a device must report 0 hashrate (or be unreachable) before the alert fires."
+msgstr "Minutos consecutivos que un dispositivo debe reportar 0 de hashrate (o estar inalcanzable) antes de que se dispare la alerta."
+
+#: src/pages/Config.tsx
 msgid "Controls how the P&L panel computes the \"spent\" figure that feeds the net result."
 msgstr "Controla cómo el panel de P&L calcula la cifra \"gastado\" que alimenta el resultado neto."
 
@@ -1004,6 +1028,10 @@ msgid "decrease"
 msgstr "disminuir"
 
 #: src/pages/Config.tsx
+msgid "Default 0 uses per-ASIC-model lookup (BM1370 = 68 °C, BM1368/BM1366 = 70 °C, BM1397 = 75 °C, fallback 70 °C). Any non-zero value here overrides all of them."
+msgstr "El valor 0 por defecto usa la tabla por modelo de ASIC (BM1370 = 68 °C, BM1368/BM1366 = 70 °C, BM1397 = 75 °C, por defecto 70 °C). Cualquier valor distinto de cero anula todos los modelos."
+
+#: src/pages/Config.tsx
 msgid "Default 50001."
 msgstr "Predeterminado 50001."
 
@@ -1039,6 +1067,14 @@ msgstr "denominación"
 #: src/components/Bip110ScanCard.tsx
 msgid "deployment"
 msgstr "despliegue"
+
+#: src/components/SoloMinersCard.tsx
+msgid "Device"
+msgstr "Dispositivo"
+
+#: src/pages/Config.tsx
+msgid "Devices"
+msgstr "Dispositivos"
 
 #: src/components/HashrateChart.tsx
 msgid "DIFFICULTY RETARGET"
@@ -1204,6 +1240,14 @@ msgstr "Host de Electrs"
 msgid "Enable cheap mode"
 msgstr "Habilitar modo barato"
 
+#: src/pages/Config.tsx
+msgid "Enable solo-mining monitoring"
+msgstr "Activar monitorizacion de mineria en solitario"
+
+#: src/pages/Config.tsx
+msgid "Enabled"
+msgstr "Activado"
+
 #: src/pages/Status.tsx
 msgid "Escalation in"
 msgstr "Escalada en"
@@ -1275,6 +1319,10 @@ msgstr "activado"
 #: src/pages/Setup.tsx
 msgid "First-run setup"
 msgstr "Configuración inicial"
+
+#: src/components/SoloMinersCard.tsx
+msgid "Fleet"
+msgstr "Flota"
 
 #: src/components/HashrateChart.tsx
 #: src/pages/Status.tsx
@@ -1367,6 +1415,7 @@ msgstr "hashprice + sobrepago máximo"
 
 #: src/components/HashrateChart.tsx
 #: src/components/HashrateChart.tsx
+#: src/components/SoloMinersCard.tsx
 msgid "Hashrate"
 msgstr "Hashrate"
 
@@ -1495,6 +1544,11 @@ msgstr "Etiqueta de instancia (opcional)"
 msgid "insufficient history"
 msgstr "histórico insuficiente"
 
+#: src/pages/Config.tsx
+#: src/pages/Config.tsx
+msgid "IP / host"
+msgstr "IP / host"
+
 #: src/lib/format.ts
 msgid "just now"
 msgstr "ahora mismo"
@@ -1510,6 +1564,11 @@ msgstr "Mantén el nombre de host de la Pool URL apuntando al IP público actual
 #: src/pages/Config.tsx
 msgid "Keep whatever run mode was active before the restart. PAUSED is demoted to DRY_RUN."
 msgstr "Mantener el modo de ejecución que estaba activo antes del reinicio. PAUSED se degrada a DRY_RUN."
+
+#: src/pages/Config.tsx
+#: src/pages/Config.tsx
+msgid "Label"
+msgstr "Etiqueta"
 
 #: src/components/Layout.tsx
 msgid "language"
@@ -1587,6 +1646,7 @@ msgstr "Cargando o se requiere reiniciar el daemon."
 
 #: src/pages/Alerts.tsx
 #: src/pages/Alerts.tsx
+#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 #: src/pages/Status.tsx
 #: src/pages/Status.tsx
@@ -1693,6 +1753,10 @@ msgid "Mismatch. If your daemon and Datum Gateway are on the same home network, 
 msgstr "No coinciden. Si tu daemon y Datum Gateway están en la misma red doméstica, deberían coincidir. Normalmente significa que tu DDNS no se ha actualizado desde que el ISP cambió tu IP público - configura DDNS abajo para arreglarlo."
 
 #: src/pages/Config.tsx
+msgid "Monitor a fleet of home Bitaxe / Nerdaxe / ESP-Miner units alongside the autopilot's rented Braiins hashrate. The daemon polls each device's /api/system/info every tick; hashrate, temperature, power draw, and share rates surface on the Status page."
+msgstr "Monitoriza una flota de unidades Bitaxe / Nerdaxe / ESP-Miner junto al hashrate alquilado de Braiins del autopiloto. El daemon consulta /api/system/info de cada dispositivo en cada tick; hashrate, temperatura, consumo y porcentajes de shares aparecen en la pagina Estado."
+
+#: src/pages/Config.tsx
 msgid "MP3 / OGG / WAV / WebM, max 200 KB."
 msgstr "MP3 / OGG / WAV / WebM, máx. 200 KB."
 
@@ -1790,6 +1854,10 @@ msgstr "sin ofertas en esta cuenta"
 #: src/pages/Config.tsx
 msgid "no change needed"
 msgstr "sin cambios"
+
+#: src/pages/Config.tsx
+msgid "No devices yet. Add one below."
+msgstr "Aun no hay dispositivos. Anade uno abajo."
 
 #: src/pages/Status.tsx
 msgid "No hashrate available on the market right now."
@@ -2053,6 +2121,10 @@ msgstr "Nuestro saldo no pagado ({0}) ya ha superado el umbral de pago ({1} ≈ 
 msgid "overdue {overdueFormatted}"
 msgstr "atrasado {overdueFormatted}"
 
+#: src/pages/Config.tsx
+msgid "Overheating ceiling (°C, 0 = auto per model)"
+msgstr "Limite de sobrecalentamiento (°C, 0 = automatico por modelo)"
+
 #: src/components/PriceChart.tsx
 msgid "overpay"
 msgstr "sobrepago"
@@ -2141,6 +2213,10 @@ msgid "Per-bid budget"
 msgstr "Presupuesto por oferta"
 
 #: src/pages/Config.tsx
+msgid "Per-event-class opt-outs live on the Notifications tab. Per-ASIC-model thermal ceilings are picked automatically; the override below applies a single global ceiling across every device."
+msgstr "Las exclusiones por clase de evento estan en la pestana Notificaciones. Los limites termicos por modelo de ASIC se eligen automaticamente; el ajuste de abajo aplica un unico limite global a todos los dispositivos."
+
+#: src/pages/Config.tsx
 msgid "Per-hostname DDNS Key user, not your account login."
 msgstr "Usuario de DDNS Key por hostname, no el login de tu cuenta."
 
@@ -2151,6 +2227,10 @@ msgstr "Oferta por tick = fillable_ask + esto. Braiins iguala pay-your-bid, así
 #: src/pages/Config.tsx
 msgid "Play a sound when a new pool block is detected paying our payout address. Off by default. Pick one of the bundled cues, upload your own, or leave it disabled. The cue fires once per new reward_events row; the dashboard tab needs to be open."
 msgstr "Reproduce un sonido cuando se detecta un nuevo bloque del pool pagando a nuestra dirección de cobro. Apagado por defecto. Elige uno de los sonidos incluidos, sube el tuyo o déjalo deshabilitado. El sonido suena una vez por cada nueva fila de reward_events; la pestaña del panel debe estar abierta."
+
+#: src/components/SoloMinersCard.tsx
+msgid "Polled"
+msgstr "Consultado"
 
 #: src/pages/Config.tsx
 msgid "Polled every 5 minutes. The daemon never makes decisions based on fiat price - this is purely a display convenience. Set to \"Disabled\" if you want a sats-only dashboard."
@@ -2239,6 +2319,10 @@ msgstr "puerto"
 #: src/pages/Setup.tsx
 msgid "Port"
 msgstr "Puerto"
+
+#: src/components/SoloMinersCard.tsx
+msgid "Power"
+msgstr "Potencia"
 
 #: src/components/HashrateChart.tsx
 msgid "previous"
@@ -2368,9 +2452,17 @@ msgstr "refrescando…"
 msgid "Refundable on cancel:"
 msgstr "Reembolsable al cancelar:"
 
+#: src/components/SoloMinersCard.tsx
+msgid "Rejected"
+msgstr "Rechazado"
+
 #: src/pages/Login.tsx
 msgid "Remember me on this device"
 msgstr "Recordarme en este dispositivo"
+
+#: src/pages/Config.tsx
+msgid "remove"
+msgstr "eliminar"
 
 #: src/pages/Config.tsx
 msgid "Replace file…"
@@ -2432,6 +2524,10 @@ msgid "Rolling-mean window for the Price chart's `our bid` and `effective` lines
 msgstr "Ventana de media móvil para las líneas `our bid` y `effective` del gráfico Price. Útil cuando la línea efectiva es ruidosa a resolución de tick. Hashprice / max bid no se suavizan - son señales de mercado completo."
 
 #: src/pages/Config.tsx
+msgid "Rolling-window rejection rate above which the alert fires. Default 10 %."
+msgstr "Tasa de rechazo en la ventana movil por encima de la cual se dispara la alerta. Por defecto 10 %."
+
+#: src/pages/Config.tsx
 #: src/pages/Setup.tsx
 msgid "RPC password"
 msgstr "Contraseña RPC"
@@ -2476,6 +2572,7 @@ msgstr "sats"
 msgid "Sats accrued to our wallet on Ocean since the last on-chain payout. Climbs continuously between payouts; drops to zero when a payout is sent (Ocean pays out when this passes the threshold, ~0.01 BTC by default)."
 msgstr "Sats acumulados en nuestra cartera en Ocean desde el último pago on-chain. Sube continuamente entre pagos; cae a cero cuando se envía un pago (Ocean paga cuando esto supera el umbral, ~0,01 BTC por defecto)."
 
+#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "save"
 msgstr "guardar"
@@ -2564,6 +2661,14 @@ msgstr "share log"
 msgid "share_log %"
 msgstr "share_log %"
 
+#: src/pages/Config.tsx
+msgid "Share-rejection threshold (%)"
+msgstr "Umbral de rechazo de shares (%)"
+
+#: src/pages/Config.tsx
+msgid "Share-rejection window (minutes)"
+msgstr "Ventana de rechazo de shares (minutos)"
+
 #: src/pages/Setup.tsx
 msgid "Show"
 msgstr "Mostrar"
@@ -2601,6 +2706,19 @@ msgstr "Señaliza BIP 110 (soft fork de Reduced Data)"
 #: src/pages/Login.tsx
 msgid "signing in…"
 msgstr "iniciando sesión…"
+
+#: src/components/SoloMinersCard.tsx
+#: src/components/SoloMinersCard.tsx
+msgid "Solo miners"
+msgstr "Mineros en solitario"
+
+#: src/pages/Config.tsx
+msgid "Solo miners (Bitaxe / AxeOS)"
+msgstr "Mineros en solitario (Bitaxe / AxeOS)"
+
+#: src/components/SoloMinersCard.tsx
+msgid "Solo-mining monitoring is enabled but no devices have been added yet. Add a Bitaxe IP on Config → Display & Logging → Solo miners."
+msgstr "La monitorizacion de mineria en solitario esta activa pero aun no se han anadido dispositivos. Anade una IP de Bitaxe en Config → Visualizacion y registro → Mineros en solitario."
 
 #: src/pages/Config.tsx
 msgid "Sound"
@@ -2714,6 +2832,10 @@ msgstr "Histórico de notificaciones de Telegram. Filas pequeñas (solo título 
 #: src/pages/Config.tsx
 msgid "Telegram notifications"
 msgstr "Notificaciones de Telegram"
+
+#: src/components/SoloMinersCard.tsx
+msgid "Temp"
+msgstr "Temp"
 
 #: src/pages/Config.tsx
 msgid "Test"
@@ -2844,6 +2966,15 @@ msgstr "ganancias pendientes"
 msgid "unpaid earnings (Ocean)"
 msgstr "ganancias no pagadas (Ocean)"
 
+#: src/components/SoloMinersCard.tsx
+msgid "unreachable"
+msgstr "inalcanzable"
+
+#. placeholder {0}: entry.error
+#: src/components/SoloMinersCard.tsx
+msgid "unreachable: {0}"
+msgstr "inalcanzable: {0}"
+
 #: src/pages/Config.tsx
 msgid "unsaved changes"
 msgstr "cambios sin guardar"
@@ -2882,6 +3013,10 @@ msgstr "Subiendo…"
 msgid "uptime"
 msgstr "uptime"
 
+#: src/components/SoloMinersCard.tsx
+msgid "Uptime"
+msgstr "Tiempo activo"
+
 #: src/pages/Config.tsx
 msgid "Used by the on-chain payout balance check (when \"Bitcoin Core RPC\" is selected as the backend above), AND by the <0>BIP 110</0> yellow-cube marker on the Hashrate chart and the BIP 110 scan card on Status - those last two call bitcoind regardless of which payout backend is selected. The Test button below validates the values currently in the form, before saving."
 msgstr "Usado por la comprobación de saldo de pagos on-chain (cuando \"Bitcoin Core RPC\" está seleccionado como backend arriba), Y por el marcador de cubo amarillo <0>BIP 110</0> en el gráfico de Hashrate y la tarjeta de escaneo BIP 110 en Status - estos dos últimos llaman a bitcoind sin importar qué backend de pagos esté seleccionado. El botón Probar de abajo valida los valores actualmente en el formulario, antes de guardar."
@@ -2914,6 +3049,10 @@ msgstr ""
 #: src/components/Bip110ScanCard.tsx
 msgid "version"
 msgstr "versión"
+
+#: src/components/SoloMinersCard.tsx
+msgid "VR temp"
+msgstr "Temp VR"
 
 #: src/pages/Status.tsx
 msgid "Waiting for Ocean hashprice - trading is paused until the break-even reference is available."
@@ -2999,6 +3138,10 @@ msgstr "Colocará un CREATE_BID a {target} en el próximo tick."
 msgid "Will raise to {target} in ~{0} min (current {current})."
 msgstr "Subirá a {target} en ~{0} min (actual {current})."
 
+#: src/pages/Config.tsx
+msgid "Window over which the rejection rate is computed."
+msgstr "Ventana sobre la que se calcula la tasa de rechazo."
+
 #: src/pages/Status.tsx
 msgid "Wipe the local terminal-bid cache and re-paginate every bid from Braiins on the next refresh? This is safe but slower than a normal refresh."
 msgstr "¿Borrar la caché local de ofertas terminales y volver a paginar cada oferta desde Braiins en el próximo refresco? Es seguro pero más lento que un refresco normal."
@@ -3032,3 +3175,7 @@ msgstr "Tu dirección que recibe los pagos Ocean TIDES. La identidad del worker 
 #: src/pages/Config.tsx
 msgid "Zero hashrate for"
 msgstr "Hashrate cero durante"
+
+#: src/pages/Config.tsx
+msgid "Zero-hashrate alert after (minutes)"
+msgstr "Alerta de hashrate cero tras (minutos)"

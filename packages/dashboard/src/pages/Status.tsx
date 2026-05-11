@@ -13,6 +13,7 @@ import {
 } from '@braiins-hashrate/shared';
 
 import { Bip110ScanCard } from '../components/Bip110ScanCard';
+import { SoloMinersCard } from '../components/SoloMinersCard';
 import { HashrateChart, type HashrateRightAxis } from '../components/HashrateChart';
 import { type PriceRightAxis } from '../components/PriceChart';
 import { PriceChart } from '../components/PriceChart';
@@ -605,6 +606,8 @@ export function Status() {
       )}
 
       <Bip110ScanCard />
+
+      <SoloMinersCard />
     </div>
   );
 }
