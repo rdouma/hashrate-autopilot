@@ -389,7 +389,9 @@ CREATE TABLE reward_events (
 CREATE TABLE alerts (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   created_at INTEGER NOT NULL,
-  severity TEXT NOT NULL,                    -- 'INFO' | 'WARN' | 'LOUD'
+  severity TEXT NOT NULL,                    -- 'INFO' | 'WARNING' | 'IMPORTANT'
+                                             -- (renamed from INFO/WARN/LOUD in
+                                             --  migration 0079, #129)
   title TEXT NOT NULL,
   body TEXT NOT NULL,
   status TEXT NOT NULL,                      -- legacy: 'BUFFERED' | 'SENT' | 'FAILED'
@@ -398,11 +400,11 @@ CREATE TABLE alerts (
   event_class TEXT,                          -- e.g. 'datum_unreachable'
   delivery_status TEXT NOT NULL DEFAULT 'pending',
                                              -- 'pending' | 'sent' | 'failed' |
-                                             -- 'muted' | 'snoozed' | 'gave_up'
+                                             -- 'muted' | 'gave_up'
   delivery_attempts INTEGER NOT NULL DEFAULT 0,
   last_attempt_at_ms INTEGER,
   next_retry_at_ms INTEGER,                  -- per-tick retry scheduler reads this
-  snoozed_until_ms INTEGER,
+  snoozed_until_ms INTEGER,                  -- legacy column; snooze removed post-v1.5
   paired_alert_id INTEGER REFERENCES alerts(id),
                                              -- recovery row -> originating alert
   delivery_meta_json TEXT,                   -- {message_id: ...} for Telegram

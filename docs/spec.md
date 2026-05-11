@@ -6,7 +6,7 @@
 >
 > Earlier history: v1.0 (2026-04-14) was built around a constraint - that Braiins requires 2FA on every `POST`/`PUT` - which empirical testing on a live account on 2026-04-15 disproved for the owner-scope API token. v1.1 removed the confirmation bot, quiet-hours machinery, pending-confirmation / confirmation-timeout action modes, and operator-availability flag. v1.2-1.9 layered on depth-aware pricing, cheap-mode opportunistic scaling, the Ocean and Datum Gateway integrations, the hashprice-relative dynamic cap, and retention-managed persistence. The what-if simulator shipped in v1.8 and was retired in v2.0 along with the fill-strategy knobs.
 >
-> v2.2 added appliance packaging (Docker / GHCR / Umbrel / first-run web wizard); v2.3 was a doc-only consistency sweep. **v2.4** (this revision) brings the spec forward to cover the run of features shipped May 2026: the Telegram notification system (#100 / #109, including the per-event-class opt-out, the inline-keyboard ack/snooze, and the pool-block-credit "good news" toggle #117), the daemon-managed Dynamic DNS updater + public-IP visibility card (#110 / #111, supporting No-IP / DuckDNS / generic dyndns2), the stale-URL banner that catches a `destination_pool_url` mismatch on a live bid (#113), the wallet-runway alert wiring (#116, default 0 = off), the Config page reorganisation into four tabs with cross-tab search (#107), the price chart's paid / lifetime earnings series (#102) and difficulty-retarget markers, the hashrate chart's expand toggle (#105) and own-block-vs-BIP-110 marker swap (#115), and assorted Test connection buttons across the Pool URL / Datum stats API / DDNS surfaces (#112).
+> v2.2 added appliance packaging (Docker / GHCR / Umbrel / first-run web wizard); v2.3 was a doc-only consistency sweep. **v2.4** (this revision) brings the spec forward to cover the run of features shipped May 2026: the Telegram notification system (#100 / #109, including the per-event-class opt-out, the inline-keyboard ack, and the pool-block-credit "good news" toggle #117), the daemon-managed Dynamic DNS updater + public-IP visibility card (#110 / #111, supporting No-IP / DuckDNS / generic dyndns2), the stale-URL banner that catches a `destination_pool_url` mismatch on a live bid (#113), the wallet-runway alert wiring (#116, default 0 = off), the Config page reorganisation into four tabs with cross-tab search (#107), the price chart's paid / lifetime earnings series (#102) and difficulty-retarget markers, the hashrate chart's expand toggle (#105) and own-block-vs-BIP-110 marker swap (#115), and assorted Test connection buttons across the Pool URL / Datum stats API / DDNS surfaces (#112).
 >
 > See the document history at the bottom for the per-version breakdown.
 
@@ -104,7 +104,7 @@ The full DDL (with comments and migration numbers) lives in `architecture.md` §
 - `DELETE /v1/spot/bid` (**cancel**) - fully autonomous. The order ID is passed in the JSON body; the query-string
   form is rejected (empirical, see `docs/research.md` v1.1).
 - Dashboard UI (LAN bind).
-- **External notification channel via Telegram** (#100, shipped post-v2.3). IMPORTANT / WARNING events POST to a configured chat with an inline-keyboard ack/snooze (#109); INFO events stay dashboard-only by default with one opt-in (`notify_on_pool_block_credit`, #117). The notifier is structured around a `NotificationSink` interface so a Nostr / ntfy / email backend could be swapped in without touching the event detectors. Full event list and throttling rules in §9.1.
+- **External notification channel via Telegram** (#100, shipped post-v2.3). IMPORTANT / WARNING events POST to a configured chat with an inline-keyboard ack button (#109); INFO events (pool block credited, deposit lifecycle) are opt-in. The notifier is structured around a `NotificationSink` interface so a Nostr / ntfy / email backend could be swapped in without touching the event detectors. Full event list and throttling rules in §9.1.
 
 ## 7. Run mode and the mutation gate
 
@@ -234,22 +234,11 @@ pricing formula is unchanged.
 
 **Opportunistic scaling (cheap-mode):**
 
-- `cheap_target_hashrate_ph` - higher-than-normal target to run when the market is cheap (default 0 =
-  disabled).
-- `cheap_threshold_pct` - cheap-mode activates when the market price drops below `hashprice ×
-  (cheap_threshold_pct / 100)`. The "market price" reference is `best_ask` (cheapest price at which any
-  supply exists) - a coarser signal than the depth-aware `fillable_ask` the pricing formula uses, but
-  sufficient for cheap-mode's on/off decision. Both `cheap_target_hashrate_ph` and `cheap_threshold_pct`
-  must be non-zero to activate. When cheap-mode is active, the pricing formula is unchanged - only
-  `target_hashrate_ph` is swapped out for `cheap_target_hashrate_ph`, which feeds into
-  `cheapestAskForDepth` and the bid's `speed_limit_ph`.
-- `cheap_sustained_window_minutes` - rolling-average window for the engagement check (#50). Default 0
-  keeps the legacy per-tick spot behaviour. When > 0, cheap-mode engages only when `avg(best_ask)` over
-  this many minutes is below `cheap_threshold_pct × avg(hashprice)` over the same window - averages are
-  computed from `tick_metrics` (no new columns). Avoids flapping cheap-mode on single-tick market
-  spikes; natural hysteresis falls out of the window-based evaluation (the threshold only flips when the
-  whole window crosses it). Requires ≥5 samples in the window before honouring it; below that, falls
-  back to the spot check (same "insufficient history" pattern used by `/api/finance/range`).
+Lives in its own section on Config -> Strategy (#136) with an explicit **Enable cheap mode** checkbox at the top. When unchecked, the three fields grey out and are non-interactive; the daemon's activation sentinel is `cheap_threshold_pct > 0` (toggle-on writes 95, toggle-off writes 0). Three knobs:
+
+- `cheap_target_hashrate_ph` - higher-than-normal target to run when the market is cheap (default 0 = disabled).
+- `cheap_threshold_pct` - cheap-mode activates when the market price drops below `hashprice x (cheap_threshold_pct / 100)`. The "market price" reference is `best_ask` (cheapest price at which any supply exists) - a coarser signal than the depth-aware `fillable_ask` the pricing formula uses, but sufficient for cheap-mode's on/off decision. Both `cheap_target_hashrate_ph` and `cheap_threshold_pct` must be non-zero to activate. When cheap-mode is active, the pricing formula is unchanged - only `target_hashrate_ph` is swapped out for `cheap_target_hashrate_ph`, which feeds into `cheapestAskForDepth` and the bid's `speed_limit_ph`.
+- `cheap_sustained_window_minutes` - rolling-average window for the engagement check (#50). Default 0 keeps the legacy per-tick spot behaviour. When > 0, cheap-mode engages only when `avg(best_ask)` over this many minutes is below `cheap_threshold_pct x avg(hashprice)` over the same window - averages are computed from `tick_metrics` (no new columns). Avoids flapping cheap-mode on single-tick market spikes; natural hysteresis falls out of the window-based evaluation (the threshold only flips when the whole window crosses it). Requires >=5 samples in the window before honouring it; below that, falls back to the spot check (same "insufficient history" pattern used by `/api/finance/range`).
 
 **Datum Gateway integration (optional, informational only):**
 
@@ -319,7 +308,9 @@ all three series on the same cadence.
 - `notifications_muted` - global mute toggle. When `true` the notifier still records every alert row with `delivery_status='muted'` for the audit trail, but skips the Telegram POST.
 - `notification_retry_interval_minutes` - cadence between retry attempts while state remains bad. Default 30. First attempt fires immediately on threshold crossing; up to 4 retries follow at this cadence, then a final "giving up" message. Recovery messages bypass this entirely.
 - `notification_disabled_event_classes` - per-class opt-out list (`string[]`, stored as comma-separated TEXT, #106). Empty = all classes enabled. When an event_class is in the list, the AlertEvaluator short-circuits before arming any timer - no alert row, no retry, no recovery. New event classes default to enabled (no migration required when adding one).
-- `notify_on_pool_block_credit` - off-by-default INFO Telegram message at every TIDES credit (#117). Body contains block height, total reward, our share log %, our credit in sat, and unpaid-total progress toward the 1,048,576-sat on-chain payout threshold. Severity is INFO (no retry ladder, no inline ack/snooze). The audible cue and the chart marker fire independently of this toggle.
+- `notify_on_pool_block_credit` - off-by-default INFO Telegram message at every TIDES credit (#117). Body contains block height, total reward, our share log %, our credit in sat, and unpaid-total progress toward the 1,048,576-sat on-chain payout threshold. Severity is INFO (no retry ladder, no inline ack button). The audible cue and the chart marker fire independently of this toggle.
+- `notify_on_braiins_deposit` - off-by-default master toggle for the Braiins deposit lifecycle events (`braiins_deposit_detected`, `braiins_deposit_available`, `braiins_deposit_returned`). A single tile on the Notifications tab gates all three under one switch (#141 / #143).
+- `notification_locale` - language for Telegram alert copy. `'en'` / `'nl'` / `'es'`; default `'en'`. Independent of the dashboard's display language (#131). Picker on Config -> Notifications.
 
 **Daemon-managed Dynamic DNS (#111):**
 
@@ -405,28 +396,28 @@ event detectors. Setup walkthrough at [`docs/setup-telegram.md`](setup-telegram.
 
 **Events that fire Telegram:**
 
-IMPORTANT severity (7) - hard outages that need a phone alarm:
+IMPORTANT severity (9) - hard outages that need a phone alarm:
 
-1. **Datum stratum unreachable** for `pool_outage_blip_tolerance_seconds × 5` (the
-   2026-05-06 incident that motivated this issue).
+1. **Datum stratum unreachable** for `datum_unreachable_alert_after_minutes` (#135 - was `pool_outage_blip_tolerance_seconds × 5`; now an independent knob with an inline-minute input on the Notifications tab).
 2. **Hashrate below floor** for `below_floor_alert_after_minutes`.
 3. **Zero hashrate** for `zero_hashrate_loud_alert_after_minutes`.
 4. **Braiins API unreachable** for `api_outage_alert_after_minutes`.
 5. **Wallet runway** below `wallet_runway_alert_days`.
 6. **Unknown bid detected** (already triggers daemon auto-PAUSE; now also rings Telegram).
-7. **Bid sustained-paused by Braiins** - primary owned bid carries a non-null
-   `last_pause_reason` for the pool-outage tolerance window. Catches the
-   Paused/Active oscillation hazard.
+7. **Bid sustained-paused by Braiins** for `sustained_paused_alert_after_minutes` (#135 - was `pool_outage_blip_tolerance_seconds × 5`; now an independent knob).
+8. **Braiins deposit returned** - compliance bounced a deposit back (`return_tx_id` non-null on the on-chain endpoint). Real money on the line.
 
 WARNING severity - soft warnings that can wait for the next dashboard glance:
 
-8. **Beta-exit detected** - any active owned bid reports `fee_rate_pct > 0`.
+9. **Beta-exit detected** - any active owned bid reports `fee_rate_pct > 0`.
 
-INFO severity (opt-in, dashboard-only by default):
+INFO severity (opt-in, good news + lifecycle):
 
+- **Pool-block credit** (TIDES) - opt-in Telegram via the `notify_on_pool_block_credit` toggle. Body contains block height, total reward, our share log %, our credit in sat, and unpaid-total progress toward the 1,048,576-sat on-chain payout threshold. No retry ladder; no inline ack button.
+- **Braiins deposit detected** - fires when `braiins_total_deposited_sat` ticks up (mempool / first-confirmation). Gate: `notify_on_braiins_deposit` master toggle.
+- **Braiins deposit available** - fires when the on-chain endpoint surfaces the deposit as `DEPOSIT_STATUS_CREDITED` (typically 6-12 min after detected). Same master toggle.
 - Ocean own-found block (gold crown on the Hashrate chart - see §12.1).
 - On-chain payout received (P&L panel).
-- Pool-block credit (TIDES) - opt-in Telegram (#117) via the `notify_on_pool_block_credit` toggle. INFO severity, no retry ladder, no inline ack/snooze. Body contains block height, total reward, our share log %, our credit in sat, and unpaid-total progress toward the 1,048,576-sat on-chain payout threshold.
 
 **Recovery messages**: paired with each fired IMPORTANT or WARNING. INFO severity. Body example:
 `Datum gateway reachable again - was down 22m.` Includes a `paired_alert_id` FK to the
@@ -444,12 +435,11 @@ originating alert so the dashboard groups them visually on `/alerts`.
 
 Total: at most 5 alert messages per outage event + 1 recovery message.
 
-**Mute and snooze:**
+**Mute and ack:**
 
 - **Global mute** (`notifications_muted` config flag): silences all Telegram POSTs; alerts table still records every row with `delivery_status = 'muted'` for the audit trail.
 - **Per-event-class opt-out** (`notification_disabled_event_classes`, #106): operator picks specific event classes to silence (Datum unreachable, hashrate below floor, beta-exit, ...) from the Notifications tab on the Config page. New event classes default to enabled - no migration required when adding one.
-- **Per-alert snooze**: inline action on the `/alerts` page row for any active alert. Presets: 30m / 2h / 24h. While snoozed, retries record as `delivery_status = 'snoozed'` instead of POSTing. Recovery messages bypass snooze.
-- **Inline ack / snooze on the Telegram message itself** (#109): every IMPORTANT / WARNING firing carries `Mark as seen` and `Snooze 2h` inline-keyboard buttons. Tapping on the operator's phone sets `acknowledged_at_ms` or `snoozed_until_ms` server-side via the bot's long-polled `getUpdates` (no webhook, works behind home NAT), edits the message in place to confirm, and removes the keyboard. Single-operator security: callbacks from any chat that isn't the configured `chat_id` are rejected.
+- **Inline ack on the Telegram message** (#109): every IMPORTANT / WARNING firing carries a `Mark as seen` inline-keyboard button. Tapping on the operator's phone sets `acknowledged_at_ms` server-side via the bot's long-polled `getUpdates` (no webhook, works behind home NAT), edits the message in place to confirm, and removes the keyboard. Single-operator security: callbacks from any chat that isn't the configured `chat_id` are rejected.
 - **Per-instance label prefix** (`telegram_instance_label`): when set, the Telegram sink prefixes every message with `[<label>] ` so an operator running multiple daemons against the same bot/chat can tell them apart at a glance.
 - **No quiet-hours config** - cancelled in v1.1 spec rewrite. Mute-on-demand replaces the use case.
 
@@ -589,7 +579,7 @@ Saves go through the Zod `AppConfigInvariantsSchema` and take effect on the next
 
 ### 12.3 Alerts page
 
-Dedicated `/alerts` page (post-v2.3, #100 / #109): time-ordered audit trail of every alert the daemon evaluated, with delivery status (sent / muted / snoozed / failed), per-alert acknowledge / snooze (30m / 2h / 24h presets), recovery messages grouped visually with their originating alert via `paired_alert_id` FK, and a sticky **Unacknowledged only** filter (persists per browser via localStorage, mirroring Status's chart range). A **Mark all as seen (N)** bulk button next to the filter clears every unacked row in one click - server-side via `POST /api/alerts/acknowledge-all`. Telegram messages can also be acked or snoozed in-place from the operator's phone via the inline-keyboard buttons (#109).
+Dedicated `/alerts` page (#100 / #109 / #134 / #139): event-grouped audit trail of every alert the daemon evaluated. Events render as collapsible cards grouped into three buckets: **OPEN** (firing, not yet seen by the operator), **ACKNOWLEDGED** (operator clicked seen but the bad state hasn't cleared, or it's an INFO one-shot like pool-block-credited with no recovery semantics), and **RESOLVED** (recovery message has paired in via `paired_alert_id` FK). Open cards render expanded by default; the other two collapse to a header. A free-text search box filters across titles + bodies with hit-highlighting (#134). Sticky **Unacknowledged only** filter (persists per browser via localStorage). A **Mark all as seen (N)** bulk button next to the filter clears every unacked row in one click - server-side via `POST /api/alerts/acknowledge-all`. Telegram messages can also be acked in-place from the operator's phone via the inline-keyboard button (#109). A bottom-right **toast** appears in the dashboard the moment a new alert lands (#142), severity-coloured (red / amber / slate / emerald-for-resolved), with a 5 s auto-dismiss for INFO/recoveries and 15 s for the louder ones; clicking navigates to `/alerts`.
 
 ### 12.4 Things the v1 spec listed but the current build does not ship
 
