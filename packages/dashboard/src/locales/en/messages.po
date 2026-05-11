@@ -678,6 +678,10 @@ msgstr "Braiins marketplace"
 msgid "Braiins marketplace API - reachable when the last observe() read market/orderbook/balance without error."
 msgstr "Braiins marketplace API - reachable when the last observe() read market/orderbook/balance without error."
 
+#: src/pages/Status.tsx
+msgid "Braiins's own `state_estimate.avg_speed_ph` reading - their internal estimate of current matched hashrate. Reacts to a CREATE_BID / EDIT_SPEED within ~3 min. The orange \"delivered (Braiins)\" line on the Hashrate chart below plots a different signal: real billed PH/s derived from the consumed-sat counter (Δconsumed / (bid × Δt)). That counter signal is the truthful long-run billing record but takes longer to catch up to a capacity bump because matched shares have to accumulate. During a Datum outage the counter goes to zero correctly while this estimate holds elevated for minutes - that's why the chart uses the counter signal."
+msgstr "Braiins's own `state_estimate.avg_speed_ph` reading - their internal estimate of current matched hashrate. Reacts to a CREATE_BID / EDIT_SPEED within ~3 min. The orange \"delivered (Braiins)\" line on the Hashrate chart below plots a different signal: real billed PH/s derived from the consumed-sat counter (Δconsumed / (bid × Δt)). That counter signal is the truthful long-run billing record but takes longer to catch up to a capacity bump because matched shares have to accumulate. During a Datum outage the counter goes to zero correctly while this estimate holds elevated for minutes - that's why the chart uses the counter signal."
+
 #: src/pages/Config.tsx
 msgid "Browsers block audio until the page sees a user click; logging in counts. The first poll after a fresh page load establishes a silent baseline so you don't get a sound for every backlog row. Test plays whatever's selected above (no save needed)."
 msgstr "Browsers block audio until the page sees a user click; logging in counts. The first poll after a fresh page load establishes a silent baseline so you don't get a sound for every backlog row. Test plays whatever's selected above (no save needed)."

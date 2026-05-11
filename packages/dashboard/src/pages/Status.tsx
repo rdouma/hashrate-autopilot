@@ -798,17 +798,21 @@ function OperationsCard({
               </div>
             </div>
           </Tooltip>
-          <div className="flex flex-col items-center">
-            <div className="text-[11px] uppercase tracking-wider text-slate-100 mb-1"><Trans>delivered</Trans></div>
-            <div className={`text-4xl font-mono font-semibold tabular-nums leading-none ${deliveredColor}`}>
-              {(() => {
-                const hr = denomination.formatHashrate(s.actual_hashrate_ph, intlLocale);
-                const split = splitUnit(hr);
-                return split ? split.num : hr;
-              })()}
+          <Tooltip
+            text={t`Braiins's own \`state_estimate.avg_speed_ph\` reading - their internal estimate of current matched hashrate. Reacts to a CREATE_BID / EDIT_SPEED within ~3 min. The orange "delivered (Braiins)" line on the Hashrate chart below plots a different signal: real billed PH/s derived from the consumed-sat counter (Δconsumed / (bid × Δt)). That counter signal is the truthful long-run billing record but takes longer to catch up to a capacity bump because matched shares have to accumulate. During a Datum outage the counter goes to zero correctly while this estimate holds elevated for minutes - that's why the chart uses the counter signal.`}
+          >
+            <div className="flex flex-col items-center">
+              <div className="text-[11px] uppercase tracking-wider text-slate-100 mb-1"><Trans>delivered</Trans></div>
+              <div className={`text-4xl font-mono font-semibold tabular-nums leading-none ${deliveredColor}`}>
+                {(() => {
+                  const hr = denomination.formatHashrate(s.actual_hashrate_ph, intlLocale);
+                  const split = splitUnit(hr);
+                  return split ? split.num : hr;
+                })()}
+              </div>
+              <div className="text-xs text-slate-400 mt-1">{denomination.hashrateSuffix}</div>
             </div>
-            <div className="text-xs text-slate-400 mt-1">{denomination.hashrateSuffix}</div>
-          </div>
+          </Tooltip>
         </div>
       ) : (
         <div className="flex flex-col items-center">

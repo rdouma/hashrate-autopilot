@@ -1887,17 +1887,16 @@ function SoloMinersSection({
                         the previous "remove" text button into a single-
                         glyph action, with the confirm() dialog kept as
                         the destructive guardrail. */}
-                    {/* Column widths picked so the two text inputs
-                        share the row roughly 60/40 in favour of Label.
-                        Was: Label uncapped + IP at w-48 (192px), which
-                        on mobile left Label squeezed to ~50px showing
-                        only "BitA" of a 7-char "BitAxe1" label. Now
-                        Label gets its own w-32 minimum and IP shrinks
-                        to w-36 (just enough for 13-char "192.168.1.127"
-                        in monospace at text-xs). */}
+                    {/* Column widths: On checkbox (w-8) | Label
+                        (uncapped flex with min-w-32) | IP / host
+                        (w-44, just enough for a 13-char IPv4 like
+                        "192.168.1.127" in monospace at text-xs - was
+                        w-36 which truncated the last octet on mobile)
+                        | trash (w-8). Label's min-width keeps it from
+                        being squeezed below 128px on narrow viewports. */}
                     <th className="text-left font-normal py-1 pr-3 w-8"><Trans>On</Trans></th>
                     <th className="text-left font-normal py-1 pr-3 min-w-[8rem]"><Trans>Label</Trans></th>
-                    <th className="text-left font-normal py-1 pr-3 w-36"><Trans>IP / host</Trans></th>
+                    <th className="text-left font-normal py-1 pr-3 w-44"><Trans>IP / host</Trans></th>
                     <th className="w-8"></th>
                   </tr>
                 </thead>
