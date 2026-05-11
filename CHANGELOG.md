@@ -2,6 +2,10 @@
 
 ## 2026-05-11 · v1.6.0
 
+### `[UI]` Config search now indexes the block-found sound picker (#151 follow-up)
+
+#151 fixed the Solo miners + Display sections being invisible to the cross-tab Config search. A follow-up audit found one more gap: the `block-found-sound` section's title was indexed via the `useSections()` fallback, but the actual UI (Sound picker, bundled cue names, Test-sound button, custom-upload) lives in an ad-hoc extras component with empty `fields: []`, so the field-level indexer skipped it. Operators searching for "cowbell" / "sound" / "test" / "upload" got no hits despite those controls being plainly visible. Added a `customSectionMeta` entry with the visible labels + the five bundled sound names + alias terms ("audio", "upload"). All strings already existed in the Lingui catalog from the existing render so no new translations were needed.
+
 ### `[UI]` Status page: "Just lowered/raised bid" recap row no longer shifts the dashboard down (#154)
 
 The `JustExecutedBanner` rendered conditionally - returned `null` when there was no recent mutation to recap, then a `<div>` once a CREATE/EDIT/CANCEL fired. Adding/removing the DOM node pushed the entire dashboard below it down by one row and back up ~30 s later. Now always renders the container; the visible text content (emerald check + recap summary + age) shows when active, an invisible `&nbsp;` spacer holds the row otherwise. Total Next Action panel height stays constant; the rest of the page stops jumping.

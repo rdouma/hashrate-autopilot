@@ -791,6 +791,28 @@ function ConfigTabsAndContent({
       title: t`Display`,
       labels: [t`Number format`, t`Date layout`],
     },
+    // #154 follow-up: block-found-sound's title is indexed via
+    // useSections() fallback (the section is declared there with
+    // empty fields[]), but the visible "Sound" picker + bundled
+    // sound names live in an ad-hoc extras component invisible to
+    // the field-level indexer. Register them here so an operator
+    // searching for "cowbell" / "sound" / "test" finds the row.
+    'block-found-sound': {
+      title: t`Block-found notification`,
+      labels: [
+        t`Sound`,
+        t`Test sound`,
+        t`Cartoon cowbell`,
+        t`Glass drop & roll`,
+        t`Metallic clank 1`,
+        t`Metallic clank 2`,
+        t`Ocean mining found a block (voice)`,
+        t`Custom (uploaded)`,
+        // Alias terms operators are likely to type.
+        'audio',
+        'upload',
+      ],
+    },
     'solo-miners': {
       title: t`Solo miners (Bitaxe / AxeOS)`,
       labels: [
