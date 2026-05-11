@@ -18,7 +18,13 @@ export function Tooltip({
   children: ReactNode;
 }) {
   const [show, setShow] = useState(false);
-  const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
+  // #157: tooltip placement carries its own flag so the transform
+  // matches the resolved `top`. Without this, flipping `top` to
+  // `rect.bottom + margin` while the transform was still translating
+  // by `-100%` placed the tooltip ABOVE the anchor (and offset by an
+  // extra rect.height + margin), which on a hero card near the top
+  // of the viewport read as "tooltip clipped against the top edge."
+  const [pos, setPos] = useState<{ left: number; top: number; placement: 'above' | 'below' } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   const tipRef = useRef<HTMLDivElement>(null);
 
@@ -38,11 +44,13 @@ export function Tooltip({
     if (rect.width === 0 && rect.height === 0) return;
     const tipEl = tipRef.current;
     const vw = window.innerWidth;
+    const vh = window.innerHeight;
     const margin = 8;
 
     // Default: centered above the element
     let left = rect.left + rect.width / 2;
     let top = rect.top - margin;
+    let placement: 'above' | 'below' = 'above';
 
     // If the tooltip would go off-screen, adjust
     if (tipEl) {
@@ -50,12 +58,20 @@ export function Tooltip({
       if (left - tipRect.width / 2 < margin) left = margin + tipRect.width / 2;
       if (left + tipRect.width / 2 > vw - margin) left = vw - margin - tipRect.width / 2;
       if (top - tipRect.height < margin) {
-        // Flip below
-        top = rect.bottom + margin;
+        // Not enough room above. Try below instead.
+        const belowTop = rect.bottom + margin;
+        if (belowTop + tipRect.height <= vh - margin) {
+          top = belowTop;
+          placement = 'below';
+        }
+        // If neither fits (very tall tip in a short viewport), keep
+        // above-placement and let the top edge clip - same as before.
+        // Operator on a phone with a 600px-tall tooltip can scroll
+        // the anchor down before hovering as a workaround.
       }
     }
 
-    setPos({ left, top });
+    setPos({ left, top, placement });
   }, [show]);
 
   return (
@@ -73,7 +89,11 @@ export function Tooltip({
           style={{
             left: pos?.left ?? -9999,
             top: pos?.top ?? -9999,
-            transform: 'translate(-50%, -100%)',
+            // `translate(-50%, ...)` centres horizontally; the vertical
+            // term flips so the tooltip's bottom hugs `top` when above,
+            // its top hugs `top` when below. Without this the flipped
+            // case rendered with the wrong anchor edge.
+            transform: `translate(-50%, ${pos?.placement === 'below' ? '0' : '-100%'})`,
           }}
         >
           <div className="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-300 shadow-lg max-w-xs whitespace-normal leading-relaxed">

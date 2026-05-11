@@ -2,6 +2,10 @@
 
 ## 2026-05-11 · v1.6.0
 
+### `[Fix]` Tooltip flip-below now actually flips - was rendering above and clipping the viewport top (#157)
+
+Tooltips on the Status-page hero cards (PRICE, DELIVERED) clipped against the top of the viewport. Root cause in `Tooltip.tsx`: when not enough room above, the placement logic updated `top` to `rect.bottom + margin` but never updated the `transform: 'translate(-50%, -100%)'`. The `-100%` Y-translate pulled the tooltip UP by its own height regardless, so the "flipped below" branch actually placed the tooltip *above* the anchor by an extra `rect.height + margin`. On the hero card (which sits ~30 px from the top of the page) that drove the top of the long tooltip body off-screen. Track a `placement: 'above' | 'below'` flag and conditionally translate by `0` vs `-100%`. Also added a viewport-bottom check before committing to the flip - on a viewport shorter than the tooltip, the original above-placement wins (operator scrolls to work around).
+
 ### `[UI]` Solo-miners IP/host column widened again from w-44 to w-52 (#156 follow-up)
 
 Operator's iOS Safari screenshot showed `192.168.1.127` still cutting off mid-character at w-44 (176px) - mobile mono renders chars wider than I'd estimated. Bumped to w-52 (208px) which gives ~14-15 chars of mono space, comfortable margin for the standard IPv4 lengths. Below ~440px viewport width the table now scrolls horizontally rather than truncating a valid IP - acceptable trade for an edit-only column.
