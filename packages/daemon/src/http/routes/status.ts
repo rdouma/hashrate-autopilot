@@ -73,7 +73,6 @@ export async function registerStatusRoute(
       return {
         run_mode: runtime.run_mode,
         action_mode: 'NORMAL' as const,
-        operator_available: true,
         tick_at: runtime.last_tick_at,
         last_api_ok_at: runtime.last_api_ok_at,
         next_tick_at: nextTickAt,
@@ -171,7 +170,6 @@ export async function registerStatusRoute(
     return {
       run_mode: liveRunMode,
       action_mode: 'NORMAL' as const,
-      operator_available: true,
       tick_at: state.tick_at,
       last_api_ok_at: state.last_api_ok_at,
       next_tick_at: nextTickAt,

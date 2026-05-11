@@ -114,7 +114,6 @@ export interface RuntimeStateTable {
   id: 1;
   run_mode: RunMode;
   action_mode: ActionMode;
-  operator_available: 0 | 1;
   last_tick_at: number | null;
   last_api_ok_at: number | null;
   last_rpc_ok_at: number | null;

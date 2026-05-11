@@ -213,8 +213,11 @@ export interface BalanceView {
 
 export interface StatusResponse {
   run_mode: 'DRY_RUN' | 'LIVE' | 'PAUSED';
-  action_mode: 'NORMAL' | 'QUIET_HOURS' | 'PENDING_CONFIRMATION' | 'CONFIRMATION_TIMEOUT';
-  operator_available: boolean;
+  // action_mode collapsed to 'NORMAL' in spec v1.1 when the owner-token
+  // API was found to bypass 2FA. Stale QUIET_HOURS / PENDING_CONFIRMATION /
+  // CONFIRMATION_TIMEOUT members removed; the daemon never sends them now
+  // (see packages/shared/src/types.ts ActionMode).
+  action_mode: 'NORMAL';
   tick_at: number | null;
   last_api_ok_at: number | null;
   next_tick_at: number | null;
@@ -501,11 +504,6 @@ export const api = {
     request<{ run_mode: string }>('/api/run-mode', {
       method: 'POST',
       body: JSON.stringify({ run_mode }),
-    }),
-  setOperatorAvailable: (available: boolean) =>
-    request<{ operator_available: boolean }>('/api/operator-available', {
-      method: 'POST',
-      body: JSON.stringify({ available }),
     }),
   tickNow: () => request<TickNowResponse>('/api/actions/tick-now', { method: 'POST' }),
   metrics: (range: ChartRange) =>

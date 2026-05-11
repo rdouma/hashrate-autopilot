@@ -117,7 +117,6 @@ export interface NextActionView {
 export interface StatusResponse {
   readonly run_mode: RunMode;
   readonly action_mode: ActionMode;
-  readonly operator_available: boolean;
 
   readonly tick_at: number | null;
   readonly last_api_ok_at: number | null;

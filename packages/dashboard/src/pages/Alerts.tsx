@@ -141,7 +141,7 @@ export function Alerts() {
         <p className="text-xs text-slate-500">
           <Trans>
             Audit trail for every notification the daemon recorded - sent, failed,
-            muted, snoozed, or given-up. Configure the Telegram destination on
+            muted, or given-up. Configure the Telegram destination on
             Config → Notifications.
           </Trans>
         </p>

@@ -108,6 +108,7 @@ describe('openDatabase - migrations', () => {
       '0080_braiins_deposits.sql',
       '0081_notification_locale.sql',
       '0082_split_outage_thresholds.sql',
+      '0083_drop_operator_available.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });
@@ -216,7 +217,6 @@ describe('RuntimeStateRepo', () => {
     expect(row).toMatchObject({
       run_mode: 'DRY_RUN',
       action_mode: 'NORMAL',
-      operator_available: false,
     });
   });
 
@@ -232,10 +232,10 @@ describe('RuntimeStateRepo', () => {
   it('patch updates a subset of fields', async () => {
     const repo = new RuntimeStateRepo(handle.db);
     await repo.initializeIfMissing();
-    await repo.patch({ last_tick_at: 42, operator_available: 1 });
+    await repo.patch({ last_tick_at: 42, last_api_ok_at: 7 });
     const row = await repo.get();
     expect(row?.last_tick_at).toBe(42);
-    expect(row?.operator_available).toBe(true);
+    expect(row?.last_api_ok_at).toBe(7);
   });
 
   it('patch overrides run_mode on boot (replacing the old resetRunModeToDryRun helper)', async () => {

@@ -1,8 +1,8 @@
 /**
  * Repository for the single-row `runtime_state` table.
  *
- * `run_mode` is set on each boot from `config.boot_mode` (daemon main). Other
- * fields (`operator_available`, `last_*_ok_at`) persist across restarts.
+ * `run_mode` is set on each boot from `config.boot_mode` (daemon main).
+ * The `last_*_ok_at` fields persist across restarts.
  */
 
 import type { Kysely } from 'kysely';
@@ -14,7 +14,6 @@ import type { Database, RuntimeStateTable } from '../types.js';
 export interface RuntimeStateRow {
   run_mode: RunMode;
   action_mode: ActionMode;
-  operator_available: boolean;
   last_tick_at: number | null;
   last_api_ok_at: number | null;
   last_rpc_ok_at: number | null;
@@ -38,7 +37,7 @@ export class RuntimeStateRepo {
   }
 
   /**
-   * Initialize the row with safe defaults: DRY_RUN, NORMAL, not available.
+   * Initialize the row with safe defaults: DRY_RUN, NORMAL.
    * Idempotent - existing rows are left untouched. Used on first boot.
    */
   async initializeIfMissing(): Promise<void> {
@@ -48,7 +47,6 @@ export class RuntimeStateRepo {
         id: 1,
         run_mode: 'DRY_RUN',
         action_mode: 'NORMAL',
-        operator_available: 0,
         last_tick_at: null,
         last_api_ok_at: null,
         last_rpc_ok_at: null,
@@ -76,7 +74,6 @@ function toDomain(row: RuntimeStateTable): RuntimeStateRow {
   return {
     run_mode: row.run_mode,
     action_mode: row.action_mode,
-    operator_available: row.operator_available === 1,
     last_tick_at: row.last_tick_at,
     last_api_ok_at: row.last_api_ok_at,
     last_rpc_ok_at: row.last_rpc_ok_at,

@@ -339,8 +339,8 @@ msgid "At least one placeholder ({txid} or {hash}) is required. Auto-populated w
 msgstr "At least one placeholder ({txid} or {hash}) is required. Auto-populated when you click a preset above; override here for custom self-hosted explorers (e.g. http://umbrel.local:3006/tx/{txid})."
 
 #: src/pages/Alerts.tsx
-msgid "Audit trail for every notification the daemon recorded - sent, failed, muted, snoozed, or given-up. Configure the Telegram destination on Config → Notifications."
-msgstr "Audit trail for every notification the daemon recorded - sent, failed, muted, snoozed, or given-up. Configure the Telegram destination on Config → Notifications."
+msgid "Audit trail for every notification the daemon recorded - sent, failed, muted, or given-up. Configure the Telegram destination on Config → Notifications."
+msgstr "Audit trail for every notification the daemon recorded - sent, failed, muted, or given-up. Configure the Telegram destination on Config → Notifications."
 
 #: src/pages/Config.tsx
 msgid "auto-save"

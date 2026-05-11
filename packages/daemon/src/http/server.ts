@@ -52,7 +52,6 @@ import { registerMetricsRoute } from './routes/metrics.js';
 import { registerNotificationsTestRoute } from './routes/notifications-test.js';
 import { registerNotificationsTestEventRoute } from './routes/notifications-test-event.js';
 import { registerOceanRoute } from './routes/ocean.js';
-import { registerOperatorRoutes } from './routes/operator.js';
 import { registerPayoutsRoute } from './routes/payouts.js';
 import { registerRewardEventsRoute } from './routes/reward-events.js';
 import { registerRunModeRoute } from './routes/run-mode.js';
@@ -166,7 +165,6 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<HttpServer
   await registerDecisionsRoutes(app, deps);
   await registerConfigRoutes(app, deps);
   await registerRunModeRoute(app, deps);
-  await registerOperatorRoutes(app, deps);
   await registerActionRoutes(app, deps);
   await registerMetricsRoute(app, deps);
   await registerBidEventsRoute(app, deps);

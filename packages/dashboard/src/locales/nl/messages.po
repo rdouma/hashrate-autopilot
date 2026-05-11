@@ -339,8 +339,8 @@ msgid "At least one placeholder ({txid} or {hash}) is required. Auto-populated w
 msgstr ""
 
 #: src/pages/Alerts.tsx
-msgid "Audit trail for every notification the daemon recorded - sent, failed, muted, snoozed, or given-up. Configure the Telegram destination on Config → Notifications."
-msgstr "Auditspoor van elke melding die de daemon heeft vastgelegd - verzonden, mislukt, gedempt, gesnoozed of opgegeven. Configureer de Telegram-bestemming op Config → Meldingen."
+msgid "Audit trail for every notification the daemon recorded - sent, failed, muted, or given-up. Configure the Telegram destination on Config → Notifications."
+msgstr "Audit-spoor van elke notificatie die de daemon heeft vastgelegd - verzonden, mislukt, gedempt, of opgegeven. Configureer de Telegram-bestemming op Config → Notificaties."
 
 #: src/pages/Config.tsx
 msgid "auto-save"
