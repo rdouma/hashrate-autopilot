@@ -767,7 +767,6 @@ export type AlertDeliveryStatus =
   | 'sent'
   | 'failed'
   | 'muted'
-  | 'snoozed'
   | 'gave_up';
 
 export interface AlertRow {
@@ -783,7 +782,6 @@ export interface AlertRow {
   delivery_attempts: number;
   last_attempt_at_ms: number | null;
   next_retry_at_ms: number | null;
-  snoozed_until_ms: number | null;
   paired_alert_id: number | null;
   delivery_meta_json: string | null;
   acknowledged_at_ms: number | null;

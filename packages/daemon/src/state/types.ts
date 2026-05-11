@@ -231,7 +231,6 @@ export type AlertDeliveryStatus =
   | 'sent'
   | 'failed'
   | 'muted'
-  | 'snoozed'
   | 'gave_up';
 
 export interface AlertsTable {
@@ -244,7 +243,7 @@ export interface AlertsTable {
   sent_at: number | null;
   /** #100: which event class triggered this alert (e.g. 'datum_unreachable'). Null on rows pre-0062. */
   event_class: string | null;
-  /** #100: pending | sent | failed | muted | snoozed | gave_up. */
+  /** #100: pending | sent | failed | muted | gave_up. */
   delivery_status: AlertDeliveryStatus;
   /** #100: how many times the notifier has tried to POST this alert. */
   delivery_attempts: number;
@@ -252,8 +251,6 @@ export interface AlertsTable {
   last_attempt_at_ms: number | null;
   /** #100: ms-epoch when the next retry is scheduled. Null = no retry due. */
   next_retry_at_ms: number | null;
-  /** #100: ms-epoch until which Telegram POSTs are short-circuited as 'snoozed'. */
-  snoozed_until_ms: number | null;
   /** #100: FK back to the alert this row recovers from. Null on the original alert. */
   paired_alert_id: number | null;
   /** #100: JSON payload with channel-specific identifiers (Telegram message_id, etc). */

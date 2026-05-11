@@ -53,6 +53,19 @@ interface Sample {
  * below already disambiguates from a real fired alert in chat
  * history.
  */
+function buildDepositDetected(locale: string | null | undefined): Sample {
+  const c = getAlertCopy(locale);
+  return {
+    severity: 'INFO',
+    title: c.braiins_deposit_detected_title(),
+    body: c.braiins_deposit_detected_body({
+      amount: '0.01000000 BTC (1,000,000 sat)',
+      address_short: null,
+    }),
+    is_recovery: false,
+  };
+}
+
 const SAMPLE_BUILDERS: Record<string, (locale: string | null | undefined) => Sample> = {
   datum_unreachable: (locale) => {
     const c = getAlertCopy(locale);
@@ -139,21 +152,11 @@ const SAMPLE_BUILDERS: Record<string, (locale: string | null | undefined) => Sam
     };
   },
   // #141: lifecycle restored. The dashboard's single tile keyed
-  // `braiins_deposit` test-button still previews the Detected
-  // message; the per-class _available / _returned keys are exposed
-  // here so an operator can probe each leg via the API directly.
-  braiins_deposit: (locale) => {
-    const c = getAlertCopy(locale);
-    return {
-      severity: 'INFO',
-      title: c.braiins_deposit_detected_title(),
-      body: c.braiins_deposit_detected_body({
-        amount: '0.01000000 BTC (1,000,000 sat)',
-        address_short: null,
-      }),
-      is_recovery: false,
-    };
-  },
+  // `braiins_deposit` test-button previews the Detected message;
+  // each of the three per-class canonical event_class names is also
+  // accepted so an operator can probe any leg via the API directly.
+  braiins_deposit: (locale) => buildDepositDetected(locale),
+  braiins_deposit_detected: (locale) => buildDepositDetected(locale),
   braiins_deposit_available: (locale) => {
     const c = getAlertCopy(locale);
     return {

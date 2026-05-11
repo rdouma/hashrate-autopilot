@@ -122,7 +122,6 @@ const VALID_DELIVERY: ReadonlySet<AlertDeliveryStatus> = new Set([
   'sent',
   'failed',
   'muted',
-  'snoozed',
   'gave_up',
 ]);
 

@@ -616,7 +616,7 @@ function DeliveryBadge({
       ? 'text-emerald-300'
       : status === 'failed' || status === 'gave_up'
         ? 'text-red-400'
-        : status === 'muted' || status === 'snoozed'
+        : status === 'muted'
           ? 'text-slate-500'
           : 'text-amber-300';
   return (

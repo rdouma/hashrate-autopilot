@@ -8,10 +8,11 @@
  *
  * Schema additions in migration 0062 (#100): delivery_status,
  * delivery_attempts, last_attempt_at_ms, next_retry_at_ms,
- * snoozed_until_ms, paired_alert_id, delivery_meta_json,
- * acknowledged_at_ms, event_class. The legacy v1.0 columns
- * (severity, status, sent_at) stay so existing rows are still
- * readable.
+ * paired_alert_id, delivery_meta_json, acknowledged_at_ms,
+ * event_class. The legacy v1.0 columns (severity, status, sent_at)
+ * stay so existing rows are still readable. The `snoozed_until_ms`
+ * column from #100 was dropped in #148 (migration 0084) - snooze
+ * was retired in cc62951.
  */
 
 import type { Kysely } from 'kysely';
@@ -50,7 +51,6 @@ export interface AlertRow {
   delivery_attempts: number;
   last_attempt_at_ms: number | null;
   next_retry_at_ms: number | null;
-  snoozed_until_ms: number | null;
   paired_alert_id: number | null;
   delivery_meta_json: string | null;
   acknowledged_at_ms: number | null;
@@ -107,7 +107,6 @@ export class AlertsRepo {
         delivery_attempts: args.delivery_attempts,
         last_attempt_at_ms: null,
         next_retry_at_ms: args.next_retry_at_ms,
-        snoozed_until_ms: null,
         paired_alert_id: args.paired_alert_id,
         delivery_meta_json: null,
         acknowledged_at_ms: null,
@@ -189,11 +188,8 @@ export class AlertsRepo {
     return Number(result.numUpdatedRows ?? 0);
   }
 
-  // Snooze removed 2026-05-09 (operator request). The
-  // `snoozed_until_ms` column stays for backwards-compat with older
-  // rows but no code path writes to it any more, and the daemon's
-  // delivery loop no longer treats `snoozed_until_ms > now` as a
-  // reason to defer a retry.
+  // Snooze removed 2026-05-09 (cc62951; operator request). The
+  // `snoozed_until_ms` column itself dropped in #148 (migration 0084).
 
   async markDelivered(args: MarkDeliveredArgs): Promise<void> {
     await this.db
@@ -223,16 +219,15 @@ export class AlertsRepo {
     await this.incrementAttempts(args.id);
   }
 
-  async markMutedOrSnoozed(
+  async markMuted(
     id: number,
-    status: 'muted' | 'snoozed',
     attemptAtMs: number,
     nextRetryAtMs: number | null,
   ): Promise<void> {
     await this.db
       .updateTable('alerts')
       .set({
-        delivery_status: status,
+        delivery_status: 'muted',
         last_attempt_at_ms: attemptAtMs,
         next_retry_at_ms: nextRetryAtMs,
       })
@@ -244,8 +239,8 @@ export class AlertsRepo {
   /**
    * Rows whose retry timer has come due and which are still in a
    * deliverable state. `pending` covers the very first attempt; `failed`
-   * + `muted` + `snoozed` cover retry attempts after a previous miss.
-   * `gave_up` and `sent` are excluded.
+   * + `muted` cover retry attempts after a previous miss. `gave_up`
+   * and `sent` are excluded.
    *
    * Acknowledged rows are also excluded - if the operator has clicked
    * "mark as seen" on the dashboard, the system MUST stop retrying.
@@ -258,7 +253,7 @@ export class AlertsRepo {
       .selectAll()
       .where('next_retry_at_ms', 'is not', null)
       .where('next_retry_at_ms', '<=', nowMs)
-      .where('delivery_status', 'in', ['pending', 'failed', 'muted', 'snoozed'])
+      .where('delivery_status', 'in', ['pending', 'failed', 'muted'])
       .where('acknowledged_at_ms', 'is', null)
       .orderBy('next_retry_at_ms', 'asc')
       .limit(limit)
@@ -321,8 +316,8 @@ export class AlertsRepo {
 
   /**
    * #119: prune rows older than the supplied cutoff. Only deletes
-   * rows whose retry lifecycle has resolved - 'pending' and 'snoozed'
-   * still represent in-flight work that the AlertManager would
+   * rows whose retry lifecycle has resolved - 'pending' still
+   * represents in-flight work that the AlertManager would
    * reattempt, so age alone shouldn't drop them. Returns the number
    * of rows removed.
    */

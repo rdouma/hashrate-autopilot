@@ -112,9 +112,6 @@ export class AlertManager {
     const due = await this.alertsRepo.nextDueRetries(nowMs);
 
     for (const row of due) {
-      // Snooze gate removed 2026-05-09. No code path writes
-      // snoozed_until_ms any more; legacy rows with a non-null
-      // value just retry as normal.
       await this.attemptDelivery({
         id: row.id,
         severity: row.severity,
@@ -139,7 +136,7 @@ export class AlertManager {
 
     if (args.cfg.notifications_muted) {
       const next = this.computeNextRetry(row.delivery_attempts + 1, args.nowMs, args.cfg);
-      await this.alertsRepo.markMutedOrSnoozed(row.id, 'muted', args.nowMs, next);
+      await this.alertsRepo.markMuted(row.id, args.nowMs, next);
       return;
     }
 

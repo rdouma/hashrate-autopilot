@@ -28,12 +28,10 @@
  *   - wallet_runway         ERROR - balance / 3h-burn drops below threshold
  *   - pool_block_credited   INFO  - operator-celebratory TIDES credit notice
  *
- * Two detectors are stubbed for a small follow-up commit because they
- * need data the evaluator doesn't currently see:
- *   - wallet_runway   needs (balance, daily-burn) - daily-burn comes
- *                     from accountSpend or tick_metrics deltas
+ * One detector remains stubbed pending a data dependency:
  *   - low_acceptance  needs an acceptance-ratio time series; not yet
- *                     captured in tick_metrics
+ *                     captured in tick_metrics. (wallet_runway shipped
+ *                     in #116.)
  */
 
 import type { AlertManager } from './alert-manager.js';
@@ -407,7 +405,7 @@ export class AlertEvaluator {
   }
 
   /**
-   * #116: wallet runway. Fires LOUD when the operator's available
+   * #116: wallet runway. Fires IMPORTANT when the operator's available
    * Braiins balance, divided by the trailing-3h actual-spend rate
    * (extrapolated to a per-day figure), drops below the configured
    * threshold.
@@ -435,8 +433,8 @@ export class AlertEvaluator {
     // Use total_balance_sat (= available + blocked) to match the
     // Status-page runway readout. available_balance_sat alone reads
     // 0 whenever every sat is committed to a live bid - which is the
-    // steady state in a healthy autopilot - and would fire LOUD on
-    // every tick even with months of runway in the bid escrow.
+    // steady state in a healthy autopilot - and would fire IMPORTANT
+    // on every tick even with months of runway in the bid escrow.
     const balanceSat =
       state.balance?.accounts?.[0]?.total_balance_sat ?? null;
     if (balanceSat === null) {

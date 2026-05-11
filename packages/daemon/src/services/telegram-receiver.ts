@@ -1,8 +1,8 @@
 /**
  * Telegram getUpdates long-poll worker (#109).
  *
- * Receives callback_query events when the operator taps a button on
- * an alert message ("Mark as seen", "Snooze 2h") and dispatches them
+ * Receives callback_query events when the operator taps the
+ * "Mark as seen" button on an alert message and dispatches them
  * back to the alerts table. Without this the buttons render but
  * tapping does nothing - Telegram has no way to deliver the tap to
  * a daemon behind home NAT short of a webhook.
@@ -15,8 +15,9 @@
  * but don't crash the daemon.
  *
  * Read-side only: the bot doesn't accept free-text commands. The
- * only thing it acts on is callback_data shaped `ack:<id>` or
- * `snooze:<id>:<minutes>`. Anything else is silently dropped.
+ * only callback_data shape it acts on is `ack:<id>`. Snooze was
+ * retired in cc62951; legacy `snooze:<id>:<minutes>` callbacks are
+ * silently dropped (the buttons no longer render).
  *
  * After dispatching the action, the bot calls editMessageText to
  * append a "✓ acknowledged at <time>" footer and remove the keyboard,

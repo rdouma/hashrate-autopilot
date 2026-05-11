@@ -181,7 +181,7 @@ See also the "Pricing strategy" section further down - these three knobs feed th
 **Budget:**
 
 - `bid_budget_sat` - size of the `amount_sat` on each created bid (governs bid lifetime). **0 is a sentinel** meaning "use the full available wallet balance on each CREATE" - resolved at decision time and clamped to Braiins' 1 BTC per-bid hard cap. New installs default to 0; existing installs keep whatever explicit value is in their config. When the sentinel is active but the wallet is empty (or the balance API has failed), the CREATE is skipped silently until a balance is observed.
-- `wallet_runway_alert_days` - threshold below which the wallet-runway Telegram alert fires (#116). **0 = disabled** end-to-end (no transition arming, no Telegram POST, no alert row). New installs default to 0 so a freshly-installed unfunded-wallet daemon does not IMPORTANT-alert mid-wizard; operator chooses a value when they are ready to be told. Field type is `nonNegativeInt`.
+- `wallet_runway_alert_days` - threshold below which the wallet-runway Telegram alert fires (#116). **0 = disabled** end-to-end (no transition arming, no Telegram POST, no alert row). New installs default to 0 so a freshly-installed unfunded-wallet daemon does not IMPORTANT-alert mid-wizard; operator chooses a value when they are ready to be told. Field type is `nonNegativeNumber` (fractional days allowed, e.g. 0.5; `dc86586`).
 
 **Outage tolerance - profile selector + individual overrides:**
 
@@ -195,8 +195,10 @@ the thresholds to a preset bundle. Editing any individual threshold switches the
 
 Plus (not profile-driven; set once, rarely tuned):
 
-- `pool_outage_blip_tolerance_seconds` (default 120)
-- `api_outage_alert_after_minutes` (default 15)
+- `pool_outage_blip_tolerance_seconds` (default 120) - dashboard-pill blip tolerance only; no longer drives any alert threshold since #135.
+- `api_outage_alert_after_minutes` (default 15; lives in `APP_CONFIG_DEFAULTS`, not the Zod schema's `.default()`).
+- `datum_unreachable_alert_after_minutes` (default 10; #135 - was `pool_outage_blip_tolerance_seconds x 5`).
+- `sustained_paused_alert_after_minutes` (default 10; #135 - same shape).
 
 **Pricing strategy (v2.1 - pay-your-bid fillable-tracking):**
 
@@ -226,7 +228,7 @@ Braiins cooldown on price decreases is enforced one layer below by `gate.ts`.
 **Cheap-mode interaction.** Cheap-mode (below) changes `target_hashrate_ph` opportunistically; the
 pricing formula is unchanged.
 
-- `handover_window_minutes` - manual-override suppression window.
+- `handover_window_minutes` - manual-override suppression window. Default 30 (lives in `APP_CONFIG_DEFAULTS`, not the Zod schema's `.default()`).
 
 **Daemon startup:**
 
@@ -249,11 +251,10 @@ Lives in its own section on Config -> Strategy (#136) with an explicit **Enable 
 
 **Retention (append-only tables):**
 
-- `tick_metrics_retention_days` - default 365 (cheap numeric series; backs every chart). 0 disables pruning.
-- `decisions_uneventful_retention_days` - default 7 (rows with no proposals; heavy JSON state snapshots - main bloat
-  lever).
-- `decisions_eventful_retention_days` - default 365 (rows with at least one proposal - rare and high-value forensic
-  records).
+- `tick_metrics_retention_days` - default **0 = keep forever** (cheap numeric series; backs every chart). Set to a positive integer to prune rows older than N days.
+- `decisions_uneventful_retention_days` - default 7 (rows with no proposals; heavy JSON state snapshots - main bloat lever).
+- `decisions_eventful_retention_days` - default **0 = keep forever** (rows with at least one proposal - rare and high-value forensic records).
+- `alerts_retention_days` - default **0 = keep forever** (Telegram notification history; small rows so the cost of forever-retention is negligible). Set to a positive integer to prune older alert rows.
 
 The daemon runs a pruning pass once per hour; the controller is untouched by retention.
 
@@ -287,6 +288,11 @@ Ocean is not smoothed client-side because `/user_hashrate` already returns a ser
 setting `braiins_hashrate_smoothing_minutes` and `datum_hashrate_smoothing_minutes` to 5 visually aligns
 all three series on the same cadence.
 
+**Dashboard & accounting:**
+
+- `chart_max_markers` - cap on bid-event markers rendered on the Price chart (#123). Over the cap, `EDIT_PRICE` markers drop first since they're the high-frequency, low-information class. Default 0 = no cap.
+- `spent_scope` - `'autopilot'` | `'account'` (default). Drives the P&L panel's "spent" figure: autopilot-tagged bids only, vs the whole Braiins account ledger. Live-editable from the Pool & Payout tab.
+
 **Integrations:**
 
 - `btc_payout_address`
@@ -297,7 +303,7 @@ all three series on the same cadence.
 - `block_explorer_url_template` - URL template applied at click time on every dashboard surface that links to a block (Hashrate-chart cube markers, OCEAN panel "last pool block" row, BIP 110 scan results, BlockTooltip). Placeholders `{hash}` and `{height}` are substituted; at least one must be present. Default `https://mempool.space/block/{hash}`. Privacy-conscious operators point this at their own explorer (e.g. `http://umbrel:3006/block/{hash}`); the Config page exposes mempool.space / blockstream.info / blockchair.com / btcscan.org / btc.com presets plus a free-form custom field. (#22)
 - `block_explorer_tx_url_template` - separate template for transaction links (the on-chain payout dot on the Price chart deep-links via this). Placeholders `{txid}` and `{hash}` are substituted; default `https://mempool.space/tx/{txid}`. Migration 0071 derives the value from the operator's existing block template via known-preset matching, falling back to a `/block/{hash}` -> `/tx/{txid}` string replacement (catches local-Umbrel mempool variants). Config-page presets set both block + tx templates atomically.
 - `btc_price_source` - `none` | `coingecko` | `coinbase` | `bitstamp` | `kraken` (feeds the dashboard sat <-> USD toggle)
-- `block_found_sound` - `'off'` (default) | bundled name (`cartoon-cowbell`, `glass-drop-and-roll`, `metallic-clank-1`, `metallic-clank-2`, `ocean-mining-found-a-block`) | `'custom'` (operator-uploaded MP3, <=200 KB, stored as SQLite blob via `POST /api/config/block-found-sound`). Dashboard fires the chosen sound once per new Ocean pool block (max-`height` increment over `/api/ocean.recent_blocks`); first-poll-after-load establishes a silent baseline so the existing backlog never replays. Operator's intent is "a block was found" not "an on-chain payout to my address confirmed" - the trigger is Ocean, not the `reward_events` payout-observer table. (#88, migration 0052)
+- `block_found_sound` - `'off'` (default) | bundled name (`cartoon-cowbell`, `glass-drop-and-roll`, `metallic-clank-1`, `metallic-clank-2`, `ocean-mining-found-block`) | `'custom'` (operator-uploaded MP3, <=200 KB, stored as SQLite blob via `POST /api/config/block-found-sound`). Dashboard fires the chosen sound once per new Ocean pool block (max-`height` increment over `/api/ocean.recent_blocks`); first-poll-after-load establishes a silent baseline so the existing backlog never replays. Operator's intent is "a block was found" not "an on-chain payout to my address confirmed" - the trigger is Ocean, not the `reward_events` payout-observer table. (#88, migration 0052)
 - Braiins `owner_access_token` + optional `read_only_access_token` (stored in sops secrets, not the config table)
 
 **Telegram notifications (#100 / #106 / #109 / #117):**
@@ -416,8 +422,11 @@ INFO severity (opt-in, good news + lifecycle):
 - **Pool-block credit** (TIDES) - opt-in Telegram via the `notify_on_pool_block_credit` toggle. Body contains block height, total reward, our share log %, our credit in sat, and unpaid-total progress toward the 1,048,576-sat on-chain payout threshold. No retry ladder; no inline ack button.
 - **Braiins deposit detected** - fires when `braiins_total_deposited_sat` ticks up (mempool / first-confirmation). Gate: `notify_on_braiins_deposit` master toggle.
 - **Braiins deposit available** - fires when the on-chain endpoint surfaces the deposit as `DEPOSIT_STATUS_CREDITED` (typically 6-12 min after detected). Same master toggle.
-- Ocean own-found block (gold crown on the Hashrate chart - see §12.1).
-- On-chain payout received (P&L panel).
+
+**Dashboard-only INFO surfaces (no Telegram event):**
+
+- **Ocean own-found block** - gold crown on the Hashrate chart (see §12.1). Visual-only marker; no `event_class`, no notification path.
+- **On-chain payout received** - rendered on the P&L panel and as a dot on the Price chart's `paid earnings` series (#102). Detected by the payout observer (`reward_events`); no Telegram event class.
 
 **Recovery messages**: paired with each fired IMPORTANT or WARNING. INFO severity. Body example:
 `Datum gateway reachable again - was down 22m.` Includes a `paired_alert_id` FK to the

@@ -24,7 +24,6 @@ function makeRepoStub(): AlertsRepo & { rows: AlertRow[] } {
         delivery_attempts: args.delivery_attempts,
         last_attempt_at_ms: null,
         next_retry_at_ms: args.next_retry_at_ms,
-        snoozed_until_ms: null,
         paired_alert_id: args.paired_alert_id,
         delivery_meta_json: null,
         acknowledged_at_ms: null,
@@ -34,7 +33,6 @@ function makeRepoStub(): AlertsRepo & { rows: AlertRow[] } {
     getById: vi.fn(async (id: number) => rows.find((r) => r.id === id) ?? null),
     list: vi.fn(),
     markAcknowledged: vi.fn(),
-    snooze: vi.fn(),
     markDelivered: vi.fn(async ({ id, attempt_at_ms, delivery_meta_json }) => {
       const row = rows.find((r) => r.id === id);
       if (!row) return;
@@ -53,10 +51,10 @@ function makeRepoStub(): AlertsRepo & { rows: AlertRow[] } {
       row.next_retry_at_ms = next_retry_at_ms;
       row.delivery_attempts += 1;
     }),
-    markMutedOrSnoozed: vi.fn(async (id, status, attemptAt, nextRetry) => {
+    markMuted: vi.fn(async (id, attemptAt, nextRetry) => {
       const row = rows.find((r) => r.id === id);
       if (!row) return;
-      row.delivery_status = status;
+      row.delivery_status = 'muted';
       row.last_attempt_at_ms = attemptAt;
       row.next_retry_at_ms = nextRetry;
       row.delivery_attempts += 1;
@@ -66,7 +64,7 @@ function makeRepoStub(): AlertsRepo & { rows: AlertRow[] } {
         (r) =>
           r.next_retry_at_ms !== null &&
           r.next_retry_at_ms <= nowMs &&
-          ['pending', 'failed', 'muted', 'snoozed'].includes(r.delivery_status),
+          ['pending', 'failed', 'muted'].includes(r.delivery_status),
       ),
     ),
     countUnacknowledgedHighSeverity: vi.fn(),
