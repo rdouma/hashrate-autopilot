@@ -592,6 +592,7 @@ msgid "Block URL template"
 msgstr "Plantilla URL del bloque"
 
 #: src/pages/Config.tsx
+#: src/pages/Config.tsx
 msgid "Block-found notification"
 msgstr "Notificación de bloque encontrado"
 
@@ -754,6 +755,7 @@ msgstr "Cancelada"
 msgid "Cancelling…"
 msgstr "Cancelando…"
 
+#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "Cartoon cowbell"
 msgstr "Cencerro de dibujos"
@@ -971,6 +973,7 @@ msgid "custom"
 msgstr "personalizado"
 
 #: src/pages/Config.tsx
+#: src/pages/Config.tsx
 msgid "Custom (uploaded)"
 msgstr "Personalizado (subido)"
 
@@ -1063,6 +1066,10 @@ msgstr "Predeterminado 50001."
 #: src/pages/Setup.tsx
 msgid "Default Electrs port is 50001 (TCP). On Umbrel the in-cluster hostname is typically<0> 10.21.21.10</0> or similar - check the Electrs app's connection details."
 msgstr "El puerto Electrs predeterminado es 50001 (TCP). En Umbrel el nombre de host dentro del clúster suele ser<0> 10.21.21.10</0> o similar - revisa los detalles de conexión de la app Electrs."
+
+#: src/pages/Config.tsx
+msgid "Delete this device permanently. To pause without deleting, uncheck the box at the left of the row."
+msgstr "Eliminar este dispositivo permanentemente. Para pausar sin eliminar, desmarca la casilla a la izquierda de la fila."
 
 #: src/pages/Status.tsx
 #: src/pages/Status.tsx
@@ -1272,10 +1279,6 @@ msgstr "Habilitar modo barato"
 msgid "Enable solo-mining monitoring"
 msgstr "Activar monitorizacion de mineria en solitario"
 
-#: src/pages/Config.tsx
-msgid "Enabled"
-msgstr "Activado"
-
 #: src/pages/Status.tsx
 msgid "Escalation in"
 msgstr "Escalada en"
@@ -1431,6 +1434,7 @@ msgstr "Saldo completo del wallet por oferta. Actualmente ≈ {resolvedSatStr} s
 msgid "genesis version"
 msgstr "versión génesis"
 
+#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "Glass drop & roll"
 msgstr "Vidrio cae y rueda"
@@ -1778,9 +1782,11 @@ msgid "menu"
 msgstr "menú"
 
 #: src/pages/Config.tsx
+#: src/pages/Config.tsx
 msgid "Metallic clank 1"
 msgstr "Golpe metálico 1"
 
+#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "Metallic clank 2"
 msgstr "Golpe metálico 2"
@@ -2011,6 +2017,7 @@ msgid "ocean lifetime"
 msgstr "ocean histórico total"
 
 #: src/pages/Config.tsx
+#: src/pages/Config.tsx
 msgid "Ocean mining found a block (voice)"
 msgstr "Ocean mining ha encontrado un bloque (voz)"
 
@@ -2078,6 +2085,10 @@ msgstr "OK · mensaje entregado"
 #: src/components/StaleUrlBanner.tsx
 msgid "Old destination:"
 msgstr "Destino antiguo:"
+
+#: src/pages/Config.tsx
+msgid "On"
+msgstr "Activo"
 
 #: src/pages/Status.tsx
 msgid "On target - bid at fillable + overpay."
@@ -2516,9 +2527,14 @@ msgstr "Rechazado"
 msgid "Remember me on this device"
 msgstr "Recordarme en este dispositivo"
 
+#. placeholder {0}: device.label
 #: src/pages/Config.tsx
-msgid "remove"
-msgstr "eliminar"
+msgid "Remove {0}?"
+msgstr ""
+
+#: src/pages/Config.tsx
+msgid "Remove device"
+msgstr "Eliminar dispositivo"
 
 #: src/pages/Config.tsx
 msgid "Replace file…"
@@ -2821,6 +2837,7 @@ msgid "Solo-mining monitoring is enabled but no devices have been added yet. Add
 msgstr "La monitorizacion de mineria en solitario esta activa pero aun no se han anadido dispositivos. Anade una IP de Bitaxe en Config → Visualizacion y registro → Mineros en solitario."
 
 #: src/pages/Config.tsx
+#: src/pages/Config.tsx
 msgid "Sound"
 msgstr "Sonido"
 
@@ -2950,6 +2967,7 @@ msgid "Test connection"
 msgstr "Probar conexión"
 
 #: src/pages/Config.tsx
+#: src/pages/Config.tsx
 msgid "Test sound"
 msgstr "Probar sonido"
 
@@ -3037,6 +3055,10 @@ msgstr "Plantilla URL de la transacción"
 #: src/pages/Alerts.tsx
 msgid "unacknowledged only"
 msgstr "solo no confirmadas"
+
+#: src/pages/Config.tsx
+msgid "Uncheck to pause polling without deleting the device - label + IP are kept, alerts pause, re-enable in one click. Use the trash icon to delete permanently."
+msgstr "Desmarca para pausar el sondeo sin eliminar el dispositivo - etiqueta + IP se conservan, las alertas se pausan, reactivar con un clic. Usa el icono de papelera para eliminar permanentemente."
 
 #: src/pages/Status.tsx
 msgid "unknown"

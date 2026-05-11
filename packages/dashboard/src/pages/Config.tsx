@@ -1872,10 +1872,18 @@ function SoloMinersSection({
               <table className="w-full text-xs">
                 <thead className="text-slate-500 uppercase tracking-wider">
                   <tr>
+                    {/* #155: column order is now ON/off > Label (widest) >
+                        IP/host > trash icon (right-aligned, no spacer).
+                        The enable checkbox leads the row because that's
+                        the standard pattern for list rows with an
+                        active/inactive state; the trash icon collapses
+                        the previous "remove" text button into a single-
+                        glyph action, with the confirm() dialog kept as
+                        the destructive guardrail. */}
+                    <th className="text-left font-normal py-1 pr-3 w-8"><Trans>On</Trans></th>
                     <th className="text-left font-normal py-1 pr-3"><Trans>Label</Trans></th>
-                    <th className="text-left font-normal py-1 pr-3"><Trans>IP / host</Trans></th>
-                    <th className="text-left font-normal py-1 pr-3"><Trans>Enabled</Trans></th>
-                    <th></th>
+                    <th className="text-left font-normal py-1 pr-3 w-48"><Trans>IP / host</Trans></th>
+                    <th className="w-8"></th>
                   </tr>
                 </thead>
                 <tbody className="text-slate-200">
@@ -1954,11 +1962,22 @@ function SoloMinerRow({
   onSave: (body: { label?: string; ip?: string; enabled?: boolean }) => void;
   onDelete: () => void;
 }) {
+  const { i18n } = useLingui();
+  void i18n;
   const [label, setLabel] = useState(device.label);
   const [ip, setIp] = useState(device.ip);
   const dirty = label !== device.label || ip !== device.ip;
   return (
     <tr className="border-t border-slate-800">
+      <td className="py-1 pr-3">
+        <input
+          type="checkbox"
+          checked={device.enabled}
+          onChange={(e) => onSave({ enabled: e.target.checked })}
+          className="accent-amber-400 h-3.5 w-3.5"
+          title={t`Uncheck to pause polling without deleting the device - label + IP are kept, alerts pause, re-enable in one click. Use the trash icon to delete permanently.`}
+        />
+      </td>
       <td className="py-1 pr-3">
         <input
           type="text"
@@ -1975,20 +1994,12 @@ function SoloMinerRow({
           className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-0.5 text-xs font-mono"
         />
       </td>
-      <td className="py-1 pr-3">
-        <input
-          type="checkbox"
-          checked={device.enabled}
-          onChange={(e) => onSave({ enabled: e.target.checked })}
-          className="accent-amber-400 h-3.5 w-3.5"
-        />
-      </td>
-      <td className="py-1 text-right space-x-1">
+      <td className="py-1 text-right whitespace-nowrap">
         {dirty && (
           <button
             type="button"
             onClick={() => onSave({ label: label.trim(), ip: ip.trim() })}
-            className="px-2 py-0.5 text-[11px] text-amber-300 border border-amber-700 rounded hover:bg-amber-500/10"
+            className="px-2 py-0.5 text-[11px] text-amber-300 border border-amber-700 rounded hover:bg-amber-500/10 mr-1"
           >
             <Trans>save</Trans>
           </button>
@@ -1996,11 +2007,20 @@ function SoloMinerRow({
         <button
           type="button"
           onClick={() => {
-            if (confirm(`Remove ${device.label}?`)) onDelete();
+            if (confirm(t`Remove ${device.label}?`)) onDelete();
           }}
-          className="px-2 py-0.5 text-[11px] text-slate-400 border border-slate-700 rounded hover:bg-slate-800"
+          aria-label={t`Remove device`}
+          title={t`Delete this device permanently. To pause without deleting, uncheck the box at the left of the row.`}
+          className="text-slate-400 hover:text-red-400 p-1 rounded transition-colors"
         >
-          <Trans>remove</Trans>
+          {/* Trash-can glyph (SVG); 14px to match the row's text-xs scale. */}
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <polyline points="3 6 5 6 21 6" />
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+            <path d="M10 11v6" />
+            <path d="M14 11v6" />
+            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+          </svg>
         </button>
       </td>
     </tr>

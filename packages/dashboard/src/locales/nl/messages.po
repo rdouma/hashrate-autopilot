@@ -592,6 +592,7 @@ msgid "Block URL template"
 msgstr "Blok-URL-sjabloon"
 
 #: src/pages/Config.tsx
+#: src/pages/Config.tsx
 msgid "Block-found notification"
 msgstr "Notificatie bij gevonden blok"
 
@@ -754,6 +755,7 @@ msgstr "Geannuleerd"
 msgid "Cancelling…"
 msgstr "Annuleren…"
 
+#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "Cartoon cowbell"
 msgstr "Cartoon-koebel"
@@ -971,6 +973,7 @@ msgid "custom"
 msgstr "aangepast"
 
 #: src/pages/Config.tsx
+#: src/pages/Config.tsx
 msgid "Custom (uploaded)"
 msgstr "Eigen (geüpload)"
 
@@ -1063,6 +1066,10 @@ msgstr "Standaard 50001."
 #: src/pages/Setup.tsx
 msgid "Default Electrs port is 50001 (TCP). On Umbrel the in-cluster hostname is typically<0> 10.21.21.10</0> or similar - check the Electrs app's connection details."
 msgstr "Standaard Electrs-poort is 50001 (TCP). Op Umbrel is de hostnaam binnen het cluster meestal<0> 10.21.21.10</0> of vergelijkbaar - controleer de verbindingsgegevens van de Electrs-app."
+
+#: src/pages/Config.tsx
+msgid "Delete this device permanently. To pause without deleting, uncheck the box at the left of the row."
+msgstr "Apparaat permanent verwijderen. Om te pauzeren zonder te verwijderen, vink het vakje links in de rij uit."
 
 #: src/pages/Status.tsx
 #: src/pages/Status.tsx
@@ -1272,10 +1279,6 @@ msgstr "Goedkoop-modus inschakelen"
 msgid "Enable solo-mining monitoring"
 msgstr "Solo-mining monitoring inschakelen"
 
-#: src/pages/Config.tsx
-msgid "Enabled"
-msgstr "Ingeschakeld"
-
 #: src/pages/Status.tsx
 msgid "Escalation in"
 msgstr "Escalatie over"
@@ -1431,6 +1434,7 @@ msgstr "Volledig wallet-saldo per bod. Momenteel ≈ {resolvedSatStr} sat."
 msgid "genesis version"
 msgstr "genesis-versie"
 
+#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "Glass drop & roll"
 msgstr "Glas valt & rolt"
@@ -1778,9 +1782,11 @@ msgid "menu"
 msgstr "menu"
 
 #: src/pages/Config.tsx
+#: src/pages/Config.tsx
 msgid "Metallic clank 1"
 msgstr "Metalen klap 1"
 
+#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "Metallic clank 2"
 msgstr "Metalen klap 2"
@@ -2011,6 +2017,7 @@ msgid "ocean lifetime"
 msgstr "Ocean levenslang"
 
 #: src/pages/Config.tsx
+#: src/pages/Config.tsx
 msgid "Ocean mining found a block (voice)"
 msgstr "Ocean mining heeft een blok gevonden (stem)"
 
@@ -2078,6 +2085,10 @@ msgstr "OK · bericht afgeleverd"
 #: src/components/StaleUrlBanner.tsx
 msgid "Old destination:"
 msgstr "Oude destination:"
+
+#: src/pages/Config.tsx
+msgid "On"
+msgstr "Aan"
 
 #: src/pages/Status.tsx
 msgid "On target - bid at fillable + overpay."
@@ -2516,9 +2527,14 @@ msgstr "Geweigerd"
 msgid "Remember me on this device"
 msgstr "Onthoud mij op dit apparaat"
 
+#. placeholder {0}: device.label
 #: src/pages/Config.tsx
-msgid "remove"
-msgstr "verwijderen"
+msgid "Remove {0}?"
+msgstr ""
+
+#: src/pages/Config.tsx
+msgid "Remove device"
+msgstr "Apparaat verwijderen"
 
 #: src/pages/Config.tsx
 msgid "Replace file…"
@@ -2821,6 +2837,7 @@ msgid "Solo-mining monitoring is enabled but no devices have been added yet. Add
 msgstr "Solo-mining monitoring is ingeschakeld maar er zijn nog geen apparaten toegevoegd. Voeg een Bitaxe-IP toe via Config → Weergave & logboek → Solo-miners."
 
 #: src/pages/Config.tsx
+#: src/pages/Config.tsx
 msgid "Sound"
 msgstr "Geluid"
 
@@ -2950,6 +2967,7 @@ msgid "Test connection"
 msgstr "Verbinding testen"
 
 #: src/pages/Config.tsx
+#: src/pages/Config.tsx
 msgid "Test sound"
 msgstr "Geluid testen"
 
@@ -3037,6 +3055,10 @@ msgstr "Transactie-URL-sjabloon"
 #: src/pages/Alerts.tsx
 msgid "unacknowledged only"
 msgstr "alleen onbevestigd"
+
+#: src/pages/Config.tsx
+msgid "Uncheck to pause polling without deleting the device - label + IP are kept, alerts pause, re-enable in one click. Use the trash icon to delete permanently."
+msgstr "Vink uit om het pollen te pauzeren zonder het apparaat te verwijderen - label + IP blijven bewaard, alerts pauzeren, weer aanzetten met één klik. Gebruik het prullenbak-icoon om permanent te verwijderen."
 
 #: src/pages/Status.tsx
 msgid "unknown"

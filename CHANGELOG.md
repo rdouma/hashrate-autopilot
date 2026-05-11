@@ -2,6 +2,10 @@
 
 ## 2026-05-11 · v1.6.0
 
+### `[UI]` Solo-miners device row: re-laid-out columns + trash icon (#155)
+
+Reordered the per-device row in Config → Display & Logging → Solo miners. New column order: **On** (checkbox, leftmost, narrow) → **Label** (widest, the most editable field) → **IP / host** (medium, fixed-width) → trash icon (right-aligned, no whitespace gap). Replaces the text "remove" button with a single-glyph trash icon; the destructive confirm() dialog is preserved. The checkbox + trash icon now both carry tooltips spelling out the distinction operator hit in conversation: checkbox = pause polling without losing the row, trash = delete permanently. The functional pause-vs-delete semantics are unchanged - just made discoverable from the UI. NL ("Aan" / "Apparaat verwijderen") and ES ("Activo" / "Eliminar dispositivo") translations included.
+
 ### `[UI]` Config search now indexes the block-found sound picker (#151 follow-up)
 
 #151 fixed the Solo miners + Display sections being invisible to the cross-tab Config search. A follow-up audit found one more gap: the `block-found-sound` section's title was indexed via the `useSections()` fallback, but the actual UI (Sound picker, bundled cue names, Test-sound button, custom-upload) lives in an ad-hoc extras component with empty `fields: []`, so the field-level indexer skipped it. Operators searching for "cowbell" / "sound" / "test" / "upload" got no hits despite those controls being plainly visible. Added a `customSectionMeta` entry with the visible labels + the five bundled sound names + alias terms ("audio", "upload"). All strings already existed in the Lingui catalog from the existing render so no new translations were needed.

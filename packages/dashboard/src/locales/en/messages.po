@@ -592,6 +592,7 @@ msgid "Block URL template"
 msgstr "Block URL template"
 
 #: src/pages/Config.tsx
+#: src/pages/Config.tsx
 msgid "Block-found notification"
 msgstr "Block-found notification"
 
@@ -754,6 +755,7 @@ msgstr "Cancelled"
 msgid "Cancelling…"
 msgstr "Cancelling…"
 
+#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "Cartoon cowbell"
 msgstr "Cartoon cowbell"
@@ -971,6 +973,7 @@ msgid "custom"
 msgstr "custom"
 
 #: src/pages/Config.tsx
+#: src/pages/Config.tsx
 msgid "Custom (uploaded)"
 msgstr "Custom (uploaded)"
 
@@ -1063,6 +1066,10 @@ msgstr "Default 50001."
 #: src/pages/Setup.tsx
 msgid "Default Electrs port is 50001 (TCP). On Umbrel the in-cluster hostname is typically<0> 10.21.21.10</0> or similar - check the Electrs app's connection details."
 msgstr "Default Electrs port is 50001 (TCP). On Umbrel the in-cluster hostname is typically<0> 10.21.21.10</0> or similar - check the Electrs app's connection details."
+
+#: src/pages/Config.tsx
+msgid "Delete this device permanently. To pause without deleting, uncheck the box at the left of the row."
+msgstr "Delete this device permanently. To pause without deleting, uncheck the box at the left of the row."
 
 #: src/pages/Status.tsx
 #: src/pages/Status.tsx
@@ -1272,10 +1279,6 @@ msgstr "Enable cheap mode"
 msgid "Enable solo-mining monitoring"
 msgstr "Enable solo-mining monitoring"
 
-#: src/pages/Config.tsx
-msgid "Enabled"
-msgstr "Enabled"
-
 #: src/pages/Status.tsx
 msgid "Escalation in"
 msgstr "Escalation in"
@@ -1431,6 +1434,7 @@ msgstr "Full wallet balance per bid. Currently ≈ {resolvedSatStr} sat."
 msgid "genesis version"
 msgstr "genesis version"
 
+#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "Glass drop & roll"
 msgstr "Glass drop & roll"
@@ -1778,9 +1782,11 @@ msgid "menu"
 msgstr "menu"
 
 #: src/pages/Config.tsx
+#: src/pages/Config.tsx
 msgid "Metallic clank 1"
 msgstr "Metallic clank 1"
 
+#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "Metallic clank 2"
 msgstr "Metallic clank 2"
@@ -2011,6 +2017,7 @@ msgid "ocean lifetime"
 msgstr "ocean lifetime"
 
 #: src/pages/Config.tsx
+#: src/pages/Config.tsx
 msgid "Ocean mining found a block (voice)"
 msgstr "Ocean mining found a block (voice)"
 
@@ -2078,6 +2085,10 @@ msgstr "OK · message delivered"
 #: src/components/StaleUrlBanner.tsx
 msgid "Old destination:"
 msgstr "Old destination:"
+
+#: src/pages/Config.tsx
+msgid "On"
+msgstr "On"
 
 #: src/pages/Status.tsx
 msgid "On target - bid at fillable + overpay."
@@ -2516,9 +2527,14 @@ msgstr "Rejected"
 msgid "Remember me on this device"
 msgstr "Remember me on this device"
 
+#. placeholder {0}: device.label
 #: src/pages/Config.tsx
-msgid "remove"
-msgstr "remove"
+msgid "Remove {0}?"
+msgstr "Remove {0}?"
+
+#: src/pages/Config.tsx
+msgid "Remove device"
+msgstr "Remove device"
 
 #: src/pages/Config.tsx
 msgid "Replace file…"
@@ -2821,6 +2837,7 @@ msgid "Solo-mining monitoring is enabled but no devices have been added yet. Add
 msgstr "Solo-mining monitoring is enabled but no devices have been added yet. Add a Bitaxe IP on Config → Display & Logging → Solo miners."
 
 #: src/pages/Config.tsx
+#: src/pages/Config.tsx
 msgid "Sound"
 msgstr "Sound"
 
@@ -2950,6 +2967,7 @@ msgid "Test connection"
 msgstr "Test connection"
 
 #: src/pages/Config.tsx
+#: src/pages/Config.tsx
 msgid "Test sound"
 msgstr "Test sound"
 
@@ -3037,6 +3055,10 @@ msgstr "Transaction URL template"
 #: src/pages/Alerts.tsx
 msgid "unacknowledged only"
 msgstr "unacknowledged only"
+
+#: src/pages/Config.tsx
+msgid "Uncheck to pause polling without deleting the device - label + IP are kept, alerts pause, re-enable in one click. Use the trash icon to delete permanently."
+msgstr "Uncheck to pause polling without deleting the device - label + IP are kept, alerts pause, re-enable in one click. Use the trash icon to delete permanently."
 
 #: src/pages/Status.tsx
 msgid "unknown"
