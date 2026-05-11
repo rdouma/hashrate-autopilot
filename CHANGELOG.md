@@ -2,6 +2,10 @@
 
 ## 2026-05-11 · v1.6.0
 
+### `[UI]` Status page: "Just lowered/raised bid" recap row no longer shifts the dashboard down (#154)
+
+The `JustExecutedBanner` rendered conditionally - returned `null` when there was no recent mutation to recap, then a `<div>` once a CREATE/EDIT/CANCEL fired. Adding/removing the DOM node pushed the entire dashboard below it down by one row and back up ~30 s later. Now always renders the container; the visible text content (emerald check + recap summary + age) shows when active, an invisible `&nbsp;` spacer holds the row otherwise. Total Next Action panel height stays constant; the rest of the page stops jumping.
+
 ### `[UI]` Alerts page: merge ACKNOWLEDGED + RESOLVED into one chronological bucket (#153)
 
 The two separate sections `ACKNOWLEDGED` and `RESOLVED` created a visual break that wasn't chronological - in operator's screenshot the 8-row ACKNOWLEDGED block ran top-to-bottom from 4m ago to 1d ago, then the 10-row RESOLVED block continued from 2d ago to 4d ago. The bucket boundary happened to coincide with a state-change in that snapshot, but there's no rule that ACKNOWLEDGED rows are always newer than RESOLVED rows - a 2-min-ago recovery on an old IMPORTANT firing would otherwise land visually BELOW a 1-day-old INFO ack. Collapsed both into a single bucket headed `Acknowledged and resolved ({n})`, sorted strictly newest-first by firing time across both states. OPEN stays its own group at the top (still drives the nav badge, still expanded by default). The per-card right-side pill keeps the state distinction visible: emerald `RESOLVED` vs slate `ACKNOWLEDGED · {age}`. NL ("Bevestigd en opgelost") and ES ("Confirmado y resuelto") translations included.

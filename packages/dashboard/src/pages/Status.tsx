@@ -1239,15 +1239,25 @@ function JustExecutedBanner({ last }: { last: NextActionView['last_executed'] })
     return () => clearInterval(id);
   }, [last]);
 
-  if (!last) return null;
-  const age = now - last.executed_at_ms;
-  if (age > JUST_EXECUTED_VISIBLE_MS) return null;
-
+  // #154: always reserve the row even when there's nothing to show,
+  // so the rest of the dashboard doesn't jump down by one line when a
+  // recent mutation appears and back up when it ages out. Empty
+  // container holds the same vertical space as a rendered banner.
+  // `&nbsp;` keeps the text-line metrics; visibility-hidden on the
+  // children would also work but invisible-but-present children muddle
+  // a11y readers more than an inert spacer.
+  const visible = last !== null && now - last.executed_at_ms <= JUST_EXECUTED_VISIBLE_MS;
   return (
     <div className="mb-2 flex items-baseline gap-2 text-xs">
-      <span className="text-emerald-400">✓</span>
-      <span className="text-emerald-200">{relabelSummary(last.summary, denomination)}</span>
-      <span className="text-slate-500 text-[11px]">({formatAge(last.executed_at_ms)})</span>
+      {visible ? (
+        <>
+          <span className="text-emerald-400">✓</span>
+          <span className="text-emerald-200">{relabelSummary(last.summary, denomination)}</span>
+          <span className="text-slate-500 text-[11px]">({formatAge(last.executed_at_ms)})</span>
+        </>
+      ) : (
+        <span className="invisible select-none">&nbsp;</span>
+      )}
     </div>
   );
 }
