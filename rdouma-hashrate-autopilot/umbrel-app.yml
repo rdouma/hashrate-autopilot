@@ -8,7 +8,7 @@ id: rdouma-hashrate-autopilot
 category: bitcoin
 name: Hashrate Autopilot
 version: "1.6.0"
-tagline: Autopilot for renting hashrate to a non-custodial pool
+tagline: Autopilot for renting hashrate to mine on Ocean Mining
 icon: https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/assets/icon-512.png
 # Umbrel renders description literally - no YAML folding of soft
 # line breaks. Each paragraph MUST be one physical line; a single
@@ -18,7 +18,7 @@ icon: https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/assets/ic
 description: |
   Rent hashrate on the Braiins Hashpower marketplace and route it to your own Ocean non-custodial mining pool, automatically. Each tick the autopilot finds the cheapest available price for your target hashrate, adds a small operator-chosen cushion, and bids exactly that price. You set a maximum you are willing to pay, and the controller never goes above it.
 
-  Why this matters: Ocean is a non-custodial pool, meaning rewards land directly in your own wallet (no custodian holding your bitcoin) and Ocean's Datum templates filter non-financial spam transactions. Renting hashrate to that kind of pool is a small contribution to keeping Bitcoin mining decentralized.
+  Why this matters: Ocean is a non-custodial pool. Each Ocean block's coinbase pays out to every miner whose accumulated earnings have crossed the on-chain payout threshold (1,048,576 sat) - the coinbase IS the payout, in a single transaction the chain itself executes when the block confirms. Most pools (FPPS, PPS+, PPLNS) instead pay their own wallet first and then send miners a second transaction on the pool's settlement cadence; that intermediate pool wallet is bitcoin the pool custodies on your behalf, and it's what gets lost when a pool goes dark. With Ocean your maximum exposure to pool failure is your current unpaid balance (bounded by the threshold), and every past payout is publicly verifiable on-chain forever. Ocean's Datum templates also filter non-financial spam transactions. Renting hashrate to that kind of pool is a small contribution to keeping Bitcoin mining decentralized.
 
   Solo mining via Ocean's solo template should also work, though so far the autopilot has only been tested against the regular Ocean+Datum pool setup.
 
