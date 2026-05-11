@@ -1876,46 +1876,48 @@ function SoloMinersSection({
               </div>
             )}
             {list.data && list.data.devices.length > 0 && (
-              <table className="w-full text-xs">
-                <thead className="text-slate-500 uppercase tracking-wider">
-                  <tr>
-                    {/* #155: column order is now ON/off > Label (widest) >
-                        IP/host > trash icon (right-aligned, no spacer).
-                        The enable checkbox leads the row because that's
-                        the standard pattern for list rows with an
-                        active/inactive state; the trash icon collapses
-                        the previous "remove" text button into a single-
-                        glyph action, with the confirm() dialog kept as
-                        the destructive guardrail. */}
-                    {/* Column widths: On checkbox (w-8) | Label
-                        (uncapped flex with min-w-32) | IP / host
-                        (w-52, comfortable margin for a 13-char IPv4
-                        like "192.168.1.127" in mono at text-xs - the
-                        iOS Safari mono renders chars ~12px each, so
-                        w-44 was still ~half-a-char short on mobile;
-                        w-52 = 208px usable ≈ 14-15 chars) | trash
-                        (w-8). Label keeps its min-w-[8rem] floor so
-                        the IP-column bump doesn't squeeze Label on
-                        narrow viewports - the table will scroll
-                        horizontally below ~440px viewport width
-                        which is acceptable vs permanent truncation. */}
-                    <th className="text-left font-normal py-1 pr-3 w-8"><Trans>On</Trans></th>
-                    <th className="text-left font-normal py-1 pr-3 min-w-[8rem]"><Trans>Label</Trans></th>
-                    <th className="text-left font-normal py-1 pr-3 w-52"><Trans>IP / host</Trans></th>
-                    <th className="w-8"></th>
-                  </tr>
-                </thead>
-                <tbody className="text-slate-200">
-                  {list.data.devices.map((d) => (
-                    <SoloMinerRow
-                      key={d.id}
-                      device={d}
-                      onSave={(body) => updateMutation.mutate({ id: d.id, body })}
-                      onDelete={() => deleteMutation.mutate(d.id)}
-                    />
-                  ))}
-                </tbody>
-              </table>
+              // #158: wrap the table in overflow-x-auto with the table
+              // taking its natural width (NOT w-full). On viewports
+              // wide enough for the full table the wrapper is a no-op;
+              // on iPhone (~390-430px viewport) the table extends past
+              // the parent and the wrapper scrolls horizontally. This
+              // replaces the previous w-full + w-52 hint pattern,
+              // which still let the browser proportionally squeeze
+              // every column on a narrow viewport so the IP cell
+              // ended up ~140px no matter what the TH said. Trade-off:
+              // horizontal scroll on phones, but the IP renders
+              // correctly at full width regardless of viewport.
+              <div className="overflow-x-auto">
+                <table className="text-xs min-w-full table-fixed">
+                  <colgroup>
+                    <col className="w-8" />
+                    <col className="w-32" />
+                    <col className="w-52" />
+                    <col className="w-8" />
+                  </colgroup>
+                  <thead className="text-slate-500 uppercase tracking-wider">
+                    <tr>
+                      {/* #155: column order = ON/off > Label > IP/host
+                          > trash. table-fixed makes the col widths
+                          binding rather than advisory. */}
+                      <th className="text-left font-normal py-1 pr-3"><Trans>On</Trans></th>
+                      <th className="text-left font-normal py-1 pr-3"><Trans>Label</Trans></th>
+                      <th className="text-left font-normal py-1 pr-3"><Trans>IP / host</Trans></th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-slate-200">
+                    {list.data.devices.map((d) => (
+                      <SoloMinerRow
+                        key={d.id}
+                        device={d}
+                        onSave={(body) => updateMutation.mutate({ id: d.id, body })}
+                        onDelete={() => deleteMutation.mutate(d.id)}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
 

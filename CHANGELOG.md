@@ -2,6 +2,10 @@
 
 ## 2026-05-11 · v1.6.0
 
+### `[Fix]` Solo-miners IP/host column on mobile: stop the browser from shrinking it below w-52 (#158)
+
+Operator caught that even after #156's bump to `w-52`, the IP / host input still truncated `192.168.1.127` on iPhone. Root cause: with `<table className="w-full">` and `table-layout: auto`, the `w-52` on the `<th>` is advisory only. When the sum of column widths plus padding exceeds the parent container, the browser proportionally shrinks every column - so even though I said "give IP 208 px," it actually got ~140 px on a 430 px viewport. Wrapped the table in `overflow-x-auto`, switched to `table-fixed` with `<colgroup>` declaring binding column widths (w-8, w-32, w-52, w-8), and dropped the `w-full` so the table takes its natural width. On wide viewports the wrapper is a no-op; on iPhone the table is wider than the viewport and scrolls horizontally. Trade-off accepted: a horizontal scroll on the device-list rows beats permanent IP truncation.
+
 ### `[Fix]` Tooltip flip-below now actually flips - was rendering above and clipping the viewport top (#157)
 
 Tooltips on the Status-page hero cards (PRICE, DELIVERED) clipped against the top of the viewport. Root cause in `Tooltip.tsx`: when not enough room above, the placement logic updated `top` to `rect.bottom + margin` but never updated the `transform: 'translate(-50%, -100%)'`. The `-100%` Y-translate pulled the tooltip UP by its own height regardless, so the "flipped below" branch actually placed the tooltip *above* the anchor by an extra `rect.height + margin`. On the hero card (which sits ~30 px from the top of the page) that drove the top of the long tooltip body off-screen. Track a `placement: 'above' | 'below'` flag and conditionally translate by `0` vs `-100%`. Also added a viewport-bottom check before committing to the flip - on a viewport shorter than the tooltip, the original above-placement wins (operator scrolls to work around).
