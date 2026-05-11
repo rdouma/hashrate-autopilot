@@ -276,8 +276,22 @@ function DeviceRow({
       <td className={`py-1.5 px-3 text-right font-mono ${tempClass(entry.temp_c)}`}>
         {entry.temp_c !== null ? `${entry.temp_c.toFixed(1)} °C` : '-'}
       </td>
-      <td className={`py-1.5 px-3 text-right font-mono ${tempClass(entry.vr_temp_c)}`}>
-        {entry.vr_temp_c !== null ? `${entry.vr_temp_c.toFixed(1)} °C` : '-'}
+      <td
+        className={`py-1.5 px-3 text-right font-mono ${tempClass(entry.vr_temp_c)}`}
+        title={
+          entry.vr_temp_c === 0
+            ? 'no VR temp sensor on this board (typical on older Bitaxe Supra / Max revisions)'
+            : undefined
+        }
+      >
+        {/* Treat exactly 0.0 °C as "no sensor wired" - a running
+            ASIC + VRM never actually reads 0 °C, and older Supra /
+            Max board revisions return 0 instead of a missing-sensor
+            flag. Avoids the visually-alarming "your VR is freezing"
+            misread. */}
+        {entry.vr_temp_c !== null && entry.vr_temp_c !== 0
+          ? `${entry.vr_temp_c.toFixed(1)} °C`
+          : '-'}
       </td>
       <td className="py-1.5 px-3 text-right font-mono">
         {entry.power_w !== null ? `${entry.power_w.toFixed(1)} W` : '-'}
@@ -314,7 +328,10 @@ function formatUptime(seconds: number): string {
 }
 
 function tempClass(temp: number | null): string {
-  if (temp === null) return 'text-slate-500';
+  // 0.0 °C means "no sensor wired" on AxeOS (see VR temp note in
+  // the body); treat it like null so it renders muted, not in the
+  // healthy-temperature green/grey.
+  if (temp === null || temp === 0) return 'text-slate-500';
   if (temp >= 70) return 'text-red-300';
   if (temp >= 65) return 'text-amber-300';
   return 'text-slate-200';
