@@ -429,7 +429,7 @@ IMPORTANT severity (9) - hard outages that need a phone alarm:
 
 IMPORTANT severity (solo-mining, active only when `solo_mining_enabled = true` and the device is `enabled`) (#149):
 
-9. **Solo overheating** - ASIC or VR temp >= the configured ceiling (per-ASIC-model defaults: BM1370 68 °C, BM1368 / BM1366 70 °C, BM1397 75 °C, fallback 70 °C; overridable by a global non-zero value in `solo_overheating_global_ceiling_c`) for `solo_overheating_alert_after_seconds`. Paired recovery when both temps fall back below the ceiling.
+9. **Solo overheating** - ASIC temp >= the ASIC ceiling (default 75 °C across all BM13xx chips, matching AxeOS firmware's `THROTTLE_TEMP`; overridable via `solo_overheating_global_ceiling_c`) OR VR temp >= 100 °C (separate hardcoded ceiling; AxeOS's `TPS546_THROTTLE_TEMP` is 105 °C), sustained for `solo_overheating_alert_after_seconds`. The alert body names which sensor tripped. Paired recovery when both temps fall back below their respective ceilings.
 10. **Solo zero hashrate** - device unreachable OR hashrate = 0 for `solo_zero_hashrate_alert_after_minutes` consecutive minutes. Paired recovery.
 11. **Solo share-rejection** - rolling-window rejection rate >= `solo_share_rejection_threshold_pct` over `solo_share_rejection_window_minutes`. Re-arms once per window length; no recovery row.
 12. **Solo stratum URL drift** - device's reported `stratumURL` changed from the previously-observed value. Baselined silently on first poll so adding a device doesn't fire a spurious drift alert. No recovery row (new URL becomes the new baseline).

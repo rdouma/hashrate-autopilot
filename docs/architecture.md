@@ -452,7 +452,7 @@ concern (not by order; the file names are authoritative):
 - **Ocean / hashprice (0012, 0023-0024):** `fillable_ask_sat_per_eh_day`, per-tick hashprice,
   per-tick max-bid snapshot.
 - **Cheap-mode scaling (0020, 0044):** `cheap_target_hashrate_ph` + `cheap_threshold_pct` in 0020,
-  `cheap_sustained_window_minutes` in 0044 (sustained-average hysteresis).
+  `cheap_sustained_window_minutes` in 0044 (sustained-all-below engagement gate).
 - **Retention (0027):** `tick_metrics_retention_days`, `decisions_{uneventful,eventful}_retention_days`.
 - **Datum integration (0028-0029):** `datum_api_url` in config, `datum_hashrate_ph` on `tick_metrics`.
 - **Dynamic cap (0030):** `max_overpay_vs_hashprice_sat_per_eh_day` hashprice-relative ceiling.

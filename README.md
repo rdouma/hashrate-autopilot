@@ -111,13 +111,14 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
   instead of the effective rate, because under pay-your-bid Braiins charges the bid price exactly,
   so the bid is the truthful real-time number to anchor the dashboard on (the post-hoc range-averaged
   effective rate stays available on the stats card alongside).
-- **Cheap-mode opportunistic scaling** - when the market price (best ask) drops below a configurable
-  percentage of the break-even hashprice, the autopilot scales the target up to
-  `cheap_target_hashrate_ph` to capture cheap capacity. Reverts when the market recovers. Lives in
-  its own Config → Strategy section with an explicit **Enable cheap mode** checkbox; the three knobs
-  (scale-up target, threshold %, sustained-window minutes) grey out when the checkbox is off. The
-  sustained-window knob is the hysteresis lever: cheap-mode only engages when the rolling average
-  over that window is below the threshold, so a single-tick price spike doesn't flap the target.
+- **Cheap-mode opportunistic scaling** - when our actual bid (fillable ask + overpay - the price we
+  post under pay-your-bid) drops below a configurable percentage of the break-even hashprice, the
+  autopilot scales the target up to `cheap_target_hashrate_ph` to capture cheap capacity. Reverts
+  when our bid recovers above the threshold. Lives in its own Config → Strategy section with an
+  explicit **Enable cheap mode** checkbox; the three knobs (scale-up target, threshold %,
+  sustained-window minutes) grey out when the checkbox is off. The sustained-window knob gates
+  engagement: cheap-mode only engages when every tick in the window had our bid below the threshold,
+  so a single-tick price dip doesn't flap the target.
 - **Ocean pool integration** - reads hashprice, pool earnings, time-to-payout, Ocean-credited hashrate, and
   recent pool blocks from the Ocean API. Hashprice is plotted historically on the price chart. Ocean-credited
   hashrate is a first-class line on the Hashrate chart alongside Braiins-delivered and Datum-received. An
@@ -182,8 +183,8 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
   doesn't block the rest). Per-device readings on the Status page: hashrate, ASIC + VR temperature, power
   draw, share-rejection rate, best-ever-difficulty, uptime. Fleet footer aggregates total hashrate, total
   watts, J/TH efficiency, and active-device count. Four Telegram event classes (all IMPORTANT, independently
-  opt-out-able): **overheating** (per-ASIC-model thermal ceiling - BM1370 / BM1368 / BM1366 / BM1397
-  defaults built in, with a global override), **zero hashrate / unreachable**, **share-rejection
+  opt-out-able): **overheating** (75 °C ASIC ceiling matching AxeOS firmware's THROTTLE_TEMP, with a
+  global override; VR has a separate 100 °C ceiling), **zero hashrate / unreachable**, **share-rejection
   high** (rolling-window threshold), and **stratum URL drift** (firmware silently re-pointed at a
   different pool). Device management lives in Config -> Display & Logging -> Solo miners; a
   "Scan local network" button probes the daemon's /24 subnet (or a CIDR you type in the

@@ -2,6 +2,14 @@
 
 ## 2026-05-12
 
+### `[UI]` Hashprice line: tightly-spaced round dots instead of long dashes
+
+Hashprice is a high-variance per-tick signal and the previous `strokeDasharray="6 4"` long-dash rendering made it read as jagged - the dashes were sparse enough that the line jumped visibly between them. Switched to `"0.1 3"` with `strokeLinecap="round"`, which renders each dash as a single round dot at the stroke width's diameter; with a 1.6 px stroke and 3 px gap the dots sit ~3 px apart and follow the curve much more cleanly. The Legend swatch on the chart picks up the same style so the legend matches.
+
+### `[Docs]` /check-specs sweep: catch up four doc files to today's code changes
+
+Five doc-only fixes after today's heavy session. `spec.md §9` listed the old per-ASIC-model overheating defaults (BM1370 68 °C etc.) - replaced with the uniform 75 °C + 100 °C VR description that already appeared in §8 after the AxeOS-alignment fix. `README.md` cheap-mode bullet still said "market price (best ask)" and "rolling average" - both wrong after #160; rewrote to "our bid (fillable + overpay)" and "every tick below threshold". `README.md` solo-mining bullet still implied per-ASIC-model temp differentiation - clarified that it's uniform 75 °C now. `architecture.md` migration-summary line called 0044 "sustained-average hysteresis" - changed to "sustained-all-below engagement gate" to match the new semantics.
+
 ### `[Fix]` Cheap-mode: sustained-below semantics, our-bid (not best_ask), no spot fallback (#160)
 
 Operator caught the autopilot scaling target_hashrate from 3 to 10 PH/s at 14:28:37 UTC when their config explicitly required the cheap signal to be sustained for 5 minutes. DB analysis exposed three independent bugs in the cheap-mode engagement check:

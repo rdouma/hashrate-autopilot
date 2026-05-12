@@ -1329,13 +1329,19 @@ export const PriceChart = memo(function PriceChart({
             horizontal line. Moves with difficulty adjustments + block
             reward fluctuations. Below = profitable, above = unprofitable. */}
         {hashpricePath && (
+          // Hashprice is a high-variance per-tick signal, so a sparse
+          // long-dash pattern reads as jagged. Use tightly-spaced round
+          // dots (0.1 dash + round linecap renders the cap itself as a
+          // dot of stroke-width diameter; gap kept small so neighbouring
+          // dots stay close enough to follow the curve).
           <path
             d={hashpricePath}
             stroke={COLOR_HASHPRICE}
-            strokeWidth="1.2"
-            strokeDasharray="6 4"
+            strokeWidth="1.6"
+            strokeDasharray="0.1 3"
+            strokeLinecap="round"
             fill="none"
-            opacity="0.7"
+            opacity="0.75"
           />
         )}
         {/* Effective cap - the tighter of fixed max_bid and the
@@ -2171,6 +2177,9 @@ function SatUnit({ unit }: { unit: string }) {
 }
 
 function Legend({ color, label, dashed }: { color: string; label: string; dashed?: boolean }) {
+  // `dashed` is a misnomer kept for stable callsites; it now renders
+  // tightly-spaced round dots to match the hashprice line style on
+  // the chart (#hashprice-dots-2026-05-12).
   return (
     <span className="flex items-center gap-1 text-slate-400">
       <svg width="14" height="6">
@@ -2181,7 +2190,8 @@ function Legend({ color, label, dashed }: { color: string; label: string; dashed
           y2="3"
           stroke={color}
           strokeWidth="2"
-          strokeDasharray={dashed ? '3 2' : undefined}
+          strokeDasharray={dashed ? '0.1 3' : undefined}
+          strokeLinecap={dashed ? 'round' : undefined}
         />
       </svg>
       {label}
