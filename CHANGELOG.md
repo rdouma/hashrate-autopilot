@@ -1,6 +1,10 @@
 # Changelog
 
-## 2026-05-12
+## 2026-05-12 · v1.7.3
+
+### `[Release]` v1.7.3 - Fahrenheit support for solo-miner temperatures
+
+Adds the operator-requested °C/°F unit picker. See the `[Feature]` entry below for the full change.
 
 ### `[Feature]` Temperature unit selector: Celsius or Fahrenheit (#157)
 

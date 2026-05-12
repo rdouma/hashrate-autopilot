@@ -7,7 +7,7 @@ manifestVersion: 1
 id: rdouma-hashrate-autopilot
 category: bitcoin
 name: Hashrate Autopilot
-version: "1.7.2"
+version: "1.7.3"
 tagline: Autopilot for renting hashrate to mine on Ocean Mining
 icon: https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/assets/icon-512.png
 # Umbrel renders description literally - no YAML folding of soft
@@ -51,6 +51,13 @@ defaultPassword: ""
 submitter: Remco Douma
 submission: https://github.com/rdouma/hashrate-autopilot
 releaseNotes: |
+  v1.7.3 - Fahrenheit support for solo-miner temperatures.
+
+  NEW
+  - Temperature unit selector on Config → Display & Logging, alongside Number format and Date layout. Pick Celsius or Fahrenheit (or "system default", which uses °F for English UI and °C otherwise). Honoured everywhere temperatures show up: the Status-page Solo miners card (ASIC + VR temp columns), the right-axis temperature plot on the Hashrate chart, and the Overheating ceiling input on Config (operator types in the chosen unit, daemon round-trips internally in °C). Per-browser setting. Telegram alert bodies stay in °C for now - those go to a phone and the daemon doesn't know per-recipient preferences.
+
+  No migration; safe to upgrade or revert.
+
   v1.7.2 - solo-miner scan reliability.
 
   FIX
