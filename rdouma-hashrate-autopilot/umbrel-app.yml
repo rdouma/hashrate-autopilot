@@ -7,7 +7,7 @@ manifestVersion: 1
 id: rdouma-hashrate-autopilot
 category: bitcoin
 name: Hashrate Autopilot
-version: "1.7.3"
+version: "1.7.4"
 tagline: Autopilot for renting hashrate to mine on Ocean Mining
 icon: https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/assets/icon-512.png
 # Umbrel renders description literally - no YAML folding of soft
@@ -51,6 +51,15 @@ defaultPassword: ""
 submitter: Remco Douma
 submission: https://github.com/rdouma/hashrate-autopilot
 releaseNotes: |
+  v1.7.4 - solo-miner false alerts gone, cheap-mode sustained semantics fixed.
+
+  FIXES
+  - Solo-miner overheating alert: stopped firing IMPORTANT every ~90 s on healthy BM1370 boards. Two bugs caught and fixed: (1) the alert was evaluating the VR (voltage regulator) sensor against the ASIC ceiling - any healthy 70 °C VR tripped the alert; (2) the per-ASIC-model defaults (BM1370 68 °C etc.) were guessed from community sources and fired well before AxeOS itself starts throttling. Now uses 75 °C uniformly for the ASIC (matching AxeOS firmware's THROTTLE_TEMP, the point at which the miner reduces frequency itself) and a separate 100 °C ceiling for the VR (5 °C below AxeOS's TPS546_THROTTLE_TEMP so you get a heads-up before AxeOS itself acts). The alert body now names which sensor tripped. Dashboard color thresholds match: ASIC amber ≥70 / red ≥75, VR amber ≥90 / red ≥100.
+  - Cheap-mode: stopped scaling target_hashrate up to cheap_target when the sustained-window criteria weren't actually met. Three independent bugs found by replaying an incident against the database: (1) the check was comparing the order book's best_ask to hashprice, not our actual bid (fillable + overpay - the price we post under pay-your-bid); (2) the sustained-window check averaged across ticks instead of requiring every tick to be below threshold; (3) when the window aggregate came back with too few samples (a 120 s cadence gap could drop the count from 5 to 4), the code silently fell through to a per-tick spot check that ignored the operator's opted-in sustained semantics. Rewrite enforces literal sustained-below: every tick in the window must individually have our bid below threshold, AND there must be at least N ticks of complete data. No fallback when the operator opted into a window.
+  - Hashprice line on the price chart: switched from long dashes to tightly-spaced round dots. Hashprice is a high-variance per-tick signal and the long dashes read as jagged.
+
+  No migration; safe to upgrade or revert.
+
   v1.7.3 - Fahrenheit support for solo-miner temperatures.
 
   NEW

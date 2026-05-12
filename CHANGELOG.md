@@ -1,6 +1,10 @@
 # Changelog
 
-## 2026-05-12
+## 2026-05-12 · v1.7.4
+
+### `[Release]` v1.7.4 - solo-miner false alerts gone, cheap-mode sustained semantics fixed
+
+Three correctness fixes caught by operator testing on v1.7.3. All three were silently firing the wrong thing — bogus IMPORTANT Telegram alerts and spurious target_hashrate scale-ups. See the `[Fix]` entries below for full diagnoses.
 
 ### `[UI]` Hashprice line: tightly-spaced round dots instead of long dashes
 
