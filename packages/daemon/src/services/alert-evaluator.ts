@@ -91,24 +91,21 @@ const INITIAL: EventState = { bad_since_ms: null, active_alert_id: null };
 
 /**
  * VR (voltage-regulator buck-converter MOSFET stage) overheating
- * ceiling, °C. Separate from the per-ASIC silicon-junction ceiling
- * because the two sensors measure different things with very
- * different operating ranges:
+ * ceiling, °C. Separate from the ASIC silicon-junction ceiling
+ * because the two sensors measure very different things:
  *
- * - ASIC junction (BM1370 etc.): ~50-65 °C nominal under load,
- *   throttles or shuts down past ~70-75 °C. Bitmain rates these
- *   tight; per-model values live in `axeos.ts:overheatingCeilingForAsic`.
- * - VR (DC-DC step-down on the Bitaxe board): ~65-80 °C nominal,
- *   buck-converter MOSFETs typically rated to 125 °C junction.
- *   AxeOS's own dashboard doesn't flag VR temps under ~90 °C; this
- *   ceiling matches that "consider better cooling" threshold.
+ * - ASIC junction: `THROTTLE_TEMP = 75 °C` in AxeOS firmware. See
+ *   `axeos.ts:overheatingCeilingForAsic`.
+ * - VR (TPS546 buck converter on Bitaxe boards): AxeOS uses
+ *   `TPS546_THROTTLE_TEMP = 105 °C` as its action threshold. We
+ *   fire 5 °C earlier (at 100 °C) so the operator gets a heads-up
+ *   before AxeOS itself throttles or trips overheat-mode.
  *
- * Earlier code applied the ASIC ceiling to both sensors, which fired
- * spurious alerts on every BM1370 install with a healthy 70 °C VR.
- * No config field for this yet - if anyone needs an override we can
- * add one; default 90 °C is conservative enough for general use.
+ * Earlier values - applying the ASIC ceiling to the VR (#158), then
+ * 90 °C as a conservative first pass - were both off. 100 °C lines
+ * up with what AxeOS actually treats as concerning.
  */
-const VR_OVERHEATING_CEILING_C = 90;
+const VR_OVERHEATING_CEILING_C = 100;
 
 export interface AlertEvaluatorOptions {
   readonly alertManager: AlertManager;

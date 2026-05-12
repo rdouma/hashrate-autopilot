@@ -2123,8 +2123,8 @@ function SoloThresholdInputs({
       : t`ASIC overheating ceiling (°C, 0 = auto per model)`;
   const ceilingHelp =
     tempUnit === 'F'
-      ? t`ASIC junction temperature only. Default 0 uses per-model lookup (BM1370 = 154 °F, BM1368/BM1366 = 158 °F, BM1397 = 167 °F, fallback 158 °F). Any non-zero value here overrides all of them. The VR (voltage regulator) sensor uses a separate built-in ceiling of 194 °F (90 °C) and is not configurable yet - those chips run a much wider operating range than the ASIC and AxeOS itself doesn't flag them below ~194 °F.`
-      : t`ASIC junction temperature only. Default 0 uses per-model lookup (BM1370 = 68 °C, BM1368/BM1366 = 70 °C, BM1397 = 75 °C, fallback 70 °C). Any non-zero value here overrides all of them. The VR (voltage regulator) sensor uses a separate built-in ceiling of 90 °C and is not configurable yet - those chips run a much wider operating range than the ASIC and AxeOS itself doesn't flag them below ~90 °C.`;
+      ? t`ASIC junction temperature only. Default 0 uses 167 °F across all BM13xx chips - matches AxeOS firmware's THROTTLE_TEMP, the point at which the miner itself reduces frequency. Any non-zero value here overrides it. The VR (voltage regulator) sensor uses a separate built-in ceiling of 212 °F (100 °C); AxeOS throttles the VR at 221 °F (105 °C) so we fire 5 °C earlier to give you headroom to react.`
+      : t`ASIC junction temperature only. Default 0 uses 75 °C across all BM13xx chips - matches AxeOS firmware's THROTTLE_TEMP, the point at which the miner itself reduces frequency. Any non-zero value here overrides it. The VR (voltage regulator) sensor uses a separate built-in ceiling of 100 °C; AxeOS throttles the VR at 105 °C so we fire 5 °C earlier to give you headroom to react.`;
   return (
     <div className="border-t border-slate-800 pt-3 space-y-2">
       <h4 className="text-xs uppercase tracking-wider text-slate-400">
@@ -3015,7 +3015,7 @@ function EventClassSubscriptions({
         {
           id: 'solo_overheating',
           label: t`Solo miner overheating`,
-          help: t`Fires when the ASIC temp crosses its per-model ceiling (configurable on Display & Logging → Solo miners) OR the VR temp crosses 90 °C (separate built-in ceiling - VRs run a wider range than the ASIC), sustained for ~90 s. Recovery paired.`,
+          help: t`Fires when the ASIC temp crosses 75 °C (configurable on Display & Logging → Solo miners) OR the VR temp crosses 100 °C, sustained for ~90 s. Thresholds match AxeOS firmware's own throttle points so the alert lines up with when the miner itself starts taking action. Recovery paired.`,
           enabled: !disabled.has('solo_overheating'),
           setEnabled: (n) => toggleClass('solo_overheating', n),
           severity: 'IMPORTANT',

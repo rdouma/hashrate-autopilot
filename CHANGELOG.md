@@ -2,6 +2,15 @@
 
 ## 2026-05-12
 
+### `[Fix]` Solo-miner overheating: align thresholds with AxeOS firmware (no more false-alarm at 68 °C on BM1370)
+
+Operator on a fresh v1.7.4 install: BitAxe2 (BM1370) firing a sustained IMPORTANT alert at 68.1 °C despite AxeOS's own dashboard showing the ASIC happily green at 68.4 °C. The per-model table I'd put together for the previous fix (BM1370 = 68, BM1368/66 = 70, BM1397 = 75) was guessed from community spec sheets rather than the firmware. Looked at the AxeOS source (`main/tasks/power_management_task.c`):
+
+- `THROTTLE_TEMP = 75 °C` for the ASIC, uniformly across all BM13xx chips. AxeOS does NOT differentiate per model. This is the point at which the firmware itself reduces frequency and voltage.
+- `TPS546_THROTTLE_TEMP = 105 °C` for the voltage regulator (the previous fix had this at 90 °C as a "conservative first pass" - also too low).
+
+Fix: align with AxeOS's actual numbers. Single ASIC ceiling of 75 °C across all chips - firing at the same point the firmware does, so the alert means "your miner is throttling now." VR ceiling raised from 90 → 100 °C, just below AxeOS's 105 °C action threshold so the operator gets a heads-up before AxeOS itself throttles the VR or trips overheat-mode. Dashboard color thresholds correspondingly: ASIC amber ≥70 / red ≥75; VR amber ≥90 / red ≥100. Help text + spec.md updated to cite the AxeOS source line. NL + ES translations included.
+
 ### `[Fix]` Solo-miner overheating: split ASIC vs VR thresholds; no more false-red on healthy VR temps
 
 Operator caught the bug on a fresh v1.7.3 install: BitAxe2 (BM1370) showed VR temp 70.0 °C colored red on the dashboard, even though AxeOS itself flagged it green. Root cause in two places:

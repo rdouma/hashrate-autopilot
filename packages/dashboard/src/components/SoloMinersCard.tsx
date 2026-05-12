@@ -344,29 +344,31 @@ function formatUptime(seconds: number): string {
 }
 
 /**
- * ASIC silicon-junction temperature classes. Bitmain rates these
- * chips tight - BM1370's ceiling is 68 °C, others are 70-75 °C - so
- * amber starts at 65 and red at 70, matching the daemon's
- * overheating alert ceiling.
+ * ASIC silicon-junction temperature classes. AxeOS firmware's
+ * `THROTTLE_TEMP = 75 °C` is the point at which the miner itself
+ * reduces frequency. Red at 75 matches that authoritative threshold
+ * (and the daemon's overheating alert); amber at 70 gives the
+ * operator a heads-up window before AxeOS takes action.
  */
 function asicTempClass(temp: number | null): string {
   if (temp === null || temp === 0) return 'text-slate-500';
-  if (temp >= 70) return 'text-red-300';
-  if (temp >= 65) return 'text-amber-300';
+  if (temp >= 75) return 'text-red-300';
+  if (temp >= 70) return 'text-amber-300';
   return 'text-slate-200';
 }
 
 /**
- * VR (buck-converter MOSFET) temperature classes. These chips are
- * rated to ~125 °C junction; AxeOS itself doesn't flag VR temps
- * under ~90 °C. Amber at 80, red at 90 - matches the daemon's
- * `VR_OVERHEATING_CEILING_C`. 0.0 °C means "no sensor wired" on
- * older Bitaxe Supra / Max revisions; render muted, not red.
+ * VR (TPS546 buck-converter) temperature classes. AxeOS firmware's
+ * `TPS546_THROTTLE_TEMP = 105 °C` is the regulator's action
+ * threshold. Red at 100 (matches the daemon's
+ * `VR_OVERHEATING_CEILING_C`, fires 5 °C before AxeOS itself
+ * throttles); amber at 90 as the heads-up. 0.0 °C means "no sensor
+ * wired" on older Bitaxe Supra / Max revisions; render muted.
  */
 function vrTempClass(temp: number | null): string {
   if (temp === null || temp === 0) return 'text-slate-500';
-  if (temp >= 90) return 'text-red-300';
-  if (temp >= 80) return 'text-amber-300';
+  if (temp >= 100) return 'text-red-300';
+  if (temp >= 90) return 'text-amber-300';
   return 'text-slate-200';
 }
 

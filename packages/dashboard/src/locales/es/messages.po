@@ -371,12 +371,20 @@ msgid "ASIC and VR temperatures on the Status page, the right-axis temperature p
 msgstr "Temperaturas del ASIC y el VR en la página Estado, la gráfica de temperatura del eje derecho y el umbral de sobrecalentamiento. Almacenado internamente en °C; la conversión ocurre solo en la pantalla."
 
 #: src/pages/Config.tsx
-msgid "ASIC junction temperature only. Default 0 uses per-model lookup (BM1370 = 154 °F, BM1368/BM1366 = 158 °F, BM1397 = 167 °F, fallback 158 °F). Any non-zero value here overrides all of them. The VR (voltage regulator) sensor uses a separate built-in ceiling of 194 °F (90 °C) and is not configurable yet - those chips run a much wider operating range than the ASIC and AxeOS itself doesn't flag them below ~194 °F."
-msgstr "Solo la temperatura de unión del ASIC. Por defecto 0 usa búsqueda por modelo (BM1370 = 154 °F, BM1368/BM1366 = 158 °F, BM1397 = 167 °F, predeterminado 158 °F). Cualquier valor distinto de cero aquí los sobrescribe todos. El sensor del VR (regulador de voltaje) usa un techo integrado independiente de 194 °F (90 °C) y aún no es configurable - esos chips funcionan en un rango más amplio que el ASIC y AxeOS no los señala por debajo de ~194 °F."
+msgid "ASIC junction temperature only. Default 0 uses 167 °F across all BM13xx chips - matches AxeOS firmware's THROTTLE_TEMP, the point at which the miner itself reduces frequency. Any non-zero value here overrides it. The VR (voltage regulator) sensor uses a separate built-in ceiling of 212 °F (100 °C); AxeOS throttles the VR at 221 °F (105 °C) so we fire 5 °C earlier to give you headroom to react."
+msgstr "Solo la temperatura de unión del ASIC. Por defecto 0 usa 167 °F en todos los chips BM13xx - coincide con THROTTLE_TEMP del firmware AxeOS, el punto en que el minero reduce su frecuencia por sí mismo. Cualquier valor distinto de cero aquí lo sobrescribe. El sensor del VR (regulador de voltaje) usa un techo integrado independiente de 212 °F (100 °C); AxeOS estrangula el VR a 221 °F (105 °C), por lo que disparamos 5 °C antes para darte margen de reacción."
 
 #: src/pages/Config.tsx
-msgid "ASIC junction temperature only. Default 0 uses per-model lookup (BM1370 = 68 °C, BM1368/BM1366 = 70 °C, BM1397 = 75 °C, fallback 70 °C). Any non-zero value here overrides all of them. The VR (voltage regulator) sensor uses a separate built-in ceiling of 90 °C and is not configurable yet - those chips run a much wider operating range than the ASIC and AxeOS itself doesn't flag them below ~90 °C."
-msgstr "Solo la temperatura de unión del ASIC. Por defecto 0 usa búsqueda por modelo (BM1370 = 68 °C, BM1368/BM1366 = 70 °C, BM1397 = 75 °C, predeterminado 70 °C). Cualquier valor distinto de cero aquí los sobrescribe todos. El sensor del VR (regulador de voltaje) usa un techo integrado independiente de 90 °C y aún no es configurable - esos chips funcionan en un rango más amplio que el ASIC y AxeOS no los señala por debajo de ~90 °C."
+msgid "ASIC junction temperature only. Default 0 uses 75 °C across all BM13xx chips - matches AxeOS firmware's THROTTLE_TEMP, the point at which the miner itself reduces frequency. Any non-zero value here overrides it. The VR (voltage regulator) sensor uses a separate built-in ceiling of 100 °C; AxeOS throttles the VR at 105 °C so we fire 5 °C earlier to give you headroom to react."
+msgstr "Solo la temperatura de unión del ASIC. Por defecto 0 usa 75 °C en todos los chips BM13xx - coincide con THROTTLE_TEMP del firmware AxeOS, el punto en que el minero reduce su frecuencia por sí mismo. Cualquier valor distinto de cero aquí lo sobrescribe. El sensor del VR (regulador de voltaje) usa un techo integrado independiente de 100 °C; AxeOS estrangula el VR a 105 °C, por lo que disparamos 5 °C antes para darte margen de reacción."
+
+#: src/pages/Config.tsx
+#~ msgid "ASIC junction temperature only. Default 0 uses per-model lookup (BM1370 = 154 °F, BM1368/BM1366 = 158 °F, BM1397 = 167 °F, fallback 158 °F). Any non-zero value here overrides all of them. The VR (voltage regulator) sensor uses a separate built-in ceiling of 194 °F (90 °C) and is not configurable yet - those chips run a much wider operating range than the ASIC and AxeOS itself doesn't flag them below ~194 °F."
+#~ msgstr "Solo la temperatura de unión del ASIC. Por defecto 0 usa búsqueda por modelo (BM1370 = 154 °F, BM1368/BM1366 = 158 °F, BM1397 = 167 °F, predeterminado 158 °F). Cualquier valor distinto de cero aquí los sobrescribe todos. El sensor del VR (regulador de voltaje) usa un techo integrado independiente de 194 °F (90 °C) y aún no es configurable - esos chips funcionan en un rango más amplio que el ASIC y AxeOS no los señala por debajo de ~194 °F."
+
+#: src/pages/Config.tsx
+#~ msgid "ASIC junction temperature only. Default 0 uses per-model lookup (BM1370 = 68 °C, BM1368/BM1366 = 70 °C, BM1397 = 75 °C, fallback 70 °C). Any non-zero value here overrides all of them. The VR (voltage regulator) sensor uses a separate built-in ceiling of 90 °C and is not configurable yet - those chips run a much wider operating range than the ASIC and AxeOS itself doesn't flag them below ~90 °C."
+#~ msgstr "Solo la temperatura de unión del ASIC. Por defecto 0 usa búsqueda por modelo (BM1370 = 68 °C, BM1368/BM1366 = 70 °C, BM1397 = 75 °C, predeterminado 70 °C). Cualquier valor distinto de cero aquí los sobrescribe todos. El sensor del VR (regulador de voltaje) usa un techo integrado independiente de 90 °C y aún no es configurable - esos chips funcionan en un rango más amplio que el ASIC y AxeOS no los señala por debajo de ~90 °C."
 
 #: src/pages/Config.tsx
 #: src/pages/Config.tsx
@@ -1412,8 +1420,12 @@ msgid "Fires when share rejection rate over the rolling window exceeds the confi
 msgstr "Se dispara cuando la tasa de rechazo de shares en la ventana movil supera el umbral configurado. Se rearma una vez por ventana, de modo que un periodo malo sostenido solo se dispara periodicamente."
 
 #: src/pages/Config.tsx
-msgid "Fires when the ASIC temp crosses its per-model ceiling (configurable on Display & Logging → Solo miners) OR the VR temp crosses 90 °C (separate built-in ceiling - VRs run a wider range than the ASIC), sustained for ~90 s. Recovery paired."
-msgstr "Se dispara cuando la temperatura del ASIC supera su techo por modelo (configurable en Pantalla y registro → Solo miners) O la temperatura del VR supera 90 °C (techo integrado independiente - los VR funcionan en un rango más amplio que el ASIC), sostenido durante ~90 s. Recuperación emparejada."
+msgid "Fires when the ASIC temp crosses 75 °C (configurable on Display & Logging → Solo miners) OR the VR temp crosses 100 °C, sustained for ~90 s. Thresholds match AxeOS firmware's own throttle points so the alert lines up with when the miner itself starts taking action. Recovery paired."
+msgstr "Se dispara cuando la temperatura del ASIC supera 75 °C (configurable en Pantalla y registro → Solo miners) O la temperatura del VR supera 100 °C, sostenido durante ~90 s. Los umbrales coinciden con los puntos de throttle del propio firmware AxeOS, para que la alerta se alinee con el momento en que el minero empieza a actuar. Recuperación emparejada."
+
+#: src/pages/Config.tsx
+#~ msgid "Fires when the ASIC temp crosses its per-model ceiling (configurable on Display & Logging → Solo miners) OR the VR temp crosses 90 °C (separate built-in ceiling - VRs run a wider range than the ASIC), sustained for ~90 s. Recovery paired."
+#~ msgstr "Se dispara cuando la temperatura del ASIC supera su techo por modelo (configurable en Pantalla y registro → Solo miners) O la temperatura del VR supera 90 °C (techo integrado independiente - los VR funcionan en un rango más amplio que el ASIC), sostenido durante ~90 s. Recuperación emparejada."
 
 #: src/pages/Setup.tsx
 msgid "First-run setup"

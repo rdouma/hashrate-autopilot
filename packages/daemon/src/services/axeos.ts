@@ -105,23 +105,33 @@ export class AxeOSClient {
 }
 
 /**
- * Per-ASIC-model default overheating ceiling (°C). The alert
- * evaluator uses this when the operator's global override
+ * Default ASIC overheating ceiling (°C). The alert evaluator uses
+ * this when the operator's global override
  * (`config.solo_overheating_threshold_celsius`) is 0.
  *
- * Sources: AxeOS / Bitaxe community spec sheets. The newer 5nm
- * BM1370 (Gamma) has a tighter thermal envelope than the older
- * 7nm BM1397 (Max). All numbers are conservative junction-temp
- * defaults - operators with active cooling can raise via the
- * config override.
+ * Source: AxeOS firmware (`main/tasks/power_management_task.c`).
+ * `THROTTLE_TEMP = 75 °C` is the point at which AxeOS itself reduces
+ * frequency and voltage on the ASIC. There is NO per-chip-model
+ * differentiation in the firmware - all BM13xx variants share the
+ * same `THROTTLE_TEMP`. Firing the alert exactly at this number
+ * means "your miner is throttling right now" - the operator gets
+ * a heads-up at the moment hashrate starts dropping.
+ *
+ * The per-model table that lived here previously (BM1370 = 68,
+ * BM1368/66 = 70, BM1397 = 75) was guessed from community spec
+ * sheets and fired the alert well before AxeOS would have done
+ * anything. Operator caught it on a fresh v1.7.4 install: BM1370
+ * happily running at 68.4 °C with AxeOS showing green, but the
+ * autopilot firing IMPORTANT every ~90 s.
  */
+const ASIC_THERMAL_CEILING_C = 75;
 const ASIC_THERMAL_CEILINGS: Record<string, number> = {
-  BM1370: 68, // Bitaxe Gamma
-  BM1368: 70, // Bitaxe Supra
-  BM1366: 70, // Bitaxe Ultra
-  BM1397: 75, // Bitaxe Max (original)
+  BM1370: ASIC_THERMAL_CEILING_C,
+  BM1368: ASIC_THERMAL_CEILING_C,
+  BM1366: ASIC_THERMAL_CEILING_C,
+  BM1397: ASIC_THERMAL_CEILING_C,
 };
-const ASIC_THERMAL_FALLBACK = 70;
+const ASIC_THERMAL_FALLBACK = ASIC_THERMAL_CEILING_C;
 
 export function overheatingCeilingForAsic(asicModel: string | null | undefined): number {
   if (!asicModel) return ASIC_THERMAL_FALLBACK;
