@@ -2915,6 +2915,10 @@ msgstr "stratum accesible"
 msgid "Stratum URL for your Datum gateway or pool."
 msgstr "URL stratum para tu gateway Datum o pool."
 
+#: src/pages/Config.tsx
+msgid "Subnet to scan (CIDR). Leave blank to auto-detect from the daemon's interface - required on Umbrel."
+msgstr "Subred a escanear (CIDR). Déjalo vacío para detectarla automáticamente desde la interfaz del daemon - obligatorio en Umbrel."
+
 #: src/components/HashrateChart.tsx
 msgid "subsidy"
 msgstr "subsidio"

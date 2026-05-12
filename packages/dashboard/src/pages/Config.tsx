@@ -1941,7 +1941,7 @@ function SoloMinersSection({
                   type="text"
                   value={newLabel}
                   onChange={(e) => setNewLabel(e.target.value)}
-                  placeholder="Bedroom Gamma"
+                  placeholder="Garage Gamma"
                   className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm"
                 />
               </label>
@@ -2148,9 +2148,29 @@ function ScanLocalNetworkButton() {
     }>
   >([]);
   const [cidr, setCidr] = useState<string>('');
+  // #156: subnet-override input. On Umbrel the daemon's auto-detected /24
+  // is the docker bridge (10.21.0.0/24), so the scan finds nothing - the
+  // operator types their home LAN here (e.g. 192.168.1.0/24). Persist
+  // across navigations so they don't re-type after the first scan.
+  const [subnetOverride, setSubnetOverride] = useState<string>(() => {
+    try {
+      return localStorage.getItem('hashrate-autopilot.scan-cidr') ?? '';
+    } catch {
+      return '';
+    }
+  });
+  const persistOverride = (v: string): void => {
+    setSubnetOverride(v);
+    try {
+      if (v.trim()) localStorage.setItem('hashrate-autopilot.scan-cidr', v.trim());
+      else localStorage.removeItem('hashrate-autopilot.scan-cidr');
+    } catch {
+      // Ignore - localStorage unavailable (private mode etc.).
+    }
+  };
 
   const scanMutation = useMutation({
-    mutationFn: () => api.scanSoloMiners(),
+    mutationFn: () => api.scanSoloMiners(subnetOverride),
     onSuccess: (resp) => {
       if (resp.error) {
         setScanError(resp.error);
@@ -2191,14 +2211,27 @@ function ScanLocalNetworkButton() {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => scanMutation.mutate()}
-        disabled={scanMutation.isPending}
-        className="text-[11px] text-amber-300 border border-amber-700 rounded px-2 py-0.5 hover:bg-amber-500/10 disabled:opacity-40"
-      >
-        {scanMutation.isPending ? <Trans>scanning…</Trans> : <Trans>Scan local network</Trans>}
-      </button>
+      <div className="flex items-center gap-1.5">
+        <input
+          type="text"
+          value={subnetOverride}
+          onChange={(e) => persistOverride(e.target.value)}
+          placeholder="192.168.1.0/24"
+          spellCheck={false}
+          autoCapitalize="none"
+          autoCorrect="off"
+          className="w-32 text-[11px] font-mono bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-amber-700"
+          title={t`Subnet to scan (CIDR). Leave blank to auto-detect from the daemon's interface - required on Umbrel.`}
+        />
+        <button
+          type="button"
+          onClick={() => scanMutation.mutate()}
+          disabled={scanMutation.isPending}
+          className="text-[11px] text-amber-300 border border-amber-700 rounded px-2 py-0.5 hover:bg-amber-500/10 disabled:opacity-40"
+        >
+          {scanMutation.isPending ? <Trans>scanning…</Trans> : <Trans>Scan local network</Trans>}
+        </button>
+      </div>
 
       {open && (
         <div

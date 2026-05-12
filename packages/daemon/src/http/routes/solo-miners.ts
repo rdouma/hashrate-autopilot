@@ -164,9 +164,16 @@ export async function registerSoloMinersRoute(
   // individual create calls. Scan-then-save (not scan-and-save) so
   // operators stay in control of what gets persisted - matches the
   // mutation-gate philosophy.
+  // #156: optional `cidr` in the request body lets the operator point
+  // the scan at a /24 other than the daemon's own interface. Needed on
+  // Umbrel where the container sees the docker bridge subnet, never
+  // the host LAN where the Bitaxes live.
   const scanner = new AxeOSScanner({ repo: deps.soloMinersRepo });
-  app.post('/api/solo-miners/scan', async () => {
-    const result = await scanner.scan();
-    return result;
-  });
+  app.post<{ Body?: { cidr?: string } }>(
+    '/api/solo-miners/scan',
+    async (req) => {
+      const cidr = typeof req.body?.cidr === 'string' ? req.body.cidr : undefined;
+      return scanner.scan(cidr);
+    },
+  );
 }

@@ -1,16 +1,20 @@
 /**
  * #149 follow-up: local-network scanner for the "Scan local network"
  * button on Config -> Solo miners. Mirrors what the AxeOS Swarm tab
- * does client-side: walk the daemon's local /24, probe each IP for
- * `/api/system/info` with a short timeout, and collect every host
- * that responds with a parseable JSON body (so non-Bitaxe hosts on
- * the same subnet - routers, NAS, printers - get filtered out by
- * the failed JSON parse rather than polluting the suggestion list).
+ * does client-side: walk a /24, probe each IP for `/api/system/info`
+ * with a short timeout, and collect every host that responds with a
+ * parseable JSON body (so non-Bitaxe hosts on the same subnet -
+ * routers, NAS, printers - get filtered out by the failed JSON parse
+ * rather than polluting the suggestion list).
  *
- * No CIDR override in v1 - we deduce the /24 from the daemon's
- * outbound IPv4 interface via `os.networkInterfaces()`. If the
- * daemon ever ends up on a different subnet than the Bitaxes a
- * follow-up can add a CIDR field on the scan request body.
+ * Subnet selection (#156):
+ * - If the caller passes a CIDR, scanner uses it directly. Needed on
+ *   Umbrel where the daemon container sees `10.21.0.0/24` (docker
+ *   bridge) and never the host LAN where the Bitaxes live - the
+ *   operator types e.g. `192.168.1.0/24` explicitly.
+ * - Otherwise scanner deduces the /24 from the daemon's first
+ *   non-loopback IPv4 interface via `os.networkInterfaces()`. Works
+ *   on bare-metal where daemon shares the LAN with the miners.
  */
 
 import { networkInterfaces } from 'node:os';
@@ -60,8 +64,21 @@ export class AxeOSScanner {
     this.interfaces = options.interfaces ?? networkInterfaces;
   }
 
-  async scan(): Promise<ScanResult> {
-    const cidr = deduceLocalSlash24(this.interfaces);
+  async scan(requestedCidr?: string | null): Promise<ScanResult> {
+    let cidr: string | null;
+    if (requestedCidr && requestedCidr.trim().length > 0) {
+      const normalized = normalizeSlash24(requestedCidr.trim());
+      if (!normalized) {
+        return {
+          cidr: requestedCidr,
+          candidates: [],
+          error: `Invalid CIDR: ${requestedCidr}. Expected a /24 like 192.168.1.0/24.`,
+        };
+      }
+      cidr = normalized;
+    } else {
+      cidr = deduceLocalSlash24(this.interfaces);
+    }
     if (!cidr) {
       return {
         cidr: '',
@@ -127,6 +144,23 @@ export function deduceLocalSlash24(getIfaces: typeof networkInterfaces): string 
     }
   }
   return null;
+}
+
+/**
+ * Accept a /24 in canonical form (e.g. `192.168.1.0/24`) or a "host on
+ * the subnet" form (`192.168.1.42/24`) and return the canonical `.0/24`.
+ * Returns null on any other shape - we deliberately don't accept /23 or
+ * /16 because the probe budget is sized for ~254 addresses.
+ */
+export function normalizeSlash24(input: string): string | null {
+  const m = input.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)\/24$/);
+  if (!m) return null;
+  const [, a, b, c, d] = m;
+  for (const octet of [a, b, c, d]) {
+    const n = Number(octet);
+    if (!Number.isInteger(n) || n < 0 || n > 255) return null;
+  }
+  return `${a}.${b}.${c}.0/24`;
 }
 
 function expandSlash24(cidr: string): string[] {

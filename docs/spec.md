@@ -303,7 +303,7 @@ all three series on the same cadence.
 - `solo_share_rejection_window_minutes` - rolling-window length for the rejection-rate computation. Default 60.
 - `solo_stratum_drift_alert_enabled` - boolean; when true, fires when a device's `stratumURL` changes from the previously-observed value. Baselined silently on first poll so adding a device doesn't fire a spurious drift alert. Default `true`.
 
-Per-device fields (`solo_miners` table, not on `config`): `id`, `label`, `ip` (IPv4 or hostname), `enabled` (per-device pause without losing the row), per-ASIC ceiling override (rarely set), creation timestamp. Add / remove / pause through Config -> Display & Logging -> Solo miners; a "Scan local network" button there probes the daemon's /24 subnet and returns AxeOS-shaped responders so adding a fleet doesn't require typing every IP.
+Per-device fields (`solo_miners` table, not on `config`): `id`, `label`, `ip` (IPv4 or hostname), `enabled` (per-device pause without losing the row), per-ASIC ceiling override (rarely set), creation timestamp. Add / remove / pause through Config -> Display & Logging -> Solo miners; a "Scan local network" button there probes a /24 and returns AxeOS-shaped responders so adding a fleet doesn't require typing every IP. The scan defaults to the daemon's auto-detected /24, with an inline override field for the cases (Umbrel docker bridge, or any docker network not matching the host LAN) where the daemon's interface address isn't where the miners live. The override is persisted in `localStorage` so the operator only types it once per browser.
 
 **Integrations:**
 

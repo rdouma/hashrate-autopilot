@@ -186,8 +186,10 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
   defaults built in, with a global override), **zero hashrate / unreachable**, **share-rejection
   high** (rolling-window threshold), and **stratum URL drift** (firmware silently re-pointed at a
   different pool). Device management lives in Config -> Display & Logging -> Solo miners; a
-  "Scan local network" button probes the daemon's /24 subnet and returns AxeOS-shaped responders so
-  adding a fleet doesn't require typing every IP. Master `solo_mining_enabled` toggle defaults off and
+  "Scan local network" button probes the daemon's /24 subnet (or a CIDR you type in the
+  override field - required on Umbrel, where the daemon sits on the docker bridge subnet and
+  not the host LAN) and returns AxeOS-shaped responders so adding a fleet doesn't require
+  typing every IP. Master `solo_mining_enabled` toggle defaults off and
   hides the Status card + alerts when disabled.
 - **Block-found audible cue** - optional sound when Ocean credits your address with a new pool block. Four
   bundled cues (cowbell, glass-drop-and-roll, two metallic clanks) plus custom MP3 / OGG / WAV / WebM

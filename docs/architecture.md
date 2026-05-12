@@ -102,7 +102,7 @@ hashrate-autopilot/
 │   │   │   ├── braiins-deposit-watcher.ts (#143 - on-chain endpoint poller; _available + _returned)
 │   │   │   ├── axeos.ts            (#149 - AxeOS REST client types + per-device fetch)
 │   │   │   ├── axeos-poller.ts     (#149 - per-tick fleet poll; Promise.allSettled; 2 s per-device timeout)
-│   │   │   ├── axeos-scanner.ts    (#149 - /24 subnet sweep for the "Scan local network" button)
+│   │   │   ├── axeos-scanner.ts    (#149 / #156 - /24 subnet sweep with operator-supplied CIDR override for docker / Umbrel installs)
 │   │   │   └── retention.ts        (hourly pruner for tick_metrics + decisions + alerts)
 │   │   ├── src/controller/
 │   │   │   ├── loop.ts             (tick driver)

@@ -666,8 +666,11 @@ export const api = {
     }),
   deleteSoloMiner: (id: number) =>
     request<{ ok: boolean }>(`/api/solo-miners/${id}`, { method: 'DELETE' }),
-  scanSoloMiners: () =>
-    request<SoloScanResponse>('/api/solo-miners/scan', { method: 'POST' }),
+  scanSoloMiners: (cidr?: string) =>
+    request<SoloScanResponse>('/api/solo-miners/scan', {
+      method: 'POST',
+      body: JSON.stringify(cidr && cidr.trim() ? { cidr: cidr.trim() } : {}),
+    }),
   soloFleetSeries: (sinceMs?: number) => {
     const q = sinceMs !== undefined ? `?since=${sinceMs}` : '';
     return request<SoloFleetSeriesResponse>(`/api/solo-miners/series${q}`);

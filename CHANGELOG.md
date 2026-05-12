@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-05-11 · v1.7.1
+
+### `[Release]` v1.7.1 - solo-miner scan works on Umbrel (#156)
+
+First Umbrel install of v1.7.0 surfaced an oversight: the "Scan local network" button on Config -> Solo miners returned `No AxeOS devices found on the local subnet.` for everyone. Root cause: `axeos-scanner.ts` deduced the /24 from `os.networkInterfaces()`, which inside the daemon's docker container resolves to Umbrel's bridge subnet (10.21.0.0/24) and never the host LAN where the Bitaxes actually live. Bare-metal users were fine; every Umbrel user was silently broken. Direct-add at a typed IP still worked (outbound NATs through the host) so only auto-discovery was affected. Fix: `scan(cidr?)` accepts an optional CIDR override, plumbed through `POST /api/solo-miners/scan` body. Dashboard adds a small monospace text input next to the Scan button - placeholder `192.168.1.0/24`, value persisted in localStorage so the operator only types it once per browser. Leave blank on bare-metal and the existing auto-detect kicks in. Also: swapped the "Add device" Label placeholder from `Bedroom Gamma` (operator-flagged: home miners typically don't live in bedrooms) to `Garage Gamma`. NL + ES translations included for the new tooltip.
+
 ## 2026-05-11 · v1.7.0
 
 ### `[Release]` v1.7.0 - solo-mining monitoring + several real-user bug fixes

@@ -7,7 +7,7 @@ manifestVersion: 1
 id: rdouma-hashrate-autopilot
 category: bitcoin
 name: Hashrate Autopilot
-version: "1.7.0"
+version: "1.7.1"
 tagline: Autopilot for renting hashrate to mine on Ocean Mining
 icon: https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/assets/icon-512.png
 # Umbrel renders description literally - no YAML folding of soft
@@ -51,6 +51,14 @@ defaultPassword: ""
 submitter: Remco Douma
 submission: https://github.com/rdouma/hashrate-autopilot
 releaseNotes: |
+  v1.7.1 - solo-miner scan works on Umbrel.
+
+  FIX
+  - "Scan local network" on Config -> Solo miners returned "No AxeOS devices found" on every Umbrel install: the daemon container's auto-detected /24 is the docker bridge subnet (10.21.0.0/24), not the host LAN where the Bitaxes actually live. Added a subnet-override input next to the Scan button; type your home LAN CIDR there (e.g. 192.168.1.0/24) and the scan probes it directly. The value is remembered per browser so you only type it once. Bare-metal installs are unaffected - leave it blank and the existing auto-detect kicks in.
+  - Cosmetic: "Add device" Label placeholder swapped from "Bedroom Gamma" to "Garage Gamma" (the rented-hashrate audience tends not to host miners in the bedroom).
+
+  No migration; safe to upgrade or revert.
+
   v1.7.0 - solo-mining monitoring + several real-user bug fixes.
 
   NEW
