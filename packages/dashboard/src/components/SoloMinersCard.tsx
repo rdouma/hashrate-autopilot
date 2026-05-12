@@ -289,11 +289,11 @@ function DeviceRow({
       >
         {entry.best_diff_text ?? '-'}
       </td>
-      <td className={`py-1.5 px-3 text-right font-mono ${tempClass(entry.temp_c)}`}>
+      <td className={`py-1.5 px-3 text-right font-mono ${asicTempClass(entry.temp_c)}`}>
         {formatTemperature(entry.temp_c, tempUnit)}
       </td>
       <td
-        className={`py-1.5 px-3 text-right font-mono ${tempClass(entry.vr_temp_c)}`}
+        className={`py-1.5 px-3 text-right font-mono ${vrTempClass(entry.vr_temp_c)}`}
         title={
           entry.vr_temp_c === 0
             ? 'no VR temp sensor on this board (typical on older Bitaxe Supra / Max revisions)'
@@ -343,13 +343,30 @@ function formatUptime(seconds: number): string {
   return remH > 0 ? `${d}d ${remH}h` : `${d}d`;
 }
 
-function tempClass(temp: number | null): string {
-  // 0.0 °C means "no sensor wired" on AxeOS (see VR temp note in
-  // the body); treat it like null so it renders muted, not in the
-  // healthy-temperature green/grey.
+/**
+ * ASIC silicon-junction temperature classes. Bitmain rates these
+ * chips tight - BM1370's ceiling is 68 °C, others are 70-75 °C - so
+ * amber starts at 65 and red at 70, matching the daemon's
+ * overheating alert ceiling.
+ */
+function asicTempClass(temp: number | null): string {
   if (temp === null || temp === 0) return 'text-slate-500';
   if (temp >= 70) return 'text-red-300';
   if (temp >= 65) return 'text-amber-300';
+  return 'text-slate-200';
+}
+
+/**
+ * VR (buck-converter MOSFET) temperature classes. These chips are
+ * rated to ~125 °C junction; AxeOS itself doesn't flag VR temps
+ * under ~90 °C. Amber at 80, red at 90 - matches the daemon's
+ * `VR_OVERHEATING_CEILING_C`. 0.0 °C means "no sensor wired" on
+ * older Bitaxe Supra / Max revisions; render muted, not red.
+ */
+function vrTempClass(temp: number | null): string {
+  if (temp === null || temp === 0) return 'text-slate-500';
+  if (temp >= 90) return 'text-red-300';
+  if (temp >= 80) return 'text-amber-300';
   return 'text-slate-200';
 }
 
@@ -438,7 +455,7 @@ function DeviceMobileCard({
           <MobileStat
             label={t`Temp`}
             value={formatTemperature(entry.temp_c, tempUnit)}
-            valueClass={tempClass(entry.temp_c)}
+            valueClass={asicTempClass(entry.temp_c)}
           />
           <MobileStat
             label={t`VR temp`}
@@ -447,7 +464,7 @@ function DeviceMobileCard({
                 ? formatTemperature(entry.vr_temp_c, tempUnit)
                 : '-'
             }
-            valueClass={tempClass(entry.vr_temp_c)}
+            valueClass={vrTempClass(entry.vr_temp_c)}
           />
           <MobileStat
             label={t`Power`}

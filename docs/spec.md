@@ -296,8 +296,8 @@ all three series on the same cadence.
 **Solo-mining monitoring (optional, #149):**
 
 - `solo_mining_enabled` - master toggle. Default `false`. When off, the AxeOS poller doesn't run, the Status card is hidden, and the four solo-mining alert classes never fire. The device list in the `solo_miners` table is preserved across toggles so re-enabling later doesn't require re-entering IPs.
-- `solo_overheating_global_ceiling_c` - global thermal ceiling override (°C). Default 0 = use per-ASIC-model lookup (BM1370 68 °C, BM1368 / BM1366 70 °C, BM1397 75 °C, fallback 70 °C). Any non-zero value here overrides every per-model default.
-- `solo_overheating_alert_after_seconds` - how long temperature must exceed the ceiling before the alert fires. Default 90.
+- `solo_overheating_global_ceiling_c` - global thermal ceiling override for the **ASIC silicon-junction sensor only** (°C). Default 0 = use per-ASIC-model lookup (BM1370 68 °C, BM1368 / BM1366 70 °C, BM1397 75 °C, fallback 70 °C). Any non-zero value here overrides every per-model default. The VR (voltage regulator) sensor uses a separate, hardcoded ceiling of 90 °C (not configurable yet) - buck-converter MOSFETs run a much wider operating range than the ASIC and AxeOS itself doesn't flag VR temps below ~90 °C. Earlier versions applied the ASIC ceiling to both sensors and fired spurious alerts on every BM1370 install with a healthy 70 °C VR.
+- `solo_overheating_alert_after_seconds` - how long temperature must exceed the relevant ceiling before the alert fires. Default 90.
 - `solo_zero_hashrate_alert_after_minutes` - how many consecutive zero-hashrate (or unreachable) minutes trigger the alert. Default 5.
 - `solo_share_rejection_threshold_pct` - rolling-window rejection-rate threshold. Default 10.
 - `solo_share_rejection_window_minutes` - rolling-window length for the rejection-rate computation. Default 60.

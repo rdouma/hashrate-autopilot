@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-05-12
+
+### `[Fix]` Solo-miner overheating: split ASIC vs VR thresholds; no more false-red on healthy VR temps
+
+Operator caught the bug on a fresh v1.7.3 install: BitAxe2 (BM1370) showed VR temp 70.0 °C colored red on the dashboard, even though AxeOS itself flagged it green. Root cause in two places:
+
+1. `SoloMinersCard.tsx`: the shared `tempClass` helper applied amber ≥65 / red ≥70 °C to **both** the ASIC column and the VR column. Those thresholds are sized for the BM1370 silicon junction (ceiling 68 °C). The VR is a buck-converter MOSFET stage - rated to ~125 °C junction, healthy operating range 65-80 °C - so a 70 °C VR reading is fine.
+2. `alert-evaluator.ts`: `evaluateSoloOverheating` fed both `entry.temp_c` and `entry.vr_temp_c` into the same comparison against the ASIC ceiling. Worse than the visual bug - this fired a sustained IMPORTANT Telegram alert every ~90 s on any BM1370 install with a healthy 70 °C VR, blaming the ASIC.
+
+Fix: separate ceilings. ASIC gets the existing per-model lookup (BM1370 = 68 °C, BM1368/66 = 70 °C, BM1397 = 75 °C, fallback 70 °C) plus the operator's configurable `solo_overheating_threshold_celsius` override. VR gets a new hardcoded `VR_OVERHEATING_CEILING_C = 90` °C, no config field for now (AxeOS itself uses ~90 as its "consider better cooling" threshold; can be promoted to a config field if anyone needs it). The alert body always names the sensor that actually tripped, picking the one furthest over its ceiling when both are bad. Dashboard `vrTempClass` mirrors: amber ≥80, red ≥90. The "Overheating ceiling" Config field is relabeled "ASIC overheating ceiling" with help text explaining the VR has a separate built-in threshold. NL + ES translations included.
+
 ## 2026-05-12 · v1.7.3
 
 ### `[Release]` v1.7.3 - Fahrenheit support for solo-miner temperatures

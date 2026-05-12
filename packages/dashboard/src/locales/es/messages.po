@@ -370,6 +370,24 @@ msgstr "ASIC"
 msgid "ASIC and VR temperatures on the Status page, the right-axis temperature plot, and the overheating-ceiling threshold. Stored internally in °C; conversion happens at display only."
 msgstr "Temperaturas del ASIC y el VR en la página Estado, la gráfica de temperatura del eje derecho y el umbral de sobrecalentamiento. Almacenado internamente en °C; la conversión ocurre solo en la pantalla."
 
+#: src/pages/Config.tsx
+msgid "ASIC junction temperature only. Default 0 uses per-model lookup (BM1370 = 154 °F, BM1368/BM1366 = 158 °F, BM1397 = 167 °F, fallback 158 °F). Any non-zero value here overrides all of them. The VR (voltage regulator) sensor uses a separate built-in ceiling of 194 °F (90 °C) and is not configurable yet - those chips run a much wider operating range than the ASIC and AxeOS itself doesn't flag them below ~194 °F."
+msgstr "Solo la temperatura de unión del ASIC. Por defecto 0 usa búsqueda por modelo (BM1370 = 154 °F, BM1368/BM1366 = 158 °F, BM1397 = 167 °F, predeterminado 158 °F). Cualquier valor distinto de cero aquí los sobrescribe todos. El sensor del VR (regulador de voltaje) usa un techo integrado independiente de 194 °F (90 °C) y aún no es configurable - esos chips funcionan en un rango más amplio que el ASIC y AxeOS no los señala por debajo de ~194 °F."
+
+#: src/pages/Config.tsx
+msgid "ASIC junction temperature only. Default 0 uses per-model lookup (BM1370 = 68 °C, BM1368/BM1366 = 70 °C, BM1397 = 75 °C, fallback 70 °C). Any non-zero value here overrides all of them. The VR (voltage regulator) sensor uses a separate built-in ceiling of 90 °C and is not configurable yet - those chips run a much wider operating range than the ASIC and AxeOS itself doesn't flag them below ~90 °C."
+msgstr "Solo la temperatura de unión del ASIC. Por defecto 0 usa búsqueda por modelo (BM1370 = 68 °C, BM1368/BM1366 = 70 °C, BM1397 = 75 °C, predeterminado 70 °C). Cualquier valor distinto de cero aquí los sobrescribe todos. El sensor del VR (regulador de voltaje) usa un techo integrado independiente de 90 °C y aún no es configurable - esos chips funcionan en un rango más amplio que el ASIC y AxeOS no los señala por debajo de ~90 °C."
+
+#: src/pages/Config.tsx
+#: src/pages/Config.tsx
+msgid "ASIC overheating ceiling (°C, 0 = auto per model)"
+msgstr "Techo de sobrecalentamiento del ASIC (°C, 0 = automático por modelo)"
+
+#: src/pages/Config.tsx
+#: src/pages/Config.tsx
+msgid "ASIC overheating ceiling (°F, 0 = auto per model)"
+msgstr "Techo de sobrecalentamiento del ASIC (°F, 0 = automático por modelo)"
+
 #: src/pages/Status.tsx
 msgid "At effective cap - desired fillable + overpay exceeds the ceiling."
 msgstr "En el límite efectivo - el rellenable + sobrepago deseado supera el techo."
@@ -1074,12 +1092,12 @@ msgid "decrease"
 msgstr "disminuir"
 
 #: src/pages/Config.tsx
-msgid "Default 0 uses per-ASIC-model lookup (BM1370 = 154 °F, BM1368/BM1366 = 158 °F, BM1397 = 167 °F, fallback 158 °F). Any non-zero value here overrides all of them."
-msgstr "Por defecto 0 usa la búsqueda por modelo de ASIC (BM1370 = 154 °F, BM1368/BM1366 = 158 °F, BM1397 = 167 °F, predeterminado 158 °F). Cualquier valor distinto de cero aquí sobrescribe todos los anteriores."
+#~ msgid "Default 0 uses per-ASIC-model lookup (BM1370 = 154 °F, BM1368/BM1366 = 158 °F, BM1397 = 167 °F, fallback 158 °F). Any non-zero value here overrides all of them."
+#~ msgstr "Por defecto 0 usa la búsqueda por modelo de ASIC (BM1370 = 154 °F, BM1368/BM1366 = 158 °F, BM1397 = 167 °F, predeterminado 158 °F). Cualquier valor distinto de cero aquí sobrescribe todos los anteriores."
 
 #: src/pages/Config.tsx
-msgid "Default 0 uses per-ASIC-model lookup (BM1370 = 68 °C, BM1368/BM1366 = 70 °C, BM1397 = 75 °C, fallback 70 °C). Any non-zero value here overrides all of them."
-msgstr "El valor 0 por defecto usa la tabla por modelo de ASIC (BM1370 = 68 °C, BM1368/BM1366 = 70 °C, BM1397 = 75 °C, por defecto 70 °C). Cualquier valor distinto de cero anula todos los modelos."
+#~ msgid "Default 0 uses per-ASIC-model lookup (BM1370 = 68 °C, BM1368/BM1366 = 70 °C, BM1397 = 75 °C, fallback 70 °C). Any non-zero value here overrides all of them."
+#~ msgstr "El valor 0 por defecto usa la tabla por modelo de ASIC (BM1370 = 68 °C, BM1368/BM1366 = 70 °C, BM1397 = 75 °C, por defecto 70 °C). Cualquier valor distinto de cero anula todos los modelos."
 
 #: src/pages/Config.tsx
 msgid "Default 50001."
@@ -1386,12 +1404,16 @@ msgid "Fires when a device is unreachable OR reports 0 H/s for the configured nu
 msgstr "Se dispara cuando un dispositivo es inalcanzable O reporta 0 H/s durante el numero configurado de minutos consecutivos. Mensaje de recuperacion emparejado."
 
 #: src/pages/Config.tsx
-msgid "Fires when an ASIC or VR temp crosses the per-ASIC-model ceiling (or the global override on Display & Logging → Solo miners) for ~90 s. Recovery paired."
-msgstr "Se dispara cuando la temperatura del ASIC o del VR cruza el limite por modelo de ASIC (o el ajuste global en Visualizacion y registro → Mineros en solitario) durante ~90 s. Mensaje de recuperacion emparejado."
+#~ msgid "Fires when an ASIC or VR temp crosses the per-ASIC-model ceiling (or the global override on Display & Logging → Solo miners) for ~90 s. Recovery paired."
+#~ msgstr "Se dispara cuando la temperatura del ASIC o del VR cruza el limite por modelo de ASIC (o el ajuste global en Visualizacion y registro → Mineros en solitario) durante ~90 s. Mensaje de recuperacion emparejado."
 
 #: src/pages/Config.tsx
 msgid "Fires when share rejection rate over the rolling window exceeds the configured threshold. Re-armed once per window so a sustained bad period only fires periodically."
 msgstr "Se dispara cuando la tasa de rechazo de shares en la ventana movil supera el umbral configurado. Se rearma una vez por ventana, de modo que un periodo malo sostenido solo se dispara periodicamente."
+
+#: src/pages/Config.tsx
+msgid "Fires when the ASIC temp crosses its per-model ceiling (configurable on Display & Logging → Solo miners) OR the VR temp crosses 90 °C (separate built-in ceiling - VRs run a wider range than the ASIC), sustained for ~90 s. Recovery paired."
+msgstr "Se dispara cuando la temperatura del ASIC supera su techo por modelo (configurable en Pantalla y registro → Solo miners) O la temperatura del VR supera 90 °C (techo integrado independiente - los VR funcionan en un rango más amplio que el ASIC), sostenido durante ~90 s. Recuperación emparejada."
 
 #: src/pages/Setup.tsx
 msgid "First-run setup"
@@ -2222,13 +2244,13 @@ msgstr "atrasado {overdueFormatted}"
 
 #: src/pages/Config.tsx
 #: src/pages/Config.tsx
-msgid "Overheating ceiling (°C, 0 = auto per model)"
-msgstr "Limite de sobrecalentamiento (°C, 0 = automatico por modelo)"
+#~ msgid "Overheating ceiling (°C, 0 = auto per model)"
+#~ msgstr "Limite de sobrecalentamiento (°C, 0 = automatico por modelo)"
 
 #: src/pages/Config.tsx
 #: src/pages/Config.tsx
-msgid "Overheating ceiling (°F, 0 = auto per model)"
-msgstr "Techo de sobrecalentamiento (°F, 0 = automático por modelo)"
+#~ msgid "Overheating ceiling (°F, 0 = auto per model)"
+#~ msgstr "Techo de sobrecalentamiento (°F, 0 = automático por modelo)"
 
 #: src/components/PriceChart.tsx
 msgid "overpay"

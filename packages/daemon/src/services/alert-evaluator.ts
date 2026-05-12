@@ -89,6 +89,27 @@ interface EventState {
 
 const INITIAL: EventState = { bad_since_ms: null, active_alert_id: null };
 
+/**
+ * VR (voltage-regulator buck-converter MOSFET stage) overheating
+ * ceiling, °C. Separate from the per-ASIC silicon-junction ceiling
+ * because the two sensors measure different things with very
+ * different operating ranges:
+ *
+ * - ASIC junction (BM1370 etc.): ~50-65 °C nominal under load,
+ *   throttles or shuts down past ~70-75 °C. Bitmain rates these
+ *   tight; per-model values live in `axeos.ts:overheatingCeilingForAsic`.
+ * - VR (DC-DC step-down on the Bitaxe board): ~65-80 °C nominal,
+ *   buck-converter MOSFETs typically rated to 125 °C junction.
+ *   AxeOS's own dashboard doesn't flag VR temps under ~90 °C; this
+ *   ceiling matches that "consider better cooling" threshold.
+ *
+ * Earlier code applied the ASIC ceiling to both sensors, which fired
+ * spurious alerts on every BM1370 install with a healthy 70 °C VR.
+ * No config field for this yet - if anyone needs an override we can
+ * add one; default 90 °C is conservative enough for general use.
+ */
+const VR_OVERHEATING_CEILING_C = 90;
+
 export interface AlertEvaluatorOptions {
   readonly alertManager: AlertManager;
   /** #149: optional AxeOS poller; when set the four solo-mining detectors run after the main detectors each tick. */
@@ -807,10 +828,23 @@ export class AlertEvaluator {
   }
 
   /**
-   * Fires when either the ASIC junction temp or the VR temp crosses
-   * the per-ASIC-model ceiling (or the operator's global override)
-   * for N consecutive ticks. Recovery message paired when both temps
-   * fall back below the ceiling.
+   * Fires when EITHER the ASIC junction temp OR the VR temp crosses
+   * its respective ceiling for ~3 ticks (~90 s).
+   *
+   * Two ceilings, not one (#158-ish, see operator screenshot 2026-05-12):
+   * - ASIC junction (Bitmain chip silicon): per-model lookup (BM1370 = 68 °C,
+   *   BM1368/66 = 70 °C, BM1397 = 75 °C, fallback 70 °C), overridable via
+   *   `solo_overheating_threshold_celsius`. The ASIC throttles or shuts
+   *   down if pushed past this; we want a heads-up well before that.
+   * - VR (buck-converter MOSFET stage): hardcoded `VR_OVERHEATING_CEILING_C`.
+   *   These chips are typically rated to 125 °C junction; 90 °C is the
+   *   "consider better cooling" threshold. AxeOS itself doesn't flag
+   *   VR temps under ~90 °C - earlier code applied the ASIC ceiling to
+   *   the VR too, which generated bogus alerts on every BM1370 install
+   *   with a healthy 70 °C VR.
+   *
+   * Recovery message paired when both temps fall back below their
+   * respective ceilings.
    */
   private async evaluateSoloOverheating(
     state: State,
@@ -818,12 +852,52 @@ export class AlertEvaluator {
     entry: SoloMinerSnapshotEntry,
   ): Promise<void> {
     const override = state.config.solo_overheating_threshold_celsius;
-    const ceiling = override > 0 ? override : overheatingCeilingForAsic(entry.asic_model);
-    const temps = [entry.temp_c, entry.vr_temp_c].filter(
-      (t): t is number => t !== null && Number.isFinite(t),
-    );
-    const isBad = entry.reachable && temps.length > 0 && temps.some((t) => t >= ceiling);
-    const hottest = temps.length > 0 ? Math.max(...temps) : null;
+    const asicCeiling = override > 0 ? override : overheatingCeilingForAsic(entry.asic_model);
+    const vrCeiling = VR_OVERHEATING_CEILING_C;
+
+    // Build per-sensor bad flags so we can name which one tripped in
+    // the alert body (operator otherwise has to correlate two columns
+    // on the dashboard).
+    const asicBad =
+      entry.reachable &&
+      entry.temp_c !== null &&
+      Number.isFinite(entry.temp_c) &&
+      entry.temp_c >= asicCeiling;
+    const vrBad =
+      entry.reachable &&
+      entry.vr_temp_c !== null &&
+      Number.isFinite(entry.vr_temp_c) &&
+      entry.vr_temp_c !== 0 && // 0 = no sensor wired
+      entry.vr_temp_c >= vrCeiling;
+    const isBad = asicBad || vrBad;
+
+    // Pick the sensor to report on. If both crossed, prefer the one
+    // furthest over its ceiling - that's the more urgent signal.
+    let reportedTemp: number;
+    let reportedCeiling: number;
+    if (asicBad && vrBad) {
+      const asicMargin = (entry.temp_c as number) - asicCeiling;
+      const vrMargin = (entry.vr_temp_c as number) - vrCeiling;
+      if (vrMargin >= asicMargin) {
+        reportedTemp = entry.vr_temp_c as number;
+        reportedCeiling = vrCeiling;
+      } else {
+        reportedTemp = entry.temp_c as number;
+        reportedCeiling = asicCeiling;
+      }
+    } else if (vrBad) {
+      reportedTemp = entry.vr_temp_c as number;
+      reportedCeiling = vrCeiling;
+    } else if (asicBad) {
+      reportedTemp = entry.temp_c as number;
+      reportedCeiling = asicCeiling;
+    } else {
+      // Not bad - fall back to "current ASIC temp vs ASIC ceiling"
+      // for the recovery body's "back to normal" rendering.
+      reportedTemp = entry.temp_c ?? asicCeiling;
+      reportedCeiling = asicCeiling;
+    }
+
     const current = this.soloOverheating.get(entry.device.id) ?? INITIAL;
     const next = await this.runTransition({
       event_class: 'solo_overheating',
@@ -834,8 +908,8 @@ export class AlertEvaluator {
       disabledClasses: disabled,
       title: copyFor(state).solo_overheating_title({
         label: entry.device.label,
-        temp_c: (hottest ?? ceiling).toFixed(1),
-        ceiling_c: ceiling.toString(),
+        temp_c: reportedTemp.toFixed(1),
+        ceiling_c: reportedCeiling.toString(),
       }),
       titleForRecovery: copyFor(state).solo_overheating_title_recovery({
         label: entry.device.label,
@@ -843,8 +917,8 @@ export class AlertEvaluator {
       bodyForFiring: (durMs) =>
         copyFor(state).solo_overheating_body({
           label: entry.device.label,
-          temp_c: (hottest ?? ceiling).toFixed(1),
-          ceiling_c: ceiling.toString(),
+          temp_c: reportedTemp.toFixed(1),
+          ceiling_c: reportedCeiling.toString(),
           duration: formatDuration(durMs),
         }),
       bodyForRecovery: (durMs) =>

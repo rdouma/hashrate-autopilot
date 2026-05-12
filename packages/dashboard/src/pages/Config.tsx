@@ -837,8 +837,8 @@ function ConfigTabsAndContent({
         t`Add device`,
         t`Scan local network`,
         t`Alert thresholds`,
-        t`Overheating ceiling (°C, 0 = auto per model)`,
-        t`Overheating ceiling (°F, 0 = auto per model)`,
+        t`ASIC overheating ceiling (°C, 0 = auto per model)`,
+        t`ASIC overheating ceiling (°F, 0 = auto per model)`,
         t`Zero-hashrate alert after (minutes)`,
         t`Share-rejection threshold (%)`,
         t`Share-rejection window (minutes)`,
@@ -2119,12 +2119,12 @@ function SoloThresholdInputs({
   };
   const ceilingLabel =
     tempUnit === 'F'
-      ? t`Overheating ceiling (°F, 0 = auto per model)`
-      : t`Overheating ceiling (°C, 0 = auto per model)`;
+      ? t`ASIC overheating ceiling (°F, 0 = auto per model)`
+      : t`ASIC overheating ceiling (°C, 0 = auto per model)`;
   const ceilingHelp =
     tempUnit === 'F'
-      ? t`Default 0 uses per-ASIC-model lookup (BM1370 = 154 °F, BM1368/BM1366 = 158 °F, BM1397 = 167 °F, fallback 158 °F). Any non-zero value here overrides all of them.`
-      : t`Default 0 uses per-ASIC-model lookup (BM1370 = 68 °C, BM1368/BM1366 = 70 °C, BM1397 = 75 °C, fallback 70 °C). Any non-zero value here overrides all of them.`;
+      ? t`ASIC junction temperature only. Default 0 uses per-model lookup (BM1370 = 154 °F, BM1368/BM1366 = 158 °F, BM1397 = 167 °F, fallback 158 °F). Any non-zero value here overrides all of them. The VR (voltage regulator) sensor uses a separate built-in ceiling of 194 °F (90 °C) and is not configurable yet - those chips run a much wider operating range than the ASIC and AxeOS itself doesn't flag them below ~194 °F.`
+      : t`ASIC junction temperature only. Default 0 uses per-model lookup (BM1370 = 68 °C, BM1368/BM1366 = 70 °C, BM1397 = 75 °C, fallback 70 °C). Any non-zero value here overrides all of them. The VR (voltage regulator) sensor uses a separate built-in ceiling of 90 °C and is not configurable yet - those chips run a much wider operating range than the ASIC and AxeOS itself doesn't flag them below ~90 °C.`;
   return (
     <div className="border-t border-slate-800 pt-3 space-y-2">
       <h4 className="text-xs uppercase tracking-wider text-slate-400">
@@ -3015,7 +3015,7 @@ function EventClassSubscriptions({
         {
           id: 'solo_overheating',
           label: t`Solo miner overheating`,
-          help: t`Fires when an ASIC or VR temp crosses the per-ASIC-model ceiling (or the global override on Display & Logging → Solo miners) for ~90 s. Recovery paired.`,
+          help: t`Fires when the ASIC temp crosses its per-model ceiling (configurable on Display & Logging → Solo miners) OR the VR temp crosses 90 °C (separate built-in ceiling - VRs run a wider range than the ASIC), sustained for ~90 s. Recovery paired.`,
           enabled: !disabled.has('solo_overheating'),
           setEnabled: (n) => toggleClass('solo_overheating', n),
           severity: 'IMPORTANT',
