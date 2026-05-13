@@ -791,6 +791,10 @@ export interface StatsResponse {
   total_ph_hours: number | null;
   avg_overpay_vs_hashprice_sat_per_ph_day: number | null;
   avg_cost_per_ph_sat_per_ph_day: number | null;
+  /** #164: time-weighted mean of (our_bid - fillable_ask) over the window. */
+  avg_intent_overpay_sat_per_ph_day: number | null;
+  /** #164: delta-weighted mean of (effective_rate - fillable_ask) over the window. */
+  avg_settled_overpay_sat_per_ph_day: number | null;
   avg_time_to_fill_ms: number | null;
   mutation_count: number;
   range: ChartRange;

@@ -489,6 +489,14 @@ msgstr "gem. hashprice ({rangeLabel})"
 msgid "avg ocean"
 msgstr "gem. Ocean"
 
+#: src/pages/Status.tsx
+msgid "avg overpay (intent)"
+msgstr "gem. overpay (intent)"
+
+#: src/pages/Status.tsx
+msgid "avg overpay (settled)"
+msgstr "gem. overpay (settled)"
+
 #: src/pages/Setup.tsx
 msgid "Backend"
 msgstr "Backend"
@@ -1143,6 +1151,10 @@ msgstr "Geleverde hashrate ligt al ten minste dit aantal minuten onder je vloer.
 #: src/components/PriceChart.tsx
 msgid "delta"
 msgstr "delta"
+
+#: src/pages/Status.tsx
+msgid "Delta-consumed-weighted average of (effective rate paid - fillable ask) per tick. Same delta weighting as the avg cost / hashrate delivered card so the two stay consistent. Reflects what we actually paid above fillable, post-billing. Zero-delivery ticks contribute nothing. Divergences from the intent card highlight where billing-period weighting matters - brief expensive blips during heavy delivery count more than long cheap stretches with no delivery."
+msgstr "Delta-verbruik-gewogen gemiddelde van (effectief betaald tarief - fillable ask) per tick. Dezelfde delta-weging als de avg cost / hashrate delivered-kaart, dus die twee blijven consistent. Weerspiegelt wat we daadwerkelijk boven fillable betaalden, na de billing. Ticks met nul levering tellen niet mee. Verschillen met de intent-kaart laten zien waar billing-period weging telt - korte dure pieken tijdens zware levering tellen zwaarder dan lange goedkope stukken zonder levering."
 
 #: src/components/Layout.tsx
 msgid "denomination"
@@ -3150,6 +3162,10 @@ msgstr "tick uitvoeren…"
 #: src/pages/Status.tsx
 msgid "Time since Ocean found its most recent block. Ocean's average block-find interval is the inverse of its share of network: at ~5% network share, ~5-6 hours between blocks on average. A 24h gap is unusual but well within Poisson variance; multi-day droughts suggest something structural."
 msgstr "Tijd sinds Ocean het meest recente blok vond. Ocean's gemiddelde blok-vind-interval is omgekeerd evenredig met haar aandeel in het netwerk: bij ~5% netwerkaandeel ~5-6 uur tussen blokken gemiddeld. Een gat van 24u is ongebruikelijk maar binnen Poisson-variantie; meerdaagse droogtes suggereren iets structureels."
+
+#: src/pages/Status.tsx
+msgid "Time-weighted average of (our bid - fillable ask) per tick over the selected chart range. Reflects what the controller targeted - the price we posted regardless of whether we were delivering. Compare against the Overpay setting on Config → Pricing; sustained values above your configured overpay usually mean the bid is anchored above target (often by the 10-min price-decrease cooldown)."
+msgstr "Tijds-gewogen gemiddelde van (ons bod - fillable ask) per tick over het gekozen grafiekbereik. Weerspiegelt wat de controller probeerde - de prijs die we posten ongeacht of we leverden. Vergelijk met de Overpay-instelling op Config → Pricing; aanhoudende waarden boven je geconfigureerde overpay betekenen meestal dat het bod boven het doel vastzit (vaak door de 10-min price-decrease-cooldown)."
 
 #: src/components/Bip110ScanCard.tsx
 msgid "tip"

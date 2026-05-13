@@ -2,6 +2,15 @@
 
 ## 2026-05-12
 
+### `[Feature]` Avg overpay above fillable - intent vs settled stat cards in the Braiins panel (#164, phase 1 of 2)
+
+Two new compact stat cards at the bottom of the Braiins service panel showing the period-averaged premium our bid paid above fillable. Both cards visible side-by-side; tooltip on each explaining the derivation. Window follows the chart's time-range selector.
+
+- **Intent** = time-weighted mean of `(our_bid - fillable_ask)` per tick across the window. Reflects what the controller *targeted* - what we posted whether we were delivering or not. Compare against the configured `overpay_sat_per_eh_day`.
+- **Settled** = delta-consumed-weighted mean of `(effective_rate - fillable_ask)` - same delta-weighting as the existing `avg cost / hashrate delivered` card so the two stay consistent. Reflects what we *actually paid* above fillable, post-billing.
+
+Backend: new SQL aggregates in `stats.ts` extending the existing `avg_overpay_vs_hashprice` form with `fillable_ask` substituted for `hashprice`. No new columns - `fillable_ask_sat_per_eh_day` has been on `tick_metrics` since migration 0012. Replayed against an operator DB for the 24h window: intent 70.8, settled 70.9 sat/PH/day (configured overpay is 50; the +20 sat is roughly the price-decrease-cooldown's drag on the bid). Phase 2 of #164 (right-axis chart series) lands next.
+
 ### `[Fix]` Price chart: pool-block markers on unpaid-earnings line sit at the post-step value (#163)
 
 Operator caught the blue pool-block dot on the Price chart anchored to the **lower** (pre-step) segment of the unpaid (sat) step line at a Tue 18:00 block, while the visible line clearly stepped up to the higher segment immediately after. Same structural shape as #161 on the Hashrate chart: `visiblePoolBlockMarkers` was placing the marker at "first tick at-or-after the block timestamp", but Ocean's unpaid_sat column only refreshes on its own ~5 min cadence - so that tick still carries the pre-block value.

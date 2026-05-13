@@ -538,6 +538,25 @@ export function Status() {
               denomination={denomination}
             />
           </div>
+          {/* #164: avg overpay above fillable - intent (time-weighted)
+              and settled (delta-weighted) side by side. Period follows
+              the chart's time-range selector via statsQuery. */}
+          <div className="border-t border-slate-800 mt-2 pt-2 grid grid-cols-2 gap-2">
+            <OverpayMiniCard
+              label={t`avg overpay (intent)`}
+              value={statsQuery.data?.avg_intent_overpay_sat_per_ph_day ?? null}
+              intlLocale={intlLocale}
+              denomination={denomination}
+              tooltip={t`Time-weighted average of (our bid - fillable ask) per tick over the selected chart range. Reflects what the controller targeted - the price we posted regardless of whether we were delivering. Compare against the Overpay setting on Config → Pricing; sustained values above your configured overpay usually mean the bid is anchored above target (often by the 10-min price-decrease cooldown).`}
+            />
+            <OverpayMiniCard
+              label={t`avg overpay (settled)`}
+              value={statsQuery.data?.avg_settled_overpay_sat_per_ph_day ?? null}
+              intlLocale={intlLocale}
+              denomination={denomination}
+              tooltip={t`Delta-consumed-weighted average of (effective rate paid - fillable ask) per tick. Same delta weighting as the avg cost / hashrate delivered card so the two stay consistent. Reflects what we actually paid above fillable, post-billing. Zero-delivery ticks contribute nothing. Divergences from the intent card highlight where billing-period weighting matters - brief expensive blips during heavy delivery count more than long cheap stretches with no delivery.`}
+            />
+          </div>
         </Card>
         <DatumPanel
           url={s.config_summary.pool_url}
@@ -1505,6 +1524,53 @@ function StatCard({
         </div>
         {split && (
           <div className="text-xs text-slate-500 mt-0.5"><SatUnit unit={split.unit} /></div>
+        )}
+      </div>
+    </Tooltip>
+  );
+}
+
+/**
+ * #164: compact two-up stat card used inside the Braiins panel for
+ * the avg-overpay (intent / settled) pair. Smaller than the
+ * top-strip StatCard - the Braiins panel is already dense; a full
+ * StatCard would dwarf the existing label/value rows above it.
+ * Sign-coloured: positive values (bid above fillable, expected
+ * under pay-your-bid) render in the regular slate; deeply negative
+ * values (rare; bid below fillable, usually a transient marketplace
+ * artefact) render in emerald to flag them as unusual.
+ */
+function OverpayMiniCard({
+  label,
+  value,
+  intlLocale,
+  denomination,
+  tooltip,
+}: {
+  label: string;
+  value: number | null;
+  intlLocale: string | undefined;
+  denomination: ReturnType<typeof useDenomination>;
+  tooltip: string;
+}) {
+  const formatted = value !== null
+    ? denomination.formatSatPerPhDay(Math.round(value), intlLocale)
+    : '—';
+  const split = splitUnit(formatted);
+  const color = value !== null && value < 0 ? 'text-emerald-300' : 'text-slate-100';
+  return (
+    <Tooltip text={tooltip}>
+      <div className="bg-slate-950/40 border border-slate-800 rounded p-2 cursor-help text-center">
+        <div className="text-[10px] uppercase tracking-wider text-slate-400 mb-1 leading-tight">
+          {label}
+        </div>
+        <div className={`text-sm font-mono tabular-nums ${color}`}>
+          {split ? split.num : formatted}
+        </div>
+        {split && (
+          <div className="text-[10px] text-slate-500 mt-0.5">
+            <SatUnit unit={split.unit} />
+          </div>
         )}
       </div>
     </Tooltip>

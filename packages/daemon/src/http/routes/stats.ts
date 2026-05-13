@@ -67,6 +67,22 @@ export interface StatsResponse {
    * Braiins actually charged us) rather than our bid price.
    */
   readonly avg_cost_per_ph_sat_per_ph_day: number | null;
+  /**
+   * Average controller-intent overpay above fillable_ask (#164).
+   * Time-weighted mean of (our_bid - fillable_ask) across every tick
+   * in the window where both values are present. Reflects what the
+   * controller targeted, before billing reality. Weighted by tick
+   * duration so idle stretches with the bid still posted count.
+   */
+  readonly avg_intent_overpay_sat_per_ph_day: number | null;
+  /**
+   * Average settled overpay above fillable_ask (#164). Delta-weighted
+   * mean of (effective_rate - fillable_ask) - same delta/our_bid
+   * weighting as avg_cost_per_ph_sat_per_ph_day. Reflects what we
+   * actually paid above fillable, post-billing. Zero-delivery ticks
+   * contribute nothing.
+   */
+  readonly avg_settled_overpay_sat_per_ph_day: number | null;
   readonly avg_time_to_fill_ms: number | null;
   /**
    * Count of bid_events (CREATE / EDIT_PRICE / EDIT_SPEED / CANCEL)
@@ -120,6 +136,8 @@ export async function registerStatsRoute(
         total_ph_hours: metrics.total_ph_hours,
         avg_overpay_vs_hashprice_sat_per_ph_day: metrics.avg_overpay_vs_hashprice_sat_per_ph_day,
         avg_cost_per_ph_sat_per_ph_day: metrics.avg_cost_per_ph_sat_per_ph_day,
+        avg_intent_overpay_sat_per_ph_day: metrics.avg_intent_overpay_sat_per_ph_day,
+        avg_settled_overpay_sat_per_ph_day: metrics.avg_settled_overpay_sat_per_ph_day,
         avg_time_to_fill_ms: avgFillMs,
         mutation_count: mutationCount,
         range,
@@ -142,6 +160,8 @@ async function computeMetrics(
   total_ph_hours: number | null;
   avg_overpay_vs_hashprice_sat_per_ph_day: number | null;
   avg_cost_per_ph_sat_per_ph_day: number | null;
+  avg_intent_overpay_sat_per_ph_day: number | null;
+  avg_settled_overpay_sat_per_ph_day: number | null;
   tick_count: number;
 }> {
   // Use Kysely's raw SQL but inline the sinceMs literal so the CTE +
@@ -279,7 +299,35 @@ async function computeMetrics(
           / SUM(CASE WHEN valid AND our_bid > 0 AND hashprice IS NOT NULL THEN CAST(delta AS REAL) / our_bid ELSE 0 END)
         - (CAST(SUM(CASE WHEN valid AND our_bid > 0 AND hashprice IS NOT NULL THEN hashprice * CAST(delta AS REAL) / our_bid ELSE 0 END) AS REAL)
           / SUM(CASE WHEN valid AND our_bid > 0 AND hashprice IS NOT NULL THEN CAST(delta AS REAL) / our_bid ELSE 0 END))
-      ELSE NULL END AS avg_overpay_vs_hashprice
+      ELSE NULL END AS avg_overpay_vs_hashprice,
+
+      -- INTENT overpay (#164): time-weighted mean of (our_bid - fillable_ask)
+      -- across every tick where both values are present. Reflects what the
+      -- controller targeted, before billing reality. Weighted by tick
+      -- duration (not delivery) because the bid sits posted whether we're
+      -- delivering or not - idle Braiins still pays the posted price when
+      -- delivery picks back up, and the controller's intent in those
+      -- ticks is part of the window's average target.
+      -- result unit: sat/EH/day. Caller divides by EH_PER_PH → sat/PH/day.
+      CASE WHEN SUM(CASE WHEN our_bid > 0 AND fillable_ask IS NOT NULL AND dur BETWEEN 1 AND 300000 THEN dur ELSE 0 END) > 0 THEN
+        CAST(SUM(CASE WHEN our_bid > 0 AND fillable_ask IS NOT NULL AND dur BETWEEN 1 AND 300000
+            THEN (our_bid - fillable_ask) * dur
+            ELSE 0 END) AS REAL)
+          / SUM(CASE WHEN our_bid > 0 AND fillable_ask IS NOT NULL AND dur BETWEEN 1 AND 300000 THEN dur ELSE 0 END)
+      ELSE NULL END AS avg_intent_overpay,
+
+      -- SETTLED overpay (#164): delta-weighted mean of (effective_rate -
+      -- fillable_ask). Same delta/our_bid weighting as avg_cost above so
+      -- the two stay consistent. Result equals avg_cost minus the
+      -- delta-weighted average fillable_ask during periods we were
+      -- actually billed. Zero-delivery ticks contribute zero to both
+      -- sides (delta == 0) and don't skew the result.
+      CASE WHEN SUM(CASE WHEN valid AND our_bid > 0 AND fillable_ask IS NOT NULL THEN CAST(delta AS REAL) / our_bid ELSE 0 END) > 0 THEN
+        CAST(SUM(CASE WHEN valid AND our_bid > 0 AND fillable_ask IS NOT NULL THEN delta ELSE 0 END) AS REAL)
+          / SUM(CASE WHEN valid AND our_bid > 0 AND fillable_ask IS NOT NULL THEN CAST(delta AS REAL) / our_bid ELSE 0 END)
+        - (CAST(SUM(CASE WHEN valid AND our_bid > 0 AND fillable_ask IS NOT NULL THEN fillable_ask * CAST(delta AS REAL) / our_bid ELSE 0 END) AS REAL)
+          / SUM(CASE WHEN valid AND our_bid > 0 AND fillable_ask IS NOT NULL THEN CAST(delta AS REAL) / our_bid ELSE 0 END))
+      ELSE NULL END AS avg_settled_overpay
     FROM (
       SELECT
         tick_at,
@@ -288,6 +336,7 @@ async function computeMetrics(
         ocean_hashrate_ph,
         hashprice,
         our_bid,
+        fillable_ask,
         delta,
         dur,
         (delta IS NOT NULL
@@ -301,6 +350,7 @@ async function computeMetrics(
           datum_hashrate_ph,
           ocean_hashrate_ph,
           hashprice_sat_per_eh_day AS hashprice,
+          fillable_ask_sat_per_eh_day AS fillable_ask,
           our_primary_price_sat_per_eh_day AS our_bid,
           CASE
             WHEN primary_bid_consumed_sat IS NOT NULL
@@ -324,7 +374,18 @@ async function computeMetrics(
 
   const r = (row as unknown as { rows: Array<Record<string, number | null>> }).rows?.[0];
   if (!r) {
-    return { tick_count: 0, uptime_pct: null, avg_hashrate_ph: null, avg_datum_hashrate_ph: null, avg_ocean_hashrate_ph: null, total_ph_hours: null, avg_overpay_vs_hashprice_sat_per_ph_day: null, avg_cost_per_ph_sat_per_ph_day: null };
+    return {
+      tick_count: 0,
+      uptime_pct: null,
+      avg_hashrate_ph: null,
+      avg_datum_hashrate_ph: null,
+      avg_ocean_hashrate_ph: null,
+      total_ph_hours: null,
+      avg_overpay_vs_hashprice_sat_per_ph_day: null,
+      avg_cost_per_ph_sat_per_ph_day: null,
+      avg_intent_overpay_sat_per_ph_day: null,
+      avg_settled_overpay_sat_per_ph_day: null,
+    };
   }
 
   return {
@@ -339,6 +400,8 @@ async function computeMetrics(
     // SQL returns sat/EH/day; convert to sat/PH/day for the dashboard.
     avg_overpay_vs_hashprice_sat_per_ph_day: r['avg_overpay_vs_hashprice'] !== null ? Number(r['avg_overpay_vs_hashprice']) / EH_PER_PH : null,
     avg_cost_per_ph_sat_per_ph_day: r['avg_cost'] !== null ? Number(r['avg_cost']) / EH_PER_PH : null,
+    avg_intent_overpay_sat_per_ph_day: r['avg_intent_overpay'] !== null ? Number(r['avg_intent_overpay']) / EH_PER_PH : null,
+    avg_settled_overpay_sat_per_ph_day: r['avg_settled_overpay'] !== null ? Number(r['avg_settled_overpay']) / EH_PER_PH : null,
   };
 }
 
