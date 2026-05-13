@@ -285,11 +285,14 @@ function describeProposal(p: GateOutcome['proposal']): string {
     case 'CREATE_BID':
       return `CREATE bid at ${(p.price_sat / EH_PER_PH).toLocaleString('en-US')} sat/PH/day, ${p.speed_limit_ph} PH/s, ${p.amount_sat.toLocaleString('en-US')} sat budget`;
     case 'EDIT_PRICE':
-      return `EDIT ${p.braiins_order_id.slice(0, 8)}… ${(p.old_price_sat / EH_PER_PH).toLocaleString('en-US')} → ${(p.new_price_sat / EH_PER_PH).toLocaleString('en-US')} sat/PH/day`;
+      // Operator-visible string: show the full bid id (previously
+      // truncated to 8 chars + ellipsis, which made the proposals
+      // strip look chopped without saving any meaningful width).
+      return `EDIT ${p.braiins_order_id} ${(p.old_price_sat / EH_PER_PH).toLocaleString('en-US')} → ${(p.new_price_sat / EH_PER_PH).toLocaleString('en-US')} sat/PH/day`;
     case 'EDIT_SPEED':
-      return `EDIT ${p.braiins_order_id.slice(0, 8)}… speed ${p.old_speed_limit_ph} → ${p.new_speed_limit_ph} PH/s`;
+      return `EDIT ${p.braiins_order_id} speed ${p.old_speed_limit_ph} → ${p.new_speed_limit_ph} PH/s`;
     case 'CANCEL_BID':
-      return `CANCEL ${p.braiins_order_id.slice(0, 8)}…`;
+      return `CANCEL ${p.braiins_order_id}`;
     case 'PAUSE':
       return `PAUSE (${p.reason})`;
   }

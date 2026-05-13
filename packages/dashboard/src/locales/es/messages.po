@@ -265,6 +265,7 @@ msgid "Acknowledged and resolved ({0})"
 msgstr "Confirmado y resuelto ({0})"
 
 #: src/pages/Status.tsx
+#: src/pages/Status.tsx
 msgid "action mode blocks this"
 msgstr "el modo de acción bloquea esto"
 
@@ -701,6 +702,7 @@ msgstr "Braiins (entregado)"
 msgid "Braiins (price, effective)"
 msgstr "Braiins (precio, efectivo)"
 
+#: src/pages/Status.tsx
 #: src/pages/Status.tsx
 msgid "Braiins 10-min cooldown"
 msgstr "Cooldown de 10 min de Braiins"
@@ -2087,6 +2089,7 @@ msgid "Not enough data in this range yet."
 msgstr "Aún no hay suficientes datos en este rango."
 
 #: src/pages/Status.tsx
+#: src/pages/Status.tsx
 msgid "not in LIVE mode"
 msgstr "no está en modo LIVE"
 
@@ -2372,6 +2375,7 @@ msgstr "La paciencia se libera en"
 msgid "Pause"
 msgstr "Pausar"
 
+#: src/pages/Status.tsx
 #: src/pages/Status.tsx
 msgid "paused"
 msgstr "pausado"

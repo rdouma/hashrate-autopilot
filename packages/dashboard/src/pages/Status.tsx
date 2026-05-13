@@ -3183,6 +3183,29 @@ function splitUnit(v: string): { num: string; unit: string } | null {
   return null;
 }
 
+// Operator-friendly labels for gate reasons. The raw enum-style
+// strings (PRICE_DECREASE_COOLDOWN etc.) leaked into the proposals
+// strip; this maps each to the same human-readable label the
+// tick-result feedback row uses (line ~923), so both surfaces speak
+// the same language.
+function gateReasonLabel(reason: string): string {
+  switch (reason) {
+    case 'PRICE_DECREASE_COOLDOWN':
+      return t`Braiins 10-min cooldown`;
+    case 'RUN_MODE_NOT_LIVE':
+      return t`not in LIVE mode`;
+    case 'RUN_MODE_PAUSED':
+      return t`paused`;
+    case 'ACTION_MODE_BLOCKS_CREATE_OR_EDIT':
+      return t`action mode blocks this`;
+    default:
+      // Fall back to a humanised form of the raw enum -
+      // PRICE_DECREASE_COOLDOWN → "price decrease cooldown" - so an
+      // unknown reason still reads decently.
+      return reason.toLowerCase().replace(/_/g, ' ');
+  }
+}
+
 function ProposalLine({ p }: { p: ProposalView }) {
   const denomination = useDenomination();
   const badge =
@@ -3199,7 +3222,9 @@ function ProposalLine({ p }: { p: ProposalView }) {
         {p.executed.toLowerCase().replace('_', ' ')}
       </span>
       <span className="text-slate-100">{relabelSummary(p.summary, denomination)}</span>
-      {p.gate_reason && <span className="text-xs text-red-400 ml-2">({p.gate_reason})</span>}
+      {p.gate_reason && (
+        <span className="text-xs text-red-400 ml-2">({gateReasonLabel(p.gate_reason)})</span>
+      )}
     </div>
   );
 }

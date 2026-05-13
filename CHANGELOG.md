@@ -2,6 +2,10 @@
 
 ## 2026-05-13
 
+### `[UI]` Last tick proposals: show full bid id and humanise the gate-reason label
+
+Two small annoyances on the LAST TICK PROPOSALS strip on the Status page. The bid id was truncated server-side to 8 chars + ellipsis ("EDIT B8662467… 48.332 → 47.998 sat/PH/day"), which made the row look chopped without saving any meaningful width. And the gate-reason came through as the raw enum label ("(PRICE_DECREASE_COOLDOWN)"), which leaked the internal constant name into the UI. Fixed: full id rendered, gate reason mapped to the same humanised label the tick-result feedback row uses (PRICE_DECREASE_COOLDOWN → "Braiins 10-min cooldown", RUN_MODE_NOT_LIVE → "not in LIVE mode", etc.). Unknown reasons fall back to a lowercased space-separated form of the raw enum so future additions still read decently.
+
 ### `[Feature]` Surface 'Braiins marketplace empty' state on Telegram + Status banner + chart shading (#167)
 
 Operator caught a real instance 2026-05-13 ~07:00-08:15 where hashrate dropped to zero across Braiins / Datum / Ocean because the marketplace had no asks that could fill their target. The autopilot's `no_market_supply` descriptor on the NEXT ACTION panel already detected the state but it was easy to miss and there was no historical record on the charts. Three visibility layers added:

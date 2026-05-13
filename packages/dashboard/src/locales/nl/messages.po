@@ -265,6 +265,7 @@ msgid "Acknowledged and resolved ({0})"
 msgstr "Bevestigd en opgelost ({0})"
 
 #: src/pages/Status.tsx
+#: src/pages/Status.tsx
 msgid "action mode blocks this"
 msgstr "actie-modus blokkeert dit"
 
@@ -701,6 +702,7 @@ msgstr "Braiins (geleverd)"
 msgid "Braiins (price, effective)"
 msgstr "Braiins (prijs, effectief)"
 
+#: src/pages/Status.tsx
 #: src/pages/Status.tsx
 msgid "Braiins 10-min cooldown"
 msgstr "Braiins 10-min cooldown"
@@ -2087,6 +2089,7 @@ msgid "Not enough data in this range yet."
 msgstr "Nog niet genoeg data in dit bereik."
 
 #: src/pages/Status.tsx
+#: src/pages/Status.tsx
 msgid "not in LIVE mode"
 msgstr "niet in LIVE-modus"
 
@@ -2372,6 +2375,7 @@ msgstr "Geduld loopt af over"
 msgid "Pause"
 msgstr "Pauzeren"
 
+#: src/pages/Status.tsx
 #: src/pages/Status.tsx
 msgid "paused"
 msgstr "gepauzeerd"
