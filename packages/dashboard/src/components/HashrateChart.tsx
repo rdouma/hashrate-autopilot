@@ -861,32 +861,61 @@ export const HashrateChart = memo(function HashrateChart({
     const isDay = rightAxisSeries === 'pool_luck_24h';
     const windowMs = isDay ? 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000;
     const { minX, maxX, xScale, shareLogYScale } = chartData;
+    const countKey = isDay ? 'pool_blocks_24h_count' : 'pool_blocks_7d_count';
+    const luckKey = isDay ? 'pool_luck_24h' : 'pool_luck_7d';
+    // The block-count column updates with the Ocean refresher's cadence
+    // (~few minutes), not on the on-chain block timestamp. If we picked
+    // `before`/`after` as the two ticks straddling the event time, both
+    // would still have the pre-event count and the tooltip would report
+    // "luck went from 0.47× to 0.47×" even when the chart line visibly
+    // steps a few ticks later (#161). Find instead the first tick where
+    // the count actually changed in the direction we expect and use
+    // that as `after`; `before` is the tick immediately preceding the
+    // step. Linear scans are fine - chart point counts are small.
+    const MAX_LAG_TICKS = 15; // ~15 min of slack at 60 s cadence
     const out: typeof empty = [];
     for (const block of ourBlocks) {
       for (const kind of ['in', 'out'] as const) {
         const t =
           kind === 'in' ? block.timestamp_ms : block.timestamp_ms + windowMs;
         if (t < minX || t > maxX) continue;
-        // Locate the tick straddling the event for the post-step
-        // value. Linear scan is fine - chart point counts are small
-        // and we typically have a handful of blocks.
-        let afterIdx = -1;
+        // Locate the tick at or after the event time - the count-change
+        // we're scanning for is somewhere from here onwards.
+        let eventIdx = -1;
         for (let i = 0; i < points.length; i++) {
           if (points[i]!.tick_at >= t) {
+            eventIdx = i;
+            break;
+          }
+        }
+        if (eventIdx < 0) continue;
+        // Pre-event count: use the tick just before the event time, or
+        // fall back to the event-time tick when the event is at the
+        // start of the chart range (no earlier tick available).
+        const baseCount =
+          eventIdx > 0
+            ? points[eventIdx - 1]![countKey]
+            : points[eventIdx]![countKey];
+        if (baseCount === null) continue;
+        // Scan forward for the first tick where the count moved in the
+        // expected direction. For 'in', count should go up by one (the
+        // newly-credited block); for 'out', down by one (the block
+        // rotating out of the rolling window).
+        let afterIdx = -1;
+        const scanEnd = Math.min(points.length, eventIdx + MAX_LAG_TICKS);
+        for (let i = eventIdx; i < scanEnd; i++) {
+          const c = points[i]![countKey];
+          if (c === null) continue;
+          if (kind === 'in' ? c > baseCount : c < baseCount) {
             afterIdx = i;
             break;
           }
         }
-        if (afterIdx < 0) continue;
+        if (afterIdx < 0) continue; // daemon hasn't reflected the step yet
         const after = points[afterIdx]!;
         const before = afterIdx > 0 ? points[afterIdx - 1]! : null;
-        const luckAfter = isDay ? after.pool_luck_24h : after.pool_luck_7d;
-        const luckBefore =
-          before === null
-            ? null
-            : isDay
-              ? before.pool_luck_24h
-              : before.pool_luck_7d;
+        const luckAfter = after[luckKey];
+        const luckBefore = before === null ? null : before[luckKey];
         if (luckAfter === null) continue;
         out.push({
           event: { kind, t, block, luckBefore, luckAfter, windowMs },

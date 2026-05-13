@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-05-12
+
+### `[Fix]` Pool-luck step-marker tooltip now reports the actual step values (#161)
+
+Operator caught a "Block landed - the rolling-24h numerator went from 0.47× to 0.47×" tooltip on a block where the line visibly stepped up to ~0.90×. Root cause: the `luckEvents` useMemo picked `afterIdx` as the first tick at or after the on-chain block timestamp - but the daemon's `pool_blocks_24h_count` column only updates with the Ocean API refresher's cadence (~3 minutes after the block time in practice). So the tick the code labelled "after" still had the pre-block count, and so did the tick before it.
+
+Fix: instead of straddling the event timestamp, scan forward from the event tick for the first tick where the count column actually changed in the expected direction (incremented for "block landed", decremented for "block aged out"). That's where the visible line step lives. Scan is bounded to 15 ticks (~15 min); if the daemon hasn't caught up to Ocean yet, the marker is skipped this render and will resolve on the next dashboard refresh.
+
 ## 2026-05-12 · v1.7.4
 
 ### `[Release]` v1.7.4 - solo-miner false alerts gone, cheap-mode sustained semantics fixed
