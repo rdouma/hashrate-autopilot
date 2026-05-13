@@ -2,6 +2,15 @@
 
 ## 2026-05-12
 
+### `[Feature]` Avg overpay (intent / settled) plottable on the Price chart's right axis (#164, phase 2)
+
+Two new entries in the Price chart's right-axis dropdown: `avg overpay (intent)` and `avg overpay (settled)`. Operator picks one at a time; the right axis shows the chosen series as a time-series line over the chart's full range, retroactively from the earliest `tick_metrics` row available.
+
+- **Intent line**: per-tick `(our_bid - fillable_ask)`, rolling-mean smoothed using `braiins_price_smoothing_minutes` - the same setting that already smooths `our bid` and `fillable_ask` themselves, so the three series share a cadence.
+- **Settled line**: per-tick `(effective_rate - fillable_ask)`. Inherits the existing `effective_rate` series's null-gap behaviour during zero-delivery windows (Braiins idle, Paused, etc.) - the line breaks rather than reads a misleading continuity through outages.
+
+Both lines computed dashboard-side from the existing `tick_metrics` columns - no backend change, no migration. Same metric the two stat cards from phase 1 show as window-averages.
+
 ### `[Feature]` Avg overpay above fillable - intent vs settled stat cards in the Braiins panel (#164, phase 1 of 2)
 
 Two new compact stat cards at the bottom of the Braiins service panel showing the period-averaged premium our bid paid above fillable. Both cards visible side-by-side; tooltip on each explaining the derivation. Window follows the chart's time-range selector.

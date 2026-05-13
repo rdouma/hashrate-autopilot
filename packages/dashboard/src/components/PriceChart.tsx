@@ -147,7 +147,15 @@ export type PriceRightAxis =
   | 'paid_total_sat'
   | 'lifetime_earnings_sat'
   // #149: solo-mining total power draw (W) across the fleet.
-  | 'solo_power_watts';
+  | 'solo_power_watts'
+  // #164: per-tick (our_bid - fillable_ask), rolling-mean smoothed.
+  // Reflects what the controller targeted - intent before billing.
+  | 'avg_overpay_intent'
+  // #164: per-tick (effective_rate - fillable_ask). Inherits the
+  // null-gap behaviour of effective_rate during zero-delivery
+  // windows, so the line breaks rather than reads a misleading
+  // continuity through outages.
+  | 'avg_overpay_settled';
 
 /** Per-tick aggregated fleet series row from /api/solo-miners/series. */
 export interface SoloSeriesRow {
@@ -563,6 +571,46 @@ export const PriceChart = memo(function PriceChart({
       effectivePoints.map((p) => [p.t, p.v]),
     );
 
+    // #164: per-tick (our_bid - fillable_ask) for the intent right-axis
+    // line. Rolling-mean smoothed using `braiins_price_smoothing_minutes`
+    // - same setting that smooths `our bid` and `fillable_ask` lines
+    // themselves, so the three series share a cadence. Filter: both
+    // values must be finite numbers on the tick.
+    const intentPoints: PricePoint[] = points
+      .filter((p) =>
+        Number.isFinite(p.our_primary_price_sat_per_ph_day) &&
+        Number.isFinite(p.fillable_ask_sat_per_ph_day),
+      )
+      .map((p) => ({
+        t: p.tick_at,
+        v: (p.our_primary_price_sat_per_ph_day as number) -
+          (p.fillable_ask_sat_per_ph_day as number),
+      }));
+    const smoothedIntentPoints = rollingMeanPoints(intentPoints, priceSmoothingMinutes);
+    const intentByTick = new Map<number, number>(
+      smoothedIntentPoints.map((p) => [p.t, p.v]),
+    );
+
+    // #164: per-tick (effective_rate - fillable_ask) for the settled
+    // right-axis line. Inherits effectiveByTick's null-gap behaviour
+    // during zero-delivery windows - the line breaks rather than reads
+    // a misleading continuity through Braiins idle/Paused stretches.
+    // Fillable lookup is via a separate map to avoid an O(n) scan per
+    // settled-tick.
+    const fillableByTick = new Map<number, number>();
+    for (const p of points) {
+      if (Number.isFinite(p.fillable_ask_sat_per_ph_day)) {
+        fillableByTick.set(p.tick_at, p.fillable_ask_sat_per_ph_day as number);
+      }
+    }
+    const settledByTick = new Map<number, number>();
+    for (const [t, eff] of effectiveByTick) {
+      const fillable = fillableByTick.get(t);
+      if (fillable !== undefined) {
+        settledByTick.set(t, eff - fillable);
+      }
+    }
+
     // #93: right-axis spec, derived from rightAxisSeries. Each branch
     // pulls per-point values off MetricPoint and returns a tick
     // formatter + axis label. 'none' bypasses the right axis
@@ -659,6 +707,26 @@ export const PriceChart = memo(function PriceChart({
             stroke: '#c084fc',
             axisLabel: `lifetime (${denomination.mode === 'usd' ? '$' : denomination.mode === 'btc' ? '₿' : 'sat'})`,
             formatTick: (v) => formatSatCompact(v, denomination, intlLocale),
+          };
+        case 'avg_overpay_intent':
+          return {
+            values: points.map((p) => intentByTick.get(p.tick_at) ?? null),
+            stroke: '#c084fc',
+            axisLabel: 'avg overpay intent (sat/PH/day)',
+            formatTick: (v) =>
+              new Intl.NumberFormat(intlLocale, {
+                maximumFractionDigits: 0,
+              }).format(v),
+          };
+        case 'avg_overpay_settled':
+          return {
+            values: points.map((p) => settledByTick.get(p.tick_at) ?? null),
+            stroke: '#c084fc',
+            axisLabel: 'avg overpay settled (sat/PH/day)',
+            formatTick: (v) =>
+              new Intl.NumberFormat(intlLocale, {
+                maximumFractionDigits: 0,
+              }).format(v),
           };
       }
     })();

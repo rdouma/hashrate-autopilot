@@ -490,9 +490,11 @@ msgid "avg ocean"
 msgstr "promedio ocean"
 
 #: src/pages/Status.tsx
+#: src/pages/Status.tsx
 msgid "avg overpay (intent)"
 msgstr "overpay medio (intent)"
 
+#: src/pages/Status.tsx
 #: src/pages/Status.tsx
 msgid "avg overpay (settled)"
 msgstr "overpay medio (settled)"

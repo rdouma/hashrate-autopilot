@@ -417,6 +417,10 @@ export function Status() {
             <option value="ocean_unpaid_sat">{t`unpaid earnings`}</option>
             <option value="paid_total_sat">{t`paid earnings (lifetime)`}</option>
             <option value="lifetime_earnings_sat">{t`lifetime earnings (paid + unpaid)`}</option>
+            {/* #164: per-tick avg-overpay series, mirroring the two
+                stat cards at the bottom of the Braiins panel. */}
+            <option value="avg_overpay_intent">{t`avg overpay (intent)`}</option>
+            <option value="avg_overpay_settled">{t`avg overpay (settled)`}</option>
             {/* #149: solo power (W) only listed when the master toggle is on. */}
             {soloMiningEnabled && (
               <option value="solo_power_watts">{t`solo power (W)`}</option>
