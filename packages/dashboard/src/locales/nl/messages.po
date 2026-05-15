@@ -78,10 +78,6 @@ msgstr "{label} OFFLINE"
 msgid "{markersHiddenCount} {0} markers hidden (cap)"
 msgstr "{markersHiddenCount} {0} markers verborgen (limiet)"
 
-#: src/components/PriceChart.tsx
-#~ msgid "{markersHiddenCount} edit-price markers hidden (cap)"
-#~ msgstr "{markersHiddenCount} edit-price-markers verborgen (limiet)"
-
 #: src/components/HashrateChart.tsx
 msgid "{markersHiddenCount} markers hidden (cap)"
 msgstr "{markersHiddenCount} markers verborgen (limiet)"
@@ -335,10 +331,6 @@ msgstr "Alarmdrempels"
 #: src/pages/Config.tsx
 msgid "Alerts"
 msgstr "Meldingen"
-
-#: src/components/PriceChart.tsx
-#~ msgid "All markers were hidden because the count exceeded the configured chart-marker cap even after dropping EDIT_PRICE. Adjust the cap on Config → Display & Logging."
-#~ msgstr "Alle markers zijn verborgen omdat het aantal zelfs na het weglaten van EDIT_PRICE de ingestelde grafiek-markerlimiet overschreed. Pas de limiet aan op Config → Display & Logging."
 
 #: src/pages/Config.tsx
 msgid "already added"
@@ -1284,10 +1276,6 @@ msgid "EDIT SPEED"
 msgstr "SNELHEID AANPASSEN"
 
 #: src/components/PriceChart.tsx
-#~ msgid "Edit-price markers were hidden because the count exceeded the configured chart-marker cap. CREATE / EDIT_SPEED / CANCEL markers still render. Adjust the cap on Config → Display & Logging."
-#~ msgstr "Edit-price-markers zijn verborgen omdat het aantal de ingestelde grafiek-markerlimiet overschreed. CREATE / EDIT_SPEED / CANCEL-markers worden nog steeds getekend. Pas de limiet aan op Config → Display & Logging."
-
-#: src/components/PriceChart.tsx
 msgid "effective"
 msgstr "effectief"
 
@@ -1818,6 +1806,14 @@ msgstr "Laden…"
 #: src/pages/Config.tsx
 msgid "Log retention"
 msgstr "Logbewaring"
+
+#: src/components/HashrateChart.tsx
+msgid "luck after"
+msgstr "luck na"
+
+#: src/components/HashrateChart.tsx
+msgid "luck before"
+msgstr "luck voor"
 
 #: src/components/PriceChart.tsx
 msgid "manual"

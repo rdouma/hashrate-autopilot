@@ -131,6 +131,11 @@ interface RetargetEvent {
   difficulty: number;
   /** Difficulty during the previous epoch. */
   previous: number;
+  /** Pool luck just before the retarget (previous tick). Present only
+   *  when the right axis is a pool-luck variant. */
+  luckBefore?: number | null;
+  /** Pool luck at the retarget tick. */
+  luckAfter?: number | null;
 }
 
 interface RetargetTooltipState {
@@ -426,7 +431,8 @@ export const HashrateChart = memo(function HashrateChart({
   // the next non-null difficulty value at or after each index, so
   // the forward pass doesn't have to re-scan to find it.
   const difficultyRetargets = useMemo<RetargetEvent[]>(() => {
-    if (rightAxisSeries !== 'network_difficulty') return [];
+    const isLuck = rightAxisSeries === 'pool_luck_24h' || rightAxisSeries === 'pool_luck_7d';
+    if (rightAxisSeries !== 'network_difficulty' && !isLuck) return [];
     const n = points.length;
     if (n === 0) return [];
     const nextNonNull: Array<number | null> = new Array(n);
@@ -436,6 +442,9 @@ export const HashrateChart = memo(function HashrateChart({
       if (typeof d === 'number' && Number.isFinite(d)) trailing = d;
       nextNonNull[i] = trailing;
     }
+    const luckKey = rightAxisSeries === 'pool_luck_24h' ? 'pool_luck_24h' as const
+                  : rightAxisSeries === 'pool_luck_7d' ? 'pool_luck_7d' as const
+                  : null;
     const out: RetargetEvent[] = [];
     let prev: number | null = null;
     for (let i = 0; i < n; i += 1) {
@@ -444,7 +453,13 @@ export const HashrateChart = memo(function HashrateChart({
       if (prev !== null && Math.abs(d - prev) / prev > 0.005) {
         const next = i + 1 < n ? nextNonNull[i + 1] ?? null : null;
         if (next === null || Math.abs(next - d) / d <= 0.005) {
-          out.push({ tick_at: points[i]!.tick_at, difficulty: d, previous: prev });
+          out.push({
+            tick_at: points[i]!.tick_at,
+            difficulty: d,
+            previous: prev,
+            luckBefore: luckKey && i > 0 ? points[i - 1]![luckKey] : undefined,
+            luckAfter: luckKey ? points[i]![luckKey] : undefined,
+          });
         }
       }
       prev = d;
@@ -860,14 +875,18 @@ export const HashrateChart = memo(function HashrateChart({
   // null case internally.
   const visibleRetargetMarkers = useMemo(() => {
     const empty: Array<{ event: RetargetEvent; cx: number; cy: number }> = [];
-    if (!chartData || rightAxisSeries !== 'network_difficulty') return empty;
+    if (!chartData) return empty;
+    const isLuck = rightAxisSeries === 'pool_luck_24h' || rightAxisSeries === 'pool_luck_7d';
+    if (rightAxisSeries !== 'network_difficulty' && !isLuck) return empty;
     const { minX, maxX, xScale, shareLogYScale } = chartData;
     return difficultyRetargets
       .filter((r) => r.tick_at >= minX && r.tick_at <= maxX)
       .map((r) => ({
         event: r,
         cx: xScale(r.tick_at),
-        cy: shareLogYScale(r.difficulty),
+        cy: isLuck && r.luckAfter != null
+          ? shareLogYScale(r.luckAfter)
+          : shareLogYScale(r.difficulty),
       }));
   }, [chartData, difficultyRetargets, rightAxisSeries]);
 
@@ -1670,6 +1689,12 @@ function RetargetTooltip({
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
+  const hasLuck = event.luckBefore != null && event.luckAfter != null;
+  const fmtLuck = (v: number) =>
+    new Intl.NumberFormat(locale, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(v);
 
   return (
     <div
@@ -1713,6 +1738,19 @@ function RetargetTooltip({
           <span className={`font-mono tabular-nums ${pctColor}`}>{pctText}</span>
         </div>
       </div>
+
+      {hasLuck && (
+        <div className="mt-2 pt-2 border-t border-slate-800 space-y-0.5 text-slate-300">
+          <div className="flex justify-between gap-3">
+            <span className="text-slate-500"><Trans>luck after</Trans></span>
+            <span className="font-mono tabular-nums">{fmtLuck(event.luckAfter!)}x</span>
+          </div>
+          <div className="flex justify-between gap-3">
+            <span className="text-slate-500"><Trans>luck before</Trans></span>
+            <span className="font-mono tabular-nums text-slate-400">{fmtLuck(event.luckBefore!)}x</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

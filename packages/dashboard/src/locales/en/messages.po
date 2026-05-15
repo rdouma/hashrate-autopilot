@@ -78,10 +78,6 @@ msgstr "{label} DOWN"
 msgid "{markersHiddenCount} {0} markers hidden (cap)"
 msgstr "{markersHiddenCount} {0} markers hidden (cap)"
 
-#: src/components/PriceChart.tsx
-#~ msgid "{markersHiddenCount} edit-price markers hidden (cap)"
-#~ msgstr "{markersHiddenCount} edit-price markers hidden (cap)"
-
 #: src/components/HashrateChart.tsx
 msgid "{markersHiddenCount} markers hidden (cap)"
 msgstr "{markersHiddenCount} markers hidden (cap)"
@@ -335,10 +331,6 @@ msgstr "Alert thresholds"
 #: src/pages/Config.tsx
 msgid "Alerts"
 msgstr "Alerts"
-
-#: src/components/PriceChart.tsx
-#~ msgid "All markers were hidden because the count exceeded the configured chart-marker cap even after dropping EDIT_PRICE. Adjust the cap on Config → Display & Logging."
-#~ msgstr "All markers were hidden because the count exceeded the configured chart-marker cap even after dropping EDIT_PRICE. Adjust the cap on Config → Display & Logging."
 
 #: src/pages/Config.tsx
 msgid "already added"
@@ -1284,10 +1276,6 @@ msgid "EDIT SPEED"
 msgstr "EDIT SPEED"
 
 #: src/components/PriceChart.tsx
-#~ msgid "Edit-price markers were hidden because the count exceeded the configured chart-marker cap. CREATE / EDIT_SPEED / CANCEL markers still render. Adjust the cap on Config → Display & Logging."
-#~ msgstr "Edit-price markers were hidden because the count exceeded the configured chart-marker cap. CREATE / EDIT_SPEED / CANCEL markers still render. Adjust the cap on Config → Display & Logging."
-
-#: src/components/PriceChart.tsx
 msgid "effective"
 msgstr "effective"
 
@@ -1818,6 +1806,14 @@ msgstr "Loading…"
 #: src/pages/Config.tsx
 msgid "Log retention"
 msgstr "Log retention"
+
+#: src/components/HashrateChart.tsx
+msgid "luck after"
+msgstr "luck after"
+
+#: src/components/HashrateChart.tsx
+msgid "luck before"
+msgstr "luck before"
 
 #: src/components/PriceChart.tsx
 msgid "manual"

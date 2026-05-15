@@ -2,6 +2,10 @@
 
 ## 2026-05-15
 
+### `[UI]` Show difficulty-retarget markers on the pool luck chart overlay (#174)
+
+When the hashrate chart's right axis is set to pool luck (24h or 7d), a Bitcoin difficulty retarget causes the luck value to jump discontinuously (e.g. +3% at a retarget) with no visual explanation. Retarget markers already existed on the network_difficulty view but were gated behind that specific right-axis selection. They now also appear on the pool luck views, positioned on the luck line at the post-retarget value. The tooltip shows the difficulty change and additionally the before/after luck values so the operator can see exactly how the retarget shifted the reading.
+
 ### `[Fix]` Chart-marker cap now covers pool blocks and reward events (#172)
 
 The "Max chart markers" setting only counted bid events, so pool-block icons, pool-luck step dots, and reward-event markers rendered uncapped - the All-range chart was slow with 100+ pool blocks despite a low cap. The cap now counts all marker types together (bid events + pool blocks + reward events) and drops in priority order when over budget: EDIT_PRICE bid events first, then non-own pool blocks (sky-blue context dots), then reward events, then everything. Both the Hashrate and Price charts now show a "N markers hidden (cap)" banner when the cap is active.
