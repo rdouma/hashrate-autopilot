@@ -13,9 +13,9 @@ PAUSED switch on the left; the Next Action panel on the right explaining what th
 do and when. The window-averaged effective rate (derived per-tick from the delta of Braiins's
 `amount_consumed_sat` counter divided by delivered hashrate × elapsed time) lives on the stats bar below
 as **avg cost / PH delivered**, where the post-hoc range-averaged framing makes more sense. Below the
-hero sit range-selectable hashrate and price charts overlayed with bid events and block markers. The
-price chart draws your bid (amber), the fillable ask the controller tracks (cyan), hashprice (violet),
-and the safety ceiling (pink); the per-tick effective rate is a separate emerald line, off by default
+hero sit range-selectable hashrate and price charts overlayed with bid events, block markers, and
+difficulty-retarget pickaxe icons. The price chart draws your bid (amber), the fillable ask the
+controller tracks (cyan), hashprice (violet), and the safety ceiling (pink); the per-tick effective rate is a separate emerald line, off by default
 behind a config toggle because it's dramatically more volatile than the tracking lines and hijacks the
 Y-axis when enabled. Then a stats strip (uptime, avg hashrate per source - Braiins / Datum / Ocean
 side-by-side, cost per PH delivered, effective rate vs hashprice), service panels for Braiins / Datum
@@ -151,7 +151,7 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
 - **Dashboard** - hashrate and price charts with time-range picker (3h / 6h / 12h / 24h / 1w / 1m / 1y /
   all), bid event markers on the price chart (each dot corresponds to a CREATE / EDIT / CANCEL; click to
   pin a detail panel that lists the target-price inputs at that tick - fillable, overpay, hashprice,
-  caps, effective cap, plus a JSON export button), block markers on the hashrate chart, per-series
+  caps, effective cap, plus a JSON export button), block markers and retarget pickaxes on both charts, per-series
   rolling-mean smoothing configurable per chart (hashrate smoothing per-source; price chart smooths only
   `our bid` and `effective` - fillable / hashprice / max bid stay raw), stats bar (uptime, three
   side-by-side avg-hashrate cards for Braiins / Datum / Ocean, cost metrics), service panels that include
@@ -165,16 +165,21 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
   (`observed / Poisson-expected`) over a 24h or 7d trailing window. Decays continuously between finds, jumps
   on each new pool block. The OCEAN panel shows the same number as a "X.XX× expected" annotation next to
   `pool blocks 24h / 7d` so chart and panel always agree. Tooltips compute Ocean's live network-hashrate
-  share and the implied expected block count for the current window.
+  share and the implied expected block count for the current window. Difficulty retargets cause a
+  discontinuous luck jump (higher difficulty = smaller pool share = fewer expected blocks = higher luck);
+  retarget markers appear on the luck line with before/after luck values in the tooltip so the operator
+  can see exactly how the retarget shifted the reading.
 - **Pool-block marker shapes** - the cubes on the Hashrate chart's pool-block row carry a precedence-ordered
   vocabulary so the rare events stand out. **Own block** (Ocean credited the coinbase to your payout
-  address - the lottery-win case) renders as a **gold crown** 👑. **BIP 110-signalling pool block**
+  address - the lottery-win case) renders as a **gold crown**. **BIP 110-signalling pool block**
   (header version bit 4 set; Reduced Data soft fork) renders as a **yellow cube**. **Default pool block**
   renders as a **blue cube**. Tooltip header label and colour follow the same precedence (own > BIP 110 >
   default). Detection happens daemon-side via your bitcoind RPC (`getblockheader`) or Electrs
   (`blockchain.block.header`) - no third-party API. A separate **BIP 110 scan card** on the Status page
   lets you scan the last N blocks (configurable up to 2016) and see every signaling block with timestamp,
-  version bits, and explorer link.
+  version bits, and explorer link. Both block markers and **difficulty-retarget pickaxe icons** (violet,
+  with dashed vertical lines) are mirrored onto the price chart, so the operator sees these events in
+  context on both charts.
 - **Telegram notifications** - three severity tiers across ten event classes. **IMPORTANT** (red, with a
   retry ladder and paired recovery messages): Datum stratum unreachable, hashrate below floor, zero
   hashrate, Braiins API unreachable, unknown bid detected, bid sustained-paused, wallet runway below
