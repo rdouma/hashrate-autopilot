@@ -357,6 +357,8 @@ export interface AppConfig {
   marketplace_empty_alert_after_minutes: number;
   // #170: when true, the payout-observer backfills ALL historical coinbase receipts at the payout address into reward_events (not just currently-unspent UTXOs).
   include_historical_payouts: boolean;
+  // #170 follow-up: operator-entered offset for pre-installation / off-chain earnings; added to lifetime-earnings chart and net P&L. Always >= 0.
+  historical_payouts_offset_sat: number;
 }
 
 export interface ConfigResponse {
@@ -976,6 +978,8 @@ export interface FinanceResponse {
   /** #97 - distinguishes "first scan still running" (computing) from "0 sat collected" (ready) from "observer disabled" (idle). */
   collected_status: 'computing' | 'ready' | 'idle';
   expected_sat: number | null;
+  /** #170 follow-up: operator-entered pre-installation / off-chain earnings. Always >= 0. Already folded into net_sat. */
+  historical_offset_sat: number;
   net_sat: number | null;
   ocean: {
     lifetime_sat: number | null;

@@ -79,6 +79,16 @@ export interface FinanceResponse {
    */
   readonly collected_status: 'computing' | 'ready' | 'idle';
   readonly expected_sat: number | null;
+  /**
+   * #170 follow-up: operator-entered offset for pre-installation /
+   * off-chain earnings (Lightning payouts, pre-autopilot Ocean
+   * history that's been swept, etc.). Always >= 0; mirrors the
+   * config knob `historical_payouts_offset_sat`. Added into
+   * `net_sat` server-side so the panel's net line is coherent
+   * without the dashboard having to do the arithmetic. Surfaced as
+   * a separate field so the dashboard can render a dedicated row.
+   */
+  readonly historical_offset_sat: number;
   readonly net_sat: number | null;
   readonly ocean: {
     readonly lifetime_sat: number | null;
@@ -259,16 +269,24 @@ export async function registerFinanceRoute(
 
     const expected_sat = oceanStats?.unpaid_sat ?? null;
 
-    // Net = (collected + expected) − spent. `collected_sat` null means
-    // on-chain tracking isn't configured (payout_source=none) or the
-    // observer hasn't fetched yet; we treat it as 0 for the arithmetic
-    // so the net line still makes sense - the "collected: -" row on
-    // the panel already tells the operator that piece is missing.
-    // Only surface net=null when the *income* side is unavailable
-    // (Ocean unreachable): without unpaid earnings we genuinely can't
-    // reason about whether we're in the black.
+    // #170 follow-up: pre-installation / off-chain earnings the
+    // operator entered manually. Folded into net so the user whose
+    // Ocean history pre-dates the autopilot doesn't see a permanent
+    // "massive loss" on the P&L line.
+    const historical_offset_sat = config?.historical_payouts_offset_sat ?? 0;
+
+    // Net = (collected + historical_offset + expected) − spent.
+    // `collected_sat` null means on-chain tracking isn't configured
+    // (payout_source=none) or the observer hasn't fetched yet; treat
+    // it as 0 for the arithmetic so the net line still makes sense -
+    // the "collected: -" row on the panel already tells the operator
+    // that piece is missing. Only surface net=null when the *income*
+    // side is unavailable (Ocean unreachable): without unpaid earnings
+    // we genuinely can't reason about whether we're in the black.
     const net_sat =
-      expected_sat !== null ? (collected_sat ?? 0) + expected_sat - spent_sat : null;
+      expected_sat !== null
+        ? (collected_sat ?? 0) + historical_offset_sat + expected_sat - spent_sat
+        : null;
 
     return {
       spent_sat,
@@ -278,6 +296,7 @@ export async function registerFinanceRoute(
       collected_sat,
       collected_status,
       expected_sat,
+      historical_offset_sat,
       net_sat,
       ocean: oceanStats
         ? {

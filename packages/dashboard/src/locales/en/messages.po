@@ -902,8 +902,8 @@ msgid "collected (on-chain)"
 msgstr "collected (on-chain)"
 
 #: src/pages/Status.tsx
-msgid "Collected on-chain + Ocean's unpaid earnings − spent on bids. Missing collected is treated as 0 (the on-chain row still shows - so the operator sees the gap). Negative = still recouping the initial deposit."
-msgstr "Collected on-chain + Ocean's unpaid earnings − spent on bids. Missing collected is treated as 0 (the on-chain row still shows - so the operator sees the gap). Negative = still recouping the initial deposit."
+msgid "Collected on-chain + pre-installation (manual) + Ocean's unpaid earnings − spent on bids. Missing collected is treated as 0 (the on-chain row still shows - so the operator sees the gap). Negative = still recouping the initial deposit."
+msgstr "Collected on-chain + pre-installation (manual) + Ocean's unpaid earnings − spent on bids. Missing collected is treated as 0 (the on-chain row still shows - so the operator sees the gap). Negative = still recouping the initial deposit."
 
 #: src/pages/Config.tsx
 msgid "Compact numeric time series - one row per tick (~1,440/day) with hashrate, prices, share-log %, spend. This is what backs the Hashrate / Price / Overpay charts, so set it to the longest range you want to be able to chart. Cheap on disk: a year is ~525k small rows. Default 0 = keep forever."
@@ -2213,6 +2213,10 @@ msgid "On-chain payouts"
 msgstr "On-chain payouts"
 
 #: src/pages/Config.tsx
+msgid "One-shot offset for earnings the on-chain payout observer can't see - Lightning payouts, Ocean payouts that landed and were swept before you installed the autopilot, etc. Shifts the lifetime-earnings chart's starting value up by this amount and folds into the net P&L. Leave 0 if everything is already covered by the on-chain backfill above."
+msgstr "One-shot offset for earnings the on-chain payout observer can't see - Lightning payouts, Ocean payouts that landed and were swept before you installed the autopilot, etc. Shifts the lifetime-earnings chart's starting value up by this amount and folds into the net P&L. Leave 0 if everything is already covered by the on-chain backfill above."
+
+#: src/pages/Config.tsx
 msgid "Only engage cheap-mode when every tick in the last N minutes had our bid below the threshold, and there are at least N ticks of complete data (one per minute at the 60 s cadence). Literal sustained-below: one outlier doesn't trigger, one missing tick keeps it off. 0 = per-tick spot check (legacy)."
 msgstr "Only engage cheap-mode when every tick in the last N minutes had our bid below the threshold, and there are at least N ticks of complete data (one per minute at the 60 s cadence). Literal sustained-below: one outlier doesn't trigger, one missing tick keeps it off. 0 = per-tick spot check (legacy)."
 
@@ -2238,6 +2242,10 @@ msgstr "open in explorer"
 #: src/pages/Config.tsx
 msgid "Open Telegram and chat with <0>@BotFather</0>, send /newbot, follow the prompts; @BotFather replies with the token. Paste it here."
 msgstr "Open Telegram and chat with <0>@BotFather</0>, send /newbot, follow the prompts; @BotFather replies with the token. Paste it here."
+
+#: src/pages/Status.tsx
+msgid "Operator-entered offset for earnings the on-chain payout observer can't see - Lightning payouts, pre-autopilot Ocean history that's already been swept, etc. Set under Config → Pool & Payout → On-chain payouts."
+msgstr "Operator-entered offset for earnings the on-chain payout observer can't see - Lightning payouts, pre-autopilot Ocean history that's already been swept, etc. Set under Config → Pool & Payout → On-chain payouts."
 
 #: src/pages/Config.tsx
 msgid "Optional dynamic ceiling. On each tick the effective cap = min(Maximum, hashprice + this). Stops the autopilot from wildly overpaying when hashprice drops sharply and the fixed Maximum alone would still allow it. Set to 0 to disable."
@@ -2494,6 +2502,15 @@ msgstr "Port"
 #: src/components/SoloMinersCard.tsx
 msgid "Power"
 msgstr "Power"
+
+#: src/pages/Status.tsx
+msgid "pre-installation (manual)"
+msgstr "pre-installation (manual)"
+
+#: src/pages/Config.tsx
+#: src/pages/Config.tsx
+msgid "Pre-installation earnings (sat)"
+msgstr "Pre-installation earnings (sat)"
 
 #: src/components/HashrateChart.tsx
 msgid "previous"

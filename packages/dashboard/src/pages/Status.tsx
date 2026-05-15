@@ -458,6 +458,9 @@ export function Status() {
               : null
           }
           priceSmoothingMinutes={configQuery.data?.config?.braiins_price_smoothing_minutes ?? 1}
+          historicalPayoutsOffsetSat={
+            configQuery.data?.config?.historical_payouts_offset_sat ?? 0
+          }
           rightAxisSeries={priceRightAxis}
           soloSeries={soloSeries}
           rewardEvents={rewardEventsQuery.data?.events ?? EMPTY_REWARD_EVENTS}
@@ -2528,6 +2531,17 @@ function FinancePanel({
                 : t`Not configured. Go to Config → On-chain payouts and select Electrs or Bitcoin Core RPC to track your on-chain balance. The net line treats missing collected as 0 so the arithmetic still reads - a blank row here is the hint that a piece of the income side isn't wired up.`
           }
         />
+        {/* #170 follow-up: operator-entered pre-installation /
+            off-chain earnings. Hidden when the field is 0 (default)
+            so the panel stays uncluttered for the common case. */}
+        {data.historical_offset_sat > 0 && (
+          <FinanceRow
+            sign="plus"
+            label={t`pre-installation (manual)`}
+            value={data.historical_offset_sat}
+            tooltip={t`Operator-entered offset for earnings the on-chain payout observer can't see - Lightning payouts, pre-autopilot Ocean history that's already been swept, etc. Set under Config → Pool & Payout → On-chain payouts.`}
+          />
+        )}
 
         <div className="mt-3 pt-3 border-t border-slate-800">
           <FinanceRow
@@ -2539,7 +2553,7 @@ function FinancePanel({
             // digging out of the initial deposit. Keeps the rest of
             // the panel calm so the eye lands on the conclusion.
             valueClass={netColor}
-            tooltip={t`Collected on-chain + Ocean's unpaid earnings − spent on bids. Missing collected is treated as 0 (the on-chain row still shows - so the operator sees the gap). Negative = still recouping the initial deposit.`}
+            tooltip={t`Collected on-chain + pre-installation (manual) + Ocean's unpaid earnings − spent on bids. Missing collected is treated as 0 (the on-chain row still shows - so the operator sees the gap). Negative = still recouping the initial deposit.`}
           />
         </div>
       </div>

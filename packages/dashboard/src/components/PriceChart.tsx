@@ -212,6 +212,7 @@ export const PriceChart = memo(function PriceChart({
   maxOverpayVsHashpriceSatPerPhDay = null,
   overpaySatPerPhDay = null,
   priceSmoothingMinutes = 1,
+  historicalPayoutsOffsetSat = 0,
   rightAxisSeries = 'none',
   rewardEvents = [],
   ourBlocks = [],
@@ -259,6 +260,16 @@ export const PriceChart = memo(function PriceChart({
    * around the real trend by ±a few percent.
    */
   priceSmoothingMinutes?: number;
+  /**
+   * #170 follow-up: operator-entered offset (sat) for pre-installation
+   * / off-chain earnings that the on-chain payout-observer can't see.
+   * Added to every non-null point on the `paid_total_sat` and
+   * `lifetime_earnings_sat` right-axis series so the lifetime line
+   * starts at this value instead of zero - matches the Status finance
+   * panel's net P&L, which folds the same offset into `net_sat`.
+   * Default 0 (no offset).
+   */
+  historicalPayoutsOffsetSat?: number;
   /**
    * #93: secondary Y-axis series. 'none' hides the right axis.
    * `'effective_rate'` plots the window-aggregated effective rate
@@ -708,7 +719,11 @@ export const PriceChart = memo(function PriceChart({
           };
         case 'paid_total_sat':
           return {
-            values: points.map((p) => p.paid_total_sat),
+            values: points.map((p) =>
+              p.paid_total_sat === null
+                ? null
+                : p.paid_total_sat + historicalPayoutsOffsetSat,
+            ),
             stroke: '#c084fc',
             axisLabel: `paid total (${denomination.mode === 'usd' ? '$' : denomination.mode === 'btc' ? '₿' : 'sat'})`,
             formatTick: (v) => formatSatCompact(v, denomination, intlLocale),
@@ -735,7 +750,9 @@ export const PriceChart = memo(function PriceChart({
             values: points.map((p) =>
               p.paid_total_sat === null && p.ocean_unpaid_sat === null
                 ? null
-                : (p.paid_total_sat ?? 0) + (p.ocean_unpaid_sat ?? 0),
+                : (p.paid_total_sat ?? 0) +
+                  (p.ocean_unpaid_sat ?? 0) +
+                  historicalPayoutsOffsetSat,
             ),
             stroke: '#c084fc',
             axisLabel: `lifetime (${denomination.mode === 'usd' ? '$' : denomination.mode === 'btc' ? '₿' : 'sat'})`,
@@ -1069,7 +1086,7 @@ export const PriceChart = memo(function PriceChart({
     }
 
     return { pricePoints, minX, maxX, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, hashpricePath, fillablePath, fillableHasData: fillablePoints.length > 0, effectivePath, effectiveHasData: effectivePoints.length > 0, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents, rightAxis, hasRightAxis, rightAxisPath, rightYTicks, rightYScale, padRight, marketplaceEmptyIntervals };
-  }, [points, events, showEventKinds, priceSmoothingMinutes, maxOverpayVsHashpriceSatPerPhDay, chartHeight, rightAxisSeries, soloSeries, denomination, intlLocale]);
+  }, [points, events, showEventKinds, priceSmoothingMinutes, historicalPayoutsOffsetSat, maxOverpayVsHashpriceSatPerPhDay, chartHeight, rightAxisSeries, soloSeries, denomination, intlLocale]);
 
   const eventPriceAt = useCallback((e: BidEventView): number | null => {
     const pricePoints = chartData?.pricePoints ?? [];

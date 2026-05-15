@@ -238,6 +238,10 @@ const APP_CONFIG_ENV: {
     varName: 'BHA_INCLUDE_HISTORICAL_PAYOUTS',
     coerce: asBoolean,
   },
+  historical_payouts_offset_sat: {
+    varName: 'BHA_HISTORICAL_PAYOUTS_OFFSET_SAT',
+    coerce: asInt,
+  },
 };
 
 // ---------------------------------------------------------------------------

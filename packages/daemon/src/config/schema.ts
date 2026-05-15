@@ -435,6 +435,14 @@ export const AppConfigSchema = z.object({
   // Default ON because the typical user reuses their payout address;
   // operators with fresh-address discipline can flip it off.
   include_historical_payouts: z.boolean().default(true),
+
+  // #170 follow-up: operator-entered offset for pre-installation /
+  // off-chain earnings the payout-observer can't see (Lightning
+  // payouts, pre-autopilot Ocean history that's already been swept,
+  // etc.). Added to the lifetime-earnings chart's starting value AND
+  // to the Status finance panel's net P&L so the picture stays
+  // coherent without rotating the payout address. Always positive.
+  historical_payouts_offset_sat: z.number().int().nonnegative().default(0),
 });
 
 export type AppConfig = z.infer<typeof AppConfigSchema>;
@@ -552,4 +560,5 @@ export const APP_CONFIG_DEFAULTS: Omit<
   solo_share_rejection_window_minutes: 60,
   marketplace_empty_alert_after_minutes: 5,
   include_historical_payouts: true,
+  historical_payouts_offset_sat: 0,
 };

@@ -785,6 +785,7 @@ function ConfigTabsAndContent({
         t`Disabled (no payout tracking)`,
         t`Include historical Ocean payouts in lifetime earnings`,
         t`Backfill now`,
+        t`Pre-installation earnings (sat)`,
       ],
     },
     ddns: {
@@ -3525,6 +3526,39 @@ function HistoricalPayoutsControls({
           {result.message}
         </div>
       )}
+
+      {/* #170 follow-up: manual offset for off-chain / pre-autopilot
+          income the on-chain observer can't see. Acts as the starting
+          value of the lifetime-earnings line AND folds into the
+          Status finance panel's net P&L. */}
+      <div className="pt-3 border-t border-slate-800/60">
+        <label className="block text-sm text-slate-200">
+          <Trans>Pre-installation earnings (sat)</Trans>
+        </label>
+        <p className="text-xs text-slate-500 mt-0.5 mb-2">
+          <Trans>
+            One-shot offset for earnings the on-chain payout observer can't see -
+            Lightning payouts, Ocean payouts that landed and were swept before you
+            installed the autopilot, etc. Shifts the lifetime-earnings chart's
+            starting value up by this amount and folds into the net P&L. Leave 0 if
+            everything is already covered by the on-chain backfill above.
+          </Trans>
+        </p>
+        <input
+          type="number"
+          min={0}
+          step={1}
+          value={draft.historical_payouts_offset_sat}
+          onChange={(e) => {
+            const raw = e.target.value;
+            const next = raw === '' ? 0 : Math.max(0, Math.floor(Number(raw)));
+            if (Number.isFinite(next)) {
+              onChange('historical_payouts_offset_sat', next as never);
+            }
+          }}
+          className="w-48 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-100 focus:border-amber-500 focus:outline-none"
+        />
+      </div>
     </div>
   );
 }

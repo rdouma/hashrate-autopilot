@@ -2,6 +2,14 @@
 
 ## 2026-05-14
 
+### `[Feature]` Manual pre-installation earnings offset (#170 follow-up)
+
+The on-chain coinbase backfill that landed earlier today only covers Ocean payouts that arrived on-chain - it can't see Lightning payouts or pre-autopilot Ocean history that's been swept off-address before the daemon ever scanned. The Twitter user who motivated #170 specifically mentioned having had some payouts via Lightning, so the P&L would still be incomplete even after a successful backfill.
+
+Fix: new numeric field `historical_payouts_offset_sat` (sat) under Config -> Pool & Payout, below the "Backfill now" button. Always >= 0. Acts as a one-shot starting value: shifts the lifetime-earnings chart's `paid_total_sat` and `lifetime_earnings_sat` right-axis series up by this amount (so the line begins at the offset rather than at 0), AND folds into the Status finance panel's `net_sat` calculation. A dedicated "pre-installation (manual)" row appears under "collected (on-chain)" on the P&L panel when the offset is > 0, so the operator sees exactly which piece is manual.
+
+New migration `0090_historical_payouts_offset.sql`. EN / NL / ES translations updated. Server returns the offset as a separate `historical_offset_sat` field on `/api/finance` so the dashboard can render it as its own row without re-reading the AppConfig there.
+
 ### `[Feature]` Lifetime earnings: backfill historical Ocean coinbase receipts at the payout address (#170)
 
 A Twitter user flagged that lifetime earnings showed a "massive loss" because they'd been mining to their Ocean payout address before installing the autopilot. Pre-1.7.5 the payout-observer only counted **currently-unspent** outputs at the address (electrs `listunspent` / bitcoind `scantxoutset`), so any Ocean payout that had since been swept to another wallet was invisible to the chart - asymmetric with spend tracking, which already covers the full Braiins-account lifetime. The result: lifetime P&L looked catastrophically negative for anyone who reused a payout address or sweeps payouts on receipt.

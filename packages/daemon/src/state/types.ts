@@ -117,6 +117,8 @@ export interface ConfigTable {
   marketplace_empty_alert_after_minutes: number;
   /** #170: when 1 (default), payout-observer's electrs path backfills ALL historical coinbase receipts at btc_payout_address into reward_events; when 0, only currently-unspent outputs are counted. */
   include_historical_payouts: 0 | 1;
+  /** #170 follow-up: operator-entered offset for pre-installation / off-chain earnings; added to lifetime-earnings chart and net P&L. Always >= 0. */
+  historical_payouts_offset_sat: number;
   updated_at: number;
 }
 
