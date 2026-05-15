@@ -1980,15 +1980,17 @@ export const PriceChart = memo(function PriceChart({
                   stroke="#c084fc" strokeWidth="1" strokeDasharray="2 3" opacity="0.4"
                   pointerEvents="none"
                 />
-                <rect x={x - 8} y={PADDING.top - 12} width={16} height={16} fill="transparent" />
+                <rect x={x - 9} y={PADDING.top - 13} width={18} height={18} fill="transparent" />
                 <svg
-                  x={x - 6} y={PADDING.top - 10}
-                  width="12" height="12" viewBox="0 0 24 24"
-                  fill="none" stroke="#c084fc" strokeWidth="2.5"
+                  x={x - 7} y={PADDING.top - 11}
+                  width="14" height="14" viewBox="0 0 24 24"
+                  fill="none" stroke="#c084fc" strokeWidth="2"
                   strokeLinecap="round" strokeLinejoin="round"
                   opacity="0.85"
                 >
                   <path d="m14 13-8.381 8.38a1 1 0 0 1-3.001-3L11 9.999" />
+                  <path d="M15.973 4.027A13 13 0 0 0 5.902 2.373c-1.398.342-1.092 2.158.277 2.601a19.9 19.9 0 0 1 5.822 3.024" />
+                  <path d="M16.001 11.999a19.9 19.9 0 0 1 3.024 5.824c.444 1.369 2.26 1.676 2.603.278A13 13 0 0 0 20 8.069" />
                   <path d="M18.352 3.352a1.205 1.205 0 0 0-1.704 0l-5.296 5.296a1.205 1.205 0 0 0 0 1.704l2.296 2.296a1.205 1.205 0 0 0 1.704 0l5.296-5.296a1.205 1.205 0 0 0 0-1.704z" />
                 </svg>
               </g>
