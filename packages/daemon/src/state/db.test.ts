@@ -116,6 +116,7 @@ describe('openDatabase - migrations', () => {
       '0088_marketplace_empty_alert.sql',
       '0089_include_historical_payouts.sql',
       '0090_historical_payouts_offset.sql',
+      '0091_tick_metrics_braiins_reachable.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });
