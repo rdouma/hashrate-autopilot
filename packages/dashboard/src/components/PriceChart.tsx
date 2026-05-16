@@ -1550,6 +1550,11 @@ export const PriceChart = memo(function PriceChart({
         style={{ cursor: isDragging ? 'grabbing' : viewportHandlers ? 'grab' : undefined, touchAction: 'none' }}
         {...viewportHandlers}
       >
+        <defs>
+          <clipPath id="px-data-clip">
+            <rect x={PADDING.left} y={0} width={WIDTH - PADDING.left - padRight} height={chartHeight} />
+          </clipPath>
+        </defs>
         {yTicks.map((v, i) => (
           <g key={`y-${i}`}>
             <line
@@ -1592,6 +1597,7 @@ export const PriceChart = memo(function PriceChart({
             </g>
           ))}
 
+        <g clipPath="url(#px-data-clip)">
         {/* Fillable ask - the tracking anchor for the controller.
             bid = fillable + overpay (clamped to cap). Rendered below
             the amber bid line so the vertical gap between them is the
@@ -1807,6 +1813,7 @@ export const PriceChart = memo(function PriceChart({
           }
           return null;
         })}
+        </g>
 
         <line
           x1={PADDING.left}
@@ -1857,6 +1864,7 @@ export const PriceChart = memo(function PriceChart({
           </text>
         )}
 
+        <g clipPath="url(#px-data-clip)">
         {hasRightAxis && rightAxis && (
           <path
             d={rightAxisPath}
@@ -2000,6 +2008,7 @@ export const PriceChart = memo(function PriceChart({
               </g>
             );
           })}
+        </g>
 
         {hasRightAxis && rightAxis && (
           <text

@@ -1125,6 +1125,12 @@ export const HashrateChart = memo(function HashrateChart({
             </g>
           ))}
 
+        <defs>
+          <clipPath id="hr-data-clip">
+            <rect x={PADDING.left} y={0} width={WIDTH - PADDING.left - padRight} height={chartHeight} />
+          </clipPath>
+        </defs>
+        <g clipPath="url(#hr-data-clip)">
         {/* #167: marketplace-empty bands. Drawn behind data lines so
             they sit behind the traces without obscuring them. Each
             interval represents a contiguous run of ticks where the
@@ -1432,6 +1438,7 @@ export const HashrateChart = memo(function HashrateChart({
             <stop offset="100%" stopColor={COLOR_DELIVERED} stopOpacity="0" />
           </linearGradient>
         </defs>
+        </g>
 
         <line
           x1={PADDING.left}
