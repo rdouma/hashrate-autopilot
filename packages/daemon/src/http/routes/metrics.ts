@@ -111,13 +111,16 @@ export async function registerMetricsRoute(
   app: FastifyInstance,
   deps: HttpServerDeps,
 ): Promise<void> {
-  app.get<{ Querystring: { range?: string; since?: string; until?: string; limit?: string } }>(
+  app.get<{ Querystring: { range?: string; since?: string; until?: string; span?: string; limit?: string } }>(
     '/api/metrics',
     async (req): Promise<{ points: MetricPoint[]; range: ChartRange | null }> => {
       const nowMs = Date.now();
       const limit = clamp(Number.parseInt(req.query.limit ?? '', 10) || 5000, 10, 10_000);
 
       // #169: arbitrary viewport path: since=<ms>&until=<ms>
+      // Optional span=<ms> overrides the bucket-selection span so the
+      // caller can fetch a wider range (for pan buffering) without
+      // changing the aggregation granularity.
       const parsedSince = Number.parseInt(req.query.since ?? '', 10);
       const parsedUntil = Number.parseInt(req.query.until ?? '', 10);
       if (
@@ -125,8 +128,10 @@ export async function registerMetricsRoute(
         Number.isFinite(parsedSince) && parsedSince > 0 &&
         Number.isFinite(parsedUntil) && parsedUntil > parsedSince
       ) {
-        const spanMs = parsedUntil - parsedSince;
-        const bucketMs = pickBucketForSpan(spanMs);
+        const fetchSpanMs = parsedUntil - parsedSince;
+        const parsedSpan = Number.parseInt(req.query.span ?? '', 10);
+        const bucketSpanMs = Number.isFinite(parsedSpan) && parsedSpan > 0 ? parsedSpan : fetchSpanMs;
+        const bucketMs = pickBucketForSpan(bucketSpanMs);
         const rows = await deps.tickMetricsRepo.listAggregated(
           parsedSince, bucketMs, limit, parsedUntil,
         );

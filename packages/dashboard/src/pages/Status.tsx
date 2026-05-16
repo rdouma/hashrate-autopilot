@@ -133,14 +133,14 @@ export function Status() {
   const setChartRange = chartViewport.setPreset;
   const vp = chartViewport.settledViewport;
 
+  const visibleSpan = vp.until_ms - vp.since_ms;
   const fetchBounds = useMemo(() => {
-    const span = vp.until_ms - vp.since_ms;
-    const buffer = span * 0.5;
+    const buffer = visibleSpan * 0.5;
     return {
       since_ms: Math.max(0, vp.since_ms - buffer),
       until_ms: Math.min(Date.now(), vp.until_ms + buffer),
     };
-  }, [vp.since_ms, vp.until_ms]);
+  }, [vp.since_ms, vp.until_ms, visibleSpan]);
 
   // #93: secondary Y-axis selection per chart. Default for the
   // hashrate chart picks up the legacy show_share_log_on_hashrate_chart
@@ -195,7 +195,7 @@ export function Status() {
 
   const metricsQuery = useQuery({
     queryKey: ['metrics', fetchBounds.since_ms, fetchBounds.until_ms],
-    queryFn: () => api.metricsViewport(fetchBounds.since_ms, fetchBounds.until_ms),
+    queryFn: () => api.metricsViewport(fetchBounds.since_ms, fetchBounds.until_ms, visibleSpan),
     refetchInterval: vp.liveEdge ? 60_000 : false,
   });
 

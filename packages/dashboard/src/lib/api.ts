@@ -618,9 +618,9 @@ export const api = {
     request<{ points: MetricPoint[]; range: ChartRange | null }>(
       `/api/metrics?range=${encodeURIComponent(range)}`,
     ),
-  metricsViewport: (since: number, until: number) =>
+  metricsViewport: (since: number, until: number, visibleSpan?: number) =>
     request<{ points: MetricPoint[]; range: ChartRange | null }>(
-      `/api/metrics?since=${since}&until=${until}`,
+      `/api/metrics?since=${since}&until=${until}${visibleSpan != null ? `&span=${visibleSpan}` : ''}`,
     ),
   bidEvents: (range: ChartRange) =>
     request<{ events: BidEventView[] }>(
