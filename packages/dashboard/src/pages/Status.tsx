@@ -1,6 +1,6 @@
 import { Trans, t } from '@lingui/macro';
 import { useLingui } from '@lingui/react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -196,18 +196,21 @@ export function Status() {
   const metricsQuery = useQuery({
     queryKey: ['metrics', fetchBounds.since_ms, fetchBounds.until_ms],
     queryFn: () => api.metricsViewport(fetchBounds.since_ms, fetchBounds.until_ms, visibleSpan),
+    placeholderData: keepPreviousData,
     refetchInterval: vp.liveEdge ? 60_000 : false,
   });
 
   const bidEventsQuery = useQuery({
     queryKey: ['bid-events', fetchBounds.since_ms, fetchBounds.until_ms],
     queryFn: () => api.bidEventsViewport(fetchBounds.since_ms, fetchBounds.until_ms),
+    placeholderData: keepPreviousData,
     refetchInterval: vp.liveEdge ? 60_000 : false,
   });
 
   const statsQuery = useQuery({
     queryKey: ['stats', fetchBounds.since_ms, fetchBounds.until_ms],
     queryFn: () => api.statsViewport(fetchBounds.since_ms, fetchBounds.until_ms),
+    placeholderData: keepPreviousData,
     refetchInterval: vp.liveEdge ? 60_000 : false,
   });
 
@@ -255,6 +258,7 @@ export function Status() {
     queryFn: () => vp.liveEdge && vp.activePreset
       ? api.financeRange(vp.activePreset)
       : api.financeRangeViewport(fetchBounds.since_ms, fetchBounds.until_ms),
+    placeholderData: keepPreviousData,
     refetchInterval: vp.liveEdge ? 60_000 : false,
   });
 
