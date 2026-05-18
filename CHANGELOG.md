@@ -6,6 +6,10 @@
 
 TradingView-style chart interaction: drag-to-pan and scroll-wheel zoom on both hashrate and price charts, with soft-snap to preset durations. No new migrations.
 
+### `[Feature]` Daemon-offline gap bands and retarget backfill (#178)
+
+Both charts now show hatched bands over periods where the daemon was offline, so data gaps are visually explained instead of silently interpolated. Gap detection uses an adaptive median-based threshold that works across all aggregation levels. Additionally, the daemon now backfills a synthetic tick_metrics row at the estimated difficulty-retarget timestamp after an outage, so retarget markers land at the correct time rather than being attributed to the first tick after restart. Retarget height is deterministic (height % 2016 === 0) and the timestamp is estimated from the nearest pool block.
+
 ### `[Feature]` Drag-to-pan and scroll-wheel zoom on charts (#169)
 
 Both the hashrate and price charts now support drag-to-pan (both charts scroll in sync) and scroll-wheel zoom anchored at the cursor position. Data is pre-fetched 1x visible range on each side so a full chart-width drag stays filled. Preset buttons (3h/6h/12h/24h/1w/1m/1y/All) stay highlighted while panning since they track window size, not live-edge state. A "live" button appears when panned away from the current edge. Zoom soft-snaps to preset durations so the preset button lights up as you scroll through each one. Previous data stays visible as a placeholder while a new range loads, preventing flash-to-empty on release. New viewport API endpoints support arbitrary time windows with a separate `span` parameter for aggregation granularity.

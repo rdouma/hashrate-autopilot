@@ -60,6 +60,7 @@ import { TelegramReceiver } from './services/telegram-receiver.js';
 import { runOceanUnpaidCleanup } from './services/ocean-unpaid-cleanup.js';
 import { runPoolBlocksBackfill } from './services/pool-blocks-backfill.js';
 import { runPoolLuckRecompute } from './services/pool-luck-recompute.js';
+import { runRetargetBackfill } from './services/retarget-backfill.js';
 import type { TickResult } from './controller/tick.js';
 import { cheapestAskForDepth } from './controller/orderbook.js';
 import type { State } from './controller/types.js';
@@ -523,13 +524,14 @@ async function bootOperational(
     log: (m) => log(m),
   })
     .then(() =>
-      // Historical recompute of tick_metrics counts/luck/paid_total
-      // against the now-populated pool_blocks + reward_events. One-
-      // time correction for the systematic under-count introduced
-      // by the old 15-block-slice logic + nullable inputs on early
-      // ticks; idempotent on re-boot. Awaiting the backfill chain
-      // matters - recompute reads pool_blocks.
       runPoolLuckRecompute({
+        db: handle.db,
+        poolBlocksRepo,
+        log: (m) => log(m),
+      }),
+    )
+    .then(() =>
+      runRetargetBackfill({
         db: handle.db,
         poolBlocksRepo,
         log: (m) => log(m),
