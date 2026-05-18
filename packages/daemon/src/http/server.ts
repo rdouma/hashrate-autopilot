@@ -69,6 +69,7 @@ import type { DdnsUpdaterService } from '../services/ddns-updater.js';
 import type { AxeOSPoller } from '../services/axeos-poller.js';
 import type { SoloMinersRepo } from '../state/repos/solo_miners.js';
 import { registerSoloMinersRoute } from './routes/solo-miners.js';
+import { registerDebugDumpRoute } from './routes/debug-dump.js';
 
 export interface HttpServerDeps {
   readonly controller: Controller;
@@ -228,6 +229,10 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<HttpServer
   await registerSoloMinersRoute(app, {
     soloMinersRepo: deps.soloMinersRepo,
     axeOSPoller: deps.axeOSPoller,
+  });
+  await registerDebugDumpRoute(app, {
+    db: deps.db,
+    configRepo: deps.configRepo,
   });
 
   // Serve built dashboard if present.
