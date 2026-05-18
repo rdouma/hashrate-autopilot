@@ -360,6 +360,7 @@ export interface AppConfig {
   include_historical_payouts: boolean;
   // #170 follow-up: operator-entered offset for pre-installation / off-chain earnings; added to lifetime-earnings chart and net P&L. Always >= 0.
   historical_payouts_offset_sat: number;
+  debug_api_enabled: boolean;
 }
 
 export interface ConfigResponse {

@@ -456,6 +456,19 @@ function useSections(): Section[] {
         ],
       },
       {
+        id: 'debug-api',
+        title: t`Debug API`,
+        description: t`Opt-in diagnostics endpoint. When enabled, GET /api/debug/dump returns a bundled JSON snapshot of tick_metrics, pool_blocks, alerts, bid_events, reward_events, config (safe fields only), and daemon info. Useful for remote triage - one curl gives you everything. When disabled (default), the endpoint returns 404.`,
+        fields: [
+          {
+            key: 'debug_api_enabled',
+            label: t`Enable debug API endpoint`,
+            kind: 'boolean' as const,
+            help: t`Flip this on, curl the endpoint, flip it back. Supports ?hours=N (default 24, max 168) and ?tables=tick_metrics,pool_blocks,alert_events,bid_events,reward_events,app_config,daemon_info to filter the response.`,
+          },
+        ],
+      },
+      {
         id: 'block-found-sound',
         title: t`Block-found notification`,
         description: t`Play a sound when a new pool block is detected paying our payout address. Off by default. Pick one of the bundled cues, upload your own, or leave it disabled. The cue fires once per new reward_events row; the dashboard tab needs to be open.`,
@@ -737,7 +750,7 @@ const TAB_SECTIONS: Record<TabId, readonly string[]> = {
   strategy: ['hashrate-targets', 'cheap-mode', 'pricing', 'budget', 'daemon-startup'],
   pool: ['pool-destination', 'ddns', 'payout-source', 'profit-and-loss', 'btc-price-oracle'],
   notifications: ['notifications', 'block-found-sound'],
-  display: ['display-settings', 'solo-miners', 'block-explorer', 'chart-smoothing', 'chart-markers', 'log-retention'],
+  display: ['display-settings', 'solo-miners', 'block-explorer', 'chart-smoothing', 'chart-markers', 'log-retention', 'debug-api'],
 };
 
 function isTabId(s: string | null): s is TabId {

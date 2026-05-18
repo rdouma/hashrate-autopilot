@@ -321,6 +321,21 @@ the price-chart `our bid` / `effective` smoothing), **Chart markers** (cap on al
 (`tick_metrics`, `alerts`, eventful + uneventful `decisions`) with a live storage-estimate hint so you
 can see how big the DB will grow before you commit.
 
+### Debug API
+
+An opt-in diagnostics endpoint for remote triage. Disabled by default; toggle it under Config -> Display & Logging -> Debug API (`debug_api_enabled`). When enabled, `GET /api/debug/dump` returns a single JSON object bundling recent state from the daemon's SQLite database:
+
+```bash
+curl -u operator:<password> http://<host>:3010/api/debug/dump
+```
+
+The response includes `tick_metrics`, `pool_blocks`, `alert_events`, `bid_events`, `reward_events` (all defaulting to the last 24 hours of rows), `app_config` (safe fields only - tokens and passwords are excluded), and `daemon_info` (build number, git SHA, uptime, boot mode). Two query parameters narrow the payload:
+
+- `?hours=N` - look-back window in hours (default 24, clamped 1-168).
+- `?tables=tick_metrics,daemon_info` - comma-separated whitelist of tables to include. Valid names: `tick_metrics`, `pool_blocks`, `alert_events`, `bid_events`, `reward_events`, `app_config`, `daemon_info`.
+
+When the toggle is off (default), the endpoint returns 404 so there is no information leak even if the port is exposed. The endpoint is behind the same Basic Auth as the rest of the API, so unauthenticated requests get a 401 regardless of the toggle. Overridable via env: `BHA_DEBUG_API_ENABLED=true`.
+
 For appliance / Docker setups every configurable field is also overridable via `BHA_*` environment
 variables - priority is `env > db > defaults`, read once at boot and re-validated through the same
 schema. See [docs/configuration.md](docs/configuration.md) for the full list.

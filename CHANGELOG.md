@@ -8,7 +8,7 @@ TradingView-style chart interaction: drag-to-pan and scroll-wheel zoom on both h
 
 ### `[Feature]` Single-curl diagnostics endpoint (#179)
 
-New `GET /api/debug/dump` endpoint bundles tick_metrics, pool_blocks, alerts, bid_events, reward_events, whitelisted config, and daemon info into one JSON response for quick triage. Gated behind a `debug_api_enabled` config toggle (off by default) so the endpoint returns 404 and doesn't expand the attack surface for operators who never need it. Supports `?hours=N` (default 24, max 168) and `?tables=tick_metrics,bid_events` filters. Config uses a whitelist approach - only explicitly safe fields are included; everything else (tokens, passwords, credentials) is omitted entirely. New migration 0092.
+New `GET /api/debug/dump` endpoint bundles tick_metrics, pool_blocks, alerts, bid_events, reward_events, whitelisted config, and daemon info into one JSON response for quick triage. Gated behind a `debug_api_enabled` config toggle (off by default, Config -> Display & Logging -> Debug API) so the endpoint returns 404 and doesn't expand the attack surface for operators who never need it. Supports `?hours=N` (default 24, max 168) and `?tables=tick_metrics,bid_events` filters. Config uses a whitelist approach - only explicitly safe fields are included; everything else (tokens, passwords, credentials) is omitted entirely. New migration 0092.
 
 ### `[Feature]` Daemon-offline gap bands and retarget backfill (#178)
 

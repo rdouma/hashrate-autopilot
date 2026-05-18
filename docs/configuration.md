@@ -116,6 +116,7 @@ issue #60.
 | `BHA_DATUM_HASHRATE_SMOOTHING_MINUTES` | `datum_hashrate_smoothing_minutes` | int ≥ 1 |
 | `BHA_BRAIINS_PRICE_SMOOTHING_MINUTES` | `braiins_price_smoothing_minutes` | int ≥ 1 |
 | `BHA_SHOW_EFFECTIVE_RATE_ON_PRICE_CHART` | `show_effective_rate_on_price_chart` | `true`/`false`/`yes`/`no`/`1`/`0`/`on`/`off` |
+| `BHA_DEBUG_API_ENABLED` | `debug_api_enabled` | `true`/`false`/`yes`/`no`/`1`/`0`/`on`/`off` |
 
 ## Process-level env vars (not config overrides)
 

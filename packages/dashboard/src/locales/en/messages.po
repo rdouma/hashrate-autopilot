@@ -1104,6 +1104,10 @@ msgid "days"
 msgstr "days"
 
 #: src/pages/Config.tsx
+msgid "Debug API"
+msgstr "Debug API"
+
+#: src/pages/Config.tsx
 msgid "Decision-log rows where the autopilot proposed at least one bid action. Rare (~10% of ticks) and high-value: this is the forensic record for \"why did the autopilot create / edit / cancel that bid?\" Cheap to keep long. Default 0 = keep forever."
 msgstr "Decision-log rows where the autopilot proposed at least one bid action. Rare (~10% of ticks) and high-value: this is the forensic record for \"why did the autopilot create / edit / cancel that bid?\" Cheap to keep long. Default 0 = keep forever."
 
@@ -1343,6 +1347,10 @@ msgid "Enable cheap mode"
 msgstr "Enable cheap mode"
 
 #: src/pages/Config.tsx
+msgid "Enable debug API endpoint"
+msgstr "Enable debug API endpoint"
+
+#: src/pages/Config.tsx
 #: src/pages/Config.tsx
 msgid "Enable solo-mining monitoring"
 msgstr "Enable solo-mining monitoring"
@@ -1451,6 +1459,10 @@ msgstr "First-run setup"
 #: src/components/SoloMinersCard.tsx
 msgid "Fleet"
 msgstr "Fleet"
+
+#: src/pages/Config.tsx
+msgid "Flip this on, curl the endpoint, flip it back. Supports ?hours=N (default 24, max 168) and ?tables=tick_metrics,pool_blocks,alert_events,bid_events,reward_events,app_config,daemon_info to filter the response."
+msgstr "Flip this on, curl the endpoint, flip it back. Supports ?hours=N (default 24, max 168) and ?tables=tick_metrics,pool_blocks,alert_events,bid_events,reward_events,app_config,daemon_info to filter the response."
 
 #: src/components/HashrateChart.tsx
 #: src/pages/Status.tsx
@@ -2269,6 +2281,10 @@ msgstr "Open Telegram and chat with <0>@BotFather</0>, send /newbot, follow the 
 #: src/pages/Status.tsx
 msgid "Operator-entered offset for earnings the on-chain payout observer can't see - Lightning payouts, pre-autopilot Ocean history that's already been swept, etc. Set under Config → Pool & Payout → On-chain payouts."
 msgstr "Operator-entered offset for earnings the on-chain payout observer can't see - Lightning payouts, pre-autopilot Ocean history that's already been swept, etc. Set under Config → Pool & Payout → On-chain payouts."
+
+#: src/pages/Config.tsx
+msgid "Opt-in diagnostics endpoint. When enabled, GET /api/debug/dump returns a bundled JSON snapshot of tick_metrics, pool_blocks, alerts, bid_events, reward_events, config (safe fields only), and daemon info. Useful for remote triage - one curl gives you everything. When disabled (default), the endpoint returns 404."
+msgstr "Opt-in diagnostics endpoint. When enabled, GET /api/debug/dump returns a bundled JSON snapshot of tick_metrics, pool_blocks, alerts, bid_events, reward_events, config (safe fields only), and daemon info. Useful for remote triage - one curl gives you everything. When disabled (default), the endpoint returns 404."
 
 #: src/pages/Config.tsx
 msgid "Optional dynamic ceiling. On each tick the effective cap = min(Maximum, hashprice + this). Stops the autopilot from wildly overpaying when hashprice drops sharply and the fixed Maximum alone would still allow it. Set to 0 to disable."
