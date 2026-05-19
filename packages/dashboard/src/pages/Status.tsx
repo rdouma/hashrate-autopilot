@@ -684,69 +684,115 @@ export function Status() {
             <Trans>no bids on this account</Trans>
           </div>
         ) : (
-          <div className="bg-slate-900 border border-slate-800 rounded-lg overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="text-xs text-slate-400 bg-slate-900/50">
-                <tr>
-                  <th className="text-left py-2 px-3"><Trans>id</Trans></th>
-                  <th className="text-left py-2 px-3"><Trans>owner</Trans></th>
-                  <th className="text-left py-2 px-3"><Trans>created</Trans></th>
-                  <th className="text-right py-2 px-3"><Trans>price</Trans></th>
-                  <th className="text-right py-2 px-3"><Trans>delivered / cap</Trans></th>
-                  <th className="text-right py-2 px-3"><Trans>budget</Trans></th>
-                  <th className="text-left py-2 px-3 w-32"><Trans>progress</Trans></th>
-                  <th className="text-left py-2 px-3"><Trans>status</Trans></th>
-                </tr>
-              </thead>
-              <tbody>
-                {s.bids.map((b) => (
-                  <tr key={b.braiins_order_id} className="border-t border-slate-800">
-                    <td className="py-2 px-3 font-mono text-xs">
-                      <BidIdCell id={b.braiins_order_id} />
-                    </td>
-                    <td className="py-2 px-3">
-                      {b.is_owned ? (
-                        <span className="text-emerald-400"><Trans>autopilot</Trans></span>
-                      ) : (
-                        <span className="text-amber-400"><Trans>unknown</Trans></span>
-                      )}
-                    </td>
-                    <td className="py-2 px-3 text-xs">
-                      {b.created_at_ms ? (
-                        <>
-                          <div className="text-slate-300">{fmt.timestamp(b.created_at_ms)}</div>
-                          <div className="text-[11px] text-slate-500">
-                            {formatTimestampUtc(b.created_at_ms)}
-                          </div>
-                        </>
-                      ) : (
-                        <span className="text-slate-600">-</span>
-                      )}
-                    </td>
-                    <td className="py-2 px-3 text-right font-mono">
-                      <FormattedValue v={denomination.formatSatPerPhDay(b.price_sat_per_ph_day, intlLocale)} />
-                    </td>
-                    <td className="py-2 px-3 text-right">
-                      {denomination.formatHashrate(b.avg_speed_ph)}
-                      <span className="text-xs text-slate-500">
-                        {' '}
-                        / {b.speed_limit_ph ? denomination.formatHashrate(b.speed_limit_ph) : '∞'}
-                      </span>
-                    </td>
-                    <td className="py-2 px-3 text-right font-mono">
-                      <FormattedValue v={denomination.formatSat(b.amount_sat, intlLocale)} />
-                    </td>
-                    <td className="py-2 px-3">
-                      <BidProgress pct={b.progress_pct} />
-                    </td>
-                    <td className={`py-2 px-3 text-xs ${bidStatusClass(b.status)}`}>
-                      {bidStatusLabel(b.status)}
-                    </td>
+          <>
+            {/* Desktop: table */}
+            <div className="hidden sm:block bg-slate-900 border border-slate-800 rounded-lg overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="text-xs text-slate-400 bg-slate-900/50">
+                  <tr>
+                    <th className="text-left py-2 px-3"><Trans>id</Trans></th>
+                    <th className="text-left py-2 px-3"><Trans>owner</Trans></th>
+                    <th className="text-left py-2 px-3"><Trans>created</Trans></th>
+                    <th className="text-right py-2 px-3"><Trans>price</Trans></th>
+                    <th className="text-right py-2 px-3"><Trans>delivered / cap</Trans></th>
+                    <th className="text-right py-2 px-3"><Trans>budget</Trans></th>
+                    <th className="text-left py-2 px-3 w-32"><Trans>progress</Trans></th>
+                    <th className="text-left py-2 px-3"><Trans>status</Trans></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {s.bids.map((b) => (
+                    <tr key={b.braiins_order_id} className="border-t border-slate-800">
+                      <td className="py-2 px-3 font-mono text-xs">
+                        <BidIdCell id={b.braiins_order_id} />
+                      </td>
+                      <td className="py-2 px-3">
+                        {b.is_owned ? (
+                          <span className="text-emerald-400"><Trans>autopilot</Trans></span>
+                        ) : (
+                          <span className="text-amber-400"><Trans>unknown</Trans></span>
+                        )}
+                      </td>
+                      <td className="py-2 px-3 text-xs">
+                        {b.created_at_ms ? (
+                          <>
+                            <div className="text-slate-300">{fmt.timestamp(b.created_at_ms)}</div>
+                            <div className="text-[11px] text-slate-500">
+                              {formatTimestampUtc(b.created_at_ms)}
+                            </div>
+                          </>
+                        ) : (
+                          <span className="text-slate-600">-</span>
+                        )}
+                      </td>
+                      <td className="py-2 px-3 text-right font-mono">
+                        <FormattedValue v={denomination.formatSatPerPhDay(b.price_sat_per_ph_day, intlLocale)} />
+                      </td>
+                      <td className="py-2 px-3 text-right">
+                        {denomination.formatHashrate(b.avg_speed_ph)}
+                        <span className="text-xs text-slate-500">
+                          {' '}
+                          / {b.speed_limit_ph ? denomination.formatHashrate(b.speed_limit_ph) : '∞'}
+                        </span>
+                      </td>
+                      <td className="py-2 px-3 text-right font-mono">
+                        <FormattedValue v={denomination.formatSat(b.amount_sat, intlLocale)} />
+                      </td>
+                      <td className="py-2 px-3">
+                        <BidProgress pct={b.progress_pct} />
+                      </td>
+                      <td className={`py-2 px-3 text-xs ${bidStatusClass(b.status)}`}>
+                        {bidStatusLabel(b.status)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {/* Mobile: cards */}
+            <div className="sm:hidden space-y-2">
+              {s.bids.map((b) => (
+                <div key={b.braiins_order_id} className="bg-slate-900 border border-slate-800 rounded-lg p-3 space-y-2 text-sm">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`text-xs font-medium ${bidStatusClass(b.status)}`}>
+                      {bidStatusLabel(b.status)}
+                    </span>
+                    {b.is_owned ? (
+                      <span className="text-xs text-emerald-400"><Trans>autopilot</Trans></span>
+                    ) : (
+                      <span className="text-xs text-amber-400"><Trans>unknown</Trans></span>
+                    )}
+                    <span className="ml-auto font-mono text-xs text-slate-400">
+                      <BidIdCell id={b.braiins_order_id} />
+                    </span>
+                  </div>
+                  {b.created_at_ms && (
+                    <div className="text-xs text-slate-500">
+                      {fmt.timestamp(b.created_at_ms)}
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                    <span className="text-slate-500"><Trans>price</Trans></span>
+                    <span className="text-right font-mono text-slate-200">
+                      <FormattedValue v={denomination.formatSatPerPhDay(b.price_sat_per_ph_day, intlLocale)} />
+                    </span>
+                    <span className="text-slate-500"><Trans>delivered / cap</Trans></span>
+                    <span className="text-right text-slate-200">
+                      {denomination.formatHashrate(b.avg_speed_ph)}
+                      <span className="text-slate-500">
+                        {' '}/ {b.speed_limit_ph ? denomination.formatHashrate(b.speed_limit_ph) : '∞'}
+                      </span>
+                    </span>
+                    <span className="text-slate-500"><Trans>budget</Trans></span>
+                    <span className="text-right font-mono text-slate-200">
+                      <FormattedValue v={denomination.formatSat(b.amount_sat, intlLocale)} />
+                    </span>
+                  </div>
+                  <BidProgress pct={b.progress_pct} />
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </section>
 

@@ -2,6 +2,10 @@
 
 ## 2026-05-18
 
+### `[UI]` Mobile-responsive bids, alerts, and chart legends
+
+Bids table on the Status page now renders as stacked cards on mobile (< 640px) with a 2-column key-value grid for price/delivered/budget, while keeping the full table on desktop.
+
 ### `[UI]` Mobile layout fixes for Config and Alerts pages
 
 Debug API help text with comma-separated table names (`tick_metrics,pool_blocks,...`) could not soft-wrap, overflowing on narrow screens. Added spaces after commas in all three locales. Config page header now takes full width on mobile so the auto-save text wraps naturally instead of being crushed one-word-per-line. Alerts search input is responsive (full width on mobile, 12rem on desktop).
