@@ -2,6 +2,10 @@
 
 ## 2026-05-18
 
+### `[Infra]` Major dependency upgrades
+
+Upgraded all packages to current majors: React 18->19, Lingui 5->6 (new macro import paths, format-po plugin), Vite 6->8, Zod 3->4, react-router-dom 6->7, Vitest 3->4, ESLint 9->10, better-sqlite3 11->12, kysely 0.28->0.29, openapi-fetch 0.13->0.17, @vitejs/plugin-react 4->6, @types/node 22->25, @inquirer/prompts 7->8. Removed deprecated babel-plugin-macros (Lingui v6 vite-plugin handles macro transforms natively).
+
 ### `[Infra]` Fix CodeQL code scanning alerts
 
 Addressed 12 CodeQL alerts across the daemon and dashboard. Fixed a prototype-pollution vector where user-supplied event_class could access Object prototype methods on the sample-builders lookup (now uses Object.hasOwn). Added URL scheme validation to the DDNS test route (user-provided update URL), bitcoind RPC client, and Datum service as SSRF defense-in-depth. Replaced two regex patterns flagged for polynomial ReDoS with equivalent string methods. Added per-IP rate limiting (100 req/min) at the API gateway to throttle brute-force auth attempts.
