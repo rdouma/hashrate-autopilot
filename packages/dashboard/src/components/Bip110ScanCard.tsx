@@ -12,10 +12,11 @@
  * can be removed without touching the rest of Status.
  */
 
-import { Trans, t } from '@lingui/macro';
+import { Trans } from '@lingui/react/macro';
+import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import React, { useState } from 'react';
 
 import { api } from '../lib/api';
 import type { Bip110ScanResponse } from '../lib/api';
@@ -37,7 +38,7 @@ function formatTimeUtc(ms: number): string {
   return d.toISOString().replace('T', ' ').slice(0, 16) + 'Z';
 }
 
-export function Bip110ScanCard(): JSX.Element {
+export function Bip110ScanCard(): React.JSX.Element {
   const { i18n } = useLingui();
   void i18n;
   const { intlLocale } = useLocale();
@@ -222,7 +223,7 @@ export function Bip110ScanCard(): JSX.Element {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }): JSX.Element {
+function Stat({ label, value }: { label: string; value: string }): React.JSX.Element {
   return (
     <div className="flex flex-col">
       <span className="text-[11px] uppercase tracking-wider text-slate-500">{label}</span>

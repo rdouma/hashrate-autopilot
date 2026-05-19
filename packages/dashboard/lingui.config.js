@@ -1,23 +1,17 @@
-// Lingui v5 config (issue #1).
+// Lingui v6 config (issue #1).
 //
-// `locales` is the launch set: English, Dutch, Spanish - the three
-// languages the operator can verify directly. Czech is appealing
-// (Braiins/Trezor/Prague culture) but deferred until a CZ reviewer
-// is available. Adding a locale later is a matter of adding the
-// code here, running `pnpm lingui:extract`, filling the new .po
-// file, and shipping a fresh build.
+// Locales: English, Dutch, Spanish - the three languages the operator
+// can verify directly. Adding a locale: add the code here, run
+// `pnpm lingui:extract`, fill the new .po file, ship a fresh build.
 //
-// `sourceLocale: 'en'` means messages in the source code use English
-// keys (via the <Trans> macro and the `t` template tag from
-// @lingui/macro). The English catalog is therefore "the source of
-// truth" - copy edits land in the EN catalog (or directly in code,
-// then re-extracted) and translators see the new strings on the
-// next pull.
-//
-// Format: PO. Standard for translators; Crowdin/Weblate friendly;
-// preserves source-comment context that translators rely on.
+// sourceLocale 'en' means source code uses English keys (via <Trans>
+// and `t` from @lingui/react/macro and @lingui/core/macro). The EN
+// catalog is the source of truth.
 
-export default {
+import { defineConfig } from '@lingui/cli';
+import { formatter } from '@lingui/format-po';
+
+export default defineConfig({
   locales: ['en', 'nl', 'es'],
   sourceLocale: 'en',
   fallbackLocales: { default: 'en' },
@@ -27,9 +21,6 @@ export default {
       include: ['<rootDir>/src'],
     },
   ],
-  format: 'po',
-  formatOptions: {
-    lineNumbers: false,
-  },
+  format: formatter({ lineNumbers: false }),
   compileNamespace: 'es',
-};
+});

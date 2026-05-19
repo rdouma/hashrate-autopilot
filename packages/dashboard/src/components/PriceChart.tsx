@@ -9,7 +9,8 @@
  * X-axis aligns visually when stacked.
  */
 
-import { Trans, t } from '@lingui/macro';
+import { Trans } from '@lingui/react/macro';
+import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { useQuery } from '@tanstack/react-query';
 import type React from 'react';

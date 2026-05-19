@@ -20,7 +20,7 @@
  * parity with the rest of the dashboard's diagnostic polls.
  */
 
-import { Trans } from '@lingui/macro';
+import { Trans } from '@lingui/react/macro';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 

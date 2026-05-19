@@ -3,7 +3,7 @@
  * Braiins and our own controller. Keep UI strings out of the wire model.
  */
 
-import { t } from '@lingui/macro';
+import { t } from '@lingui/core/macro';
 
 export function bidStatusLabel(raw: string): string {
   switch (raw) {

@@ -53,14 +53,7 @@ const info = getBuildInfo();
 
 export default defineConfig({
   plugins: [
-    react({
-      // Enable babel-plugin-macros so @lingui/macro's <Trans> + `t`
-      // template tag transform at compile time. Without this the
-      // macros stay as-is in the output and Lingui throws at runtime.
-      babel: {
-        plugins: ['macros'],
-      },
-    }),
+    react(),
     // Pin Lingui's config search to the dashboard package dir so
     // pnpm-r and vitest invocations from the workspace root (whose
     // process.cwd() is the repo root, not packages/dashboard) still

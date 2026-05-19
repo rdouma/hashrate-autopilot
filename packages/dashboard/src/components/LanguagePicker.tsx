@@ -8,7 +8,7 @@
 // when supported, English otherwise (see getInitialLocale in
 // lib/i18n.ts).
 
-import { t } from '@lingui/macro';
+import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 
 import {

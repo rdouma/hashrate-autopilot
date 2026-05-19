@@ -9,7 +9,8 @@
  * time-range filter and X-axis layout.
  */
 
-import { Trans, t } from '@lingui/macro';
+import { Trans } from '@lingui/react/macro';
+import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { memo, useCallback, useEffect, useMemo, useState, useRef, useLayoutEffect } from 'react';
 import type React from 'react';

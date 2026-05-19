@@ -20,7 +20,7 @@
  * explicit locale/options object to override per call.
  */
 
-import { t } from '@lingui/macro';
+import { t } from '@lingui/core/macro';
 
 type Locale = string | undefined;
 

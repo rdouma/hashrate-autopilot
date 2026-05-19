@@ -17,7 +17,7 @@
  * having to refresh manually.
  */
 
-import { Trans } from '@lingui/macro';
+import { Trans } from '@lingui/react/macro';
 import { type ReactNode, useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 
