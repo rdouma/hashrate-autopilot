@@ -53,7 +53,11 @@ const info = getBuildInfo();
 
 export default defineConfig({
   plugins: [
-    react(),
+    react({
+      babel: {
+        plugins: ['@lingui/babel-plugin-lingui-macro'],
+      },
+    }),
     // Pin Lingui's config search to the dashboard package dir so
     // pnpm-r and vitest invocations from the workspace root (whose
     // process.cwd() is the repo root, not packages/dashboard) still
