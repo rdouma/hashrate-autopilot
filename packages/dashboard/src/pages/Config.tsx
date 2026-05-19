@@ -464,6 +464,7 @@ function useSections(): Section[] {
             key: 'debug_api_enabled',
             label: t`Enable debug API endpoint`,
             kind: 'boolean' as const,
+            fullWidth: true,
             help: t`Flip this on, curl the endpoint, flip it back. Supports ?hours=N (default 24, max 168) and ?tables=tick_metrics, pool_blocks, alert_events, bid_events, reward_events, app_config, daemon_info to filter the response.`,
           },
         ],
