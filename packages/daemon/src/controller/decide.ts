@@ -54,6 +54,22 @@ export function decide(state: State): readonly Proposal[] {
     ];
   }
 
+  // Cancel all owned bids when Datum stratum has been down for 3+
+  // consecutive ticks (#199). No point paying for hashrate that
+  // cannot reach the pool.
+  const DATUM_DOWN_CANCEL_THRESHOLD = 3;
+  if (
+    state.datum !== null &&
+    state.datum.consecutive_failures >= DATUM_DOWN_CANCEL_THRESHOLD
+  ) {
+    if (state.owned_bids.length === 0) return [];
+    return state.owned_bids.map((bid) => ({
+      kind: 'CANCEL_BID' as const,
+      braiins_order_id: bid.braiins_order_id,
+      reason: `datum_stratum_down: ${state.datum!.consecutive_failures} consecutive failures - cancelling to stop spend`,
+    }));
+  }
+
   // Without a market snapshot we can't price anything.
   if (!state.market) return [];
 

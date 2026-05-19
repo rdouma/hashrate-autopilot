@@ -2,6 +2,10 @@
 
 ## 2026-05-19
 
+### `[Feature]` Auto-cancel bids when Datum stratum is down (#199)
+
+When Datum stratum is unreachable for 3+ consecutive ticks, the controller cancels all active bids to stop spending on hashrate that cannot reach the pool. Also blocks new bid creation while stratum is down. Bidding resumes automatically on the next tick after stratum recovers. The `datum_unreachable` alert message now reflects this auto-cancel behavior across all locales (en/nl/es).
+
 ### `[Release]` v1.7.7
 
 Chart UX polish (click-to-focus scroll-wheel zoom, viewport-scoped Y-axis), CodeQL security hardening (prototype-pollution, SSRF, ReDoS, rate limiting), mobile-responsive UI, debug API endpoint, daemon-offline gap bands, and major dependency upgrades (React 19, Lingui 6, Vite 8, Zod 4, and 10+ other packages). No new migrations.

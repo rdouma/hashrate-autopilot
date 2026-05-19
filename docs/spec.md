@@ -1,4 +1,4 @@
-# Hashrate Autopilot - Specification (v2.6)
+# Hashrate Autopilot - Specification (v2.7)
 
 > Status: current, aligned with code through 2026-05-19.
 >
@@ -244,7 +244,7 @@ Lives in its own section on Config -> Strategy (#136) with an explicit **Enable 
 
 - `datum_api_url` - HTTP base URL of the Datum Gateway's `/umbrel-api` endpoint. When null, the dashboard's Datum
   panel shows a "not configured" empty state and the daemon writes `null` to `tick_metrics.datum_hashrate_ph`.
-  Integration is never on the control path - if Datum is unreachable the control loop continues unchanged.
+  When Datum stratum is unreachable for 3+ consecutive ticks, the controller cancels all active bids to stop spend (see §9 "Datum pool unreachable").
   See `docs/setup-datum-api.md` for the Umbrel-side port-exposure recipe.
 
 **Retention (append-only tables):**
@@ -385,12 +385,7 @@ The updater pushes on a 5-min cadence and on any save event that touches a DDNS-
   dashboard's Datum Gateway service panel surfaces this state.
 - `pool_outage_blip_tolerance_seconds` is the observer-side threshold below which the dashboard still
   reports the service as healthy (ignores transient blips).
-- The controller does **not** currently auto-transition to PAUSED on sustained pool outages, nor
-  auto-recover to LIVE. The v1.x spec called for both; they were not carried through the subsequent
-  rewrites. Active bids continue to bid for hashrate regardless of whether the operator's pool is
-  reachable - if the pool is down, Braiins may observe zero delivery and stop matching on that bid,
-  which the operator sees as a below-floor alert (above). Operator-driven PAUSE from the dashboard is
-  always available.
+- When `state.datum.consecutive_failures >= 3` (three consecutive ticks of Datum stratum being unreachable), the controller cancels all active bids to stop spend (#199). There is no point paying for hashrate that cannot reach the pool. When stratum recovers (consecutive_failures drops back to 0), the controller resumes normal operation and creates a new bid on the next tick. The `datum_unreachable` alert copy reflects this auto-cancel behavior.
 
 **Braiins API unreachable:**
 
@@ -732,4 +727,5 @@ Still open:
 | 2.3     | 2026-05-02 | Spec-consistency sweep through v1.4.8. §12.1 hero PRICE card description corrected to "live current owned-bid price" (the post-#69 reality - the card has shown the live bid for some time; the older "window-averaged effective rate" framing was a stale paragraph that contradicted the README and the running dashboard). No behaviour change; pure doc correctness pass. Done in lockstep with architecture v1.6 (schema additions through migration 0051, P&L spend-source clarification, /healthz -> /api/health) and a research.md tweak that retired the historical 300 sat/PH/day default in §1.8 in favour of the live 1,000. |
 | 2.4     | 2026-05-09 | Catch-up sweep with the May-2026 feature run (v1.5.0 -> v1.5.4). §6 flips "No external notification channel" to the shipped Telegram sink; §8 gains the Telegram config block (`telegram_chat_id`, `telegram_bot_token`, `telegram_instance_label`, `notifications_muted`, `notification_retry_interval_minutes`, `notification_disabled_event_classes`, `notify_on_pool_block_credit`), the Daemon-managed Dynamic DNS block (`ddns_provider` for `''`/`noip`/`duckdns`/`dyndns2`, `ddns_hostname`, `ddns_username`, `ddns_credential`, `ddns_update_url`), `block_explorer_tx_url_template`, the new bundled `ocean-mining-found-a-block` sound, and the `wallet_runway_alert_days = 0 = disabled` semantic with the new default of 0. §9.1 promoted from "planned" to "shipped" with the per-event-class opt-out (#106), inline-keyboard ack/snooze (#109), and per-instance label prefix layered on. §12.1 updated for the price chart's `paid earnings (lifetime)` and `lifetime earnings (paid + unpaid)` series (#102), the difficulty-retarget markers, the chart expand toggle (#105), the own-block-vs-BIP-110 marker swap (#115), and the stale-URL banner (#113). §12.2 rewritten for the four-tab Config layout with cross-tab search (#107) and the Test connection buttons across Pool URL / Datum API / DDNS (#112) / bitcoind / electrs / Telegram. §12.3 split: new dedicated Alerts page section (#100 / #109 with the bulk-ack and unacked-only filter), and §12.4 inherits the "things v1 listed but doesn't ship" honesty list (Telegram dropped from that list now that it ships). §14 "Dynamic home IP" landmine flipped from `[unhandled]` to `[handled]` against the new DDNS feature. Generalised "on the Umbrel node" prose throughout - the Bitcoin node can run on any platform; Umbrel is one option among several. |
 | 2.5     | 2026-05-15 | §12.1 Hashrate chart: retarget markers now appear on pool luck (24h/7d) overlays with luck-before/after tooltip (#174); pickaxe icon (Lucide) at chart top for retargets, always visible regardless of right-axis selection (#175). §12.1 Price chart: pool-block markers (cubes/crowns/BIP-110) and retarget pickaxes mirrored from the Hashrate chart (#176). Also covers #171 (payout-triggering block in Telegram), #172 (chart-marker cap extended to pool blocks + reward events), #173 (braiins_reachable discriminator for marketplace-empty vs API-unreachable). |
+| 2.7     | 2026-05-19 | Datum-down auto-cancel (#199): when Datum stratum is unreachable for 3+ consecutive ticks, the controller cancels all active bids to stop spend. Also blocks new bid creation while stratum is down. Bidding resumes automatically when stratum recovers. The `datum_unreachable` alert copy updated to reflect the auto-cancel behavior. |
 | 2.6     | 2026-05-19 | Click-to-focus scroll-wheel zoom: user must click a chart to activate scroll-wheel zoom; clicking outside or pressing Escape deactivates; blue outline indicates focused chart. Viewport-scoped Y-axis: hashrate chart Y-axis scaling considers only visible data, not out-of-view spikes; outlier clamping on counter-derived hashrate guards against post-outage phantoms. Debug API endpoint (#179): GET /api/debug/dump behind a Config toggle. Daemon-offline gap bands (#178): hatched overlay on both charts during periods where the daemon was not polling. Retarget backfill (#178). CodeQL security fixes: prototype-pollution guard, SSRF scheme validation, ReDoS string-method replacements, per-IP rate limiting. Mobile UI: bids render as responsive cards < 640px; chart legends, Config, and Alerts pages fixed for narrow screens. Major dependency upgrades: React 18-19, Lingui 5-6, Vite 6-8, Zod 3-4, react-router-dom 6-7, and 8+ other packages. |

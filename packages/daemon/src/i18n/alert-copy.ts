@@ -156,7 +156,7 @@ const EN: AlertCopy = {
   datum_unreachable_title: () => 'Datum stratum unreachable',
   datum_unreachable_title_recovery: () => 'Datum stratum reachable',
   datum_unreachable_body: ({ duration }) =>
-    `Datum gateway has been unreachable for ${duration}. Buyer-side hashrate cannot reach Ocean - shares are not crediting.`,
+    `Datum gateway has been unreachable for ${duration}. Buyer-side hashrate cannot reach Ocean - shares are not crediting. The autopilot has cancelled the active bid to stop spend; it will resume bidding when stratum recovers.`,
   datum_unreachable_body_recovery: ({ duration }) =>
     `Datum gateway reachable again - was down ${duration}.`,
 
@@ -270,7 +270,7 @@ const NL: AlertCopy = {
   datum_unreachable_title: () => 'Datum stratum onbereikbaar',
   datum_unreachable_title_recovery: () => 'Datum stratum bereikbaar',
   datum_unreachable_body: ({ duration }) =>
-    `Datum gateway is al ${duration} onbereikbaar. Gehuurde hashrate kan Ocean niet bereiken - shares worden niet bijgeschreven.`,
+    `Datum gateway is al ${duration} onbereikbaar. Gehuurde hashrate kan Ocean niet bereiken - shares worden niet bijgeschreven. De autopilot heeft het actieve bod geannuleerd om kosten te stoppen; bieden wordt hervat zodra stratum herstelt.`,
   datum_unreachable_body_recovery: ({ duration }) =>
     `Datum gateway is weer bereikbaar - was ${duration} down.`,
 
@@ -385,7 +385,7 @@ const ES: AlertCopy = {
   datum_unreachable_title: () => 'Stratum de Datum no accesible',
   datum_unreachable_title_recovery: () => 'Stratum de Datum accesible',
   datum_unreachable_body: ({ duration }) =>
-    `La gateway Datum lleva ${duration} sin ser accesible. La hashrate del comprador no puede llegar a Ocean - los shares no se acreditan.`,
+    `La gateway Datum lleva ${duration} sin ser accesible. La hashrate del comprador no puede llegar a Ocean - los shares no se acreditan. El autopilot ha cancelado la oferta activa para detener el gasto; reanudara las ofertas cuando el stratum se recupere.`,
   datum_unreachable_body_recovery: ({ duration }) =>
     `Gateway Datum accesible de nuevo - estuvo caída ${duration}.`,
 

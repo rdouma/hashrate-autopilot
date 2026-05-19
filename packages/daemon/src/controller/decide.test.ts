@@ -132,6 +132,71 @@ describe('decide - case selection', () => {
   });
 });
 
+describe('decide - Datum stratum down auto-cancel (#199)', () => {
+  const datumDown = (failures: number) => ({
+    reachable: false,
+    connections: null,
+    hashrate_ph: null,
+    last_ok_at: 1_700_000_000_000 - failures * 60_000,
+    consecutive_failures: failures,
+  });
+
+  it('cancels all owned bids when Datum is down for 3+ ticks', () => {
+    const proposals = decide(state({
+      datum: datumDown(3),
+      owned_bids: [owned()],
+    }));
+    expect(proposals).toHaveLength(1);
+    expect(proposals[0]).toMatchObject({
+      kind: 'CANCEL_BID',
+      braiins_order_id: 'order-a',
+    });
+    expect(proposals[0]!.reason).toContain('datum_stratum_down');
+  });
+
+  it('cancels multiple owned bids when Datum is down', () => {
+    const proposals = decide(state({
+      datum: datumDown(5),
+      owned_bids: [owned(), owned({ braiins_order_id: 'order-b' })],
+    }));
+    expect(proposals).toHaveLength(2);
+    expect(proposals.every((p) => p.kind === 'CANCEL_BID')).toBe(true);
+  });
+
+  it('does not cancel when Datum is down for fewer than 3 ticks', () => {
+    const proposals = decide(state({
+      datum: datumDown(2),
+      owned_bids: [owned()],
+    }));
+    expect(proposals.every((p) => p.kind !== 'CANCEL_BID')).toBe(true);
+  });
+
+  it('does not cancel when Datum is not configured (null)', () => {
+    const proposals = decide(state({
+      datum: null,
+      owned_bids: [owned()],
+    }));
+    expect(proposals.every((p) => p.kind !== 'CANCEL_BID' || p.reason.includes('multiple'))).toBe(true);
+  });
+
+  it('does nothing when Datum is down but no owned bids', () => {
+    const proposals = decide(state({
+      datum: datumDown(10),
+      owned_bids: [],
+    }));
+    expect(proposals).toEqual([]);
+  });
+
+  it('does not block CREATE after Datum recovers', () => {
+    const proposals = decide(state({
+      datum: { reachable: true, connections: 1, hashrate_ph: 1.5, last_ok_at: Date.now(), consecutive_failures: 0 },
+      owned_bids: [],
+    }));
+    expect(proposals).toHaveLength(1);
+    expect(proposals[0]).toMatchObject({ kind: 'CREATE_BID' });
+  });
+});
+
 describe('decide - CREATE path', () => {
   it('creates at fillable + overpay when below the fixed cap', () => {
     const proposals = decide(state());
