@@ -133,8 +133,8 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
   total hashrate grows or your delivered PH/s fluctuates. Every TIDES-credited pool block appears on the
   hashrate chart as an isometric cube marker - **blue** for the common case (pool block credited via TIDES) and
   **gold** for the rare solo-lottery case where our own worker found the block. Clicking a cube opens it in
-  your configured block explorer (mempool.space by default; blockstream / blockchair / your own local explorer
-  are preset pills on the Config page). Tooltips show block height, reward / subsidy / fees, and an estimated
+  your configured block explorer (mempool.space by default; blockstream / blockchair / btcscan / btc.com / your
+  own local explorer are preset pills on the Config page). Tooltips show block height, reward / subsidy / fees, and an estimated
   our-share for the block based on the current share_log.
 - **Datum Gateway integration (optional)** - when `datum_api_url` is configured, the daemon polls Datum's
   `/umbrel-api` each tick and records the gateway-measured hashrate alongside the Braiins-reported number. A
@@ -182,7 +182,7 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
   version bits, and explorer link. Both block markers and **difficulty-retarget pickaxe icons** (violet,
   with dashed vertical lines) are mirrored onto the price chart, so the operator sees these events in
   context on both charts.
-- **Telegram notifications** - three severity tiers across ten event classes. **IMPORTANT** (red, with a
+- **Telegram notifications** - three severity tiers across seventeen event classes. **IMPORTANT** (red, with a
   retry ladder and paired recovery messages): Datum stratum unreachable, hashrate below floor, zero
   hashrate, Braiins API unreachable, unknown bid detected, bid sustained-paused, wallet runway below
   threshold, and the Braiins-side compliance-returned deposit. **WARNING** (amber): Braiins beta-exit
@@ -208,9 +208,10 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
   not the host LAN) and returns AxeOS-shaped responders so adding a fleet doesn't require
   typing every IP. Master `solo_mining_enabled` toggle defaults off and
   hides the Status card + alerts when disabled.
-- **Block-found audible cue** - optional sound when Ocean credits your address with a new pool block. Four
-  bundled cues (cowbell, glass-drop-and-roll, two metallic clanks) plus custom MP3 / OGG / WAV / WebM
-  upload up to 200 KB. Plays once per new block; the dashboard tab needs to be open.
+- **Block-found audible cue** - optional sound when Ocean credits your address with a new pool block. Five
+  bundled cues (cowbell, glass-drop-and-roll, two metallic clanks, and an "Ocean mining found a block"
+  voice clip) plus custom MP3 / OGG / WAV / WebM upload up to 200 KB. Plays once per new block; the
+  dashboard tab needs to be open.
 - **Per-chart right-axis dropdown** - render BTC/USD price, network difficulty, pool hashrate, Ocean unpaid
   balance, estimated block reward, pool-luck (24h/7d), or share_log against the chart's primary series.
   Independent picker per chart, persists per browser.
@@ -298,7 +299,7 @@ the sat ↔ USD header toggle; CoinGecko / Coinbase / Bitstamp / Kraken).
 **Telegram notifications** - bot token, chat id, optional instance label, retry interval, master
 **Send messages to Telegram** switch, and a language picker (alert copy can run in a different
 language from the dashboard if you'd rather read the chat in English while the UI is in Dutch). Below
-that, ten event-class tiles grouped by source (Datum / Braiins marketplace / Ocean), each with a
+that, seventeen event-class tiles grouped by source (Datum / Braiins marketplace / Ocean / Solo miners), each with a
 severity pill (IMPORTANT red, WARNING amber, INFO slate) so the operator can tell at a glance which
 bucket each one fires at. Tiles for timer-driven events (Datum unreachable, hashrate floor, zero
 hashrate, API unreachable, sustained-paused, wallet runway) carry an inline minute input so the

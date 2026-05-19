@@ -611,7 +611,7 @@ Reorganised in v1.5.0 (#107) from a single long-scroll form into **four tabs** w
 
 | Tab | Sections |
 |---|---|
-| **Strategy** | Hashrate targets, Pricing (fillable-tracking overpay + two safety ceilings + cheap-mode), Budget, Daemon startup |
+| **Strategy** | Hashrate targets, Cheap mode, Pricing (fillable-tracking overpay + two safety ceilings), Budget, Daemon startup |
 | **Pool & Payout** | Pool destination + Test connection button, Datum stats API + Test connection button, Dynamic DNS (provider + hostname + credentials + Test connection button + diagnostic IPs - daemon's public IP, hostname resolves to, match/mismatch note), Payout source (none / electrs / bitcoind + Test connection buttons), Profit & Loss scope, BTC price oracle |
 | **Notifications** | Telegram bot token + chat ID + Test connection button, instance label, mute toggle, retry interval, wallet-runway threshold, per-event-class opt-out checklist, pool-block-credit toggle, block-found sound (off / bundled / custom upload) |
 | **Display & Logging** | Number format (separators) + Date layout (independent dropdowns; month names always follow the UI language picker - #147), block explorer URL template + transaction URL template, chart smoothing (Braiins / Datum / Braiins price), chart-markers cap, log retention (tick metrics / decisions uneventful / decisions eventful / alerts), Solo miners device list + alert thresholds (when `solo_mining_enabled = true`) |

@@ -1,4 +1,4 @@
-# Hashrate Autopilot - Architecture (v1.6)
+# Hashrate Autopilot - Architecture (v1.7)
 
 > Concretion of `docs/spec.md` into module boundaries, data flow, deployment shape, and a
 > milestone-ordered build plan.
@@ -9,11 +9,13 @@
 > the simulator and the depth-aware pricing machinery. v1.3 was a spec-consistency sweep. v1.4
 > (2026-04-24) aligned the architecture doc with spec v2.1: the simulator has been retired,
 > `overpay_sat_per_eh_day` is back as the single pricing knob. v1.5 (2026-04-25) covered the
-> appliance-packaging release. **v1.6** (this revision, 2026-05-02) catches up on schema additions
-> through migration 0051 (share_log column + chart toggle, BTC-price default flip, retention bumps),
-> fixes the legacy-`spend_sat` self-contradiction, drops the never-shipped `Decisions` page from the
-> repo layout, replaces stale `/healthz` + `/metrics` mentions with the actual `/api/health`
-> endpoint, and adds the `storage-estimate` route to the route list.
+> appliance-packaging release. v1.6 (2026-05-02) caught up on schema additions through migration
+> 0051. **v1.7** (this revision, 2026-05-18) is a comprehensive catch-up with spec v2.5: adds the
+> Telegram notification subsystem (NotificationSink + TelegramSink + AlertEvaluator + inline-ack),
+> DDNS updater, solo-mining monitoring, deposit lifecycle tracking, marketplace-empty alert, debug
+> API endpoint, historical-payout backfill, six new tables (pool_blocks, bid_events, solo_miners,
+> solo_miner_samples, braiins_deposits, block_version_cache), ~30 new config columns, the /alerts
+> dashboard page, and corrects the retention defaults to match the running schema.
 
 ## 1. High-level shape
 
@@ -45,8 +47,12 @@ Braiins API   Datum Gateway   bitcoind RPC       Electrs
 ```
 
 The **daemon** is the control loop and the only writer to SQLite. The **dashboard** is a read-mostly React SPA backed
-by a thin HTTP API the daemon exposes (same Node process). The operator interacts through the dashboard only; there
-is no external notification channel in v1 - alerts and pending work surface in-app.
+by a thin HTTP API the daemon exposes (same Node process). The operator interacts through the dashboard and - since
+v1.5 (#100) - via **Telegram notifications**. The notification subsystem is built around a `NotificationSink`
+interface (currently only `TelegramSink`; future Nostr / ntfy / email backends can slot in). An `AlertEvaluator`
+detects state transitions each tick, the `AlertManager` writes rows to the `alerts` table with a retry ladder, and
+a `TelegramReceiver` long-polls `getUpdates` to process inline-keyboard acknowledgements from the operator's phone.
+Alerts and their delivery state are also surfaced on a dedicated `/alerts` dashboard page.
 
 ## 2. Repository layout
 
@@ -116,11 +122,12 @@ hashrate-autopilot/
 │   │       └── routes/             (status, config, decisions, actions, operator, metrics, run-mode,
 │   │                                finance, stats, storage-estimate, bid-events, ocean, payouts, btc-price,
 │   │                                bip110-scan, bitcoind-test, electrs-test, block-found-sound,
-│   │                                reward-events, alerts, notifications-test)
+│   │                                reward-events, alerts, notifications-test, ddns, ddns-test,
+│   │                                solo-miners, solo-miners-scan, debug-dump)
 │   │
 │   └── dashboard/                  React SPA
 │       ├── src/main.tsx
-│       ├── src/pages/              (Status, Alerts, Config, Setup, Login)
+│       ├── src/pages/              (Status, Config, Alerts, Setup, Login)
 │       ├── src/components/
 │       ├── src/lib/                (api, auth, format, labels, locale)
 │       └── vite.config.ts
@@ -193,7 +200,7 @@ Two tiers of config:
 - **Framework**: React 18 + Vite. Served as static files from Fastify in production, or a Vite dev server against the
   daemon API in development.
 - **State management**: TanStack Query for server state; Zustand for transient UI state.
-- **Routing**: `react-router`. Pages: `/status`, `/config`, `/login`. Per-decision inspection is on the Status page: clicking a marker on the price chart pins its tooltip and exposes a "copy JSON" button that copies the underlying bid event.
+- **Routing**: `react-router`. Pages: `/status`, `/config`, `/alerts`, `/setup`, `/login`. Per-decision inspection is on the Status page: clicking a marker on the price chart pins its tooltip and exposes a "copy JSON" button that copies the underlying bid event. The `/alerts` page is a chronological audit trail of every notification the daemon evaluated (see spec.md 12.3).
 - **Auth**: single shared password, checked by Fastify middleware; session cookie. Tailscale/VPN is the real
   perimeter; the password is a second factor against someone on the LAN.
 - **Live updates**: polling via TanStack Query (`refetchInterval` ~5s on status screens). No WebSocket/SSE in v1.
@@ -243,22 +250,56 @@ CREATE TABLE config (
   payout_source TEXT NOT NULL DEFAULT 'none',       -- 'none' | 'electrs' | 'bitcoind'
   btc_price_source TEXT NOT NULL DEFAULT 'coingecko', -- 'none' | 'coingecko' | 'coinbase' | 'bitstamp' | 'kraken' (#77, migration 0050)
   datum_api_url TEXT,                               -- optional Datum Gateway /umbrel-api URL
+  -- Outage tolerance (split thresholds, migration 0082)
+  datum_unreachable_alert_after_minutes INTEGER NOT NULL DEFAULT 10,
+  sustained_paused_alert_after_minutes INTEGER NOT NULL DEFAULT 10,
+  marketplace_empty_alert_after_minutes INTEGER NOT NULL DEFAULT 5,   -- #167, migration 0088
+  -- Telegram notifications (#100, migrations 0063/0070/0064/0073/0076/0081)
+  telegram_bot_token TEXT NOT NULL DEFAULT '',
+  telegram_chat_id TEXT NOT NULL DEFAULT '',
+  telegram_instance_label TEXT NOT NULL DEFAULT '',
+  notifications_muted INTEGER NOT NULL DEFAULT 0,                    -- bool (0 | 1)
+  notification_retry_interval_minutes INTEGER NOT NULL DEFAULT 30,
+  notification_disabled_event_classes TEXT NOT NULL DEFAULT '',       -- comma-separated
+  notify_on_pool_block_credit INTEGER NOT NULL DEFAULT 0,            -- bool (0 | 1)
+  notify_on_braiins_deposit INTEGER NOT NULL DEFAULT 0,              -- bool (0 | 1)
+  notification_locale TEXT NOT NULL DEFAULT 'en',                    -- 'en' | 'nl' | 'es'
+  -- Dynamic DNS (#111, migrations 0067-0068)
+  ddns_provider TEXT NOT NULL DEFAULT '',                            -- '' | 'noip' | 'duckdns' | 'dyndns2'
+  ddns_hostname TEXT NOT NULL DEFAULT '',
+  ddns_username TEXT NOT NULL DEFAULT '',
+  ddns_credential TEXT NOT NULL DEFAULT '',
+  ddns_update_url TEXT NOT NULL DEFAULT '',                          -- dyndns2-generic only
   -- Chart smoothing (display-only, not read by control loop)
   braiins_hashrate_smoothing_minutes INTEGER NOT NULL DEFAULT 1,
   datum_hashrate_smoothing_minutes INTEGER NOT NULL DEFAULT 1,
   braiins_price_smoothing_minutes INTEGER NOT NULL DEFAULT 1,
-  show_effective_rate_on_price_chart INTEGER NOT NULL DEFAULT 0,  -- bool (0 | 1)
-  show_share_log_on_hashrate_chart INTEGER NOT NULL DEFAULT 0,    -- bool (0 | 1); migration 0049
-  -- Retention (defaults bumped in migration 0051)
-  tick_metrics_retention_days INTEGER NOT NULL DEFAULT 365,
+  show_effective_rate_on_price_chart INTEGER NOT NULL DEFAULT 0,     -- bool (0 | 1)
+  show_share_log_on_hashrate_chart INTEGER NOT NULL DEFAULT 0,       -- bool (0 | 1); migration 0049
+  chart_max_markers INTEGER NOT NULL DEFAULT 0,                      -- 0 = no cap; migration 0078
+  -- Retention
+  tick_metrics_retention_days INTEGER NOT NULL DEFAULT 0,             -- 0 = forever
   decisions_uneventful_retention_days INTEGER NOT NULL DEFAULT 7,
-  decisions_eventful_retention_days INTEGER NOT NULL DEFAULT 365,
+  decisions_eventful_retention_days INTEGER NOT NULL DEFAULT 0,       -- 0 = forever
+  alerts_retention_days INTEGER NOT NULL DEFAULT 0,                   -- 0 = forever; migration 0076
   -- Accounting
-  spent_scope TEXT NOT NULL DEFAULT 'account',      -- 'autopilot' | 'account'
+  spent_scope TEXT NOT NULL DEFAULT 'account',                       -- 'autopilot' | 'account'
+  -- Block explorer
+  block_explorer_url_template TEXT NOT NULL DEFAULT 'https://mempool.space/block/{hash}',
+  block_explorer_tx_url_template TEXT NOT NULL DEFAULT 'https://mempool.space/tx/{txid}', -- migration 0071
+  -- Payout features (#170, migrations 0089-0090)
+  include_historical_payouts INTEGER NOT NULL DEFAULT 1,             -- bool (0 | 1)
+  historical_payouts_offset_sat INTEGER NOT NULL DEFAULT 0,
+  -- Solo-mining monitoring (#149, migration 0085)
+  solo_mining_enabled INTEGER NOT NULL DEFAULT 0,                    -- bool (0 | 1)
+  solo_overheating_threshold_celsius INTEGER NOT NULL DEFAULT 0,     -- 0 = 75 C (firmware default)
+  solo_zero_hashrate_alert_after_minutes INTEGER NOT NULL DEFAULT 5,
+  solo_share_rejection_threshold_pct INTEGER NOT NULL DEFAULT 10,
+  solo_share_rejection_window_minutes INTEGER NOT NULL DEFAULT 60,
+  -- Debug API (#179, migration 0092)
+  debug_api_enabled INTEGER NOT NULL DEFAULT 0,                      -- bool (0 | 1)
   -- Legacy columns still in the table (kept for NOT NULL + historical
-  -- schema continuity) but no longer read or written by the app. 0043
-  -- dropped the fill-strategy ones after the v2.0 CLOB redesign.
-  -- `hibernate_on_expensive_market` is a v1.0 relic never used post-v1.1.
+  -- schema continuity) but no longer read or written by the app.
   hibernate_on_expensive_market INTEGER NOT NULL DEFAULT 0,
   --
   updated_at INTEGER NOT NULL
@@ -427,6 +468,77 @@ CREATE TABLE fee_schedule_cache (
   id INTEGER PRIMARY KEY CHECK (id = 1),
   payload_json TEXT NOT NULL,
   cached_at INTEGER NOT NULL
+);
+
+-- Pool blocks observed from Ocean (migration 0055+)
+CREATE TABLE pool_blocks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  height INTEGER NOT NULL UNIQUE,
+  block_hash TEXT NOT NULL,
+  timestamp_ms INTEGER NOT NULL,
+  total_reward_sat INTEGER,
+  subsidy_sat INTEGER,
+  txn_fees_sat INTEGER,
+  is_own_block INTEGER NOT NULL DEFAULT 0,       -- bool: coinbase credited our address
+  detected_at INTEGER NOT NULL
+);
+
+-- Bid events (create/edit/cancel audit trail; migration 0009+)
+CREATE TABLE bid_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  tick_at INTEGER NOT NULL,
+  kind TEXT NOT NULL,                             -- 'CREATE_BID' | 'EDIT_PRICE' | 'EDIT_SPEED' | 'CANCEL_BID'
+  braiins_order_id TEXT,
+  price_sat INTEGER,
+  speed_limit_ph REAL,
+  amount_sat INTEGER,
+  run_mode TEXT NOT NULL,
+  details_json TEXT
+);
+
+-- Block-header version cache for BIP 110 detection (#94, migration 0058)
+CREATE TABLE block_version_cache (
+  block_hash TEXT PRIMARY KEY,
+  block_version INTEGER NOT NULL,
+  fetched_at INTEGER NOT NULL
+);
+
+-- Braiins deposit lifecycle tracking (#143, migration 0080)
+CREATE TABLE braiins_deposits (
+  txid TEXT PRIMARY KEY,
+  first_seen_at_ms INTEGER NOT NULL,
+  status TEXT NOT NULL,                           -- 'detected' | 'available' | 'returned'
+  amount_sat INTEGER,
+  return_tx_id TEXT
+);
+
+-- Solo-mining device registry (#149, migration 0085)
+CREATE TABLE solo_miners (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  label TEXT NOT NULL,
+  ip TEXT NOT NULL,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  overheating_ceiling_c INTEGER,                  -- per-device override; null = use global
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at INTEGER NOT NULL
+);
+
+-- Solo-mining per-tick per-device samples (#149, migration 0085)
+CREATE TABLE solo_miner_samples (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  device_id INTEGER NOT NULL REFERENCES solo_miners(id),
+  sampled_at INTEGER NOT NULL,
+  hashrate_10m_ghs REAL,
+  hashrate_1h_ghs REAL,
+  hashrate_instant_ghs REAL,                      -- migration 0087; firmware fallback
+  temp_asic_c REAL,
+  temp_vr_c REAL,
+  power_w REAL,
+  shares_accepted INTEGER,
+  shares_rejected INTEGER,
+  stratum_url TEXT,
+  best_diff TEXT,                                  -- migration 0086
+  best_session_diff TEXT                           -- migration 0086
 );
 ```
 
@@ -646,3 +758,4 @@ Remaining work is tracked in GitHub issues.
 | 1.5     | 2026-04-25 | Aligned with spec v2.2 (appliance packaging, v1.3.0 release, umbrella #56). Documented three-layer secrets resolution (env > sops > db) and the new `secrets` table (migration 0047). Added the NEEDS_SETUP boot path: when secrets or config are absent, daemon stands up only the wizard's three endpoints and transitions in-place to operational on submit. Added `/api/health` as a public probe shared by both boot phases. Noted setup.ts as the power-user CLI path; the dashboard wizard is the appliance default. Touched §3.3 and §10 (operator-facing helpers) only - no schema or control-loop shape changes. |
 
 | 1.6     | 2026-05-02 | Catch-up sweep with spec v2.3. §5 config schema gains `show_share_log_on_hashrate_chart` (migration 0049) and flips `btc_price_source` default to `coingecko` (migration 0050, #77). §5 tick_metrics gains `share_log_pct` (migration 0048). Rewrote the `spend_sat` migration-summary entry (was self-contradicting: §5 marked it LEGACY/no-longer-written while the migration summary still said it fed the per-day P&L panel; per-day P&L is actually driven by `primary_bid_consumed_sat` deltas added in 0041). §2 repo-layout block: dropped the never-shipped `Decisions` page (spec §12.3 confirms it was not built) and added `storage-estimate` to the `routes/` listing (#85 shipped 2026-05-01). §9 observability: removed stale `/healthz` and Prometheus `/metrics` references (neither shipped) in favour of the actual `/api/health` endpoint, with a forward-looking note that `/metrics` is deferred. §1 high-level diagram: added the Datum Gateway's optional `:7152` `/umbrel-api` port (only `:23334` was shown), and dropped the misleading "Umbrel" annotation on bitcoind RPC - bitcoind can run anywhere on the LAN, and like Electrs it's an optional payout-observation source. No schema or control-loop shape changes. |
+| 1.7     | 2026-05-18 | Comprehensive catch-up with spec v2.5 (two weeks of feature work since v1.6). §1: replaced "no external notification channel" with description of the Telegram subsystem (NotificationSink + TelegramSink + AlertEvaluator + TelegramReceiver inline-ack). §2: added debug-dump, ddns, solo-miners routes; confirmed /alerts in dashboard pages. §4: added /alerts and /setup to routing list. §5 config schema: added ~30 columns (Telegram 9, DDNS 5, solo-mining 5, alert thresholds 3, payout features 2, display/chart 3, debug API 1); fixed retention defaults (tick_metrics and eventful decisions are 0 = forever, not 365). §5 new tables: pool_blocks, bid_events, block_version_cache, braiins_deposits, solo_miners, solo_miner_samples. No control-loop shape changes. |
