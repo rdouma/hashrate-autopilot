@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@braiins-hashrate/shared": "workspace:*",
-    "openapi-fetch": "^0.13.8"
+    "openapi-fetch": "^0.17.0"
   },
   "devDependencies": {
     "openapi-typescript": "^7.5.2"
