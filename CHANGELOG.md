@@ -2,6 +2,10 @@
 
 ## 2026-05-19
 
+### `[Release]` v1.7.7
+
+Chart UX polish (click-to-focus scroll-wheel zoom, viewport-scoped Y-axis), CodeQL security hardening (prototype-pollution, SSRF, ReDoS, rate limiting), mobile-responsive UI, debug API endpoint, daemon-offline gap bands, and major dependency upgrades (React 19, Lingui 6, Vite 8, Zod 4, and 10+ other packages). No new migrations.
+
 ### `[UI]` Click-to-focus scroll-wheel zoom on charts
 
 Scroll wheel no longer hijacks page scrolling when the cursor passes over a chart. The user must click a chart first to activate scroll-to-zoom; clicking elsewhere or pressing Escape deactivates it. A subtle blue outline indicates which chart is focused. Both hashrate and price charts share focus state.

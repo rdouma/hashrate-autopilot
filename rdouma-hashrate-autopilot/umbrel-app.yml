@@ -7,7 +7,7 @@ manifestVersion: 1
 id: rdouma-hashrate-autopilot
 category: bitcoin
 name: Hashrate Autopilot
-version: "1.7.6"
+version: "1.7.7"
 tagline: Autopilot for renting hashrate to mine on Ocean Mining
 icon: https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/assets/icon-512.png
 # Umbrel renders description literally - no YAML folding of soft
@@ -51,21 +51,22 @@ defaultPassword: ""
 submitter: Remco Douma
 submission: https://github.com/rdouma/hashrate-autopilot
 releaseNotes: |
-  v1.7.6 - TradingView-style chart interaction.
+  v1.7.7 - chart UX polish, security hardening, major dependency upgrades.
 
   NEW
-  - Drag-to-pan and scroll-wheel zoom on both hashrate and price charts. Both charts scroll in sync. Data is pre-fetched 1x visible range on each side for smooth panning. Preset buttons (3h/6h/12h/24h/1w/1m/1y/All) stay highlighted while panning. A "live" button appears when panned away from the current edge. Zoom soft-snaps to preset durations so the preset button lights up as you scroll through each one. Previous data stays visible as a placeholder while a new range loads, preventing flash-to-empty on release.
+  - Click-to-focus scroll-wheel zoom: scroll wheel no longer hijacks page scrolling when the cursor passes over a chart. Click a chart to activate zoom; click outside or press Escape to deactivate. A subtle blue outline shows the focused chart.
+  - Viewport-scoped Y-axis: the hashrate chart Y-axis now scales to only the visible data, so out-of-view spikes don't inflate the axis and crush the visible detail.
+  - Debug API endpoint: GET /api/debug/dump (behind a Config toggle) returns the full daemon state as JSON for single-curl diagnostics.
+  - Daemon-offline gap bands: hatched overlay on both charts during periods where the daemon was not polling.
+  - Mobile-responsive bids table and improved layout for Config, Alerts, and chart legends on narrow screens.
+
+  SECURITY
+  - CodeQL fixes: prototype-pollution guard, SSRF scheme validation, ReDoS string-method replacements, per-IP rate limiting (100 req/min).
+
+  DEPS
+  - React 18-19, Lingui 5-6, Vite 6-8, Zod 3-4, react-router-dom 6-7, better-sqlite3 11-12, kysely 0.28-0.29, ESLint 9-10, Vitest 3-4, and 5+ other packages.
 
   No migration; safe to upgrade or revert.
-
-  v1.7.5 - lifetime earnings backfill, marketplace-empty visibility, chart polish.
-
-  NEW
-  - Lifetime earnings backfill: walk your payout address's full on-chain history (electrs) to find historical Ocean coinbase receipts, so lifetime P&L is complete even if you swept past payouts. Auto-runs at startup; manual "Backfill now" button under Config - Pool & Payout. Manual pre-installation earnings offset for Lightning or pre-autopilot payouts the chain scan can't see.
-  - Marketplace-empty visibility: new Telegram event class, live yellow Status banner, and grey diagonal-hatch chart bands when the Braiins orderbook has no asks. Separate red hatching and distinct alert behavior when the Braiins API itself is unreachable (new braiins_reachable column, migration 0091).
-  - Payout-triggering pool block: the pool_block_credited Telegram message now highlights when a block's coinbase contained your on-chain TIDES payout, with the payout amount in sat and BTC.
-  - Avg overpay (settled) right-axis series on the price chart, using the delta-weighted formula that matches the stat card.
-  - Difficulty retarget pickaxe markers on the hashrate chart and pool luck overlay; all block/retarget markers mirrored onto the price chart.
 
   FIXES
   - Chart-marker cap now covers pool blocks and reward events (not just bid events); drops in priority order when over budget.
