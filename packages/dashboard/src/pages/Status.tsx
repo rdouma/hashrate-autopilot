@@ -666,7 +666,7 @@ export function Status() {
               value={statsQuery.data?.avg_settled_overpay_sat_per_ph_day ?? null}
               intlLocale={intlLocale}
               denomination={denomination}
-              tooltip={t`Delta-consumed-weighted average of (effective rate paid - fillable ask) per tick. Same delta weighting as the avg cost / hashrate delivered card so the two stay consistent. Reflects what we actually paid above fillable, post-billing. Zero-delivery ticks contribute nothing. Divergences from the intent card highlight where billing-period weighting matters - brief expensive blips during heavy delivery count more than long cheap stretches with no delivery.`}
+              tooltip={t`Delta-consumed-weighted average of (effective rate paid - fillable ask) per tick. Same delta weighting as the avg cost delivered card so the two stay consistent. Reflects what we actually paid above fillable, post-billing. Zero-delivery ticks contribute nothing. Divergences from the intent card highlight where billing-period weighting matters - brief expensive blips during heavy delivery count more than long cheap stretches with no delivery.`}
             />
           </div>
         </Card>
@@ -1613,7 +1613,7 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
       t`avg braiins`,
       t`avg datum`,
       t`avg ocean`,
-      t`avg cost / hashrate delivered`,
+      t`avg cost delivered`,
       t`avg cost vs hashprice`,
     ];
     return (
@@ -1667,14 +1667,14 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
         tooltip={t`Duration-weighted average of the hashrate Ocean credits to our payout address. Each tick (every 60 s) the daemon calls Ocean's /v1/user_hashrate endpoint and reads the \`hashrate_300s\` field - Ocean's own 5-minute sliding-window estimate for this wallet. So: sampled every minute, each sample is a 5-minute smoothed value. A sustained gap below Avg Braiins / Avg Datum means the pool isn't crediting work we think we delivered.`}
       />
       <StatCard
-        label={t`avg cost / hashrate delivered`}
+        label={t`avg cost delivered`}
         value={avg_cost_per_ph_sat_per_ph_day !== null ? denomination.formatSatPerPhDay(Math.round(avg_cost_per_ph_sat_per_ph_day), intlLocale) : '\u2014'}
         tooltip={t`Average effective rate over the selected chart range - what Braiins actually charged per PH/day delivered. Computed as the delta-weighted harmonic mean of the bid: SUM(Δconsumed_sat) ÷ SUM(Δconsumed_sat ÷ bid). Under pay-your-bid the bid IS the price, so when the bid is constant across the window this equals the bid exactly; when the bid varies (mid-window edits) it's the spend-weighted average. Periods of zero delivery contribute zero to both sides and don't skew the result. For the current bid price see the NEXT ACTION panel.`}
       />
       <StatCard
         label={t`avg cost vs hashprice`}
         value={avg_overpay_vs_hashprice_sat_per_ph_day !== null ? denomination.formatSatPerPhDay(Math.round(avg_overpay_vs_hashprice_sat_per_ph_day), intlLocale) : '\u2014'}
-        tooltip={t`(avg cost / hashrate delivered) minus the delta-weighted average hashprice during periods we were actually billed. Negative means we paid below break-even (good - cheaper than mining at current difficulty), positive means above. Same delta weighting as the avg cost card so the two stay consistent.`}
+        tooltip={t`(avg cost delivered) minus the delta-weighted average hashprice during periods we were actually billed. Negative means we paid below break-even (good - cheaper than mining at current difficulty), positive means above. Same delta weighting as the avg cost card so the two stay consistent.`}
         color={
           avg_overpay_vs_hashprice_sat_per_ph_day === null
             ? 'text-slate-100'
