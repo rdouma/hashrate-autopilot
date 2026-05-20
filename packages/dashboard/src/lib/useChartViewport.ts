@@ -103,6 +103,7 @@ interface DragState {
   pointerId: number;
   captured: boolean;
   dataWidthPx: number;
+  effectiveDuration: number;
 }
 
 export function useChartViewport(): UseChartViewportReturn {
@@ -207,17 +208,21 @@ export function useChartViewport(): UseChartViewportReturn {
       if (!svg) return;
       const vp = viewportRef.current;
       const zoomingOut = e.deltaY > 0;
-      const vpDuration = vp.until_ms - vp.since_ms;
-      const isAll = vp.activePreset === 'all' || vpDuration > YEAR_MS * halfStep;
-      if (isAll && zoomingOut) return;
-      if (isAll && !zoomingOut) {
-        const now = Date.now();
-        updateViewportRef.current({
-          since_ms: now - YEAR_MS, until_ms: now,
-          activePreset: '1y', liveEdge: true,
-        });
-        return;
+
+      if (vp.activePreset === 'all' && zoomingOut) return;
+
+      // Use the effective viewport for zoom math. When since_ms precedes
+      // the data start, the chart renders from the data start with 2%
+      // padding. Zoom must match so the cursor anchors where the user
+      // actually sees data, not in a hidden empty region.
+      const ds = dataStartRef.current;
+      let effSince = vp.since_ms;
+      if (ds !== null && effSince < ds) {
+        const span = vp.until_ms - ds;
+        effSince = Math.max(0, ds - span * 0.02);
       }
+      const effDuration = vp.until_ms - effSince;
+
       const rect = svg.getBoundingClientRect();
       const clientX = e.clientX - rect.left;
       const svgWidth = rect.width;
@@ -226,16 +231,16 @@ export function useChartViewport(): UseChartViewportReturn {
       const pxLeft = svgWidth * leftFrac;
       const pxRight = svgWidth * rightFrac;
       const fraction = Math.max(0, Math.min(1, (clientX - pxLeft) / (pxRight - pxLeft)));
-      const duration = vp.until_ms - vp.since_ms;
       const factor = zoomingOut ? ZOOM_FACTOR : 1 / ZOOM_FACTOR;
-      let newDuration = Math.max(MIN_DURATION_MS, duration * factor);
+      let newDuration = Math.max(MIN_DURATION_MS, effDuration * factor);
+
       if (newDuration > YEAR_MS * halfStep) {
-        const ds = dataStartRef.current;
         const now = Date.now();
-        const since = ds !== null ? Math.max(0, ds - (now - ds) * 0.02) : 0;
-        updateViewportRef.current({ since_ms: since, until_ms: now, activePreset: 'all', liveEdge: true });
+        const since = ds !== null ? Math.max(0, ds - (now - ds) * 0.02) : now - YEAR_MS;
+        updateViewportRef.current({ since_ms: since, until_ms: now, activePreset: 'all' as ChartRange, liveEdge: true });
         return;
       }
+
       let snappedPreset: ChartRange | null = null;
       for (const key of CHART_RANGES) {
         const w = CHART_RANGE_SPECS[key].windowMs;
@@ -245,12 +250,21 @@ export function useChartViewport(): UseChartViewportReturn {
           break;
         }
       }
-      const cursorTime = vp.since_ms + fraction * duration;
+      const cursorTime = effSince + fraction * effDuration;
       const raw: ChartViewport = {
         since_ms: cursorTime - fraction * newDuration,
         until_ms: cursorTime + (1 - fraction) * newDuration,
       };
       const clamped = clampViewport(raw);
+
+      // Snap to All if zoom-out reaches past all data at the live edge
+      if (zoomingOut && ds !== null && clamped.since_ms <= ds && isAtLiveEdge(clamped)) {
+        const now = Date.now();
+        const since = Math.max(0, ds - (now - ds) * 0.02);
+        updateViewportRef.current({ since_ms: since, until_ms: now, activePreset: 'all' as ChartRange, liveEdge: true });
+        return;
+      }
+
       const preset = snappedPreset ?? viewportToNearestPreset(clamped);
       const live = isAtLiveEdge(clamped);
       updateViewportRef.current({ ...clamped, activePreset: preset, liveEdge: live });
@@ -300,19 +314,25 @@ export function useChartViewport(): UseChartViewportReturn {
   const onPointerDown = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
     svgRef.current = e.currentTarget;
     if (e.button !== 0) return;
+    const ds = dataStartRef.current;
+    let effSince = viewport.since_ms;
+    if (ds !== null && effSince < ds) {
+      const span = viewport.until_ms - ds;
+      effSince = Math.max(0, ds - span * 0.02);
+    }
     dragStart.current = {
       clientX: e.clientX,
       viewport,
       pointerId: e.pointerId,
       captured: false,
       dataWidthPx: computeDataWidthPx(e.currentTarget),
+      effectiveDuration: viewport.until_ms - effSince,
     };
   }, [viewport, computeDataWidthPx]);
 
   const onPointerMove = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
     if (!dragStart.current) return;
-    const startDuration = dragStart.current.viewport.until_ms - dragStart.current.viewport.since_ms;
-    if (dragStart.current.viewport.activePreset === 'all' || startDuration > CHART_RANGE_SPECS['1y'].windowMs! * 1.1) return;
+    if (dragStart.current.viewport.activePreset === 'all') return;
     const deltaPx = e.clientX - dragStart.current.clientX;
     if (!dragStart.current.captured && Math.abs(deltaPx) > DRAG_THRESHOLD_PX) {
       e.currentTarget.setPointerCapture(dragStart.current.pointerId);
@@ -321,8 +341,7 @@ export function useChartViewport(): UseChartViewportReturn {
     }
     if (dragStart.current.captured) {
       const startVp = dragStart.current.viewport;
-      const duration = startVp.until_ms - startVp.since_ms;
-      const deltaMs = -(deltaPx / dragStart.current.dataWidthPx) * duration;
+      const deltaMs = -(deltaPx / dragStart.current.dataWidthPx) * dragStart.current.effectiveDuration;
       const raw: ChartViewport = {
         since_ms: startVp.since_ms + deltaMs,
         until_ms: startVp.until_ms + deltaMs,

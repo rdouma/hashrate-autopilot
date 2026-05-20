@@ -2,9 +2,9 @@
 
 ## 2026-05-20
 
-### `[Fix]` "All" viewport robust against zoom/drag collapse
+### `[Fix]` Chart zoom and drag operate on the visible viewport, not the raw internal one
 
-Multiple layers of defense against the "All" viewport collapsing when interacting with the chart: (1) `viewportToNearestPreset` now recognizes data-extent-based All viewports (not just `since_ms === 0`), so the 'all' preset is never lost during zoom operations; (2) the wheel handler uses both `activePreset` and duration as All detection, catching cases where the preset is stale; (3) `readStored('all')` uses a 1-year fallback window instead of epoch-to-now; (4) `clampViewport` no longer falls back to `since_ms: 0`; (5) `setDataStart()` feeds the actual first data timestamp into the hook so All spans from first-data-point to now with 2% padding.
+The root cause of the "All" zoom collapse: the chart renders from the data start (via `effectiveViewportSince`), but zoom calculations used the raw internal viewport, which could be much wider (e.g. 1 year when only 30 days of data exist). Positioning the cursor in the middle of the visible 30-day chart actually anchored the zoom at the middle of the hidden 365-day range - deep in an empty region with no data. Now both zoom and drag compute the effective viewport (matching what the user sees) and use it for cursor mapping, duration scaling, and drag sensitivity. Zooming out past all data snaps to All.
 
 ### `[Fix]` Chart zoom/drag edge cases: stuck at All, drag past data
 
