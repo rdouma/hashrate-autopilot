@@ -2,6 +2,10 @@
 
 ## 2026-05-20
 
+### `[Fix]` Chart viewport collapses when zooming or dragging from "All" mode
+
+The "All" preset creates a viewport spanning epoch-to-now (~56 years), but `clampViewport` capped duration at 5 years. Any zoom or drag operation from "All" mode passed through the clamp and collapsed the viewport from 56 years to 5 years, squishing data to the far left and often triggering "Not enough data in this range yet." Fixed by: (1) snapping to "All" when zoom-out exceeds the 1y preset, (2) blocking further zoom-out when already at "All", (3) blocking drag in "All" mode, and (4) making clampViewport return the full since=0,until=now range instead of truncating when duration exceeds the cap.
+
 ### `[Fix]` Chart focus activates on click completion, not pointer-down
 
 Focus (which enables scroll-to-zoom) now requires a full click (pointer-down + pointer-up without drag) rather than activating on pointer-down alone. This prevents accidental focus acquisition from phantom pointer events on certain input devices, which could lead to unintended zoom-out via subsequent scroll events.
