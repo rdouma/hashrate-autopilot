@@ -72,6 +72,7 @@ export interface OceanResponse {
   pool_luck_24h: number | null;
   pool_luck_7d: number | null;
   pool_luck_30d: number | null;
+  pool_luck_all_time: number | null;
   recent_blocks: readonly OceanBlock[];
   /**
    * Pool blocks to overlay as markers on the Hashrate chart. Under
@@ -129,6 +130,7 @@ export async function registerOceanRoute(
         pool_luck_24h: null,
         pool_luck_7d: null,
         pool_luck_30d: null,
+        pool_luck_all_time: null,
         recent_blocks: [],
         our_recent_blocks: [],
         pool: null,
@@ -150,6 +152,7 @@ export async function registerOceanRoute(
         pool_luck_24h: null,
         pool_luck_7d: null,
         pool_luck_30d: null,
+        pool_luck_all_time: null,
         recent_blocks: [],
         our_recent_blocks: [],
         pool: null,
@@ -170,6 +173,7 @@ export async function registerOceanRoute(
         pool_luck_24h: null,
         pool_luck_7d: null,
         pool_luck_30d: null,
+        pool_luck_all_time: null,
         recent_blocks: [],
         our_recent_blocks: [],
         pool: null,
@@ -248,6 +252,26 @@ export async function registerOceanRoute(
       windowMs: 30 * DAY_MS,
       recentBlockTimestampsMs: blockTimestamps,
     });
+    const earliestBlockMs = await deps.poolBlocksRepo.earliestTimestampMs().catch(() => null);
+    const allTimeWindowMs = earliestBlockMs !== null && earliestBlockMs > 0
+      ? now - earliestBlockMs
+      : null;
+    const allTimeBlockTimestamps = allTimeWindowMs !== null
+      ? await deps.poolBlocksRepo.timestampsSince(earliestBlockMs!).catch(() => blockTimestamps)
+      : blockTimestamps;
+    const poolHashrateAllTime = allTimeWindowMs !== null
+      ? await deps.tickMetricsRepo.avgPoolHashratePhSince(earliestBlockMs!).catch(() => null)
+      : null;
+    const pool_luck_all_time = allTimeWindowMs !== null && allTimeWindowMs > 0
+      ? computePoolLuck({
+          tickAt: now,
+          countInWindow: blocks_all_time,
+          poolHashrateAvgPh: poolHashrateAllTime ?? stats.pool.pool_hashrate_ph,
+          networkDifficulty: stats.pool.network_difficulty,
+          windowMs: allTimeWindowMs,
+          recentBlockTimestampsMs: allTimeBlockTimestamps,
+        })
+      : null;
     const shareLogAtBlock = await Promise.all(
       recentBlocksForUi.map((b) =>
         b.timestamp_ms > 0
@@ -302,6 +326,7 @@ export async function registerOceanRoute(
       pool_luck_24h,
       pool_luck_7d,
       pool_luck_30d,
+      pool_luck_all_time,
       recent_blocks: recentBlocksForUi,
       our_recent_blocks,
       pool: stats.pool,

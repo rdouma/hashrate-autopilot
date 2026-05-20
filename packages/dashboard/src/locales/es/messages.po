@@ -32,10 +32,6 @@ msgid "\"Autopilot only\" sums consumed across bids the daemon has tagged in its
 msgstr "\"Solo autopilot\" suma lo consumido en las ofertas que el daemon ha etiquetado en su libro contable - exacto para lo que *este* autopilot ha costado. \"Cuenta completa\" suma counters_committed.amount_consumed_sat en cada oferta de /v1/spot/bid - cubre ofertas activas + históricas (incluyendo cualquiera colocada antes de activar el autopilot). Puede retrasarse respecto a la última hora de consumo de ofertas activas."
 
 #: src/pages/Status.tsx
-#~ msgid "(avg cost / hashrate delivered) minus the delta-weighted average hashprice during periods we were actually billed. Negative means we paid below break-even (good - cheaper than mining at current difficulty), positive means above. Same delta weighting as the avg cost card so the two stay consistent."
-#~ msgstr "(avg cost / hashrate delivered) minus the delta-weighted average hashprice during periods we were actually billed. Negative means we paid below break-even (good - cheaper than mining at current difficulty), positive means above. Same delta weighting as the avg cost card so the two stay consistent."
-
-#: src/pages/Status.tsx
 msgid "(avg cost delivered) minus the delta-weighted average hashprice during periods we were actually billed. Negative means we paid below break-even (good - cheaper than mining at current difficulty), positive means above. Same delta weighting as the avg cost card so the two stay consistent."
 msgstr "(coste medio entregado) menos el hashprice promedio ponderado por delta durante los periodos que realmente nos facturaron. Negativo significa que pagamos por debajo del break-even (bien - mas barato que minar a la dificultad actual), positivo significa por encima. Misma ponderacion delta que la tarjeta avg cost, asi las dos quedan consistentes."
 
@@ -444,10 +440,6 @@ msgstr "Average effective rate over the selected chart range - what Braiins actu
 #: src/pages/Status.tsx
 msgid "avg braiins"
 msgstr "promedio braiins"
-
-#: src/pages/Status.tsx
-#~ msgid "avg cost / hashrate delivered"
-#~ msgstr "coste medio / hashrate entregado"
 
 #: src/pages/Status.tsx
 msgid "avg cost delivered"
@@ -1128,10 +1120,6 @@ msgstr "La hashrate entregada lleva al menos este número de minutos por debajo 
 #: src/components/PriceChart.tsx
 msgid "delta"
 msgstr "delta"
-
-#: src/pages/Status.tsx
-#~ msgid "Delta-consumed-weighted average of (effective rate paid - fillable ask) per tick. Same delta weighting as the avg cost / hashrate delivered card so the two stay consistent. Reflects what we actually paid above fillable, post-billing. Zero-delivery ticks contribute nothing. Divergences from the intent card highlight where billing-period weighting matters - brief expensive blips during heavy delivery count more than long cheap stretches with no delivery."
-#~ msgstr "Promedio ponderado por delta-consumido de (tasa efectiva pagada - fillable ask) por tick. Misma ponderación delta que la tarjeta avg cost / hashrate delivered, así las dos quedan consistentes. Refleja lo que pagamos realmente por encima de fillable, post-billing. Los ticks sin entrega no contribuyen. Las divergencias con la tarjeta intent destacan donde importa la ponderación por período de facturación - picos cortos caros durante entrega intensa pesan más que estiramientos largos baratos sin entrega."
 
 #: src/pages/Status.tsx
 msgid "Delta-consumed-weighted average of (effective rate paid - fillable ask) per tick. Same delta weighting as the avg cost delivered card so the two stay consistent. Reflects what we actually paid above fillable, post-billing. Zero-delivery ticks contribute nothing. Divergences from the intent card highlight where billing-period weighting matters - brief expensive blips during heavy delivery count more than long cheap stretches with no delivery."
@@ -3145,8 +3133,8 @@ msgid "total"
 msgstr "total"
 
 #: src/pages/Status.tsx
-msgid "Total blocks Ocean has found since the daemon started tracking. No luck multiplier - the Poisson expectation over an unbounded window is not practically useful."
-msgstr "Total de bloques que Ocean ha encontrado desde que el daemon empezo a registrar. Sin multiplicador de suerte - la expectativa de Poisson sobre una ventana ilimitada no es practicamente util."
+msgid "Total blocks Ocean has found since the daemon started tracking. The luck multiplier covers the entire window from the first tracked block to now."
+msgstr "Total de bloques que Ocean ha encontrado desde que el daemon comenzo a rastrear. El multiplicador de suerte abarca toda la ventana desde el primer bloque rastreado hasta ahora."
 
 #: src/pages/Config.tsx
 msgid "Total Braiins balance ÷ trailing-3h burn rate has dropped below the configured threshold. Off by default; tick the box and pick a day count to enable."

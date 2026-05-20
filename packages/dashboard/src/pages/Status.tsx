@@ -2296,7 +2296,7 @@ function OceanPanel() {
             shareStr && expected30d !== null
               ? t`Blocks Ocean found in the last 30d. At Ocean's current share of ${shareStr}, the 30d expectation is ~${fmt(expected30d, 0)} blocks. 30d smooths almost all Poisson variance - a sustained deviation here points to a real share change.`
               : t`Blocks Ocean found in the last 30d. Pool hashrate / network difficulty unavailable right now.`;
-          const tooltipAllTime = t`Total blocks Ocean has found since the daemon started tracking. No luck multiplier - the Poisson expectation over an unbounded window is not practically useful.`;
+          const tooltipAllTime = t`Total blocks Ocean has found since the daemon started tracking. The luck multiplier covers the entire window from the first tracked block to now.`;
           return (
             <>
               <Row
@@ -2316,7 +2316,7 @@ function OceanPanel() {
               />
               <Row
                 k={t`pool blocks all time`}
-                v={String(o.blocks_all_time)}
+                v={renderPoolBlocksRow(o.blocks_all_time, o.pool_luck_all_time, intlLocale)}
                 tooltip={tooltipAllTime}
               />
             </>

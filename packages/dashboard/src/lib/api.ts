@@ -1071,6 +1071,7 @@ export interface OceanResponse {
   pool_luck_24h: number | null;
   pool_luck_7d: number | null;
   pool_luck_30d: number | null;
+  pool_luck_all_time: number | null;
   recent_blocks: OceanBlockView[];
   our_recent_blocks: OurBlockMarker[];
   pool: {
