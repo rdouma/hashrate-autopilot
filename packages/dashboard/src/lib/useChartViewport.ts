@@ -248,10 +248,6 @@ export function useChartViewport(): UseChartViewportReturn {
 
   const onPointerDown = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
     svgRef.current = e.currentTarget;
-    if (!focusedRef.current) {
-      focusedRef.current = true;
-      setIsFocused(true);
-    }
     if (e.button !== 0) return;
     dragStart.current = {
       clientX: e.clientX,
@@ -292,6 +288,9 @@ export function useChartViewport(): UseChartViewportReturn {
       const live = isAtLiveEdge(viewport);
       const vp: ViewportState = { ...viewport, activePreset: startVp.activePreset, liveEdge: live };
       updateViewport(vp);
+    } else if (!focusedRef.current) {
+      focusedRef.current = true;
+      setIsFocused(true);
     }
     dragStart.current = null;
     setIsDragging(false);

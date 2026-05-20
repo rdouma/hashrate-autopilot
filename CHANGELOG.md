@@ -2,6 +2,10 @@
 
 ## 2026-05-20
 
+### `[Fix]` Chart focus activates on click completion, not pointer-down
+
+Focus (which enables scroll-to-zoom) now requires a full click (pointer-down + pointer-up without drag) rather than activating on pointer-down alone. This prevents accidental focus acquisition from phantom pointer events on certain input devices, which could lead to unintended zoom-out via subsequent scroll events.
+
 ### `[Fix]` Max bid cap line spikes to hard cap when hashprice is null
 
 The "max bid" line on the price chart spiked to the fixed hard cap (e.g. 50,000 sat/PH/day) whenever the Braiins API was briefly unreachable and hashprice was null. The daemon's decide() logic correctly pauses bidding in that scenario, but the chart fell back to plotting the fixed cap instead of skipping the tick. Now the cap line omits ticks with missing hashprice when the dynamic cap is configured, matching what the controller actually does.
