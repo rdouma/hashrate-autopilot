@@ -952,15 +952,20 @@ export const HashrateChart = memo(function HashrateChart({
     if (!chartData) return empty;
     if (
       rightAxisSeries !== 'pool_luck_24h' &&
-      rightAxisSeries !== 'pool_luck_7d'
+      rightAxisSeries !== 'pool_luck_7d' &&
+      rightAxisSeries !== 'pool_luck_30d'
     ) {
       return empty;
     }
-    const isDay = rightAxisSeries === 'pool_luck_24h';
-    const windowMs = isDay ? 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000;
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    const windowMs = rightAxisSeries === 'pool_luck_24h' ? DAY_MS
+                   : rightAxisSeries === 'pool_luck_7d' ? 7 * DAY_MS
+                   : 30 * DAY_MS;
     const { dataMinX, dataMaxX, xScale, shareLogYScale } = chartData;
-    const countKey = isDay ? 'pool_blocks_24h_count' : 'pool_blocks_7d_count';
-    const luckKey = isDay ? 'pool_luck_24h' : 'pool_luck_7d';
+    const countKey = rightAxisSeries === 'pool_luck_24h' ? 'pool_blocks_24h_count'
+                   : rightAxisSeries === 'pool_luck_7d' ? 'pool_blocks_7d_count'
+                   : 'pool_blocks_30d_count';
+    const luckKey = rightAxisSeries as 'pool_luck_24h' | 'pool_luck_7d' | 'pool_luck_30d';
     // The block-count column updates with the Ocean refresher's cadence
     // (~few minutes), not on the on-chain block timestamp. If we picked
     // `before`/`after` as the two ticks straddling the event time, both
