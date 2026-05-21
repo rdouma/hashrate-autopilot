@@ -16,9 +16,9 @@ import type { FastifyInstance } from 'fastify';
 
 import type { DdnsUpdaterService } from '../../services/ddns-updater.js';
 import type { PublicIpService } from '../../services/public-ip.js';
+import { USER_AGENT } from './build.js';
 
 const NOIP_UPDATE_URL = 'https://dynupdate.no-ip.com/nic/update';
-const USER_AGENT = 'hashrate-autopilot/1.0';
 
 export interface DdnsTestRouteDeps {
   readonly ddnsUpdater: DdnsUpdaterService;

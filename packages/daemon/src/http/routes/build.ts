@@ -66,6 +66,7 @@ function readBuildInfo(): BuildInfo {
 }
 
 export const BUILD: BuildInfo = readBuildInfo();
+export const USER_AGENT = `hashrate-autopilot/${BUILD.version}`;
 
 export async function registerBuildRoute(app: FastifyInstance): Promise<void> {
   app.get('/api/build', async (): Promise<BuildInfo> => BUILD);

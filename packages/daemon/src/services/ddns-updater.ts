@@ -27,9 +27,9 @@
 
 import type { AppConfig } from '../config/schema.js';
 import type { PublicIpService } from './public-ip.js';
+import { USER_AGENT } from '../http/routes/build.js';
 
 const NOIP_UPDATE_URL = 'https://dynupdate.no-ip.com/nic/update';
-const DEFAULT_USER_AGENT = 'hashrate-autopilot/1.0';
 const DEFAULT_INTERVAL_MS = 5 * 60_000;
 const HEARTBEAT_MS = 60 * 60_000; // force a push at least hourly
 
@@ -77,7 +77,7 @@ export class DdnsUpdaterService {
 
   constructor(private readonly options: DdnsUpdaterOptions) {
     this.fetcher = options.fetcher ?? fetch;
-    this.userAgent = options.userAgent ?? DEFAULT_USER_AGENT;
+    this.userAgent = options.userAgent ?? USER_AGENT;
   }
 
   getSnapshot(): DdnsSnapshot {

@@ -19,6 +19,8 @@
  * more reliable and returns structured data.
  */
 
+import { USER_AGENT } from '../http/routes/build.js';
+
 const OCEAN_API_BASE = 'https://api.ocean.xyz/v1';
 const PAYOUT_THRESHOLD_SAT = 1_048_576;
 // 60 s matches the dashboard tick / Ocean-panel refetch cadence.
@@ -343,7 +345,7 @@ async function getJson(
   const res = await fetchImpl(url, {
     headers: {
       accept: 'application/json',
-      'user-agent': 'hashrate-autopilot/1.0',
+      'user-agent': USER_AGENT,
     },
     signal: AbortSignal.timeout(10_000),
   });
