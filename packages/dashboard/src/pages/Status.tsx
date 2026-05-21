@@ -135,14 +135,16 @@ export function Status() {
   const setChartRange = chartViewport.setPreset;
   const vp = chartViewport.settledViewport;
 
+  const isAll = chartViewport.viewport.activePreset === 'all';
   const visibleSpan = vp.until_ms - vp.since_ms;
   const fetchBounds = useMemo(() => {
+    if (isAll) return { since_ms: 0, until_ms: Date.now() };
     const buffer = visibleSpan * 1.0;
     return {
       since_ms: Math.max(0, vp.since_ms - buffer),
       until_ms: Math.min(Date.now(), vp.until_ms + buffer),
     };
-  }, [vp.since_ms, vp.until_ms, visibleSpan]);
+  }, [vp.since_ms, vp.until_ms, visibleSpan, isAll]);
 
   const [dataStartMs, setDataStartMs] = useState<number | null>(null);
 

@@ -119,14 +119,17 @@ export function useChartViewport(): UseChartViewportReturn {
   const allViewport = useCallback((): ViewportState => {
     const now = Date.now();
     const ds = dataStartRef.current;
-    const since = ds !== null ? ds - (now - ds) * 0.02 : 0;
+    if (ds === null) {
+      return { since_ms: now - CHART_RANGE_SPECS['1y'].windowMs!, until_ms: now, activePreset: 'all' as ChartRange, liveEdge: true };
+    }
+    const since = ds - (now - ds) * 0.02;
     return { since_ms: Math.max(0, since), until_ms: now, activePreset: 'all' as ChartRange, liveEdge: true };
   }, []);
 
   const setDataStart = useCallback((ms: number) => {
     const prev = dataStartRef.current;
     dataStartRef.current = ms;
-    if (prev === null && viewport.activePreset === 'all') {
+    if (viewport.activePreset === 'all' && (prev === null || ms < prev)) {
       const vp = allViewport();
       setViewport(vp);
       setSettledViewport(vp);
@@ -155,6 +158,7 @@ export function useChartViewport(): UseChartViewportReturn {
   }, [scheduleSettle]);
 
   const setPreset = useCallback((range: ChartRange) => {
+    if (range === 'all') dataStartRef.current = null;
     const vp: ViewportState = range === 'all'
       ? allViewport()
       : { ...presetToViewport(range), activePreset: range, liveEdge: true };

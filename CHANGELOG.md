@@ -2,6 +2,10 @@
 
 ## 2026-05-20
 
+### `[Fix]` "All" shows all data in one click, not progressively
+
+Clicking "All" from a narrow preset (e.g. 24h) used to require multiple clicks to expand because `dataStartRef` was stale - it reflected the narrow query window, not the full dataset. Each click widened the fetch, discovered older data, and expanded one step. Now clicking "All" resets the data-start tracking and fetches from epoch, so the first response discovers the true earliest data point and the viewport corrects in one shot.
+
 ### `[Fix]` Chart zoom and drag operate on the visible viewport, not the raw internal one
 
 The root cause of the "All" zoom collapse: the chart renders from the data start (via `effectiveViewportSince`), but zoom calculations used the raw internal viewport, which could be much wider (e.g. 1 year when only 30 days of data exist). Positioning the cursor in the middle of the visible 30-day chart actually anchored the zoom at the middle of the hidden 365-day range - deep in an empty region with no data. Now both zoom and drag compute the effective viewport (matching what the user sees) and use it for cursor mapping, duration scaling, and drag sensitivity. Zooming out past all data snaps to All.
