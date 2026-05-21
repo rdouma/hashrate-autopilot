@@ -44,6 +44,10 @@ fi
 echo "==> installing dependencies..."
 pnpm install --frozen-lockfile
 
+echo "==> cleaning stale build artifacts..."
+find packages -name 'tsconfig.tsbuildinfo' -not -path '*/node_modules/*' -delete
+rm -rf packages/*/dist
+
 echo "==> building..."
 pnpm build
 
