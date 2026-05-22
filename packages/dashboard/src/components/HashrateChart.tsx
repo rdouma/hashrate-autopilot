@@ -749,19 +749,18 @@ export const HashrateChart = memo(function HashrateChart({
         const hi = Math.max(Math.ceil(slMax) + 1, 3);
         shareLogYTicks = [];
         for (let v = lo; v <= hi; v++) shareLogYTicks.push(v);
+      } else if (
+        rightAxisSeries === 'solo_hashrate' ||
+        rightAxisSeries === 'solo_max_temp'
+      ) {
+        const yFloor = 0;
+        const yCeiling = slMax > 0 ? slMax * 1.1 : 1;
+        shareLogYTicks = niceYTicks(yFloor, yCeiling, 5);
       } else {
-        // 5% breathing room above + below so the line never sits on the
-        // top/bottom rule. Falls back to a [0, slMax] band when slMin
-        // approaches zero so the axis still makes sense.
         const rawSpan = slMax - slMin;
         let yFloor: number;
         let yCeiling: number;
         if (rawSpan === 0) {
-          // Flat-series guard (mirrors PriceChart's right-axis
-          // handling): avoid scientific-notation ticks like `2.00e-8`
-          // when the entire visible window is constant zero (e.g. a
-          // pool-blocks-count or share-log series sitting at 0 across
-          // the current zoom).
           if (slMax === 0) {
             yFloor = 0;
             yCeiling = 1;

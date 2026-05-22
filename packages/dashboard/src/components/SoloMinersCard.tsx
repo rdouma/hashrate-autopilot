@@ -270,16 +270,23 @@ function DeviceRow({
     return (
       <tr className="border-t border-slate-800">
         <td className="py-1.5 px-3">
-          <span className="text-slate-200">{entry.device.label}</span>{' '}
-          <span className="text-slate-500 font-mono text-[10px]">{entry.device.ip}</span>
+          <div className="text-slate-200">{entry.device.label}</div>
+          <div className="text-[10px] text-slate-500 font-mono">{entry.device.ip}</div>
         </td>
-        <td colSpan={7} className="py-1.5 px-3 text-red-300 text-[11px] italic">
-          {entry.error
-            ? t`unreachable: ${entry.error}`
-            : t`unreachable`}
+        <td
+          className="py-1.5 px-3 text-right font-mono text-slate-500 italic"
+          title={entry.error ?? undefined}
+        >
+          {t`offline`}
         </td>
+        <td className="py-1.5 px-3 text-right font-mono text-slate-600">-</td>
+        <td className="py-1.5 px-3 text-right font-mono text-slate-600">-</td>
+        <td className="py-1.5 px-3 text-right font-mono text-slate-600">-</td>
+        <td className="py-1.5 px-3 text-right font-mono text-slate-600">-</td>
+        <td className="py-1.5 px-3 text-right font-mono text-slate-600">-</td>
+        <td className="py-1.5 px-3 text-right font-mono text-slate-600">-</td>
         <td className="py-1.5 px-3 text-right text-[10px] text-slate-500 font-mono">
-          {fmt.timestamp(entry.last_polled_at)}
+          {formatAge(entry.last_polled_at)}
         </td>
       </tr>
     );
@@ -460,12 +467,12 @@ function DeviceMobileCard({
           </div>
         </div>
         <div className="text-[10px] text-slate-500 font-mono whitespace-nowrap">
-          {fmt.timestamp(entry.last_polled_at)}
+          {formatAge(entry.last_polled_at)}
         </div>
       </div>
       {!entry.reachable ? (
-        <div className="text-red-300 text-[11px] italic">
-          {entry.error ? t`unreachable: ${entry.error}` : t`unreachable`}
+        <div className="text-slate-500 text-[11px] italic" title={entry.error ?? undefined}>
+          {t`offline`}
         </div>
       ) : (
         <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">

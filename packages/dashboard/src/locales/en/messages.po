@@ -3201,13 +3201,8 @@ msgid "unpaid earnings (Ocean)"
 msgstr "unpaid earnings (Ocean)"
 
 #: src/components/SoloMinersCard.tsx
-msgid "unreachable"
-msgstr "unreachable"
-
-#. placeholder {0}: entry.error
-#: src/components/SoloMinersCard.tsx
-msgid "unreachable: {0}"
-msgstr "unreachable: {0}"
+msgid "offline"
+msgstr "offline"
 
 #: src/pages/Config.tsx
 msgid "unsaved changes"

@@ -2,6 +2,10 @@
 
 ## 2026-05-22
 
+### `[UI]` Solo miners offline: clean display + chart axis anchored at zero (#206)
+
+When solo miners are powered off, the Status table now shows "offline" with dashes in each data column instead of the raw Node.js error message ("unreachable: This operation was aborted") spanning across the table. The internal error is preserved as a tooltip for debugging. The "Polled" column shows relative age (e.g. "2m ago") instead of an absolute timestamp for consistency with the online rows. On the chart side, the solo power (W), solo hashrate, and solo max temp right-axis series now anchor at zero so the operator can see the series actually dropping to zero when devices go offline, instead of the axis staying zoomed into the last known range (e.g. 52-54W).
+
 ### `[Release]` v1.8.5
 
 Renamed "Bitcoin Core" to "Bitcoin Knots" across the entire app (dashboard, Config page, locale catalogs, docs, Umbrel manifest). Pool URL default changed from disappearing HTML placeholder to a real editable value. Config page Electrs hint now mentions electrs_electrs_1 as typical Umbrel hostname.

@@ -837,15 +837,13 @@ export const PriceChart = memo(function PriceChart({
       const allowNegativeAxis =
         rightAxisSeries === 'avg_overpay_intent' ||
         rightAxisSeries === 'avg_overpay_settled';
+      const anchorAtZero = rightAxisSeries === 'solo_power_watts';
       let yFloor: number;
       let yCeiling: number;
-      if (rawSpan === 0) {
-        // Series is flat across the window. The previous code's
-        // `Math.max(span, 1e-6)` safety floor produced scientific-
-        // notation ticks like `2.00e-8` when the series sat at zero
-        // (typical right after a payout, when unpaid (sat) drops to 0
-        // for the rest of the chart range). Pick a clean visible band
-        // so the labels stay human-readable.
+      if (anchorAtZero) {
+        yFloor = 0;
+        yCeiling = rmax > 0 ? rmax * 1.1 : 1;
+      } else if (rawSpan === 0) {
         if (rmax === 0 && !allowNegativeAxis) {
           yFloor = 0;
           yCeiling = 1;
