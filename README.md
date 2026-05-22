@@ -185,11 +185,11 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
   version bits, and explorer link. Both block markers and **difficulty-retarget pickaxe icons** (violet,
   with dashed vertical lines) are mirrored onto the price chart, so the operator sees these events in
   context on both charts.
-- **Telegram notifications** - three severity tiers across seventeen event classes. **IMPORTANT** (red, with a
+- **Telegram notifications** - three severity tiers across eighteen event classes. **IMPORTANT** (red, with a
   retry ladder and paired recovery messages): Datum stratum unreachable, hashrate below floor, zero
   hashrate, Braiins API unreachable, unknown bid detected, bid sustained-paused, wallet runway below
   threshold, and the Braiins-side compliance-returned deposit. **WARNING** (amber): Braiins beta-exit
-  fees detected. **INFO** (slate, opt-in good news): pool block credited via TIDES (with a "+ ON-CHAIN PAYOUT" title suffix and payout amount when the block triggers a payout), Braiins deposit detected (mempool / first-confirmation), Braiins deposit available (compliance-cleared and spendable), marketplace empty (reachable but no supply; won't double-fire with the API-unreachable alert during outages).
+  fees detected. **INFO** (slate, opt-in good news): pool block credited via TIDES (with a "+ ON-CHAIN PAYOUT" title suffix and payout amount when the block triggers a payout), Braiins deposit detected (mempool / first-confirmation), Braiins deposit available (compliance-cleared and spendable), marketplace empty (reachable but no supply; won't double-fire with the API-unreachable alert during outages), solo fleet best difficulty (new all-time high share difficulty record).
   Each event class has its own opt-out toggle; timer-driven events carry an inline minute threshold so
   the operator can tune "how long bad before I get paged" per-event. Messages localise to the operator's
   chosen language (English / Dutch / Spanish, independent of the dashboard's display language). Setup
@@ -201,11 +201,12 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
   device's `/api/system/info` every tick (2 s per-device timeout, parallel poll so one unreachable unit
   doesn't block the rest). Per-device readings on the Status page: hashrate, ASIC + VR temperature, power
   draw, share-rejection rate, best-ever-difficulty, uptime. Fleet footer aggregates total hashrate, total
-  watts, J/TH efficiency, and active-device count. Four Telegram event classes (all IMPORTANT, independently
-  opt-out-able): **overheating** (75 °C ASIC ceiling matching AxeOS firmware's THROTTLE_TEMP, with a
+  watts, J/TH efficiency, and active-device count. Five Telegram event classes (independently
+  opt-out-able): four IMPORTANT - **overheating** (75 °C ASIC ceiling matching AxeOS firmware's THROTTLE_TEMP, with a
   global override; VR has a separate 100 °C ceiling), **zero hashrate / unreachable**, **share-rejection
   high** (rolling-window threshold), and **stratum URL drift** (firmware silently re-pointed at a
-  different pool). Device management lives in Config -> Display & Logging -> Solo miners; a
+  different pool) - plus one INFO: **fleet best difficulty** (new all-time high share difficulty record,
+  rendered as a staircase line with trophy markers on the Hashrate chart). Device management lives in Config -> Display & Logging -> Solo miners; a
   "Scan local network" button probes the daemon's /24 subnet (or a CIDR you type in the
   override field - required on Umbrel, where the daemon sits on the docker bridge subnet and
   not the host LAN) and returns AxeOS-shaped responders so adding a fleet doesn't require
@@ -302,7 +303,7 @@ the sat ↔ USD header toggle; CoinGecko / Coinbase / Bitstamp / Kraken).
 **Telegram notifications** - bot token, chat id, optional instance label, retry interval, master
 **Send messages to Telegram** switch, and a language picker (alert copy can run in a different
 language from the dashboard if you'd rather read the chat in English while the UI is in Dutch). Below
-that, seventeen event-class tiles grouped by source (Datum / Braiins marketplace / Ocean / Solo miners), each with a
+that, eighteen event-class tiles grouped by source (Datum / Braiins marketplace / Ocean / Solo miners), each with a
 severity pill (IMPORTANT red, WARNING amber, INFO slate) so the operator can tell at a glance which
 bucket each one fires at. Tiles for timer-driven events (Datum unreachable, hashrate floor, zero
 hashrate, API unreachable, sustained-paused, wallet runway) carry an inline minute input so the

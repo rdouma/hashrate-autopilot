@@ -1,4 +1,4 @@
-# Hashrate Autopilot - Architecture (v1.7)
+# Hashrate Autopilot - Architecture (v1.8)
 
 > Concretion of `docs/spec.md` into module boundaries, data flow, deployment shape, and a
 > milestone-ordered build plan.
@@ -10,12 +10,14 @@
 > (2026-04-24) aligned the architecture doc with spec v2.1: the simulator has been retired,
 > `overpay_sat_per_eh_day` is back as the single pricing knob. v1.5 (2026-04-25) covered the
 > appliance-packaging release. v1.6 (2026-05-02) caught up on schema additions through migration
-> 0051. **v1.7** (this revision, 2026-05-18) is a comprehensive catch-up with spec v2.5: adds the
+> 0051. v1.7 (2026-05-18) was a comprehensive catch-up with spec v2.5: adds the
 > Telegram notification subsystem (NotificationSink + TelegramSink + AlertEvaluator + inline-ack),
 > DDNS updater, solo-mining monitoring, deposit lifecycle tracking, marketplace-empty alert, debug
 > API endpoint, historical-payout backfill, six new tables (pool_blocks, bid_events, solo_miners,
 > solo_miner_samples, braiins_deposits, block_version_cache), ~30 new config columns, the /alerts
-> dashboard page, and corrects the retention defaults to match the running schema.
+> dashboard page, and corrects the retention defaults to match the running schema. **v1.8** (this
+> revision, 2026-05-21) adds migrations 0093-0094: pool luck 30d columns on tick_metrics (#201)
+> and the solo_best_difficulty_events table + runtime_state high-water mark (#204).
 
 ## 1. High-level shape
 
@@ -119,11 +121,12 @@ hashrate-autopilot/
 │   │   │   └── execute.ts          (calls Braiins API with dry-run/live split)
 │   │   └── src/http/               (Fastify; dashboard API)
 │   │       ├── server.ts
-│   │       └── routes/             (status, config, decisions, actions, operator, metrics, run-mode,
+│   │       └── routes/             (status, config, decisions, actions, metrics, run-mode,
 │   │                                finance, stats, storage-estimate, bid-events, ocean, payouts, btc-price,
-│   │                                bip110-scan, bitcoind-test, electrs-test, block-found-sound,
-│   │                                reward-events, alerts, notifications-test, ddns, ddns-test,
-│   │                                solo-miners, solo-miners-scan, debug-dump)
+│   │                                bip110-scan, bitcoind-test, electrs-test, block-found-sound, build,
+│   │                                reward-events, alerts, notifications-test, notifications-test-event,
+│   │                                ddns, ddns-test, datum-test, pool-url-test, stale-urls,
+│   │                                solo-miners, debug-dump)
 │   │
 │   └── dashboard/                  React SPA
 │       ├── src/main.tsx
@@ -318,7 +321,8 @@ CREATE TABLE runtime_state (
   below_floor_since_ms INTEGER,           -- alert timer start (debounced by FLOOR_DEBOUNCE_TICKS)
   above_floor_ticks INTEGER NOT NULL,     -- debounce counter for below_floor_since_ms
   lower_ready_since_ms INTEGER,           -- DEPRECATED (v2.0 retired lowering-patience)
-  below_target_since_ms INTEGER           -- DEPRECATED (v2.0 retired above_market escalation)
+  below_target_since_ms INTEGER,          -- DEPRECATED (v2.0 retired above_market escalation)
+  solo_best_difficulty_all_time REAL      -- fleet-wide all-time best share difficulty (migration 0094, #204)
 );
 -- Note: run_mode is set on startup from config.boot_mode:
 --   ALWAYS_DRY_RUN (default) → always boots in DRY_RUN (safest)
@@ -396,6 +400,9 @@ CREATE TABLE tick_metrics (
   pool_hashrate_ph_avg_7d REAL,           -- trailing 7d mean
   pool_luck_24h REAL,                     -- gap-based per-tick luck = (600 / pool_share) / elapsed
   pool_luck_7d REAL,
+  pool_luck_30d REAL,                     -- 30d trailing luck (migration 0093, #201)
+  pool_blocks_30d_count INTEGER,          -- pool blocks observed in last 30d
+  pool_hashrate_ph_avg_30d REAL,          -- trailing 30d mean of pool_hashrate_ph
   braiins_reachable INTEGER,              -- 1 = API reachable this tick, 0 = unreachable; NULL pre-0091
   run_mode TEXT NOT NULL,
   action_mode TEXT NOT NULL
@@ -538,8 +545,21 @@ CREATE TABLE solo_miner_samples (
   shares_rejected INTEGER,
   stratum_url TEXT,
   best_diff TEXT,                                  -- migration 0086
-  best_session_diff TEXT                           -- migration 0086
+  best_session_diff TEXT,                          -- migration 0086
+  best_diff_numeric REAL                           -- migration 0094; parsed numeric for fleet MAX()
 );
+
+-- Solo-mining fleet best-difficulty records (#204, migration 0094)
+CREATE TABLE solo_best_difficulty_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  recorded_at INTEGER NOT NULL,
+  difficulty REAL NOT NULL,
+  previous_difficulty REAL,
+  device_label TEXT NOT NULL,
+  device_ip TEXT NOT NULL
+);
+CREATE INDEX idx_solo_best_diff_events_recorded_at
+  ON solo_best_difficulty_events(recorded_at);
 ```
 
 Migration history in `packages/daemon/src/state/migrations/` - forward-only, applied in filename order
@@ -643,6 +663,15 @@ concern (not by order; the file names are authoritative):
   surfaces. 0087 adds `hashrate_instant_ghs` to `solo_miner_samples`
   for firmware variants that expose only the bare `hashRate` field
   rather than the windowed `hashRate_10m` / `hashRate_1h` averages.
+
+- **Pool luck 30d + solo best difficulty (0093-0094):** 0093 (#201)
+  adds `pool_luck_30d`, `pool_blocks_30d_count`, `pool_hashrate_ph_avg_30d`
+  to `tick_metrics`, extending the gap-based luck surface from 24h/7d to
+  30d. 0094 (#204) adds `solo_best_difficulty_all_time REAL` to
+  `runtime_state` (fleet-wide high-water mark) and creates the
+  `solo_best_difficulty_events` table (device_label, device_ip, difficulty,
+  recorded_at) for the staircase chart line and trophy markers. An INFO
+  Telegram notification fires on each new record.
 
 ## 6. External integrations
 
@@ -759,3 +788,4 @@ Remaining work is tracked in GitHub issues.
 
 | 1.6     | 2026-05-02 | Catch-up sweep with spec v2.3. §5 config schema gains `show_share_log_on_hashrate_chart` (migration 0049) and flips `btc_price_source` default to `coingecko` (migration 0050, #77). §5 tick_metrics gains `share_log_pct` (migration 0048). Rewrote the `spend_sat` migration-summary entry (was self-contradicting: §5 marked it LEGACY/no-longer-written while the migration summary still said it fed the per-day P&L panel; per-day P&L is actually driven by `primary_bid_consumed_sat` deltas added in 0041). §2 repo-layout block: dropped the never-shipped `Decisions` page (spec §12.3 confirms it was not built) and added `storage-estimate` to the `routes/` listing (#85 shipped 2026-05-01). §9 observability: removed stale `/healthz` and Prometheus `/metrics` references (neither shipped) in favour of the actual `/api/health` endpoint, with a forward-looking note that `/metrics` is deferred. §1 high-level diagram: added the Datum Gateway's optional `:7152` `/umbrel-api` port (only `:23334` was shown), and dropped the misleading "Umbrel" annotation on bitcoind RPC - bitcoind can run anywhere on the LAN, and like Electrs it's an optional payout-observation source. No schema or control-loop shape changes. |
 | 1.7     | 2026-05-18 | Comprehensive catch-up with spec v2.5 (two weeks of feature work since v1.6). §1: replaced "no external notification channel" with description of the Telegram subsystem (NotificationSink + TelegramSink + AlertEvaluator + TelegramReceiver inline-ack). §2: added debug-dump, ddns, solo-miners routes; confirmed /alerts in dashboard pages. §4: added /alerts and /setup to routing list. §5 config schema: added ~30 columns (Telegram 9, DDNS 5, solo-mining 5, alert thresholds 3, payout features 2, display/chart 3, debug API 1); fixed retention defaults (tick_metrics and eventful decisions are 0 = forever, not 365). §5 new tables: pool_blocks, bid_events, block_version_cache, braiins_deposits, solo_miners, solo_miner_samples. No control-loop shape changes. |
+| 1.8     | 2026-05-21 | Migrations 0093-0094 catch-up (spec v2.7). §5 tick_metrics: added `pool_luck_30d`, `pool_blocks_30d_count`, `pool_hashrate_ph_avg_30d` (#201). §5 runtime_state: added `solo_best_difficulty_all_time` (#204). §5 new table: `solo_best_difficulty_events` (#204). Migration summary extended with a 0093-0094 paragraph. No control-loop shape changes. |
