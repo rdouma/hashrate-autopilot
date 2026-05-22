@@ -2,6 +2,10 @@
 
 ## 2026-05-22
 
+### `[Release]` v1.8.3
+
+Wizard fixes for turnkey Umbrel setup: Pool URL no longer defaults to unreachable datum.local (empty field with public-host placeholder + DDNS hint), Electrs help text corrected to electrs_electrs_1, and Datum API URL auto-configured from BHA_DATUM_API_URL during setup.
+
 ### `[Release]` v1.8.2
 
 Hot-fix on v1.8.1: the wizard's /api/setup-info endpoint crashed with 500 because applyEnvOverridesToConfig() re-validated the full Zod schema against placeholder empty strings (btc_payout_address, worker_name) that fail nonEmptyString. Replaced with direct env-var reads for payout_source, electrs_host, and electrs_port.

@@ -7,7 +7,7 @@ manifestVersion: 1
 id: rdouma-hashrate-autopilot
 category: bitcoin
 name: Hashrate Autopilot
-version: "1.8.2"
+version: "1.8.3"
 tagline: Autopilot for renting hashrate to mine on Ocean Mining
 icon: https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/assets/icon-512.png
 # Umbrel renders description literally - no YAML folding of soft
@@ -51,28 +51,14 @@ defaultPassword: ""
 submitter: Remco Douma
 submission: https://github.com/rdouma/hashrate-autopilot
 releaseNotes: |
-  v1.8.0 - turnkey Umbrel setup, solo best difficulty tracking, pool luck 30d, auto-cancel on Datum outage.
-
-  NEW
-  - Turnkey Umbrel setup: Bitcoin Core, Electrs, and Datum Gateway are now declared dependencies. All three auto-discover across Umbrel's shared Docker network - the wizard pre-fills every field, so a fresh install goes from zero to live dashboard in under a minute.
-  - Solo fleet best difficulty tracking: new right-axis option on the hashrate chart renders a running-max staircase with trophy markers at each record. Telegram notification on every new all-time high. Localized in EN/NL/ES.
-  - Pool luck 30d: new trailing window option alongside 24h and 7d, plus an all-time pool block count in the Ocean panel.
-  - Auto-cancel bids when Datum stratum is down: after 3 consecutive unreachable ticks the controller cancels active bids to stop spending on hashrate that cannot reach the pool. Resumes automatically on recovery.
-  - Color-coded ASIC chip badges in the Solo Miners section for quick visual identification of device generations.
-  - Drag-to-pan and scroll-wheel zoom on both charts with soft-snap to preset durations.
-  - Daemon-offline gap bands, debug API endpoint, mobile-responsive layout.
+  v1.8.3 - wizard fixes for turnkey Umbrel setup.
 
   FIXES
-  - Wizard now respects BHA_* env overrides (payout source, Electrs host/port) so Umbrel installs default to Electrs instead of requiring manual selection.
-  - Chart icons unified to Lucide library (box for pool blocks, pickaxe for retargets, trophy for best difficulty).
-  - Boot-time hashprice fetch retries up to 3 times to prevent false "Waiting for Ocean hashprice" on slow networks.
-  - Human-readable reason strings in bid event tooltips instead of internal enum values.
-  - Duplicate Telegram notification on first alert fire eliminated.
-  - Chart viewport fixes: "All" works in one click, zoom/drag from All no longer collapses, focus activates on click completion.
+  - Pool URL field no longer defaults to the unreachable datum.local. Now shows an empty field with a placeholder explaining the URL must be publicly reachable, and a note about built-in DDNS support available in Config after setup.
+  - Electrs help text corrected from wrong IP (10.21.21.10) to actual Docker hostname (electrs_electrs_1).
+  - Datum Gateway API URL is now auto-configured from the BHA_DATUM_API_URL env var during setup, so the Datum panel works on first boot without manual configuration.
 
-  New migrations (0088-0094). Safe to upgrade.
-
-  v1.7.3 - Fahrenheit support for solo-miner temperatures.
+  Safe to upgrade from any 1.8.x release.
 
   NEW
   - Temperature unit selector on Config → Display & Logging, alongside Number format and Date layout. Pick Celsius or Fahrenheit (or "system default", which uses °F for English UI and °C otherwise). Honoured everywhere temperatures show up: the Status-page Solo miners card (ASIC + VR temp columns), the right-axis temperature plot on the Hashrate chart, and the Overheating ceiling input on Config (operator types in the chosen unit, daemon round-trips internally in °C). Per-browser setting. Telegram alert bodies stay in °C for now - those go to a phone and the daemon doesn't know per-recipient preferences.
