@@ -2,6 +2,10 @@
 
 ## 2026-05-21
 
+### `[Fix]` "Waiting for Ocean hashprice" shown while Ocean panel has a value
+
+The Next Action card read hashprice from the tick-captured snapshot, which could be null if the cache was cold when the tick ran. Meanwhile the Ocean panel's finance poll had already warmed the cache, so the two cards contradicted each other. The status route now overlays the live hashprice cache onto the tick state before computing the next action, eliminating the false "waiting" message.
+
 ### `[Fix]` Duplicate Telegram notification on first alert fire
 
 When `recordAlert()` inserted a new alert row with `next_retry_at_ms` set to `now`, the concurrent `processDueRetries()` running on the same tick could pick up the row before the initial delivery attempt finished, sending the Telegram message twice. Fixed by setting `next_retry_at_ms` to the first retry interval in the future so the retry processor only sees the row on a subsequent tick if the initial delivery actually failed.

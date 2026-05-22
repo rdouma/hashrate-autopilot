@@ -167,6 +167,17 @@ export async function registerStatusRoute(
 
     const hashpriceSatPerPhDay = deps.hashpriceCache?.getFresh(Infinity) ?? null;
 
+    // Overlay the live hashprice cache onto the tick-captured state
+    // so describeNextAction sees it even if the cache was cold when
+    // the tick ran. Without this, the Next Action card shows
+    // "Waiting for Ocean hashprice" while the Ocean panel happily
+    // displays the value (the finance poll warmed the cache after
+    // the tick snapshot was taken).
+    const stateForNextAction =
+      state.hashprice_sat_per_ph_day === null && hashpriceSatPerPhDay !== null
+        ? { ...state, hashprice_sat_per_ph_day: hashpriceSatPerPhDay }
+        : state;
+
     return {
       run_mode: liveRunMode,
       action_mode: 'NORMAL' as const,
@@ -175,7 +186,7 @@ export async function registerStatusRoute(
       next_tick_at: nextTickAt,
       tick_interval_ms: tickIntervalMs,
       next_action: {
-        ...describeNextAction(state, liveRunMode),
+        ...describeNextAction(stateForNextAction, liveRunMode),
         last_executed: summariseLastExecuted(state.tick_at, executed),
       },
       balances,
