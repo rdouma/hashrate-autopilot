@@ -1464,21 +1464,17 @@ export const HashrateChart = memo(function HashrateChart({
                       <line x1="0" y1="9.5" x2="10" y2="9.5" stroke={color} strokeWidth="1.4" />
                     </g>
                   ) : (
-                    // CUBE - default and BIP 110-signalling. The two
-                    // cases share the same shape; colour differs
-                    // (yellow vs blue) so BIP 110 stays scannable in
-                    // a row of pool blocks without yelling.
-                    <g
-                      transform={`translate(${x - 5}, ${PADDING.top - 9})`}
-                      fill="none"
-                      stroke={color}
-                      strokeWidth="1.1"
-                      strokeLinejoin="round"
+                    <svg
+                      x={x - 7} y={PADDING.top - 11}
+                      width="14" height="14" viewBox="0 0 24 24"
+                      fill="none" stroke={color} strokeWidth="2"
+                      strokeLinecap="round" strokeLinejoin="round"
+                      opacity="0.85"
                     >
-                      <path d="M5 0 L10 2.5 L5 5 L0 2.5 Z" fill={color} fillOpacity="0.25" />
-                      <path d="M0 2.5 L0 7.5 L5 10 L5 5 Z" fill={color} fillOpacity="0.15" />
-                      <path d="M5 5 L5 10 L10 7.5 L10 2.5 Z" fill={color} fillOpacity="0.35" />
-                    </g>
+                      <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" fill={color} fillOpacity="0.25" />
+                      <path d="m3.3 7 8.7 5 8.7-5" />
+                      <path d="M12 22V12" />
+                    </svg>
                   )}
                 </g>
               );
