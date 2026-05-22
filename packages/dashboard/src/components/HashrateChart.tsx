@@ -1309,6 +1309,7 @@ export const HashrateChart = memo(function HashrateChart({
           d={`${deliveredPath} L${xScale(dataMaxX).toFixed(1)},${yScale(0)} L${xScale(dataMinX).toFixed(1)},${yScale(0)} Z`}
           fill="url(#deliveredFill)"
           opacity="0.5"
+          pointerEvents="none"
         />
         <path d={deliveredPath} stroke={COLOR_DELIVERED} strokeWidth="1.8" fill="none" />
         {hasDatum && (

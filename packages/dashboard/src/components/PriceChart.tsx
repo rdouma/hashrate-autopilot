@@ -1783,7 +1783,7 @@ export const PriceChart = memo(function PriceChart({
                 <stop offset="100%" stopColor={COLOR_MAXBID} stopOpacity="0" />
               </linearGradient>
             </defs>
-            <path d={capExclusionPolygon} fill="url(#capExclusion)" stroke="none" />
+            <path d={capExclusionPolygon} fill="url(#capExclusion)" stroke="none" pointerEvents="none" />
           </>
         )}
         {capPath && (
@@ -1801,7 +1801,7 @@ export const PriceChart = memo(function PriceChart({
              sub-run is its own closed polygon down to the baseline
              (#46 - the earlier single-closure variant painted diagonal
              wedges across gaps after #44 split the line into subpaths). */
-          <path d={priceAreaPath} fill="url(#priceFill)" opacity="0.5" />
+          <path d={priceAreaPath} fill="url(#priceFill)" opacity="0.5" pointerEvents="none" />
         )}
         {pricePath && (
           <path d={pricePath} stroke={COLOR_PRICE} strokeWidth="1.8" fill="none" opacity="0.95" />
