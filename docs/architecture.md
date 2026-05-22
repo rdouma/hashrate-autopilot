@@ -1,4 +1,4 @@
-# Hashrate Autopilot - Architecture (v1.8)
+# Hashrate Autopilot - Architecture (v1.9)
 
 > Concretion of `docs/spec.md` into module boundaries, data flow, deployment shape, and a
 > milestone-ordered build plan.
@@ -15,9 +15,11 @@
 > DDNS updater, solo-mining monitoring, deposit lifecycle tracking, marketplace-empty alert, debug
 > API endpoint, historical-payout backfill, six new tables (pool_blocks, bid_events, solo_miners,
 > solo_miner_samples, braiins_deposits, block_version_cache), ~30 new config columns, the /alerts
-> dashboard page, and corrects the retention defaults to match the running schema. **v1.8** (this
-> revision, 2026-05-21) adds migrations 0093-0094: pool luck 30d columns on tick_metrics (#201)
-> and the solo_best_difficulty_events table + runtime_state high-water mark (#204).
+> dashboard page, and corrects the retention defaults to match the running schema. v1.8
+> (2026-05-21) adds migrations 0093-0094: pool luck 30d columns on tick_metrics (#201)
+> and the solo_best_difficulty_events table + runtime_state high-water mark (#204). **v1.9** (this
+> revision, 2026-05-22) corrects the §5 DDL for five tables (pool_blocks, bid_events,
+> braiins_deposits, solo_miners, solo_miner_samples) that had drifted from the actual migrations.
 
 ## 1. High-level shape
 
@@ -477,31 +479,38 @@ CREATE TABLE fee_schedule_cache (
   cached_at INTEGER NOT NULL
 );
 
--- Pool blocks observed from Ocean (migration 0055+)
+-- Pool blocks observed from Ocean (#108, migration 0065)
 CREATE TABLE pool_blocks (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  height INTEGER NOT NULL UNIQUE,
+  height INTEGER PRIMARY KEY,
   block_hash TEXT NOT NULL,
   timestamp_ms INTEGER NOT NULL,
-  total_reward_sat INTEGER,
-  subsidy_sat INTEGER,
-  txn_fees_sat INTEGER,
-  is_own_block INTEGER NOT NULL DEFAULT 0,       -- bool: coinbase credited our address
-  detected_at INTEGER NOT NULL
+  total_reward_sat INTEGER NOT NULL,
+  subsidy_sat INTEGER NOT NULL,
+  fees_sat INTEGER NOT NULL,
+  worker TEXT,
+  username TEXT,
+  observed_at_ms INTEGER NOT NULL
 );
+CREATE INDEX idx_pool_blocks_timestamp_ms ON pool_blocks (timestamp_ms);
 
--- Bid events (create/edit/cancel audit trail; migration 0009+)
+-- Bid events (create/edit/cancel audit trail; migrations 0009, 0016, 0077)
 CREATE TABLE bid_events (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  tick_at INTEGER NOT NULL,
-  kind TEXT NOT NULL,                             -- 'CREATE_BID' | 'EDIT_PRICE' | 'EDIT_SPEED' | 'CANCEL_BID'
+  occurred_at INTEGER NOT NULL,
+  source TEXT NOT NULL CHECK (source IN ('AUTOPILOT', 'OPERATOR')),
+  kind TEXT NOT NULL CHECK (
+    kind IN ('CREATE_BID', 'EDIT_PRICE', 'EDIT_SPEED', 'CANCEL_BID')
+  ),
   braiins_order_id TEXT,
-  price_sat INTEGER,
+  old_price_sat INTEGER,
+  new_price_sat INTEGER,
   speed_limit_ph REAL,
   amount_sat INTEGER,
-  run_mode TEXT NOT NULL,
-  details_json TEXT
+  reason TEXT,
+  overpay_sat_per_eh_day INTEGER,                -- migration 0077; snapshot at write time
+  max_overpay_vs_hashprice_sat_per_eh_day INTEGER -- migration 0077; snapshot at write time
 );
+CREATE INDEX idx_bid_events_occurred_at ON bid_events (occurred_at);
 
 -- Block-header version cache for BIP 110 detection (#94, migration 0058)
 CREATE TABLE block_version_cache (
@@ -510,44 +519,61 @@ CREATE TABLE block_version_cache (
   fetched_at INTEGER NOT NULL
 );
 
--- Braiins deposit lifecycle tracking (#143, migration 0080)
+-- Braiins deposit lifecycle tracking (#130/#143, migration 0080)
 CREATE TABLE braiins_deposits (
-  txid TEXT PRIMARY KEY,
+  tx_id TEXT PRIMARY KEY,
+  amount_sat INTEGER NOT NULL,
+  address TEXT,
+  last_seen_status INTEGER NOT NULL,              -- DepositStatus enum (0..5; exact mapping undocumented)
+  last_seen_return_tx_id TEXT,
   first_seen_at_ms INTEGER NOT NULL,
-  status TEXT NOT NULL,                           -- 'detected' | 'available' | 'returned'
-  amount_sat INTEGER,
-  return_tx_id TEXT
+  updated_at_ms INTEGER NOT NULL,
+  notified_detected INTEGER NOT NULL DEFAULT 0 CHECK (notified_detected IN (0, 1)),
+  notified_available INTEGER NOT NULL DEFAULT 0 CHECK (notified_available IN (0, 1)),
+  notified_returned INTEGER NOT NULL DEFAULT 0 CHECK (notified_returned IN (0, 1))
 );
+CREATE INDEX idx_braiins_deposits_first_seen_at ON braiins_deposits (first_seen_at_ms);
 
 -- Solo-mining device registry (#149, migration 0085)
 CREATE TABLE solo_miners (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   label TEXT NOT NULL,
-  ip TEXT NOT NULL,
+  ip TEXT NOT NULL UNIQUE,
   enabled INTEGER NOT NULL DEFAULT 1,
-  overheating_ceiling_c INTEGER,                  -- per-device override; null = use global
   sort_order INTEGER NOT NULL DEFAULT 0,
-  created_at INTEGER NOT NULL
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
 );
 
--- Solo-mining per-tick per-device samples (#149, migration 0085)
+-- Solo-mining per-tick per-device samples (#149, migrations 0085-0087, 0094)
 CREATE TABLE solo_miner_samples (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  device_id INTEGER NOT NULL REFERENCES solo_miners(id),
-  sampled_at INTEGER NOT NULL,
+  device_id INTEGER NOT NULL REFERENCES solo_miners(id) ON DELETE CASCADE,
+  tick_at INTEGER NOT NULL,
+  reachable INTEGER NOT NULL,
+  hashrate_1m_ghs REAL,
   hashrate_10m_ghs REAL,
   hashrate_1h_ghs REAL,
   hashrate_instant_ghs REAL,                      -- migration 0087; firmware fallback
-  temp_asic_c REAL,
-  temp_vr_c REAL,
+  expected_hashrate_ghs REAL,
+  temp_c REAL,
+  vr_temp_c REAL,
   power_w REAL,
+  voltage_v REAL,
+  current_a REAL,
   shares_accepted INTEGER,
   shares_rejected INTEGER,
+  uptime_seconds INTEGER,
+  asic_model TEXT,
+  version TEXT,
   stratum_url TEXT,
-  best_diff TEXT,                                  -- migration 0086
-  best_session_diff TEXT,                          -- migration 0086
-  best_diff_numeric REAL                           -- migration 0094; parsed numeric for fleet MAX()
+  stratum_port INTEGER,
+  stratum_user TEXT,
+  best_diff_text TEXT,                             -- migration 0086
+  best_session_diff_text TEXT,                     -- migration 0086
+  best_diff_numeric REAL,                          -- migration 0094; parsed numeric for fleet MAX()
+  PRIMARY KEY (device_id, tick_at)
 );
+CREATE INDEX solo_miner_samples_tick_idx ON solo_miner_samples(tick_at);
 
 -- Solo-mining fleet best-difficulty records (#204, migration 0094)
 CREATE TABLE solo_best_difficulty_events (
@@ -789,3 +815,4 @@ Remaining work is tracked in GitHub issues.
 | 1.6     | 2026-05-02 | Catch-up sweep with spec v2.3. §5 config schema gains `show_share_log_on_hashrate_chart` (migration 0049) and flips `btc_price_source` default to `coingecko` (migration 0050, #77). §5 tick_metrics gains `share_log_pct` (migration 0048). Rewrote the `spend_sat` migration-summary entry (was self-contradicting: §5 marked it LEGACY/no-longer-written while the migration summary still said it fed the per-day P&L panel; per-day P&L is actually driven by `primary_bid_consumed_sat` deltas added in 0041). §2 repo-layout block: dropped the never-shipped `Decisions` page (spec §12.3 confirms it was not built) and added `storage-estimate` to the `routes/` listing (#85 shipped 2026-05-01). §9 observability: removed stale `/healthz` and Prometheus `/metrics` references (neither shipped) in favour of the actual `/api/health` endpoint, with a forward-looking note that `/metrics` is deferred. §1 high-level diagram: added the Datum Gateway's optional `:7152` `/umbrel-api` port (only `:23334` was shown), and dropped the misleading "Umbrel" annotation on bitcoind RPC - bitcoind can run anywhere on the LAN, and like Electrs it's an optional payout-observation source. No schema or control-loop shape changes. |
 | 1.7     | 2026-05-18 | Comprehensive catch-up with spec v2.5 (two weeks of feature work since v1.6). §1: replaced "no external notification channel" with description of the Telegram subsystem (NotificationSink + TelegramSink + AlertEvaluator + TelegramReceiver inline-ack). §2: added debug-dump, ddns, solo-miners routes; confirmed /alerts in dashboard pages. §4: added /alerts and /setup to routing list. §5 config schema: added ~30 columns (Telegram 9, DDNS 5, solo-mining 5, alert thresholds 3, payout features 2, display/chart 3, debug API 1); fixed retention defaults (tick_metrics and eventful decisions are 0 = forever, not 365). §5 new tables: pool_blocks, bid_events, block_version_cache, braiins_deposits, solo_miners, solo_miner_samples. No control-loop shape changes. |
 | 1.8     | 2026-05-21 | Migrations 0093-0094 catch-up (spec v2.7). §5 tick_metrics: added `pool_luck_30d`, `pool_blocks_30d_count`, `pool_hashrate_ph_avg_30d` (#201). §5 runtime_state: added `solo_best_difficulty_all_time` (#204). §5 new table: `solo_best_difficulty_events` (#204). Migration summary extended with a 0093-0094 paragraph. No control-loop shape changes. |
+| 1.9     | 2026-05-22 | §5 DDL accuracy pass: rewrote `pool_blocks` (height-keyed PK, correct column names), `bid_events` (occurred_at, source, old/new price split, overpay snapshot columns from 0077), `braiins_deposits` (tx_id, integer status, notified_* idempotency flags, address column), `solo_miners` (UNIQUE ip, updated_at), and `solo_miner_samples` (composite PK, 20+ columns from actual migration 0085-0087 including reachable, voltage, current, asic_model, version, stratum_port/user). No code or control-loop shape changes - pure documentation accuracy. |

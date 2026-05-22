@@ -1213,7 +1213,7 @@ export class AlertEvaluator {
   }
 
   private async evaluateSoloBestDifficulty(
-    _state: State,
+    state: State,
     disabled: ReadonlySet<string>,
   ): Promise<void> {
     if (disabled.has('solo_best_difficulty')) return;
@@ -1221,16 +1221,21 @@ export class AlertEvaluator {
     const result = this.axeOSPoller.getLastBestDiffResult();
     if (!result.isNewRecord || result.fleetMax === null) return;
     const prev = result.previousRecord;
+    const copy = copyFor(state);
+    const diffStr = formatDifficultyCompact(result.fleetMax);
+    const prevStr = prev !== null ? formatDifficultyCompact(prev) : null;
     const improvementStr = prev !== null && prev > 0
-      ? ` (${(result.fleetMax / prev).toFixed(1)}x improvement)`
-      : '';
-    const prevStr = prev !== null
-      ? `Previous record: ${formatDifficultyCompact(prev)}. `
-      : '';
+      ? (result.fleetMax / prev).toFixed(1)
+      : null;
     await this.alertManager.recordAlert({
       severity: 'INFO',
-      title: `New best difficulty: ${formatDifficultyCompact(result.fleetMax)}`,
-      body: `${result.deviceLabel ?? 'Unknown'} submitted a share at ${formatDifficultyCompact(result.fleetMax)} difficulty${improvementStr}. ${prevStr}`,
+      title: copy.solo_best_difficulty_title({ difficulty: diffStr }),
+      body: copy.solo_best_difficulty_body({
+        label: result.deviceLabel ?? 'Unknown',
+        difficulty: diffStr,
+        previous: prevStr,
+        improvement: improvementStr,
+      }),
       event_class: 'solo_best_difficulty',
     });
   }

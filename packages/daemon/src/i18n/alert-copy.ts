@@ -143,6 +143,10 @@ export interface AlertCopy {
 
   solo_stratum_drift_title(args: { label: string }): string;
   solo_stratum_drift_body(args: { label: string; old_url: string; new_url: string }): string;
+
+  // #204 - solo fleet best difficulty.
+  solo_best_difficulty_title(args: { difficulty: string }): string;
+  solo_best_difficulty_body(args: { label: string; difficulty: string; previous: string | null; improvement: string | null }): string;
 }
 
 const EN: AlertCopy = {
@@ -257,6 +261,11 @@ const EN: AlertCopy = {
   solo_stratum_drift_title: ({ label }) => `Solo miner stratum changed: ${label}`,
   solo_stratum_drift_body: ({ label, old_url, new_url }) =>
     `${label}'s stratum URL changed from ${old_url} to ${new_url}. If this wasn't you, someone re-pointed the device.`,
+
+  solo_best_difficulty_title: ({ difficulty }) =>
+    `New best difficulty: ${difficulty}`,
+  solo_best_difficulty_body: ({ label, difficulty, previous, improvement }) =>
+    `${label} submitted a share at ${difficulty} difficulty${improvement ? ` (${improvement}x improvement)` : ''}. ${previous ? `Previous record: ${previous}. ` : ''}`,
 };
 
 const NL: AlertCopy = {
@@ -372,6 +381,11 @@ const NL: AlertCopy = {
   solo_stratum_drift_title: ({ label }) => `Solo-miner stratum gewijzigd: ${label}`,
   solo_stratum_drift_body: ({ label, old_url, new_url }) =>
     `Stratum-URL van ${label} is gewijzigd van ${old_url} naar ${new_url}. Als jij dit niet deed heeft iemand het apparaat omgezet.`,
+
+  solo_best_difficulty_title: ({ difficulty }) =>
+    `Nieuw beste difficulty: ${difficulty}`,
+  solo_best_difficulty_body: ({ label, difficulty, previous, improvement }) =>
+    `${label} heeft een share ingediend met difficulty ${difficulty}${improvement ? ` (${improvement}x verbetering)` : ''}. ${previous ? `Vorig record: ${previous}. ` : ''}`,
 };
 
 const ES: AlertCopy = {
@@ -487,6 +501,11 @@ const ES: AlertCopy = {
   solo_stratum_drift_title: ({ label }) => `Stratum del minero solo cambió: ${label}`,
   solo_stratum_drift_body: ({ label, old_url, new_url }) =>
     `La URL stratum de ${label} cambió de ${old_url} a ${new_url}. Si no fuiste tú, alguien reapuntó el dispositivo.`,
+
+  solo_best_difficulty_title: ({ difficulty }) =>
+    `Nuevo mejor difficulty: ${difficulty}`,
+  solo_best_difficulty_body: ({ label, difficulty, previous, improvement }) =>
+    `${label} envió un share con difficulty ${difficulty}${improvement ? ` (${improvement}x mejora)` : ''}. ${previous ? `Récord anterior: ${previous}. ` : ''}`,
 };
 
 const CATALOGS: Record<AlertLocale, AlertCopy> = { en: EN, nl: NL, es: ES };
