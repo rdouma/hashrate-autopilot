@@ -151,7 +151,7 @@ describe('decide - Datum stratum down auto-cancel (#199)', () => {
       kind: 'CANCEL_BID',
       braiins_order_id: 'order-a',
     });
-    expect(proposals[0]!.reason).toContain('datum_stratum_down');
+    expect(proposals[0]!.reason).toContain('Datum stratum down');
   });
 
   it('cancels multiple owned bids when Datum is down', () => {
