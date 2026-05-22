@@ -68,7 +68,7 @@ describe('createSetupModeServer', () => {
     expect(body.has_existing_config).toBe(false);
     expect(body.has_existing_secrets).toBe(false);
     expect(body.defaults.target_hashrate_ph).toBe(APP_CONFIG_DEFAULTS.target_hashrate_ph);
-    expect(body.defaults.destination_pool_url).toBe('stratum+tcp://datum.local:23334');
+    expect(body.defaults.destination_pool_url).toBe('stratum+tcp://your-public-host:23334');
     expect(body.current_config).toBeNull();
   });
 
