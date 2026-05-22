@@ -45,7 +45,6 @@ import {
   APP_CONFIG_DEFAULTS,
   SecretsSchema,
 } from './config/schema.js';
-import { applyEnvOverridesToConfig } from './config/env-overrides.js';
 import type { ConfigRepo } from './state/repos/config.js';
 import type { SecretsRepo } from './state/repos/secrets.js';
 
@@ -113,33 +112,26 @@ export async function createSetupModeServer(
   app.get('/api/setup-info', async () => {
     const existing = await deps.configRepo.get();
     const detected = detectBitcoindEnv(process.env);
-    const envDefaults = applyEnvOverridesToConfig({
-      ...APP_CONFIG_DEFAULTS,
-      destination_pool_url: 'stratum+tcp://datum.local:23334',
-      destination_pool_worker_name: '',
-      btc_payout_address: '',
-    });
+    const env = process.env;
+    const envPayoutSource = env['BHA_PAYOUT_SOURCE']?.trim() || null;
+    const envElectrsHost = env['BHA_ELECTRS_HOST']?.trim() || null;
+    const envElectrsPort = env['BHA_ELECTRS_PORT']?.trim() || null;
     return {
       has_existing_config: existing !== null,
       has_existing_secrets: await deps.secretsRepo.exists(),
       defaults: {
-        ...envDefaults,
-        // Bitcoind detection fills gaps only when BHA_* didn't
-        // already set them (envDefaults still carries the schema
-        // default empty strings for these fields when no BHA_*
-        // override was provided).
-        bitcoind_rpc_url: envDefaults.bitcoind_rpc_url || detected.url || APP_CONFIG_DEFAULTS.bitcoind_rpc_url,
-        bitcoind_rpc_user: envDefaults.bitcoind_rpc_user || detected.user || APP_CONFIG_DEFAULTS.bitcoind_rpc_user,
-        bitcoind_rpc_password: envDefaults.bitcoind_rpc_password || detected.password || APP_CONFIG_DEFAULTS.bitcoind_rpc_password,
-        // If BHA_PAYOUT_SOURCE was set, envDefaults already carries
-        // the right value. Otherwise fall back to bitcoind detection.
-        payout_source: envDefaults.payout_source !== APP_CONFIG_DEFAULTS.payout_source
-          ? envDefaults.payout_source
-          : detected.url ? 'bitcoind' : APP_CONFIG_DEFAULTS.payout_source,
+        ...APP_CONFIG_DEFAULTS,
+        destination_pool_url: 'stratum+tcp://datum.local:23334',
+        destination_pool_worker_name: '',
+        btc_payout_address: '',
+        bitcoind_rpc_url: detected.url ?? APP_CONFIG_DEFAULTS.bitcoind_rpc_url,
+        bitcoind_rpc_user: detected.user ?? APP_CONFIG_DEFAULTS.bitcoind_rpc_user,
+        bitcoind_rpc_password: detected.password ?? APP_CONFIG_DEFAULTS.bitcoind_rpc_password,
+        electrs_host: envElectrsHost ?? APP_CONFIG_DEFAULTS.electrs_host,
+        electrs_port: envElectrsPort ? Number(envElectrsPort) : APP_CONFIG_DEFAULTS.electrs_port,
+        payout_source: envPayoutSource ?? (detected.url ? 'bitcoind' : APP_CONFIG_DEFAULTS.payout_source),
       },
       current_config: existing,
-      // Surface raw detected values so the wizard can show a
-      // "detected: …" hint next to the bitcoind section.
       detected_bitcoind: detected,
     };
   });

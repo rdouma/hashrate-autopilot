@@ -2,6 +2,10 @@
 
 ## 2026-05-22
 
+### `[Release]` v1.8.2
+
+Hot-fix on v1.8.1: the wizard's /api/setup-info endpoint crashed with 500 because applyEnvOverridesToConfig() re-validated the full Zod schema against placeholder empty strings (btc_payout_address, worker_name) that fail nonEmptyString. Replaced with direct env-var reads for payout_source, electrs_host, and electrs_port.
+
 ### `[Release]` v1.8.1
 
 Hot-fix on v1.8.0: replace hand-drawn pool-block cube with Lucide box icon on the price chart (the hashrate chart was already fixed in v1.8.0 but the price chart was missed).
