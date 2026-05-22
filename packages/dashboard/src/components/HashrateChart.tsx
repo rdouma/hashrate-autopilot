@@ -1601,21 +1601,40 @@ export const HashrateChart = memo(function HashrateChart({
         {rightAxisSeries === 'solo_best_diff' && bestDiffEvents
           .filter((ev) => ev.recorded_at >= dataMinX && ev.recorded_at <= dataMaxX)
           .map((ev) => {
-            const cx = xScale(ev.recorded_at);
-            const cy = shareLogYScale(ev.difficulty);
-            if (cy < PADDING.top || cy > chartHeight - PADDING.bottom) return null;
+            const x = xScale(ev.recorded_at);
             return (
-              <g key={ev.recorded_at} opacity="0.85">
-                <text
-                  x={cx}
-                  y={cy + 4}
-                  textAnchor="middle"
-                  fontSize="12"
-                  fill="#f59e0b"
-                  fontFamily="'Font Awesome 6 Pro'"
+              <g key={ev.recorded_at}>
+                <line
+                  x1={x}
+                  x2={x}
+                  y1={PADDING.top + 8}
+                  y2={chartHeight - PADDING.bottom}
+                  stroke="#f59e0b"
+                  strokeWidth="1"
+                  strokeDasharray="2 3"
+                  opacity="0.45"
+                  pointerEvents="none"
+                />
+                <rect
+                  x={x - 9}
+                  y={PADDING.top - 13}
+                  width={18}
+                  height={18}
+                  fill="transparent"
+                />
+                <svg
+                  x={x - 7} y={PADDING.top - 11}
+                  width="14" height="14" viewBox="0 0 24 24"
+                  fill="none" stroke="#f59e0b" strokeWidth="2"
+                  strokeLinecap="round" strokeLinejoin="round"
+                  opacity="0.85"
                 >
-                  {''}
-                </text>
+                  <path d="M6 2h12v6a6 6 0 0 1-12 0V2z" fill="#f59e0b" fillOpacity="0.25" />
+                  <path d="M12 14v4" />
+                  <path d="M8 18h8" />
+                  <path d="M4 2v4a2 2 0 0 0 2 2" />
+                  <path d="M20 2v4a2 2 0 0 1-2 2" />
+                </svg>
               </g>
             );
           })}
