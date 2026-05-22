@@ -122,7 +122,7 @@ export async function createSetupModeServer(
       has_existing_secrets: await deps.secretsRepo.exists(),
       defaults: {
         ...APP_CONFIG_DEFAULTS,
-        destination_pool_url: '',
+        destination_pool_url: 'stratum+tcp://your-public-host:23334',
         destination_pool_worker_name: '',
         btc_payout_address: '',
         bitcoind_rpc_url: detected.url ?? APP_CONFIG_DEFAULTS.bitcoind_rpc_url,
@@ -233,7 +233,7 @@ export async function createSetupModeServer(
 
 /**
  * Look at the process environment for the standard env-var triples
- * Umbrel and Start9 inject when an app declares a Bitcoin Core
+ * Umbrel and Start9 inject when an app declares a Bitcoin Knots
  * dependency. Returns whichever pieces we found - the wizard uses
  * this to prefill the bitcoind section so an operator who already
  * runs bitcoind on the same appliance doesn't have to re-enter creds.

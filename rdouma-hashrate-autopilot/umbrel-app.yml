@@ -24,7 +24,7 @@ description: |
 
   Setup is a three-step web wizard accessible at port 3010. After setup you get a dashboard with live decisions, charts, the DRY-RUN / LIVE / PAUSED switch, and a P&L panel that reads spend from Braiins and earnings from your on-chain wallet.
 
-  This app declares Bitcoin Core, Electrs, and Datum Gateway as dependencies, so Umbrel will prompt you to install them during setup. Once all apps run on the same Umbrel, the autopilot's dashboard auto-discovers the local Datum HTTP API, Electrs server, and Bitcoin RPC across Umbrel's shared Docker network - zero copy/paste, the worker-count, hashrate, P&L earnings, and BIP110 signalling panels all populate on first boot. (Pointing at off-Umbrel instances is also supported - just override the URLs in Config after setup.)
+  This app declares Bitcoin Knots, Electrs, and Datum Gateway as dependencies, so Umbrel will prompt you to install them during setup. Once all apps run on the same Umbrel, the autopilot's dashboard auto-discovers the local Datum HTTP API, Electrs server, and Bitcoin RPC across Umbrel's shared Docker network - zero copy/paste, the worker-count, hashrate, P&L earnings, and BIP110 signalling panels all populate on first boot. (Pointing at off-Umbrel instances is also supported - just override the URLs in Config after setup.)
 
 developer: Remco Douma
 website: https://github.com/rdouma/hashrate-autopilot
@@ -122,7 +122,7 @@ releaseNotes: |
   v1.5.4 - the actual electrs-only fix.
 
   FIX
-  - On-chain payouts populate the chart on Umbrel installs (and any other electrs-only setup without Bitcoin Core RPC). Previous fixes (v1.5.1 / v1.5.2) added the right code inside PayoutObserver, but main.ts's construction guard required bitcoindClient and so the observer was never instantiated when bitcoind RPC creds were absent. Relaxed the guard to allow electrs-only construction. Daemon log now explicitly reports whether the observer is ENABLED or DISABLED on startup (with the exact reason if disabled), so the next regression of this shape is grep-able from the log instead of presenting as a silent flat-zero chart.
+  - On-chain payouts populate the chart on Umbrel installs (and any other electrs-only setup without Bitcoin Knots RPC). Previous fixes (v1.5.1 / v1.5.2) added the right code inside PayoutObserver, but main.ts's construction guard required bitcoindClient and so the observer was never instantiated when bitcoind RPC creds were absent. Relaxed the guard to allow electrs-only construction. Daemon log now explicitly reports whether the observer is ENABLED or DISABLED on startup (with the exact reason if disabled), so the next regression of this shape is grep-able from the log instead of presenting as a silent flat-zero chart.
 
   Within ~60s the balance panel should populate; the chart's lifetime-earnings line backfills retroactively shortly after.
 
@@ -134,7 +134,7 @@ releaseNotes: |
   v1.5.2 - hot-fix on top of v1.5.1.
 
   FIX
-  - On-chain payouts populate the chart on Umbrel installs (and any other electrs-only setup without Bitcoin Core RPC). v1.5.1's "Electrs payout-observer now writes reward_events" fix only worked when bitcoind RPC was ALSO configured - the side-scan it added required a bitcoind client. Replaced with an electrs-native path: blockchain.scripthash.listunspent for the per-UTXO list, blockchain.block.header parsed for the actual on-chain timestamp. Backfills retroactively within ~60s of restart - your historical payouts now appear at their real block dates on the price chart's "paid earnings (lifetime)" line.
+  - On-chain payouts populate the chart on Umbrel installs (and any other electrs-only setup without Bitcoin Knots RPC). v1.5.1's "Electrs payout-observer now writes reward_events" fix only worked when bitcoind RPC was ALSO configured - the side-scan it added required a bitcoind client. Replaced with an electrs-native path: blockchain.scripthash.listunspent for the per-UTXO list, blockchain.block.header parsed for the actual on-chain timestamp. Backfills retroactively within ~60s of restart - your historical payouts now appear at their real block dates on the price chart's "paid earnings (lifetime)" line.
   - Two example placeholders in the Config UI no longer leak personal hostnames (the dev box's name was bleeding into operator-facing text).
 
   v1.5.1 - polish + bug-fix release.

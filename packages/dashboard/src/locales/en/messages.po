@@ -561,25 +561,25 @@ msgid "bit"
 msgstr "bit"
 
 #: src/pages/Setup.tsx
-msgid "Bitcoin Core (bitcoind RPC)"
-msgstr "Bitcoin Core (bitcoind RPC)"
+msgid "Bitcoin Knots (bitcoind RPC)"
+msgstr "Bitcoin Knots (bitcoind RPC)"
 
 #: src/pages/Config.tsx
-msgid "Bitcoin Core RPC"
-msgstr "Bitcoin Core RPC"
+msgid "Bitcoin Knots RPC"
+msgstr "Bitcoin Knots RPC"
 
 #. placeholder {0}: form.bitcoind_rpc_url
 #: src/pages/Setup.tsx
-msgid "Bitcoin Core RPC ({0})"
-msgstr "Bitcoin Core RPC ({0})"
+msgid "Bitcoin Knots RPC ({0})"
+msgstr "Bitcoin Knots RPC ({0})"
 
 #: src/pages/Config.tsx
-msgid "Bitcoin Core RPC connection"
-msgstr "Bitcoin Core RPC connection"
+msgid "Bitcoin Knots RPC connection"
+msgstr "Bitcoin Knots RPC connection"
 
 #: src/pages/Config.tsx
-msgid "Bitcoin Core RPC URL"
-msgstr "Bitcoin Core RPC URL"
+msgid "Bitcoin Knots RPC URL"
+msgstr "Bitcoin Knots RPC URL"
 
 #: src/pages/Setup.tsx
 msgid "Bitcoin payout address"
@@ -1206,12 +1206,12 @@ msgid "Dynamic DNS"
 msgstr "Dynamic DNS"
 
 #: src/pages/Config.tsx
-msgid "e.g. 192.168.1.121 or umbrel.local"
-msgstr "e.g. 192.168.1.121 or umbrel.local"
+msgid "e.g. 192.168.1.121 or electrs_electrs_1 on Umbrel"
+msgstr "e.g. 192.168.1.121 or electrs_electrs_1 on Umbrel"
 
 #: src/pages/Config.tsx
-msgid "e.g. http://192.168.1.121:8332 - your Bitcoin Core RPC endpoint."
-msgstr "e.g. http://192.168.1.121:8332 - your Bitcoin Core RPC endpoint."
+msgid "e.g. http://192.168.1.121:8332 - your Bitcoin Knots RPC endpoint."
+msgstr "e.g. http://192.168.1.121:8332 - your Bitcoin Knots RPC endpoint."
 
 #: src/components/PriceChart.tsx
 msgid "edit price"
@@ -2034,8 +2034,8 @@ msgid "Not configured"
 msgstr "Not configured"
 
 #: src/pages/Status.tsx
-msgid "Not configured. Go to Config → On-chain payouts and select Electrs or Bitcoin Core RPC to track your on-chain balance. The net line treats missing collected as 0 so the arithmetic still reads - a blank row here is the hint that a piece of the income side isn't wired up."
-msgstr "Not configured. Go to Config → On-chain payouts and select Electrs or Bitcoin Core RPC to track your on-chain balance. The net line treats missing collected as 0 so the arithmetic still reads - a blank row here is the hint that a piece of the income side isn't wired up."
+msgid "Not configured. Go to Config → On-chain payouts and select Electrs or Bitcoin Knots RPC to track your on-chain balance. The net line treats missing collected as 0 so the arithmetic still reads - a blank row here is the hint that a piece of the income side isn't wired up."
+msgstr "Not configured. Go to Config → On-chain payouts and select Electrs or Bitcoin Knots RPC to track your on-chain balance. The net line treats missing collected as 0 so the arithmetic still reads - a blank row here is the hint that a piece of the income side isn't wired up."
 
 #: src/components/HashrateChart.tsx
 #: src/components/PriceChart.tsx
@@ -2998,8 +2998,8 @@ msgid "stratum reachable"
 msgstr "stratum reachable"
 
 #: src/pages/Setup.tsx
-msgid "Must be reachable from the public internet (Braiins connects to it). Leave empty if you don't have a public hostname yet - you can set it later from the Config page, which also has built-in DDNS support."
-msgstr "Must be reachable from the public internet (Braiins connects to it). Leave empty if you don't have a public hostname yet - you can set it later from the Config page, which also has built-in DDNS support."
+msgid "Must be reachable from the public internet (Braiins connects to it). You can change this later from the Config page, which also has built-in DDNS support."
+msgstr "Must be reachable from the public internet (Braiins connects to it). You can change this later from the Config page, which also has built-in DDNS support."
 
 #: src/pages/Config.tsx
 msgid "Subnet to scan (CIDR). Leave blank to auto-detect from the daemon's interface - required on Umbrel."
@@ -3251,8 +3251,8 @@ msgid "Uptime"
 msgstr "Uptime"
 
 #: src/pages/Config.tsx
-msgid "Used by the on-chain payout balance check (when \"Bitcoin Core RPC\" is selected as the backend above), AND by the <0>BIP 110</0> yellow-cube marker on the Hashrate chart and the BIP 110 scan card on Status - those last two call bitcoind regardless of which payout backend is selected. The Test button below validates the values currently in the form, before saving."
-msgstr "Used by the on-chain payout balance check (when \"Bitcoin Core RPC\" is selected as the backend above), AND by the <0>BIP 110</0> yellow-cube marker on the Hashrate chart and the BIP 110 scan card on Status - those last two call bitcoind regardless of which payout backend is selected. The Test button below validates the values currently in the form, before saving."
+msgid "Used by the on-chain payout balance check (when \"Bitcoin Knots RPC\" is selected as the backend above), AND by the <0>BIP 110</0> yellow-cube marker on the Hashrate chart and the BIP 110 scan card on Status - those last two call bitcoind regardless of which payout backend is selected. The Test button below validates the values currently in the form, before saving."
+msgstr "Used by the on-chain payout balance check (when \"Bitcoin Knots RPC\" is selected as the backend above), AND by the <0>BIP 110</0> yellow-cube marker on the Hashrate chart and the BIP 110 scan card on Status - those last two call bitcoind regardless of which payout backend is selected. The Test button below validates the values currently in the form, before saving."
 
 #: src/pages/Config.tsx
 msgid "Used for click-through from the Ocean panel's \"last pool block\" row, block-marker tooltips on the Hashrate chart, and on-chain payout dots on the Price chart. Block links use `{hash}` / `{height}`; transaction links use `{txid}` / `{hash}`. Picking a preset sets both URLs at once."

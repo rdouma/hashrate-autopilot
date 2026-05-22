@@ -173,7 +173,7 @@ export const AppConfigSchema = z.object({
   //   doesn't trigger; one missing tick keeps engagement off.
   cheap_sustained_window_minutes: z.number().int().nonnegative().default(0),
 
-  // Bitcoin Core RPC credentials (issue #14).
+  // Bitcoin Knots RPC credentials (issue #14).
   // Seeded from secrets on first boot; editable from the dashboard afterwards.
   // Empty strings mean "not configured" - the daemon falls back to secrets.
   bitcoind_rpc_url: z.string().default(''),

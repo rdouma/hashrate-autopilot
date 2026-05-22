@@ -556,9 +556,9 @@ export interface SetupInfoResponse {
   defaults: AppConfig;
   current_config: AppConfig | null;
   /**
-   * Bitcoin Core RPC creds discovered in the appliance's standard
+   * Bitcoin Knots RPC creds discovered in the appliance's standard
    * env vars (Umbrel/Start9 inject `BITCOIN_RPC_*` when an app
-   * declares a Bitcoin Core dependency). Each field is `null` when
+   * declares a Bitcoin Knots dependency). Each field is `null` when
    * not detected, so the wizard can show a "detected" hint when
    * any is non-null.
    */

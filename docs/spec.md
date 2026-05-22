@@ -71,7 +71,7 @@ Umbrel, Docker and scripted installs. See README.md for details.
     - Fees: `GET /v1/spot/fee`
     - Market settings: `GET /v1/spot/settings`
     - Transactions (on-chain + internal): `GET /v1/account/transactions`
-- Block reward payouts observed via **Electrs** (preferred, instant lookups) or `bitcoind` RPC (`listreceivedbyaddress` / `gettransaction` / `scantxoutset` fallback) against any reachable Bitcoin node on the LAN. The node can be Bitcoin Knots / Bitcoin Core running on Umbrel, Start9, a NAS, a VPS, or bare metal; the daemon just needs RPC or Electrum-protocol reach to it.
+- Block reward payouts observed via **Electrs** (preferred, instant lookups) or `bitcoind` RPC (`listreceivedbyaddress` / `gettransaction` / `scantxoutset` fallback) against any reachable Bitcoin node on the LAN. The node can be Bitcoin Knots / Bitcoin Knots running on Umbrel, Start9, a NAS, a VPS, or bare metal; the daemon just needs RPC or Electrum-protocol reach to it.
 - Datum Gateway endpoint reachability (TCP connect health check, port 23334).
 - Datum Gateway API (normally port 7152; no auth):
 - Ocean API (public)

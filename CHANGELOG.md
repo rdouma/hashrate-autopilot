@@ -12,7 +12,7 @@ The wizard no longer requires a Pool URL to complete setup. Operators who don't 
 
 ### `[Fix]` Bitcoin RPC auto-configured from Umbrel env on wizard submit
 
-When payout_source is Electrs the wizard hides the bitcoind RPC fields, so the detected BITCOIN_RPC_* env vars were never written to the DB. The BIP 110 scan panel showed "bitcoind RPC not configured" even though Bitcoin Core was a declared dependency. The setup POST handler now merges detected bitcoind creds into config alongside the Datum API URL.
+When payout_source is Electrs the wizard hides the bitcoind RPC fields, so the detected BITCOIN_RPC_* env vars were never written to the DB. The BIP 110 scan panel showed "bitcoind RPC not configured" even though Bitcoin Knots was a declared dependency. The setup POST handler now merges detected bitcoind creds into config alongside the Datum API URL.
 
 ### `[Release]` v1.8.3
 
@@ -28,19 +28,19 @@ Hot-fix on v1.8.0: replace hand-drawn pool-block cube with Lucide box icon on th
 
 ### `[Release]` v1.8.0
 
-Turnkey Umbrel setup (Bitcoin Core + Electrs + Datum as dependencies with auto-discovery), solo fleet best difficulty tracking with chart overlay and localized Telegram notifications, pool luck 30d window + all-time count, auto-cancel bids when Datum stratum is down, color-coded ASIC chip badges, Lucide icon consistency across all chart markers, drag-to-pan and scroll-wheel zoom, daemon-offline gap bands, debug API, and 20+ bug fixes including chart viewport stability and wizard env override support. New migrations 0088-0094.
+Turnkey Umbrel setup (Bitcoin Knots + Electrs + Datum as dependencies with auto-discovery), solo fleet best difficulty tracking with chart overlay and localized Telegram notifications, pool luck 30d window + all-time count, auto-cancel bids when Datum stratum is down, color-coded ASIC chip badges, Lucide icon consistency across all chart markers, drag-to-pan and scroll-wheel zoom, daemon-offline gap bands, debug API, and 20+ bug fixes including chart viewport stability and wizard env override support. New migrations 0088-0094.
 
 ### `[Fix]` Wizard: fix Electrs help text, blank Pool URL default, auto-configure Datum API
 
 Corrected the Electrs host help text from the wrong IP (10.21.21.10) to the actual Docker hostname (electrs_electrs_1). Changed the Pool URL default from the unreachable datum.local to an empty field with a placeholder and hint explaining that the URL must be publicly reachable, with a note about DDNS support in Config. Added BHA_DATUM_API_URL env override to the wizard - the Datum API URL is now written to the DB during setup so the Datum Gateway panel works on first boot without manual configuration.
 
-### `[Feature]` Turnkey Umbrel setup: Bitcoin Core + Electrs as dependencies
+### `[Feature]` Turnkey Umbrel setup: Bitcoin Knots + Electrs as dependencies
 
-Declares Bitcoin Core, Electrs, and Datum Gateway as Umbrel app dependencies. On a fresh install Umbrel prompts to install all three, and the docker-compose.yml injects BHA_ELECTRS_HOST, BHA_ELECTRS_PORT, and BHA_PAYOUT_SOURCE=electrs so on-chain payout tracking works on first boot with zero wizard configuration. Bitcoin RPC auto-detects from Umbrel's standard APP_BITCOIN_* env vars, enabling BIP110 signalling detection.
+Declares Bitcoin Knots, Electrs, and Datum Gateway as Umbrel app dependencies. On a fresh install Umbrel prompts to install all three, and the docker-compose.yml injects BHA_ELECTRS_HOST, BHA_ELECTRS_PORT, and BHA_PAYOUT_SOURCE=electrs so on-chain payout tracking works on first boot with zero wizard configuration. Bitcoin RPC auto-detects from Umbrel's standard APP_BITCOIN_* env vars, enabling BIP110 signalling detection.
 
 ### `[Fix]` Wizard ignores BHA_* env overrides for payout source and Electrs
 
-The /api/setup-info endpoint only applied BITCOIN_RPC_* appliance detection to its defaults, ignoring BHA_PAYOUT_SOURCE, BHA_ELECTRS_HOST, and BHA_ELECTRS_PORT. On Umbrel fresh installs the wizard defaulted to Bitcoin Core instead of Electrs and left the Electrs fields empty. Now runs applyEnvOverridesToConfig() on the defaults before returning them so all BHA_* env vars flow through to the wizard form.
+The /api/setup-info endpoint only applied BITCOIN_RPC_* appliance detection to its defaults, ignoring BHA_PAYOUT_SOURCE, BHA_ELECTRS_HOST, and BHA_ELECTRS_PORT. On Umbrel fresh installs the wizard defaulted to Bitcoin Knots instead of Electrs and left the Electrs fields empty. Now runs applyEnvOverridesToConfig() on the defaults before returning them so all BHA_* env vars flow through to the wizard form.
 
 ### `[UI]` Lucide icon consistency for chart markers
 
@@ -476,7 +476,7 @@ Two more operator-flagged things from the pass-2 walkthrough. **Solo-miners devi
 
 ### `[UI]` Mobile responsiveness pass 2: Config tab wrap + field/button wrap (#155)
 
-Operator's mobile walkthrough surfaced five remaining structural issues across the Config page; all fixed. **Tab strip**: under sm now `flex-wrap` so all four tabs render at once as a 2x2 grid (was a single-row horizontal scroller where the operator couldn't tell there was a fourth tab past the right edge); sm+ unchanged. Bonus: dropped the `overflow-x-auto` on mobile killed the iOS vertical-bounce drag the operator hit because the scroll container's `touch-action` defaulted to letting vertical scroll through. **Field + Test-connection rows** (DDNS hostname, Bitcoin Core RPC URL, Telegram Chat ID): added `flex-wrap` + `min-w-[12rem]` on the input so the Test button drops to a second row when the input can't fit alongside it. Was: the button stayed pinned right and squeezed the input to ~80 px on mobile. **Sound + Test sound row**: same pattern. **Notification opt-out tiles**: added `flex-wrap` to the per-tile row so the severity pill + Test button drop below the checkbox+label on narrow viewports instead of overflowing the right margin. **Solo miners "Add device" form**: stacks `flex-col sm:flex-row` on mobile so Label and IP fields both render full-width on their own rows instead of the prior asymmetric wrap that made the IP field much wider than the Label field.
+Operator's mobile walkthrough surfaced five remaining structural issues across the Config page; all fixed. **Tab strip**: under sm now `flex-wrap` so all four tabs render at once as a 2x2 grid (was a single-row horizontal scroller where the operator couldn't tell there was a fourth tab past the right edge); sm+ unchanged. Bonus: dropped the `overflow-x-auto` on mobile killed the iOS vertical-bounce drag the operator hit because the scroll container's `touch-action` defaulted to letting vertical scroll through. **Field + Test-connection rows** (DDNS hostname, Bitcoin Knots RPC URL, Telegram Chat ID): added `flex-wrap` + `min-w-[12rem]` on the input so the Test button drops to a second row when the input can't fit alongside it. Was: the button stayed pinned right and squeezed the input to ~80 px on mobile. **Sound + Test sound row**: same pattern. **Notification opt-out tiles**: added `flex-wrap` to the per-tile row so the severity pill + Test button drop below the checkbox+label on narrow viewports instead of overflowing the right margin. **Solo miners "Add device" form**: stacks `flex-col sm:flex-row` on mobile so Label and IP fields both render full-width on their own rows instead of the prior asymmetric wrap that made the IP field much wider than the Label field.
 
 ### `[UI]` Mobile responsiveness pass 1: Status Solo-miners card + Config tab strip (#155)
 
@@ -556,7 +556,7 @@ The "Number & date format" dropdown bundled three concerns - thousands/decimal s
 
 ### `[Docs]` BIP 110 marker shape catch-up: yellow cube, not crown (#146)
 
-#115 reassigned the Hashrate chart's pool-block marker shapes (own block -> gold crown, BIP 110-signalling -> yellow cube, default -> blue cube) but the docs lagged. README claimed BIP 110-signalling pool blocks "render with a 👑 crown icon" - flat wrong since #115. Updated README to describe the precedence-ordered shape vocabulary correctly. docs/architecture.md migration-0058 reference renamed "BIP 110 crown marker" -> "BIP 110 yellow-cube marker" and credits #115 for the swap. Config.tsx Bitcoin Core RPC section's `<Trans>` help text changed "BIP 110 crown marker" -> "BIP 110 yellow-cube marker" with NL ("gele-kubus marker") and ES ("marcador de cubo amarillo BIP 110") translations. Bip110ScanCard dev comments brought along too. The implementation comments in HashrateChart.tsx were already correct from #115.
+#115 reassigned the Hashrate chart's pool-block marker shapes (own block -> gold crown, BIP 110-signalling -> yellow cube, default -> blue cube) but the docs lagged. README claimed BIP 110-signalling pool blocks "render with a 👑 crown icon" - flat wrong since #115. Updated README to describe the precedence-ordered shape vocabulary correctly. docs/architecture.md migration-0058 reference renamed "BIP 110 crown marker" -> "BIP 110 yellow-cube marker" and credits #115 for the swap. Config.tsx Bitcoin Knots RPC section's `<Trans>` help text changed "BIP 110 crown marker" -> "BIP 110 yellow-cube marker" with NL ("gele-kubus marker") and ES ("marcador de cubo amarillo BIP 110") translations. Bip110ScanCard dev comments brought along too. The implementation comments in HashrateChart.tsx were already correct from #115.
 
 ### `[Fix]` Config page header no longer overlaps the global nav (#145)
 
@@ -1028,7 +1028,7 @@ Search input now sits at the right end of the tab bar instead of in its own row 
 
 Three operator-flagged tweaks:
 
-- **DDNS layout**: Hostname row gets its Test connection button inline-right (mirroring the Bitcoin Core RPC URL layout); Username + Credential render side-by-side below in a 2-column grid. DuckDNS variant (no username) gets Credential spanning both columns to keep the row balanced.
+- **DDNS layout**: Hostname row gets its Test connection button inline-right (mirroring the Bitcoin Knots RPC URL layout); Username + Credential render side-by-side below in a 2-column grid. DuckDNS variant (no username) gets Credential spanning both columns to keep the row balanced.
 - **Display section consolidated**: the standalone DISPLAY card above the tab bar moved into the Display & Logging tab. Tabs are now self-contained.
 - **Section title clarification**: the Notifications card on the Notifications tab is now titled "Telegram notifications" so it doesn't read ambiguously alongside the Block-found notification card and is clearly an external push, not in-app.
 - **Date-locale leak fixed**: setting the number/date *format* preference to nl-NL no longer flips chart x-axis day abbreviations and runway/next-payout month names to Dutch when the UI language is English. Date and time formatting now follows the UI language (`useDateTimeLocale()`); the format-preference dropdown still controls separators and number layout. EN/NL/ES translations refreshed.
@@ -1242,15 +1242,15 @@ Round two of polish. Numbers in the stats row + the table now respect the dashbo
 
 ### `[UI]` BIP 110 scan polish - newest-first sort, relative time, configured block-explorer link, bip110.org reference
 
-Three small things on the scan results table: signaling blocks now sort newest-first (was random / insertion order - most useful entries are the recent ones); the time column shows a human-readable relative age (`2d ago`, `27m ago`) with the absolute UTC timestamp on hover, instead of always-UTC; and block-hash links now route through `config.block_explorer_url_template` instead of the hardcoded `mempool.space` (so privacy-conscious operators with their own explorer get used). Also added a link to [bip110.org](https://bip110.org/) in the card description AND in the Config page's Bitcoin Core RPC subsection help text, since that's the canonical spec reference.
+Three small things on the scan results table: signaling blocks now sort newest-first (was random / insertion order - most useful entries are the recent ones); the time column shows a human-readable relative age (`2d ago`, `27m ago`) with the absolute UTC timestamp on hover, instead of always-UTC; and block-hash links now route through `config.block_explorer_url_template` instead of the hardcoded `mempool.space` (so privacy-conscious operators with their own explorer get used). Also added a link to [bip110.org](https://bip110.org/) in the card description AND in the Config page's Bitcoin Knots RPC subsection help text, since that's the canonical spec reference.
 
 ### `[Fix]` BIP 110 scanner now picks up Config edits without a daemon restart
 
 The scanner was using a `BitcoindClient` instance built once at daemon boot from whatever creds were saved at that moment. Saving fresh creds in the form persisted them to SQLite but the in-memory client kept hitting the old URL - operator empirically saved a new working URL, hit Scan, and still got "fetch failed" against the old host. The route now reads the live `config` row at request time (with sops/env secrets as fallback for empty fields) and builds an ephemeral client per scan, so saved Config edits take effect immediately. Same restart-free behavior the Test button already has.
 
-### `[Feature]` Bitcoin Core RPC test button + always-visible RPC fields on Config
+### `[Feature]` Bitcoin Knots RPC test button + always-visible RPC fields on Config
 
-The "Bitcoin Core RPC URL / username / password" fields used to live behind the `payout_source = 'bitcoind'` radio, hidden when the operator picked Electrs as the balance-check backend. But those same creds also drive the BIP 110 crown marker (#94) and BIP 110 scan card (#95), which call bitcoind regardless of which payout backend is selected. Hiding the fields made the BIP 110 scanner look broken - the scanner used the saved (potentially stale) values while the operator was typing fresh ones into a form they couldn't see. The fields now always render in their own "Bitcoin Core RPC connection" subsection with help text explaining the multi-feature use, and a new **Test connection** button next to the URL field validates whatever values are currently in the form (before saving) by calling `getblockchaininfo` against them. Returns chain/blocks/headers on success, or the same `ENOTFOUND` / `ECONNREFUSED` / target-URL diagnostic the BIP 110 scanner uses on failure. en/nl/es catalogs updated.
+The "Bitcoin Knots RPC URL / username / password" fields used to live behind the `payout_source = 'bitcoind'` radio, hidden when the operator picked Electrs as the balance-check backend. But those same creds also drive the BIP 110 crown marker (#94) and BIP 110 scan card (#95), which call bitcoind regardless of which payout backend is selected. Hiding the fields made the BIP 110 scanner look broken - the scanner used the saved (potentially stale) values while the operator was typing fresh ones into a form they couldn't see. The fields now always render in their own "Bitcoin Knots RPC connection" subsection with help text explaining the multi-feature use, and a new **Test connection** button next to the URL field validates whatever values are currently in the form (before saving) by calling `getblockchaininfo` against them. Returns chain/blocks/headers on success, or the same `ENOTFOUND` / `ECONNREFUSED` / target-URL diagnostic the BIP 110 scanner uses on failure. en/nl/es catalogs updated.
 
 ### `[Fix]` BIP 110 scan now reports concrete network errors, not "fetch failed"
 
@@ -1552,7 +1552,7 @@ Y-axis label now uses `t\`sat/PH/day\`` (and `t\`$/PH/day\`` for USD mode), tran
 
 The dashboard UI is fully translatable. A language picker sits in the header next to "sign out"; the choice persists to `localStorage` and the page boots in the operator's stored language (or browser language as fallback). Three launch locales: `en` (source), `nl`, `es`. Czech is deferred until a CZ reviewer is available. The format-locale picker (number/date display) on the Config page is unchanged and remains independent: it governs how 1,234.56 looks, not which language the surrounding chrome speaks.
 
-Under the hood: @lingui/react v5, with macros that hash message IDs at compile time and one code-split catalog chunk per locale (~30 KB gzipped each, lazy-loaded). 421 source strings extracted across the dashboard - Status, Config, Setup wizard, Login, header chrome, the bids/event panels, the hashrate + price charts, time-relative format helpers (`5m ago`), and the bid-status labels. Units (`PH/s`, `sat/PH/day`, `BTC`), proper nouns (`Datum`, `Ocean`, `Braiins`, `Bitcoin Core`, `Electrs`, `TIDES`, `Stratum`), and mode badges (`DRY-RUN`, `LIVE`, `PAUSED`) deliberately stay in English regardless of locale.
+Under the hood: @lingui/react v5, with macros that hash message IDs at compile time and one code-split catalog chunk per locale (~30 KB gzipped each, lazy-loaded). 421 source strings extracted across the dashboard - Status, Config, Setup wizard, Login, header chrome, the bids/event panels, the hashrate + price charts, time-relative format helpers (`5m ago`), and the bid-status labels. Units (`PH/s`, `sat/PH/day`, `BTC`), proper nouns (`Datum`, `Ocean`, `Braiins`, `Bitcoin Knots`, `Electrs`, `TIDES`, `Stratum`), and mode badges (`DRY-RUN`, `LIVE`, `PAUSED`) deliberately stay in English regardless of locale.
 
 `lib/locale.ts` was reframed in its header doc to clarify it's the format-locale picker only - distinct from the new UI-language picker.
 
@@ -1588,7 +1588,7 @@ New `Dockerfile` (multi-stage, `node:22-slim` base) builds the daemon + dashboar
 
 ### `[Feature]` Wizard auto-detects bitcoind RPC creds from appliance env vars (#60)
 
-Both Umbrel and Start9 inject standard env vars (`BITCOIN_RPC_HOST`/`PORT`/`USER`/`PASSWORD`, optionally `BITCOIN_RPC_URL`) when an app declares a Bitcoin Core dependency. New `detectBitcoindEnv()` helper reads them and the setup-info endpoint surfaces both pre-filled defaults *and* a `detected_bitcoind` summary so the wizard can show a green "Detected from environment" badge above the RPC fields. Operator can still override; falls back cleanly to empty defaults when no vars are present. When the URL is detected, `payout_source` defaults to `bitcoind` (instead of `none`) so an Umbrel install gets an end-to-end working setup with no manual data entry on the payout side.
+Both Umbrel and Start9 inject standard env vars (`BITCOIN_RPC_HOST`/`PORT`/`USER`/`PASSWORD`, optionally `BITCOIN_RPC_URL`) when an app declares a Bitcoin Knots dependency. New `detectBitcoindEnv()` helper reads them and the setup-info endpoint surfaces both pre-filled defaults *and* a `detected_bitcoind` summary so the wizard can show a green "Detected from environment" badge above the RPC fields. Operator can still override; falls back cleanly to empty defaults when no vars are present. When the URL is detected, `payout_source` defaults to `bitcoind` (instead of `none`) so an Umbrel install gets an end-to-end working setup with no manual data entry on the payout side.
 
 ### `[Infra]` Graceful SIGTERM in setup mode + 8s hard force-exit fence (#61)
 
@@ -1619,7 +1619,7 @@ Also: the wizard's PH/s number inputs used `step="0.1"` + `min="0.001"`, which c
 Three first-bug-report fixes after shipping the wizard:
 
 - **`SetupGate` clears stored auth when the daemon reports `NEEDS_SETUP`.** Operators with a remembered password from a previous install on the same host were getting routed straight to the auth flow on a fresh install, never seeing the wizard. Caught us once on a genuine fresh install - the operator's browser remembered the dashboard from a wiped+re-cloned working directory.
-- **Mining step now has a "Payout tracking" backend selector** (None / Bitcoin Core / Electrs) with per-backend connection fields. The previous wizard hardcoded Bitcoin Core RPC as the only option, hiding the Electrs path entirely.
+- **Mining step now has a "Payout tracking" backend selector** (None / Bitcoin Knots / Electrs) with per-backend connection fields. The previous wizard hardcoded Bitcoin Knots RPC as the only option, hiding the Electrs path entirely.
 - **Worker identity is auto-derived from the BTC payout address** (`<address>.<label>`). Editing the address now follows through to the worker. Editing the worker to anything that doesn't have the address as its prefix surfaces a hard error blocking submission - Ocean TIDES credits shares by the address prefix, so a mismatch silently routes shares to nobody.
 
 ### `[Docs]` README: lead with the web wizard; SOPS becomes a power-user appendix
@@ -2129,9 +2129,9 @@ Reverts: `services/coinbase.ts`, `state/repos/block_metadata.ts`, the bitcoind-c
 
 The Ocean panel was on a 5-min refresh (both client-side refetch and server-side cache) which felt sluggish - and because block-marker enrichment only runs on a cache-miss of `/api/ocean`, new blocks took up to 5 minutes to get their `Simple Mining · OCEAN` style label. Dropped both to 60 s, aligned with the chart / tick cadence. Net cost is ~4 req/min to Ocean's public API per wallet - well below any sane rate limit and on par with what Ocean's own dashboard does.
 
-### `[UI]` Bitcoin Core RPC always visible in Config; dual-purpose hint
+### `[UI]` Bitcoin Knots RPC always visible in Config; dual-purpose hint
 
-The bitcoind RPC credentials were previously only shown when "Bitcoin Core RPC" was selected as the on-chain-payout backend. With block-marker miner-identity enrichment added, the credentials are now used by that feature regardless of the payout choice - so an operator running Electrs for payouts was left with the enrichment silently disabled and no UI surface to configure the RPC. Pulled the three fields out from behind the radio-selector gate; they now render unconditionally with a help note that swaps wording based on whether the Electrs or bitcoind payout path is in use.
+The bitcoind RPC credentials were previously only shown when "Bitcoin Knots RPC" was selected as the on-chain-payout backend. With block-marker miner-identity enrichment added, the credentials are now used by that feature regardless of the payout choice - so an operator running Electrs for payouts was left with the enrichment silently disabled and no UI surface to configure the RPC. Pulled the three fields out from behind the radio-selector gate; they now render unconditionally with a help note that swaps wording based on whether the Electrs or bitcoind payout path is in use.
 
 ### `[UI]` Ocean panel shows Ocean-credited hashrate; chart line recoloured to match the block cubes
 

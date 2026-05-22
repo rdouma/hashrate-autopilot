@@ -796,7 +796,7 @@ function ConfigTabsAndContent({
     'payout-source': {
       title: t`Payout source`,
       labels: [
-        t`Bitcoin Core RPC`,
+        t`Bitcoin Knots RPC`,
         t`Electrs`,
         t`Disabled (no payout tracking)`,
         t`Include historical Ocean payouts in lifetime earnings`,
@@ -3342,7 +3342,7 @@ function PayoutSourceSection({
     },
     {
       value: 'bitcoind',
-      label: t`Bitcoin Core RPC`,
+      label: t`Bitcoin Knots RPC`,
       help: t`Uses scantxoutset -- CPU-heavy, 30+ seconds per scan. Polled hourly. Use only if you don't have Electrs.`,
     },
   ];
@@ -3429,7 +3429,7 @@ function PayoutSourceSection({
           <HistoricalPayoutsControls draft={draft} locale={locale} onChange={onChange} />
         )}
 
-        {/* Bitcoin Core RPC fields - always shown, not gated on the
+        {/* Bitcoin Knots RPC fields - always shown, not gated on the
             balance-check radio. These creds drive THREE features and
             only one of them is on-chain payouts: the BIP 110 yellow-
             cube marker on the Hashrate chart (#94 / #115) and the
@@ -3685,7 +3685,7 @@ function ElectrsFields({
           className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm font-mono"
         />
         <span className="block text-xs text-slate-500 mt-1">
-          <Trans>e.g. 192.168.1.121 or umbrel.local</Trans>
+          <Trans>e.g. 192.168.1.121 or electrs_electrs_1 on Umbrel</Trans>
         </span>
       </label>
       <label className="block">
@@ -3756,11 +3756,11 @@ function BitcoindRpcFields({
     <div className="pt-3 border-t border-slate-800 space-y-3">
       <header>
         <h4 className="text-xs uppercase tracking-wider text-slate-400">
-          <Trans>Bitcoin Core RPC connection</Trans>
+          <Trans>Bitcoin Knots RPC connection</Trans>
         </h4>
         <p className="text-xs text-slate-500 mt-1">
           <Trans>
-            Used by the on-chain payout balance check (when "Bitcoin Core RPC" is
+            Used by the on-chain payout balance check (when "Bitcoin Knots RPC" is
             selected as the backend above), AND by the{' '}
             <a
               href="https://bip110.org/"
@@ -3780,7 +3780,7 @@ function BitcoindRpcFields({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
         <label className="block sm:col-span-2">
           <span className="block text-sm text-slate-300 mb-1">
-            <Trans>Bitcoin Core RPC URL</Trans>
+            <Trans>Bitcoin Knots RPC URL</Trans>
           </span>
           <div className="flex flex-wrap gap-2">
             <input
@@ -3799,7 +3799,7 @@ function BitcoindRpcFields({
             </button>
           </div>
           <span className="block text-xs text-slate-500 mt-1">
-            <Trans>e.g. http://192.168.1.121:8332 - your Bitcoin Core RPC endpoint.</Trans>
+            <Trans>e.g. http://192.168.1.121:8332 - your Bitcoin Knots RPC endpoint.</Trans>
           </span>
           {test.data && test.data.ok && (
             <div className="mt-2 text-xs text-emerald-300 font-mono">
@@ -4472,7 +4472,7 @@ function localizeDdnsStatus(raw: string): string {
  * endpoint with the values currently in the form and surfaces the
  * provider's response (`good <ip>` / `nochg <ip>` / `badauth` / etc).
  * Inlined into the Hostname row (next to the input, same pattern as
- * Bitcoin Core RPC URL + Test).
+ * Bitcoin Knots RPC URL + Test).
  */
 /**
  * Hostname (with inline Test connection) + Username + Credential

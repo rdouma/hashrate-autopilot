@@ -471,10 +471,9 @@ function MiningStep({
         </div>
       </Section>
       <Section title={t`Pool destination (where Braiins delivers)`}>
-        <Field label={t`Pool URL`} hint={t`Must be reachable from the public internet (Braiins connects to it). Leave empty if you don't have a public hostname yet - you can set it later from the Config page, which also has built-in DDNS support.`}>
+        <Field label={t`Pool URL`} hint={t`Must be reachable from the public internet (Braiins connects to it). You can change this later from the Config page, which also has built-in DDNS support.`}>
           <input
             type="text"
-            placeholder="stratum+tcp://your-public-host:23334"
             value={form.destination_pool_url}
             onChange={(e) => update('destination_pool_url', e.target.value)}
             className={textInputCss}
@@ -531,7 +530,7 @@ function MiningStep({
             className={textInputCss}
           >
             <option value="none">{t`None - skip payout tracking`}</option>
-            <option value="bitcoind">{t`Bitcoin Core (bitcoind RPC)`}</option>
+            <option value="bitcoind">{t`Bitcoin Knots (bitcoind RPC)`}</option>
             <option value="electrs">{t`Electrs (Electrum-style indexed lookup, faster)`}</option>
           </select>
         </Field>
@@ -662,7 +661,7 @@ function ReviewStep({
           label={t`Payout tracking`}
           value={
             form.payout_source === 'bitcoind'
-              ? t`Bitcoin Core RPC (${form.bitcoind_rpc_url})`
+              ? t`Bitcoin Knots RPC (${form.bitcoind_rpc_url})`
               : form.payout_source === 'electrs'
                 ? t`Electrs (${form.electrs_host}:${form.electrs_port})`
                 : t`None`

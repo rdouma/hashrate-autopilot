@@ -222,7 +222,7 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
   strings, range selectors) translates between English, Dutch, and Spanish. Language picker sits in the
   header next to "sign out"; the choice persists to localStorage and the page boots in the operator's stored
   language (browser language as fallback). Units (`PH/s`, `sat/PH/day`, `BTC`) and proper nouns (Datum, Ocean,
-  Braiins, Bitcoin Core, Electrs, TIDES) deliberately stay English in every locale because that is how the
+  Braiins, Bitcoin Knots, Electrs, TIDES) deliberately stay English in every locale because that is how the
   Bitcoin community writes them. Czech is a likely next addition (Braiins / Trezor / Prague culture); other
   locales are easy to add - one entry in `SUPPORTED_LOCALES` plus a translation pass.
 - **Operator overrides** - pause/resume, switch between dry-run and live, or trigger an immediate decision tick
@@ -383,7 +383,7 @@ nothing trades real money until you flip the switch from the dashboard's Status 
 
 ### Path A - Umbrel Community App Store
 
-Add the community app store URL to your Umbrel's **Settings - App stores** and search for "Hashrate Autopilot". The app declares Bitcoin Core, Electrs, and Datum Gateway as dependencies - Umbrel will prompt you to install any that are missing. Once installed, the daemon auto-discovers all three services across Umbrel's shared Docker network: Bitcoin RPC creds come from Umbrel's standard `APP_BITCOIN_*` env vars, the Electrs host/port and payout source are pre-set via `BHA_*` env overrides in docker-compose.yml, and Datum's API URL is injected the same way. The result is a turnkey setup where the wizard's Mining step has every field pre-filled - walk through it, confirm, and the dashboard is live.
+Add the community app store URL to your Umbrel's **Settings - App stores** and search for "Hashrate Autopilot". The app declares Bitcoin Knots, Electrs, and Datum Gateway as dependencies - Umbrel will prompt you to install any that are missing. Once installed, the daemon auto-discovers all three services across Umbrel's shared Docker network: Bitcoin RPC creds come from Umbrel's standard `APP_BITCOIN_*` env vars, the Electrs host/port and payout source are pre-set via `BHA_*` env overrides in docker-compose.yml, and Datum's API URL is injected the same way. The result is a turnkey setup where the wizard's Mining step has every field pre-filled - walk through it, confirm, and the dashboard is live.
 
 ### Path B - Docker on a Linux box
 
@@ -483,8 +483,8 @@ docker run -d \
   ghcr.io/rdouma/hashrate-autopilot:latest
 ```
 
-Bitcoin Core RPC creds auto-detect from the standard `BITCOIN_RPC_*` env vars Umbrel injects when
-an app declares a Bitcoin Core dependency - no override needed when running alongside Umbrel's
+Bitcoin Knots RPC creds auto-detect from the standard `BITCOIN_RPC_*` env vars Umbrel injects when
+an app declares a Bitcoin Knots dependency - no override needed when running alongside Umbrel's
 bitcoind. Full list of `BHA_*` overrides: [`docs/configuration.md`](docs/configuration.md).
 
 #### B.5. Day-to-day
@@ -721,7 +721,7 @@ auto-redirects to `/setup`. Three steps:
 2. **Mining** - target + minimum-floor hashrate, your Datum gateway / pool URL, the BTC payout
    address, the worker identity (`<btc-address>.<label>` - auto-derived from the address; the period
    is mandatory or Ocean TIDES won't credit your shares), and an optional payout-tracking backend
-   (Bitcoin Core RPC or Electrs).
+   (Bitcoin Knots RPC or Electrs).
 3. **Review** - sanity-check, submit.
 
 On submit the daemon writes everything to `state.db` and transitions to operational mode in-place

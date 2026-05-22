@@ -362,12 +362,12 @@ From the Ocean Datum setup guide and Rent Some Hash Umbrel guide:
 
 ### 5.2 What the autopilot can observe locally
 
-Against any reachable Bitcoin node on the LAN (Bitcoin Knots / Bitcoin Core, hosted on Umbrel, Start9, a NAS, a VPS, or bare metal - the autopilot is platform-agnostic), with standard RPC:
+Against any reachable Bitcoin node on the LAN (Bitcoin Knots / Bitcoin Knots, hosted on Umbrel, Start9, a NAS, a VPS, or bare metal - the autopilot is platform-agnostic), with standard RPC:
 
 - **`listreceivedbyaddress minconf includeEmpty includeWatchonly [filter]`** to get total received at the payout address. Use a descriptor wallet and import the payout address as a watch-only descriptor on node setup. (General bitcoind RPC, documented at [bitcoincore.org/en/doc](https://bitcoincore.org/en/doc/); Knots is a fork so this is identical.)
 - **`listtransactions`** / **`gettransaction txid`** to inspect deposits to the payout address as they confirm.
 - **`listunspent 0 9999999 ["<addr>"]`** to see live UTXOs credited to that address.
-- **ZMQ** (`zmqpubrawtx`, `zmqpubhashblock`, `zmqpubrawblock`): event-driven alternative to polling. Set `-zmqpubrawtx=tcp://127.0.0.1:28332` in bitcoin.conf, subscribe in the autopilot, inspect each tx for outputs paying the payout address. Lowest latency path. (Standard Bitcoin Core feature, [bitcoincore.org/en/doc/28.0.0/rpc/zmq/getzmqnotifications/](https://bitcoincore.org/en/doc/).)
+- **ZMQ** (`zmqpubrawtx`, `zmqpubhashblock`, `zmqpubrawblock`): event-driven alternative to polling. Set `-zmqpubrawtx=tcp://127.0.0.1:28332` in bitcoin.conf, subscribe in the autopilot, inspect each tx for outputs paying the payout address. Lowest latency path. (Standard Bitcoin Knots feature, [bitcoincore.org/en/doc/28.0.0/rpc/zmq/getzmqnotifications/](https://bitcoincore.org/en/doc/).)
 - **ScanTxOutSet** with a `addr(<payout>)` descriptor for one-shot lifetime accounting without a wallet index.
 - An **Electrum server (ElectrumX / electrs / Fulcrum)** or **Esplora** instance is another path - the Electrum protocol's `blockchain.scripthash.get_history` gives you the same data. Many Bitcoin-node platforms ship Electrs as an installable companion (Umbrel, Start9, MyNode); the autopilot reaches it as a generic Electrum server, not a platform-specific app. Relevant if the autopilot wants a query-by-scripthash path without running its own indexer logic.
 
@@ -608,7 +608,7 @@ Per-hour work:
 Per-day work:
 - `GET /v1/spot/settings` → refresh market rules cache. Settings could change as Braiins exits beta. ([openapi.yml - spotGetMarketSettings](https://hashpower.braiins.com/api/openapi.yml))
 - `GET /v1/spot/bars?aggregation_period=PERIOD_1_DAY&limit=30` → 30-day VWAP, used in UI for budget forecasting. ([openapi.yml - spotGetMarketBars](https://hashpower.braiins.com/api/openapi.yml))
-- `bitcoind listreceivedbyaddress` (or ZMQ `rawblock` subscriber) against any reachable Bitcoin node on the LAN → detect block reward income since last check. (Standard Bitcoin Core RPC, [bitcoincore.org](https://bitcoincore.org/en/doc/).)
+- `bitcoind listreceivedbyaddress` (or ZMQ `rawblock` subscriber) against any reachable Bitcoin node on the LAN → detect block reward income since last check. (Standard Bitcoin Knots RPC, [bitcoincore.org](https://bitcoincore.org/en/doc/).)
 
 ### 7.9 Secrets management
 

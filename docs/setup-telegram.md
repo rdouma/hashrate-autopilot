@@ -89,7 +89,7 @@ two paths:
    chat within a few seconds.
 6. **Click Save** to persist the values - the Test button validates
    the typed-but-unsaved values; saving is a separate explicit step
-   (mirrors the Bitcoin Core RPC test flow).
+   (mirrors the Bitcoin Knots RPC test flow).
 
 ## Step 4: verify retry / mute behaviour
 
@@ -162,7 +162,7 @@ no ack flow to drive. Recovery messages similarly carry no button.
 | Per-alert audit trail | `alerts` table | Read-only via /alerts page |
 
 The bot token's dual location (config + secrets) mirrors the
-Bitcoin Core RPC password pattern: the encrypted-at-rest secrets
+Bitcoin Knots RPC password pattern: the encrypted-at-rest secrets
 file (`.env.sops.yaml`) is consulted as a fallback when the config
 column is empty, so installs that bootstrapped via the SOPS path
 keep working without a config edit. New installs and live edits

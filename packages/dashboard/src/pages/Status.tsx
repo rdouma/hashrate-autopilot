@@ -2732,7 +2732,7 @@ function FinancePanel({
               ? t`Payout observer is starting up. Waiting for the first balance scan to complete - usually a few seconds with Electrs, up to a minute with bitcoind scantxoutset.`
               : data.collected_sat !== null
                 ? t`UTXOs at the configured payout address. Read via Electrs (preferred, instant) or bitcoind RPC (slower).`
-                : t`Not configured. Go to Config → On-chain payouts and select Electrs or Bitcoin Core RPC to track your on-chain balance. The net line treats missing collected as 0 so the arithmetic still reads - a blank row here is the hint that a piece of the income side isn't wired up.`
+                : t`Not configured. Go to Config → On-chain payouts and select Electrs or Bitcoin Knots RPC to track your on-chain balance. The net line treats missing collected as 0 so the arithmetic still reads - a blank row here is the hint that a piece of the income side isn't wired up.`
           }
         />
         {/* #170 follow-up: operator-entered pre-installation /
