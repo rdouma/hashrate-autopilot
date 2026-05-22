@@ -25,13 +25,20 @@
 #   We pre-set the daemon's `datum_api_url` config value via the
 #   BHA_DATUM_API_URL env override, so the wizard never needs to ask.
 #
+# - We declare `electrs` as a dependency, joining our containers to
+#   the Electrs app's docker-compose network. The electrs service
+#   listens on :50001 for Electrum TCP. We pre-set BHA_ELECTRS_HOST,
+#   BHA_ELECTRS_PORT, and BHA_PAYOUT_SOURCE so on-chain payout
+#   tracking works out of the box without wizard configuration.
+#
 # - Bitcoin RPC is *not* declared as a dependency (the autopilot does
 #   not strictly need Bitcoin RPC to bid - it is only used by the
-#   optional P&L panel's earnings figure). The BITCOIN_RPC_* env
-#   block below resolves to empty when the dep is not declared, and
-#   the daemon's detectBitcoindEnv() handles empty values cleanly,
-#   so the wizard shows blank RPC fields and the operator types in
-#   any reachable RPC after setup.
+#   optional P&L panel's earnings figure as a fallback when electrs
+#   is unavailable). The BITCOIN_RPC_* env block below resolves to
+#   empty when the dep is not declared, and the daemon's
+#   detectBitcoindEnv() handles empty values cleanly, so the wizard
+#   shows blank RPC fields and the operator types in any reachable
+#   RPC after setup.
 
 version: "3.7"
 
@@ -84,3 +91,10 @@ services:
       # the BHA_* env-override layer, so this overrides whatever is in
       # the database and the operator never needs to type it.
       BHA_DATUM_API_URL: "http://datum_datum_1:21000"
+      # Electrs auto-config (see note at top of file). Resolves to the
+      # Umbrel Electrs app's container on the shared cross-app network.
+      # With host + port set and payout_source = electrs, the P&L
+      # panel's on-chain earnings tracking works on first boot.
+      BHA_ELECTRS_HOST: "electrs_electrs_1"
+      BHA_ELECTRS_PORT: "50001"
+      BHA_PAYOUT_SOURCE: "electrs"

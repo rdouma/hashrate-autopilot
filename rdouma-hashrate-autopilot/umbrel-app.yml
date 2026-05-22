@@ -24,14 +24,13 @@ description: |
 
   Setup is a three-step web wizard accessible at port 3010. After setup you get a dashboard with live decisions, charts, the DRY-RUN / LIVE / PAUSED switch, and a P&L panel that reads spend from Braiins and earnings from your on-chain wallet.
 
-  This app declares Datum Gateway as a dependency, so Umbrel will prompt you to install it during setup. Once both apps run on the same Umbrel, the autopilot's dashboard auto-discovers the local Datum HTTP API across Umbrel's shared Docker network - zero copy/paste, the worker-count and hashrate panels populate on first boot. (Pointing at a Datum gateway running off-Umbrel is also supported - just override the URL in Config after setup.)
-
-  For the P&L panel's earnings figure, a Bitcoin Knots / Bitcoin Core RPC endpoint is helpful but not required - the autopilot does not need Bitcoin RPC to bid. Bitcoin is intentionally not declared as a dependency so this app stays lightweight; you can point it at any reachable Bitcoin RPC after setup.
+  This app declares Datum Gateway and Electrs as dependencies, so Umbrel will prompt you to install them during setup. Once all apps run on the same Umbrel, the autopilot's dashboard auto-discovers the local Datum HTTP API and Electrs server across Umbrel's shared Docker network - zero copy/paste, the worker-count, hashrate, and P&L earnings panels all populate on first boot. (Pointing at a Datum gateway or Electrs instance running off-Umbrel is also supported - just override the URLs in Config after setup.)
 
 developer: Remco Douma
 website: https://github.com/rdouma/hashrate-autopilot
 dependencies:
   - datum
+  - electrs
 repo: https://github.com/rdouma/hashrate-autopilot
 support: https://github.com/rdouma/hashrate-autopilot/issues
 port: 3010
