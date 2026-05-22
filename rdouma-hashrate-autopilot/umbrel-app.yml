@@ -7,7 +7,7 @@ manifestVersion: 1
 id: rdouma-hashrate-autopilot
 category: bitcoin
 name: Hashrate Autopilot
-version: "1.8.4"
+version: "1.8.5"
 tagline: Autopilot for renting hashrate to mine on Ocean Mining
 icon: https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/assets/icon-512.png
 # Umbrel renders description literally - no YAML folding of soft
@@ -51,13 +51,13 @@ defaultPassword: ""
 submitter: Remco Douma
 submission: https://github.com/rdouma/hashrate-autopilot
 releaseNotes: |
-  v1.8.4 - complete turnkey Umbrel setup.
+  v1.8.5 - "Bitcoin Knots" rebrand + wizard polish.
 
-  FIXES
-  - Pool URL is now optional in the wizard. Leave it empty if you don't have a public hostname yet - set it later from Config, which has built-in DDNS support.
-  - Bitcoin RPC auto-configured from Umbrel's BITCOIN_RPC_* env vars on wizard submit, even when Electrs is the selected payout backend. BIP 110 scan works on first boot.
-  - Datum API URL, Electrs host/port, and payout source all auto-configured from env during setup.
-  - Electrs help text corrected to actual Docker hostname (electrs_electrs_1).
+  CHANGES
+  - Renamed every "Bitcoin Core" reference to "Bitcoin Knots" across the entire app - dashboard labels, Config page, locale catalogs (EN/NL/ES), docs, and Umbrel manifest.
+  - Pool URL default is now a real editable value (stratum+tcp://your-public-host:23334) instead of a disappearing HTML placeholder.
+  - Config page Electrs host hint now mentions electrs_electrs_1 as the typical Umbrel hostname.
+  - Pool URL wizard hint simplified with DDNS mention.
 
   Safe to upgrade from any 1.8.x release.
 

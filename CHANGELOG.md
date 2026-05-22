@@ -2,6 +2,10 @@
 
 ## 2026-05-22
 
+### `[Release]` v1.8.5
+
+Renamed "Bitcoin Core" to "Bitcoin Knots" across the entire app (dashboard, Config page, locale catalogs, docs, Umbrel manifest). Pool URL default changed from disappearing HTML placeholder to a real editable value. Config page Electrs hint now mentions electrs_electrs_1 as typical Umbrel hostname.
+
 ### `[Release]` v1.8.4
 
 Complete turnkey Umbrel setup: Pool URL is now optional (leave empty, configure later from Config with DDNS support), Bitcoin RPC auto-configured from Umbrel env even when Electrs is selected, hint text corrected.
