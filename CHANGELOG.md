@@ -2,9 +2,9 @@
 
 ## 2026-05-23
 
-### `[Feature]` On-chain payout gem markers on both charts (#207)
+### `[Feature]` On-chain payout gem markers on the Price chart (#207)
 
-On-chain payouts now appear as emerald gem icons at the top of both the Hashrate and Price charts, with dashed vertical lines extending down to the x-axis. On the Price chart, reward events also render as gem icons on the right-axis earnings line (replacing the former purple dots) when the right axis is set to paid earnings, lifetime earnings, or unpaid earnings. Clicking a gem opens a pinned tooltip showing the block height, payout date, amount (in the active denomination), and a deep-link to the block explorer. All existing reward_events data is backfilled automatically.
+On-chain payouts now appear as emerald gem icons at the top of the Price chart with dashed vertical lines extending to the x-axis. Clicking a gem opens a pinnable tooltip with block height, payout date, amount (in the active denomination), and a block-explorer deep-link. When the right axis is set to unpaid, paid, or lifetime earnings, emerald dots on the line mark the on-chain confirmation and a purple dot marks the earlier moment Ocean debited the unpaid balance (payout initiated), bridging the visual gap between the unpaid drop and the on-chain transaction. Also corrected the BIP 110 tooltip label from "Reduced Data soft fork" to "Reduced Data Temporary Soft Fork" to match the BIP 110 scan card.
 
 ## 2026-05-22
 

@@ -14,7 +14,7 @@ do and when. The window-averaged effective rate (derived per-tick from the delta
 `amount_consumed_sat` counter divided by delivered hashrate × elapsed time) lives on the stats bar below
 as **avg cost / PH delivered**, where the post-hoc range-averaged framing makes more sense. Below the
 hero sit range-selectable hashrate and price charts overlayed with bid events, block markers, and
-difficulty-retarget pickaxe icons. The price chart draws your bid (amber), the fillable ask the
+difficulty-retarget pickaxe icons, and on-chain payout gem markers. The price chart draws your bid (amber), the fillable ask the
 controller tracks (cyan), hashprice (violet), and the safety ceiling (pink); the per-tick effective rate is a separate emerald line, off by default
 behind a config toggle because it's dramatically more volatile than the tracking lines and hijacks the
 Y-axis when enabled. Then a stats strip (uptime, avg hashrate per source - Braiins / Datum / Ocean
@@ -174,16 +174,16 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
   discontinuous luck jump (higher difficulty = smaller pool share = fewer expected blocks = higher luck);
   retarget markers appear on the luck line with before/after luck values in the tooltip so the operator
   can see exactly how the retarget shifted the reading.
-- **Pool-block marker shapes** - the icons on the Hashrate chart carry a precedence-ordered
+- **Chart marker shapes** - the icons on the Hashrate chart carry a precedence-ordered
   vocabulary so the rare events stand out. All markers use Lucide icons for visual consistency. **Own block** (Ocean credited the coinbase to your payout
   address - the lottery-win case) renders as a **gold crown**. **BIP 110-signalling pool block**
-  (header version bit 4 set; Reduced Data soft fork) renders as a **yellow box**. **Default pool block**
+  (header version bit 4 set; Reduced Data Temporary Soft Fork) renders as a **yellow box**. **Default pool block**
   renders as a **blue box**. **Difficulty retargets** show a **violet pickaxe**. **Solo fleet best difficulty records** show a **gold trophy** with a dashed vertical line. Tooltip header label and colour follow the same precedence (own > BIP 110 >
   default). Detection happens daemon-side via your bitcoind RPC (`getblockheader`) or Electrs
   (`blockchain.block.header`) - no third-party API. A separate **BIP 110 scan card** on the Status page
   lets you scan the last N blocks (configurable up to 2016) and see every signaling block with timestamp,
   version bits, and explorer link. Block markers and retarget icons are mirrored onto the price chart, so the operator sees these events in
-  context on both charts.
+  context on both charts. **On-chain payout gems** (emerald) appear at the top of the Price chart with a dashed vertical line whenever a payout is detected on-chain; clicking opens a tooltip with block height, date, amount, and a block-explorer deep-link. A purple dot on the unpaid-earnings line marks the earlier moment Ocean debited the balance (payout initiated), bridging the visual gap between the unpaid drop and the on-chain confirmation.
 - **Telegram notifications** - three severity tiers across eighteen event classes. **IMPORTANT** (red, with a
   retry ladder and paired recovery messages): Datum stratum unreachable, hashrate below floor, zero
   hashrate, Braiins API unreachable, unknown bid detected, bid sustained-paused, wallet runway below
