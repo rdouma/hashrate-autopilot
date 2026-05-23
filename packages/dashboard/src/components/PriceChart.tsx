@@ -351,6 +351,10 @@ export const PriceChart = memo(function PriceChart({
   const [poolBlockTip, setPoolBlockTip] = useState<PoolBlockTooltipState | null>(null);
   const [rewardTip, setRewardTip] = useState<RewardTooltipState | null>(null);
   const [retargetTip, setRetargetTip] = useState<RetargetTooltipState | null>(null);
+  const [unpaidDropTip, setUnpaidDropTip] = useState<{
+    tick_at: number; prev: number; cur: number;
+    x: number; y: number; pinned: boolean;
+  } | null>(null);
   const [expanded, setExpanded] = useState(false);
   const chartHeight = expanded ? HEIGHT * 2 : HEIGHT;
   const { intlLocale } = useLocale();
@@ -1276,6 +1280,27 @@ export const PriceChart = memo(function PriceChart({
   );
   const closeRewardTip = useCallback(() => setRewardTip(null), []);
 
+  const onUnpaidDropEnter = useCallback(
+    (d: { tick_at: number; prev: number; cur: number }) => (e: React.MouseEvent) => {
+      setUnpaidDropTip((prev) => {
+        if (prev?.pinned) return prev;
+        return { ...d, x: e.clientX, y: e.clientY, pinned: false };
+      });
+    },
+    [],
+  );
+  const onUnpaidDropLeave = useCallback(() => {
+    setUnpaidDropTip((prev) => (prev?.pinned ? prev : null));
+  }, []);
+  const onUnpaidDropClick = useCallback(
+    (d: { tick_at: number; prev: number; cur: number }) => (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setUnpaidDropTip({ ...d, x: e.clientX, y: e.clientY, pinned: true });
+    },
+    [],
+  );
+  const closeUnpaidDropTip = useCallback(() => setUnpaidDropTip(null), []);
+
   // Outside-click closes the pinned pool-block / reward tooltips.
   // Mirrors the pattern used for the bid-event tooltip below.
   useEffect(() => {
@@ -1313,6 +1338,24 @@ export const PriceChart = memo(function PriceChart({
     document.addEventListener('mousedown', onDocClick);
     return () => document.removeEventListener('mousedown', onDocClick);
   }, [rewardTip?.pinned]);
+
+  useEffect(() => {
+    if (!unpaidDropTip?.pinned) return;
+    const onDocClick = (ev: MouseEvent) => {
+      const target = ev.target as Node | null;
+      if (
+        target &&
+        document
+          .getElementById('price-chart-pinned-unpaid-drop-tooltip')
+          ?.contains(target)
+      ) {
+        return;
+      }
+      setUnpaidDropTip(null);
+    };
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [unpaidDropTip?.pinned]);
 
   useEffect(() => {
     if (!tooltip?.pinned) return;
@@ -1996,15 +2039,23 @@ export const PriceChart = memo(function PriceChart({
         ))}
 
         {unpaidDropMarkers.map((d) => (
-          <circle
+          <g
             key={`unpaid-drop-${d.tick_at}`}
-            cx={d.cx}
-            cy={d.cy}
-            r="4.5"
-            fill={COLOR_PAYOUT}
-            stroke="#0f172a"
-            strokeWidth="1.5"
-          />
+            onMouseEnter={onUnpaidDropEnter(d)}
+            onMouseLeave={onUnpaidDropLeave}
+            onClick={onUnpaidDropClick(d)}
+            style={{ cursor: 'pointer' }}
+          >
+            <circle
+              cx={d.cx}
+              cy={d.cy}
+              r="4.5"
+              fill="#c084fc"
+              stroke="#0f172a"
+              strokeWidth="1.5"
+            />
+            <rect x={d.cx - 9} y={d.cy - 9} width="18" height="18" fill="transparent" />
+          </g>
         ))}
 
         {/* Pool-block dots on the right-axis line. Click opens the
@@ -2198,6 +2249,14 @@ export const PriceChart = memo(function PriceChart({
           dateTimeLocale={dateTimeLocale}
           denomination={denomination}
           onClose={closeRewardTip}
+        />
+      )}
+      {unpaidDropTip && (
+        <UnpaidDropTooltip
+          tip={unpaidDropTip}
+          locale={intlLocale}
+          denomination={denomination}
+          onClose={closeUnpaidDropTip}
         />
       )}
 
@@ -2843,5 +2902,93 @@ function EventLegend({ kinds }: { kinds: readonly BidEventKind[] }) {
         </span>
       )}
     </span>
+  );
+}
+
+function UnpaidDropTooltip({
+  tip,
+  locale,
+  denomination,
+  onClose,
+}: {
+  tip: { tick_at: number; prev: number; cur: number; x: number; y: number; pinned: boolean };
+  locale: string | undefined;
+  denomination: ReturnType<typeof useDenomination>;
+  onClose: () => void;
+}) {
+  const { i18n } = useLingui();
+  void i18n;
+  const fmt = useFormatters();
+  const { pinned } = tip;
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [pos, setPos] = useState<{ left: number; top: number; ready: boolean }>({
+    left: tip.x + 12,
+    top: tip.y + 12,
+    ready: false,
+  });
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const margin = 8;
+    let left = tip.x + 12;
+    let top = tip.y + 12;
+    if (left + rect.width > window.innerWidth - margin) left = tip.x - rect.width - 12;
+    if (top + rect.height > window.innerHeight - margin) top = tip.y - rect.height - 12;
+    if (left < margin) left = margin;
+    if (top < margin) top = margin;
+    setPos({ left, top, ready: true });
+  }, [tip.x, tip.y, tip.tick_at]);
+
+  const dropSat = tip.prev - tip.cur;
+  const formatVal = (sat: number) => {
+    const btc = sat / 1e8;
+    if (denomination.mode === 'usd' && denomination.btcPrice !== null) {
+      return `$${new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(btc * denomination.btcPrice)}`;
+    }
+    if (denomination.mode === 'btc') {
+      return `₿ ${new Intl.NumberFormat(locale, { minimumFractionDigits: 8, maximumFractionDigits: 8 }).format(btc)}`;
+    }
+    return `${new Intl.NumberFormat(locale, { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(sat)} sat`;
+  };
+
+  return (
+    <div
+      ref={ref}
+      id={pinned ? 'price-chart-pinned-unpaid-drop-tooltip' : undefined}
+      className={`fixed z-50 bg-slate-950 border rounded-lg shadow-lg p-3 text-xs whitespace-nowrap ${pinned ? 'border-slate-500 pointer-events-auto' : 'border-slate-700 pointer-events-none'} ${pos.ready ? '' : 'invisible'}`}
+      style={{ left: pos.left, top: pos.top }}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <span className="font-semibold uppercase tracking-wider text-violet-300">
+          <Trans>PAYOUT INITIATED</Trans>
+        </span>
+        {pinned && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t`close`}
+            className="text-slate-500 hover:text-slate-200 leading-none text-base -mt-0.5 -mr-0.5"
+          >
+            ×
+          </button>
+        )}
+      </div>
+      <div className="text-slate-300 mt-1">
+        {fmt.timestamp(tip.tick_at)}
+        <span className="text-slate-500 ml-2">· {formatAgeMinutes(tip.tick_at)}</span>
+      </div>
+      <div className="text-slate-500 text-[10px]">{formatTimestampUtc(tip.tick_at)}</div>
+
+      <div className="mt-2 flex justify-between gap-3 text-slate-300">
+        <span className="text-slate-500"><Trans>amount</Trans></span>
+        <span className="font-mono tabular-nums">{formatVal(dropSat)}</span>
+      </div>
+
+      <div className="mt-1 text-[10px] text-slate-500">
+        <Trans>Ocean debited the unpaid balance. On-chain transaction follows shortly.</Trans>
+      </div>
+    </div>
   );
 }

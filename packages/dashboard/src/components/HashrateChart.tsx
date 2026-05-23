@@ -1777,7 +1777,7 @@ export function PoolBlockTooltip({
 
       {block.signals_bip110 === true && (
         <div className="mt-2 pt-2 border-t border-slate-800 text-amber-300 text-[11px]">
-          <Trans>Signaling BIP 110 (Reduced Data soft fork)</Trans>
+          <Trans>Signaling BIP 110 (Reduced Data Temporary Soft Fork)</Trans>
         </div>
       )}
 

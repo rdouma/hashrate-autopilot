@@ -2078,6 +2078,10 @@ msgstr "Observing payouts to <0>{payoutAddr}</0>. Edit this in the <1>Pool desti
 msgid "Ocean"
 msgstr "Ocean"
 
+#: src/components/PriceChart.tsx
+msgid "Ocean debited the unpaid balance. On-chain transaction follows shortly."
+msgstr "Ocean debited the unpaid balance. On-chain transaction follows shortly."
+
 #. placeholder {0}: localizedRangeLabel('3h', i18n.locale)
 #: src/pages/Status.tsx
 msgid "ocean est. income/day ({0})"
@@ -2347,6 +2351,10 @@ msgstr "Paused - no bids will be placed or edited until run mode changes."
 #: src/pages/Setup.tsx
 msgid "Payout address"
 msgstr "Payout address"
+
+#: src/components/PriceChart.tsx
+msgid "PAYOUT INITIATED"
+msgstr "PAYOUT INITIATED"
 
 #: src/pages/Status.tsx
 msgid "Payout observer is starting up. Waiting for the first balance scan to complete - usually a few seconds with Electrs, up to a minute with bitcoind scantxoutset."
@@ -2893,8 +2901,12 @@ msgid "Signaling BIP 110"
 msgstr "Signaling BIP 110"
 
 #: src/components/HashrateChart.tsx
-msgid "Signaling BIP 110 (Reduced Data soft fork)"
-msgstr "Signaling BIP 110 (Reduced Data soft fork)"
+#~ msgid "Signaling BIP 110 (Reduced Data soft fork)"
+#~ msgstr "Signaling BIP 110 (Reduced Data soft fork)"
+
+#: src/components/HashrateChart.tsx
+msgid "Signaling BIP 110 (Reduced Data Temporary Soft Fork)"
+msgstr "Signaling BIP 110 (Reduced Data Temporary Soft Fork)"
 
 #: src/pages/Login.tsx
 msgid "signing in…"
