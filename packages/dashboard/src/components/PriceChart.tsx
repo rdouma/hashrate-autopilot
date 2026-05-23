@@ -1959,16 +1959,14 @@ export const PriceChart = memo(function PriceChart({
             onClick={onRewardClick(reward)}
             style={{ cursor: 'pointer' }}
           >
-            <svg
-              x={cx - 6} y={cy - 6}
-              width="12" height="12" viewBox="0 0 24 24"
-              fill="none" stroke={COLOR_PAYOUT} strokeWidth="2"
-              strokeLinecap="round" strokeLinejoin="round"
-            >
-              <path d="M17 3a2 2 0 0 1 1.6.8l3 4a2 2 0 0 1 .013 2.382l-7.99 10.986a2 2 0 0 1-3.247 0l-7.99-10.986A2 2 0 0 1 2.4 7.8l2.998-3.997A2 2 0 0 1 7 3z" fill={COLOR_PAYOUT} fillOpacity="0.35" />
-              <path d="M2 9h20" />
-              <path d="M10.5 3 8 9l4 13 4-13-2.5-6" />
-            </svg>
+            <circle
+              cx={cx}
+              cy={cy}
+              r="4.5"
+              fill={COLOR_PAYOUT}
+              stroke="#0f172a"
+              strokeWidth="1.5"
+            />
             <rect x={cx - 9} y={cy - 9} width="18" height="18" fill="transparent" />
           </g>
         ))}
