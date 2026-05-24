@@ -891,6 +891,12 @@ export interface Bip110ScanSignalingBlock {
   time_ms: number;
   version: number;
   version_hex: string;
+  n_tx: number | null;
+  size_bytes: number | null;
+  weight: number | null;
+  subsidy_sat: number;
+  total_fees_sat: number | null;
+  pool_tag: string | null;
 }
 
 export interface Bip110ScanDeployment {

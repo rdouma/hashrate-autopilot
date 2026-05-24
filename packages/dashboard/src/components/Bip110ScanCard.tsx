@@ -1,15 +1,12 @@
 /**
- * BIP 110 scan card - small Status-page diagnostic that fires the
+ * BIP 110 scan card - Status-page diagnostic that fires the
  * `/api/bip110/scan` endpoint and renders the deployment header +
- * signaling block list.
+ * signaling block cards.
  *
  * Goal (#95): give the operator a way to verify the BIP 110 yellow-
  * cube marker (#94 / #115) renders correctly against known signaling
  * blocks, since Ocean's recent-blocks window may not contain any
  * signaling blocks at all in early adoption (well under 1% block-rate).
- *
- * Once the operator is satisfied that the marker UI works, this card
- * can be removed without touching the rest of Status.
  */
 
 import { Trans } from '@lingui/react/macro';
@@ -19,23 +16,114 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import React, { useState } from 'react';
 
 import { api } from '../lib/api';
-import type { Bip110ScanResponse } from '../lib/api';
+import type { Bip110ScanResponse, Bip110ScanSignalingBlock } from '../lib/api';
 import { applyExplorerTemplate } from '../lib/blockExplorer';
-import { formatAgeMinutes, formatNumber } from '../lib/format';
+import { formatAgeMinutes, formatNumber, formatTimestampHuman } from '../lib/format';
 import { useLocale } from '../lib/locale';
 
-// Retarget windows (2016 blocks each), so each step is "one more
-// difficulty period" of context. 32256 = 16 retargets ≈ 7-8 months
-// at 10-minute target spacing - enough back-history for the operator
-// to find any signaling block on a quiet network.
 const WINDOWS = [2016, 4032, 8064, 16128, 32256] as const;
 type ScanWindow = (typeof WINDOWS)[number];
 
 const BIP110_REFERENCE_URL = 'https://bip110.org/';
 
-function formatTimeUtc(ms: number): string {
-  const d = new Date(ms);
-  return d.toISOString().replace('T', ' ').slice(0, 16) + 'Z';
+function formatBtc(sat: number): string {
+  return (sat / 1e8).toFixed(8).replace(/0+$/, '').replace(/\.$/, '.0');
+}
+
+function formatSize(bytes: number): string {
+  if (bytes >= 1e6) return `${(bytes / 1e6).toFixed(2)} MB`;
+  if (bytes >= 1e3) return `${(bytes / 1e3).toFixed(1)} kB`;
+  return `${bytes} B`;
+}
+
+function truncateHash(hash: string): string {
+  if (hash.length <= 16) return hash;
+  return `${hash.slice(0, 8)}...${hash.slice(-8)}`;
+}
+
+function SignalingBlockCard({
+  block,
+  tipHeight,
+  explorerTemplate,
+  intlLocale,
+}: {
+  block: Bip110ScanSignalingBlock;
+  tipHeight: number | null;
+  explorerTemplate: string;
+  intlLocale: string | undefined;
+}): React.JSX.Element {
+  const confirmations = tipHeight !== null ? tipHeight - block.height + 1 : null;
+  const totalRewardSat =
+    block.total_fees_sat !== null
+      ? block.subsidy_sat + block.total_fees_sat
+      : null;
+
+  return (
+    <div className="bg-slate-950 border border-slate-800 rounded-lg p-4">
+      {/* Header: height + pool tag */}
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-lg font-semibold text-amber-400 font-mono">
+          {formatNumber(block.height, {}, intlLocale)}
+        </span>
+        {block.pool_tag && (
+          <span className="text-xs text-slate-400 truncate max-w-[160px]" title={block.pool_tag}>
+            {block.pool_tag}
+          </span>
+        )}
+      </div>
+
+      {/* Timestamp: absolute + relative */}
+      <div className="mt-1.5 text-xs text-slate-400">
+        <span>{formatTimestampHuman(block.time_ms)}</span>
+        <span className="text-slate-600 mx-1.5">-</span>
+        <span>{formatAgeMinutes(block.time_ms)}</span>
+      </div>
+
+      {/* Stats grid */}
+      <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs font-mono">
+        {totalRewardSat !== null && (
+          <DetailRow label={t`reward`} value={`${formatBtc(totalRewardSat)} BTC`} />
+        )}
+        {block.total_fees_sat !== null && (
+          <DetailRow label={t`fees`} value={`${formatBtc(block.total_fees_sat)} BTC`} />
+        )}
+        {block.n_tx !== null && (
+          <DetailRow label={t`txs`} value={formatNumber(block.n_tx, {}, intlLocale)} />
+        )}
+        {block.size_bytes !== null && (
+          <DetailRow label={t`size`} value={formatSize(block.size_bytes)} />
+        )}
+        {confirmations !== null && (
+          <DetailRow label={t`confs`} value={formatNumber(confirmations, {}, intlLocale)} />
+        )}
+      </div>
+
+      {/* Block hash link */}
+      <div className="mt-3 pt-2 border-t border-slate-800">
+        <a
+          href={applyExplorerTemplate(explorerTemplate, {
+            block_hash: block.hash,
+            height: block.height,
+          })}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs text-amber-400 hover:underline font-mono"
+          title={block.hash}
+        >
+          {truncateHash(block.hash)}
+        </a>
+      </div>
+    </div>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: string }): React.JSX.Element {
+  return (
+    <div className="flex justify-between">
+      <span className="text-slate-500">{label}</span>
+      <span className="text-slate-300">{value}</span>
+    </div>
+  );
 }
 
 export function Bip110ScanCard(): React.JSX.Element {
@@ -45,9 +133,6 @@ export function Bip110ScanCard(): React.JSX.Element {
 
   const [window, setWindow] = useState<ScanWindow>(2016);
 
-  // Shares the cached value with the rest of Status - same queryKey used
-  // by Layout / OceanCard / etc - so adding this hook adds zero network
-  // traffic.
   const configQuery = useQuery({
     queryKey: ['config'],
     queryFn: () => api.config(),
@@ -61,8 +146,6 @@ export function Bip110ScanCard(): React.JSX.Element {
   });
 
   const data: Bip110ScanResponse | undefined = scan.data;
-  // Newest blocks first - the tip-most signal is the most relevant for
-  // verifying the yellow-cube marker behaviour against current network state.
   const sortedBlocks = data
     ? [...data.signaling_blocks].sort((a, b) => b.height - a.height)
     : [];
@@ -109,7 +192,7 @@ export function Bip110ScanCard(): React.JSX.Element {
             disabled={scan.isPending}
             className="px-4 py-1.5 text-sm rounded bg-amber-400 text-slate-900 font-medium hover:bg-amber-300 disabled:opacity-50"
           >
-            {scan.isPending ? <Trans>Scanning…</Trans> : <Trans>Scan</Trans>}
+            {scan.isPending ? <Trans>Scanning...</Trans> : <Trans>Scan</Trans>}
           </button>
         </div>
       </header>
@@ -166,7 +249,7 @@ export function Bip110ScanCard(): React.JSX.Element {
               <Trans>elapsed</Trans>)
               {data.deployment.bit !== null && (
                 <>
-                  {' · '}
+                  {' - '}
                   <Trans>bit</Trans> {data.deployment.bit}
                 </>
               )}
@@ -178,43 +261,16 @@ export function Bip110ScanCard(): React.JSX.Element {
               <Trans>No signaling blocks in this window.</Trans>
             </p>
           ) : (
-            <div className="mt-4 overflow-x-auto">
-              <table className="w-full text-xs font-mono">
-                <thead>
-                  <tr className="text-slate-500 text-left">
-                    <th className="pb-2 pr-4 font-normal">{t`height`}</th>
-                    <th className="pb-2 pr-4 font-normal">{t`found`}</th>
-                    <th className="pb-2 pr-4 font-normal">{t`version`}</th>
-                    <th className="pb-2 font-normal">{t`block`}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedBlocks.map((b) => (
-                    <tr key={b.hash} className="text-slate-300 border-t border-slate-800">
-                      <td className="py-1.5 pr-4">
-                        {formatNumber(b.height, {}, intlLocale)}
-                      </td>
-                      <td className="py-1.5 pr-4" title={formatTimeUtc(b.time_ms)}>
-                        {formatAgeMinutes(b.time_ms)}
-                      </td>
-                      <td className="py-1.5 pr-4">{b.version_hex}</td>
-                      <td className="py-1.5 break-all">
-                        <a
-                          href={applyExplorerTemplate(explorerTemplate, {
-                            block_hash: b.hash,
-                            height: b.height,
-                          })}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-amber-400 hover:underline"
-                        >
-                          {b.hash}
-                        </a>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {sortedBlocks.map((b) => (
+                <SignalingBlockCard
+                  key={b.hash}
+                  block={b}
+                  tipHeight={data.tip_height}
+                  explorerTemplate={explorerTemplate}
+                  intlLocale={intlLocale}
+                />
+              ))}
             </div>
           )}
         </>

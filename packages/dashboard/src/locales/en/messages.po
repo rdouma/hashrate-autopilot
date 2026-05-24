@@ -590,8 +590,8 @@ msgid "bitcoind RPC is not configured on the daemon. Set BHA_BITCOIND_RPC_URL / 
 msgstr "bitcoind RPC is not configured on the daemon. Set BHA_BITCOIND_RPC_URL / _USER / _PASSWORD or fill the corresponding fields on the Config page."
 
 #: src/components/Bip110ScanCard.tsx
-msgid "block"
-msgstr "block"
+#~ msgid "block"
+#~ msgstr "block"
 
 #. placeholder {0}: luckAfter.toFixed(2)
 #: src/components/HashrateChart.tsx
@@ -903,6 +903,10 @@ msgstr "Confirm cancel"
 #: src/pages/Setup.tsx
 msgid "Confirm password"
 msgstr "Confirm password"
+
+#: src/components/Bip110ScanCard.tsx
+msgid "confs"
+msgstr "confs"
 
 #: src/components/SetupGate.tsx
 msgid "Connecting to daemon…"
@@ -1371,6 +1375,7 @@ msgstr "failed to load: {0}"
 msgid "Fast and lightweight. Polled every minute. Instant balance lookups via your Electrum server."
 msgstr "Fast and lightweight. Polled every minute. Instant balance lookups via your Electrum server."
 
+#: src/components/Bip110ScanCard.tsx
 #: src/components/HashrateChart.tsx
 msgid "fees"
 msgstr "fees"
@@ -1441,7 +1446,6 @@ msgstr "Floor hashrate"
 msgid "Format: <btc-address>.<label>. Ocean TIDES credits shares by the address prefix - anything else routes shares to nobody."
 msgstr "Format: <btc-address>.<label>. Ocean TIDES credits shares by the address prefix - anything else routes shares to nobody."
 
-#: src/components/Bip110ScanCard.tsx
 #: src/pages/Status.tsx
 msgid "found"
 msgstr "found"
@@ -1538,8 +1542,8 @@ msgid "headers"
 msgstr "headers"
 
 #: src/components/Bip110ScanCard.tsx
-msgid "height"
-msgstr "height"
+#~ msgid "height"
+#~ msgstr "height"
 
 #: src/pages/Setup.tsx
 msgid "Hide"
@@ -2695,6 +2699,10 @@ msgstr "revert"
 msgid "Review"
 msgstr "Review"
 
+#: src/components/Bip110ScanCard.tsx
+msgid "reward"
+msgstr "reward"
+
 #: src/pages/Status.tsx
 msgid "right axis"
 msgstr "right axis"
@@ -2814,6 +2822,9 @@ msgid "scanning…"
 msgstr "scanning…"
 
 #: src/components/Bip110ScanCard.tsx
+msgid "Scanning..."
+msgstr "Scanning..."
+
 #: src/pages/Config.tsx
 msgid "Scanning…"
 msgstr "Scanning…"
@@ -2911,6 +2922,10 @@ msgstr "Signaling BIP 110 (Reduced Data Temporary Soft Fork)"
 #: src/pages/Login.tsx
 msgid "signing in…"
 msgstr "signing in…"
+
+#: src/components/Bip110ScanCard.tsx
+msgid "size"
+msgstr "size"
 
 #: src/pages/Status.tsx
 msgid "solo best difficulty"
@@ -3184,6 +3199,10 @@ msgstr "Total worker connections on Ocean (one address can have many workers)."
 msgid "Transaction URL template"
 msgstr "Transaction URL template"
 
+#: src/components/Bip110ScanCard.tsx
+msgid "txs"
+msgstr "txs"
+
 #: src/pages/Alerts.tsx
 msgid "unacknowledged only"
 msgstr "unacknowledged only"
@@ -3290,8 +3309,8 @@ msgid "v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
 msgstr "v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
 
 #: src/components/Bip110ScanCard.tsx
-msgid "version"
-msgstr "version"
+#~ msgid "version"
+#~ msgstr "version"
 
 #: src/components/SoloMinersCard.tsx
 msgid "VR temp"

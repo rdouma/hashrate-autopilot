@@ -2,6 +2,10 @@
 
 ## 2026-05-24
 
+### `[UI]` BIP 110 scan: card layout with rich block data
+
+Signaling blocks in the BIP 110 scan are now displayed as cards instead of a cramped table. Each card shows block height (prominent), absolute + relative timestamp, pool name (extracted from coinbase), total reward and fees in BTC, transaction count, block size, and confirmations. Block hash is shown truncated with a link to the configured block explorer. The daemon now enriches signaling blocks with `getblock` + `getrawtransaction` data (two extra RPC batches, negligible since signaling blocks are rare).
+
 ### `[Fix]` Chart right-axis scale inflated by out-of-viewport data points
 
 The right-axis Y-domain on both the Price and Hashrate charts was computed from all data points in the dataset, not just those within the visible time window. When earlier points had significantly different values (e.g. unpaid sat before a payout reset), the axis scaled to accommodate invisible data, compressing the visible line into a small band. Both charts now filter to the viewport before computing the right-axis domain, matching how the Hashrate chart already handled its left axis.

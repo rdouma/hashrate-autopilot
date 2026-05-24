@@ -53,6 +53,12 @@ export interface Bip110SignalingBlock {
   readonly time_ms: number;
   readonly version: number;
   readonly version_hex: string;
+  readonly n_tx: number | null;
+  readonly size_bytes: number | null;
+  readonly weight: number | null;
+  readonly subsidy_sat: number;
+  readonly total_fees_sat: number | null;
+  readonly pool_tag: string | null;
 }
 
 export interface Bip110Deployment {
@@ -84,6 +90,42 @@ interface BlockHeaderVerbose {
   readonly version: number;
   readonly versionHex: string;
   readonly time: number;
+}
+
+interface BlockVerbosity1 {
+  readonly hash: string;
+  readonly height: number;
+  readonly size: number;
+  readonly weight: number;
+  readonly nTx: number;
+  readonly tx: readonly string[];
+}
+
+interface DecodedTx {
+  readonly vin: readonly { readonly coinbase?: string }[];
+  readonly vout: readonly { readonly value: number }[];
+}
+
+function subsidySat(height: number): number {
+  const halvings = Math.floor(height / 210_000);
+  if (halvings >= 64) return 0;
+  return Math.floor(50e8 / (1 << halvings));
+}
+
+function extractPoolTag(coinbaseHex: string): string | null {
+  const bytes = Buffer.from(coinbaseHex, 'hex');
+  let best = '';
+  let run = '';
+  for (const b of bytes) {
+    if (b >= 0x20 && b <= 0x7e) {
+      run += String.fromCharCode(b);
+    } else {
+      if (run.length > best.length) best = run;
+      run = '';
+    }
+  }
+  if (run.length > best.length) best = run;
+  return best.length >= 3 ? best.trim() : null;
 }
 
 interface SoftforkBip9 {
@@ -225,15 +267,70 @@ export async function registerBip110ScanRoute(
         };
       }
 
-      const signaling: Bip110SignalingBlock[] = headers
-        .filter((h) => isBip110Signal(h.version))
-        .map((h) => ({
+      const signalingHeaders = headers.filter((h) => isBip110Signal(h.version));
+
+      // Enrich signaling blocks with block-level data (nTx, size) and
+      // coinbase data (pool tag, fees). Two extra batch rounds but
+      // signaling blocks are rare so the cost is negligible.
+      let blockMap = new Map<string, BlockVerbosity1>();
+      let coinbaseMap = new Map<string, DecodedTx>();
+      if (signalingHeaders.length > 0) {
+        try {
+          const blocks: BlockVerbosity1[] = [];
+          for (const batch of chunk(signalingHeaders.map((h) => h.hash), BATCH_SIZE)) {
+            const results = await client.batch<BlockVerbosity1>(
+              batch.map((h) => ({ method: 'getblock', params: [h, 1] })),
+            );
+            blocks.push(...results);
+          }
+          blockMap = new Map(blocks.map((b) => [b.hash, b]));
+
+          const coinbasePairs = blocks
+            .filter((b) => b.tx.length > 0)
+            .map((b) => ({ hash: b.hash, txid: b.tx[0]! }));
+          if (coinbasePairs.length > 0) {
+            const txs: DecodedTx[] = [];
+            for (const batch of chunk(coinbasePairs, BATCH_SIZE)) {
+              const results = await client.batch<DecodedTx>(
+                batch.map((p) => ({ method: 'getrawtransaction', params: [p.txid, true, p.hash] })),
+              );
+              txs.push(...results);
+            }
+            coinbaseMap = new Map(coinbasePairs.map((p, i) => [p.hash, txs[i]!]));
+          }
+        } catch {
+          // Enrichment is best-effort; fall back to header-only data.
+        }
+      }
+
+      const signaling: Bip110SignalingBlock[] = signalingHeaders.map((h) => {
+        const block = blockMap.get(h.hash);
+        const cbTx = coinbaseMap.get(h.hash);
+        const sub = subsidySat(h.height);
+        let totalFeesSat: number | null = null;
+        let poolTag: string | null = null;
+        if (cbTx) {
+          const cbOutputSat = Math.round(
+            cbTx.vout.reduce((sum, o) => sum + o.value, 0) * 1e8,
+          );
+          totalFeesSat = Math.max(0, cbOutputSat - sub);
+          const scriptSig = cbTx.vin[0]?.coinbase;
+          if (scriptSig) poolTag = extractPoolTag(scriptSig);
+        }
+        return {
           height: h.height,
           hash: h.hash,
           time_ms: h.time * 1000,
           version: h.version,
           version_hex: h.versionHex || `0x${h.version.toString(16).padStart(8, '0')}`,
-        }));
+          n_tx: block?.nTx ?? null,
+          size_bytes: block?.size ?? null,
+          weight: block?.weight ?? null,
+          subsidy_sat: sub,
+          total_fees_sat: totalFeesSat,
+          pool_tag: poolTag,
+        };
+      });
 
       return {
         rpc_available: true,
