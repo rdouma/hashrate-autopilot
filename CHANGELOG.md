@@ -2,6 +2,10 @@
 
 ## 2026-05-25
 
+### `[Fix]` Deposit-detected notification never fires (#210)
+
+The `braiins_deposit_detected` notification was silently swallowed because the deposit watcher assumed the on-chain endpoint never returns `DEPOSIT_STATUS_DETECTED` entries. Empirical testing confirmed the Braiins API does report this status. The watcher now fires the detected notification directly from the on-chain endpoint poll, and the balance-delta workaround in AlertEvaluator has been retired.
+
 ### `[Fix]` Pool-block step marker dots misaligned with actual curve step (#209)
 
 Pool-luck step markers (HashrateChart) and pool-block dots on the unpaid earnings curve (PriceChart) were positioned at the block's on-chain timestamp, but the daemon reflects the value change a few ticks later. The dot sat at the old value while the line stepped up to the right. Both charts now place the dot at the tick where the value actually changes, so the marker sits exactly on the curve's step. When the dot shifts away from the block's vertical line, a thin dotted connector line bridges them horizontally so the causal link stays visible.

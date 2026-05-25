@@ -179,17 +179,6 @@ export class AlertEvaluator {
     noticed_at_ms: number;
   }> = [];
   /**
-   * #143: baseline for `state.braiins_total_deposited_sat`. Fires
-   * `braiins_deposit_detected` whenever the live value exceeds the
-   * baseline. Hydrated lazily from `tickMetricsRepo.latestBraiinsTotalDeposited()`
-   * on the first tick so a daemon restart doesn't replay historical
-   * deposits, while still catching deposits that landed during a
-   * daemon-offline gap. `_available` lives in BraiinsDepositWatcherService
-   * (on-chain endpoint poll); the two detectors share no state.
-   */
-  private lastNotifiedTotalDepositedSat: number | null = null;
-
-  /**
    * #149: per-device alert state for the four solo-mining event
    * classes. Keys are `solo_miners.id`. Maps stay in-memory only -
    * hydrate intentionally skipped because the alerts table uses a
@@ -300,16 +289,13 @@ export class AlertEvaluator {
     await this.evaluateWalletRunway(state, disabled);
     await this.evaluateMarketplaceEmpty(state, disabled);
     await this.evaluatePoolBlockCredited(state, disabled);
-    await this.evaluateBraiinsDepositDetected(state, disabled);
     // #149: solo-mining alerts (Bitaxe / AxeOS). No-op when the
     // master toggle is off or the poller wasn't wired.
     if (state.config.solo_mining_enabled && this.axeOSPoller) {
       await this.evaluateSoloMiners(state, disabled);
     }
-    // _available + _returned live in BraiinsDepositWatcherService
-    // (on-chain-endpoint poll). The endpoint only exposes already-
-    // CREDITED deposits, so it can't see the pre-credited "first-seen"
-    // state - that comes from the balance-delta detector above.
+    // All three deposit events (_detected, _available, _returned)
+    // live in BraiinsDepositWatcherService (on-chain-endpoint poll).
     // TODO(#100): low_acceptance still needs an acceptance-ratio series
     //   in tick_metrics. Scoped for a separate commit.
   }
@@ -759,92 +745,6 @@ export class AlertEvaluator {
       }
     }
     this.pendingPoolBlockCredits = stillPending;
-  }
-
-  /**
-   * #143: per-tick `_detected` detector via `state.braiins_total_deposited_sat`
-   * deltas. The Braiins API field ticks up as soon as Braiins observes
-   * the on-chain deposit (typically mempool / first-confirmation),
-   * 6-12 min before the deposit is `DEPOSIT_STATUS_CREDITED` and shows
-   * up in the on-chain-endpoint feed that `BraiinsDepositWatcherService`
-   * polls. So this detector is the only signal source for the
-   * pre-credited "first-seen" moment.
-   *
-   * Disabled paths - all silent, no row, no Telegram:
-   *   - `notify_on_braiins_deposit === false` (master toggle).
-   *   - `braiins_deposit_detected` in `notification_disabled_event_classes`.
-   *   - `state.braiins_total_deposited_sat` is null (Braiins API
-   *     unreachable this tick).
-   *   - First post-boot tick: silently baseline from the latest
-   *     persisted tick_metrics row.
-   *
-   * Severity = INFO. Deposits are good news, no retry ladder.
-   *
-   * Decreasing balance is logged (forensic visibility) but does not
-   * fire. Withdrawals aren't currently a Braiins-supported feature,
-   * so a drop is unusual; if it happens we just rebaseline so the
-   * next real increment fires correctly.
-   */
-  private async evaluateBraiinsDepositDetected(
-    state: State,
-    disabledClasses: ReadonlySet<string>,
-  ): Promise<void> {
-    const total = state.braiins_total_deposited_sat;
-    if (total == null) {
-      this.log('[deposits] tick: balance=null (Braiins API unavailable); skipping detected');
-      return;
-    }
-    const muted = !state.config.notify_on_braiins_deposit;
-    const classDisabled = disabledClasses.has('braiins_deposit_detected');
-
-    if (this.lastNotifiedTotalDepositedSat === null) {
-      const persisted = this.tickMetricsRepo
-        ? await this.tickMetricsRepo
-            .latestBraiinsTotalDeposited()
-            .catch(() => null)
-        : null;
-      this.lastNotifiedTotalDepositedSat = persisted ?? total;
-      this.log(
-        `[deposits] tick: baseline=${this.lastNotifiedTotalDepositedSat.toLocaleString('en-US')} sat (${persisted === null ? 'fresh install' : 'from tick_metrics'}); current=${total.toLocaleString('en-US')}`,
-      );
-      return;
-    }
-
-    const baseline = this.lastNotifiedTotalDepositedSat;
-    if (total === baseline) {
-      this.log(`[deposits] tick: balance=${total.toLocaleString('en-US')} sat (no change)`);
-      return;
-    }
-    if (total < baseline) {
-      const dec = baseline - total;
-      this.log(
-        `[deposits] tick: balance=${total.toLocaleString('en-US')} sat (DECREASED by ${dec.toLocaleString('en-US')} sat from ${baseline.toLocaleString('en-US')}; rebaselining, not firing)`,
-      );
-      this.lastNotifiedTotalDepositedSat = total;
-      return;
-    }
-
-    const deltaSat = total - baseline;
-    this.lastNotifiedTotalDepositedSat = total;
-
-    if (muted || classDisabled) {
-      this.log(
-        `[deposits] tick: +${deltaSat.toLocaleString('en-US')} sat (${muted ? 'master-toggle off' : 'class-disabled'} - silent absorb)`,
-      );
-      return;
-    }
-    this.log(
-      `[deposits] tick: +${deltaSat.toLocaleString('en-US')} sat - firing braiins_deposit_detected`,
-    );
-
-    const amount = formatSatAsBtc(deltaSat);
-    const copy = copyFor(state);
-    await this.alertManager.recordAlert({
-      severity: 'INFO',
-      title: copy.braiins_deposit_detected_title(),
-      body: copy.braiins_deposit_detected_body({ amount, address_short: null }),
-      event_class: 'braiins_deposit_detected',
-    });
   }
 
   // ---------------------------------------------------------------

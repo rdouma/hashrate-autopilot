@@ -112,7 +112,7 @@ hashrate-autopilot/
 │   │   │   ├── notifier.ts         (#100 - NotificationSink interface + TelegramSink)
 │   │   │   ├── alert-manager.ts    (#100 - alerts table writer; retry ladder; recovery pairing)
 │   │   │   ├── alert-evaluator.ts  (#100 - per-tick state-diff that detects transitions)
-│   │   │   ├── braiins-deposit-watcher.ts (#143 - on-chain endpoint poller; _available + _returned)
+│   │   │   ├── braiins-deposit-watcher.ts (#143/#210 - on-chain endpoint poller; all three deposit events)
 │   │   │   ├── axeos.ts            (#149 - AxeOS REST client types + per-device fetch)
 │   │   │   ├── axeos-poller.ts     (#149 - per-tick fleet poll; Promise.allSettled; 2 s per-device timeout)
 │   │   │   ├── axeos-scanner.ts    (#149 / #156 - /24 subnet sweep with operator-supplied CIDR override for docker / Umbrel installs)
@@ -826,3 +826,4 @@ Remaining work is tracked in GitHub issues.
 | 1.8     | 2026-05-21 | Migrations 0093-0094 catch-up (spec v2.7). §5 tick_metrics: added `pool_luck_30d`, `pool_blocks_30d_count`, `pool_hashrate_ph_avg_30d` (#201). §5 runtime_state: added `solo_best_difficulty_all_time` (#204). §5 new table: `solo_best_difficulty_events` (#204). Migration summary extended with a 0093-0094 paragraph. No control-loop shape changes. |
 | 1.9     | 2026-05-22 | §5 DDL accuracy pass: rewrote `pool_blocks` (height-keyed PK, correct column names), `bid_events` (occurred_at, source, old/new price split, overpay snapshot columns from 0077), `braiins_deposits` (tx_id, integer status, notified_* idempotency flags, address column), `solo_miners` (UNIQUE ip, updated_at), and `solo_miner_samples` (composite PK, 20+ columns from actual migration 0085-0087 including reachable, voltage, current, asic_model, version, stratum_port/user). No code or control-loop shape changes - pure documentation accuracy. |
 | 1.10    | 2026-05-25 | §5 DDL fixes from /check-code audit: `tick_metrics.network_difficulty` type corrected from REAL to INTEGER (matches migration 0053); added missing `paid_total_sat` (0066), `block_found_sound*` (0052/0061) columns; removed dropped `operator_available` from `runtime_state` (0083). No code changes. |
+| 1.11    | 2026-05-25 | §2 repo layout: updated braiins-deposit-watcher.ts annotation - all three deposit events (_detected, _available, _returned) now sourced from the on-chain endpoint poller (#210). Retired the balance-delta workaround in AlertEvaluator. |

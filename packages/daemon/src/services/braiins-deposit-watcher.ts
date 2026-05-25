@@ -1,29 +1,23 @@
 /**
- * Braiins on-chain deposit lifecycle watcher (#143).
+ * Braiins on-chain deposit lifecycle watcher (#143, corrected #210).
  *
- * Polls `/v1/account/transaction/on-chain` every 60s. Empirically the
- * endpoint only exposes deposits that have already reached the
- * `DEPOSIT_STATUS_CREDITED` state -- the earlier pending / confirming
- * stages are not surfaced. So this watcher fires:
+ * Polls `/v1/account/transaction/on-chain` every 60s. The endpoint
+ * returns deposits across their full lifecycle, including the early
+ * `DEPOSIT_STATUS_DETECTED` state (empirically verified 2026-05-25).
+ * This watcher is the single source of truth for all three deposit
+ * notification events:
  *
- *   - **Available** (INFO) -- first time a tx_id appears in the
- *     response with `return_tx_id` empty. Maps to "Braiins compliance
- *     cleared the deposit; funds spendable now."
+ *   - **Detected** (INFO) -- first time a tx_id appears in the
+ *     response, regardless of status. The deposit has been seen by
+ *     Braiins (mempool / first confirmation) but not yet credited.
+ *   - **Available** (INFO) -- the deposit reaches
+ *     `DEPOSIT_STATUS_CREDITED` with no `return_tx_id`. Compliance
+ *     cleared; funds spendable.
  *   - **Returned**  (IMPORTANT) -- `return_tx_id` is non-empty.
  *     Compliance bounced it back; real money on the line.
  *
- * The `_detected` event (firing when the deposit first lands but
- * hasn't yet been credited) lives in `AlertEvaluator.evaluateBraiinsDeposit`
- * driven by `state.braiins_total_deposited_sat` deltas. That signal
- * ticks 6-12 min earlier than this endpoint exposes the row, so the
- * two detectors are coordinated by signal source, not by lifecycle
- * flag.
- *
- * Per-row `notified_available` / `notified_returned` flags ensure
- * each event fires exactly once. The `notified_detected` flag on
- * the same row is set unconditionally to 1 on first upsert (legacy
- * from #130; this watcher does NOT fire `_detected`, so the flag is
- * just future-proofing).
+ * Per-row `notified_detected` / `notified_available` /
+ * `notified_returned` flags ensure each event fires exactly once.
  *
  * Disabled paths (master toggle off, per-class disabled in #106):
  * still poll, still upsert, still flip `notified_*` flags so a
@@ -171,11 +165,14 @@ export class BraiinsDepositWatcherService {
         observed_at_ms: this.now(),
       });
 
-      // The watcher does not fire `_detected` (that signal comes from
-      // the balance-delta path in AlertEvaluator). Flip the flag to 1
-      // on the first upsert so the legacy column stays coherent.
       if (!observed.notified_detected) {
-        await this.options.depositsRepo.markNotified(tx_id, 'detected');
+        await this.handleEvent({
+          kind: 'detected',
+          notifyOn,
+          tx_id,
+          payload: { amount_sat, address },
+          severity: 'INFO',
+        });
       }
 
       if (return_tx_id !== null && !observed.notified_returned) {
