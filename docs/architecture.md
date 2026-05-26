@@ -1,4 +1,4 @@
-# Hashrate Autopilot - Architecture (v1.10)
+# Hashrate Autopilot - Architecture (v1.12)
 
 > Concretion of `docs/spec.md` into module boundaries, data flow, deployment shape, and a
 > milestone-ordered build plan.
@@ -20,10 +20,12 @@
 > and the solo_best_difficulty_events table + runtime_state high-water mark (#204). v1.9
 > (2026-05-22) corrects the §5 DDL for five tables (pool_blocks, bid_events,
 > braiins_deposits, solo_miners, solo_miner_samples) that had drifted from the actual migrations.
-> **v1.10** (this revision, 2026-05-25) fixes `tick_metrics.network_difficulty` type (REAL -> INTEGER
+> v1.10 (2026-05-25) fixes `tick_metrics.network_difficulty` type (REAL -> INTEGER
 > to match migration 0053), adds missing columns (`paid_total_sat` from 0066, `block_found_sound*`
 > from 0052/0061), removes the dropped `operator_available` column from `runtime_state`, and adds
-> `total_balance_sat` to `tick_metrics` (migration 0095, #211).
+> `total_balance_sat` to `tick_metrics` (migration 0095, #211). v1.11 (2026-05-25) updated
+> braiins-deposit-watcher annotation and route listing. **v1.12** (this revision, 2026-05-25)
+> added the `deposits` route.
 
 ## 1. High-level shape
 
