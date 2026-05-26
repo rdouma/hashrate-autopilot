@@ -784,7 +784,7 @@ export const PriceChart = memo(function PriceChart({
         case 'total_balance_sat':
           return {
             values: points.map((p) => p.total_balance_sat),
-            stroke: '#f59e0b',
+            stroke: '#c084fc',
             axisLabel: `total balance (${denomination.mode === 'usd' ? '$' : denomination.mode === 'btc' ? '₿' : 'sat'})`,
             formatTick: (v) => formatSatCompact(v, denomination, intlLocale),
           };
