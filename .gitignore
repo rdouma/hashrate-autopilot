@@ -46,6 +46,7 @@ docs/permissions-log.md
 
 braiins_hashrate_control.iml
 scripts/dump-clarent.sh
+scripts/test-stratum.sh
 
 # Operator-private working files at the repo root - analysis
 # spreadsheets, scratch notes - not meant to be part of the project.
