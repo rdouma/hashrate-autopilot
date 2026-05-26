@@ -878,7 +878,9 @@ export const PriceChart = memo(function PriceChart({
       const allowNegativeAxis =
         rightAxisSeries === 'avg_overpay_intent' ||
         rightAxisSeries === 'avg_overpay_settled';
-      const anchorAtZero = rightAxisSeries === 'solo_power_watts';
+      const anchorAtZero =
+        rightAxisSeries === 'solo_power_watts' ||
+        rightAxisSeries === 'total_balance_sat';
       let yFloor: number;
       let yCeiling: number;
       if (anchorAtZero) {
