@@ -210,14 +210,20 @@ function formatSatCompact(
   if (denomination.mode === 'btc') {
     const btc = sat / 100_000_000;
     const abs = Math.abs(btc);
+    const btcSpan = axisSpan !== undefined ? axisSpan / 100_000_000 : undefined;
+    const decimalsForSpan = (base: number): number => {
+      if (btcSpan === undefined || btcSpan <= 0) return base;
+      const spanDigits = -Math.floor(Math.log10(btcSpan));
+      return Math.max(base, spanDigits + 1);
+    };
     const fmt = (decimals: number): string =>
       new Intl.NumberFormat(locale, {
         minimumFractionDigits: 0,
         maximumFractionDigits: decimals,
       }).format(btc);
-    if (abs >= 1) return fmt(2);
-    if (abs >= 0.1) return fmt(4);
-    if (abs >= 0.001) return fmt(6);
+    if (abs >= 1) return fmt(decimalsForSpan(2));
+    if (abs >= 0.1) return fmt(decimalsForSpan(4));
+    if (abs >= 0.001) return fmt(decimalsForSpan(6));
     if (abs === 0) return '0';
     return btc.toExponential(2);
   }

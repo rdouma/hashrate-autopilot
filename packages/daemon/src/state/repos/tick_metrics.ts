@@ -146,12 +146,13 @@ export class TickMetricsRepo {
    * bucket the operator actually sees).
    *
    * MVP simplification (vs the original issue): `target_ph`, `floor_ph`,
-   * `available_balance_sat`, and `best_ask_sat_per_eh_day` are currently
-   * averaged; the issue proposed end-of-bucket for the first three and
-   * median for the last. The deviation is documented in the same issue;
-   * target/floor rarely change mid-bucket so AVG is visually identical,
-   * and median in SQLite requires a window-function pass we can layer in
-   * later without changing the endpoint.
+   * `available_balance_sat`, `total_balance_sat`, and
+   * `best_ask_sat_per_eh_day` are currently averaged; the issue proposed
+   * end-of-bucket for the first four and median for the last. The
+   * deviation is documented in the same issue; target/floor rarely change
+   * mid-bucket so AVG is visually identical, and median in SQLite
+   * requires a window-function pass we can layer in later without
+   * changing the endpoint.
    */
   async listAggregated(
     sinceMs: number,

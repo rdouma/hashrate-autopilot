@@ -50,7 +50,6 @@ export async function registerDepositsRoute(
         .limit(limit)
         .execute();
       const deposits = rows
-        .slice()
         .reverse()
         .map((r) => ({
           tx_id: String(r.tx_id),
