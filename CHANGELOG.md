@@ -6,9 +6,9 @@
 
 When the stratum probe fails, the dashboard now shows the actual error (e.g. "timeout after 2500ms", "connect ECONNREFUSED") as a tooltip on the "stratum DOWN" badge. When the probe succeeds, the tooltip shows latency in ms. Probe failures are also logged to the daemon console at warn level for post-mortem analysis.
 
-### `[UI]` Available balance right-axis series on the Price chart (#211)
+### `[UI]` Total balance right-axis series on the Price chart (#211)
 
-New "available balance" option in the Price chart's right-axis dropdown plots the Braiins wallet balance over time. Shows deposit jumps aligned with the amber fuel markers, giving a complete visual timeline of funding activity.
+New "total balance" option in the Price chart's right-axis dropdown plots the Braiins total wallet balance (available + blocked) over time. The total decreases as bids consume funds and jumps on deposits, giving a complete visual timeline of funding activity. Requires new `total_balance_sat` column in `tick_metrics` (migration 0095); historical ticks show null.
 
 ### `[Feature]` Deposit markers on the Price chart (#211)
 

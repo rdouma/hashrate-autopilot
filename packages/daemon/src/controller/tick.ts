@@ -143,6 +143,7 @@ export class Controller {
           : null,
         max_bid_sat_per_eh_day: state.config.max_bid_sat_per_eh_day,
         available_balance_sat: primaryBalance?.available_balance_sat ?? null,
+        total_balance_sat: primaryBalance?.total_balance_sat ?? null,
         datum_hashrate_ph: state.datum?.hashrate_ph ?? null,
         ocean_hashrate_ph: state.ocean_hashrate_ph,
         share_log_pct: state.share_log_pct,

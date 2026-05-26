@@ -22,7 +22,8 @@
 > braiins_deposits, solo_miners, solo_miner_samples) that had drifted from the actual migrations.
 > **v1.10** (this revision, 2026-05-25) fixes `tick_metrics.network_difficulty` type (REAL -> INTEGER
 > to match migration 0053), adds missing columns (`paid_total_sat` from 0066, `block_found_sound*`
-> from 0052/0061), and removes the dropped `operator_available` column from `runtime_state`.
+> from 0052/0061), removes the dropped `operator_available` column from `runtime_state`, and adds
+> `total_balance_sat` to `tick_metrics` (migration 0095, #211).
 
 ## 1. High-level shape
 
@@ -381,6 +382,7 @@ CREATE TABLE tick_metrics (
   hashprice_sat_per_eh_day INTEGER,       -- Ocean break-even hashprice
   max_bid_sat_per_eh_day INTEGER,         -- snapshot of config cap used this tick
   available_balance_sat INTEGER,
+  total_balance_sat INTEGER,              -- available + blocked; migration 0095; null pre-0095
   datum_hashrate_ph REAL,                 -- gateway-measured hashrate (null if not configured)
   ocean_hashrate_ph REAL,                 -- Ocean's credited 5-min hashrate for our payout address
   share_log_pct REAL,                     -- our slice of Ocean's TIDES window (e.g. 0.0182 for 0.0182%);

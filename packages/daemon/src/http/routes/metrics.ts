@@ -42,6 +42,7 @@ export interface MetricPoint {
   readonly hashprice_sat_per_ph_day: number | null;
   readonly max_bid_sat_per_ph_day: number | null;
   readonly available_balance_sat: number | null;
+  readonly total_balance_sat: number | null;
   /**
    * Hashrate Datum reports for its own connected workers, PH/s.
    * Null when the Datum integration is disabled, the poll failed
@@ -184,6 +185,7 @@ function toMetricPoint(r: {
   hashprice_sat_per_eh_day: number | null;
   max_bid_sat_per_eh_day: number | null;
   available_balance_sat: number | null;
+  total_balance_sat: number | null;
   datum_hashrate_ph: number | null;
   ocean_hashrate_ph: number | null;
   share_log_pct: number | null;
@@ -231,6 +233,7 @@ function toMetricPoint(r: {
         ? r.max_bid_sat_per_eh_day / EH_PER_PH
         : null,
     available_balance_sat: r.available_balance_sat,
+    total_balance_sat: r.total_balance_sat,
     datum_hashrate_ph: r.datum_hashrate_ph,
     ocean_hashrate_ph: r.ocean_hashrate_ph,
     share_log_pct: r.share_log_pct,

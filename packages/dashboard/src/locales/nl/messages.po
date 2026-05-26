@@ -430,8 +430,8 @@ msgid "available"
 msgstr "beschikbaar"
 
 #: src/pages/Status.tsx
-msgid "available balance"
-msgstr "beschikbaar saldo"
+msgid "total balance"
+msgstr "totaal saldo"
 
 #: src/pages/Status.tsx
 msgid "Average break-even unit price over the selected range. Multiplied by avg delivered to get projected income. Different from the spot hashprice row below - this is what the projection actually uses."

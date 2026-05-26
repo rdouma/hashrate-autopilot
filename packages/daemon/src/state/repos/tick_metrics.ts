@@ -29,6 +29,7 @@ export interface InsertTickMetricArgs {
   readonly hashprice_sat_per_eh_day: number | null;
   readonly max_bid_sat_per_eh_day: number | null;
   readonly available_balance_sat: number | null;
+  readonly total_balance_sat: number | null;
   readonly datum_hashrate_ph: number | null;
   readonly ocean_hashrate_ph: number | null;
   readonly share_log_pct: number | null;
@@ -95,6 +96,7 @@ export interface AggregatedTickMetricRow {
   hashprice_sat_per_eh_day: number | null;
   max_bid_sat_per_eh_day: number | null;
   available_balance_sat: number | null;
+  total_balance_sat: number | null;
   datum_hashrate_ph: number | null;
   ocean_hashrate_ph: number | null;
   share_log_pct: number | null;
@@ -171,6 +173,7 @@ export class TickMetricsRepo {
         hashprice_sat_per_eh_day: r.hashprice_sat_per_eh_day,
         max_bid_sat_per_eh_day: r.max_bid_sat_per_eh_day,
         available_balance_sat: r.available_balance_sat,
+        total_balance_sat: r.total_balance_sat,
         datum_hashrate_ph: r.datum_hashrate_ph,
         ocean_hashrate_ph: r.ocean_hashrate_ph,
         share_log_pct: r.share_log_pct,
@@ -216,6 +219,7 @@ export class TickMetricsRepo {
           'max_bid_sat_per_eh_day',
         ),
         sql<number | null>`AVG(available_balance_sat)`.as('available_balance_sat'),
+        sql<number | null>`AVG(total_balance_sat)`.as('total_balance_sat'),
         sql<number | null>`AVG(datum_hashrate_ph)`.as('datum_hashrate_ph'),
         sql<number | null>`AVG(ocean_hashrate_ph)`.as('ocean_hashrate_ph'),
         sql<number | null>`AVG(share_log_pct)`.as('share_log_pct'),

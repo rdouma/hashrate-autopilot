@@ -164,7 +164,7 @@ export type PriceRightAxis =
   | 'lifetime_earnings_sat'
   // #149: solo-mining total power draw (W) across the fleet.
   | 'solo_power_watts'
-  | 'available_balance_sat'
+  | 'total_balance_sat'
   // #164: per-tick (our_bid - fillable_ask), rolling-mean smoothed.
   // Reflects what the controller targeted - intent before billing.
   | 'avg_overpay_intent'
@@ -781,11 +781,11 @@ export const PriceChart = memo(function PriceChart({
             axisLabel: `paid total (${denomination.mode === 'usd' ? '$' : denomination.mode === 'btc' ? '₿' : 'sat'})`,
             formatTick: (v) => formatSatCompact(v, denomination, intlLocale),
           };
-        case 'available_balance_sat':
+        case 'total_balance_sat':
           return {
-            values: points.map((p) => p.available_balance_sat),
+            values: points.map((p) => p.total_balance_sat),
             stroke: '#f59e0b',
-            axisLabel: `available (${denomination.mode === 'usd' ? '$' : denomination.mode === 'btc' ? '₿' : 'sat'})`,
+            axisLabel: `total balance (${denomination.mode === 'usd' ? '$' : denomination.mode === 'btc' ? '₿' : 'sat'})`,
             formatTick: (v) => formatSatCompact(v, denomination, intlLocale),
           };
         case 'solo_power_watts': {
