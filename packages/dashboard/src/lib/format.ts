@@ -108,6 +108,7 @@ export function formatNumber(
 export function formatCompactNumber(
   n: number,
   locale: Locale = defaultLocale(),
+  axisSpan?: number,
 ): string {
   if (!Number.isFinite(n)) return '-';
   const abs = Math.abs(n);
@@ -116,12 +117,25 @@ export function formatCompactNumber(
       minimumFractionDigits: minDecimals,
       maximumFractionDigits: maxDecimals,
     }).format(v);
+  // When the caller supplies the axis span (max - min), pick enough
+  // decimals in the suffix so adjacent ticks don't collapse to the
+  // same label. E.g. 1,780,000..1,840,000 at the M tier: span/1e6 =
+  // 0.06 -> need 2 decimals ("1,78M" vs "1,84M") instead of the
+  // default 1 ("1,8M" for both).
+  const suffixDecimals = (divisor: number): number => {
+    if (axisSpan === undefined || axisSpan <= 0) return 1;
+    const spanInSuffix = axisSpan / divisor;
+    if (spanInSuffix >= 1) return 1;
+    if (spanInSuffix >= 0.1) return 2;
+    return 3;
+  };
   // For k/M/B-suffixed values, force exactly 1 decimal so adjacent
   // ticks don't visually swap suffix - "80k" next to "79,5k" reads
   // as a width jump even though the magnitude is identical. Always
   // showing 1 decimal ("80,0k" / "79,5k") keeps the column stable.
-  if (abs >= 1e9) return `${fmt(n / 1e9, 1, 1)}B`;
-  if (abs >= 1e6) return `${fmt(n / 1e6, 1, 1)}M`;
+  // When axisSpan is provided and narrow, more decimals are used.
+  if (abs >= 1e9) { const d = suffixDecimals(1e9); return `${fmt(n / 1e9, d, d)}B`; }
+  if (abs >= 1e6) { const d = suffixDecimals(1e6); return `${fmt(n / 1e6, d, d)}M`; }
   // Below 1M we render with full thousands grouping rather than the
   // `k` suffix - "25,000" reads better than "25,0k" at the typical
   // pool-hashrate magnitudes where we have room for it. The k

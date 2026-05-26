@@ -201,9 +201,11 @@ function formatSatCompact(
   sat: number,
   denomination: ReturnType<typeof useDenomination>,
   locale: string | undefined,
+  axisSpan?: number,
 ): string {
   if (denomination.mode === 'usd' && denomination.btcPrice !== null) {
-    return `$${formatCompactNumber((sat / 100_000_000) * denomination.btcPrice, locale)}`;
+    const usdSpan = axisSpan !== undefined ? (axisSpan / 100_000_000) * denomination.btcPrice : undefined;
+    return `$${formatCompactNumber((sat / 100_000_000) * denomination.btcPrice, locale, usdSpan)}`;
   }
   if (denomination.mode === 'btc') {
     const btc = sat / 100_000_000;
@@ -219,7 +221,7 @@ function formatSatCompact(
     if (abs === 0) return '0';
     return btc.toExponential(2);
   }
-  return formatCompactNumber(sat, locale);
+  return formatCompactNumber(sat, locale, axisSpan);
 }
 
 export const PriceChart = memo(function PriceChart({
@@ -717,7 +719,7 @@ export const PriceChart = memo(function PriceChart({
       values: (number | null)[];
       stroke: string;
       axisLabel: string;
-      formatTick: (v: number) => string;
+      formatTick: (v: number, axisSpan?: number) => string;
     } | null = (() => {
       switch (rightAxisSeries) {
         case 'none':
@@ -740,7 +742,7 @@ export const PriceChart = memo(function PriceChart({
             values: points.map((p) => p.estimated_block_reward_sat),
             stroke: '#c084fc',
             axisLabel: `block reward (${denomination.mode === 'usd' ? '$' : denomination.mode === 'btc' ? '₿' : 'sat'})`,
-            formatTick: (v) => formatSatCompact(v, denomination, intlLocale),
+            formatTick: (v, span) => formatSatCompact(v, denomination, intlLocale, span),
           };
         case 'btc_usd_price':
           return {
@@ -768,7 +770,7 @@ export const PriceChart = memo(function PriceChart({
             values: points.map((p) => p.ocean_unpaid_sat),
             stroke: '#c084fc',
             axisLabel: `unpaid (${denomination.mode === 'usd' ? '$' : denomination.mode === 'btc' ? '₿' : 'sat'})`,
-            formatTick: (v) => formatSatCompact(v, denomination, intlLocale),
+            formatTick: (v, span) => formatSatCompact(v, denomination, intlLocale, span),
           };
         case 'paid_total_sat':
           return {
@@ -779,14 +781,14 @@ export const PriceChart = memo(function PriceChart({
             ),
             stroke: '#c084fc',
             axisLabel: `paid total (${denomination.mode === 'usd' ? '$' : denomination.mode === 'btc' ? '₿' : 'sat'})`,
-            formatTick: (v) => formatSatCompact(v, denomination, intlLocale),
+            formatTick: (v, span) => formatSatCompact(v, denomination, intlLocale, span),
           };
         case 'total_balance_sat':
           return {
             values: points.map((p) => p.total_balance_sat),
             stroke: '#c084fc',
             axisLabel: `Braiins balance (${denomination.mode === 'usd' ? '$' : denomination.mode === 'btc' ? '₿' : 'sat'})`,
-            formatTick: (v) => formatSatCompact(v, denomination, intlLocale),
+            formatTick: (v, span) => formatSatCompact(v, denomination, intlLocale, span),
           };
         case 'solo_power_watts': {
           // Nearest-neighbor join with 15s tolerance - see HashrateChart's
@@ -816,7 +818,7 @@ export const PriceChart = memo(function PriceChart({
             ),
             stroke: '#c084fc',
             axisLabel: `lifetime (${denomination.mode === 'usd' ? '$' : denomination.mode === 'btc' ? '₿' : 'sat'})`,
-            formatTick: (v) => formatSatCompact(v, denomination, intlLocale),
+            formatTick: (v, span) => formatSatCompact(v, denomination, intlLocale, span),
           };
         case 'avg_overpay_intent':
           return {
@@ -1767,7 +1769,7 @@ export const PriceChart = memo(function PriceChart({
                 fill={rightAxis.stroke}
                 fontFamily="monospace"
               >
-                {rightAxis.formatTick(v)}
+                {rightAxis.formatTick(v, (rightYTicks[rightYTicks.length - 1] ?? 1) - (rightYTicks[0] ?? 0))}
               </text>
             </g>
           ))}
