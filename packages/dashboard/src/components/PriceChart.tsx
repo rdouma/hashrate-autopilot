@@ -2270,27 +2270,40 @@ export const PriceChart = memo(function PriceChart({
             const t = d.tx_timestamp_ms ?? d.credited_at_ms ?? d.first_seen_at_ms;
             return t >= dataMinX && t <= dataMaxX;
           });
-          const connectorIds = new Set<string>();
-          const creditGroups = new Map<number, typeof visible>();
-          for (const d of visible) {
-            if (d.credited_at_ms && d.tx_timestamp_ms && d.credited_at_ms !== d.tx_timestamp_ms && d.credited_at_ms <= dataMaxX) {
-              const group = creditGroups.get(d.credited_at_ms) ?? [];
-              group.push(d);
-              creditGroups.set(d.credited_at_ms, group);
+
+          const balanceStepUps: { depositTxId: string; stepX: number; stepY: number }[] = [];
+          if (rightAxisSeries === 'total_balance_sat' && rightAxis && rightYScale) {
+            for (let i = 1; i < points.length; i++) {
+              const prev = rightAxis.values[i - 1] ?? null;
+              const cur = rightAxis.values[i] ?? null;
+              if (prev === null || cur === null || cur <= prev) continue;
+              const delta = cur - prev;
+              if (delta < 10_000) continue;
+              const pt = points[i];
+              if (!pt) continue;
+              const stepTime = pt.tick_at;
+              let bestDeposit: (typeof visible)[number] | null = null;
+              let bestDist = Infinity;
+              for (const d of visible) {
+                const dt = d.tx_timestamp_ms ?? d.credited_at_ms ?? d.first_seen_at_ms;
+                if (dt > stepTime) continue;
+                const dist = stepTime - dt;
+                if (dist < bestDist) { bestDist = dist; bestDeposit = d; }
+              }
+              if (bestDeposit && bestDist < 24 * 60 * 60 * 1000) {
+                balanceStepUps.push({
+                  depositTxId: bestDeposit.tx_id,
+                  stepX: xScale(stepTime),
+                  stepY: rightYScale(cur),
+                });
+              }
             }
           }
-          for (const group of creditGroups.values()) {
-            const nearest = group.reduce((a, b) =>
-              Math.abs(a.tx_timestamp_ms! - a.credited_at_ms!) < Math.abs(b.tx_timestamp_ms! - b.credited_at_ms!) ? a : b
-            );
-            connectorIds.add(nearest.tx_id);
-          }
+          const stepUpByTxId = new Map(balanceStepUps.map((s) => [s.depositTxId, s]));
 
           return visible.map((d) => {
             const x = xScale(d.tx_timestamp_ms ?? d.credited_at_ms ?? d.first_seen_at_ms);
-            const showConnector = connectorIds.has(d.tx_id);
-            const xCredit = showConnector ? xScale(d.credited_at_ms!) : null;
-            const connectorY = PADDING.top + 2;
+            const stepUp = stepUpByTxId.get(d.tx_id);
             return (
               <g
                 key={`deposit-icon-${d.tx_id}`}
@@ -2308,24 +2321,22 @@ export const PriceChart = memo(function PriceChart({
                   opacity="0.55"
                   pointerEvents="none"
                 />
-                {xCredit !== null && (
+                {stepUp && (
                   <>
-                    <line
-                      x1={x + 9} x2={xCredit}
-                      y1={connectorY} y2={connectorY}
-                      stroke={COLOR_DEPOSIT}
-                      strokeWidth="1"
-                      strokeDasharray="3 3"
-                      opacity="0.4"
+                    <circle
+                      cx={stepUp.stepX} cy={stepUp.stepY}
+                      r={4}
+                      fill={COLOR_DEPOSIT} fillOpacity={0.8}
+                      stroke="none"
                       pointerEvents="none"
                     />
                     <line
-                      x1={xCredit} x2={xCredit}
-                      y1={PADDING.top - 4} y2={chartHeight - PADDING.bottom}
+                      x1={x} x2={stepUp.stepX}
+                      y1={stepUp.stepY} y2={stepUp.stepY}
                       stroke={COLOR_DEPOSIT}
                       strokeWidth="1"
-                      strokeDasharray="2 3"
-                      opacity="0.3"
+                      strokeDasharray="4 3"
+                      opacity="0.5"
                       pointerEvents="none"
                     />
                   </>
