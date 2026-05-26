@@ -12,10 +12,12 @@ import { createPortal } from 'react-dom';
  */
 export function Tooltip({
   text,
+  content,
   children,
   preWrap,
 }: {
-  text: string;
+  text?: string;
+  content?: ReactNode;
   children: ReactNode;
   preWrap?: boolean;
 }) {
@@ -99,7 +101,7 @@ export function Tooltip({
           }}
         >
           <div className={`bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-300 shadow-lg max-w-xs leading-relaxed ${preWrap ? 'whitespace-pre-line' : 'whitespace-normal'}`}>
-            {text}
+            {content ?? text}
           </div>
         </div>,
         document.body,

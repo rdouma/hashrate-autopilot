@@ -2265,17 +2265,31 @@ export const PriceChart = memo(function PriceChart({
             );
           })}
 
-        {deposits
-          .filter((d) => {
+        {(() => {
+          const visible = deposits.filter((d) => {
             const t = d.tx_timestamp_ms ?? d.credited_at_ms ?? d.first_seen_at_ms;
             return t >= dataMinX && t <= dataMaxX;
-          })
-          .map((d) => {
+          });
+          const connectorIds = new Set<string>();
+          const creditGroups = new Map<number, typeof visible>();
+          for (const d of visible) {
+            if (d.credited_at_ms && d.tx_timestamp_ms && d.credited_at_ms !== d.tx_timestamp_ms && d.credited_at_ms <= dataMaxX) {
+              const group = creditGroups.get(d.credited_at_ms) ?? [];
+              group.push(d);
+              creditGroups.set(d.credited_at_ms, group);
+            }
+          }
+          for (const group of creditGroups.values()) {
+            const nearest = group.reduce((a, b) =>
+              Math.abs(a.tx_timestamp_ms! - a.credited_at_ms!) < Math.abs(b.tx_timestamp_ms! - b.credited_at_ms!) ? a : b
+            );
+            connectorIds.add(nearest.tx_id);
+          }
+
+          return visible.map((d) => {
             const x = xScale(d.tx_timestamp_ms ?? d.credited_at_ms ?? d.first_seen_at_ms);
-            const hasCreditGap = d.credited_at_ms && d.tx_timestamp_ms
-              && d.credited_at_ms !== d.tx_timestamp_ms
-              && d.credited_at_ms <= dataMaxX;
-            const xCredit = hasCreditGap ? xScale(d.credited_at_ms!) : null;
+            const showConnector = connectorIds.has(d.tx_id);
+            const xCredit = showConnector ? xScale(d.credited_at_ms!) : null;
             const connectorY = PADDING.top + 2;
             return (
               <g
@@ -2307,10 +2321,11 @@ export const PriceChart = memo(function PriceChart({
                     />
                     <line
                       x1={xCredit} x2={xCredit}
-                      y1={connectorY - 3} y2={connectorY + 3}
+                      y1={PADDING.top - 4} y2={chartHeight - PADDING.bottom}
                       stroke={COLOR_DEPOSIT}
-                      strokeWidth="1.5"
-                      opacity="0.6"
+                      strokeWidth="1"
+                      strokeDasharray="2 3"
+                      opacity="0.3"
                       pointerEvents="none"
                     />
                   </>
@@ -2330,7 +2345,8 @@ export const PriceChart = memo(function PriceChart({
                 </svg>
               </g>
             );
-          })}
+          });
+        })()}
 
         {difficultyRetargets
           .filter((r) => r.tick_at >= dataMinX && r.tick_at <= dataMaxX)

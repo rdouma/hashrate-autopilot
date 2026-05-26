@@ -386,6 +386,10 @@ msgstr "Techo de sobrecalentamiento del ASIC (°C, 0 = automático por modelo)"
 msgid "ASIC overheating ceiling (°F, 0 = auto per model)"
 msgstr "Techo de sobrecalentamiento del ASIC (°F, 0 = automático por modelo)"
 
+#: src/components/Bip110ScanCard.tsx
+msgid "At block height 965,664 (approximately September 2026), user-activated enforcement begins: nodes running BIP 110-compatible software will enforce the rules regardless of miner signaling."
+msgstr "A la altura de bloque 965.664 (aproximadamente septiembre 2026), comienza la aplicacion activada por usuarios: los nodos que ejecutan software compatible con BIP 110 aplicaran las reglas independientemente de la senalizacion de los mineros."
+
 #: src/pages/Status.tsx
 msgid "At effective cap - desired fillable + overpay exceeds the ceiling."
 msgstr "En el límite efectivo - el rellenable + sobrepago deseado supera el techo."
@@ -553,9 +557,11 @@ msgstr "Oferta:"
 msgid "Bids"
 msgstr "Ofertas"
 
+#. placeholder {0}: formatNumber(stats.threshold, {}, intlLocale)
+#. placeholder {1}: formatNumber(stats.period, {}, intlLocale)
 #: src/components/Bip110ScanCard.tsx
-msgid "BIP 110 activation requires miners to signal support in their block headers. Once the threshold is reached within a retarget period (2,016 blocks), the softfork locks in and activates after one more period."
-msgstr "La activacion de BIP 110 requiere que los mineros senalicen soporte en sus encabezados de bloque. Una vez alcanzado el umbral dentro de un periodo de retarget (2.016 bloques), el softfork se bloquea y se activa despues de un periodo mas."
+msgid "BIP 110 (Reduced Data Temporary Softfork) activation happens in two phases. Currently in the miner-activated phase: miners can optionally signal support in their block headers. If the threshold ({0} of {1} blocks) is reached within a retarget period, the softfork locks in early."
+msgstr "La activacion de BIP 110 (Reduced Data Temporary Softfork) ocurre en dos fases. Actualmente en la fase activada por mineros: los mineros pueden senalizar soporte opcionalmente en sus encabezados de bloque. Si el umbral ({0} de {1} bloques) se alcanza dentro de un periodo de retarget, el softfork se bloquea anticipadamente."
 
 #: src/components/Bip110ScanCard.tsx
 msgid "BIP 110 scan"
@@ -3047,11 +3053,11 @@ msgstr "gastado (cuenta completa)"
 msgid "Start a chat with your bot, then send /start. Send any message to <0>@userinfobot</0> and copy the numeric Id back into this field. Test connection validates the values currently in the form, before saving."
 msgstr "Inicia un chat con tu bot y envía /start. Luego envía cualquier mensaje a <0>@userinfobot</0> y copia el Id numérico de vuelta en este campo. Test connection valida los valores actuales del formulario, antes de guardar."
 
-#: src/components/Bip110ScanCard.tsx
 #: src/pages/Status.tsx
 msgid "status"
 msgstr "estado"
 
+#: src/components/Bip110ScanCard.tsx
 #: src/components/Layout.tsx
 msgid "Status"
 msgstr "Status"

@@ -418,17 +418,53 @@ function DeploymentProgressBar({
     : deployment.status === 'active' ? t`active`
     : t`signaling`;
 
-  const tooltip = [
-    `${t`status`}: ${statusLabel}`,
-    `${formatNumber(stats.count, {}, intlLocale)} / ${formatNumber(stats.threshold, {}, intlLocale)} ${t`signaling blocks in this period`}`,
-    `${formatNumber(stats.elapsed, {}, intlLocale)} / ${formatNumber(stats.period, {}, intlLocale)} ${t`blocks into the current retarget period`}`,
-    `${formatNumber(remaining, {}, intlLocale)} ${t`blocks remaining in this period`}`,
-    '',
-    t`BIP 110 activation requires miners to signal support in their block headers. Once the threshold is reached within a retarget period (2,016 blocks), the softfork locks in and activates after one more period.`,
-  ].join('\n');
+  const tooltipContent = (
+    <div className="max-w-sm">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-slate-400"><Trans>Status</Trans>:</span>
+        <span className="bg-amber-400/20 text-amber-400 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider">
+          {statusLabel}
+        </span>
+      </div>
+      <div className="space-y-0.5 font-mono text-slate-400 mb-3">
+        <div>
+          <span className="text-slate-200">{formatNumber(stats.count, {}, intlLocale)}</span>
+          {' / '}
+          {formatNumber(stats.threshold, {}, intlLocale)}
+          {' '}<Trans>signaling blocks in this period</Trans>
+        </div>
+        <div>
+          <span className="text-slate-200">{formatNumber(stats.elapsed, {}, intlLocale)}</span>
+          {' / '}
+          {formatNumber(stats.period, {}, intlLocale)}
+          {' '}<Trans>blocks into the current retarget period</Trans>
+        </div>
+        <div>
+          <span className="text-slate-200">{formatNumber(remaining, {}, intlLocale)}</span>
+          {' '}<Trans>blocks remaining in this period</Trans>
+        </div>
+      </div>
+      <hr className="border-slate-700 mb-2" />
+      <p className="text-slate-400 leading-relaxed">
+        <Trans>
+          BIP 110 (Reduced Data Temporary Softfork) activation happens in two phases.
+          Currently in the miner-activated phase: miners can optionally signal support
+          in their block headers. If the threshold ({formatNumber(stats.threshold, {}, intlLocale)} of {formatNumber(stats.period, {}, intlLocale)} blocks)
+          is reached within a retarget period, the softfork locks in early.
+        </Trans>
+      </p>
+      <p className="text-slate-400 leading-relaxed mt-1.5">
+        <Trans>
+          At block height 965,664 (approximately September 2026), user-activated
+          enforcement begins: nodes running BIP 110-compatible software will enforce
+          the rules regardless of miner signaling.
+        </Trans>
+      </p>
+    </div>
+  );
 
   return (
-    <Tooltip text={tooltip} preWrap>
+    <Tooltip content={tooltipContent}>
       <div className="flex items-center gap-2 cursor-help min-w-0">
         <div className="flex-1 h-2 rounded-full bg-slate-700 overflow-hidden min-w-[60px]">
           <div

@@ -386,6 +386,10 @@ msgstr "ASIC overheating ceiling (°C, 0 = auto per model)"
 msgid "ASIC overheating ceiling (°F, 0 = auto per model)"
 msgstr "ASIC overheating ceiling (°F, 0 = auto per model)"
 
+#: src/components/Bip110ScanCard.tsx
+msgid "At block height 965,664 (approximately September 2026), user-activated enforcement begins: nodes running BIP 110-compatible software will enforce the rules regardless of miner signaling."
+msgstr "At block height 965,664 (approximately September 2026), user-activated enforcement begins: nodes running BIP 110-compatible software will enforce the rules regardless of miner signaling."
+
 #: src/pages/Status.tsx
 msgid "At effective cap - desired fillable + overpay exceeds the ceiling."
 msgstr "At effective cap - desired fillable + overpay exceeds the ceiling."
@@ -553,9 +557,11 @@ msgstr "Bid:"
 msgid "Bids"
 msgstr "Bids"
 
+#. placeholder {0}: formatNumber(stats.threshold, {}, intlLocale)
+#. placeholder {1}: formatNumber(stats.period, {}, intlLocale)
 #: src/components/Bip110ScanCard.tsx
-msgid "BIP 110 activation requires miners to signal support in their block headers. Once the threshold is reached within a retarget period (2,016 blocks), the softfork locks in and activates after one more period."
-msgstr "BIP 110 activation requires miners to signal support in their block headers. Once the threshold is reached within a retarget period (2,016 blocks), the softfork locks in and activates after one more period."
+msgid "BIP 110 (Reduced Data Temporary Softfork) activation happens in two phases. Currently in the miner-activated phase: miners can optionally signal support in their block headers. If the threshold ({0} of {1} blocks) is reached within a retarget period, the softfork locks in early."
+msgstr "BIP 110 (Reduced Data Temporary Softfork) activation happens in two phases. Currently in the miner-activated phase: miners can optionally signal support in their block headers. If the threshold ({0} of {1} blocks) is reached within a retarget period, the softfork locks in early."
 
 #: src/components/Bip110ScanCard.tsx
 msgid "BIP 110 scan"
@@ -3047,11 +3053,11 @@ msgstr "spent (whole account)"
 msgid "Start a chat with your bot, then send /start. Send any message to <0>@userinfobot</0> and copy the numeric Id back into this field. Test connection validates the values currently in the form, before saving."
 msgstr "Start a chat with your bot, then send /start. Send any message to <0>@userinfobot</0> and copy the numeric Id back into this field. Test connection validates the values currently in the form, before saving."
 
-#: src/components/Bip110ScanCard.tsx
 #: src/pages/Status.tsx
 msgid "status"
 msgstr "status"
 
+#: src/components/Bip110ScanCard.tsx
 #: src/components/Layout.tsx
 msgid "Status"
 msgstr "Status"
