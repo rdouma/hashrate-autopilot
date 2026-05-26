@@ -430,10 +430,6 @@ msgid "available"
 msgstr "available"
 
 #: src/pages/Status.tsx
-msgid "Braiins balance"
-msgstr "Braiins balance"
-
-#: src/pages/Status.tsx
 msgid "Average break-even unit price over the selected range. Multiplied by avg delivered to get projected income. Different from the spot hashprice row below - this is what the projection actually uses."
 msgstr "Average break-even unit price over the selected range. Multiplied by avg delivered to get projected income. Different from the spot hashprice row below - this is what the projection actually uses."
 
@@ -699,6 +695,10 @@ msgstr "Braiins API unreachable - waiting for connectivity."
 #: src/pages/Config.tsx
 msgid "Braiins API unreachable for"
 msgstr "Braiins API unreachable for"
+
+#: src/pages/Status.tsx
+msgid "Braiins balance"
+msgstr "Braiins balance"
 
 #: src/pages/Config.tsx
 msgid "Braiins deposit lifecycle"
@@ -1680,6 +1680,10 @@ msgstr "Keep the Pool URL's hostname pointed at this box's current public IP. Re
 msgid "Keep whatever run mode was active before the restart. PAUSED is demoted to DRY_RUN."
 msgstr "Keep whatever run mode was active before the restart. PAUSED is demoted to DRY_RUN."
 
+#: src/components/Bip110ScanCard.tsx
+msgid "known softforks"
+msgstr "known softforks"
+
 #: src/pages/Config.tsx
 msgid "Label"
 msgstr "Label"
@@ -2026,6 +2030,10 @@ msgstr "No on-chain balance tracking. The Profit & Loss panel won't show collect
 msgid "No signaling blocks in this window."
 msgstr "No signaling blocks in this window."
 
+#: src/components/Bip110ScanCard.tsx
+msgid "node does not track BIP 110 as a named softfork"
+msgstr "node does not track BIP 110 as a named softfork"
+
 #: src/pages/Status.tsx
 msgid "none"
 msgstr "none"
@@ -2062,10 +2070,6 @@ msgstr "Not enough data in this range yet."
 #: src/pages/Status.tsx
 msgid "not in LIVE mode"
 msgstr "not in LIVE mode"
-
-#: src/components/Bip110ScanCard.tsx
-msgid "not reported"
-msgstr "not reported"
 
 #: src/pages/Config.tsx
 msgid "Notifications"
@@ -2696,10 +2700,6 @@ msgstr "Restore the values that were on this page when you opened it."
 #: src/pages/Config.tsx
 msgid "Resume last mode"
 msgstr "Resume last mode"
-
-#: src/components/Bip110ScanCard.tsx
-msgid "retarget window:"
-msgstr "retarget window:"
 
 #: src/pages/Config.tsx
 msgid "Retry interval"

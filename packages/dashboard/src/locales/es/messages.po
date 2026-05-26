@@ -430,10 +430,6 @@ msgid "available"
 msgstr "disponible"
 
 #: src/pages/Status.tsx
-msgid "Braiins balance"
-msgstr "saldo Braiins"
-
-#: src/pages/Status.tsx
 msgid "Average break-even unit price over the selected range. Multiplied by avg delivered to get projected income. Different from the spot hashprice row below - this is what the projection actually uses."
 msgstr "Precio unitario de equilibrio promedio en el rango seleccionado. Multiplicado por el promedio entregado para obtener el ingreso proyectado. Distinto del hashprice spot de la fila inferior - este es el que la proyección realmente usa."
 
@@ -699,6 +695,10 @@ msgstr "API de Braiins inaccesible - esperando conectividad."
 #: src/pages/Config.tsx
 msgid "Braiins API unreachable for"
 msgstr "API de Braiins no accesible durante"
+
+#: src/pages/Status.tsx
+msgid "Braiins balance"
+msgstr "saldo Braiins"
 
 #: src/pages/Config.tsx
 msgid "Braiins deposit lifecycle"
@@ -1680,6 +1680,10 @@ msgstr "Mantén el nombre de host de la Pool URL apuntando al IP público actual
 msgid "Keep whatever run mode was active before the restart. PAUSED is demoted to DRY_RUN."
 msgstr "Mantener el modo de ejecución que estaba activo antes del reinicio. PAUSED se degrada a DRY_RUN."
 
+#: src/components/Bip110ScanCard.tsx
+msgid "known softforks"
+msgstr "softforks conocidos"
+
 #: src/pages/Config.tsx
 msgid "Label"
 msgstr "Etiqueta"
@@ -2026,6 +2030,10 @@ msgstr "Sin seguimiento de saldo on-chain. El panel de Profit & Loss no mostrar�
 msgid "No signaling blocks in this window."
 msgstr "No hay bloques que señalicen en esta ventana."
 
+#: src/components/Bip110ScanCard.tsx
+msgid "node does not track BIP 110 as a named softfork"
+msgstr "el nodo no reporta BIP 110 como softfork nombrado"
+
 #: src/pages/Status.tsx
 msgid "none"
 msgstr "ninguno"
@@ -2062,10 +2070,6 @@ msgstr "Aún no hay suficientes datos en este rango."
 #: src/pages/Status.tsx
 msgid "not in LIVE mode"
 msgstr "no está en modo LIVE"
-
-#: src/components/Bip110ScanCard.tsx
-msgid "not reported"
-msgstr "no reportado"
 
 #: src/pages/Config.tsx
 msgid "Notifications"
@@ -2696,10 +2700,6 @@ msgstr "Restaura los valores que había en esta página cuando la abriste."
 #: src/pages/Config.tsx
 msgid "Resume last mode"
 msgstr "Reanudar último modo"
-
-#: src/components/Bip110ScanCard.tsx
-msgid "retarget window:"
-msgstr "ventana de reajuste:"
 
 #: src/pages/Config.tsx
 msgid "Retry interval"

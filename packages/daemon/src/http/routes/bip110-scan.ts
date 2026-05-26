@@ -80,6 +80,7 @@ export interface Bip110ScanResponse {
   readonly signaling_count: number;
   readonly signaling_pct: number;
   readonly deployment: Bip110Deployment | null;
+  readonly softfork_keys: readonly string[] | null;
   readonly signaling_blocks: readonly Bip110SignalingBlock[];
   readonly error: string | null;
 }
@@ -155,30 +156,45 @@ function chunk<T>(xs: readonly T[], n: number): T[][] {
   return out;
 }
 
+const BIP110_BIT = 4;
+
 function findBip110Deployment(softforks: Record<string, unknown> | undefined): Bip110Deployment | null {
   if (!softforks) return null;
+
   const candidates = ['bip110', 'reduceddatasoftfork', 'reduceddata', 'reduced_data'];
   for (const key of candidates) {
-    const entry = softforks[key] as SoftforkEntry | undefined;
-    if (!entry) continue;
-    const bip9 = entry.bip9;
-    const stats = bip9?.statistics;
-    return {
-      key,
-      status: bip9?.status ?? null,
-      bit: typeof bip9?.bit === 'number' ? bip9.bit : null,
-      statistics:
-        stats && typeof stats.count === 'number'
-          ? {
-              count: stats.count,
-              elapsed: stats.elapsed ?? 0,
-              threshold: stats.threshold ?? 0,
-              period: stats.period ?? 0,
-            }
-          : null,
-    };
+    const result = extractDeployment(key, softforks[key] as SoftforkEntry | undefined);
+    if (result) return result;
   }
+
+  for (const [key, raw] of Object.entries(softforks)) {
+    const entry = raw as SoftforkEntry | undefined;
+    if (entry?.bip9?.bit === BIP110_BIT) {
+      return extractDeployment(key, entry);
+    }
+  }
+
   return null;
+}
+
+function extractDeployment(key: string, entry: SoftforkEntry | undefined): Bip110Deployment | null {
+  if (!entry) return null;
+  const bip9 = entry.bip9;
+  const stats = bip9?.statistics;
+  return {
+    key,
+    status: bip9?.status ?? null,
+    bit: typeof bip9?.bit === 'number' ? bip9.bit : null,
+    statistics:
+      stats && typeof stats.count === 'number'
+        ? {
+            count: stats.count,
+            elapsed: stats.elapsed ?? 0,
+            threshold: stats.threshold ?? 0,
+            period: stats.period ?? 0,
+          }
+        : null,
+  };
 }
 
 export async function registerBip110ScanRoute(
@@ -206,6 +222,7 @@ export async function registerBip110ScanRoute(
         signaling_count: 0,
         signaling_pct: 0,
         deployment: null,
+        softfork_keys: null,
         signaling_blocks: [],
         error,
       });
@@ -232,6 +249,7 @@ export async function registerBip110ScanRoute(
       const start = Math.max(0, tip - blocks + 1);
       const heights = Array.from({ length: tip - start + 1 }, (_, i) => start + i);
       const deployment = findBip110Deployment(info.softforks);
+      const softfork_keys = info.softforks ? Object.keys(info.softforks).sort() : null;
 
       let hashes: string[];
       try {
@@ -247,6 +265,7 @@ export async function registerBip110ScanRoute(
           ...empty(`getblockhash batch failed: ${(err as Error).message}`),
           tip_height: tip,
           deployment,
+          softfork_keys,
         };
       }
 
@@ -264,6 +283,7 @@ export async function registerBip110ScanRoute(
           ...empty(`getblockheader batch failed: ${(err as Error).message}`),
           tip_height: tip,
           deployment,
+          softfork_keys,
         };
       }
 
@@ -339,6 +359,7 @@ export async function registerBip110ScanRoute(
         signaling_count: signaling.length,
         signaling_pct: headers.length > 0 ? (signaling.length / headers.length) * 100 : 0,
         deployment,
+        softfork_keys,
         signaling_blocks: signaling,
         error: null,
       };

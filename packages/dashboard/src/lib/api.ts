@@ -937,6 +937,7 @@ export interface Bip110ScanResponse {
   signaling_count: number;
   signaling_pct: number;
   deployment: Bip110ScanDeployment | null;
+  softfork_keys: string[] | null;
   signaling_blocks: Bip110ScanSignalingBlock[];
   error: string | null;
 }

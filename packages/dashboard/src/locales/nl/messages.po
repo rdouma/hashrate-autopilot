@@ -430,10 +430,6 @@ msgid "available"
 msgstr "beschikbaar"
 
 #: src/pages/Status.tsx
-msgid "Braiins balance"
-msgstr "Braiins-saldo"
-
-#: src/pages/Status.tsx
 msgid "Average break-even unit price over the selected range. Multiplied by avg delivered to get projected income. Different from the spot hashprice row below - this is what the projection actually uses."
 msgstr "Gemiddelde break-even eenheidsprijs over het geselecteerde bereik. Vermenigvuldigd met de gemiddelde levering om geprojecteerde inkomsten te krijgen. Verschillend van de spot-hashprice rij hieronder - dit is wat de projectie daadwerkelijk gebruikt."
 
@@ -699,6 +695,10 @@ msgstr "Braiins API onbereikbaar - wacht op verbinding."
 #: src/pages/Config.tsx
 msgid "Braiins API unreachable for"
 msgstr "Braiins API onbereikbaar gedurende"
+
+#: src/pages/Status.tsx
+msgid "Braiins balance"
+msgstr "Braiins-saldo"
 
 #: src/pages/Config.tsx
 msgid "Braiins deposit lifecycle"
@@ -1680,6 +1680,10 @@ msgstr "Houd de hostnaam in de Pool URL verwezen naar het huidige publieke IP va
 msgid "Keep whatever run mode was active before the restart. PAUSED is demoted to DRY_RUN."
 msgstr "Behoud de run-modus die actief was vóór de herstart. PAUSED wordt teruggezet naar DRY_RUN."
 
+#: src/components/Bip110ScanCard.tsx
+msgid "known softforks"
+msgstr "bekende softforks"
+
 #: src/pages/Config.tsx
 msgid "Label"
 msgstr "Label"
@@ -2026,6 +2030,10 @@ msgstr "Geen on-chain saldo-tracking. Het Profit & Loss-paneel toont geen ontvan
 msgid "No signaling blocks in this window."
 msgstr "Geen signalerende blokken in dit venster."
 
+#: src/components/Bip110ScanCard.tsx
+msgid "node does not track BIP 110 as a named softfork"
+msgstr "node rapporteert BIP 110 niet als benoemde softfork"
+
 #: src/pages/Status.tsx
 msgid "none"
 msgstr "geen"
@@ -2062,10 +2070,6 @@ msgstr "Nog niet genoeg data in dit bereik."
 #: src/pages/Status.tsx
 msgid "not in LIVE mode"
 msgstr "niet in LIVE-modus"
-
-#: src/components/Bip110ScanCard.tsx
-msgid "not reported"
-msgstr "niet gerapporteerd"
 
 #: src/pages/Config.tsx
 msgid "Notifications"
@@ -2696,10 +2700,6 @@ msgstr "Herstel de waarden die op deze pagina stonden toen je hem opende."
 #: src/pages/Config.tsx
 msgid "Resume last mode"
 msgstr "Laatste modus hervatten"
-
-#: src/components/Bip110ScanCard.tsx
-msgid "retarget window:"
-msgstr "herrekenvenster:"
 
 #: src/pages/Config.tsx
 msgid "Retry interval"
