@@ -143,6 +143,8 @@ export interface StatusResponse {
     readonly reachable: boolean;
     readonly last_ok_at: number | null;
     readonly consecutive_failures: number;
+    readonly error: string | null;
+    readonly latency_ms: number | null;
   };
 
   /**

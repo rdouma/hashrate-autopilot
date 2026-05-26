@@ -92,6 +92,8 @@ export async function registerStatusRoute(
           reachable: false,
           last_ok_at: runtime.last_pool_ok_at,
           consecutive_failures: 0,
+          error: null,
+          latency_ms: null,
         },
         datum: null,
         bids: [],
