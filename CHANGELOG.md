@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-05-29
+
+### `[Fix]` Pool-block dots on the unpaid line no longer collide when blocks share an Ocean refresh (#221)
+
+When two pool blocks were found within Ocean's ~5 min `unpaid_sat` refresh cadence, both blocks' TIDES credit appeared as a single observed step on the unpaid line, and both block markers projected to the exact same `(cx, cy)` on the chart - the topmost circle obscured the other and ate every pointer event, so only one dot was visible and only one tooltip was reachable. Now: when multiple blocks share a step, each gets an 8-pixel horizontal stagger along the post-step segment of the line, with its own dashed connector back to its own block timestamp. Three-or-more-blocks case fans out correspondingly. Single-block case is unchanged.
+
 ## 2026-05-27
 
 ### `[Feature]` Profit per bucket overlay on the Price chart (#220)

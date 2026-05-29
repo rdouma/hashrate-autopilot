@@ -1690,7 +1690,16 @@ export const PriceChart = memo(function PriceChart({
         break;
       }
     }
-    const out: typeof empty = [];
+    // Intermediate per-block projection - same fields as the
+    // returned shape plus the steppedIdx used to detect collisions
+    // in the stagger pass below.
+    const projected: Array<{
+      block: OurBlockMarker;
+      cx: number;
+      cy: number;
+      blockCx: number;
+      steppedIdx: number;
+    }> = [];
     // ourBlocks comes from /api/ocean newest-first, so sort ASC so the
     // two-pointer cursor walk lines up with `points` (also ASC).
     const sortedBlocks = [...ourBlocks].sort((a, b) => a.timestamp_ms - b.timestamp_ms);
@@ -1739,7 +1748,50 @@ export const PriceChart = memo(function PriceChart({
       }
       if (v === null) continue;
       const dotX = steppedIdx >= 0 ? points[steppedIdx]!.tick_at : b.timestamp_ms;
-      out.push({ block: b, cx: xScale(dotX), cy: rightYScale(v), blockCx: xScale(b.timestamp_ms) });
+      projected.push({
+        block: b,
+        cx: xScale(dotX),
+        cy: rightYScale(v),
+        blockCx: xScale(b.timestamp_ms),
+        steppedIdx,
+      });
+    }
+    // #221: collision pass. When two pool blocks land within Ocean's
+    // ~5 min unpaid_sat refresh cadence, they both project to the same
+    // steppedIdx (Ocean batched both credits into one observed step).
+    // Without staggering, both circles paint at identical (cx, cy);
+    // the topmost obscures the other and its hit-rect eats every
+    // pointer event so the second block's tooltip is unreachable.
+    //
+    // Stagger overlapping markers horizontally along the post-step
+    // segment of the line: first block stays at its computed cx,
+    // each subsequent block in the same step gets +STAGGER_PX. Order
+    // is timestamp-ascending (the projected[] order), so the leftmost
+    // dot corresponds to the earliest block. blockCx (connector
+    // origin) is unchanged - each block keeps its own dashed line
+    // back to its own timestamp on the X-axis.
+    //
+    // Single-block steps (steppedIdx === -1 covers the no-step fallback;
+    // distinct steppedIdx values are inherently non-colliding) are
+    // unchanged. The -1 sentinel intentionally is not bucketed by key
+    // since those projections sit at b.timestamp_ms which is already
+    // unique per block.
+    const STAGGER_PX = 8;
+    const stepCounts = new Map<number, number>();
+    const out: typeof empty = [];
+    for (const p of projected) {
+      if (p.steppedIdx < 0) {
+        out.push({ block: p.block, cx: p.cx, cy: p.cy, blockCx: p.blockCx });
+        continue;
+      }
+      const rank = stepCounts.get(p.steppedIdx) ?? 0;
+      stepCounts.set(p.steppedIdx, rank + 1);
+      out.push({
+        block: p.block,
+        cx: p.cx + rank * STAGGER_PX,
+        cy: p.cy,
+        blockCx: p.blockCx,
+      });
     }
     return out;
   }, [chartData, showPoolBlockMarkers, ourBlocks, points]);
