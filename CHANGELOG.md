@@ -2,6 +2,10 @@
 
 ## 2026-05-29
 
+### `[Fix]` Pool-luck step tooltip wording (#223)
+
+The pool-luck step tooltip on the Hashrate chart was labelling the luck value as the "numerator" - e.g. "Block aged out of the rolling-24h window - numerator went from 1.14× to 0.91×." The numerator of the luck formula is actually the block count over the rolling window (an integer, N → N±1); the 1.14× / 0.91× values shown are the pool luck multiplier before and after the step. Reworded to "pool luck went from X× to Y×" on both step-up (block landed) and step-down (block aged out) variants. en / nl / es catalogs updated.
+
 ### `[Infra]` Reverted: profit per bucket overlay on the Price chart (#220)
 
 The signed-bar profit overlay shipped on 2026-05-27 read as visually busy on the Price chart and didn't communicate net profit clearly when overlaid on top of the existing bid / fillable / hashprice / max-bid lines and the cube / pickaxe / fuel / gem markers above. Cancelled per operator review. The same chart slot is still available for a future profit visualisation; a line series (matching the existing right-axis pattern) is a more promising shape than bars if the idea is revisited.

@@ -603,8 +603,8 @@ msgstr "bitcoind RPC is niet geconfigureerd in de daemon. Stel BHA_BITCOIND_RPC_
 #. placeholder {0}: luckBefore === null ? '-' : `${luckBefore.toFixed(2)}×`
 #. placeholder {1}: luckAfter.toFixed(2)
 #: src/components/HashrateChart.tsx
-msgid "Block aged out of the rolling-{windowLabel} window - numerator went from {0} to {1}×."
-msgstr "Blok uit het rollende {windowLabel}-venster gevallen - teller ging van {0} naar {1}×."
+msgid "Block aged out of the rolling-{windowLabel} window - pool luck went from {0} to {1}×."
+msgstr "Blok uit het rolling-{windowLabel}-venster gevallen - pool luck ging van {0} naar {1}×."
 
 #: src/pages/Config.tsx
 msgid "Block explorer"
@@ -617,8 +617,8 @@ msgstr "block gevonden:"
 #. placeholder {0}: luckBefore === null ? '-' : `${luckBefore.toFixed(2)}×`
 #. placeholder {1}: luckAfter.toFixed(2)
 #: src/components/HashrateChart.tsx
-msgid "Block landed - the rolling-{windowLabel} numerator went from {0} to {1}×."
-msgstr "Block landed - the rolling-{windowLabel} numerator went from {0} to {1}×."
+msgid "Block landed - pool luck went from {0} to {1}× (rolling-{windowLabel} window)."
+msgstr "Blok gevonden - pool luck ging van {0} naar {1}× (rolling-{windowLabel}-venster)."
 
 #: src/pages/Status.tsx
 msgid "block reward"

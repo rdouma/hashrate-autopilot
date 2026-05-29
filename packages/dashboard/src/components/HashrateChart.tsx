@@ -2128,12 +2128,17 @@ function PoolLuckStepTooltip({
   const windowLabel = windowMs <= DAY ? '24h' : windowMs <= 7 * DAY ? '7d' : '30d';
   const headerLabel =
     kind === 'in' ? t`POOL LUCK +` : t`POOL LUCK -`;
+  // #223: the previous copy said "numerator went from X× to Y×" which
+  // misframed the value - the numerator of the luck formula is the
+  // block count over the rolling window (an integer, N → N±1), not
+  // the luck multiplier itself. The values shown are the luck before
+  // and after the step. Rewording to talk about pool luck directly.
   const directionText =
     kind === 'in'
-      ? t`Block landed - the rolling-${windowLabel} numerator went from ${
+      ? t`Block landed - pool luck went from ${
           luckBefore === null ? '-' : `${luckBefore.toFixed(2)}×`
-        } to ${luckAfter.toFixed(2)}×.`
-      : t`Block aged out of the rolling-${windowLabel} window - numerator went from ${
+        } to ${luckAfter.toFixed(2)}× (rolling-${windowLabel} window).`
+      : t`Block aged out of the rolling-${windowLabel} window - pool luck went from ${
           luckBefore === null ? '-' : `${luckBefore.toFixed(2)}×`
         } to ${luckAfter.toFixed(2)}×.`;
 
