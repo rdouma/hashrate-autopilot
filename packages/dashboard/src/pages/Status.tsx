@@ -354,7 +354,30 @@ export function Status() {
   const { visibleBidEvents, visibleOurBlocks, visibleRewardEvents, markersHiddenKind, markersHiddenCount } = useMemo(() => {
     const events = bidEventsQuery.data?.events ?? EMPTY_BID_EVENTS;
     const cap = configQuery.data?.config?.chart_max_markers ?? 0;
-    const totalCount = events.length + allOurBlocks.length + allRewardEvents.length;
+    // #225: count for the cap decision against what's *visible* on
+    // the chart, not the full fetched (buffered) set. fetchBounds
+    // widens the metrics + events fetch by 100% on each side of the
+    // visible range for pan/zoom snappiness (see line ~145), so at a
+    // 12h view we pull 36h of data. The old counter summed the full
+    // 36h, so an active controller (~18 events/h) easily blew past
+    // a 500 cap and nuked every EDIT_PRICE marker - even though only
+    // ~220 events were in the visible 12h. Filter to the settled
+    // viewport here. The step-down drops below still apply globally
+    // to the arrays passed to PriceChart; PriceChart filters by
+    // viewport on render, so the buffered out-of-view events stay
+    // available for pan/zoom but don't inflate the cap.
+    const since = vp.since_ms;
+    const until = vp.until_ms;
+    const eventsInView = events.filter(
+      (e) => e.occurred_at >= since && e.occurred_at <= until,
+    );
+    const blocksInView = allOurBlocks.filter(
+      (b) => b.timestamp_ms >= since && b.timestamp_ms <= until,
+    );
+    const rewardsInView = allRewardEvents.filter(
+      (r) => r.detected_at >= since && r.detected_at <= until,
+    );
+    const totalCount = eventsInView.length + blocksInView.length + rewardsInView.length;
     if (cap <= 0 || totalCount <= cap) {
       return {
         visibleBidEvents: events,
@@ -370,34 +393,37 @@ export function Status() {
     let curRewards = allRewardEvents;
     let hiddenKind: null | 'edit_price' | 'pool_block' | 'reward_event' | 'all' = null;
     let hiddenCount = 0;
-    // Step 1: drop EDIT_PRICE bid events
+    // Step 1: drop EDIT_PRICE bid events. hiddenCount is the
+    // *visible* drop (what the operator perceives), so we count
+    // visible-range EDIT_PRICE here; the underlying arrays still
+    // drop globally because PriceChart re-filters by viewport.
     const withoutEditPrice = events.filter((e) => e.kind !== 'EDIT_PRICE');
-    const editPriceDropped = events.length - withoutEditPrice.length;
-    if (remaining > cap && editPriceDropped > 0) {
-      remaining -= editPriceDropped;
-      hiddenCount += editPriceDropped;
+    const editPriceDroppedInView = eventsInView.filter((e) => e.kind === 'EDIT_PRICE').length;
+    if (remaining > cap && editPriceDroppedInView > 0) {
+      remaining -= editPriceDroppedInView;
+      hiddenCount += editPriceDroppedInView;
       curEvents = withoutEditPrice;
       hiddenKind = 'edit_price';
     }
     // Step 2: drop non-own pool blocks
     if (remaining > cap) {
       const ownOnly = allOurBlocks.filter((b) => b.found_by_us);
-      const nonOwnDropped = allOurBlocks.length - ownOnly.length;
-      if (nonOwnDropped > 0) {
-        remaining -= nonOwnDropped;
-        hiddenCount += nonOwnDropped;
+      const nonOwnDroppedInView = blocksInView.filter((b) => !b.found_by_us).length;
+      if (nonOwnDroppedInView > 0) {
+        remaining -= nonOwnDroppedInView;
+        hiddenCount += nonOwnDroppedInView;
         curBlocks = ownOnly;
         hiddenKind = 'pool_block';
       }
     }
     // Step 3: drop reward events
-    if (remaining > cap && curRewards.length > 0) {
-      hiddenCount += curRewards.length;
-      remaining -= curRewards.length;
+    if (remaining > cap && rewardsInView.length > 0) {
+      hiddenCount += rewardsInView.length;
+      remaining -= rewardsInView.length;
       curRewards = EMPTY_REWARD_EVENTS;
       hiddenKind = 'reward_event';
     }
-    // Step 4: drop everything
+    // Step 4: drop everything (visible)
     if (remaining > cap) {
       hiddenCount = totalCount;
       return {
@@ -415,7 +441,7 @@ export function Status() {
       markersHiddenKind: hiddenKind,
       markersHiddenCount: hiddenCount,
     };
-  }, [bidEventsQuery.data?.events, configQuery.data?.config?.chart_max_markers, allOurBlocks, allRewardEvents]);
+  }, [bidEventsQuery.data?.events, configQuery.data?.config?.chart_max_markers, allOurBlocks, allRewardEvents, vp.since_ms, vp.until_ms]);
 
   if (query.isError && query.error instanceof UnauthorizedError) {
     navigate('/login');

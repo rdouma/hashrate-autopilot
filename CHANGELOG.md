@@ -2,6 +2,10 @@
 
 ## 2026-05-29
 
+### `[Fix]` chart_max_markers cap now counts visible events, not the buffered fetch window (#225)
+
+The dashboard pre-fetches 3× the visible range (1× visible + 1× buffer on each side) for pan/zoom snappiness, but the chart-marker cap was counting the full fetched set. On an actively-editing controller (~18 events/hour observed today), a 12h view fetched ~36h ≈ 650 events; the cap at 500 fired and the EDIT_PRICE drop step nuked every yellow marker, even though only ~220 were in the visible 12h. Shrinking to 6h made markers reappear because the fetch dropped to ~325 events. Now the cap counts events filtered to `vp.since_ms..vp.until_ms` (the settled viewport); the global step-down drops still apply to the arrays passed to PriceChart, so the buffered out-of-view events stay loaded for pan/zoom but don't inflate the cap decision. `markersHiddenCount` is also now the count visible would have been hidden, not the count in the buffered superset.
+
 ### `[UI]` Show bid_edit_deadband_pct in EDIT_PRICE tooltip (#224)
 
 The EDIT_PRICE event tooltip's MARKET AT THIS TICK section now shows the deadband that was in effect at the moment of the edit, as a percentage and the equivalent sat/PH/day floor (e.g. `20 % (≈ 200 sat/PH/day)`). Captured per-tick into `tick_metrics.bid_edit_deadband_pct` via migration 0100 so historical events render the right value even after the operator changes the knob. The `DEFAULT 20` on the column backfills every existing row to 20 (the legacy hard-coded `overpay / 5` value), so tooltips on pre-#222 events show the historically correct deadband. Also fixes a missed Dutch translation of "Braiins fee above your threshold" from #222.
