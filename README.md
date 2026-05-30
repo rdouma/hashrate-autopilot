@@ -6,6 +6,21 @@ landing at your own Datum-connected pool without manual babysitting.
 
 ![Dashboard in real-time mode](docs/images/dashboard.jpg)
 
+## StartOS packaging variation
+
+This repository packages Hashrate Autopilot for StartOS. The upstream application was already structured for
+Docker and had an Umbrel Community App Store manifest; this variation adds the StartOS service wrapper needed to
+build and sideload `.s9pk` packages while leaving the daemon, dashboard, and controller behavior intact.
+
+The StartOS work lives in `startos/` and defines the service manifest, version graph, persistent data volume,
+dashboard interface, dependency declarations for Bitcoin / Electrs / Datum, backup hooks, and the runtime daemon
+entrypoint. `Makefile` and `s9pk.mk` wrap `start-cli s9pk pack`, and `instructions.md` gives operators the
+StartOS-specific setup notes shown during install. The package has been built for `x86_64` and `aarch64`; the
+`x86_64` package was successfully sideloaded and started on a StartOS server.
+
+Use this repository when you want the StartOS package project. Use the original Umbrel metadata under
+`rdouma-hashrate-autopilot/` when targeting Umbrel.
+
 The Status page is a single scroll: a hero card with the **live current bid** (the price Braiins charges
 per delivered EH·day under pay-your-bid, so the bid *is* the truthful real-time number to anchor the
 dashboard on) and its delta versus hashprice, the delivered-hashrate number, and the DRY-RUN / LIVE /
