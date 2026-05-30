@@ -16,6 +16,8 @@ coverage
 .vite
 .cache
 .vitest-cache
+javascript
+*.s9pk
 
 # Operator-specific runtime state (must NEVER bake into an image)
 data
@@ -49,3 +51,6 @@ Dockerfile
 # Add App Store flow; not needed inside the daemon image).
 umbrel-app-store.yml
 rdouma-hashrate-autopilot/
+startos/
+s9pk.mk
+instructions.md

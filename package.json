@@ -10,6 +10,7 @@
   },
   "scripts": {
     "build": "pnpm -r run build",
+    "build:startos": "rm -rf ./javascript && ncc build startos/index.ts -o ./javascript && node -e \"require('fs').writeFileSync('javascript/package.json', '{\\\"type\\\":\\\"commonjs\\\"}\\n')\"",
     "typecheck": "pnpm -r run typecheck",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -23,12 +24,14 @@
     "daemon": "tsx packages/daemon/src/main.ts"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@hashrate-autopilot/braiins-client": "workspace:*",
     "@hashrate-autopilot/daemon": "workspace:*",
     "@hashrate-autopilot/shared": "workspace:*",
-    "@eslint/js": "^10.0.1",
     "@inquirer/prompts": "^8.5.0",
+    "@start9labs/start-sdk": "0.4.0-beta.62",
     "@types/node": "^25.9.1",
+    "@vercel/ncc": "0.38.4",
     "eslint": "^10.4.0",
     "prettier": "^3.8.3",
     "tsx": "^4.22.3",
