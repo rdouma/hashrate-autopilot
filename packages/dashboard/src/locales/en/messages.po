@@ -1681,6 +1681,14 @@ msgid "INFO"
 msgstr "INFO"
 
 #: src/pages/Config.tsx
+msgid "Informational. Off by default. Fires the moment Ocean debits your unpaid balance - the payout has been committed to the coinbase of the next block Ocean finds, but the transaction hasn't confirmed on-chain yet. Detection: the daemon's per-tick ocean_unpaid_sat drops by more than 30% AND the residual is below the 1,048,576-sat payout threshold (filters out tick noise / Ocean-side accounting bumps)."
+msgstr "Informational. Off by default. Fires the moment Ocean debits your unpaid balance - the payout has been committed to the coinbase of the next block Ocean finds, but the transaction hasn't confirmed on-chain yet. Detection: the daemon's per-tick ocean_unpaid_sat drops by more than 30% AND the residual is below the 1,048,576-sat payout threshold (filters out tick noise / Ocean-side accounting bumps)."
+
+#: src/pages/Config.tsx
+msgid "Informational. Off by default. Fires when the on-chain payout scanner observes a coinbase output crediting your payout address - i.e. the transaction Ocean committed has now confirmed. Includes block height, payout amount, and a truncated tx id. Source: reward_events ledger (populated by Electrs or bitcoind scantxoutset, whichever the operator has wired)."
+msgstr "Informational. Off by default. Fires when the on-chain payout scanner observes a coinbase output crediting your payout address - i.e. the transaction Ocean committed has now confirmed. Includes block height, payout amount, and a truncated tx id. Source: reward_events ledger (populated by Electrs or bitcoind scantxoutset, whichever the operator has wired)."
+
+#: src/pages/Config.tsx
 msgid "Informational. Off by default. When on, every block Ocean credits to your payout address sends a small INFO message: block height, your share %, your credit, and progress toward the next 1,048,576-sat on-chain payout."
 msgstr "Informational. Off by default. When on, every block Ocean credits to your payout address sends a small INFO message: block height, your share %, your credit, and progress toward the next 1,048,576-sat on-chain payout."
 
@@ -2167,6 +2175,14 @@ msgstr "ocean lifetime"
 #: src/pages/Config.tsx
 msgid "Ocean mining found a block (voice)"
 msgstr "Ocean mining found a block (voice)"
+
+#: src/pages/Config.tsx
+msgid "Ocean payout confirmed on-chain"
+msgstr "Ocean payout confirmed on-chain"
+
+#: src/pages/Config.tsx
+msgid "Ocean payout initiated"
+msgstr "Ocean payout initiated"
 
 #: src/pages/Config.tsx
 msgid "Ocean pool-block credited"

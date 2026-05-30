@@ -46,6 +46,9 @@ export class ConfigRepo {
       notifications_muted: rest.notifications_muted === 1,
       notify_on_pool_block_credit: rest.notify_on_pool_block_credit === 1,
       notify_on_braiins_deposit: rest.notify_on_braiins_deposit === 1,
+      // #226: payout lifecycle Telegram alerts stored 0/1, surfaced as boolean.
+      notify_on_payout_initiated: rest.notify_on_payout_initiated === 1,
+      notify_on_payout_confirmed: rest.notify_on_payout_confirmed === 1,
       notification_locale: rest.notification_locale as AppConfig['notification_locale'],
       // #106: stored as comma-separated TEXT; surface as string[].
       // Empty string -> empty array (no opt-outs).
@@ -83,6 +86,9 @@ export class ConfigRepo {
       notifications_muted: (validated.notifications_muted ? 1 : 0) as 0 | 1,
       notify_on_pool_block_credit: (validated.notify_on_pool_block_credit ? 1 : 0) as 0 | 1,
       notify_on_braiins_deposit: (validated.notify_on_braiins_deposit ? 1 : 0) as 0 | 1,
+      // #226: payout lifecycle Telegram alerts.
+      notify_on_payout_initiated: (validated.notify_on_payout_initiated ? 1 : 0) as 0 | 1,
+      notify_on_payout_confirmed: (validated.notify_on_payout_confirmed ? 1 : 0) as 0 | 1,
       notification_locale: validated.notification_locale,
       // #106: comma-join the opt-out list back to TEXT.
       notification_disabled_event_classes:

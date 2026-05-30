@@ -53,6 +53,10 @@ export interface ConfigTable {
   notify_on_pool_block_credit: 0 | 1;
   /** #130: opt-in messages on Braiins deposit lifecycle (Detected / Available / Returned). Off by default. */
   notify_on_braiins_deposit: 0 | 1;
+  /** #226: opt-in INFO message when Ocean debits unpaid_sat (payout committed to next coinbase). Off by default. */
+  notify_on_payout_initiated: 0 | 1;
+  /** #226: opt-in INFO message when an on-chain coinbase to the payout address confirms. Off by default. */
+  notify_on_payout_confirmed: 0 | 1;
   /** #131: locale for Telegram message rendering. 'en' (default) | 'nl' | 'es'. */
   notification_locale: string;
   /** @deprecated Legacy column - kept for NOT NULL; ignored by the app. */

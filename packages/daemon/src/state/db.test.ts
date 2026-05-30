@@ -126,6 +126,7 @@ describe('openDatabase - migrations', () => {
       '0098_fix_credited_at_backfill.sql',
       '0099_fee_halt_and_deadband.sql',
       '0100_tick_metrics_deadband_pct.sql',
+      '0101_payout_notifications.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });

@@ -405,6 +405,23 @@ export const AppConfigSchema = z.object({
   // the Telegram POST.
   notify_on_braiins_deposit: z.boolean().default(false),
 
+  // #226: opt-in INFO Telegram alerts on the Ocean payout lifecycle.
+  // - notify_on_payout_initiated: fires the tick we observe a sharp
+  //   drop in ocean_unpaid_sat (>30% of prior) WITH the residual below
+  //   the on-chain payout threshold (1,048,576 sat). At that moment
+  //   Ocean has debited the balance and committed to including the
+  //   payout in the coinbase of the next block it finds; the
+  //   transaction hasn't hit the chain yet.
+  // - notify_on_payout_confirmed: fires when the on-chain payout
+  //   scanner writes a new row to reward_events (a coinbase output
+  //   to the configured payout address has confirmed). Idempotent
+  //   via the in-memory `lastNotifiedRewardEventId` watermark in the
+  //   alert evaluator, same pattern as pool_block_credited.
+  // Both default off so a fresh install / upgrade doesn't start
+  // buzzing the operator's phone unannounced.
+  notify_on_payout_initiated: z.boolean().default(false),
+  notify_on_payout_confirmed: z.boolean().default(false),
+
   // #131: locale for Telegram message rendering. The dashboard has its
   // own locale picker (Lingui-driven) for the UI; this is the
   // separate, daemon-side locale that drives the language of every
@@ -590,6 +607,9 @@ export const APP_CONFIG_DEFAULTS: Omit<
   notification_disabled_event_classes: [],
   notify_on_pool_block_credit: false,
   notify_on_braiins_deposit: false,
+  // #226: payout lifecycle Telegram alerts — opt-in, default off.
+  notify_on_payout_initiated: false,
+  notify_on_payout_confirmed: false,
   notification_locale: 'en',
 
   ddns_provider: '',

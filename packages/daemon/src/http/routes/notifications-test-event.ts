@@ -206,6 +206,37 @@ const SAMPLE_BUILDERS: Record<string, (locale: string | null | undefined) => Sam
       is_recovery: false,
     };
   },
+  // #226: Ocean payout lifecycle previews. Plausible synthetic
+  // values reflecting a real payout near the 1,048,576-sat threshold.
+  payout_initiated: (locale) => {
+    const c = getAlertCopy(locale);
+    return {
+      severity: 'INFO',
+      title: c.payout_initiated_title({ payout_btc: '0.01062144' }),
+      body: c.payout_initiated_body({
+        payout_sat: '1,062,144',
+        payout_btc: '0.01062144',
+        pre_drop_unpaid: '1,074,562 sat',
+        residual_unpaid: '12,418 sat',
+      }),
+      is_recovery: false,
+    };
+  },
+  payout_confirmed: (locale) => {
+    const c = getAlertCopy(locale);
+    return {
+      severity: 'INFO',
+      title: c.payout_confirmed_title({ payout_btc: '0.01062144' }),
+      body: c.payout_confirmed_body({
+        payout_sat: '1,062,144',
+        payout_btc: '0.01062144',
+        height: '951,602',
+        txid_short: 'a1b2c3d4…e5f6g7h8',
+        txid_full: 'a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e5f6g7h8',
+      }),
+      is_recovery: false,
+    };
+  },
   // #149: solo-mining event classes. Each preview uses a plausible
   // synthetic device label + readings so the operator can see
   // exactly what a real alert will look like in chat history.

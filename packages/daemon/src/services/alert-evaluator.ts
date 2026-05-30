@@ -40,6 +40,7 @@ import { overheatingCeilingForAsic } from './axeos.js';
 import type { AlertsRepo } from '../state/repos/alerts.js';
 import type { PoolBlocksRepo } from '../state/repos/pool_blocks.js';
 import type { PoolBlocksTable } from '../state/types.js';
+import type { RewardEventsRepo } from '../state/repos/reward_events.js';
 import type { TickMetricsRepo } from '../state/repos/tick_metrics.js';
 import type { State } from '../controller/types.js';
 import { getAlertCopy } from '../i18n/alert-copy.js';
@@ -128,6 +129,15 @@ export interface AlertEvaluatorOptions {
    * per new row above the watermark.
    */
   readonly poolBlocksRepo?: PoolBlocksRepo;
+  /**
+   * #226: optional reward-events read repo. When provided the
+   * evaluator hydrates a `lastNotifiedRewardEventId` watermark from
+   * `maxId()` at boot (silent baseline so a fresh-install backfill
+   * doesn't fire a flood of "payout confirmed" messages) and fires
+   * once per new row above the watermark. Without it
+   * `payout_confirmed` short-circuits safely.
+   */
+  readonly rewardEventsRepo?: RewardEventsRepo;
   /** Override clock for tests. */
   readonly now?: () => number;
   /**
@@ -212,10 +222,34 @@ export class AlertEvaluator {
    */
   private readonly soloShareRejectionLastFiredAt = new Map<number, number>();
 
+  /**
+   * #226: previous tick's `ocean_unpaid_sat` value, retained across
+   * ticks so the payout_initiated detector can compute a one-tick
+   * delta without an extra DB query. Null until the first tick we
+   * actually observe a finite value. Updated unconditionally at the
+   * end of every evaluatePayoutInitiated() call so subsequent ticks
+   * have a comparison baseline. In-memory only; on daemon restart
+   * the first tick re-baselines and the second tick has the
+   * comparison ready.
+   */
+  private payoutPrevUnpaidSat: number | null = null;
+  /**
+   * #226: highest `reward_events.id` we've already considered for the
+   * `payout_confirmed` Telegram. Hydrated at boot from
+   * `rewardEventsRepo.maxId()` so the boot-time backfill of historical
+   * payouts doesn't fire a flood of "payout confirmed" messages. Same
+   * silent-baseline contract as `lastNotifiedBlockHeight` for #117.
+   * Sentinel `-1` means "table genuinely empty, fire on the very first
+   * row we ever see"; `null` means "uninitialised, baseline on next
+   * evaluator tick before firing anything."
+   */
+  private lastNotifiedRewardEventId: number | null = null;
+
   private readonly alertManager: AlertManager;
   private readonly axeOSPoller: AxeOSPoller | null;
   private readonly tickMetricsRepo: TickMetricsRepo | null;
   private readonly poolBlocksRepo: PoolBlocksRepo | null;
+  private readonly rewardEventsRepo: RewardEventsRepo | null;
   private readonly now: () => number;
   private readonly log: (msg: string) => void;
 
@@ -224,6 +258,7 @@ export class AlertEvaluator {
     this.axeOSPoller = opts.axeOSPoller ?? null;
     this.tickMetricsRepo = opts.tickMetricsRepo ?? null;
     this.poolBlocksRepo = opts.poolBlocksRepo ?? null;
+    this.rewardEventsRepo = opts.rewardEventsRepo ?? null;
     this.now = opts.now ?? (() => Date.now());
     this.log = opts.log ?? (() => {});
   }
@@ -270,6 +305,14 @@ export class AlertEvaluator {
         .maxHeight()
         .catch(() => null);
     }
+    // #226: same silent-baseline contract for the reward_events
+    // watermark. Without this, a daemon restart would re-fire
+    // payout_confirmed for every historical row in the ledger.
+    if (this.rewardEventsRepo) {
+      this.lastNotifiedRewardEventId = await this.rewardEventsRepo
+        .maxId()
+        .catch(() => null);
+    }
   }
 
   /**
@@ -289,6 +332,13 @@ export class AlertEvaluator {
     await this.evaluateWalletRunway(state, disabled);
     await this.evaluateMarketplaceEmpty(state, disabled);
     await this.evaluatePoolBlockCredited(state, disabled);
+    // #226: payout lifecycle. Order matters lightly: initiated reads
+    // state.ocean_unpaid_sat against the prior tick's snapshot, then
+    // confirmed scans new reward_events rows. Both are dedicated
+    // toggle-gated (notify_on_payout_initiated /
+    // notify_on_payout_confirmed) and silently short-circuit when off.
+    await this.evaluatePayoutInitiated(state, disabled);
+    await this.evaluatePayoutConfirmed(state, disabled);
     // #149: solo-mining alerts (Bitaxe / AxeOS). No-op when the
     // master toggle is off or the poller wasn't wired.
     if (state.config.solo_mining_enabled && this.axeOSPoller) {
@@ -745,6 +795,153 @@ export class AlertEvaluator {
       }
     }
     this.pendingPoolBlockCredits = stillPending;
+  }
+
+  /**
+   * #226: `payout_initiated` — INFO Telegram alert the moment Ocean
+   * debits the operator's accumulated unpaid_sat balance. The trigger
+   * is a sharp one-tick drop in `state.ocean_unpaid_sat`: greater than
+   * 30% of the prior tick's value AND the residual is below the
+   * on-chain payout threshold (1,048,576 sat). Both gates matter -
+   * the percentage filter throws out tick noise / API jitter, the
+   * absolute-residual filter discriminates a real payout (residual
+   * ~0) from any other Ocean-side accounting bump that briefly
+   * lowers the unpaid count.
+   *
+   * Mirrors the dashboard's `unpaidDropMarkers` heuristic on
+   * PriceChart.tsx (~lines 1646-1668) so the operator sees the same
+   * event surfaced visually on the chart and audibly via Telegram.
+   *
+   * Idempotency: in-memory `payoutPrevUnpaidSat` is updated at the
+   * end of every call. After firing, the next tick's `prev` is the
+   * post-drop residual; subsequent drops would need a fresh build-up
+   * past 30%-of-residual, which only happens on the next genuine
+   * payout cycle. Daemon restart re-baselines on the first tick
+   * (no prev → no comparison → no fire); the second tick gets a
+   * comparison and the detector resumes normally. Acceptable cost:
+   * a payout landing exactly on a restart boundary would silently
+   * skip the initiation alert (but payout_confirmed still fires).
+   */
+  private async evaluatePayoutInitiated(
+    state: State,
+    disabledClasses: ReadonlySet<string>,
+  ): Promise<void> {
+    if (!state.config.notify_on_payout_initiated) return;
+    if (disabledClasses.has('payout_initiated')) return;
+    const cur = state.ocean_unpaid_sat;
+    const prev = this.payoutPrevUnpaidSat;
+    // Always update the prev baseline at the end, regardless of
+    // whether we fire. Captured before the early-returns so the
+    // baseline tracks the current observation even when the gate is
+    // off or the comparison isn't possible.
+    const updatePrev = () => {
+      this.payoutPrevUnpaidSat = cur;
+    };
+    if (cur === null) {
+      updatePrev();
+      return;
+    }
+    if (prev === null || prev <= 0) {
+      // No prior, or zero baseline. Can't compute a meaningful
+      // delta - re-baseline and wait.
+      updatePrev();
+      return;
+    }
+    const drop = prev - cur;
+    if (drop <= 0) {
+      // Unpaid went up or held flat - normal accumulation.
+      updatePrev();
+      return;
+    }
+    const dropFraction = drop / prev;
+    if (dropFraction <= 0.3) {
+      // Below the noise gate - not a payout event.
+      updatePrev();
+      return;
+    }
+    if (cur >= OCEAN_PAYOUT_THRESHOLD_SAT) {
+      // Residual is still above the threshold - a real payout
+      // always leaves residual near zero, so this is some other
+      // Ocean-side adjustment (a TIDES window rebalance, an
+      // accounting correction, etc.). Don't fire.
+      updatePrev();
+      return;
+    }
+    // All gates passed - fire once, advance the baseline.
+    const payoutAmountSat = drop;
+    const payoutBtc = (payoutAmountSat / 1e8).toFixed(8);
+    const preDropStr = `${prev.toLocaleString('en-US')} sat`;
+    const residualStr = `${cur.toLocaleString('en-US')} sat`;
+    const payoutSatStr = payoutAmountSat.toLocaleString('en-US');
+    await this.alertManager.recordAlert({
+      severity: 'INFO',
+      title: copyFor(state).payout_initiated_title({ payout_btc: payoutBtc }),
+      body: copyFor(state).payout_initiated_body({
+        payout_sat: payoutSatStr,
+        payout_btc: payoutBtc,
+        pre_drop_unpaid: preDropStr,
+        residual_unpaid: residualStr,
+      }),
+      event_class: 'payout_initiated',
+    });
+    updatePrev();
+  }
+
+  /**
+   * #226: `payout_confirmed` — INFO Telegram alert when the on-chain
+   * scanner observes a coinbase output crediting the configured
+   * payout address. Detection: walk reward_events rows with `id` >
+   * `lastNotifiedRewardEventId` (and `reorged = 0`); fire one INFO
+   * per row; advance the watermark.
+   *
+   * Same silent-baseline contract as pool_block_credited: on first
+   * tick after a fresh boot where hydrate() didn't run, baseline
+   * from `maxId()` before processing so the boot-time backfill of
+   * historical rows doesn't flood Telegram.
+   */
+  private async evaluatePayoutConfirmed(
+    state: State,
+    disabledClasses: ReadonlySet<string>,
+  ): Promise<void> {
+    if (!state.config.notify_on_payout_confirmed) return;
+    if (disabledClasses.has('payout_confirmed')) return;
+    const repo = this.rewardEventsRepo;
+    if (!repo) return;
+    if (this.lastNotifiedRewardEventId === null) {
+      this.lastNotifiedRewardEventId = await repo.maxId().catch(() => null);
+      if (this.lastNotifiedRewardEventId === null) {
+        // Table genuinely empty - mark with -1 so the first ever
+        // row we see fires.
+        this.lastNotifiedRewardEventId = -1;
+      }
+      return;
+    }
+    const newRows = await repo
+      .sinceId(this.lastNotifiedRewardEventId)
+      .catch(() => [] as Awaited<ReturnType<typeof repo.sinceId>>);
+    for (const row of newRows) {
+      const valueSatStr = row.value_sat.toLocaleString('en-US');
+      const valueBtcStr = (row.value_sat / 1e8).toFixed(8);
+      const heightStr = row.block_height.toLocaleString('en-US');
+      const txidShort = row.txid.length > 16
+        ? `${row.txid.slice(0, 8)}…${row.txid.slice(-8)}`
+        : row.txid;
+      await this.alertManager.recordAlert({
+        severity: 'INFO',
+        title: copyFor(state).payout_confirmed_title({ payout_btc: valueBtcStr }),
+        body: copyFor(state).payout_confirmed_body({
+          payout_sat: valueSatStr,
+          payout_btc: valueBtcStr,
+          height: heightStr,
+          txid_short: txidShort,
+          txid_full: row.txid,
+        }),
+        event_class: 'payout_confirmed',
+      });
+      if (row.id > this.lastNotifiedRewardEventId) {
+        this.lastNotifiedRewardEventId = row.id;
+      }
+    }
   }
 
   // ---------------------------------------------------------------

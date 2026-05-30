@@ -283,6 +283,9 @@ CREATE TABLE config (
   notification_disabled_event_classes TEXT NOT NULL DEFAULT '',       -- comma-separated
   notify_on_pool_block_credit INTEGER NOT NULL DEFAULT 0,            -- bool (0 | 1)
   notify_on_braiins_deposit INTEGER NOT NULL DEFAULT 0,              -- bool (0 | 1)
+  -- #226 (migration 0101): payout lifecycle Telegram alerts.
+  notify_on_payout_initiated INTEGER NOT NULL DEFAULT 0,             -- bool (0 | 1)
+  notify_on_payout_confirmed INTEGER NOT NULL DEFAULT 0,             -- bool (0 | 1)
   notification_locale TEXT NOT NULL DEFAULT 'en',                    -- 'en' | 'nl' | 'es'
   -- Dynamic DNS (#111, migrations 0067-0068)
   ddns_provider TEXT NOT NULL DEFAULT '',                            -- '' | 'noip' | 'duckdns' | 'dyndns2'
@@ -846,3 +849,4 @@ Remaining work is tracked in GitHub issues.
 | 1.11    | 2026-05-25 | §2 repo layout: updated braiins-deposit-watcher.ts annotation - all three deposit events (_detected, _available, _returned) now sourced from the on-chain endpoint poller (#210). Retired the balance-delta workaround in AlertEvaluator. |
 | 1.12    | 2026-05-25 | §2 routes listing: added `deposits` route (#211, `/api/deposits` serves credited Braiins deposits for Price chart markers). |
 | 1.13    | 2026-05-29 | v1.10.0 release window. §5 `config` schema gains `bid_edit_deadband_pct` and `max_acceptable_fee_pct` (migration 0099, #222) - the EDIT_PRICE deadband formula in `decide.ts` is now `max(tick_size, overpay × bid_edit_deadband_pct / 100)` with default 20 reproducing the legacy `overpay / 5`; the mutation gate gains a new `FEE_THRESHOLD_EXCEEDED` denial reason that blocks CREATE / EDIT / EDIT_SPEED when any active bid's `fee_rate_pct` exceeds `config.max_acceptable_fee_pct` (CANCEL_BID stays allowed). §5 `tick_metrics` gains `bid_edit_deadband_pct` (migration 0100, #224) - per-tick snapshot so EDIT_PRICE event tooltips render the deadband in effect at any historical edit; `DEFAULT 20` backfills existing rows. No other control-loop shape changes. |
+| 1.14    | 2026-05-30 | §5 `config` schema gains `notify_on_payout_initiated` and `notify_on_payout_confirmed` (migration 0101, #226) - two new opt-in INFO Telegram alerts for the Ocean payout lifecycle. payout_initiated fires the tick the daemon observes a one-tick `ocean_unpaid_sat` drop > 30% with residual below the 1,048,576-sat payout threshold (mirrors the dashboard's unpaidDropMarkers heuristic on PriceChart.tsx). payout_confirmed fires once per new `reward_events` row, with in-memory `lastNotifiedRewardEventId` watermark for idempotency, silent-baselined at boot from `rewardEventsRepo.maxId()` so a fresh install's backfill doesn't fire a flood. Both default off, gated by their own dedicated toggle each (same convention as `notify_on_pool_block_credit` / `notify_on_braiins_deposit`). No control-loop shape changes. |

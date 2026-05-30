@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-05-30
+
+### `[Feature]` Telegram alerts for the Ocean payout lifecycle (#226)
+
+Two new opt-in INFO Telegram alert classes, each gated by its own config toggle (Config → Notifications → Ocean events). Both default off, matching the existing `notify_on_pool_block_credit` (#117) and `notify_on_braiins_deposit` (#130) conventions. **`payout_initiated`** fires the tick the daemon observes Ocean debiting your unpaid balance: detected as a sharp one-tick drop in `ocean_unpaid_sat` (>30% of the prior value) with the residual below the 1,048,576-sat payout threshold. At that moment Ocean has committed the payout to the coinbase of the next block it finds; the transaction hasn't confirmed on-chain yet. Body includes pre-drop and residual balances plus the inferred payout amount. **`payout_confirmed`** fires when the on-chain payout scanner observes a coinbase output crediting your payout address — one INFO per new row in the `reward_events` ledger, with block height + payout amount + truncated tx id. Idempotency via an in-memory `lastNotifiedRewardEventId` watermark (silent-baseline on first tick after boot so a fresh-install backfill of historical rows doesn't fire a flood). Migration 0101 adds the two columns. en + nl + es alert copy.
+
 ## 2026-05-29
 
 ### `[Release]` v1.10.0

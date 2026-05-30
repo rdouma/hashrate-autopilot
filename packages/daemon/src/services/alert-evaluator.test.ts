@@ -194,3 +194,223 @@ describe('AlertEvaluator - hashrate_below_floor', () => {
     expect(mgr.recorded[0]!.event_class).toBe('hashrate_below_floor');
   });
 });
+
+// #226: payout_initiated detection. The trigger is a sharp drop in
+// `state.ocean_unpaid_sat` between consecutive ticks, gated on the
+// residual being below the payout threshold (so non-payout dips
+// don't fire). Idempotency: `payoutPrevUnpaidSat` advances every
+// tick to the current value, so a second tick at the same residual
+// has zero delta and won't refire.
+describe('AlertEvaluator - payout_initiated (#226)', () => {
+  function payoutState(overrides: Partial<State> & { ocean_unpaid_sat: number | null }): State {
+    return makeState({
+      ...overrides,
+      config: {
+        ...(makeState({}).config),
+        notify_on_payout_initiated: true,
+      } as State['config'],
+    });
+  }
+
+  it('does nothing while the toggle is off', async () => {
+    const mgr = makeManager();
+    const ev = new AlertEvaluator({ alertManager: mgr });
+    await ev.evaluate(makeState({ ocean_unpaid_sat: 1_200_000 } as Partial<State>));
+    await ev.evaluate(makeState({ ocean_unpaid_sat: 5_000 } as Partial<State>));
+    expect(mgr.recordAlert).not.toHaveBeenCalled();
+  });
+
+  it('fires once when unpaid drops >30% AND residual is below threshold', async () => {
+    const mgr = makeManager();
+    const ev = new AlertEvaluator({ alertManager: mgr });
+    await ev.evaluate(payoutState({ ocean_unpaid_sat: 1_074_562 }));
+    await ev.evaluate(payoutState({ ocean_unpaid_sat: 12_418 }));
+    expect(mgr.recordAlert).toHaveBeenCalledTimes(1);
+    expect(mgr.recorded[0]!.event_class).toBe('payout_initiated');
+    expect(mgr.recorded[0]!.severity).toBe('INFO');
+  });
+
+  it('does not fire when the drop is <30%', async () => {
+    const mgr = makeManager();
+    const ev = new AlertEvaluator({ alertManager: mgr });
+    // 1_200_000 -> 1_000_000: 16.7% drop. Doesn't qualify.
+    await ev.evaluate(payoutState({ ocean_unpaid_sat: 1_200_000 }));
+    await ev.evaluate(payoutState({ ocean_unpaid_sat: 1_000_000 }));
+    expect(mgr.recordAlert).not.toHaveBeenCalled();
+  });
+
+  it('does not fire when residual stays at-or-above the payout threshold', async () => {
+    const mgr = makeManager();
+    const ev = new AlertEvaluator({ alertManager: mgr });
+    // 5_000_000 -> 1_500_000: 70% drop but residual still above 1,048,576.
+    // Not a payout - some other Ocean-side accounting bump.
+    await ev.evaluate(payoutState({ ocean_unpaid_sat: 5_000_000 }));
+    await ev.evaluate(payoutState({ ocean_unpaid_sat: 1_500_000 }));
+    expect(mgr.recordAlert).not.toHaveBeenCalled();
+  });
+
+  it('does not refire on subsequent ticks observing the same residual', async () => {
+    const mgr = makeManager();
+    const ev = new AlertEvaluator({ alertManager: mgr });
+    await ev.evaluate(payoutState({ ocean_unpaid_sat: 1_074_562 }));
+    await ev.evaluate(payoutState({ ocean_unpaid_sat: 12_418 })); // fires
+    await ev.evaluate(payoutState({ ocean_unpaid_sat: 12_500 })); // no delta worth firing
+    await ev.evaluate(payoutState({ ocean_unpaid_sat: 14_000 })); // small rise, no fire
+    expect(mgr.recordAlert).toHaveBeenCalledTimes(1);
+  });
+
+  it('null observations re-baseline silently (no fire on either tick)', async () => {
+    const mgr = makeManager();
+    const ev = new AlertEvaluator({ alertManager: mgr });
+    await ev.evaluate(payoutState({ ocean_unpaid_sat: null }));
+    await ev.evaluate(payoutState({ ocean_unpaid_sat: 5_000 }));
+    await ev.evaluate(payoutState({ ocean_unpaid_sat: null }));
+    expect(mgr.recordAlert).not.toHaveBeenCalled();
+  });
+
+  it('first tick with a baseline does not fire (no prior comparison)', async () => {
+    // Daemon-restart edge case: the prev field is null on the first
+    // tick after construction, so a drop straddling that boundary is
+    // silently absorbed. Documented behavior; the matching
+    // payout_confirmed will still fire when the coinbase confirms.
+    const mgr = makeManager();
+    const ev = new AlertEvaluator({ alertManager: mgr });
+    await ev.evaluate(payoutState({ ocean_unpaid_sat: 12_418 }));
+    expect(mgr.recordAlert).not.toHaveBeenCalled();
+  });
+
+  it('respects notification_disabled_event_classes', async () => {
+    const mgr = makeManager();
+    const ev = new AlertEvaluator({ alertManager: mgr });
+    const s1 = payoutState({ ocean_unpaid_sat: 1_074_562 });
+    const s2 = payoutState({ ocean_unpaid_sat: 12_418 });
+    (s2.config as { notification_disabled_event_classes: string[] }).notification_disabled_event_classes = ['payout_initiated'];
+    (s1.config as { notification_disabled_event_classes: string[] }).notification_disabled_event_classes = ['payout_initiated'];
+    await ev.evaluate(s1);
+    await ev.evaluate(s2);
+    expect(mgr.recordAlert).not.toHaveBeenCalled();
+  });
+});
+
+// #226: payout_confirmed detection. The trigger is a new
+// `reward_events` row (id > the in-memory watermark, reorged = 0).
+// Silent-baseline contract on first tick after construction.
+describe('AlertEvaluator - payout_confirmed (#226)', () => {
+  type RewardRow = {
+    id: number;
+    txid: string;
+    vout: number;
+    block_height: number;
+    confirmations: number;
+    value_sat: number;
+    detected_at: number;
+    reorged: number;
+  };
+
+  function fakeRewardEventsRepo(initial: RewardRow[] = []) {
+    const rows = [...initial];
+    return {
+      rows,
+      async maxId() {
+        return rows.length === 0 ? null : Math.max(...rows.map((r) => r.id));
+      },
+      async sinceId(sinceId: number) {
+        return rows.filter((r) => r.id > sinceId && r.reorged === 0);
+      },
+      async listSince() { return [] as RewardRow[]; },
+      async sumPaidUpTo() { return 0; },
+    };
+  }
+
+  function payoutConfirmedState(overrides: Partial<State> = {}): State {
+    return makeState({
+      ...overrides,
+      config: {
+        ...(makeState({}).config),
+        notify_on_payout_confirmed: true,
+      } as State['config'],
+    });
+  }
+
+  it('does nothing while the toggle is off', async () => {
+    const mgr = makeManager();
+    const repo = fakeRewardEventsRepo([
+      { id: 1, txid: 'abc', vout: 0, block_height: 100, confirmations: 6, value_sat: 1_062_144, detected_at: 0, reorged: 0 },
+    ]);
+    const ev = new AlertEvaluator({ alertManager: mgr, rewardEventsRepo: repo as never });
+    await ev.evaluate(makeState({ ocean_unpaid_sat: null } as Partial<State>));
+    expect(mgr.recordAlert).not.toHaveBeenCalled();
+  });
+
+  it('silently baselines on first tick after construction (no fire for existing rows)', async () => {
+    const mgr = makeManager();
+    const repo = fakeRewardEventsRepo([
+      { id: 1, txid: 'abc', vout: 0, block_height: 100, confirmations: 6, value_sat: 1_062_144, detected_at: 0, reorged: 0 },
+      { id: 2, txid: 'def', vout: 0, block_height: 200, confirmations: 6, value_sat: 1_070_000, detected_at: 100, reorged: 0 },
+    ]);
+    const ev = new AlertEvaluator({ alertManager: mgr, rewardEventsRepo: repo as never });
+    await ev.evaluate(payoutConfirmedState());
+    expect(mgr.recordAlert).not.toHaveBeenCalled();
+  });
+
+  it('fires once for the first new row after baseline', async () => {
+    const mgr = makeManager();
+    const repo = fakeRewardEventsRepo([
+      { id: 1, txid: 'abc', vout: 0, block_height: 100, confirmations: 6, value_sat: 1_062_144, detected_at: 0, reorged: 0 },
+    ]);
+    const ev = new AlertEvaluator({ alertManager: mgr, rewardEventsRepo: repo as never });
+    await ev.evaluate(payoutConfirmedState()); // baseline
+    // Scanner inserts a new row, then next tick fires.
+    repo.rows.push({ id: 2, txid: 'def', vout: 0, block_height: 200, confirmations: 6, value_sat: 1_070_000, detected_at: 100, reorged: 0 });
+    await ev.evaluate(payoutConfirmedState());
+    expect(mgr.recordAlert).toHaveBeenCalledTimes(1);
+    expect(mgr.recorded[0]!.event_class).toBe('payout_confirmed');
+    expect(mgr.recorded[0]!.severity).toBe('INFO');
+  });
+
+  it('does not refire on subsequent ticks for the same row', async () => {
+    const mgr = makeManager();
+    const repo = fakeRewardEventsRepo();
+    const ev = new AlertEvaluator({ alertManager: mgr, rewardEventsRepo: repo as never });
+    await ev.evaluate(payoutConfirmedState()); // baseline at -1
+    repo.rows.push({ id: 1, txid: 'abc', vout: 0, block_height: 100, confirmations: 6, value_sat: 1_062_144, detected_at: 0, reorged: 0 });
+    await ev.evaluate(payoutConfirmedState()); // fires
+    await ev.evaluate(payoutConfirmedState()); // no new rows
+    await ev.evaluate(payoutConfirmedState()); // still no new rows
+    expect(mgr.recordAlert).toHaveBeenCalledTimes(1);
+  });
+
+  it('fires once per new row when multiple land between ticks', async () => {
+    const mgr = makeManager();
+    const repo = fakeRewardEventsRepo();
+    const ev = new AlertEvaluator({ alertManager: mgr, rewardEventsRepo: repo as never });
+    await ev.evaluate(payoutConfirmedState()); // baseline at -1
+    repo.rows.push(
+      { id: 1, txid: 'abc', vout: 0, block_height: 100, confirmations: 6, value_sat: 1_062_144, detected_at: 0, reorged: 0 },
+      { id: 2, txid: 'def', vout: 0, block_height: 200, confirmations: 6, value_sat: 1_070_000, detected_at: 100, reorged: 0 },
+    );
+    await ev.evaluate(payoutConfirmedState());
+    expect(mgr.recordAlert).toHaveBeenCalledTimes(2);
+  });
+
+  it('skips reorged rows', async () => {
+    const mgr = makeManager();
+    const repo = fakeRewardEventsRepo();
+    const ev = new AlertEvaluator({ alertManager: mgr, rewardEventsRepo: repo as never });
+    await ev.evaluate(payoutConfirmedState()); // baseline
+    repo.rows.push(
+      { id: 1, txid: 'abc', vout: 0, block_height: 100, confirmations: 6, value_sat: 1_062_144, detected_at: 0, reorged: 1 },
+    );
+    await ev.evaluate(payoutConfirmedState());
+    expect(mgr.recordAlert).not.toHaveBeenCalled();
+  });
+
+  it('short-circuits when no repo wired', async () => {
+    const mgr = makeManager();
+    const ev = new AlertEvaluator({ alertManager: mgr });
+    await ev.evaluate(payoutConfirmedState());
+    await ev.evaluate(payoutConfirmedState());
+    expect(mgr.recordAlert).not.toHaveBeenCalled();
+  });
+
+});

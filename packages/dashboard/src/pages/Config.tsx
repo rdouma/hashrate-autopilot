@@ -3073,6 +3073,26 @@ function EventClassSubscriptions({
       setEnabled: (n) => onChange('notify_on_pool_block_credit', n as never),
       severity: 'INFO',
     },
+    // #226: payout lifecycle - two separate INFO toggles. Most operators
+    // will want both on or both off; keeping them split mirrors how the
+    // events actually fire (one when Ocean debits unpaid_sat, one when
+    // the coinbase confirms on-chain).
+    {
+      id: 'payout_initiated',
+      label: t`Ocean payout initiated`,
+      help: t`Informational. Off by default. Fires the moment Ocean debits your unpaid balance - the payout has been committed to the coinbase of the next block Ocean finds, but the transaction hasn't confirmed on-chain yet. Detection: the daemon's per-tick ocean_unpaid_sat drops by more than 30% AND the residual is below the 1,048,576-sat payout threshold (filters out tick noise / Ocean-side accounting bumps).`,
+      enabled: draft.notify_on_payout_initiated,
+      setEnabled: (n) => onChange('notify_on_payout_initiated', n as never),
+      severity: 'INFO',
+    },
+    {
+      id: 'payout_confirmed',
+      label: t`Ocean payout confirmed on-chain`,
+      help: t`Informational. Off by default. Fires when the on-chain payout scanner observes a coinbase output crediting your payout address - i.e. the transaction Ocean committed has now confirmed. Includes block height, payout amount, and a truncated tx id. Source: reward_events ledger (populated by Electrs or bitcoind scantxoutset, whichever the operator has wired).`,
+      enabled: draft.notify_on_payout_confirmed,
+      setEnabled: (n) => onChange('notify_on_payout_confirmed', n as never),
+      severity: 'INFO',
+    },
   ];
 
   // #149: solo-mining tiles. Only rendered when the master toggle is

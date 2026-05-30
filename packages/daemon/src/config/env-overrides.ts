@@ -208,6 +208,15 @@ const APP_CONFIG_ENV: {
     varName: 'BHA_NOTIFY_ON_BRAIINS_DEPOSIT',
     coerce: asBoolean,
   },
+  // #226: payout lifecycle Telegram alerts.
+  notify_on_payout_initiated: {
+    varName: 'BHA_NOTIFY_ON_PAYOUT_INITIATED',
+    coerce: asBoolean,
+  },
+  notify_on_payout_confirmed: {
+    varName: 'BHA_NOTIFY_ON_PAYOUT_CONFIRMED',
+    coerce: asBoolean,
+  },
   notification_locale: {
     varName: 'BHA_NOTIFICATION_LOCALE',
     coerce: asString,

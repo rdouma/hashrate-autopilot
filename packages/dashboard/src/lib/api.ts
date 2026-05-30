@@ -325,6 +325,10 @@ export interface AppConfig {
   notification_disabled_event_classes: string[];
   notify_on_pool_block_credit: boolean;
   notify_on_braiins_deposit: boolean;
+  /** #226: payout-initiated Telegram alert (Ocean debited unpaid_sat). Off by default. */
+  notify_on_payout_initiated: boolean;
+  /** #226: payout-confirmed Telegram alert (on-chain coinbase to payout address). Off by default. */
+  notify_on_payout_confirmed: boolean;
   notification_locale: 'en' | 'nl' | 'es';
   electrs_host: string | null;
   electrs_port: number | null;

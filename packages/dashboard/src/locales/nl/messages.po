@@ -1681,6 +1681,14 @@ msgid "INFO"
 msgstr "INFO"
 
 #: src/pages/Config.tsx
+msgid "Informational. Off by default. Fires the moment Ocean debits your unpaid balance - the payout has been committed to the coinbase of the next block Ocean finds, but the transaction hasn't confirmed on-chain yet. Detection: the daemon's per-tick ocean_unpaid_sat drops by more than 30% AND the residual is below the 1,048,576-sat payout threshold (filters out tick noise / Ocean-side accounting bumps)."
+msgstr "Informatief. Standaard uit. Vuurt op het moment dat Ocean je unpaid-saldo debiteert - de uitbetaling zit nu in de coinbase van het eerstvolgende blok dat Ocean vindt, maar de transactie is nog niet on-chain bevestigd. Detectie: de daemon's per-tick ocean_unpaid_sat zakt meer dan 30% EN het residu staat onder de 1.048.576-sat uitbetaaldrempel (filtert tick-ruis / Ocean-side boekhoudkundige bumps eruit)."
+
+#: src/pages/Config.tsx
+msgid "Informational. Off by default. Fires when the on-chain payout scanner observes a coinbase output crediting your payout address - i.e. the transaction Ocean committed has now confirmed. Includes block height, payout amount, and a truncated tx id. Source: reward_events ledger (populated by Electrs or bitcoind scantxoutset, whichever the operator has wired)."
+msgstr "Informatief. Standaard uit. Vuurt wanneer de on-chain payout-scanner een coinbase-output naar je payout-adres ziet - oftewel de transactie die Ocean heeft toegezegd is nu bevestigd. Bevat block-hoogte, uitbetalingsbedrag en een verkorte tx id. Bron: reward_events ledger (gevuld door Electrs of bitcoind scantxoutset, afhankelijk van wat de operator heeft aangesloten)."
+
+#: src/pages/Config.tsx
 msgid "Informational. Off by default. When on, every block Ocean credits to your payout address sends a small INFO message: block height, your share %, your credit, and progress toward the next 1,048,576-sat on-chain payout."
 msgstr "Informatief. Standaard uit. Wanneer aan, stuurt elk blok dat Ocean op je uitbetalingsadres bijschrijft een klein INFO-bericht: blokhoogte, jouw aandeel %, jouw bijschrijving en voortgang naar de volgende on-chain uitbetaling van 1.048.576 sat."
 
@@ -2167,6 +2175,14 @@ msgstr "Ocean levenslang"
 #: src/pages/Config.tsx
 msgid "Ocean mining found a block (voice)"
 msgstr "Ocean mining heeft een blok gevonden (stem)"
+
+#: src/pages/Config.tsx
+msgid "Ocean payout confirmed on-chain"
+msgstr "Ocean-uitbetaling bevestigd on-chain"
+
+#: src/pages/Config.tsx
+msgid "Ocean payout initiated"
+msgstr "Ocean-uitbetaling gestart"
 
 #: src/pages/Config.tsx
 msgid "Ocean pool-block credited"

@@ -597,6 +597,8 @@ async function bootOperational(
     axeOSPoller,
     tickMetricsRepo,
     poolBlocksRepo,
+    // #226: enables payout_confirmed firing once per new reward_events row.
+    rewardEventsRepo,
     log: (m) => log(m),
   });
   // Rebuild in-memory event state from the alerts table so a daemon
