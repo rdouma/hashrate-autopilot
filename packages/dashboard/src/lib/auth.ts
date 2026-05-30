@@ -15,7 +15,7 @@
  * rest of the app is oblivious to which backend is in use.
  */
 
-const STORAGE_KEY = 'braiins.dashboardPassword';
+const STORAGE_KEY = 'hashrate-autopilot.dashboardPassword';
 
 export function setPassword(password: string, remember = false): void {
   const target = remember ? window.localStorage : window.sessionStorage;

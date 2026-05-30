@@ -6,8 +6,8 @@
  *
  * Polls /api/btc-price every 5 minutes for sat<->USD conversion.
  * Mode persisted to localStorage:
- *   - 'braiins.denomination'   = 'sats' | 'btc' | 'usd'
- *   - 'braiins.hashrateUnit'   = 'TH'   | 'PH'  | 'EH'
+ *   - 'hashrate-autopilot.denomination'   = 'sats' | 'btc' | 'usd'
+ *   - 'hashrate-autopilot.hashrateUnit'   = 'TH'   | 'PH'  | 'EH'
  *
  * When the price source is 'none' or the API is unreachable, btcPrice
  * is null; USD is hidden in the toggle UI and forced back to sats here
@@ -29,8 +29,8 @@ import { useQuery } from '@tanstack/react-query';
 import { api, type BtcPriceResponse } from './api';
 import { useLocale } from './locale';
 
-const DENOMINATION_STORAGE_KEY = 'braiins.denomination';
-const HASHRATE_UNIT_STORAGE_KEY = 'braiins.hashrateUnit';
+const DENOMINATION_STORAGE_KEY = 'hashrate-autopilot.denomination';
+const HASHRATE_UNIT_STORAGE_KEY = 'hashrate-autopilot.hashrateUnit';
 const POLL_INTERVAL_MS = 5 * 60_000;
 
 const SAT_PER_BTC = 100_000_000;

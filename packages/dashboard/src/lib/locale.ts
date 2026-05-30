@@ -9,13 +9,13 @@
  *
  *   - `numberLocale` (Intl locale string) — drives `Intl.NumberFormat`
  *     (thousand / decimal separators only). Persisted to localStorage
- *     as `braiins.numberLocale`.
+ *     as `hashrate-autopilot.numberLocale`.
  *   - `dateLayout` (discrete enum) — drives date/time *layout* (order,
  *     separators, 12h vs 24h). Persisted to localStorage as
- *     `braiins.dateLayout`. Month-name *language* is always whichever
+ *     `hashrate-autopilot.dateLayout`. Month-name *language* is always whichever
  *     UI language the operator has picked (via `useDateTimeLocale`).
  *
- * One-time migration from the legacy single `braiins.displayLocale`
+ * One-time migration from the legacy single `hashrate-autopilot.displayLocale`
  * key happens in `useLocaleState`. After migration runs, the old key
  * is removed from localStorage.
  */
@@ -35,10 +35,10 @@ import {
   type DateLayout,
 } from './format';
 
-const NUMBER_LOCALE_KEY = 'braiins.numberLocale';
-const DATE_LAYOUT_KEY = 'braiins.dateLayout';
-const TEMP_UNIT_KEY = 'braiins.temperatureUnit';
-const LEGACY_DISPLAY_LOCALE_KEY = 'braiins.displayLocale';
+const NUMBER_LOCALE_KEY = 'hashrate-autopilot.numberLocale';
+const DATE_LAYOUT_KEY = 'hashrate-autopilot.dateLayout';
+const TEMP_UNIT_KEY = 'hashrate-autopilot.temperatureUnit';
+const LEGACY_DISPLAY_LOCALE_KEY = 'hashrate-autopilot.displayLocale';
 
 export type { DateLayout } from './format';
 
@@ -93,7 +93,7 @@ function isKnownNumberLocale(v: string | null | undefined): boolean {
 }
 
 /**
- * Migrate the legacy single `braiins.displayLocale` key into the
+ * Migrate the legacy single `hashrate-autopilot.displayLocale` key into the
  * new pair if and only if the new keys are unset. Runs once per
  * `useLocaleState` mount; safe to call repeatedly (no-op when new
  * keys already exist).

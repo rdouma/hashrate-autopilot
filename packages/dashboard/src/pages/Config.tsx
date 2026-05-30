@@ -38,7 +38,7 @@ import {
 } from '../lib/locale';
 
 // #98 - auto-save defaults on; toggle persists per-browser.
-const AUTOSAVE_STORAGE_KEY = 'braiins.configAutoSave';
+const AUTOSAVE_STORAGE_KEY = 'hashrate-autopilot.configAutoSave';
 const AUTOSAVE_DEBOUNCE_MS = 800;
 
 const EH_PER_PH = 1000;

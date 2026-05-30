@@ -35,7 +35,7 @@ export const LOCALE_LABELS: Record<SupportedLocale, string> = {
   es: 'Español',
 };
 
-const STORAGE_KEY = 'braiins.uiLanguage';
+const STORAGE_KEY = 'hashrate-autopilot.uiLanguage';
 
 function isSupported(code: string): code is SupportedLocale {
   return (SUPPORTED_LOCALES as readonly string[]).includes(code);

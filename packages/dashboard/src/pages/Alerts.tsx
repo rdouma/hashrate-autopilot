@@ -4,7 +4,7 @@ import { useLingui } from '@lingui/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 
-const UNACK_ONLY_STORAGE_KEY = 'braiins.alertsUnacknowledgedOnly';
+const UNACK_ONLY_STORAGE_KEY = 'hashrate-autopilot.alertsUnacknowledgedOnly';
 // #121: cursor pagination page size. Server hard-cap is 1000; 50 is
 // enough to fit on a typical screen without scrolling and gives the
 // "Load older" button the time to feel useful.

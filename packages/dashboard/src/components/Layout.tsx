@@ -17,7 +17,7 @@ import { ModeBadge } from './ModeBadge';
 import { SatSymbol } from './SatSymbol';
 import { ToastStack } from './ToastStack';
 
-const TOAST_LAST_SEEN_KEY = 'braiins.alertsLastToastId';
+const TOAST_LAST_SEEN_KEY = 'hashrate-autopilot.alertsLastToastId';
 
 // Nav items are translated at render time. Using `t\`...\`` inside the
 // component (rather than at module load) so the active locale wins -

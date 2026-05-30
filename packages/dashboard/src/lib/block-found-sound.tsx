@@ -33,7 +33,7 @@ import { api, type AppConfig } from './api';
 // (pool block found vs on-chain payout confirmed). Using a fresh
 // key also re-baselines silently on first poll for existing
 // operators upgrading past this commit.
-const STORAGE_KEY = 'braiins.lastSeenOceanBlockHeight';
+const STORAGE_KEY = 'hashrate-autopilot.lastSeenOceanBlockHeight';
 const POLL_INTERVAL_MS = 60_000;
 
 /**

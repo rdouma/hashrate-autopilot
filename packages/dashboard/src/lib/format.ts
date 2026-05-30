@@ -6,9 +6,9 @@
  * preferences:
  *
  *   - `numberLocale`: drives `Intl.NumberFormat` (thousands / decimal
- *     separators only). Read from localStorage `braiins.numberLocale`.
+ *     separators only). Read from localStorage `hashrate-autopilot.numberLocale`.
  *   - `dateLayout`: drives date/time layout (order, separators, 12h
- *     vs 24h). Read from localStorage `braiins.dateLayout`.
+ *     vs 24h). Read from localStorage `hashrate-autopilot.dateLayout`.
  *
  * Month-name language follows the *UI language* picker (Lingui),
  * NOT either of the format preferences - so an English-UI operator
@@ -24,8 +24,8 @@ import { t } from '@lingui/core/macro';
 
 type Locale = string | undefined;
 
-const NUMBER_LOCALE_STORAGE_KEY = 'braiins.numberLocale';
-const DATE_LAYOUT_STORAGE_KEY = 'braiins.dateLayout';
+const NUMBER_LOCALE_STORAGE_KEY = 'hashrate-autopilot.numberLocale';
+const DATE_LAYOUT_STORAGE_KEY = 'hashrate-autopilot.dateLayout';
 
 function defaultLocale(): Locale {
   if (typeof window === 'undefined') return undefined;

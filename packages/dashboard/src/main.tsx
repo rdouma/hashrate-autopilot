@@ -11,6 +11,7 @@ import './index.css';
 import { DenominationProvider } from './lib/denomination';
 import { getInitialLocale, i18n, loadAndActivate } from './lib/i18n';
 import { LocaleContext, useLocaleState } from './lib/locale';
+import { migrateLegacyStorageKeys } from './lib/storage-key-migration';
 import { Alerts } from './pages/Alerts';
 import { Config } from './pages/Config';
 import { Login } from './pages/Login';
@@ -32,6 +33,12 @@ const queryClient = new QueryClient({
 
 const root = document.getElementById('root');
 if (!root) throw new Error('root element missing');
+
+// #228: one-shot rename of legacy `braiins.*` localStorage keys to
+// `hashrate-autopilot.*`. Runs before the first render so any
+// component reading from localStorage in its initial state sees the
+// new keys already in place. Idempotent — re-runs are no-ops.
+migrateLegacyStorageKeys();
 
 function AppShell() {
   const locale = useLocaleState();

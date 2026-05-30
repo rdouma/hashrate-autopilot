@@ -70,8 +70,8 @@ const EMPTY_OUR_BLOCKS: readonly never[] = Object.freeze([]) as readonly never[]
 const EMPTY_DEPOSITS: readonly never[] = Object.freeze([]) as readonly never[];
 
 // #93: per-chart secondary Y-axis selection, persisted per-browser.
-const HASHRATE_RIGHT_AXIS_KEY = 'braiins.hashrateRightAxis';
-const PRICE_RIGHT_AXIS_KEY = 'braiins.priceRightAxis';
+const HASHRATE_RIGHT_AXIS_KEY = 'hashrate-autopilot.hashrateRightAxis';
+const PRICE_RIGHT_AXIS_KEY = 'hashrate-autopilot.priceRightAxis';
 
 function readStoredHashrateRightAxis(
   fallback: HashrateRightAxis,
