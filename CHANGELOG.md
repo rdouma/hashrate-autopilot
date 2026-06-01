@@ -2,6 +2,10 @@
 
 ## 2026-06-02
 
+### `[UI]` Copy / Paste hex in the chart-color picker (#238 follow-up)
+
+Each `ChartColorPicker` popover gains a Copy / Paste row so the operator can mirror a hex from one slot to another without retyping — handy for "use the same color on both charts' right axis" or any cross-series matching. Copy uses the existing `copyToClipboard` helper (which already handles insecure LAN-HTTP contexts via `document.execCommand` fallback). Paste reads from `navigator.clipboard`, accepts `#RRGGBB` or bare `RRGGBB`, and validates against the same hex pattern the picker uses elsewhere; non-hex paste is a silent no-op. Copy button shows a brief "Copied" confirmation for 1.2s on success. en + nl + es translations added.
+
 ### `[Fix]` Pool-block-credited alert reports actual Ocean credit, not share-log estimate (#239)
 
 The `pool_block_credited` Telegram body computed credit as `share_log_pct × reward / 100` — an estimate from a single-tick snapshot near block time. With operator hashrate fluctuating inside Ocean's ~80-min TIDES window or with unusually-fee-heavy blocks, that estimate could diverge from Ocean's actual TIDES credit by 3× or more. Operator's screenshot: alert reported credit `~31,044 sat` for block 951997 but the unpaid jumped from 400,045 → 491,682 (an actual credit of 91,637 sat). The unpaid totals are ground truth from Ocean's API; the per-block credit estimate isn't. Now tracking previous unpaid_sat at the moment of the last `pool_block_credited` fire (in-memory). On the next single-block-this-tick alert with a non-negative delta the credit number becomes the actual delta — no `~` prefix. Multi-block ticks, the first alert after restart, and alerts firing right after a payout fall back to the `~estimate` (those edge cases can't reliably back-derive a per-block credit). Body rewording: "Credited to you: 30,477 sat (~0.0098% pool share at the time)" — the percentage now reads as context, not as the math derivation. en + nl + es updated symmetrically.

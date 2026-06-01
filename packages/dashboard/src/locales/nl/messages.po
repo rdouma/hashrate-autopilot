@@ -1014,6 +1014,10 @@ msgstr "Bepaalt hoe het P&L-paneel het \"uitgegeven\"-bedrag berekent dat het ne
 msgid "Cooldown clears in"
 msgstr "Cooldown loopt af over"
 
+#: src/components/ChartColorPicker.tsx
+msgid "Copied"
+msgstr "Gekopieerd"
+
 #: src/pages/Status.tsx
 msgid "copied bid ID"
 msgstr "bod-ID gekopieerd"
@@ -1026,9 +1030,17 @@ msgstr "JSON gekopieerd"
 msgid "copied URL"
 msgstr "URL gekopieerd"
 
+#: src/components/ChartColorPicker.tsx
+msgid "Copy"
+msgstr "Kopiëren"
+
 #: src/pages/Status.tsx
 msgid "copy bid ID"
 msgstr "bod-ID kopiëren"
+
+#: src/components/ChartColorPicker.tsx
+msgid "Copy hex to clipboard"
+msgstr "Hex kopiëren naar klembord"
 
 #: src/components/PriceChart.tsx
 msgid "copy JSON"
@@ -2542,6 +2554,14 @@ msgstr "Wachtwoord"
 #: src/pages/Setup.tsx
 msgid "passwords don't match"
 msgstr "wachtwoorden komen niet overeen"
+
+#: src/components/ChartColorPicker.tsx
+msgid "Paste"
+msgstr "Plakken"
+
+#: src/components/ChartColorPicker.tsx
+msgid "Paste hex from clipboard"
+msgstr "Hex plakken vanuit klembord"
 
 #: src/pages/Status.tsx
 msgid "Patience clears in"

@@ -1014,6 +1014,10 @@ msgstr "Controls how the P&L panel computes the \"spent\" figure that feeds the 
 msgid "Cooldown clears in"
 msgstr "Cooldown clears in"
 
+#: src/components/ChartColorPicker.tsx
+msgid "Copied"
+msgstr "Copied"
+
 #: src/pages/Status.tsx
 msgid "copied bid ID"
 msgstr "copied bid ID"
@@ -1026,9 +1030,17 @@ msgstr "copied JSON"
 msgid "copied URL"
 msgstr "copied URL"
 
+#: src/components/ChartColorPicker.tsx
+msgid "Copy"
+msgstr "Copy"
+
 #: src/pages/Status.tsx
 msgid "copy bid ID"
 msgstr "copy bid ID"
+
+#: src/components/ChartColorPicker.tsx
+msgid "Copy hex to clipboard"
+msgstr "Copy hex to clipboard"
 
 #: src/components/PriceChart.tsx
 msgid "copy JSON"
@@ -2542,6 +2554,14 @@ msgstr "Password"
 #: src/pages/Setup.tsx
 msgid "passwords don't match"
 msgstr "passwords don't match"
+
+#: src/components/ChartColorPicker.tsx
+msgid "Paste"
+msgstr "Paste"
+
+#: src/components/ChartColorPicker.tsx
+msgid "Paste hex from clipboard"
+msgstr "Paste hex from clipboard"
 
 #: src/pages/Status.tsx
 msgid "Patience clears in"
