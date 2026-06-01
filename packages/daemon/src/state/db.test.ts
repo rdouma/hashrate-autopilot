@@ -129,6 +129,7 @@ describe('openDatabase - migrations', () => {
       '0101_payout_notifications.sql',
       '0102_display_format_settings.sql',
       '0103_chart_color_overrides.sql',
+      '0104_tick_metrics_synthetic.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });

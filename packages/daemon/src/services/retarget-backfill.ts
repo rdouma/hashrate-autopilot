@@ -47,9 +47,16 @@ export interface RetargetBackfillDeps {
 export async function runRetargetBackfill(deps: RetargetBackfillDeps): Promise<void> {
   const { db, poolBlocksRepo, log = () => {} } = deps;
 
+  // #241: anchor gap detection on REAL polled rows only. If a previous
+  // boot's backfill inserted a synthetic tick (potentially at a wrong
+  // timestamp from the pre-bitcoind nearest-pool-block estimate), that
+  // synthetic row must NOT be the "previous tick" candidate - it has
+  // the post-retarget difficulty already, which would falsely make the
+  // diff appear stable and short-circuit the re-correction.
   const lastTick = await db
     .selectFrom('tick_metrics')
     .select(['tick_at', 'network_difficulty'])
+    .where('synthetic', '=', 0)
     .orderBy('tick_at', 'desc')
     .limit(1)
     .executeTakeFirst();
@@ -58,6 +65,7 @@ export async function runRetargetBackfill(deps: RetargetBackfillDeps): Promise<v
   const prevTick = await db
     .selectFrom('tick_metrics')
     .select(['tick_at', 'network_difficulty'])
+    .where('synthetic', '=', 0)
     .where('tick_at', '<', lastTick.tick_at - 180_000)
     .where('network_difficulty', 'is not', null)
     .orderBy('tick_at', 'desc')
@@ -121,33 +129,45 @@ export async function runRetargetBackfill(deps: RetargetBackfillDeps): Promise<v
     return;
   }
 
-  const existing = await db
-    .selectFrom('tick_metrics')
-    .select('tick_at')
-    .where('tick_at', '>=', estimatedRetargetMs - 60_000)
-    .where('tick_at', '<=', estimatedRetargetMs + 60_000)
+  // #241: clear ANY synthetic ticks that fell inside the detected gap.
+  // A previous boot may have inserted one at a wrong timestamp (legacy
+  // nearest-pool-block estimate before bitcoind was wired). Deleting
+  // strictly inside (gapStart, gapEnd) is safe - real polled rows
+  // can't exist in the outage window by definition - and lets the
+  // current run re-insert at the now-canonical timestamp without
+  // leaving the wrong-time marker behind.
+  const cleared = await db
+    .deleteFrom('tick_metrics')
+    .where('synthetic', '=', 1)
+    .where('tick_at', '>', gapStart)
+    .where('tick_at', '<', gapEnd)
     .executeTakeFirst();
-  if (existing) {
-    log(`[retarget-backfill] tick already exists near retarget time, skipping`);
-    return;
+  if (cleared.numDeletedRows > 0n) {
+    log(`[retarget-backfill] cleared ${cleared.numDeletedRows} stale synthetic tick(s) inside gap before re-insert`);
   }
 
+  // Template the new synthetic row off the last REAL polled row before
+  // the gap (synthetic=0). Anchoring on a real row keeps copied fields
+  // (hashrate, pool stats, etc.) representative rather than inheriting
+  // values from another backfill row.
   const templateTick = await db
     .selectFrom('tick_metrics')
     .selectAll()
+    .where('synthetic', '=', 0)
     .where('tick_at', '<=', gapStart)
     .orderBy('tick_at', 'desc')
     .limit(1)
     .executeTakeFirst();
   if (!templateTick) return;
 
-  const { id: _id, ...rest } = templateTick;
+  const { id: _id, synthetic: _syn, ...rest } = templateTick;
   await db
     .insertInto('tick_metrics')
     .values({
       ...rest,
       tick_at: estimatedRetargetMs,
       network_difficulty: newDiff,
+      synthetic: 1,
     })
     .execute();
 

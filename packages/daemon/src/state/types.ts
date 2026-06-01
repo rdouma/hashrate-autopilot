@@ -448,6 +448,16 @@ export interface TickMetricsTable {
   braiins_reachable: number | null;
   run_mode: RunMode;
   action_mode: ActionMode;
+  /**
+   * #241: 1 = synthetic row inserted by a boot-time backfill service
+   * to fill an offline gap (currently runRetargetBackfill; future
+   * per-tick gap-fill). 0 = real polled row. Gap-detection queries
+   * filter `synthetic = 0` so a previous run's wrong-time synthetic
+   * doesn't poison the "previous tick" lookup and block re-correction
+   * on the next boot. Added by migration 0104; rows predating it
+   * carry the default 0.
+   */
+  synthetic: Generated<number>;
 }
 
 // ---------------------------------------------------------------------------
