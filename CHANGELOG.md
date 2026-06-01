@@ -2,6 +2,10 @@
 
 ## 2026-06-02
 
+### `[Fix]` Retarget-backfill uses bitcoind's canonical block timestamp (#241 partial)
+
+`runRetargetBackfill` previously estimated the retarget block's timestamp from the *nearest pool block in the `pool_blocks` table* plus the 600s/block average rate. That estimate depends on which pool blocks Ocean had returned to each install at backfill time, which varies between machines — producing inconsistent retarget-marker X positions across daemons looking at the same chain. Empirical case: block 951,552 was mined at `2026-05-29 10:29:46Z`, but Clarent's chart marked the retarget at `2026-05-29 10:59 UTC` (close — within 30 min) while Talisman marked it at `2026-05-30 13:11 UTC` (off by more than a day). The retarget block's actual header timestamp is canonical and the same on every machine; `runRetargetBackfill` now fetches it via bitcoind RPC (`getblockhash` → `getblockheader`, two batched calls) and uses that as the synthetic-tick `tick_at`. Falls back to the legacy nearest-pool-block estimate when bitcoind isn't wired. The broader gap-filling work (per-tick synthetic ticks across the entire offline window so pool-luck and pool-block X positions also reconstruct correctly) stays in #241 for a follow-up.
+
 ### `[Feature]` Payout-address change refreshes on-chain payout history (#240)
 
 When the operator changes `btc_payout_address` on Config, the existing `reward_events` rows belong to the old address and the `tick_metrics.paid_total_sat` values were derived from those — they're now stale. The `onConfigSaved` hook detects the change and (a) clears the `reward_events` table, (b) sets `tick_metrics.paid_total_sat = NULL` across history, then (c) immediately kicks `runHistoricalBackfill` against the new address. The backfill's existing `onRewardsChanged` callback re-runs `runPoolLuckRecompute` automatically, so the dashboard's collected-on-chain card reflects the new address within one tick. `historical_payouts_offset_sat` is operator-set and untouched — separate concern.

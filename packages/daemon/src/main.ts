@@ -540,6 +540,7 @@ async function bootOperational(
       runRetargetBackfill({
         db: handle.db,
         poolBlocksRepo,
+        ...(bitcoindClient ? { bitcoindClient } : {}),
         log: (m) => log(m),
       }),
     )
