@@ -345,6 +345,18 @@ async function bootOperational(
       ? createBitcoindClient({ url: bitcoindRpcUrl, username: bitcoindRpcUser, password: bitcoindRpcPass })
       : null;
 
+  // Live config wrapper. Defined BEFORE the payout observer (and
+  // anything else that needs a live-view of the operator's edits)
+  // so closures over cfgRefHolder.value see updates as they land,
+  // not the boot-time `cfg` snapshot. Previously the observer's
+  // getAddress / getHistoricalEnabled read from the boot const,
+  // which meant changing btc_payout_address via the dashboard
+  // didn't take effect until daemon restart - the observer kept
+  // scanning the old address and the P&L "collected (on-chain)"
+  // tile stayed stuck on the old number even though Config showed
+  // the new address (#240 follow-up).
+  const cfgRefHolder = { value: cfg };
+
   let payoutObserver: PayoutObserver | null = null;
   // Construction conditions:
   // - payout_source must be enabled
@@ -363,14 +375,24 @@ async function bootOperational(
   if (cfg.payout_source !== 'none' && cfg.btc_payout_address && (hasBitcoind || hasElectrs)) {
     payoutObserver = new PayoutObserver({
       client: bitcoindClient,
-      getAddress: () => cfg.btc_payout_address,
+      // #240 follow-up: live-read via cfgRefHolder so a dashboard-
+      // edited btc_payout_address takes effect on the observer's
+      // next scan without a daemon restart. The boot-time `cfg`
+      // capture used to snapshot the address - subsequent edits
+      // changed the DB row but the observer kept polling the old
+      // value.
+      getAddress: () => cfgRefHolder.value.btc_payout_address,
+      // electrs host/port are still read off the boot-time cfg
+      // because changing the electrs endpoint mid-run isn't a
+      // supported edit (would need a full observer rewire). Address
+      // is the operator-facing knob.
       electrsHost: cfg.payout_source === 'electrs' ? cfg.electrs_host : null,
       electrsPort: cfg.payout_source === 'electrs' ? cfg.electrs_port : null,
       log: (m) => log(m),
       db: handle.db,
       // #170: live-read the backfill toggle each cycle so flipping it
       // in the dashboard takes effect without a daemon restart.
-      getHistoricalEnabled: () => cfg.include_historical_payouts,
+      getHistoricalEnabled: () => cfgRefHolder.value.include_historical_payouts,
       // When new reward_events rows land, immediately backfill
       // tick_metrics.paid_total_sat across history so the chart's
       // lifetime-earnings line shows the correct timeline without
@@ -537,12 +559,20 @@ async function bootOperational(
   //      pool_blocks + reward_events ground truth. This is what turns
   //      the in-gap synthetics into a luck line that step-changes on
   //      each in-gap pool block instead of flat-interpolating.
+  // Each stage gets its own `.catch` so an earlier-stage error
+  // doesn't silently swallow the next stage. Previously a single
+  // shared `.catch` at the end meant: pool-blocks-backfill throws ->
+  // gap-backfill and pool-luck-recompute never run -> the chart
+  // looks identical to a daemon that didn't restart, and we ship
+  // four iterations of "fixes" thinking the code is buggy when
+  // actually it's never executing.
   void runPoolBlocksBackfill({
     oceanClient,
     poolBlocksRepo,
     db: handle.db,
     log: (m) => log(m),
   })
+    .catch((err) => log(`[pool-blocks] backfill failed: ${(err as Error).message}`))
     .then(() =>
       runGapBackfill({
         db: handle.db,
@@ -551,6 +581,7 @@ async function bootOperational(
         log: (m) => log(m),
       }),
     )
+    .catch((err) => log(`[gap-backfill] failed: ${(err as Error).message}\n${(err as Error).stack ?? ''}`))
     .then(() =>
       runPoolLuckRecompute({
         db: handle.db,
@@ -558,9 +589,7 @@ async function bootOperational(
         log: (m) => log(m),
       }),
     )
-    .catch((err) =>
-      log(`[pool-blocks] backfill/recompute failed: ${(err as Error).message}`),
-    );
+    .catch((err) => log(`[pool-luck-recompute] failed: ${(err as Error).message}`));
 
   // #230: fill NULL `network_difficulty` ticks from bitcoind block
   // headers. Pre-existing rows that predate the daemon-side
@@ -594,7 +623,6 @@ async function bootOperational(
     });
     void latestCfg;
   };
-  const cfgRefHolder = { value: cfg };
   // Forward `opts` through to the freshly-built sink so the
   // alert-manager's alert_id + action_buttons (Mark as seen / Snooze)
   // make it onto the outbound Telegram payload as reply_markup. The
@@ -900,6 +928,19 @@ async function bootOperational(
               .set({ paid_total_sat: null })
               .execute();
             if (payoutObserver) {
+              // Drop the in-memory snapshot first so the P&L
+              // "collected (on-chain)" tile shows 'computing'
+              // instead of the OLD address's total while the
+              // rescan + backfill run.
+              payoutObserver.resetSnapshot();
+              // Kick an immediate balance scan against the new
+              // address (getAddress reads cfgRefHolder live, so
+              // it'll see the just-saved new value). Don't await -
+              // backfill below is more important and they're
+              // independent.
+              void payoutObserver.scanOnce().catch((e) =>
+                log(`[payout] post-address-change scanOnce failed: ${(e as Error).message}`),
+              );
               log('[payout] kicking historical backfill against new address');
               // runHistoricalBackfill fires onRewardsChanged when any
               // rows insert, and that callback already kicks

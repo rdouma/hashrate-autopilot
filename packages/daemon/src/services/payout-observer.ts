@@ -744,6 +744,22 @@ export class PayoutObserver {
   }
 
   /**
+   * #240 follow-up: drop the in-memory snapshot. After a payout-
+   * address change we want the dashboard's "collected (on-chain)"
+   * tile to render as 'computing' (spinner) until the next scan
+   * lands - otherwise the operator sees the *old* address's total
+   * for up to one poll interval after switching addresses, which
+   * looks identical to "the address change didn't work".
+   *
+   * Pairs with calling `scanOnce()` straight after so the rescan
+   * is queued behind the reset.
+   */
+  resetSnapshot(): void {
+    this.lastSnapshot = null;
+    this.lastError = null;
+  }
+
+  /**
    * State machine for the dashboard's `collected (on-chain)` row (#97):
    * - 'computing' - observer is enabled but the first scan has not yet
    *   produced a snapshot. Either the very first scan is in flight, or
