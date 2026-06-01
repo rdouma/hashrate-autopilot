@@ -67,10 +67,21 @@ export async function runPoolLuckRecompute(deps: PoolLuckRecomputeDeps): Promise
     return;
   }
 
-  // Eligible window: ticks whose 30d window starts at or after the
-  // earliest pool_block we have. Below this, the count would be
-  // partial-by-pool_blocks-coverage rather than real-pool-find
-  // history, and we'd lower the count to a wrong value. Conservative.
+  // Eligible window for REAL polled rows (synthetic = 0): ticks
+  // whose 30d window starts at or after the earliest pool_block we
+  // have. Below this, the count would be partial-by-pool_blocks-
+  // coverage rather than real-pool-find history, and we'd lower
+  // the count to a wrong value. Conservative.
+  //
+  // For SYNTHETIC rows (gap-fill, synthetic = 1) the eligibility
+  // gate does NOT apply: their write-time pool_luck is NULL, and
+  // a partial-coverage recompute is strictly better than null.
+  // #241 root cause: a fresh-install machine (Taliesin) has
+  // pool_blocks back only LOOKBACK_FLOOR_DAYS = 30 days, so
+  // earliestEligibleTick lands ~today and the gate skipped every
+  // gap-synthetic tick - leaving them with null pool_luck_30d and
+  // the chart linearly interpolating across the gap. The
+  // synthetic-bypass below fixes that.
   const earliestEligibleTick = earliestBlock + 30 * DAY_MS;
 
   // Pre-load nearest-non-null lookup tables for the formula inputs
@@ -99,7 +110,12 @@ export async function runPoolLuckRecompute(deps: PoolLuckRecomputeDeps): Promise
 
   let totalScanned = 0;
   let totalUpdated = 0;
-  let cursorTickAt = earliestEligibleTick - 1;
+  let syntheticUpdated = 0;
+  // Start the cursor at -1 (i.e., scan from the very first tick)
+  // rather than at earliestEligibleTick - 1. The per-row WHERE
+  // below enforces the eligibility gate FOR REAL ROWS but lets
+  // synthetic rows through unconditionally.
+  let cursorTickAt = -1;
   let cumPaidSat = 0;
   let payoutPtr = 0;
 
@@ -122,8 +138,19 @@ export async function runPoolLuckRecompute(deps: PoolLuckRecomputeDeps): Promise
         'network_difficulty',
         'paid_total_sat',
         'ocean_unpaid_sat',
+        'synthetic',
       ])
       .where('tick_at', '>', cursorTickAt)
+      // Eligibility gate: real rows must be past earliestEligibleTick
+      // so a partial pool_blocks coverage doesn't lower their
+      // write-time-correct count. Synthetic rows bypass the gate -
+      // they have NULL pool_luck and a partial recompute beats null.
+      .where((eb) =>
+        eb.or([
+          eb('tick_at', '>=', earliestEligibleTick),
+          eb('synthetic', '=', 1),
+        ]),
+      )
       .orderBy('tick_at', 'asc')
       .limit(BATCH_SIZE)
       .execute();
@@ -213,12 +240,13 @@ export async function runPoolLuckRecompute(deps: PoolLuckRecomputeDeps): Promise
         .where('id', '=', row.id)
         .execute();
       totalUpdated += 1;
+      if (row.synthetic === 1) syntheticUpdated += 1;
     }
   }
   /* eslint-enable no-await-in-loop */
 
   log(
-    `pool-luck-recompute: scanned ${totalScanned}, updated ${totalUpdated} tick_metrics row(s) using pool_blocks data`,
+    `pool-luck-recompute: scanned ${totalScanned}, updated ${totalUpdated} tick_metrics row(s) (${syntheticUpdated} synthetic) using pool_blocks data`,
   );
 }
 

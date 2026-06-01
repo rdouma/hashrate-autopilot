@@ -91,16 +91,24 @@ async function seedTickMetricsBoundary(
     .execute();
 }
 
-async function seedRecentPoolBlocks(handle: DatabaseHandle): Promise<void> {
+async function seedRecentPoolBlocks(
+  handle: DatabaseHandle,
+  options: { earliestRelativeToPrevTickMs?: number } = {},
+): Promise<void> {
   const repo = new PoolBlocksRepo(handle.db);
+  // Default: 30d of pool_blocks history going back from PREV_TICK_AT,
+  // which models an established install with pool-blocks-backfill
+  // having pulled deep history. Overridable so tests can simulate a
+  // fresh install where only the last 30d of pool_blocks exists.
+  const earliestRel = options.earliestRelativeToPrevTickMs ?? -30 * DAY;
   // Spread some pool blocks: a few before the gap, some inside the gap
   // (to drive pool_luck step-changes that the chart should show), and
   // the latest one matches the screenshot ("last pool block #951,997
   // found 7h 45m ago" -> a few hours before LAST_TICK_AT).
   const blocks = [
-    // Pre-gap blocks (so 30d window goes well back)
-    { height: 940_000, timestamp_ms: PREV_TICK_AT - 30 * DAY },
-    { height: 945_000, timestamp_ms: PREV_TICK_AT - 15 * DAY },
+    // Pre-gap blocks (so 30d window goes well back).
+    { height: 940_000, timestamp_ms: PREV_TICK_AT + earliestRel },
+    { height: 945_000, timestamp_ms: PREV_TICK_AT + earliestRel / 2 },
     { height: 950_000, timestamp_ms: PREV_TICK_AT - 3 * DAY },
     { height: 951_000, timestamp_ms: PREV_TICK_AT - 1 * DAY },
     // In-gap blocks (drive luck step-changes)
@@ -252,5 +260,45 @@ describe('runGapBackfill - Taliesin reproduction (no bitcoindClient)', () => {
     }
 
     expect(detected.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('REPRO Taliesin: 30d pool_blocks coverage skips recompute on gap synthetics', async () => {
+    // Re-seed pool_blocks so the earliest block lands a TINY bit
+    // before PREV_TICK_AT - models the screenshot where Taliesin
+    // shows pool_blocks_30d=110 but the earliest block in the table
+    // is only ~30 days back (LOOKBACK_FLOOR_DAYS). With this shape:
+    //   earliestBlock ≈ PREV_TICK_AT - 1h
+    //   earliestEligibleTick = earliestBlock + 30 * DAY
+    //                        ≈ PREV_TICK_AT + 30d - 1h
+    //                        = WAY past gapEnd
+    // Every synthetic in the gap is < earliestEligibleTick, so
+    // runPoolLuckRecompute SKIPS them and they retain null
+    // pool_luck_30d. The chart sees nulls and interpolates linearly
+    // across the gap - the exact symptom in the operator's
+    // screenshots after every build.
+    await handle.db.deleteFrom('pool_blocks').execute();
+    await seedRecentPoolBlocks(handle, { earliestRelativeToPrevTickMs: -1 * HOUR });
+
+    await runGapBackfill({
+      db: handle.db,
+      poolBlocksRepo: new PoolBlocksRepo(handle.db),
+    });
+    await runPoolLuckRecompute({
+      db: handle.db,
+      poolBlocksRepo: new PoolBlocksRepo(handle.db),
+    });
+
+    const syntheticRows = await handle.db
+      .selectFrom('tick_metrics')
+      .selectAll()
+      .where('synthetic', '=', 1)
+      .execute();
+    const withLuck = syntheticRows.filter((r) => r.pool_luck_30d !== null);
+    console.log(`Taliesin-shape repro: ${syntheticRows.length} synthetics inserted, ${withLuck.length} got pool_luck_30d populated`);
+
+    // This SHOULD be > 0 after the fix. Before the fix, it's 0 (or
+    // close to it) because every synthetic's tick_at is before
+    // earliestEligibleTick = earliestBlock + 30d.
+    expect(withLuck.length).toBeGreaterThan(syntheticRows.length * 0.9);
   });
 });
