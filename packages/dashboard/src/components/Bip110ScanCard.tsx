@@ -121,22 +121,28 @@ function formatSize(bytes: number): string {
   return `${bytes} B`;
 }
 
-const POOL_COLORS = [
+/** #234: deterministic color picker for the miner-badge avatar. The
+ *  pool the operator mines on is always Ocean; the meaningful
+ *  identity is the miner who built the template, so this colors a
+ *  per-miner badge (a "M" in front of "Roughnecks", etc.). Same
+ *  hash-of-tag → index logic the PoolBadge had; only the surface
+ *  naming changed. */
+const MINER_COLORS = [
   'bg-amber-600', 'bg-emerald-600', 'bg-sky-600', 'bg-violet-600',
   'bg-rose-600', 'bg-teal-600', 'bg-orange-600', 'bg-indigo-600',
 ];
 
-function poolColor(tag: string): string {
+function minerColor(tag: string): string {
   let h = 0;
   for (let i = 0; i < tag.length; i++) h = (h * 31 + tag.charCodeAt(i)) | 0;
-  return POOL_COLORS[Math.abs(h) % POOL_COLORS.length]!;
+  return MINER_COLORS[Math.abs(h) % MINER_COLORS.length]!;
 }
 
-function PoolBadge({ tag }: { tag: string }): React.JSX.Element {
+function MinerBadge({ tag }: { tag: string }): React.JSX.Element {
   const initial = tag.replace(/^[^a-zA-Z0-9]*/, '').charAt(0).toUpperCase() || '?';
   return (
     <span className="inline-flex items-center gap-1.5 text-xs text-slate-300 truncate max-w-[180px]" title={tag}>
-      <span className={`inline-flex items-center justify-center w-5 h-5 rounded text-[10px] font-bold text-white ${poolColor(tag)}`}>
+      <span className={`inline-flex items-center justify-center w-5 h-5 rounded text-[10px] font-bold text-white ${minerColor(tag)}`}>
         {initial}
       </span>
       <span className="truncate">{tag}</span>
@@ -194,7 +200,7 @@ function SignalingBlockCard({
         <span className="text-lg font-semibold text-amber-400 font-mono">
           {formatNumber(block.height, {}, intlLocale)}
         </span>
-        {block.pool_tag && <PoolBadge tag={block.pool_tag} />}
+        {block.miner_tag && <MinerBadge tag={block.miner_tag} />}
       </div>
 
       <div className="mt-1.5 text-xs text-slate-400">
@@ -260,7 +266,7 @@ function SignalingBlockTable({
         <thead>
           <tr className="text-slate-500 text-left">
             <th className="pb-2 pr-4 font-normal">{t`height`}</th>
-            <th className="pb-2 pr-4 font-normal">{t`pool`}</th>
+            <th className="pb-2 pr-4 font-normal">{t`miner`}</th>
             <th className="pb-2 pr-4 font-normal">{t`found`}</th>
             <th className="pb-2 pr-4 font-normal text-right">{t`reward`}</th>
             <th className="pb-2 pr-4 font-normal text-right">{t`fees`}</th>
@@ -279,7 +285,7 @@ function SignalingBlockTable({
                   {formatNumber(b.height, {}, intlLocale)}
                 </td>
                 <td className="py-2 pr-4">
-                  {b.pool_tag ? <PoolBadge tag={b.pool_tag} /> : <span className="text-slate-600">-</span>}
+                  {b.miner_tag ? <MinerBadge tag={b.miner_tag} /> : <span className="text-slate-600">-</span>}
                 </td>
                 <td className="py-2 pr-4" title={formatAgeMinutes(b.time_ms)}>
                   {fmtTimestamp(b.time_ms)}

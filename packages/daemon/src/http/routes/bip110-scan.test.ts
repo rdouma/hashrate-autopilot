@@ -13,6 +13,7 @@ import {
   BIP110_FIRST_SIGNALING_BLOCK_HEIGHT,
   bucketByEpoch,
   computeScanRange,
+  extractMinerTag,
   forecastEpochEnd,
 } from './bip110-scan.js';
 
@@ -207,5 +208,49 @@ describe('forecastEpochEnd', () => {
     const endMs = startMs - 1000;
     const result = forecastEpochEnd(startMs, endMs, 2);
     expect(result).toBe(startMs + 2016 * 600_000);
+  });
+});
+
+/**
+ * #234: miner-tag extraction. The two cases below are real Ocean
+ * coinbases pulled from mempool.space's API for blocks 951929
+ * (mempool labels: Roughnecks) and 951972 (Peer to Peer Money).
+ * Before #234 the longest-printable-run heuristic mis-picked the
+ * Ocean wrapper "<OCEAN.XYZ>" for block 951929 because it was
+ * longer than "Roughnecks"; the new filter drops the wrapper and
+ * the inner tag wins.
+ */
+describe('extractMinerTag', () => {
+  it('picks the inner miner tag over the Ocean wrapper (block 951929: Roughnecks)', () => {
+    // Coinbase scriptSig segment for block 951929. Both runs
+    // present: "< OCEAN.XYZ >" (13 chars) + "Roughnecks" (10).
+    const hex =
+      '0379860e193c204f4345414e2e58595a203e0f526f7567686e65636b73000000';
+    expect(extractMinerTag(hex)).toBe('Roughnecks');
+  });
+
+  it('still picks the longer non-wrapper run when both exist (block 951972: Peer to Peer Money)', () => {
+    // Coinbase: "!< OCEAN.XYZ >" (14) + "Peer to Peer Money" (18).
+    const hex =
+      '0364860e1921213c204f4345414e2e58595a203e125065657220746f20506565722' +
+      '04d6f6e6579';
+    expect(extractMinerTag(hex)).toBe('Peer to Peer Money');
+  });
+
+  it('returns null when the coinbase has no printable run ≥3 chars', () => {
+    expect(extractMinerTag('00000000000000000000')).toBeNull();
+  });
+
+  it('falls back to the unfiltered list when the Ocean wrapper is the only run', () => {
+    // Pathological: only the Ocean wrapper, no inner tag. Render
+    // the wrapper rather than nothing.
+    const hex = '003c204f4345414e2e58595a203e00';
+    expect(extractMinerTag(hex)).toBe('< OCEAN.XYZ >');
+  });
+
+  it('non-Ocean blocks behave like the old heuristic (longest run)', () => {
+    // "Foundry USA Pool #" - a typical Foundry tag, no Ocean wrapper.
+    const hex = '00466f756e6472792055534120506f6f6c202300';
+    expect(extractMinerTag(hex)).toBe('Foundry USA Pool #');
   });
 });

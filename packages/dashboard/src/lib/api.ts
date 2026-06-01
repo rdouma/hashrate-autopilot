@@ -938,7 +938,10 @@ export interface Bip110ScanSignalingBlock {
   weight: number | null;
   subsidy_sat: number;
   total_fees_sat: number | null;
-  pool_tag: string | null;
+  /** #234: miner identity extracted from the coinbase. For Ocean
+   *  blocks this is the inner-miner tag (e.g. "Roughnecks"), NOT
+   *  the "<OCEAN.XYZ>" pool-wrapper signature. */
+  miner_tag: string | null;
 }
 
 export interface Bip110ScanDeployment {

@@ -1982,6 +1982,10 @@ msgid "Metallic clank 2"
 msgstr "Metallic clank 2"
 
 #: src/components/Bip110ScanCard.tsx
+msgid "miner"
+msgstr "miner"
+
+#: src/components/Bip110ScanCard.tsx
 msgid "Miner-activated (MASF):"
 msgstr "Miner-activated (MASF):"
 
@@ -2546,7 +2550,6 @@ msgstr "Polled"
 msgid "Polled every 5 minutes. The daemon never makes decisions based on fiat price - this is purely a display convenience. Set to \"Disabled\" if you want a sats-only dashboard."
 msgstr "Polled every 5 minutes. The daemon never makes decisions based on fiat price - this is purely a display convenience. Set to \"Disabled\" if you want a sats-only dashboard."
 
-#: src/components/Bip110ScanCard.tsx
 #: src/pages/Status.tsx
 msgid "pool"
 msgstr "pool"

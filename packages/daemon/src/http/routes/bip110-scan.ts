@@ -76,7 +76,16 @@ export interface Bip110SignalingBlock {
   readonly weight: number | null;
   readonly subsidy_sat: number;
   readonly total_fees_sat: number | null;
-  readonly pool_tag: string | null;
+  /**
+   * Miner identity extracted from the coinbase scriptSig. On Ocean
+   * (the operator's pool) this is the inner-miner tag the template
+   * author embedded - e.g. "Roughnecks" or "Peer to Peer Money" -
+   * NOT the "<OCEAN.XYZ>" pool-wrapper signature that lives next to
+   * it in the same coinbase. See #234 for the extraction rule.
+   * Renamed from `pool_tag` because the pool is always Ocean for
+   * this operator; the meaningful identity is the miner.
+   */
+  readonly miner_tag: string | null;
 }
 
 export interface Bip110Deployment {
@@ -172,19 +181,47 @@ function subsidySat(height: number): number {
   return Math.floor(50e8 / (1 << halvings));
 }
 
-function extractPoolTag(coinbaseHex: string): string | null {
+/**
+ * Ocean's DATUM coinbase carries a pool-wrapper signature ("< OCEAN.XYZ >"
+ * or "!< OCEAN.XYZ >", ~13-14 chars) alongside the inner-miner identity
+ * tag the template author embedded. When the inner tag is shorter than
+ * the wrapper (e.g. "Roughnecks" = 10 chars) the naive longest-printable-
+ * run pick returns the wrapper, which is wrong for our purposes - the
+ * pool is always Ocean, what we want to surface is the miner. This
+ * pattern matches anything containing OCEAN.XYZ regardless of
+ * surrounding punctuation. See #234.
+ */
+const OCEAN_WRAPPER_PATTERN = /OCEAN\.?XYZ/i;
+
+/**
+ * Extract the miner-identity tag from a coinbase transaction's
+ * scriptSig hex. Walks the bytes, collects every printable-ASCII run
+ * of length ≥3, filters out the Ocean pool-wrapper signature, and
+ * returns the longest remaining run. Falls back to the unfiltered
+ * pool if the filter leaves nothing (defensive - would mean the
+ * Ocean wrapper was the only printable string in the coinbase, which
+ * shouldn't happen but we'd rather render something than nothing).
+ */
+export function extractMinerTag(coinbaseHex: string): string | null {
   const bytes = Buffer.from(coinbaseHex, 'hex');
-  let best = '';
-  let run = '';
+  const runs: string[] = [];
+  let cur = '';
   for (const b of bytes) {
     if (b >= 0x20 && b <= 0x7e) {
-      run += String.fromCharCode(b);
+      cur += String.fromCharCode(b);
     } else {
-      if (run.length > best.length) best = run;
-      run = '';
+      if (cur.length >= 3) runs.push(cur);
+      cur = '';
     }
   }
-  if (run.length > best.length) best = run;
+  if (cur.length >= 3) runs.push(cur);
+  if (runs.length === 0) return null;
+  const filtered = runs.filter((r) => !OCEAN_WRAPPER_PATTERN.test(r));
+  const pool = filtered.length > 0 ? filtered : runs;
+  let best = '';
+  for (const r of pool) {
+    if (r.length > best.length) best = r;
+  }
   return best.length >= 3 ? best.trim() : null;
 }
 
@@ -534,14 +571,14 @@ export async function registerBip110ScanRoute(
         const cbTx = coinbaseMap.get(h.hash);
         const sub = subsidySat(h.height);
         let totalFeesSat: number | null = null;
-        let poolTag: string | null = null;
+        let minerTag: string | null = null;
         if (cbTx) {
           const cbOutputSat = Math.round(
             cbTx.vout.reduce((sum, o) => sum + o.value, 0) * 1e8,
           );
           totalFeesSat = Math.max(0, cbOutputSat - sub);
           const scriptSig = cbTx.vin[0]?.coinbase;
-          if (scriptSig) poolTag = extractPoolTag(scriptSig);
+          if (scriptSig) minerTag = extractMinerTag(scriptSig);
         }
         return {
           height: h.height,
@@ -554,7 +591,7 @@ export async function registerBip110ScanRoute(
           weight: block?.weight ?? null,
           subsidy_sat: sub,
           total_fees_sat: totalFeesSat,
-          pool_tag: poolTag,
+          miner_tag: minerTag,
         };
       });
 
