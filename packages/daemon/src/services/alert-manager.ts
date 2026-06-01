@@ -3,12 +3,12 @@
  *
  * Two responsibilities:
  *
- * 1. **Recording** — when an event detector observes a transition into
+ * 1. **Recording** - when an event detector observes a transition into
  *    a bad state (or out of one), it calls `recordAlert(...)`. The
  *    manager inserts the row, schedules the first delivery attempt,
  *    and (if not muted/snoozed) POSTs immediately.
  *
- * 2. **Retry loop** — `processDueRetries(nowMs)` is called once per
+ * 2. **Retry loop** - `processDueRetries(nowMs)` is called once per
  *    daemon tick. It pulls every alert whose `next_retry_at_ms` has
  *    come due and re-attempts delivery, or transitions to `gave_up`
  *    after 5 total attempts.

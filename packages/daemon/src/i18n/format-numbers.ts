@@ -42,15 +42,15 @@ export function localeTag(locale: string | null | undefined): string {
  * Inputs the dashboard produces (see NUMBER_LOCALE_PRESETS in
  * packages/dashboard/src/lib/locale.ts):
  *
- *   - 'system'      — "follow the browser default." There IS no
+ *   - 'system'      - "follow the browser default." There IS no
  *                     browser on the daemon side; resolve to en-US
  *                     (and grouping on). Operators who want
  *                     non-en-US numbers in Telegram must actively
  *                     pick a non-system value on Display & Logging.
- *   - 'en-US'       — comma thousands, period decimal.
- *   - 'nl-NL'       — period thousands, comma decimal.
- *   - 'fr-FR'       — narrow-no-break-space thousands, comma decimal.
- *   - 'no-grouping' — disable thousand separators entirely. Render
+ *   - 'en-US'       - comma thousands, period decimal.
+ *   - 'nl-NL'       - period thousands, comma decimal.
+ *   - 'fr-FR'       - narrow-no-break-space thousands, comma decimal.
+ *   - 'no-grouping' - disable thousand separators entirely. Render
  *                     via 'en-US' with useGrouping: false; the
  *                     formatting helpers honor the flag.
  *
@@ -125,7 +125,7 @@ export function formatBtc(
 
 /**
  * Locale-aware "{integer} sat" rendering. Note: the unit literal `sat`
- * is intentionally not translated — it's the same token in EN / NL / ES
+ * is intentionally not translated - it's the same token in EN / NL / ES
  * for "satoshi" in this project's vocabulary.
  */
 export function formatSat(

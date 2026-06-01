@@ -37,7 +37,7 @@ if (!root) throw new Error('root element missing');
 // #228: one-shot rename of legacy `braiins.*` localStorage keys to
 // `hashrate-autopilot.*`. Runs before the first render so any
 // component reading from localStorage in its initial state sees the
-// new keys already in place. Idempotent — re-runs are no-ops.
+// new keys already in place. Idempotent - re-runs are no-ops.
 migrateLegacyStorageKeys();
 
 function AppShell() {

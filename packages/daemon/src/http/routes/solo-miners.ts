@@ -145,7 +145,7 @@ export async function registerSoloMinersRoute(
   // tick_at with summed hashrate (GH/s), summed power (W), max
   // temperature (°C) across {temp_c, vr_temp_c}, and the active
   // device count. Default `since` (param missing or non-numeric) =
-  // now() - 24h. `since=0` is honored as "everything" — the
+  // now() - 24h. `since=0` is honored as "everything" - the
   // dashboard's "All" chart range sends 0 to mean since-the-dawn-of-time.
   app.get<{ Querystring: { since?: string } }>(
     '/api/solo-miners/series',

@@ -5,7 +5,7 @@
  *
  * Prints the raw shape of:
  *   - /v1/account/transactions  (all-time money movements)
- *   - /v1/spot/bid/current      (currently-active bids only — for
+ *   - /v1/spot/bid/current      (currently-active bids only - for
  *                                comparison)
  *
  * Reveals which fields identify "spent on hashrate" vs other movements

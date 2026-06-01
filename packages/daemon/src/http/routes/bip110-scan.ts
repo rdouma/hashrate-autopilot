@@ -38,7 +38,7 @@ import type { ConfigRepo } from '../../state/repos/config.js';
 
 const BLOCKS_PER_EPOCH = 2016;
 /**
- * Height of the first known BIP 110 signaling block — found
+ * Height of the first known BIP 110 signaling block - found
  * 2026-03-01 on the mainnet. Anchors the `range=all` scan so the
  * historical view is bounded (instead of starting at genesis and
  * scanning ~1M empty blocks).
@@ -108,7 +108,7 @@ export interface Bip110EpochBucket {
    * block of the epoch (so the operator sees the date span the
    * difficulty was in force). For the in-progress epoch that's the
    * epoch start through "as of the chain tip we scanned." Both null
-   * when no headers fell in the bucket (defensive — shouldn't happen
+   * when no headers fell in the bucket (defensive - shouldn't happen
    * on a healthy node).
    */
   readonly start_time_ms: number | null;
@@ -318,7 +318,7 @@ export function bucketByEpoch(
     slot.maxTimeSecs = slot.maxTimeSecs === null ? h.time : Math.max(slot.maxTimeSecs, h.time);
     buckets.set(epochStart, slot);
   }
-  // Seed any epoch starts that produced zero headers (defensive — a
+  // Seed any epoch starts that produced zero headers (defensive - a
   // healthy node shouldn't drop blocks but the bucket structure
   // shouldn't have holes).
   for (
@@ -427,7 +427,7 @@ export async function registerBip110ScanRoute(
 
       const client = createBitcoindClient({ url, username: user, password });
 
-      // #231 follow-up #3: range is now a two-option choice —
+      // #231 follow-up #3: range is now a two-option choice -
       // `current` (in-progress epoch) or `all` (everything since the
       // first known BIP 110 signaling block, 938,903). Anything else
       // resolves to `current` so a bad query param can't blow up

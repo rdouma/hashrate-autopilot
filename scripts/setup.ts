@@ -3,7 +3,7 @@
  *
  * Walks the operator through: installing the age key, seeding the sops
  * encryption policy, prompting for secrets + core config, and initialising
- * the SQLite database. Idempotent — refuses to overwrite an existing
+ * the SQLite database. Idempotent - refuses to overwrite an existing
  * setup without --force.
  *
  * Usage:
@@ -63,12 +63,12 @@ interface Args {
 
 function parseArgs(argv: string[]): Args {
   return {
-    // Rewrite secrets + age key + sops policy. Never touches the DB —
+    // Rewrite secrets + age key + sops policy. Never touches the DB -
     // config.upsert() on an existing DB is idempotent and preserves
     // tick_metrics / decisions / bid_events / owned_bids (all history).
     force: argv.includes('--force'),
     // Explicit opt-in for wiping data/state.db. Only use this when the
-    // DB is genuinely corrupt — it deletes ALL history (tick metrics,
+    // DB is genuinely corrupt - it deletes ALL history (tick metrics,
     // decisions, bid events, P&L inputs).
     wipeDb: argv.includes('--wipe-db'),
     printPaths: argv.includes('--print-paths'),
@@ -176,7 +176,7 @@ async function promptSecrets(): Promise<Secrets> {
   });
 
   // bitcoind RPC credentials are edited from the dashboard Config page and
-  // only matter when the operator picks `bitcoind` as the payout source —
+  // only matter when the operator picks `bitcoind` as the payout source -
   // Electrs is the default and has its own host/port fields. Not prompted
   // here to keep the first-run wizard short.
   const parsed = SecretsSchema.parse({
@@ -217,14 +217,14 @@ async function promptConfig(): Promise<AppConfig> {
     '\n  Ocean TIDES credits hashrate to the address in the worker identity.',
   );
   console.log(
-    `  Format: <btc address>.<label> — e.g. ${payout.slice(0, 10)}….rig1\n`,
+    `  Format: <btc address>.<label> - e.g. ${payout.slice(0, 10)}….rig1\n`,
   );
   const worker = await input({
     message: 'Worker identity (btc_address.label):',
     default: `${payout}.autopilot`,
     validate: (v) => {
       if (!v.includes('.')) {
-        return 'must contain a period — "<btc address>.<label>"; without it, shares are uncredited on Ocean';
+        return 'must contain a period - "<btc address>.<label>"; without it, shares are uncredited on Ocean';
       }
       return true;
     },
@@ -287,7 +287,7 @@ async function main() {
     console.log(`⚠  --wipe-db: deleting ${paths.dbFile} (ALL history will be lost)`);
     await rm(paths.dbFile);
   } else if (dbExists) {
-    console.log(`→ existing database at ${paths.dbFile} — history preserved; config will be updated in place`);
+    console.log(`→ existing database at ${paths.dbFile} - history preserved; config will be updated in place`);
   }
 
   const agePubKey = await ensureAgeKey(paths.ageKey);
@@ -312,7 +312,7 @@ async function main() {
   }
 
   console.log('\n✔ Setup complete.');
-  console.log(`  age key:     ${paths.ageKey}   (chmod 600 — back this up!)`);
+  console.log(`  age key:     ${paths.ageKey}   (chmod 600 - back this up!)`);
   console.log(`  sops policy: ${paths.sopsPolicy}`);
   console.log(`  secrets:     ${paths.secretsFile}`);
   console.log(`  database:    ${paths.dbFile}`);

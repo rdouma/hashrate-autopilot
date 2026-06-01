@@ -391,12 +391,12 @@ msgid "ASIC overheating ceiling (°F, 0 = auto per model)"
 msgstr "ASIC-oververhittingsgrens (°F, 0 = automatisch per model)"
 
 #: src/components/Bip110ScanCard.tsx
-msgid "at block {uasfHeightStr} (estimated {uasfDateStr}), BIP 110-aware nodes — Bitcoin Knots included — begin enforcing the rules regardless of miner signaling."
-msgstr "bij blok {uasfHeightStr} (geschat {uasfDateStr}) gaan BIP 110-bewuste nodes — waaronder Bitcoin Knots — de regels handhaven ongeacht miner-signalering."
+msgid "at block {uasfHeightStr} (estimated {uasfDateStr}), BIP 110-aware nodes (Bitcoin Knots included) begin enforcing the rules regardless of miner signaling."
+msgstr "bij blok {uasfHeightStr} (geschat {uasfDateStr}) gaan BIP 110-bewuste nodes (waaronder Bitcoin Knots) de regels handhaven ongeacht miner-signalering."
 
 #: src/components/Bip110ScanCard.tsx
-msgid "at block {uasfHeightStr}, BIP 110-aware nodes — Bitcoin Knots included — begin enforcing the rules regardless of miner signaling."
-msgstr "bij blok {uasfHeightStr} gaan BIP 110-bewuste nodes — waaronder Bitcoin Knots — de regels handhaven ongeacht miner-signalering."
+msgid "at block {uasfHeightStr}, BIP 110-aware nodes (Bitcoin Knots included) begin enforcing the rules regardless of miner signaling."
+msgstr "bij blok {uasfHeightStr} gaan BIP 110-bewuste nodes (waaronder Bitcoin Knots) de regels handhaven ongeacht miner-signalering."
 
 #: src/pages/Status.tsx
 msgid "At effective cap - desired fillable + overpay exceeds the ceiling."
@@ -578,8 +578,8 @@ msgid "Bids"
 msgstr "Biedingen"
 
 #: src/components/Bip110ScanCard.tsx
-msgid "BIP 110 is active — your Bitcoin node is enforcing the new consensus rules."
-msgstr "BIP 110 is actief — je Bitcoin-node handhaaft de nieuwe consensusregels."
+msgid "BIP 110 is active. Your Bitcoin node is enforcing the new consensus rules."
+msgstr "BIP 110 is actief. Je Bitcoin-node handhaaft de nieuwe consensusregels."
 
 #: src/components/Bip110ScanCard.tsx
 msgid "BIP 110 scan"

@@ -51,7 +51,7 @@ import { getAlertCopy } from '../i18n/alert-copy.js';
 // Intl.NumberFormat. We deliberately read display_number_locale (the
 // dashboard's "number format" dropdown) rather than notification_locale
 // (which is the *language* of the message body); the two are
-// independent — an operator can have English Telegram copy with Dutch
+// independent - an operator can have English Telegram copy with Dutch
 // number separators, or vice versa.
 import {
   formatBtc,
@@ -824,7 +824,7 @@ export class AlertEvaluator {
   }
 
   /**
-   * #226: `payout_initiated` — INFO Telegram alert the moment Ocean
+   * #226: `payout_initiated` - INFO Telegram alert the moment Ocean
    * debits the operator's accumulated unpaid_sat balance. The trigger
    * is a sharp one-tick drop in `state.ocean_unpaid_sat`: greater than
    * 30% of the prior tick's value AND the residual is below the
@@ -915,7 +915,7 @@ export class AlertEvaluator {
   }
 
   /**
-   * #226: `payout_confirmed` — INFO Telegram alert when the on-chain
+   * #226: `payout_confirmed` - INFO Telegram alert when the on-chain
    * scanner observes a coinbase output crediting the configured
    * payout address. Detection: walk reward_events rows with `id` >
    * `lastNotifiedRewardEventId` (and `reorged = 0`); fire one INFO

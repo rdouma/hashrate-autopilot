@@ -59,7 +59,7 @@ function formatEpochDateRange(
  * #231 follow-up #3: range is a two-option choice. `current` shows
  * the in-progress difficulty epoch (live MASF window). `all` shows
  * every difficulty epoch since the first known BIP 110 signaling
- * block (height 938,903, 2026-03-01) — a bounded ~13k-block scan
+ * block (height 938,903, 2026-03-01) - a bounded ~13k-block scan
  * that takes single-digit seconds on a healthy node.
  */
 type ScanRange = 'current' | 'all';
@@ -72,32 +72,37 @@ const MASF_THRESHOLD_PCT = 55;
 const BLOCKS_PER_EPOCH = 2016;
 const MASF_THRESHOLD_BLOCKS = Math.ceil(BLOCKS_PER_EPOCH * (MASF_THRESHOLD_PCT / 100));
 /** BIP 110 UASF flag-day block height. At this height, BIP 110-aware
- *  nodes begin enforcing the rules regardless of miner signaling.
- *  The operator-visible "estimated activation date" is computed
- *  dynamically from the average block time observed in the in-progress
- *  difficulty epoch, so the displayed date drifts with network
- *  conditions instead of citing a fixed calendar guess. */
+ *  nodes begin enforcing the rules regardless of miner signaling. */
 const UASF_HEIGHT_BIP110 = 965_664;
 
+/** Bitcoin's protocol-target block time. The chain retargets every
+ *  2016 blocks to bring the moving-window average toward this. */
+const TARGET_BLOCK_TIME_MS = 600_000;
+
 /**
- * Linear extrapolation: estimated wall-clock time at which the chain
- * will reach `targetHeight`, based on the average block time observed
- * in the in-progress difficulty epoch. Null when we can't compute it
- * (no scan data yet, target already past, or fewer than 2 blocks of
- * observation in the in-progress epoch).
+ * Estimated wall-clock time at which the chain will reach
+ * `targetHeight`, computed as `now + (target - tip) × 600s`. Matches
+ * the formula every block-time calculator on the internet uses
+ * (bennet.org's tool, the operator's own hand math at
+ * 144 blocks/day), so the displayed estimate matches what the
+ * operator can verify independently.
+ *
+ * A previous draft used the observed average block time from the
+ * in-progress difficulty epoch instead of the 600s target - more
+ * accurate over short horizons but visibly off vs every other tool
+ * over the ~95-day horizon to UASF. Operator's expectation is the
+ * target-rate baseline, so we use it.
+ *
+ * Null when the target is already past, or when we don't know the
+ * tip height (no scan yet).
  */
 function forecastBlockHeightTime(
   targetHeight: number,
   tipHeight: number | null,
-  inProgressEpoch: Bip110EpochBucket | null | undefined,
+  nowMs: number = Date.now(),
 ): number | null {
   if (tipHeight === null || tipHeight >= targetHeight) return null;
-  if (!inProgressEpoch) return null;
-  if (inProgressEpoch.start_time_ms === null || inProgressEpoch.end_time_ms === null) return null;
-  if (inProgressEpoch.scanned < 2) return null;
-  const avgMs = (inProgressEpoch.end_time_ms - inProgressEpoch.start_time_ms) / (inProgressEpoch.scanned - 1);
-  if (!Number.isFinite(avgMs) || avgMs <= 0) return null;
-  return inProgressEpoch.end_time_ms + (targetHeight - tipHeight) * avgMs;
+  return nowMs + (targetHeight - tipHeight) * TARGET_BLOCK_TIME_MS;
 }
 
 function formatMediumDate(ms: number, dateTimeLocale: string): string {
@@ -342,7 +347,7 @@ export function Bip110ScanCard(): React.JSX.Element {
   // epoch row so the operator sees its signaling blocks without an
   // extra chevron click. Keys off the response identity so a manual
   // collapse during the same scan session sticks (we don't re-fire
-  // on every re-render — only when fresh data arrives).
+  // on every re-render - only when fresh data arrives).
   useEffect(() => {
     if (!data?.epochs) return;
     const inProgress = data.epochs.find((e) => e.in_progress);
@@ -479,7 +484,6 @@ export function Bip110ScanCard(): React.JSX.Element {
                 <DeploymentStatusBadge
                   deployment={data.deployment}
                   tipHeight={data.tip_height}
-                  inProgressEpoch={data.epochs?.find((e) => e.in_progress) ?? null}
                   intlLocale={intlLocale}
                 />
               </>
@@ -525,7 +529,7 @@ function Divider(): React.JSX.Element {
  * scanned count, signaling count + percentage, and a 55%-MASF-threshold
  * indicator (percentage is green at or above 55%, slate below). The
  * current (in-progress) epoch is tagged so the operator can see at a
- * glance which row is the live one — its percentage is partial and
+ * glance which row is the live one - its percentage is partial and
  * may still climb.
  *
  * Follow-up: rows with at least one signaling block can be expanded
@@ -554,7 +558,7 @@ function EpochBreakdown({
   expanded: ReadonlySet<number>;
   setExpanded: React.Dispatch<React.SetStateAction<ReadonlySet<number>>>;
 }): React.JSX.Element {
-  // Latest-first ordering — the in-progress epoch sits at the top, which is
+  // Latest-first ordering - the in-progress epoch sits at the top, which is
   // what the operator is usually checking on.
   const ordered = [...epochs].sort((a, b) => b.start_height - a.start_height);
   const dateTimeLocale = useDateTimeLocale();
@@ -818,18 +822,16 @@ function MasfProgress({
  * carried was already off (blocks are coming faster than 600s on
  * average), so the dynamic forecast replaces the calendar fact too.
  *
- * Wording: never the C-word in user-visible text — see the
+ * Wording: never the C-word in user-visible text - see the
  * never-say-bitcoin-core-in-ui memory.
  */
 function DeploymentStatusBadge({
   deployment,
   tipHeight,
-  inProgressEpoch,
   intlLocale,
 }: {
   deployment: Bip110ScanDeployment;
   tipHeight: number | null;
-  inProgressEpoch: Bip110EpochBucket | null;
   intlLocale: string | undefined;
 }): React.JSX.Element {
   const dateTimeLocale = useDateTimeLocale();
@@ -837,7 +839,7 @@ function DeploymentStatusBadge({
     deployment.status === 'locked_in' ? t`locked in`
     : deployment.status === 'active' ? t`active`
     : t`signaling`;
-  const uasfForecastMs = forecastBlockHeightTime(UASF_HEIGHT_BIP110, tipHeight, inProgressEpoch);
+  const uasfForecastMs = forecastBlockHeightTime(UASF_HEIGHT_BIP110, tipHeight);
   const uasfHeightStr = formatNumber(UASF_HEIGHT_BIP110, {}, intlLocale);
   const uasfDateStr = uasfForecastMs !== null
     ? formatMediumDate(uasfForecastMs, dateTimeLocale)
@@ -856,7 +858,7 @@ function DeploymentStatusBadge({
       return (
         <p className="text-slate-300 leading-relaxed max-w-xs">
           <Trans>
-            BIP 110 is active — your Bitcoin node is enforcing the new consensus rules.
+            BIP 110 is active. Your Bitcoin node is enforcing the new consensus rules.
           </Trans>
         </p>
       );
@@ -883,11 +885,11 @@ function DeploymentStatusBadge({
           </span>{' '}
           {uasfDateStr !== null ? (
             <Trans>
-              at block {uasfHeightStr} (estimated {uasfDateStr}), BIP 110-aware nodes — Bitcoin Knots included — begin enforcing the rules regardless of miner signaling.
+              at block {uasfHeightStr} (estimated {uasfDateStr}), BIP 110-aware nodes (Bitcoin Knots included) begin enforcing the rules regardless of miner signaling.
             </Trans>
           ) : (
             <Trans>
-              at block {uasfHeightStr}, BIP 110-aware nodes — Bitcoin Knots included — begin enforcing the rules regardless of miner signaling.
+              at block {uasfHeightStr}, BIP 110-aware nodes (Bitcoin Knots included) begin enforcing the rules regardless of miner signaling.
             </Trans>
           )}
         </p>

@@ -169,7 +169,7 @@ export function inferRetargetBlockHeight(
  * of the prior epoch. A fresh install (or any adjustment older than
  * our 60-day server-side pool_blocks cutoff) won't have a block at
  * or before `epochStart`, which means the count is artificially
- * low — showing "5 blocks this epoch" right after a fresh install
+ * low - showing "5 blocks this epoch" right after a fresh install
  * would mislead the operator into thinking Ocean had a horrible
  * run when actually we just don't have the data yet. The coverage
  * check requires at least one block whose height is ≤ `epochStart`;
@@ -2025,7 +2025,7 @@ export function RetargetTooltip({
     : null;
   const avgBlockText = avgBlockSec !== null
     ? `${Math.floor(avgBlockSec / 60)}m ${Math.round(avgBlockSec % 60)}s`
-    : '—';
+    : '-';
 
   // #229: network hashrate from difficulty. `difficulty × 2^32 / 600`
   // gives H/s. Bitcoin's network is in the high-hundreds-of-EH range
@@ -2042,7 +2042,7 @@ export function RetargetTooltip({
 
   // #229: pool blocks Ocean found in the prior epoch. Hidden when
   // null (no nearby pool block available to derive the epoch range)
-  // or when the count is zero (Ocean had a no-luck epoch — surface
+  // or when the count is zero (Ocean had a no-luck epoch - surface
   // it as a gap rather than misleadingly imply we know the count
   // is exactly zero; in practice this is near-impossible).
   const poolBlocksText = event.pool_blocks_prior_epoch !== null

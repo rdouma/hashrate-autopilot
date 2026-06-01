@@ -1,6 +1,6 @@
 /**
  * #230: boot-time backfill of NULL tick_metrics.network_difficulty
- * from bitcoind. Pure-mocking unit tests — the better-sqlite3 ABI
+ * from bitcoind. Pure-mocking unit tests - the better-sqlite3 ABI
  * mismatch on local Node 25 means real DB tests would skip anyway.
  *
  * Cases pinned:

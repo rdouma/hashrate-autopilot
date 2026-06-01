@@ -1,5 +1,5 @@
 /**
- * Datum Gateway probe — discovers which API endpoints your local
+ * Datum Gateway probe - discovers which API endpoints your local
  * Datum Gateway exposes and what data they return.
  *
  * Run from the same LAN as your Datum box:
@@ -41,13 +41,13 @@ async function tryEndpoint(path: string, label: string): Promise<string | null> 
 async function main() {
   console.log(`Probing Datum Gateway at ${BASE}\n`);
 
-  // 1. Umbrel-API — the cleanest source if compiled in.
+  // 1. Umbrel-API - the cleanest source if compiled in.
   const umbrel = await tryEndpoint('/umbrel-api', 'Umbrel API (JSON, conditional)');
 
-  // 2. Homepage — always present, template-substituted HTML with hashrate.
+  // 2. Homepage - always present, template-substituted HTML with hashrate.
   const home = await tryEndpoint('/', 'Homepage (HTML dashboard)');
 
-  // 3. Clients page — per-worker table, may require admin auth.
+  // 3. Clients page - per-worker table, may require admin auth.
   await tryEndpoint('/clients', 'Clients (per-worker, may need auth)');
 
   console.log('\n=== Summary ===');
@@ -73,7 +73,7 @@ async function main() {
       console.log('? Homepage reachable but no hashrate pattern found');
     }
   } else {
-    console.log('✗ Homepage not reachable — Datum API may be disabled in your config');
+    console.log('✗ Homepage not reachable - Datum API may be disabled in your config');
     console.log('  Check datum_gateway_config.json → api.listen_port (default 7152)');
   }
 }

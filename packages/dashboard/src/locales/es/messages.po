@@ -391,12 +391,12 @@ msgid "ASIC overheating ceiling (°F, 0 = auto per model)"
 msgstr "Techo de sobrecalentamiento del ASIC (°F, 0 = automático por modelo)"
 
 #: src/components/Bip110ScanCard.tsx
-msgid "at block {uasfHeightStr} (estimated {uasfDateStr}), BIP 110-aware nodes — Bitcoin Knots included — begin enforcing the rules regardless of miner signaling."
-msgstr "en el bloque {uasfHeightStr} (estimado {uasfDateStr}), los nodos compatibles con BIP 110 — incluido Bitcoin Knots — comienzan a aplicar las reglas independientemente de la señalización de los mineros."
+msgid "at block {uasfHeightStr} (estimated {uasfDateStr}), BIP 110-aware nodes (Bitcoin Knots included) begin enforcing the rules regardless of miner signaling."
+msgstr "en el bloque {uasfHeightStr} (estimado {uasfDateStr}), los nodos compatibles con BIP 110 (incluido Bitcoin Knots) comienzan a aplicar las reglas independientemente de la señalización de los mineros."
 
 #: src/components/Bip110ScanCard.tsx
-msgid "at block {uasfHeightStr}, BIP 110-aware nodes — Bitcoin Knots included — begin enforcing the rules regardless of miner signaling."
-msgstr "en el bloque {uasfHeightStr}, los nodos compatibles con BIP 110 — incluido Bitcoin Knots — comienzan a aplicar las reglas independientemente de la señalización de los mineros."
+msgid "at block {uasfHeightStr}, BIP 110-aware nodes (Bitcoin Knots included) begin enforcing the rules regardless of miner signaling."
+msgstr "en el bloque {uasfHeightStr}, los nodos compatibles con BIP 110 (incluido Bitcoin Knots) comienzan a aplicar las reglas independientemente de la señalización de los mineros."
 
 #: src/pages/Status.tsx
 msgid "At effective cap - desired fillable + overpay exceeds the ceiling."
@@ -578,8 +578,8 @@ msgid "Bids"
 msgstr "Ofertas"
 
 #: src/components/Bip110ScanCard.tsx
-msgid "BIP 110 is active — your Bitcoin node is enforcing the new consensus rules."
-msgstr "BIP 110 está activo — tu nodo Bitcoin está aplicando las nuevas reglas de consenso."
+msgid "BIP 110 is active. Your Bitcoin node is enforcing the new consensus rules."
+msgstr "BIP 110 está activo. Tu nodo Bitcoin está aplicando las nuevas reglas de consenso."
 
 #: src/components/Bip110ScanCard.tsx
 msgid "BIP 110 scan"

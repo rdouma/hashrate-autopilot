@@ -157,7 +157,7 @@ function buildPriceSegments(
   bid: OwnedBidRow,
   bidEndAt: number,
 ): PriceSegment[] {
-  // Fast path: no events at all — fall back to flat `owned_bids.price_sat`
+  // Fast path: no events at all - fall back to flat `owned_bids.price_sat`
   // for the full [created_at, bidEndAt] range. Less accurate (misses edits
   // that happened without a bid_events row being inserted, which should be
   // vanishingly rare) but means we still score the bid.
@@ -268,7 +268,7 @@ function analyzeBid(
 
   // For terminal bids, lifetime ends at the last CANCEL event if any,
   // else the latest tick we have. For still-active bids, we cap at
-  // the latest tick — consumed counter tracks up to (approximately) the
+  // the latest tick - consumed counter tracks up to (approximately) the
   // last observe cycle.
   const events = loadBidEvents(raw, bid.braiins_order_id);
   const cancelEvent = [...events].reverse().find((e) => e.kind === 'CANCEL_BID');
@@ -344,12 +344,12 @@ function median(xs: readonly number[]): number {
 }
 
 function fmtInt(n: number): string {
-  if (!Number.isFinite(n)) return '—';
+  if (!Number.isFinite(n)) return '-';
   return Math.round(n).toLocaleString('en-US');
 }
 
 function fmtNum(n: number, d = 2): string {
-  if (!Number.isFinite(n)) return '—';
+  if (!Number.isFinite(n)) return '-';
   return n.toFixed(d);
 }
 
@@ -410,14 +410,14 @@ async function main(): Promise<void> {
     const bids = loadOwnedBids(raw);
     const latestTick = latestTickAt(raw);
     if (latestTick === null) {
-      console.log('\nNo tick_metrics rows at all — daemon never ran. Nothing to score.');
+      console.log('\nNo tick_metrics rows at all - daemon never ran. Nothing to score.');
       return;
     }
 
     const reports: BidReport[] = bids.map((b) => analyzeBid(raw, b, latestTick));
 
     // Anomalously low ratios (< 0.1) almost always mean the bid wasn't
-    // actually the autopilot's primary for most of [created_at, end] —
+    // actually the autopilot's primary for most of [created_at, end] -
     // tick_metrics delivery rows were shared with another overlapping
     // owned bid that actually did the work. Flagging these out of the
     // aggregate summary; they're shown in the table with a note.
@@ -435,13 +435,13 @@ async function main(): Promise<void> {
         return false;
       }
       if (r.actual_over_expected_ratio < ANOMALY_FLOOR) {
-        r.note = `ratio < ${ANOMALY_FLOOR} — likely not primary during claimed lifetime (overlapping owned bid)`;
+        r.note = `ratio < ${ANOMALY_FLOOR} - likely not primary during claimed lifetime (overlapping owned bid)`;
         return false;
       }
       return true;
     });
 
-    // Global ratio — immune to per-bid overlap artifacts. Sum of all
+    // Global ratio - immune to per-bid overlap artifacts. Sum of all
     // autopilot-observed actual consumption vs sum of tick_metrics'
     // modeled spend (already computed at pay-your-bid in the daemon).
     const globalActual = countRows(
@@ -466,7 +466,7 @@ async function main(): Promise<void> {
       const state = r.terminal ? 'terminal' : 'active  ';
       if (r.note || !Number.isFinite(r.actual_over_expected_ratio)) {
         console.log(
-          `${r.id.slice(0, 16).padEnd(16)} | ${state} | ${fmtNum(r.lifetime_h, 1).padStart(7)} |      — |       — | ${fmtInt(r.consumed_sat).padStart(12)} |              — |            — | (${r.note ?? 'no expected spend'})`,
+          `${r.id.slice(0, 16).padEnd(16)} | ${state} | ${fmtNum(r.lifetime_h, 1).padStart(7)} |      - |       - | ${fmtInt(r.consumed_sat).padStart(12)} |              - |            - | (${r.note ?? 'no expected spend'})`,
         );
         continue;
       }
@@ -513,7 +513,7 @@ async function main(): Promise<void> {
       console.log('=================================================================');
       console.log(' VERDICT: pay-your-bid. Our daemon model is correct.');
       console.log(' actual_consumed ≈ bid_price × delivered_ph × time');
-      console.log(' Lowering bids matters — every sat of bid reduction = sat saved.');
+      console.log(' Lowering bids matters - every sat of bid reduction = sat saved.');
       console.log('=================================================================');
     } else if (med < 0.98) {
       const discountPct = (1 - med) * 100;
@@ -521,7 +521,7 @@ async function main(): Promise<void> {
       console.log(
         ` VERDICT: pay-at-ask / classic CLOB. Median discount vs bid: ${fmtNum(discountPct, 1)}%`,
       );
-      console.log(' Our daemon OVER-states spend. Lowering bids has little cost impact —');
+      console.log(' Our daemon OVER-states spend. Lowering bids has little cost impact -');
       console.log(' they mainly act as a ceiling on acceptable ask prices.');
       console.log('=====================================================================');
     } else {

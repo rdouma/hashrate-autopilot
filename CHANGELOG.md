@@ -2,6 +2,10 @@
 
 ## 2026-06-01
 
+### `[Fix]` BIP 110 UASF forecast uses 600s target rate, drop em dashes project-wide (#233 follow-up #3)
+
+Two corrections to the BIP 110 tooltip plus a project-wide cleanup. **UASF forecast**: the previous draft used the observed average block time from the in-progress epoch to project the UASF activation date, which read three days later than the standard 600s-per-block calculation that every block-time calculator (and the operator's own hand math at 144 blocks/day) uses. Switched to `now + (target - tip) × 600s` so the displayed estimate matches what the operator can verify independently. **Em dashes**: swept the source tree for em dashes (—) and replaced with ASCII hyphens per the no-em-dashes rule. The three new BIP 110 tooltip strings carried em dashes; 21 more files had them in code comments and JSDoc. 76 occurrences removed across 24 files. Locale .po catalogs re-extracted, three new translations added for NL and ES.
+
 ### `[UI]` BIP 110 deployment tooltip explains both activation paths (#233 follow-up #2)
 
 The SIGNALING-state tooltip now names both BIP 110 activation paths and shows the UASF flag-day block (965,664) with a dynamically forecasted date from the average block time observed in the in-progress epoch. The previous one-paragraph "Your Bitcoin node is in the BIP 110 signaling window..." was read as time-related and didn't mention the user-activated path at all. New copy: "Your Bitcoin node supports BIP 110, currently in its activation window. Miner-activated (MASF): 55% threshold in any epoch locks in early. User-activated (UASF): at block 965,664 (estimated {date}), BIP 110-aware nodes — Bitcoin Knots included — enforce the rules regardless." The forecasted UASF date drifts with network conditions (blocks have been coming faster than 600s on average — earlier September-2026 calendar reference was already off). LOCKED_IN and ACTIVE tooltips unchanged. en + nl + es translations updated for six new strings.

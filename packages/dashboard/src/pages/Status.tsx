@@ -317,7 +317,7 @@ export function Status() {
    *                      previous `?? 24h` fallback truncated the series
    *                      to a trailing 24h window at the widest preset.
    *   - other preset  → since = now - presetWindow.
-   *   - custom (pan)  → since = vp.since_ms — line up exactly with the
+   *   - custom (pan)  → since = vp.since_ms - line up exactly with the
    *                      visible viewport. The previous formula
    *                      (`now - (until - since)`) anchored to "now"
    *                      instead of "since", so a panned viewport over
@@ -1828,7 +1828,7 @@ function OverpayMiniCard({
 }) {
   const formatted = value !== null
     ? denomination.formatSatPerPhDay(Math.round(value), intlLocale)
-    : '—';
+    : '-';
   const split = splitUnit(formatted);
   const color = value !== null && value < 0 ? 'text-emerald-300' : 'text-slate-100';
   return (

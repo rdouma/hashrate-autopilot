@@ -628,7 +628,7 @@ export const APP_CONFIG_DEFAULTS: Omit<
   notification_disabled_event_classes: [],
   notify_on_pool_block_credit: false,
   notify_on_braiins_deposit: false,
-  // #226: payout lifecycle Telegram alerts — opt-in, default off.
+  // #226: payout lifecycle Telegram alerts - opt-in, default off.
   notify_on_payout_initiated: false,
   notify_on_payout_confirmed: false,
   notification_locale: 'en',

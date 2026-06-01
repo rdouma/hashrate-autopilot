@@ -68,7 +68,7 @@ interface Sample {
  * alert path uses. Previously the synthetic values were hardcoded
  * English literals (`'948,512'`, `'1,062,144'`, `'~40,635 sat'`),
  * which meant an operator with Display & Logging set to 1.234,56
- * still saw comma-thousand previews — making "test notification"
+ * still saw comma-thousand previews - making "test notification"
  * useless as a check that the locale plumbing was working. With this
  * change the preview matches the real-alert formatting exactly.
  */

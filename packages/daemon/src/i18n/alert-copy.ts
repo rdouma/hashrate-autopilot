@@ -119,7 +119,7 @@ export interface AlertCopy {
   // transaction will land, you'll get a second message.
   //
   // Tx id is intentionally omitted from the confirmed body (privacy
-  // posture — the operator's payout-tx history is sensitive and
+  // posture - the operator's payout-tx history is sensitive and
   // shouldn't broadcast through Telegram by default).
   payout_initiated_title(args: { payout_btc: string }): string;
   payout_initiated_body(args: {

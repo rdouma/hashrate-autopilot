@@ -60,7 +60,7 @@ async function main() {
     (it) => it.bid.status === 'BID_STATUS_ACTIVE' && it.bid.id,
   );
   if (!target) {
-    console.error('\nNo ACTIVE bid found — cannot test. Place a bid and retry.');
+    console.error('\nNo ACTIVE bid found - cannot test. Place a bid and retry.');
     process.exit(1);
   }
 

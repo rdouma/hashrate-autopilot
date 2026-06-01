@@ -6,7 +6,7 @@
  * browser-persistence keys inherited the brand prefix. After the
  * project's market-agnostic repositioning (Braiins is one integrated
  * marketplace, not the project itself), the prefix became misleading
- * — DevTools, exported settings, and any browser-side tooling all
+ * - DevTools, exported settings, and any browser-side tooling all
  * surface it. The actual daemon-side config field names (e.g.
  * `display_number_locale`, `notify_on_*`) are already correctly
  * marketplace-agnostic; only the dashboard's browser cache carried

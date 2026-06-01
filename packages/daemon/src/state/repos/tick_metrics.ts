@@ -728,7 +728,7 @@ export class TickMetricsRepo {
   /**
    * #230: write `difficulty` to every row in `[fromTickAtMs, toTickAtMs)`
    * whose `network_difficulty` is currently NULL. The `IS NULL` guard
-   * is load-bearing — backfill never overwrites a live observation,
+   * is load-bearing - backfill never overwrites a live observation,
    * only fills gaps. Returns the number of rows updated.
    */
   async updateDifficultyForNullRange(

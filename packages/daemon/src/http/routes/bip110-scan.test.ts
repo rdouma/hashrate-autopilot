@@ -2,7 +2,7 @@
  * #231: range-by-epoch helpers for the BIP 110 scanner.
  *
  * Bucketing and range alignment are the load-bearing bits of the
- * epoch redesign — they're what guarantee the per-bucket percentage
+ * epoch redesign - they're what guarantee the per-bucket percentage
  * is directly comparable to the 55% MASF threshold. Test them
  * in isolation; the full route is integration-tested elsewhere.
  */
@@ -31,7 +31,7 @@ describe('computeScanRange', () => {
     const expectedStart = Math.floor(BIP110_FIRST_SIGNALING_BLOCK_HEIGHT / EPOCH) * EPOCH;
     expect(r.startHeight).toBe(expectedStart);
     expect(r.startHeight % EPOCH).toBe(0);
-    // currentEpochStart unaffected by the range — always the floor of tip.
+    // currentEpochStart unaffected by the range - always the floor of tip.
     expect(r.currentEpochStart).toBe(Math.floor(951_700 / EPOCH) * EPOCH);
   });
 
@@ -41,7 +41,7 @@ describe('computeScanRange', () => {
     const epochsCovered = (r.currentEpochStart - r.startHeight) / EPOCH + 1;
     // ~6-7 epochs from BIP110_FIRST_SIGNALING_BLOCK_HEIGHT (938_903)
     // through current as of the spec date. The exact count depends
-    // on tip — just confirm we're in the right order of magnitude.
+    // on tip - just confirm we're in the right order of magnitude.
     expect(epochsCovered).toBeGreaterThanOrEqual(5);
     expect(epochsCovered).toBeLessThanOrEqual(20);
   });
@@ -106,13 +106,13 @@ describe('bucketByEpoch', () => {
     const tip = 5 * EPOCH + 100;
     const currentEpochStart = 5 * EPOCH;
     const headers = [
-      // Epoch 4 — three headers with deliberately non-monotone times
+      // Epoch 4 - three headers with deliberately non-monotone times
       // (block time isn't strictly monotonic in Bitcoin; min/max
       // tracking has to handle that).
       sig(4 * EPOCH, BASE + 100),
       nosig(4 * EPOCH + 1, BASE + 50),
       sig(4 * EPOCH + 2, BASE + 200),
-      // Epoch 5 — one header
+      // Epoch 5 - one header
       nosig(5 * EPOCH, BASE + 500),
     ];
     const buckets = bucketByEpoch(headers, start, currentEpochStart, tip);
@@ -122,7 +122,7 @@ describe('bucketByEpoch', () => {
     expect(buckets[1]!.end_time_ms).toBe((BASE + 500) * 1000);
   });
 
-  it('seeds empty buckets when no header lands in an epoch — timestamps are null', () => {
+  it('seeds empty buckets when no header lands in an epoch - timestamps are null', () => {
     const start = 3 * EPOCH;
     const tip = 5 * EPOCH + 50;
     const currentEpochStart = 5 * EPOCH;
@@ -202,7 +202,7 @@ describe('forecastEpochEnd', () => {
 
   it('degrades to target-time fallback when computed average is non-positive (clock skew)', () => {
     const startMs = 1_000_000_000_000;
-    // end < start across two blocks — defensive against header
+    // end < start across two blocks - defensive against header
     // time non-monotonicity / clock skew.
     const endMs = startMs - 1000;
     const result = forecastEpochEnd(startMs, endMs, 2);

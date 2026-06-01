@@ -1313,7 +1313,7 @@ function SectionCard({
  *
  * Greying uses `opacity-50 pointer-events-none` on the wrapper so
  * the inputs visibly read as disabled and clicks/keys can't reach
- * them — the existing `Field` component doesn't take a disabled
+ * them - the existing `Field` component doesn't take a disabled
  * prop, and adding one would touch every field type. The wrapper
  * approach is one line and reverts cleanly when the operator
  * toggles back on.
@@ -2811,7 +2811,7 @@ type Tile = {
    * Source of truth: each detector's `severity:` argument in
    * `packages/daemon/src/services/alert-evaluator.ts`. The
    * mapping is static (assigned at code time, not configurable per-
-   * install), so a const lookup is enough — no API call needed.
+   * install), so a const lookup is enough - no API call needed.
    */
   severity: AlertSeverity;
 };
@@ -4716,7 +4716,7 @@ function DdnsSection({
             <Trans>Daemon's public IP:</Trans>
           </span>
           <span className="text-slate-100">
-            {r?.daemon_public_ip ?? <span className="text-slate-500">—</span>}
+            {r?.daemon_public_ip ?? <span className="text-slate-500">-</span>}
             {r?.daemon_public_ip_checked_at && (
               <span className="text-slate-500 ml-2">
                 <Trans>(checked {formatAge(r.daemon_public_ip_checked_at)})</Trans>
@@ -4732,7 +4732,7 @@ function DdnsSection({
             <Trans>Pool URL hostname:</Trans>
           </span>
           <span className="text-slate-100">
-            {r?.pool_url_hostname ?? <span className="text-slate-500">—</span>}
+            {r?.pool_url_hostname ?? <span className="text-slate-500">-</span>}
           </span>
         </div>
         <div className="flex flex-wrap gap-x-4">
@@ -4740,7 +4740,7 @@ function DdnsSection({
             <Trans>Resolves to:</Trans>
           </span>
           <span className="text-slate-100">
-            {r?.pool_url_resolves_to ?? <span className="text-slate-500">—</span>}
+            {r?.pool_url_resolves_to ?? <span className="text-slate-500">-</span>}
             {r?.pool_url_resolve_error && (
               <span className="text-red-400 ml-2">({r.pool_url_resolve_error})</span>
             )}
@@ -4821,7 +4821,7 @@ function DdnsSection({
                   <Trans>Last successful push:</Trans>
                 </span>
                 <span className="text-slate-100">
-                  {r?.ddns.last_pushed_ip ?? <span className="text-slate-500">—</span>}
+                  {r?.ddns.last_pushed_ip ?? <span className="text-slate-500">-</span>}
                   {r?.ddns.last_pushed_at != null && (
                     <span className="text-slate-500 ml-2">
                       {/* formatAge expects an absolute ms-epoch

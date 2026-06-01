@@ -7,10 +7,10 @@
  * #147 split a single conflated "number & date format" dropdown into
  * two independent controls:
  *
- *   - `numberLocale` (Intl locale string) — drives `Intl.NumberFormat`
+ *   - `numberLocale` (Intl locale string) - drives `Intl.NumberFormat`
  *     (thousand / decimal separators only). Persisted to localStorage
  *     as `hashrate-autopilot.numberLocale`.
- *   - `dateLayout` (discrete enum) — drives date/time *layout* (order,
+ *   - `dateLayout` (discrete enum) - drives date/time *layout* (order,
  *     separators, 12h vs 24h). Persisted to localStorage as
  *     `hashrate-autopilot.dateLayout`. Month-name *language* is always whichever
  *     UI language the operator has picked (via `useDateTimeLocale`).
@@ -262,7 +262,7 @@ export function useLocaleState(): LocaleContextValue {
   //   2. Each setter PATCHes daemon config in addition to setting
   //      local state, so subsequent changes flow through.
   //
-  // Fire-and-forget on all PATCHes — if the network is down or the
+  // Fire-and-forget on all PATCHes - if the network is down or the
   // user is logged out, local state and localStorage are still
   // correct for this session. The next successful boot reconciles.
   const syncedRef = useRef(false);

@@ -12,7 +12,7 @@
  * the gap on boot and fills what it can.
  *
  * Idempotent: second boot finds zero (or fewer) NULL ticks and either
- * skips or backfills only the remainder. **Never overwrites** —
+ * skips or backfills only the remainder. **Never overwrites** -
  * `updateDifficultyForNullRange()` has an `IS NULL` guard on every
  * write so a live observation that landed after the backfill is
  * never clobbered.
@@ -62,7 +62,7 @@ export async function runNetworkDifficultyBackfill(
     return;
   }
 
-  // 2. Tip info from bitcoind. This is the first network call —
+  // 2. Tip info from bitcoind. This is the first network call -
   // failures here are how we detect "bitcoind not reachable" and
   // bail silently.
   let tipHeight: number;
