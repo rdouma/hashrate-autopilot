@@ -2,6 +2,10 @@
 
 ## 2026-06-01
 
+### `[Feature]` Chart-color picker on Display & Logging (#238 step 3)
+
+Third commit of the chart-color overrides feature; the operator-facing UI lands. New `ChartColorPicker` component renders a swatch button + click-to-open popover (`<details>` element with click-outside dismiss) carrying the 12 curated preset swatches, a native color input for custom picks, and a "Reset to default" link. New `ChartColorsSection` on the Display & Logging tab groups the 18 series by chart (Hashrate / Price / Bid-event markers). Each row: label + picker. Header has a "Reset all to defaults" link that wipes the override JSON back to `'{}'`. Picks update `draft.chart_color_overrides` via the standard onChange so the existing Save button at the top commits to the daemon and the chart re-renders on the next refetch. en + nl + es translations for all 21 new strings. Config search index extended with both per-row labels and intent aliases ("right axis color", "purple", "palette", "theme") so the search box still works as primary navigation.
+
 ### `[Infra]` Wire chart color overrides through Hashrate + Price charts (#238 step 2)
 
 `HashrateChart` and `PriceChart` now accept a `chartColorOverrides` prop (the JSON string from `config.chart_color_overrides`). Each component parses it via `parseOverrides`, then resolves all named series colors with `getChartColor` and shadows the module-scope `COLOR_*` defaults so the rest of the component body keeps using the same identifier names — minimal-touch refactor. The 8 right-axis `'#c084fc'` literals on HashrateChart and the 10 on PriceChart now read from `COLOR_RIGHT_AXIS` (per-chart slot). `Status.tsx` passes `chart_color_overrides` from the config response into both charts. With no overrides set every color is unchanged from before; populating the JSON object on the daemon side now repaints the charts. UI for actually editing the overrides ships in step 3.

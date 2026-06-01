@@ -5,9 +5,17 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
+import { ChartColorPicker } from '../components/ChartColorPicker';
 import { NumberField } from '../components/NumberField';
 import { SatSymbol } from '../components/SatSymbol';
 import { StaleUrlBanner } from '../components/StaleUrlBanner';
+import {
+  CHART_COLOR_DEFAULTS,
+  type ChartColorKey,
+  getChartColor,
+  parseOverrides,
+  serializeOverrides,
+} from '../lib/chartColors';
 import {
   api,
   UnauthorizedError,
@@ -781,7 +789,7 @@ const TAB_SECTIONS: Record<TabId, readonly string[]> = {
   strategy: ['hashrate-targets', 'cheap-mode', 'pricing', 'fee-protection', 'budget', 'daemon-startup'],
   pool: ['pool-destination', 'ddns', 'payout-source', 'profit-and-loss', 'btc-price-oracle'],
   notifications: ['notifications', 'block-found-sound'],
-  display: ['display-settings', 'solo-miners', 'block-explorer', 'chart-smoothing', 'chart-markers', 'log-retention', 'debug-api'],
+  display: ['display-settings', 'chart-colors', 'solo-miners', 'block-explorer', 'chart-smoothing', 'chart-markers', 'log-retention', 'debug-api'],
 };
 
 function isTabId(s: string | null): s is TabId {
@@ -856,6 +864,37 @@ function ConfigTabsAndContent({
         'Fahrenheit',
         '°C',
         '°F',
+      ],
+    },
+    // #238: per-series chart color overrides. Aliased with the
+    // hashrate / price / event series names so an operator searching
+    // for "max bid color" or "right axis purple" lands here.
+    'chart-colors': {
+      title: t`Chart colors`,
+      labels: [
+        t`delivered (Braiins)`,
+        t`received (Datum)`,
+        t`received (Ocean)`,
+        t`target`,
+        t`floor`,
+        t`our pool blocks`,
+        t`other pool blocks`,
+        t`Hashrate right-axis line`,
+        t`our bid`,
+        t`fillable`,
+        t`hashprice`,
+        t`max bid`,
+        t`unpaid (sat)`,
+        t`Price right-axis line`,
+        t`create event marker`,
+        t`edit-price event marker`,
+        t`edit-speed event marker`,
+        t`cancel event marker`,
+        // Generic aliases — operators search by intent, not by series key.
+        'right axis color',
+        'purple',
+        'palette',
+        'theme',
       ],
     },
     // #154 follow-up: block-found-sound's title is indexed via
@@ -984,6 +1023,9 @@ function ConfigTabsAndContent({
     }
     if (sid === 'display-settings') {
       return wrapHighlight(sid, <DisplaySettingsSection />);
+    }
+    if (sid === 'chart-colors') {
+      return wrapHighlight(sid, <ChartColorsSection draft={draft} onChange={onChange} />);
     }
     if (sid === 'solo-miners') {
       return wrapHighlight(sid, <SoloMinersSection draft={draft} onChange={onChange} />);
@@ -1877,6 +1919,126 @@ function dateLayoutLabel(layout: DateLayout, sampleMs: number, uiLocale: string)
  * (in-memory poller cache), refreshed on a 5s interval so adding
  * an IP and waiting one tick shows live values without a page reload.
  */
+
+/**
+ * #238: per-series chart color picker rows grouped by chart.
+ * Each row shows the series label + a ChartColorPicker. Changes write
+ * back into the draft's `chart_color_overrides` JSON string via the
+ * shared onChange; the Save button at the page top commits.
+ */
+function ChartColorsSection({
+  draft,
+  onChange,
+}: {
+  draft: AppConfig;
+  onChange: <K extends keyof AppConfig>(k: K, v: AppConfig[K]) => void;
+}) {
+  const { i18n } = useLingui();
+  void i18n;
+  const overrides = parseOverrides(draft.chart_color_overrides);
+  const setColor = (key: ChartColorKey, next: string | null) => {
+    const updated = { ...overrides };
+    if (next === null) {
+      delete updated[key];
+    } else {
+      updated[key] = next;
+    }
+    onChange('chart_color_overrides', serializeOverrides(updated));
+  };
+  const resetAll = () => onChange('chart_color_overrides', '{}');
+
+  const groups: { title: string; rows: Array<{ key: ChartColorKey; label: string }> }[] = [
+    {
+      title: t`Hashrate chart`,
+      rows: [
+        { key: 'hashrate.delivered', label: t`delivered (Braiins)` },
+        { key: 'hashrate.received_datum', label: t`received (Datum)` },
+        { key: 'hashrate.received_ocean', label: t`received (Ocean)` },
+        { key: 'hashrate.target', label: t`target` },
+        { key: 'hashrate.floor', label: t`floor` },
+        { key: 'hashrate.pool_block_ours', label: t`our pool blocks` },
+        { key: 'hashrate.pool_block_others', label: t`other pool blocks` },
+        { key: 'hashrate.right_axis', label: t`right-axis line` },
+      ],
+    },
+    {
+      title: t`Price chart`,
+      rows: [
+        { key: 'price.our_bid', label: t`our bid` },
+        { key: 'price.fillable', label: t`fillable` },
+        { key: 'price.hashprice', label: t`hashprice` },
+        { key: 'price.max_bid', label: t`max bid` },
+        { key: 'price.unpaid', label: t`unpaid (sat)` },
+        { key: 'price.right_axis', label: t`right-axis line` },
+      ],
+    },
+    {
+      title: t`Bid-event markers`,
+      rows: [
+        { key: 'events.create', label: t`create` },
+        { key: 'events.edit_price', label: t`edit price` },
+        { key: 'events.edit_speed', label: t`edit speed` },
+        { key: 'events.cancel', label: t`cancel` },
+      ],
+    },
+  ];
+
+  const anyOverride = Object.keys(overrides).length > 0;
+
+  return (
+    <section className="bg-slate-900 border border-slate-800 rounded-lg p-4">
+      <header className="mb-3 flex items-start justify-between gap-4">
+        <div>
+          <h3 className="text-sm uppercase tracking-wider text-amber-400">
+            <Trans>Chart colors</Trans>
+          </h3>
+          <p className="text-xs text-slate-500 mt-1 max-w-2xl">
+            <Trans>
+              Override the color of any named line or event marker on the Hashrate and Price charts.
+              Click a swatch to pick from the curated palette or set a custom hex value.
+              Saved on the daemon, so the choice follows you across devices.
+            </Trans>
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={resetAll}
+          disabled={!anyOverride}
+          className="shrink-0 text-xs text-amber-400 hover:underline disabled:text-slate-600 disabled:no-underline disabled:cursor-not-allowed whitespace-nowrap"
+        >
+          <Trans>Reset all to defaults</Trans>
+        </button>
+      </header>
+      <div className="space-y-5 max-w-3xl">
+        {groups.map((group) => (
+          <div key={group.title}>
+            <div className="text-[11px] uppercase tracking-wider text-slate-500 mb-2">
+              {group.title}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
+              {group.rows.map((row) => {
+                const def = CHART_COLOR_DEFAULTS[row.key];
+                const cur = getChartColor(row.key, overrides);
+                return (
+                  <div key={row.key} className="flex items-center justify-between gap-3">
+                    <span className="text-sm text-slate-300">{row.label}</span>
+                    <ChartColorPicker
+                      value={cur}
+                      defaultValue={def}
+                      onChange={(next) => setColor(row.key, next)}
+                      isOverridden={overrides[row.key] !== undefined}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function SoloMinersSection({
   draft,
   onChange,
