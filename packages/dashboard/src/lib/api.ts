@@ -333,6 +333,10 @@ export interface AppConfig {
   display_number_locale: string;
   /** #227 follow-up: display date layout ('system' | 'us' | 'eu-spaced-24h' | 'slash-dmy-24h' | 'iso' | 'slash-mdy-12h'). */
   display_date_layout: string;
+  /** #238: per-series chart color overrides as a JSON string. Empty
+   *  `'{}'` means use every series's built-in default. Parsed
+   *  defensively via `lib/chartColors.parseOverrides`. */
+  chart_color_overrides: string;
   notification_locale: 'en' | 'nl' | 'es';
   electrs_host: string | null;
   electrs_port: number | null;

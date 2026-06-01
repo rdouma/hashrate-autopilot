@@ -128,6 +128,7 @@ describe('openDatabase - migrations', () => {
       '0100_tick_metrics_deadband_pct.sql',
       '0101_payout_notifications.sql',
       '0102_display_format_settings.sql',
+      '0103_chart_color_overrides.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });

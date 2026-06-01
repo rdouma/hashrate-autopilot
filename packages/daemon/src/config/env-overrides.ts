@@ -232,6 +232,12 @@ const APP_CONFIG_ENV: {
     varName: 'BHA_DISPLAY_DATE_LAYOUT',
     coerce: asString,
   },
+  // #238: JSON string of per-series color overrides. Same format the
+  // dashboard PATCHes via Display & Logging.
+  chart_color_overrides: {
+    varName: 'BHA_CHART_COLOR_OVERRIDES',
+    coerce: asString,
+  },
   ddns_provider: { varName: 'BHA_DDNS_PROVIDER', coerce: asString },
   ddns_hostname: { varName: 'BHA_DDNS_HOSTNAME', coerce: asString },
   ddns_username: { varName: 'BHA_DDNS_USERNAME', coerce: asString },

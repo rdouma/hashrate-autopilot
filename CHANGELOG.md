@@ -2,6 +2,10 @@
 
 ## 2026-06-01
 
+### `[Infra]` Foundation for user-configurable chart colors (#238 step 1)
+
+First of three commits implementing per-series chart color overrides. Migration 0103 adds `chart_color_overrides TEXT NOT NULL DEFAULT '{}'` to `config`; daemon schema, repo, types, and env-override map all extend through. New dashboard module `lib/chartColors.ts` carries the canonical defaults table (18 series — every left/right-axis line plus the four bid-event marker hues), 12 curated preset swatches, and `parseOverrides` / `getChartColor` / `serializeOverrides` helpers. `parseOverrides` is defensive — malformed JSON, non-object roots, unknown keys, non-string values, and non-`#RRGGBB` hex strings all silently drop so a stray browser write can't break the chart. 11 unit tests cover the parser, getter, and round-trip serialization plus a snapshot guard that every default is a valid hex. No visible UI change yet; wire-through into the chart components and the Settings panel ship in the follow-up commits.
+
 ### `[UI]` BIP 110 scanner: separate Pool and Miner columns (#237)
 
 The signaling-block table had a single column conflating two distinct identities: who built the block template (miner) and which pool the block was mined to. For Ocean blocks the operator wants both visible (Ocean as pool, Roughnecks / Peer to Peer Money / etc. as miner). For non-Ocean blocks the pool tag is the only identity (Foundry, AntPool — no separable miner identity). `extractMinerTag` restructured into `extractCoinbaseTags(hex) → {pool, miner}`: Ocean coinbase → pool="Ocean" (normalised), miner=longest non-Ocean run; non-Ocean coinbase → pool=longest run, miner=null. Desktop table adds a Pool column between Height and Miner. Mobile signaling-block cards stack the two badges vertically in the top-right (pool on top, miner below); non-Ocean blocks show only the pool badge. `Bip110SignalingBlock` adds `pool_tag: string | null`; `miner_tag` retains its #234 semantics. en + nl + es translations re-include `pool` (dropped from the catalog after #234, now reintroduced).

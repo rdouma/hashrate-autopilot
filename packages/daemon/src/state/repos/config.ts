@@ -55,6 +55,9 @@ export class ConfigRepo {
       // against the preset enums on the next round-trip.
       display_number_locale: rest.display_number_locale as AppConfig['display_number_locale'],
       display_date_layout: rest.display_date_layout as AppConfig['display_date_layout'],
+      // #238: pass through verbatim; the dashboard parses JSON and
+      // drops malformed entries at render time.
+      chart_color_overrides: rest.chart_color_overrides ?? '{}',
       // #106: stored as comma-separated TEXT; surface as string[].
       // Empty string -> empty array (no opt-outs).
       notification_disabled_event_classes: rest.notification_disabled_event_classes
@@ -98,6 +101,8 @@ export class ConfigRepo {
       // #227 follow-up: write-through for display format preferences.
       display_number_locale: validated.display_number_locale,
       display_date_layout: validated.display_date_layout,
+      // #238: chart color overrides written through as-is.
+      chart_color_overrides: validated.chart_color_overrides,
       // #106: comma-join the opt-out list back to TEXT.
       notification_disabled_event_classes:
         validated.notification_disabled_event_classes.join(','),

@@ -451,6 +451,16 @@ export const AppConfigSchema = z.object({
     .enum(['system', 'us', 'eu-spaced-24h', 'slash-dmy-24h', 'iso', 'slash-mdy-12h'])
     .default('system'),
 
+  // #238: per-series chart color overrides. JSON object keyed by
+  // canonical series name (e.g. "hashrate.delivered") with hex-string
+  // values (`#RRGGBB`). Missing keys fall back to the built-in defaults
+  // on the dashboard side, so an empty `{}` preserves the current look.
+  // Schema validates as a string here (cheap, no JSON re-parse on every
+  // tick); the dashboard's `parseOverrides()` validates and silently
+  // drops malformed entries so a stray browser write can't break the
+  // chart.
+  chart_color_overrides: z.string().default('{}'),
+
   // #111: daemon-managed DDNS updater. When ddns_provider is non-empty
   // the daemon pushes the current public IP to the configured DDNS
   // provider every 5 minutes (and forces a heartbeat at least hourly,
@@ -639,6 +649,8 @@ export const APP_CONFIG_DEFAULTS: Omit<
   // and Telegram immediately renders with it.
   display_number_locale: 'system',
   display_date_layout: 'system',
+  // #238: empty JSON object = "use every series's built-in default".
+  chart_color_overrides: '{}',
 
   ddns_provider: '',
   ddns_hostname: '',

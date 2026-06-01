@@ -63,6 +63,8 @@ export interface ConfigTable {
   display_number_locale: string;
   /** #227 follow-up: date-layout preference (mirrors dashboard's `braiins.dateLayout`). Default 'system'. */
   display_date_layout: string;
+  /** #238: per-series chart color overrides as a JSON string. Empty `{}` means defaults. */
+  chart_color_overrides: string;
   /** @deprecated Legacy column - kept for NOT NULL; ignored by the app. */
   hibernate_on_expensive_market: 0 | 1;
   electrs_host: string | null;
