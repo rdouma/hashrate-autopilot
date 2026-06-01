@@ -948,6 +948,11 @@ export interface Bip110ScanDeployment {
   key: string;
   status: string | null;
   bit: number | null;
+  /** #235: block height at which the deployment transitioned to its
+   *  current status. Populated from bitcoind's `bip9.since`. Used to
+   *  distinguish MASF (since < UASF height) from UASF (since == UASF
+   *  height) activation in the ACTIVE-state tooltip. */
+  since: number | null;
   statistics: {
     count: number;
     elapsed: number;

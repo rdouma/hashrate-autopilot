@@ -87,21 +87,20 @@ const TARGET_BLOCK_TIME_MS = 600_000;
  * 144 blocks/day), so the displayed estimate matches what the
  * operator can verify independently.
  *
- * A previous draft used the observed average block time from the
- * in-progress difficulty epoch instead of the 600s target - more
- * accurate over short horizons but visibly off vs every other tool
- * over the ~95-day horizon to UASF. Operator's expectation is the
- * target-rate baseline, so we use it.
+ * #235: works in both directions. For past targets (target < tip)
+ * the formula gives `now - (tip - target) × 600s` - the estimated
+ * wall-clock time at which that past block was mined. Accurate to
+ * within a few hours; for exact times the operator can click through
+ * to a block explorer.
  *
- * Null when the target is already past, or when we don't know the
- * tip height (no scan yet).
+ * Null when we don't know the tip height (no scan yet).
  */
-function forecastBlockHeightTime(
+function estimateBlockHeightTime(
   targetHeight: number,
   tipHeight: number | null,
   nowMs: number = Date.now(),
 ): number | null {
-  if (tipHeight === null || tipHeight >= targetHeight) return null;
+  if (tipHeight === null) return null;
   return nowMs + (targetHeight - tipHeight) * TARGET_BLOCK_TIME_MS;
 }
 
@@ -845,13 +844,51 @@ function DeploymentStatusBadge({
     deployment.status === 'locked_in' ? t`locked in`
     : deployment.status === 'active' ? t`active`
     : t`signaling`;
-  const uasfForecastMs = forecastBlockHeightTime(UASF_HEIGHT_BIP110, tipHeight);
   const uasfHeightStr = formatNumber(UASF_HEIGHT_BIP110, {}, intlLocale);
-  const uasfDateStr = uasfForecastMs !== null
-    ? formatMediumDate(uasfForecastMs, dateTimeLocale)
+  const uasfPast = tipHeight !== null && tipHeight >= UASF_HEIGHT_BIP110;
+  const uasfTimeMs = estimateBlockHeightTime(UASF_HEIGHT_BIP110, tipHeight);
+  const uasfDateStr = uasfTimeMs !== null
+    ? formatMediumDate(uasfTimeMs, dateTimeLocale)
+    : null;
+  // #235: next epoch boundary above the current tip. Used in the
+  // LOCKED_IN tooltip to forecast when activation will land.
+  const nextBoundary = tipHeight !== null
+    ? Math.floor(tipHeight / BLOCKS_PER_EPOCH) * BLOCKS_PER_EPOCH + BLOCKS_PER_EPOCH
+    : null;
+  const nextBoundaryDateMs = nextBoundary !== null
+    ? estimateBlockHeightTime(nextBoundary, tipHeight)
+    : null;
+  const nextBoundaryHeightStr = nextBoundary !== null
+    ? formatNumber(nextBoundary, {}, intlLocale)
+    : null;
+  const nextBoundaryDateStr = nextBoundaryDateMs !== null
+    ? formatMediumDate(nextBoundaryDateMs, dateTimeLocale)
+    : null;
+  // #235: `since` lets us tell MASF apart from UASF after activation.
+  // since < UASF_HEIGHT_BIP110 means MASF triggered earlier (the
+  // since height is the activation height — first block of the epoch
+  // after the one that crossed 55%). since >= UASF_HEIGHT_BIP110
+  // (or close to it) means UASF triggered.
+  const since = deployment.since;
+  const sinceHeightStr = since !== null ? formatNumber(since, {}, intlLocale) : null;
+  const sinceDateMs = since !== null
+    ? estimateBlockHeightTime(since, tipHeight)
+    : null;
+  const sinceDateStr = sinceDateMs !== null
+    ? formatMediumDate(sinceDateMs, dateTimeLocale)
     : null;
   const tooltip = (() => {
     if (deployment.status === 'locked_in') {
+      // Enriched with next-boundary forecast when we have tip data.
+      if (nextBoundaryHeightStr !== null && nextBoundaryDateStr !== null) {
+        return (
+          <p className="text-slate-300 leading-relaxed max-w-xs">
+            <Trans>
+              The 55% miner-activation threshold has been crossed. BIP 110 will activate at the next difficulty epoch boundary (block {nextBoundaryHeightStr}, estimated {nextBoundaryDateStr}).
+            </Trans>
+          </p>
+        );
+      }
       return (
         <p className="text-slate-300 leading-relaxed max-w-xs">
           <Trans>
@@ -861,6 +898,29 @@ function DeploymentStatusBadge({
       );
     }
     if (deployment.status === 'active') {
+      // #235: distinguish MASF vs UASF activation when we have `since`.
+      // UASF = since == flag-day height (Knots will report 965,664
+      // exactly when UASF triggered the activation). MASF = anything
+      // earlier than the flag day.
+      if (since !== null && sinceDateStr !== null) {
+        if (since >= UASF_HEIGHT_BIP110) {
+          return (
+            <p className="text-slate-300 leading-relaxed max-w-xs">
+              <Trans>
+                BIP 110 is active. Activated at the UASF flag-day block {uasfHeightStr} on {sinceDateStr}. Your Bitcoin node is enforcing the new consensus rules.
+              </Trans>
+            </p>
+          );
+        }
+        return (
+          <p className="text-slate-300 leading-relaxed max-w-xs">
+            <Trans>
+              BIP 110 is active. Activated via the 55% miner-activation threshold at block {sinceHeightStr} on {sinceDateStr}. Your Bitcoin node is enforcing the new consensus rules.
+            </Trans>
+          </p>
+        );
+      }
+      // No `since` data — fall back to the short text.
       return (
         <p className="text-slate-300 leading-relaxed max-w-xs">
           <Trans>
@@ -889,14 +949,30 @@ function DeploymentStatusBadge({
           <span className="text-amber-300 font-semibold">
             <Trans>User-activated (UASF):</Trans>
           </span>{' '}
-          {uasfDateStr !== null ? (
-            <Trans>
-              at block {uasfHeightStr} (estimated {uasfDateStr}), BIP 110-aware nodes (Bitcoin Knots included) begin enforcing the rules regardless of miner signaling.
-            </Trans>
+          {/* #235: tense switches when the UASF block has been mined.
+              This SIGNALING state is unlikely to be observed past the
+              flag day (Knots would report ACTIVE), but defensively
+              cover it so the framing isn't wrong if it ever does. */}
+          {uasfPast ? (
+            uasfDateStr !== null ? (
+              <Trans>
+                at block {uasfHeightStr} (mined ~{uasfDateStr}), BIP 110-aware nodes (Bitcoin Knots included) began enforcing the rules regardless of miner signaling.
+              </Trans>
+            ) : (
+              <Trans>
+                at block {uasfHeightStr}, BIP 110-aware nodes (Bitcoin Knots included) began enforcing the rules regardless of miner signaling.
+              </Trans>
+            )
           ) : (
-            <Trans>
-              at block {uasfHeightStr}, BIP 110-aware nodes (Bitcoin Knots included) begin enforcing the rules regardless of miner signaling.
-            </Trans>
+            uasfDateStr !== null ? (
+              <Trans>
+                at block {uasfHeightStr} (estimated {uasfDateStr}), BIP 110-aware nodes (Bitcoin Knots included) begin enforcing the rules regardless of miner signaling.
+              </Trans>
+            ) : (
+              <Trans>
+                at block {uasfHeightStr}, BIP 110-aware nodes (Bitcoin Knots included) begin enforcing the rules regardless of miner signaling.
+              </Trans>
+            )
           )}
         </p>
       </div>

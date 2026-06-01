@@ -92,6 +92,17 @@ export interface Bip110Deployment {
   readonly key: string;
   readonly status: string | null;
   readonly bit: number | null;
+  /**
+   * #235: block height at which the deployment moved to its current
+   * status. Comes from bitcoind's getdeploymentinfo `bip9.since` field.
+   * For LOCKED_IN this is the first block of the epoch the threshold
+   * was reached in; for ACTIVE this is the activation height
+   * (= next epoch boundary after locked_in, OR the UASF flag day if
+   * Knots activated it via UASF). Null when getdeploymentinfo
+   * doesn't expose the field (older builds) or the deployment isn't
+   * BIP 9-style.
+   */
+  readonly since: number | null;
   readonly statistics: {
     readonly count: number;
     readonly elapsed: number;
@@ -228,6 +239,8 @@ export function extractMinerTag(coinbaseHex: string): string | null {
 interface SoftforkBip9 {
   status?: string;
   bit?: number;
+  /** #235: height at which the deployment switched to its current status. */
+  since?: number;
   statistics?: {
     count?: number;
     elapsed?: number;
@@ -281,6 +294,7 @@ function extractDeployment(key: string, entry: SoftforkEntry | undefined): Bip11
     key,
     status: bip9?.status ?? null,
     bit: typeof bip9?.bit === 'number' ? bip9.bit : null,
+    since: typeof bip9?.since === 'number' ? bip9.since : null,
     statistics:
       stats && typeof stats.count === 'number'
         ? {

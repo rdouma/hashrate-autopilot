@@ -395,6 +395,14 @@ msgid "at block {uasfHeightStr} (estimated {uasfDateStr}), BIP 110-aware nodes (
 msgstr "at block {uasfHeightStr} (estimated {uasfDateStr}), BIP 110-aware nodes (Bitcoin Knots included) begin enforcing the rules regardless of miner signaling."
 
 #: src/components/Bip110ScanCard.tsx
+msgid "at block {uasfHeightStr} (mined ~{uasfDateStr}), BIP 110-aware nodes (Bitcoin Knots included) began enforcing the rules regardless of miner signaling."
+msgstr "at block {uasfHeightStr} (mined ~{uasfDateStr}), BIP 110-aware nodes (Bitcoin Knots included) began enforcing the rules regardless of miner signaling."
+
+#: src/components/Bip110ScanCard.tsx
+msgid "at block {uasfHeightStr}, BIP 110-aware nodes (Bitcoin Knots included) began enforcing the rules regardless of miner signaling."
+msgstr "at block {uasfHeightStr}, BIP 110-aware nodes (Bitcoin Knots included) began enforcing the rules regardless of miner signaling."
+
+#: src/components/Bip110ScanCard.tsx
 msgid "at block {uasfHeightStr}, BIP 110-aware nodes (Bitcoin Knots included) begin enforcing the rules regardless of miner signaling."
 msgstr "at block {uasfHeightStr}, BIP 110-aware nodes (Bitcoin Knots included) begin enforcing the rules regardless of miner signaling."
 
@@ -576,6 +584,14 @@ msgstr "Bid:"
 #: src/pages/Status.tsx
 msgid "Bids"
 msgstr "Bids"
+
+#: src/components/Bip110ScanCard.tsx
+msgid "BIP 110 is active. Activated at the UASF flag-day block {uasfHeightStr} on {sinceDateStr}. Your Bitcoin node is enforcing the new consensus rules."
+msgstr "BIP 110 is active. Activated at the UASF flag-day block {uasfHeightStr} on {sinceDateStr}. Your Bitcoin node is enforcing the new consensus rules."
+
+#: src/components/Bip110ScanCard.tsx
+msgid "BIP 110 is active. Activated via the 55% miner-activation threshold at block {sinceHeightStr} on {sinceDateStr}. Your Bitcoin node is enforcing the new consensus rules."
+msgstr "BIP 110 is active. Activated via the 55% miner-activation threshold at block {sinceHeightStr} on {sinceDateStr}. Your Bitcoin node is enforcing the new consensus rules."
 
 #: src/components/Bip110ScanCard.tsx
 msgid "BIP 110 is active. Your Bitcoin node is enforcing the new consensus rules."
@@ -3271,6 +3287,10 @@ msgstr "Testing…"
 #: src/pages/Config.tsx
 msgid "The \"Backfill now\" button walks the full address history via Electrs and adds any historical Ocean coinbase payouts that aren't already recorded. Safe to run repeatedly."
 msgstr "The \"Backfill now\" button walks the full address history via Electrs and adds any historical Ocean coinbase payouts that aren't already recorded. Safe to run repeatedly."
+
+#: src/components/Bip110ScanCard.tsx
+msgid "The 55% miner-activation threshold has been crossed. BIP 110 will activate at the next difficulty epoch boundary (block {nextBoundaryHeightStr}, estimated {nextBoundaryDateStr})."
+msgstr "The 55% miner-activation threshold has been crossed. BIP 110 will activate at the next difficulty epoch boundary (block {nextBoundaryHeightStr}, estimated {nextBoundaryDateStr})."
 
 #: src/components/Bip110ScanCard.tsx
 msgid "The 55% miner-activation threshold has been crossed. BIP 110 will activate at the next difficulty epoch boundary."
