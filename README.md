@@ -4,7 +4,7 @@ A personal-scale autopilot and monitor for the [Braiins Hashpower marketplace](h
 Keeps a rented-hashrate bid continuously alive at an operator-chosen price ceiling, so purchased hashrate keeps
 landing at your own Datum-connected pool without manual babysitting.
 
-![Dashboard in real-time mode](docs/images/dashboard.jpg)
+![Dashboard in real-time mode](docs/images/dashboard.png)
 
 The Status page is a single scroll: a hero card with the **live current bid** (the price Braiins charges
 per delivered EH·day under pay-your-bid, so the bid *is* the truthful real-time number to anchor the
@@ -167,10 +167,14 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
   that lists the target-price inputs at that tick - fillable, overpay, hashprice, caps, effective cap, plus
   a JSON export button), block markers and retarget pickaxes on both charts, per-series rolling-mean
   smoothing configurable per chart (hashrate smoothing per-source; price chart smooths only `our bid` and
-  `effective` - fillable / hashprice / max bid stay raw), stats bar (uptime, three side-by-side
-  avg-hashrate cards for Braiins / Datum / Ocean, cost metrics), service panels that include a runway
-  forecast on the Braiins card, split P&L panels (period and lifetime), live bid table with full IDs, and
-  a full config editor with live reload.
+  `effective` - fillable / hashprice / max bid stay raw), **offline-period reconstruction** - daemon-offline
+  gaps render as a hatched band, and a boot-time backfill walks the gap inserting synthetic ticks every
+  5 min plus one at each detected difficulty retarget so the pool-luck line step-changes through the gap
+  and retarget markers land at (close to) canonical time even after long outages, stats bar (uptime, three
+  side-by-side avg-hashrate cards for Braiins / Datum / Ocean, cost metrics), service panels that include
+  a runway forecast on the Braiins card, split P&L panels (period and lifetime - "collected (on-chain)"
+  reads lifetime received from `reward_events`, not current UTXO balance, so a payout that's been spent
+  still counts), live bid table with full IDs, and a full config editor with live reload.
 - **Unit toggles in the header** - hashrate displays as TH/s, PH/s, or EH/s and prices as sat, ₿ (BTC), or
   USD. Both pickers persist per browser. The USD path uses a live BTC oracle (CoinGecko, Coinbase, Bitstamp,
   or Kraken; pick one) refreshed daemon-side every 4 minutes so it stays current even when the dashboard tab
@@ -324,9 +328,9 @@ drop, two metallic clanks, an "Ocean mining found a block" voice clip - or uploa
 
 ### Display & Logging
 
-![Config → Display & Logging tab](docs/images/config-display-and-logging.jpg)
+![Config → Display & Logging tab](docs/images/config-display-and-logging.png)
 
-**Display** (number format, date layout, and temperature unit (°C / °F) - sticky per browser, independent of the UI language; database and Telegram stay in °C, conversion at the dashboard boundary only), **Block
+**Display** (number format, date layout, and temperature unit (°C / °F) - now daemon-managed config so Telegram render path uses the same formatting as the dashboard; database stays in °C, conversion at the display boundary only), **Chart colors** (per-series color overrides for every named line and event marker on the Hashrate and Price charts - curated 12-swatch palette + native color picker + reset-to-default; #238), **Block
 explorer** (separate URL templates for blocks and transactions; preset buttons for mempool.space /
 blockstream.info / blockchair / btcscan / btc.com set both at once, custom self-hosted explorers can fill
 in either independently), **Chart smoothing** (rolling-mean window per-source on the hashrate chart plus

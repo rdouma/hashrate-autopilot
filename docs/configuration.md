@@ -51,6 +51,8 @@ issue #60.
 | `BHA_MAX_OVERPAY_VS_HASHPRICE_SAT_PER_EH_DAY` | `max_overpay_vs_hashprice_sat_per_eh_day` | int or empty (disable) |
 | `BHA_OVERPAY_SAT_PER_EH_DAY` | `overpay_sat_per_eh_day` | int, sat/EH/day |
 | `BHA_BID_BUDGET_SAT` | `bid_budget_sat` | int sat; `0` = use full wallet balance per CREATE |
+| `BHA_BID_EDIT_DEADBAND_PCT` | `bid_edit_deadband_pct` | float (%); default 20 (legacy `overpay/5` equivalent). EDIT_PRICE noise floor: `max(tick_size, overpay × pct / 100)` (#222, migration 0099) |
+| `BHA_MAX_ACCEPTABLE_FEE_PCT` | `max_acceptable_fee_pct` | float (%); default 0 (any non-zero fee halts mutations). Mutation gate denies CREATE / EDIT / EDIT_SPEED when any active bid's `fee_rate_pct` exceeds this ceiling; CANCEL remains allowed (#222, migration 0099) |
 
 ## Pool destination
 
@@ -123,6 +125,8 @@ issue #60.
 | `BHA_NOTIFICATION_DISABLED_EVENT_CLASSES` | `notification_disabled_event_classes` | comma-separated list |
 | `BHA_NOTIFY_ON_POOL_BLOCK_CREDIT` | `notify_on_pool_block_credit` | boolean |
 | `BHA_NOTIFY_ON_BRAIINS_DEPOSIT` | `notify_on_braiins_deposit` | boolean |
+| `BHA_NOTIFY_ON_PAYOUT_INITIATED` | `notify_on_payout_initiated` | boolean (#226, migration 0101) |
+| `BHA_NOTIFY_ON_PAYOUT_CONFIRMED` | `notify_on_payout_confirmed` | boolean (#226, migration 0101) |
 | `BHA_NOTIFICATION_LOCALE` | `notification_locale` | `en`, `nl`, `es` |
 
 ## DDNS
@@ -164,6 +168,9 @@ issue #60.
 | `BHA_SHOW_EFFECTIVE_RATE_ON_PRICE_CHART` | `show_effective_rate_on_price_chart` | boolean |
 | `BHA_SHOW_SHARE_LOG_ON_HASHRATE_CHART` | `show_share_log_on_hashrate_chart` | boolean |
 | `BHA_BLOCK_FOUND_SOUND` | `block_found_sound` | `off`, `cartoon-cowbell`, `glass-drop-and-roll`, `metallic-clank-1`, `metallic-clank-2`, `ocean-mining-found-block`, `custom` |
+| `BHA_DISPLAY_NUMBER_LOCALE` | `display_number_locale` | `system` (default), `en-US`, `nl-NL`, `fr-FR`, `no-grouping` (#227 follow-up, migration 0102) |
+| `BHA_DISPLAY_DATE_LAYOUT` | `display_date_layout` | `system` (default), `us`, `eu-spaced-24h`, `slash-dmy-24h`, `iso`, `slash-mdy-12h` (#227 follow-up, migration 0102) |
+| `BHA_CHART_COLOR_OVERRIDES` | `chart_color_overrides` | JSON object keyed by series name with `#RRGGBB` values, default `{}` (#238, migration 0103) |
 | `BHA_DEBUG_API_ENABLED` | `debug_api_enabled` | boolean |
 
 ## Process-level env vars (not config overrides)
