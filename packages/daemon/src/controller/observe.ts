@@ -385,6 +385,36 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
     }
   }
 
+  // #243: primary-bid share counters snapshot. The bids LIST response
+  // (`/spot/bid`) doesn't include `counters_committed` - the share
+  // counters live on `/spot/bid/detail/{order_id}`. We make one extra
+  // GET per tick for the primary bid only (lowest order_id from the
+  // owned ledger, matching tick.ts's primary selection). Graceful
+  // degradation on failure: null fields, tick proceeds.
+  let primary_bid_shares_purchased_m: number | null = null;
+  let primary_bid_shares_accepted_m: number | null = null;
+  let primary_bid_shares_rejected_m: number | null = null;
+  if (owned_bids.length > 0) {
+    const primaryId = [...owned_bids]
+      .sort((a, b) => a.braiins_order_id.localeCompare(b.braiins_order_id))[0]!.braiins_order_id;
+    try {
+      const detail = await deps.braiins.getBidDetail(primaryId);
+      const counters = detail.counters_committed;
+      if (counters) {
+        primary_bid_shares_purchased_m =
+          typeof counters.shares_purchased_m === 'number' ? counters.shares_purchased_m : null;
+        primary_bid_shares_accepted_m =
+          typeof counters.shares_accepted_m === 'number' ? counters.shares_accepted_m : null;
+        primary_bid_shares_rejected_m =
+          typeof counters.shares_rejected_m === 'number' ? counters.shares_rejected_m : null;
+      }
+    } catch (err) {
+      console.warn(
+        `[observe] getBidDetail(${primaryId}) failed: ${(err as Error).message}`,
+      );
+    }
+  }
+
   // Pool probe (always run - we want outage visibility even if API is down).
   // Skip when no pool URL is configured (wizard completed without one).
   const poolProbe = config.destination_pool_url
@@ -512,6 +542,9 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
     pool_luck_24h,
     pool_luck_7d,
     pool_luck_30d,
+    primary_bid_shares_purchased_m,
+    primary_bid_shares_accepted_m,
+    primary_bid_shares_rejected_m,
     last_api_ok_at: deps.braiins.getLastApiOkAt(),
     hashprice_sat_per_ph_day: inputs.hashpriceSatPerPhDay,
     fillable_ask_sat_per_eh_day,

@@ -195,6 +195,19 @@ export interface State {
   readonly pool_luck_24h: number | null;
   readonly pool_luck_7d: number | null;
   readonly pool_luck_30d: number | null;
+  /**
+   * #243: primary owned bid's cumulative share counters this tick
+   * (sourced from Braiins `/spot/bid/detail` -> `counters_committed`
+   * because the bids list response doesn't include them). NULL when
+   * there's no primary owned bid this tick or the per-bid detail
+   * call failed (graceful degradation - the tick itself doesn't
+   * abort). tick.ts forwards verbatim to tick_metrics; the
+   * instantaneous rejection rate is derived downstream from
+   * per-tick deltas.
+   */
+  readonly primary_bid_shares_purchased_m: number | null;
+  readonly primary_bid_shares_accepted_m: number | null;
+  readonly primary_bid_shares_rejected_m: number | null;
   readonly pool_blocks_30d_count: number | null;
   readonly pool_hashrate_ph_avg_30d: number | null;
 

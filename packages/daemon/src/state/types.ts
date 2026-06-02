@@ -456,6 +456,18 @@ export interface TickMetricsTable {
   /** #173: 1 = Braiins API was reachable this tick, 0 = unreachable.
    * NULL for rows predating migration 0091. */
   braiins_reachable: number | null;
+  /**
+   * #243: per-tick cumulative-since-bid-creation share counters
+   * snapshotted from the primary owned bid's
+   * `counters_committed.shares_*_m` (Braiins `/spot/bid/detail`).
+   * Stored cumulative; the chart + Braiins card derive the
+   * instantaneous rejection rate from per-tick deltas (rejected_m
+   * delta / purchased_m delta * 100). NULL on a tick where
+   * `getBidDetail` failed or there was no primary owned bid.
+   */
+  primary_bid_shares_purchased_m: number | null;
+  primary_bid_shares_accepted_m: number | null;
+  primary_bid_shares_rejected_m: number | null;
   run_mode: RunMode;
   action_mode: ActionMode;
   /**

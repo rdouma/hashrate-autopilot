@@ -176,6 +176,12 @@ export class Controller {
         pool_luck_24h: state.pool_luck_24h,
         pool_luck_7d: state.pool_luck_7d,
         pool_luck_30d: state.pool_luck_30d,
+        // #243: snapshot the primary bid's cumulative share counters
+        // here too. observe.ts made the /spot/bid/detail call once
+        // per tick; tick.ts forwards the values verbatim.
+        primary_bid_shares_purchased_m: state.primary_bid_shares_purchased_m,
+        primary_bid_shares_accepted_m: state.primary_bid_shares_accepted_m,
+        primary_bid_shares_rejected_m: state.primary_bid_shares_rejected_m,
         pool_blocks_30d_count: state.pool_blocks_30d_count,
         pool_hashrate_ph_avg_30d: state.pool_hashrate_ph_avg_30d,
         braiins_reachable: state.market !== null ? 1 : 0,

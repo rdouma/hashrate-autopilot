@@ -172,7 +172,9 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
   5 min plus one at each detected difficulty retarget so the pool-luck line step-changes through the gap
   and retarget markers land at (close to) canonical time even after long outages, stats bar (uptime, three
   side-by-side avg-hashrate cards for Braiins / Datum / Ocean, cost metrics), service panels that include
-  a runway forecast on the Braiins card, split P&L panels (period and lifetime - "collected (on-chain)"
+  a runway forecast AND an instantaneous Braiins share-rejection rate on the Braiins card (10-min rolling
+  window; also available as a chart right-axis series so the operator can see when the rate spiked - #243),
+  split P&L panels (period and lifetime - "collected (on-chain)"
   reads lifetime received from `reward_events`, not current UTXO balance, so a payout that's been spent
   still counts), live bid table with full IDs, and a full config editor with live reload.
 - **Unit toggles in the header** - hashrate displays as TH/s, PH/s, or EH/s and prices as sat, ₿ (BTC), or

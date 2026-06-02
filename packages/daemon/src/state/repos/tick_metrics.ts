@@ -75,6 +75,10 @@ export interface InsertTickMetricArgs {
   readonly pool_blocks_30d_count: number | null;
   readonly pool_hashrate_ph_avg_30d: number | null;
   readonly braiins_reachable: number | null;
+  /** #243: snapshot of primary owned bid's cumulative share counters from Braiins /spot/bid/detail. */
+  readonly primary_bid_shares_purchased_m: number | null;
+  readonly primary_bid_shares_accepted_m: number | null;
+  readonly primary_bid_shares_rejected_m: number | null;
   readonly run_mode: TickMetricsTable['run_mode'];
   readonly action_mode: TickMetricsTable['action_mode'];
 }
@@ -122,6 +126,10 @@ export interface AggregatedTickMetricRow {
   braiins_reachable: number | null;
   /** #224 (#222): config.bid_edit_deadband_pct at the tick. */
   bid_edit_deadband_pct: number;
+  /** #243: primary owned bid's cumulative share counters. Aggregated as MAX over the bucket so the chart's per-bucket delta is monotonically meaningful. */
+  primary_bid_shares_purchased_m: number | null;
+  primary_bid_shares_accepted_m: number | null;
+  primary_bid_shares_rejected_m: number | null;
 }
 
 export class TickMetricsRepo {
@@ -200,6 +208,9 @@ export class TickMetricsRepo {
         pool_hashrate_ph_avg_30d: r.pool_hashrate_ph_avg_30d,
         braiins_reachable: r.braiins_reachable,
         bid_edit_deadband_pct: r.bid_edit_deadband_pct,
+        primary_bid_shares_purchased_m: r.primary_bid_shares_purchased_m,
+        primary_bid_shares_accepted_m: r.primary_bid_shares_accepted_m,
+        primary_bid_shares_rejected_m: r.primary_bid_shares_rejected_m,
       }));
     }
 
@@ -292,6 +303,13 @@ export class TickMetricsRepo {
         sql<number>`AVG(bid_edit_deadband_pct)`.as('bid_edit_deadband_pct'),
         sql<number | null>`AVG(pool_hashrate_ph_avg_30d)`.as('pool_hashrate_ph_avg_30d'),
         sql<number | null>`MIN(braiins_reachable)`.as('braiins_reachable'),
+        // #243: cumulative share counters - MAX gives end-of-bucket
+        // value so bucket-to-bucket deltas yield the actual per-bucket
+        // shares purchased / accepted / rejected. AVG would smear the
+        // ramp and break the derived rejection rate.
+        sql<number | null>`MAX(primary_bid_shares_purchased_m)`.as('primary_bid_shares_purchased_m'),
+        sql<number | null>`MAX(primary_bid_shares_accepted_m)`.as('primary_bid_shares_accepted_m'),
+        sql<number | null>`MAX(primary_bid_shares_rejected_m)`.as('primary_bid_shares_rejected_m'),
       ])
       .where('tick_at', '>=', sinceMs)
       .$if(untilMs !== undefined, (qb) => qb.where('tick_at', '<=', untilMs!))

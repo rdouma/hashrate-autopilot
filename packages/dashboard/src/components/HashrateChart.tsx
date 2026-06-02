@@ -250,7 +250,13 @@ export type HashrateRightAxis =
   | 'solo_hashrate'
   | 'solo_device_count'
   | 'solo_max_temp'
-  | 'solo_best_diff';
+  | 'solo_best_diff'
+  // #243: per-tick instantaneous share-rejection rate for the
+  // primary owned bid. Derived client-side from per-tick deltas
+  // of MetricPoint.primary_bid_shares_rejected_m /
+  // primary_bid_shares_purchased_m. Null on bid-rotation ticks
+  // (negative delta) and on ticks where the purchased delta is 0.
+  | 'braiins_rejection_pct';
 
 /** Per-tick aggregated fleet series row from /api/solo-miners/series. */
 export interface SoloSeriesRow {
@@ -778,6 +784,52 @@ export const HashrateChart = memo(function HashrateChart({
                 maximumFractionDigits: 2,
               }).format(v)}×`,
             axisLabel: label,
+            stroke: COLOR_RIGHT_AXIS,
+          };
+        }
+        case 'braiins_rejection_pct': {
+          // #243: instantaneous per-tick rejection rate derived from
+          // the cumulative-since-bid-creation share counters.
+          //   rate[i] = (rejected[i] - rejected[i-1])
+          //           / (purchased[i] - purchased[i-1]) * 100
+          // NULL on:
+          //   - first point (no previous to delta against)
+          //   - either side of a bid rotation (counter resets, so
+          //     Δpurchased goes negative)
+          //   - any bucket where Δpurchased <= 0 (no shares
+          //     purchased -> divide-by-zero, and the rate is
+          //     undefined in that case)
+          // The Δrejected can be negative on bid rotation too; the
+          // Δpurchased ≤ 0 guard catches that case as well.
+          const values: (number | null)[] = new Array(points.length);
+          values[0] = null;
+          for (let i = 1; i < points.length; i += 1) {
+            const prev = points[i - 1]!;
+            const cur = points[i]!;
+            const pp = prev.primary_bid_shares_purchased_m;
+            const cp = cur.primary_bid_shares_purchased_m;
+            const pr = prev.primary_bid_shares_rejected_m;
+            const cr = cur.primary_bid_shares_rejected_m;
+            if (pp === null || cp === null || pr === null || cr === null) {
+              values[i] = null;
+              continue;
+            }
+            const dp = cp - pp;
+            const dr = cr - pr;
+            if (dp <= 0) {
+              values[i] = null;
+              continue;
+            }
+            values[i] = (dr / dp) * 100;
+          }
+          return {
+            values,
+            formatTick: (v) =>
+              `${new Intl.NumberFormat(intlLocale, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              }).format(v)}%`,
+            axisLabel: 'rejection rate (Braiins)',
             stroke: COLOR_RIGHT_AXIS,
           };
         }

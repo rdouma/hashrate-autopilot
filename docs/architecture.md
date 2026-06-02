@@ -458,6 +458,13 @@ CREATE TABLE tick_metrics (
   -- existing rows to the legacy `overpay / 5` equivalent.
   bid_edit_deadband_pct REAL NOT NULL DEFAULT 20,
   -- #92 (migrations 0055-0057): pool-block / pool-luck plot
+  -- #243 (migration 0106): per-tick snapshot of the primary owned
+  -- bid's cumulative-since-bid-creation share counters from Braiins
+  -- /spot/bid/detail.counters_committed. The bids list response
+  -- doesn't include counters, hence one extra GET per tick.
+  primary_bid_shares_purchased_m REAL,    -- cumulative shares purchased
+  primary_bid_shares_accepted_m REAL,     -- cumulative shares accepted by target
+  primary_bid_shares_rejected_m REAL,     -- cumulative shares rejected by target
   pool_blocks_24h_count INTEGER,          -- pool blocks observed in last 24h
   pool_blocks_7d_count INTEGER,           -- pool blocks observed in last 7d
   pool_hashrate_ph_avg_24h REAL,          -- trailing 24h mean of pool_hashrate_ph (luck denominator)
@@ -799,6 +806,17 @@ concern (not by order; the file names are authoritative):
   was using browser defaults, not Display & Logging settings). 0103 (#238)
   adds `chart_color_overrides` JSON to config, keyed by series name with
   `#RRGGBB` values, for the Display & Logging chart-color picker.
+
+- **Per-tick Braiins share counters (0106):** 0106 (#243) adds
+  `tick_metrics.primary_bid_shares_purchased_m / _accepted_m /
+  _rejected_m` (REAL nullable). Sourced from a per-tick GET on
+  `/spot/bid/detail/{order_id}` (`counters_committed` block; the
+  bids list response doesn't carry them). The dashboard's Hashrate
+  chart adds a `rejection rate (Braiins)` right-axis series and the
+  Braiins service panel adds a `rejection rate` row, both derived
+  client-side from per-tick deltas (`Δrejected / Δpurchased × 100`)
+  with NULL on bid-rotation ticks (counter reset → negative
+  Δpurchased) and on ticks where Δpurchased ≤ 0.
 
 - **Gap-backfill + boot-time payout refresh (0104-0105):** 0104 (#241)
   adds `tick_metrics.synthetic INTEGER NOT NULL DEFAULT 0` marking rows

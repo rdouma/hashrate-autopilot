@@ -116,6 +116,16 @@ export interface MetricPoint {
    * by migration 0100 for rows that pre-date the column.
    */
   readonly bid_edit_deadband_pct: number;
+  /**
+   * #243: cumulative-since-bid-creation share counters from Braiins
+   * `/spot/bid/detail.counters_committed`. Stored cumulative; the
+   * chart derives instantaneous rejection rate as the per-tick
+   * delta. NULL for rows where there was no primary owned bid or
+   * the per-bid detail call failed.
+   */
+  readonly primary_bid_shares_purchased_m: number | null;
+  readonly primary_bid_shares_accepted_m: number | null;
+  readonly primary_bid_shares_rejected_m: number | null;
 }
 
 export async function registerMetricsRoute(
@@ -214,6 +224,9 @@ function toMetricPoint(r: {
   pool_hashrate_ph_avg_30d: number | null;
   braiins_reachable: number | null;
   bid_edit_deadband_pct: number;
+  primary_bid_shares_purchased_m: number | null;
+  primary_bid_shares_accepted_m: number | null;
+  primary_bid_shares_rejected_m: number | null;
 }): MetricPoint {
   return {
     tick_at: r.tick_at,
@@ -263,6 +276,9 @@ function toMetricPoint(r: {
     pool_hashrate_ph_avg_30d: r.pool_hashrate_ph_avg_30d,
     braiins_reachable: r.braiins_reachable,
     bid_edit_deadband_pct: r.bid_edit_deadband_pct,
+    primary_bid_shares_purchased_m: r.primary_bid_shares_purchased_m,
+    primary_bid_shares_accepted_m: r.primary_bid_shares_accepted_m,
+    primary_bid_shares_rejected_m: r.primary_bid_shares_rejected_m,
   };
 }
 

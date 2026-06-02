@@ -2900,6 +2900,14 @@ msgstr "Refundable on cancel:"
 msgid "Rejected"
 msgstr "Rejected"
 
+#: src/pages/Status.tsx
+msgid "rejection rate"
+msgstr "rejection rate"
+
+#: src/pages/Status.tsx
+msgid "rejection rate (Braiins)"
+msgstr "rejection rate (Braiins)"
+
 #: src/pages/Login.tsx
 msgid "Remember me on this device"
 msgstr "Remember me on this device"

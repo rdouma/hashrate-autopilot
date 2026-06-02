@@ -2900,6 +2900,14 @@ msgstr "Reembolsable al cancelar:"
 msgid "Rejected"
 msgstr "Rechazado"
 
+#: src/pages/Status.tsx
+msgid "rejection rate"
+msgstr "tasa de rechazo"
+
+#: src/pages/Status.tsx
+msgid "rejection rate (Braiins)"
+msgstr "tasa de rechazo (Braiins)"
+
 #: src/pages/Login.tsx
 msgid "Remember me on this device"
 msgstr "Recordarme en este dispositivo"

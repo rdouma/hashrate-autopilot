@@ -2900,6 +2900,14 @@ msgstr "Terug bij annuleren:"
 msgid "Rejected"
 msgstr "Geweigerd"
 
+#: src/pages/Status.tsx
+msgid "rejection rate"
+msgstr "afkeurpercentage"
+
+#: src/pages/Status.tsx
+msgid "rejection rate (Braiins)"
+msgstr "afkeurpercentage (Braiins)"
+
 #: src/pages/Login.tsx
 msgid "Remember me on this device"
 msgstr "Onthoud mij op dit apparaat"

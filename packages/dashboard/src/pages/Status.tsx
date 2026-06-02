@@ -92,7 +92,8 @@ function readStoredHashrateRightAxis(
     raw === 'solo_hashrate' ||
     raw === 'solo_device_count' ||
     raw === 'solo_max_temp' ||
-    raw === 'solo_best_diff'
+    raw === 'solo_best_diff' ||
+    raw === 'braiins_rejection_pct'
   ) {
     return raw;
   }
@@ -526,6 +527,7 @@ export function Status() {
             <option value="pool_luck_24h">{t`pool luck (24h)`}</option>
             <option value="pool_luck_7d">{t`pool luck (7d)`}</option>
             <option value="pool_luck_30d">{t`pool luck (30d)`}</option>
+            <option value="braiins_rejection_pct">{t`rejection rate (Braiins)`}</option>
             {/* #149: solo-mining series only listed when the master toggle is on. */}
             {soloMiningEnabled && (
               <>
@@ -655,6 +657,50 @@ export function Status() {
             }
           />
           <Row k={t`floor`} v={denomination.formatHashrate(s.config_summary.minimum_floor_hashrate_ph)} />
+          {/* #243: instantaneous share-rejection rate for the primary
+              bid, computed from the most recent ~10 min of ticks as
+              Δrejected_m / Δpurchased_m × 100. NULL window (no
+              points, no usable counter samples, or a bid rotation
+              inside the window leaving every delta non-positive)
+              renders as an em-dash. */}
+          <Row
+            k={t`rejection rate`}
+            v={(() => {
+              const pts = metricsQuery.data?.points ?? [];
+              if (pts.length < 2) return '—';
+              // Window: prefer 10 min of wall-clock back from the
+              // latest tick, but always include at least 2 points
+              // so a single-tick window doesn't render zero.
+              const latestAt = pts[pts.length - 1]!.tick_at;
+              const sinceMs = latestAt - 10 * 60_000;
+              let dr = 0;
+              let dp = 0;
+              for (let i = 1; i < pts.length; i += 1) {
+                if (pts[i]!.tick_at < sinceMs) continue;
+                const prev = pts[i - 1]!;
+                const cur = pts[i]!;
+                const pp = prev.primary_bid_shares_purchased_m;
+                const cp = cur.primary_bid_shares_purchased_m;
+                const pr = prev.primary_bid_shares_rejected_m;
+                const cr = cur.primary_bid_shares_rejected_m;
+                if (pp === null || cp === null || pr === null || cr === null) continue;
+                const localDp = cp - pp;
+                const localDr = cr - pr;
+                // Bid rotation -> counters reset -> negative delta.
+                // Skip those samples; aggregating across bid
+                // rotations would mix counter resets into the rate.
+                if (localDp <= 0) continue;
+                dp += localDp;
+                dr += localDr;
+              }
+              if (dp <= 0) return '—';
+              const pct = (dr / dp) * 100;
+              return `${new Intl.NumberFormat(intlLocale, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              }).format(pct)}%`;
+            })()}
+          />
           {/* #144: gate on current-delivered-below-floor in addition to
               the daemon's debounce-held `below_floor_since` timer. The
               timer is kept non-null for ~3 above-floor ticks after a

@@ -15,6 +15,7 @@
 import type {
   AccountBalances,
   BidDeliveryHistory,
+  BidDetail,
   BidsResponse,
   BraiinsClient,
   FeeSchedule,
@@ -88,6 +89,19 @@ export class BraiinsService {
 
   async getBidDeliveryHistory(orderId: string): Promise<BidDeliveryHistory> {
     const v = await this.client.getBidDeliveryHistory(orderId);
+    this.lastApiOkAt = this.now();
+    return v;
+  }
+
+  /**
+   * #243: per-bid detail with `counters_committed` (cumulative share
+   * counters). Called once per tick for the primary owned bid so the
+   * dashboard can derive the instantaneous rejection rate from
+   * tick-to-tick deltas. The bids list endpoint doesn't include
+   * counters, hence the extra GET.
+   */
+  async getBidDetail(orderId: string): Promise<BidDetail> {
+    const v = await this.client.getBidDetail(orderId);
     this.lastApiOkAt = this.now();
     return v;
   }
