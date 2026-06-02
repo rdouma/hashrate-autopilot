@@ -177,17 +177,6 @@ export interface MetricPoint {
    * migration 0100 for pre-existing rows.
    */
   bid_edit_deadband_pct: number;
-  /**
-   * #243: primary owned bid's cumulative-since-bid-creation share
-   * counters sampled from Braiins `/spot/bid/detail.counters_committed`.
-   * The chart's `braiins_rejection_pct` right-axis series derives the
-   * instantaneous per-tick rate as `Δrejected / Δpurchased × 100`,
-   * NULL-skipping ticks where Δpurchased ≤ 0 (counter reset on bid
-   * rotation, or no shares purchased in the bucket).
-   */
-  primary_bid_shares_purchased_m: number | null;
-  primary_bid_shares_accepted_m: number | null;
-  primary_bid_shares_rejected_m: number | null;
 }
 
 export interface BidEventView {
