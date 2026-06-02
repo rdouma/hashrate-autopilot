@@ -7,7 +7,7 @@ manifestVersion: 1
 id: rdouma-hashrate-autopilot
 category: bitcoin
 name: Hashrate Autopilot
-version: "1.10.0"
+version: "1.11.0"
 tagline: Autopilot for renting hashrate to mine on Ocean Mining
 icon: https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/assets/icon-512.png
 # Umbrel renders description literally - no YAML folding of soft
@@ -51,6 +51,26 @@ defaultPassword: ""
 submitter: Remco Douma
 submission: https://github.com/rdouma/hashrate-autopilot
 releaseNotes: |
+  v1.11.0 - BIP 110 scanner restructure, Telegram payout-lifecycle alerts, chart color picker, offline-period reconstruction.
+
+  NEW
+  - BIP 110 scanner overhaul: range selector replaced with a clean Current epoch / All toggle anchored at the first known signaling block (938,903). Per-epoch breakdown with expandable rows showing pool name, miner template-author, block reward, fees, size, and confirmations. Each epoch carries a MASF progress bar against the 55% threshold (1,109 signaling blocks of 2016) and a forecasted end date. The deployment-status tooltip is lifecycle-aware: LOCKED_IN forecasts the next boundary, ACTIVE distinguishes miner-activated (MASF) from user-activated (UASF, block 965,664), SIGNALING tense-switches its UASF clause when the chain tip crosses the flag-day. UASF forecast updates dynamically as the chain progresses.
+  - Telegram payout-lifecycle alerts (#226): two new opt-in INFO event classes. notify_on_payout_initiated fires the tick Ocean debits unpaid_sat by >30% with a residual below the on-chain payout threshold (signals Ocean has committed the payout to the coinbase of the next block it finds; the TX hasn't confirmed yet). notify_on_payout_confirmed fires once per new on-chain payout to your configured address. Baselined at boot from rewardEventsRepo.maxId() so a fresh-install backfill doesn't fire a flood. Both are off by default; toggle on under Config -> Notifications.
+  - Chart color picker (#238): per-series color overrides for every named line and event marker on the Hashrate and Price charts. Curated 12-swatch palette + native color input + reset-to-default per slot. Settings under Config -> Display & Logging -> Chart colors. Eighteen named slots covering the chart's color vocabulary; missing keys fall back to the documented default.
+  - Difficulty-adjustment tooltip enrichment (#229): the violet pickaxe at every retarget tick now shows new vs previous difficulty, percent change, block height, average block time, network hashrate, and pool blocks this epoch.
+  - Historical network-difficulty backfill from bitcoind (#230): boot-time service walks NULL tick_metrics.network_difficulty rows (mostly pre-migration-0053 ticks) and writes the correct epoch's difficulty from bitcoind. Guarded with IS NULL so live observations never get clobbered.
+  - Offline-period reconstruction (#241): daemon-offline gaps render as a hatched band and a boot-time backfill walks every gap inserting synthetic ticks every 5 minutes plus one at each detected difficulty retarget. Pool-luck line step-changes through the gap, retarget markers land at canonical time when bitcoind is configured (nearest-pool-block estimate otherwise). Bypasses the recompute eligibility gate for synthetic rows so fresh installs with shallow pool_blocks history still get pool_luck populated.
+
+  FIXES
+  - Pool-block-credited Telegram credit math (#239): credit number now reads Ocean's actual TIDES credit (delta in ocean_unpaid_sat against the previous fire), with the legacy share_log_pct × reward estimate kept only as a prefixed ~ fallback for first alert after restart, multi-block ticks, or right after a payout fired in the interval.
+  - Right-axis at constant-data ranges (#236): when every visible tick formats to the same number, the axis re-pads to a value-relative minimum, anchoring the actual value at top with nice round ticks below; no more single-label collapse.
+  - Solo fleet right-axis at the All chart range (#232): no longer silently truncates to 24h.
+  - P&L collected (on-chain) reads lifetime received (#240 follow-up): switched from current UTXO balance to the sum of reward_events. A payout received then spent still counts; "we count what they put in."
+  - Boot-time payout-address mismatch detection (#240 follow-up): on every restart the daemon compares cfg.btc_payout_address against the address last fed to runHistoricalBackfill; on mismatch it clears reward_events + re-runs the backfill against the live address. Even on match, the daemon additively re-runs the backfill so users whose reward_events was missing a TX from a prior boot (electrs hiccup, transient error, or a now-fixed code bug like the pre-build-558 coinbase-only filter) pick it up next restart.
+  - Dropped the coinbase-only filter in historical backfill (#240): empirically Ocean payouts are NOT always coinbase-direct. Ocean's pool wallet (P2SH 37dvwZZoT3D7RXpTCpN2yKzMmNs2i2Fd1n) sweeps coinbase outputs into batched multi-output transactions to operators. Any output paying the configured address now counts.
+
+  New migrations 0101-0105 (payout-lifecycle alert toggles, Display & Logging locale plumbing, chart color overrides JSON, tick_metrics.synthetic, runtime_state.last_backfilled_payout_address). Safe to upgrade from any 1.10.x release.
+
   v1.10.0 - fee protection + configurable edit deadband, deadband shown in EDIT_PRICE tooltip, chart-marker cap actually works.
 
   NEW
