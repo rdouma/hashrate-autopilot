@@ -13,8 +13,9 @@ Docker and had an Umbrel Community App Store manifest; this variation adds the S
 build and sideload `.s9pk` packages while leaving the daemon, dashboard, and controller behavior intact.
 
 The StartOS work lives in `startos/` and defines the service manifest, version graph, persistent data volume,
-dashboard interface, dependency declarations for Bitcoin / Electrs / Datum, backup hooks, and the runtime daemon
-entrypoint. `Makefile` and `s9pk.mk` wrap `start-cli s9pk pack`, and `instructions.md` gives operators the
+dashboard interface, dependency declarations for Bitcoin Knots or Core via StartOS package ID `bitcoind`,
+Electrs, and Datum Gateway, backup hooks, and the runtime daemon entrypoint. `Makefile` and `s9pk.mk` wrap
+`start-cli s9pk pack`, and `instructions.md` gives operators the
 StartOS-specific setup notes shown during install. The package has been built for `x86_64` and `aarch64`; the
 `x86_64` package was successfully sideloaded and started on a StartOS server.
 

@@ -21,7 +21,7 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json && cp -R src/state/migrations dist/state/",
+    "build": "tsc -b tsconfig.json --force && cp -R src/state/migrations dist/state/",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

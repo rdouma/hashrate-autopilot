@@ -41,9 +41,9 @@ export const manifest = setupManifest({
     stop: null,
   },
   dependencies: {
-    bitcoin: {
+    bitcoind: {
       description:
-        'Provides a local Bitcoin node for Datum Gateway and optional BIP 110 block-header checks.',
+        'Provides a local Bitcoin node, including Bitcoin Knots, for Datum Gateway and optional BIP 110 block-header checks.',
       optional: false,
       s9pk: null,
     },

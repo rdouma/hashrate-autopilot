@@ -12,6 +12,7 @@ dist
 coverage
 *.log
 *.tsbuildinfo
+**/*.tsbuildinfo
 .tsbuildinfo
 .vite
 .cache
