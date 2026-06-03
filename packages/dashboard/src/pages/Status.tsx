@@ -2917,7 +2917,10 @@ function FinancePanel({
               stays right-aligned across all four lines above. Same
               green/red sentiment as `= net` since it's the same
               quantity expressed as a ratio. Empty sign slot keeps the
-              label aligned under "net". */}
+              label aligned under "net". splitUnit pulls the `%` into
+              its own muted span so the percent symbol gets the same
+              recede-into-the-background treatment as the sat symbol
+              on the rows above. */}
           {data.net_sat !== null && data.spent_sat > 0 && (() => {
             const pct = (data.net_sat / data.spent_sat) * 100;
             const signStr = pct >= 0 ? '+' : '';
@@ -2926,6 +2929,7 @@ function FinancePanel({
               { minimumFractionDigits: 1, maximumFractionDigits: 1 },
               intlLocale,
             )}%`;
+            const split = splitUnit(pctStr);
             return (
               <Tooltip
                 text={t`Net divided by spent, expressed as a percentage. −100% means we've spent everything with nothing to show, 0% means we've broken even, and positive means we've earned more than we paid for hashrate.`}
@@ -2933,7 +2937,16 @@ function FinancePanel({
                 <div className="cursor-help flex items-baseline text-xs py-0.5 gap-2 text-slate-500">
                   <span className="font-mono tabular-nums w-3" aria-hidden="true" />
                   <span className="flex-1">{t`return on spend`}</span>
-                  <span className={`font-mono ${netColor}`}>{pctStr}</span>
+                  <span className={`font-mono ${netColor}`}>
+                    {split ? (
+                      <>
+                        {split.num}
+                        <span className="text-slate-500 text-[11px] ml-1">{split.unit}</span>
+                      </>
+                    ) : (
+                      pctStr
+                    )}
+                  </span>
                 </div>
               </Tooltip>
             );
@@ -3593,6 +3606,14 @@ function splitUnit(v: string): { num: string; unit: string } | null {
   // USD-prefixed rate: "$4.75/PH/day" -> { num: "$4.75", unit: "/PH/day" }
   const usdRate = v.match(/^(.+?)(\/(?:TH|PH|EH)\/day)$/);
   if (usdRate?.[1] && usdRate[2]) return { num: usdRate[1], unit: usdRate[2] };
+  // Trailing percent sign, no whitespace. Lets share log / uptime /
+  // return-on-spend / rejection rate all share the same number-then-
+  // muted-unit treatment the sat values get: small space between
+  // number and symbol, symbol in muted slate. Asked for by the
+  // operator: "Why is the Satoshi symbol muted gray and the
+  // percentage symbol not? Just makes it a bit more logical."
+  const pct = v.match(/^(.+?)(%)$/);
+  if (pct?.[1] && pct[2]) return { num: pct[1], unit: pct[2] };
   return null;
 }
 

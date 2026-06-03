@@ -2,6 +2,10 @@
 
 ## 2026-06-03
 
+### `[UI]` Percent symbol now mirrors the sat symbol's muted styling (small space + slate-500)
+
+Operator: the sat symbol on numeric values has a small space before it and renders in muted slate, but the percent symbol on share log / uptime / return-on-spend / rejection rate had no space and rendered in the main text colour. Inconsistent for no good reason. Extended the value-formatter's unit detection to also recognise a trailing `%`, so every percentage-bearing row inherits the same number-then-muted-unit treatment: small left margin between the number and the symbol, symbol in `text-slate-500` at one font size down. Same change reaches the uptime stat card (the `%` now sits below the big number, matching the other stat cards' unit row), the Ocean panel's share log, the Braiins card's rejection rate row, and the new lifetime P&L "return on spend" row in one pass.
+
 ### `[UI]` "return on spend" percentage on its own row in the lifetime P&L card (#249)
 
 Build 584 added the percentage in parentheses next to the `= net` value. Operator: that pushes the sat-column right-alignment out of whack - all the figures used to line up at the unit symbol, and the trailing `(−7.1%)` breaks that. Moved the percentage to a dedicated row immediately below `= net`, labeled "return on spend", same green/red sentiment colour as the net line above. Empty sign-column slot keeps the label visually aligned under "net". The four sat rows above (spent / unpaid earnings / collected / net) now align cleanly at the unit symbol again.
