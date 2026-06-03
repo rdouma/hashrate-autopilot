@@ -23,6 +23,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
         DB_PATH: '/app/data/state.db',
         DASHBOARD_STATIC: 'packages/dashboard/dist',
         APP_VERSION: appVersion,
+        BHA_BITCOIND_RPC_URL: 'http://bitcoind.startos:8332',
         BHA_DATUM_API_URL: 'http://datum.startos:7152',
         BHA_ELECTRS_HOST: 'electrs.startos',
         BHA_ELECTRS_PORT: '50001',

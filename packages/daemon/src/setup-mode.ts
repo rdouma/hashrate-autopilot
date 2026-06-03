@@ -239,10 +239,11 @@ export async function createSetupModeServer(
  * runs bitcoind on the same appliance doesn't have to re-enter creds.
  *
  * Both platforms use the same env var names in 2025, so a single
- * lookup covers both. We accept a pair of common synonyms for the
- * URL (`BITCOIN_RPC_URL` directly, or split `BITCOIN_RPC_HOST` +
- * `BITCOIN_RPC_PORT`) so different deployment manifests don't have
- * to rename their existing variables.
+ * lookup covers both. The explicit Hashrate Autopilot env vars win
+ * over the generic appliance ones, then we accept a pair of common
+ * synonyms for the URL (`BITCOIN_RPC_URL` directly, or split
+ * `BITCOIN_RPC_HOST` + `BITCOIN_RPC_PORT`) so different deployment
+ * manifests don't have to rename their existing variables.
  *
  * Returns nulls (not the empty string) for missing fields so the
  * wizard can distinguish "not detected" from "detected as empty".
@@ -255,15 +256,17 @@ export interface DetectedBitcoindEnv {
 
 export function detectBitcoindEnv(env: NodeJS.ProcessEnv): DetectedBitcoindEnv {
   const url =
+    env['BHA_BITCOIND_RPC_URL']?.trim() ||
     env['BITCOIN_RPC_URL']?.trim() ||
     (env['BITCOIN_RPC_HOST']?.trim() && env['BITCOIN_RPC_PORT']?.trim()
       ? `http://${env['BITCOIN_RPC_HOST']}:${env['BITCOIN_RPC_PORT']}`
       : '') ||
     null;
-  const user = env['BITCOIN_RPC_USER']?.trim() || null;
+  const user = env['BHA_BITCOIND_RPC_USER']?.trim() || env['BITCOIN_RPC_USER']?.trim() || null;
   // Both BITCOIN_RPC_PASS and BITCOIN_RPC_PASSWORD show up in the
   // wild; accept either.
   const password =
+    env['BHA_BITCOIND_RPC_PASSWORD']?.trim() ||
     env['BITCOIN_RPC_PASSWORD']?.trim() || env['BITCOIN_RPC_PASS']?.trim() || null;
   return { url: url || null, user, password };
 }

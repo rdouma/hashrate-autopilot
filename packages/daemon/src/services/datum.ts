@@ -1,8 +1,10 @@
 /**
  * Datum Gateway stats poller (issue #19).
  *
- * Polls `{apiUrl}/umbrel-api` once per tick when configured, parses the
- * three-stats JSON response, and exposes connection count + hashrate.
+ * Polls Datum Gateway once per tick when configured, exposes connection
+ * count + hashrate, and supports both shipped stats surfaces:
+ *   - `{apiUrl}/umbrel-api` JSON when Datum is built with DATUM_API_FOR_UMBREL.
+ *   - `{apiUrl}/` dashboard HTML fallback used by the StartOS package.
  * Integration is informational only - the control loop does not depend
  * on Datum being reachable. Failures are counted and surfaced as
  * `reachable: false`; they never throw out of `poll()`.
@@ -60,6 +62,14 @@ const HASHRATE_UNIT_TO_PH: Record<string, number> = {
   'eh/s': 1_000,
 };
 
+function hashrateUnitMultiplier(unit: string): number | undefined {
+  const normalized = unit
+    .toLowerCase()
+    .trim()
+    .replace('/sec', '/s');
+  return HASHRATE_UNIT_TO_PH[normalized];
+}
+
 export class DatumService {
   private readonly apiUrl: string;
   private readonly timeoutMs: number;
@@ -89,6 +99,9 @@ export class DatumService {
       const response = await fetch(`${this.apiUrl}/umbrel-api`, {
         signal: controller.signal,
       });
+      if (response.status === 404) {
+        return await this.pollStartosDashboard(checkedAt, controller.signal);
+      }
       if (!response.ok) {
         return this.fail(checkedAt, `HTTP ${response.status}`);
       }
@@ -109,6 +122,35 @@ export class DatumService {
     } finally {
       clearTimeout(timeout);
     }
+  }
+
+  private async pollStartosDashboard(
+    checkedAt: number,
+    signal: AbortSignal,
+  ): Promise<DatumPollResult> {
+    const response = await fetch(`${this.apiUrl}/`, { signal });
+    if (!response.ok) {
+      return this.fail(checkedAt, `HTTP ${response.status}`);
+    }
+    const html = await response.text();
+    const connections =
+      extractDashboardNumber(html, 'Total Work Subscriptions') ??
+      extractDashboardNumber(html, 'Total Connections');
+    const hashrate_ph = extractDashboardHashratePh(html);
+
+    if (connections === null && hashrate_ph === null) {
+      return this.fail(checkedAt, 'Datum dashboard stats not found');
+    }
+
+    this.lastOkAt = checkedAt;
+    this.consecutiveFailures = 0;
+    return {
+      reachable: true,
+      connections,
+      hashrate_ph,
+      checked_at: checkedAt,
+      error: null,
+    };
   }
 
   snapshot(): { last_ok_at: number | null; consecutive_failures: number } {
@@ -149,13 +191,42 @@ function extractHashratePh(payload: UmbrelApiResponse): number | null {
   const n = Number.parseFloat(item.text);
   if (!Number.isFinite(n)) return null;
   const unit = item.subtext?.toLowerCase().trim() ?? '';
-  const multiplier = HASHRATE_UNIT_TO_PH[unit];
+  const multiplier = hashrateUnitMultiplier(unit);
   if (multiplier === undefined) {
     // Unknown unit - fall back to the pre-fix behaviour (assume Th/s)
     // rather than returning null, so a future Datum label change
     // degrades gracefully instead of blanking the field.
     return n / 1_000;
   }
+  return n * multiplier;
+}
+
+function extractDashboardNumber(html: string, label: string): number | null {
+  const lower = html.toLowerCase();
+  const start = lower.indexOf(label.toLowerCase());
+  if (start < 0) return null;
+  const afterLabel = html.slice(start + label.length);
+  const textAfterLabel = afterLabel.replace(/<[^>]*>/g, ' ');
+  const match = textAfterLabel.match(/[-+]?\d+(?:\.\d+)?/);
+  if (!match) return null;
+  const n = Number.parseFloat(match[0]);
+  return Number.isFinite(n) ? n : null;
+}
+
+function extractDashboardHashratePh(html: string): number | null {
+  const lower = html.toLowerCase();
+  const start = lower.indexOf('estimated hashrate');
+  if (start < 0) return null;
+  const afterLabel = html.slice(start + 'estimated hashrate'.length);
+  const textAfterLabel = afterLabel.replace(/<[^>]*>/g, ' ');
+  const match = textAfterLabel.match(/([-+]?\d+(?:\.\d+)?)\s*([a-z]+\/(?:s|sec))/i);
+  if (!match) return null;
+  const amount = match[1];
+  const unit = match[2];
+  if (!amount || !unit) return null;
+  const n = Number.parseFloat(amount);
+  if (!Number.isFinite(n)) return null;
+  const multiplier = hashrateUnitMultiplier(unit) ?? (1 / 1_000);
   return n * multiplier;
 }
 

@@ -132,7 +132,7 @@ hashrate-autopilot/
 │   │   │   ├── payout-observer.ts  (Electrs-preferred; bitcoind fallback)
 │   │   │   ├── pool-health.ts      (TCP probe of Datum Gateway :23334)
 │   │   │   ├── ocean.ts            (Ocean pool REST client: stats, blocks, earnings)
-│   │   │   ├── datum.ts            (optional /umbrel-api poller - gateway-measured hashrate + workers)
+│   │   │   ├── datum.ts            (optional Datum stats poller - gateway-measured hashrate + workers)
 │   │   │   ├── hashprice-cache.ts  (in-memory hashprice cache, fed from Ocean)
 │   │   │   ├── btc-price.ts        (BTC/USD oracle - CoinGecko / Coinbase / Bitstamp / Kraken)
 │   │   │   ├── account-spend.ts    (whole-account spend ledger from /v1/account/transaction)
@@ -287,7 +287,7 @@ CREATE TABLE config (
   bitcoind_rpc_password TEXT,
   payout_source TEXT NOT NULL DEFAULT 'none',       -- 'none' | 'electrs' | 'bitcoind'
   btc_price_source TEXT NOT NULL DEFAULT 'coingecko', -- 'none' | 'coingecko' | 'coinbase' | 'bitstamp' | 'kraken' (#77, migration 0050)
-  datum_api_url TEXT,                               -- optional Datum Gateway /umbrel-api URL
+  datum_api_url TEXT,                               -- optional Datum Gateway stats/dashboard URL
   -- Outage tolerance (split thresholds, migration 0082)
   datum_unreachable_alert_after_minutes INTEGER NOT NULL DEFAULT 10,
   sustained_paused_alert_after_minutes INTEGER NOT NULL DEFAULT 10,

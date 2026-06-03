@@ -2,7 +2,7 @@
 
 > **Status:** **WORKING and stable.** Verified live on 2026-04-19
 > and running uninterrupted since - the daemon has been polling
-> `/umbrel-api` every tick, recording `datum_hashrate_ph` on every
+> Datum stats every tick, recording `datum_hashrate_ph` on every
 > `tick_metrics` row, with zero post-setup interventions needed. The
 > recipe below is the verified path. It differs from the original
 > research notes in two important ways - the `sed` pattern must match
@@ -14,23 +14,27 @@
 
 The hashrate dashboard wants to read Datum Gateway's own hashrate
 estimate alongside what Braiins reports, so the operator can see both
-perspectives on the same chart. Datum exposes an HTTP API with a
-`/umbrel-api` endpoint that returns JSON with connection count and
-hashrate - but the Umbrel app package only maps the stratum port
+perspectives on the same chart. Datum exposes stats on its HTTP API
+port. Some builds expose `/umbrel-api` JSON with connection count and
+hashrate. The StartOS package does not currently expose that JSON route,
+so Hashrate Autopilot falls back to parsing the regular Datum dashboard
+HTML at `/`. On Umbrel, the app package only maps the stratum port
 (23334) to the host network. The API port is live inside the Docker
-container but unreachable from the LAN.
+container but unreachable from the LAN until exposed.
 
-Despite the name, `/umbrel-api` is a **Datum Gateway** endpoint, not
-an Umbrel-side proxy. It's defined in
+Despite the name, `/umbrel-api` is a **Datum Gateway** endpoint when
+the build enables it, not an Umbrel-side proxy. It's defined in
 [`datum_gateway/src/datum_api.c`](https://github.com/OCEAN-xyz/datum_gateway/blob/master/src/datum_api.c)
 under `#ifdef DATUM_API_FOR_UMBREL` - the Umbrel Datum image
 (`ghcr.io/retropex/datum:v1.14`) is built with that flag, so the
 endpoint lives in the Datum process itself. Umbrel just renders the
 JSON it returns into the small stats widget on the app card. The
-default Datum API port is 7152; the Umbrel image rewires that to
-container port 21000 internally to fit Umbrel's app-proxy
-convention, which is why the host:7152 → container:21000 mapping
-below works.
+StartOS Datum package exposes the same HTTP dashboard port but does not
+compile that optional JSON route, so the daemon reads the dashboard
+HTML labels instead. The default Datum API port is 7152; the Umbrel
+image rewires that to container port 21000 internally to fit Umbrel's
+app-proxy convention, which is why the host:7152 → container 21000
+mapping below works.
 
 The fix is a one-line edit to the Datum app's `docker-compose.yml`
 to add a second host→container port mapping, followed by a full
@@ -234,10 +238,11 @@ given app version, and that's enough for now.
 
 1. Config field `datum_api_url` (nullable string, default null -
    integration is disabled when unset).
-2. Service `packages/daemon/src/services/datum.ts` polls
-   `{datum_api_url}/umbrel-api` each tick, parses the three-stats
-   JSON, extracts connection count and hashrate (Th/s), and
-   converts hashrate to PH/s.
+2. Service `packages/daemon/src/services/datum.ts` first polls
+   `{datum_api_url}/umbrel-api` each tick. If that JSON endpoint is
+   absent, it falls back to `{datum_api_url}/` and parses the Datum
+   dashboard HTML used by the StartOS package. It extracts connection
+   count and hashrate, then converts hashrate to PH/s.
 3. Column `datum_hashrate_ph REAL` on `tick_metrics` (migration
    0029) stores the per-tick Datum-reported hashrate, null when
    the integration is disabled or the poll failed.

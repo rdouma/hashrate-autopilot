@@ -46,6 +46,15 @@ describe('createSetupModeServer', () => {
   });
 
   afterEach(async () => {
+    delete process.env.BHA_BITCOIND_RPC_URL;
+    delete process.env.BHA_BITCOIND_RPC_USER;
+    delete process.env.BHA_BITCOIND_RPC_PASSWORD;
+    delete process.env.BITCOIN_RPC_URL;
+    delete process.env.BITCOIN_RPC_HOST;
+    delete process.env.BITCOIN_RPC_PORT;
+    delete process.env.BITCOIN_RPC_USER;
+    delete process.env.BITCOIN_RPC_PASSWORD;
+    delete process.env.BITCOIN_RPC_PASS;
     await server.stop();
     await closeDatabase(handle);
   });
@@ -72,6 +81,22 @@ describe('createSetupModeServer', () => {
     expect(body.current_config).toBeNull();
   });
 
+  it('GET /api/setup-info prefers explicit BHA_BITCOIND_RPC_URL for the bitcoind default', async () => {
+    process.env.BHA_BITCOIND_RPC_URL = 'http://bitcoind.startos:8332';
+    process.env.BITCOIN_RPC_URL = 'http://external-proxy.local:64090';
+
+    const res = await server.app.inject({ method: 'GET', url: '/api/setup-info' });
+    expect(res.statusCode).toBe(200);
+    const body = res.json() as {
+      defaults: { bitcoind_rpc_url: string; payout_source: string };
+      detected_bitcoind: { url: string | null };
+    };
+
+    expect(body.defaults.bitcoind_rpc_url).toBe('http://bitcoind.startos:8332');
+    expect(body.defaults.payout_source).toBe('bitcoind');
+    expect(body.detected_bitcoind.url).toBe('http://bitcoind.startos:8332');
+  });
+
   it('GET /api/setup-info reports existing config when one exists', async () => {
     await configRepo.upsert(validSetupPayload().config);
     const res = await server.app.inject({ method: 'GET', url: '/api/setup-info' });
@@ -94,6 +119,22 @@ describe('createSetupModeServer', () => {
     const secrets = await secretsRepo.get();
     expect(secrets).not.toBeNull();
     expect(secrets!.braiins_owner_token).toBe('owner-tok');
+  });
+
+  it('POST /api/setup fills empty bitcoind URL from BHA_BITCOIND_RPC_URL', async () => {
+    process.env.BHA_BITCOIND_RPC_URL = 'http://bitcoind.startos:8332';
+    const payload = validSetupPayload();
+    payload.config.bitcoind_rpc_url = '';
+
+    const res = await server.app.inject({
+      method: 'POST',
+      url: '/api/setup',
+      payload,
+    });
+
+    expect(res.statusCode).toBe(200);
+    const cfg = await configRepo.get();
+    expect(cfg?.bitcoind_rpc_url).toBe('http://bitcoind.startos:8332');
   });
 
   it('POST /api/setup invokes onSetupComplete after a successful write', async () => {
@@ -235,6 +276,15 @@ describe('detectBitcoindEnv', () => {
         BITCOIN_RPC_PORT: '8332',
       }),
     ).toEqual({ url: 'http://from-url:18332', user: null, password: null });
+  });
+
+  it('BHA_BITCOIND_RPC_URL wins over generic appliance Bitcoin RPC env vars', () => {
+    expect(
+      detectBitcoindEnv({
+        BHA_BITCOIND_RPC_URL: 'http://bitcoind.startos:8332',
+        BITCOIN_RPC_URL: 'http://external-proxy.local:64090',
+      }),
+    ).toEqual({ url: 'http://bitcoind.startos:8332', user: null, password: null });
   });
 
   it('captures user + password', () => {

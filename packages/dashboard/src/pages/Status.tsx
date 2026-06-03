@@ -3101,7 +3101,7 @@ function DatumPanel({
             label={t`API reachable`}
             reachable={datum.reachable}
             downLabel={t`API unreachable (${datum.consecutive_failures})`}
-            title={t`Datum /umbrel-api HTTP poll.`}
+            title={t`Datum stats HTTP poll.`}
           />
         )}
       </div>
