@@ -1,15 +1,8 @@
--- #244: persist the dashboard card/block display order daemon-side so
--- it follows the operator between devices. The feature request was
--- "every time I open the dashboard on my phone I have to scroll to the
--- bottom to see the P&L card" - browser-only localStorage would mean
--- the order set on a laptop wouldn't carry to the phone, defeating the
--- point. The dashboard PATCHes a JSON array of stable block IDs here.
---
--- One JSON column (not one row per block) so future blocks can be
--- added without another migration; the dashboard reconciles the saved
--- list against the current default block set on read, dropping unknown
--- IDs and appending newly added blocks at their default position.
---
--- Default '[]' = "use the built-in default order", preserving the
--- current layout for every existing install.
+-- #244: column for the dashboard card/block display order (drag to
+-- reorder). RESERVED / currently dormant: the operator chose per-device
+-- ordering, so the dashboard stores the order in browser localStorage
+-- and does not write here. The column is kept (cheaper than a revert,
+-- and avoids schema divergence on any instance that already ran this
+-- migration); the daemon plumbing is ready if cross-device sync is ever
+-- wanted. JSON array of stable block IDs; '[]' = built-in default order.
 ALTER TABLE config ADD COLUMN dashboard_card_order TEXT NOT NULL DEFAULT '[]';

@@ -348,10 +348,10 @@ export interface AppConfig {
    *  `'{}'` means use every series's built-in default. Parsed
    *  defensively via `lib/chartColors.parseOverrides`. */
   chart_color_overrides: string;
-  /** #244: dashboard card/block display order as a JSON string array of
-   *  stable block IDs. Empty `'[]'` means use the built-in default
-   *  order. Reconciled against the current default block list on read
-   *  via `lib/cardOrder.reconcileOrder`. */
+  /** #244: RESERVED / dormant. Daemon-side card-order column kept for
+   *  forward compatibility; the dashboard stores the drag-chosen order
+   *  per-device in localStorage (see lib/cardOrder) and does not read or
+   *  write this field. Always `'[]'` in practice. */
   dashboard_card_order: string;
   notification_locale: 'en' | 'nl' | 'es';
   electrs_host: string | null;

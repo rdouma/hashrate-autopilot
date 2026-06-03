@@ -902,10 +902,6 @@ msgstr "Grafiek-markers"
 msgid "Chart smoothing"
 msgstr "Grafiek-smoothing"
 
-#: src/pages/Status.tsx
-msgid "Charts"
-msgstr "Grafieken"
-
 #: src/pages/Config.tsx
 msgid "Chat ID"
 msgstr "Chat-ID"
@@ -1148,6 +1144,10 @@ msgstr "Daemon-opstart"
 msgid "Daemon's public IP:"
 msgstr "Publiek IP van de daemon:"
 
+#: src/components/Layout.tsx
+msgid "dashboard layout"
+msgstr "dashboard-indeling"
+
 #: src/pages/Setup.tsx
 msgid "Dashboard password"
 msgstr "Dashboard-wachtwoord"
@@ -1313,13 +1313,21 @@ msgstr "Verschillende uitbetaaladressen die momenteel op Ocean minen."
 msgid "Do not scan"
 msgstr "Niet scannen"
 
-#: src/pages/Status.tsx
+#: src/components/Layout.tsx
 msgid "Done"
 msgstr "Klaar"
 
+#: src/components/Layout.tsx
+msgid "Done rearranging"
+msgstr "Klaar met herschikken"
+
 #: src/pages/Status.tsx
-msgid "Drag the cards by their title bar to reorder. Your layout is saved and follows you across devices."
-msgstr "Sleep de kaarten aan hun titelbalk om de volgorde te wijzigen. Je indeling wordt opgeslagen en volgt je op al je apparaten."
+msgid "Drag the cards by their title bar to reorder."
+msgstr "Sleep de kaarten aan hun titelbalk om de volgorde te wijzigen."
+
+#: src/components/Layout.tsx
+msgid "Drag the dashboard cards into the order you want"
+msgstr "Sleep de dashboardkaarten in de gewenste volgorde"
 
 #: src/pages/Status.tsx
 msgid "Drag to reorder"
@@ -1699,6 +1707,7 @@ msgid "Hashrate below floor for"
 msgstr "Hashrate onder de vloer gedurende"
 
 #: src/pages/Config.tsx
+#: src/pages/Status.tsx
 msgid "Hashrate chart"
 msgstr "Hashrate-grafiek"
 
@@ -1820,6 +1829,10 @@ msgstr "onjuist wachtwoord"
 #: src/pages/Config.tsx
 msgid "increase"
 msgstr "verhogen"
+
+#: src/pages/Status.tsx
+msgid "Indicators"
+msgstr "Indicatoren"
 
 #: src/pages/Alerts.tsx
 msgid "info"
@@ -2653,6 +2666,10 @@ msgid "Percentage of overpay below which the autopilot does NOT issue an EDIT_PR
 msgstr "Percentage van overpay waaronder de autopilot GEEN EDIT_PRICE uitvoert. Standaard 20 reproduceert het oude gedrag (overpay / 5). Zet op 50 om de edit-frequentie te halveren en ~2x meer prijs-jitter te tolereren voordat opnieuw wordt geprijsd - handig om chart-ruis te dempen vandaag, en als bescherming tegen per-edit-fees als Braiins ooit een EDIT-fee invoert. tick_size is altijd de absolute ondergrens; Braiins weigert kleinere edits sowieso."
 
 #: src/pages/Status.tsx
+msgid "Period selector"
+msgstr "Periodekiezer"
+
+#: src/pages/Status.tsx
 msgid "Pipeline"
 msgstr "Pijplijn"
 
@@ -2797,6 +2814,7 @@ msgid "Price"
 msgstr "Prijs"
 
 #: src/pages/Config.tsx
+#: src/pages/Status.tsx
 msgid "Price chart"
 msgstr "Prijsgrafiek"
 
@@ -2889,9 +2907,13 @@ msgstr "Opnieuw instellen"
 msgid "Read-only token"
 msgstr "Alleen-lezen token"
 
-#: src/pages/Status.tsx
+#: src/components/Layout.tsx
 msgid "Rearrange"
 msgstr "Herschikken"
+
+#: src/components/Layout.tsx
+msgid "Rearrange cards"
+msgstr "Kaarten herschikken"
 
 #: src/pages/Status.tsx
 msgid "rebuild"
@@ -2957,17 +2979,22 @@ msgstr "Apparaat verwijderen"
 msgid "Replace file…"
 msgstr "Bestand vervangen…"
 
+#: src/components/Layout.tsx
+msgid "Reset"
+msgstr "Herstellen"
+
 #: src/pages/Config.tsx
 msgid "Reset all to defaults"
 msgstr "Alles terugzetten naar standaard"
 
-#: src/pages/Status.tsx
-msgid "Reset order"
-msgstr "Volgorde herstellen"
-
 #: src/components/ChartColorPicker.tsx
 msgid "Reset to default"
 msgstr "Terugzetten naar standaard"
+
+#: src/components/Layout.tsx
+#: src/pages/Status.tsx
+msgid "Reset to default order"
+msgstr "Standaardvolgorde herstellen"
 
 #: src/pages/Config.tsx
 msgid "Residential ISPs reassign your public IP periodically. If you put a raw IP here it will work today and silently break the day your ISP rotates it. Use a DDNS hostname instead - free options include DuckDNS (no expiration, no monthly re-confirm) and No-IP. Configure DDNS in the <0>Dynamic DNS</0> panel below; once set up, point Pool URL at the hostname (e.g. <1>stratum+tcp://yourname.duckdns.org:23334</1>) and the daemon keeps the hostname mapped to your current IP automatically. Static IPs / VPS / business connections can keep using a raw IP and ignore this note."
@@ -3780,6 +3807,10 @@ msgstr "je Bitcoin-node registreert BIP 110 niet als benoemde softfork"
 #: src/components/Bip110ScanCard.tsx
 msgid "Your Bitcoin node supports BIP 110, which is currently in its activation window. There are two paths it can activate by:"
 msgstr "Je Bitcoin-node ondersteunt BIP 110, dat zich momenteel in zijn activatievenster bevindt. Er zijn twee paden waarlangs het kan activeren:"
+
+#: src/pages/Status.tsx
+msgid "Your layout is saved on this device."
+msgstr "Je indeling wordt op dit apparaat opgeslagen."
 
 #: src/pages/Config.tsx
 msgid "Zero hashrate for"

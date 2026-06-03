@@ -1,29 +1,27 @@
 // #244: dashboard card/block ordering.
 //
-// The operator can drag the top-level dashboard blocks (hero, charts,
-// pipeline, bids, P&L, ...) into any order. The chosen order is
-// persisted daemon-side (config.dashboard_card_order, a JSON string
-// array of stable block IDs) so it follows the operator between
-// devices - the whole motivation was "I open the dashboard on my
-// phone and have to scroll to the bottom to see the P&L card". Browser
-// localStorage is used as an instant-apply cache so the order is right
-// on first paint, before the config GET resolves; the daemon copy is
-// the cross-device source of truth.
+// The operator can drag the top-level dashboard blocks (hero, period
+// selector, indicators, hashrate chart, price chart, pipeline, bids,
+// P&L, ...) into any order. The chosen order is stored PER-DEVICE in
+// browser localStorage, deliberately not synced to the daemon: a phone
+// and a desktop want genuinely different layouts (the operator's own
+// call after living with it), so each device keeps its own order.
 //
-// This module mirrors the dual-write pattern in lib/locale.ts: read
-// localStorage synchronously on init, push to the daemon on mount /
-// on change, and adopt the daemon's value if it differs.
+// There is a dormant `config.dashboard_card_order` column daemon-side
+// (migration 0108) left in place but unused; it is not deleted because
+// the migration may already have run on a deployed instance, and a
+// harmless unused column is safer than diverging the schema. If
+// cross-device sync is ever wanted, the daemon plumbing is ready.
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { api, UnauthorizedError } from './api';
+import { useCallback, useEffect, useState } from 'react';
 
 const CARD_ORDER_KEY = 'hashrate-autopilot.cardOrder';
 
 /**
  * Reconcile a saved order against the current set of default block IDs.
  *
- * - Saved IDs that no longer exist (a block removed in a later release)
- *   are dropped.
+ * - Saved IDs that no longer exist (a block removed/renamed in a later
+ *   release) are dropped.
  * - Duplicate saved IDs collapse to their first occurrence.
  * - Default blocks missing from the saved order (a block ADDED in a
  *   later release, or a fresh install with an empty saved order) are
@@ -96,7 +94,7 @@ function sameOrder(a: readonly string[], b: readonly string[]): boolean {
 export interface CardOrderControls {
   /** The reconciled order to render, always a permutation of defaultIds. */
   order: string[];
-  /** Persist a new order (array of block IDs) to localStorage + daemon. */
+  /** Persist a new order (array of block IDs) to localStorage. */
   setOrder: (next: string[]) => void;
   /** Clear back to the built-in default order. */
   reset: () => void;
@@ -105,86 +103,31 @@ export interface CardOrderControls {
 }
 
 /**
- * Stateful hook owning the card order. `defaultIds` is the built-in
- * order for the blocks currently present (already filtered for
- * conditionally-rendered blocks by the caller). The hook keeps the
- * persisted order reconciled against whatever `defaultIds` is today.
+ * Stateful hook owning the per-device card order. `defaultIds` is the
+ * built-in order for all blocks; the hook keeps the persisted order
+ * reconciled against it on every render, so adding/removing a block in
+ * a later release re-slots a stored order cleanly.
  */
 export function useCardOrder(defaultIds: readonly string[]): CardOrderControls {
-  // Snapshot the saved order once; reconcile against the live
-  // defaultIds on every render so toggling a conditional block
-  // (e.g. last-tick proposals appearing) re-slots correctly.
   const [savedOrder, setSavedOrder] = useState<string[]>(() => readStoredOrder());
   const order = reconcileOrder(defaultIds, savedOrder);
 
-  // Persist the JSON string to localStorage whenever the saved order
-  // changes. Empty array = "use default", stored as '[]'.
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    // Empty array = "use default", stored as '[]'.
     window.localStorage.setItem(CARD_ORDER_KEY, JSON.stringify(savedOrder));
   }, [savedOrder]);
 
-  // One-shot sync with the daemon on mount: adopt the daemon's order
-  // if it has one, otherwise push a local custom order up so other
-  // devices (and a fresh browser) inherit it.
-  const syncedRef = useRef(false);
-  useEffect(() => {
-    if (syncedRef.current) return;
-    if (typeof window === 'undefined') return;
-    syncedRef.current = true;
-    void (async () => {
-      try {
-        const res = await api.config();
-        const cfg = res.config;
-        const daemonOrder = parseCardOrder(cfg.dashboard_card_order);
-        if (daemonOrder.length > 0) {
-          // Daemon is authoritative; adopt if it differs from local.
-          setSavedOrder((prev) => (sameOrder(prev, daemonOrder) ? prev : daemonOrder));
-          window.localStorage.setItem(CARD_ORDER_KEY, JSON.stringify(daemonOrder));
-        } else if (savedOrder.length > 0) {
-          // Daemon at default but this browser has a custom order:
-          // push it up so it follows the operator to other devices.
-          await api
-            .updateConfig({ ...cfg, dashboard_card_order: JSON.stringify(savedOrder) })
-            .catch(() => null);
-        }
-      } catch (e) {
-        if (e instanceof UnauthorizedError) return;
-        // Network / parse failure: local state stays authoritative.
-      }
-    })();
-    // Intentionally mount-only (matches lib/locale.ts); savedOrder read
-    // inside is the initial value, which is what we want to push up.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const persist = useCallback((next: string[]) => {
-    setSavedOrder(next);
-    void (async () => {
-      try {
-        const res = await api.config();
-        const cfg = res.config;
-        const encoded = JSON.stringify(next);
-        if (cfg.dashboard_card_order !== encoded) {
-          await api.updateConfig({ ...cfg, dashboard_card_order: encoded });
-        }
-      } catch {
-        // Best-effort; local state remains authoritative this session.
-      }
-    })();
-  }, []);
-
   const setOrder = useCallback(
     (next: string[]) => {
-      persist(reconcileOrder(defaultIds, next));
+      setSavedOrder(reconcileOrder(defaultIds, next));
     },
-    [persist, defaultIds],
+    [defaultIds],
   );
 
   const reset = useCallback(() => {
-    // Store an empty array = "default order"; reconcile renders defaults.
-    persist([]);
-  }, [persist]);
+    setSavedOrder([]);
+  }, []);
 
   return {
     order,

@@ -20,9 +20,9 @@ behind a config toggle because it's dramatically more volatile than the tracking
 Y-axis when enabled. Then a stats strip (uptime, avg hashrate per source - Braiins / Datum / Ocean
 side-by-side, cost per PH delivered, effective rate vs hashprice), service panels for Braiins / Datum
 Gateway / Ocean, the active bids table, and per-day and lifetime P&L measured from actual account-ledger
-spend and on-chain receipts. Every block on this page is draggable: hit **Rearrange** at the top, drag the
-cards into the order you want (e.g. P&L up top), and the layout is saved daemon-side so it follows you to
-every device you open the dashboard on.
+spend and on-chain receipts. Every block on this page is draggable: hit **Rearrange** in the top bar, drag the
+cards into the order you want (e.g. P&L up top, or the hashrate and price charts reordered independently), and
+the layout is saved per-device in the browser so your phone and desktop each keep their own arrangement.
 
 ## Why this exists
 

@@ -4,7 +4,7 @@
 
 ### `[Feature]` Drag to reorder the dashboard cards (#244)
 
-Every block on the Status page (hero, charts, the Braiins/Datum/Ocean pipeline, bids, Profit & Loss, and the rest) can now be reordered to taste. Hit **Rearrange** at the top of the page, drag any card by its title bar into the order you want - want lifetime P&L up top so you don't have to scroll on your phone? Put it there. The chosen order is saved daemon-side (not just in the browser), so it follows you to every device you open the dashboard on, and **Reset order** drops back to the default layout. Touch-friendly (press-and-hold to grab) and keyboard-accessible. New blocks added in future releases slot into their default position rather than getting buried at the bottom.
+Every block on the Status page (hero, the period selector, the indicators strip, the hashrate and price charts each on their own, the Braiins/Datum/Ocean pipeline, bids, Profit & Loss, and the rest) can now be reordered to taste. Hit **Rearrange** in the top bar, drag any card by its title bar into the order you want - want lifetime P&L up top so you don't have to scroll on your phone? Put it there. The order is saved **per-device** in the browser, so your phone and your desktop keep their own layouts (a small screen and a wide monitor want different arrangements), and **Reset** drops back to the default. Touch-friendly (press-and-hold to grab) and keyboard-accessible. New blocks added in future releases slot into their default position rather than getting buried at the bottom.
 
 ### `[Fix]` Rejection-rate chart line now appears on bucketed presets (1w / 1m / 1y / All) (#243 follow-up)
 

@@ -11,6 +11,7 @@ import { useBlockFoundSound } from '../lib/block-found-sound';
 import { useDenomination } from '../lib/denomination';
 import { formatNumber } from '../lib/format';
 import { useLocale } from '../lib/locale';
+import { CardOrderProvider, useCardOrderContext } from '../lib/cardOrderContext';
 import { LanguagePicker } from './LanguagePicker';
 import { BtcSymbol } from './BtcSymbol';
 import { ModeBadge } from './ModeBadge';
@@ -132,6 +133,7 @@ export function Layout() {
   const primaryBalance = status.data?.balances?.[0];
 
   return (
+    <CardOrderProvider>
     <div className="min-h-full flex flex-col">
       {/* Sticky cluster: upgrade banner + top nav. Wrapped together so
           both stay pinned at the top of the viewport on scroll. The
@@ -201,6 +203,10 @@ export function Layout() {
               from a dropdown so the top bar stays single-row on
               mobile with only Status/Alerts/Config visible. */}
           <div className="hidden sm:flex items-center gap-3 ml-auto text-xs">
+            {/* #244: Rearrange toggle lives in the header (not on the
+                page) so it costs zero page height. Status-only - it
+                reorders Status cards and is meaningless elsewhere. */}
+            {location.pathname === '/' && <RearrangeControl />}
             <HashrateUnitToggle />
             <DenominationToggle />
             <LanguagePicker />
@@ -213,7 +219,7 @@ export function Layout() {
           </div>
 
           <div className="sm:hidden ml-auto">
-            <MobileMenu onSignOut={logout} />
+            <MobileMenu onSignOut={logout} showRearrange={location.pathname === '/'} />
           </div>
         </div>
         </header>
@@ -245,6 +251,7 @@ export function Layout() {
         onActivate={activateToast}
       />
     </div>
+    </CardOrderProvider>
   );
 }
 
@@ -257,9 +264,16 @@ export function Layout() {
  * Click-outside dismisses the popover; opening it does not block
  * scroll, since the page underneath stays useful.
  */
-function MobileMenu({ onSignOut }: { onSignOut: () => void }) {
+function MobileMenu({
+  onSignOut,
+  showRearrange,
+}: {
+  onSignOut: () => void;
+  showRearrange: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const { rearranging, setRearranging, isCustomized, reset } = useCardOrderContext();
 
   useEffect(() => {
     if (!open) return;
@@ -298,6 +312,40 @@ function MobileMenu({ onSignOut }: { onSignOut: () => void }) {
 
       {open && (
         <div className="absolute right-0 mt-2 w-64 bg-slate-900 border border-slate-700 rounded-lg shadow-lg p-3 z-30 space-y-3">
+          {/* #244: dashboard layout - Status page only. Toggling closes
+              the menu so the operator can immediately drag cards. */}
+          {showRearrange && (
+            <div>
+              <div className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">
+                <Trans>dashboard layout</Trans>
+              </div>
+              <button
+                onClick={() => {
+                  setRearranging(!rearranging);
+                  setOpen(false);
+                }}
+                className={
+                  'w-full px-2 py-1.5 text-xs rounded border ' +
+                  (rearranging
+                    ? 'border-emerald-600 bg-emerald-600/20 text-emerald-300'
+                    : 'border-slate-700 text-slate-300 hover:bg-slate-800')
+                }
+              >
+                {rearranging ? <Trans>Done rearranging</Trans> : <Trans>Rearrange cards</Trans>}
+              </button>
+              {isCustomized && (
+                <button
+                  onClick={() => {
+                    reset();
+                    setOpen(false);
+                  }}
+                  className="w-full mt-2 px-2 py-1.5 text-xs text-slate-400 border border-slate-700 rounded hover:bg-slate-800"
+                >
+                  <Trans>Reset to default order</Trans>
+                </button>
+              )}
+            </div>
+          )}
           <div>
             <div className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">
               <Trans>hashrate unit</Trans>
@@ -327,6 +375,50 @@ function MobileMenu({ onSignOut }: { onSignOut: () => void }) {
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * #244: header "Rearrange" toggle for the Status dashboard. Lives in
+ * the top bar (desktop) so it costs no page height; toggling flips the
+ * shared edit-mode flag the Status page reads to enable drag-to-reorder.
+ * "Reset" only appears once the order has been customised.
+ */
+function RearrangeControl() {
+  const { rearranging, setRearranging, isCustomized, reset } = useCardOrderContext();
+  return (
+    <div className="flex items-center gap-2">
+      {rearranging && isCustomized && (
+        <button
+          type="button"
+          onClick={reset}
+          className="text-[11px] text-slate-400 underline underline-offset-2 hover:text-slate-200"
+        >
+          <Trans>Reset</Trans>
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={() => setRearranging(!rearranging)}
+        title={t`Drag the dashboard cards into the order you want`}
+        className={
+          'inline-flex items-center gap-1.5 px-2 py-1 text-[11px] rounded border ' +
+          (rearranging
+            ? 'border-emerald-600 bg-emerald-600/20 text-emerald-300'
+            : 'border-slate-700 text-slate-300 hover:bg-slate-800')
+        }
+      >
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <circle cx="9" cy="5" r="1" />
+          <circle cx="9" cy="12" r="1" />
+          <circle cx="9" cy="19" r="1" />
+          <circle cx="15" cy="5" r="1" />
+          <circle cx="15" cy="12" r="1" />
+          <circle cx="15" cy="19" r="1" />
+        </svg>
+        {rearranging ? <Trans>Done</Trans> : <Trans>Rearrange</Trans>}
+      </button>
     </div>
   );
 }

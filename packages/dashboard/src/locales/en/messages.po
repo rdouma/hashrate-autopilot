@@ -902,10 +902,6 @@ msgstr "Chart markers"
 msgid "Chart smoothing"
 msgstr "Chart smoothing"
 
-#: src/pages/Status.tsx
-msgid "Charts"
-msgstr "Charts"
-
 #: src/pages/Config.tsx
 msgid "Chat ID"
 msgstr "Chat ID"
@@ -1148,6 +1144,10 @@ msgstr "Daemon startup"
 msgid "Daemon's public IP:"
 msgstr "Daemon's public IP:"
 
+#: src/components/Layout.tsx
+msgid "dashboard layout"
+msgstr "dashboard layout"
+
 #: src/pages/Setup.tsx
 msgid "Dashboard password"
 msgstr "Dashboard password"
@@ -1313,13 +1313,21 @@ msgstr "Distinct payout addresses currently mining on Ocean."
 msgid "Do not scan"
 msgstr "Do not scan"
 
-#: src/pages/Status.tsx
+#: src/components/Layout.tsx
 msgid "Done"
 msgstr "Done"
 
+#: src/components/Layout.tsx
+msgid "Done rearranging"
+msgstr "Done rearranging"
+
 #: src/pages/Status.tsx
-msgid "Drag the cards by their title bar to reorder. Your layout is saved and follows you across devices."
-msgstr "Drag the cards by their title bar to reorder. Your layout is saved and follows you across devices."
+msgid "Drag the cards by their title bar to reorder."
+msgstr "Drag the cards by their title bar to reorder."
+
+#: src/components/Layout.tsx
+msgid "Drag the dashboard cards into the order you want"
+msgstr "Drag the dashboard cards into the order you want"
 
 #: src/pages/Status.tsx
 msgid "Drag to reorder"
@@ -1699,6 +1707,7 @@ msgid "Hashrate below floor for"
 msgstr "Hashrate below floor for"
 
 #: src/pages/Config.tsx
+#: src/pages/Status.tsx
 msgid "Hashrate chart"
 msgstr "Hashrate chart"
 
@@ -1820,6 +1829,10 @@ msgstr "incorrect password"
 #: src/pages/Config.tsx
 msgid "increase"
 msgstr "increase"
+
+#: src/pages/Status.tsx
+msgid "Indicators"
+msgstr "Indicators"
 
 #: src/pages/Alerts.tsx
 msgid "info"
@@ -2653,6 +2666,10 @@ msgid "Percentage of overpay below which the autopilot does NOT issue an EDIT_PR
 msgstr "Percentage of overpay below which the autopilot does NOT issue an EDIT_PRICE. Default 20 reproduces the legacy hard-coded behavior (overpay / 5). Raise to 50 to halve edit frequency and tolerate ~2x more price jitter before re-pricing - useful as a chart-noise reducer today, and as a per-edit-fee mitigation if Braiins ever introduces an EDIT fee. tick_size is always the hard floor; Braiins rejects sub-tick edits regardless."
 
 #: src/pages/Status.tsx
+msgid "Period selector"
+msgstr "Period selector"
+
+#: src/pages/Status.tsx
 msgid "Pipeline"
 msgstr "Pipeline"
 
@@ -2797,6 +2814,7 @@ msgid "Price"
 msgstr "Price"
 
 #: src/pages/Config.tsx
+#: src/pages/Status.tsx
 msgid "Price chart"
 msgstr "Price chart"
 
@@ -2889,9 +2907,13 @@ msgstr "Re-setup"
 msgid "Read-only token"
 msgstr "Read-only token"
 
-#: src/pages/Status.tsx
+#: src/components/Layout.tsx
 msgid "Rearrange"
 msgstr "Rearrange"
+
+#: src/components/Layout.tsx
+msgid "Rearrange cards"
+msgstr "Rearrange cards"
 
 #: src/pages/Status.tsx
 msgid "rebuild"
@@ -2957,17 +2979,22 @@ msgstr "Remove device"
 msgid "Replace file…"
 msgstr "Replace file…"
 
+#: src/components/Layout.tsx
+msgid "Reset"
+msgstr "Reset"
+
 #: src/pages/Config.tsx
 msgid "Reset all to defaults"
 msgstr "Reset all to defaults"
 
-#: src/pages/Status.tsx
-msgid "Reset order"
-msgstr "Reset order"
-
 #: src/components/ChartColorPicker.tsx
 msgid "Reset to default"
 msgstr "Reset to default"
+
+#: src/components/Layout.tsx
+#: src/pages/Status.tsx
+msgid "Reset to default order"
+msgstr "Reset to default order"
 
 #: src/pages/Config.tsx
 msgid "Residential ISPs reassign your public IP periodically. If you put a raw IP here it will work today and silently break the day your ISP rotates it. Use a DDNS hostname instead - free options include DuckDNS (no expiration, no monthly re-confirm) and No-IP. Configure DDNS in the <0>Dynamic DNS</0> panel below; once set up, point Pool URL at the hostname (e.g. <1>stratum+tcp://yourname.duckdns.org:23334</1>) and the daemon keeps the hostname mapped to your current IP automatically. Static IPs / VPS / business connections can keep using a raw IP and ignore this note."
@@ -3780,6 +3807,10 @@ msgstr "your Bitcoin node does not track BIP 110 as a named softfork"
 #: src/components/Bip110ScanCard.tsx
 msgid "Your Bitcoin node supports BIP 110, which is currently in its activation window. There are two paths it can activate by:"
 msgstr "Your Bitcoin node supports BIP 110, which is currently in its activation window. There are two paths it can activate by:"
+
+#: src/pages/Status.tsx
+msgid "Your layout is saved on this device."
+msgstr "Your layout is saved on this device."
 
 #: src/pages/Config.tsx
 msgid "Zero hashrate for"

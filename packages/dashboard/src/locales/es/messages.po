@@ -902,10 +902,6 @@ msgstr "Marcadores de la gráfica"
 msgid "Chart smoothing"
 msgstr "Suavizado del gráfico"
 
-#: src/pages/Status.tsx
-msgid "Charts"
-msgstr "Gráficos"
-
 #: src/pages/Config.tsx
 msgid "Chat ID"
 msgstr "ID de chat"
@@ -1148,6 +1144,10 @@ msgstr "Arranque del daemon"
 msgid "Daemon's public IP:"
 msgstr "IP público del daemon:"
 
+#: src/components/Layout.tsx
+msgid "dashboard layout"
+msgstr "disposición del panel"
+
 #: src/pages/Setup.tsx
 msgid "Dashboard password"
 msgstr "Contraseña del panel"
@@ -1313,13 +1313,21 @@ msgstr "Direcciones de pago distintas que actualmente minan en Ocean."
 msgid "Do not scan"
 msgstr "No escanear"
 
-#: src/pages/Status.tsx
+#: src/components/Layout.tsx
 msgid "Done"
 msgstr "Listo"
 
+#: src/components/Layout.tsx
+msgid "Done rearranging"
+msgstr "Listo"
+
 #: src/pages/Status.tsx
-msgid "Drag the cards by their title bar to reorder. Your layout is saved and follows you across devices."
-msgstr "Arrastra las tarjetas por su barra de título para reordenarlas. Tu disposición se guarda y te sigue en todos tus dispositivos."
+msgid "Drag the cards by their title bar to reorder."
+msgstr "Arrastra las tarjetas por su barra de título para reordenarlas."
+
+#: src/components/Layout.tsx
+msgid "Drag the dashboard cards into the order you want"
+msgstr "Arrastra las tarjetas del panel en el orden que quieras"
 
 #: src/pages/Status.tsx
 msgid "Drag to reorder"
@@ -1699,6 +1707,7 @@ msgid "Hashrate below floor for"
 msgstr "Hashrate por debajo del mínimo durante"
 
 #: src/pages/Config.tsx
+#: src/pages/Status.tsx
 msgid "Hashrate chart"
 msgstr "Gráfico de hashrate"
 
@@ -1820,6 +1829,10 @@ msgstr "contraseña incorrecta"
 #: src/pages/Config.tsx
 msgid "increase"
 msgstr "aumentar"
+
+#: src/pages/Status.tsx
+msgid "Indicators"
+msgstr "Indicadores"
 
 #: src/pages/Alerts.tsx
 msgid "info"
@@ -2653,6 +2666,10 @@ msgid "Percentage of overpay below which the autopilot does NOT issue an EDIT_PR
 msgstr "Porcentaje de overpay por debajo del cual el autopiloto NO ejecuta un EDIT_PRICE. El valor por defecto 20 reproduce el comportamiento legacy (overpay / 5). Sube a 50 para reducir a la mitad la frecuencia de ediciones y tolerar ~2x más jitter de precio antes de reajustar - útil para reducir el ruido del gráfico hoy, y como mitigación de comisiones por edición si Braiins llega a introducir una comisión EDIT. tick_size es siempre el suelo absoluto; Braiins rechaza ediciones por debajo de este tamaño."
 
 #: src/pages/Status.tsx
+msgid "Period selector"
+msgstr "Selector de período"
+
+#: src/pages/Status.tsx
 msgid "Pipeline"
 msgstr "Flujo"
 
@@ -2797,6 +2814,7 @@ msgid "Price"
 msgstr "Precio"
 
 #: src/pages/Config.tsx
+#: src/pages/Status.tsx
 msgid "Price chart"
 msgstr "Gráfico de precio"
 
@@ -2889,9 +2907,13 @@ msgstr "Reconfigurar"
 msgid "Read-only token"
 msgstr "Token de solo lectura"
 
-#: src/pages/Status.tsx
+#: src/components/Layout.tsx
 msgid "Rearrange"
 msgstr "Reorganizar"
+
+#: src/components/Layout.tsx
+msgid "Rearrange cards"
+msgstr "Reorganizar tarjetas"
 
 #: src/pages/Status.tsx
 msgid "rebuild"
@@ -2957,17 +2979,22 @@ msgstr "Eliminar dispositivo"
 msgid "Replace file…"
 msgstr "Reemplazar archivo…"
 
+#: src/components/Layout.tsx
+msgid "Reset"
+msgstr "Restablecer"
+
 #: src/pages/Config.tsx
 msgid "Reset all to defaults"
 msgstr "Restaurar todo a los valores predeterminados"
 
-#: src/pages/Status.tsx
-msgid "Reset order"
-msgstr "Restablecer orden"
-
 #: src/components/ChartColorPicker.tsx
 msgid "Reset to default"
 msgstr "Restaurar al predeterminado"
+
+#: src/components/Layout.tsx
+#: src/pages/Status.tsx
+msgid "Reset to default order"
+msgstr "Restablecer el orden predeterminado"
 
 #: src/pages/Config.tsx
 msgid "Residential ISPs reassign your public IP periodically. If you put a raw IP here it will work today and silently break the day your ISP rotates it. Use a DDNS hostname instead - free options include DuckDNS (no expiration, no monthly re-confirm) and No-IP. Configure DDNS in the <0>Dynamic DNS</0> panel below; once set up, point Pool URL at the hostname (e.g. <1>stratum+tcp://yourname.duckdns.org:23334</1>) and the daemon keeps the hostname mapped to your current IP automatically. Static IPs / VPS / business connections can keep using a raw IP and ignore this note."
@@ -3780,6 +3807,10 @@ msgstr "tu nodo Bitcoin no registra BIP 110 como una softfork con nombre"
 #: src/components/Bip110ScanCard.tsx
 msgid "Your Bitcoin node supports BIP 110, which is currently in its activation window. There are two paths it can activate by:"
 msgstr "Tu nodo Bitcoin admite BIP 110, que actualmente está en su ventana de activación. Hay dos caminos por los que puede activarse:"
+
+#: src/pages/Status.tsx
+msgid "Your layout is saved on this device."
+msgstr "Tu disposición se guarda en este dispositivo."
 
 #: src/pages/Config.tsx
 msgid "Zero hashrate for"
