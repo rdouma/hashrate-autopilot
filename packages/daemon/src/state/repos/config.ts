@@ -58,6 +58,9 @@ export class ConfigRepo {
       // #238: pass through verbatim; the dashboard parses JSON and
       // drops malformed entries at render time.
       chart_color_overrides: rest.chart_color_overrides ?? '{}',
+      // #244: dashboard block order, passed through verbatim; the
+      // dashboard reconciles it against the live block set on read.
+      dashboard_card_order: rest.dashboard_card_order ?? '[]',
       // #106: stored as comma-separated TEXT; surface as string[].
       // Empty string -> empty array (no opt-outs).
       notification_disabled_event_classes: rest.notification_disabled_event_classes

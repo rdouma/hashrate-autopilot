@@ -461,6 +461,19 @@ export const AppConfigSchema = z.object({
   // chart.
   chart_color_overrides: z.string().default('{}'),
 
+  // #244: dashboard card/block display order. JSON array of stable
+  // block IDs (e.g. ["hero","charts","finance",...]) in the order the
+  // operator dragged them. Persisted daemon-side (not just browser
+  // localStorage) so the order follows the operator between devices -
+  // the issue's whole motivation was "I open the dashboard on my
+  // phone and have to scroll to the P&L card". Validated as a string
+  // here (same cheap pattern as chart_color_overrides - no JSON
+  // re-parse per tick); the dashboard reconciles it against the
+  // current default block list, so unknown IDs are dropped and newly
+  // added blocks append at their default position. Empty `[]` =
+  // "use the built-in default order".
+  dashboard_card_order: z.string().default('[]'),
+
   // #111: daemon-managed DDNS updater. When ddns_provider is non-empty
   // the daemon pushes the current public IP to the configured DDNS
   // provider every 5 minutes (and forces a heartbeat at least hourly,
@@ -651,6 +664,8 @@ export const APP_CONFIG_DEFAULTS: Omit<
   display_date_layout: 'system',
   // #238: empty JSON object = "use every series's built-in default".
   chart_color_overrides: '{}',
+  // #244: empty JSON array = "use the built-in dashboard block order".
+  dashboard_card_order: '[]',
 
   ddns_provider: '',
   ddns_hostname: '',

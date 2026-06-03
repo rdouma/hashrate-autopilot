@@ -2,6 +2,10 @@
 
 ## 2026-06-02
 
+### `[Feature]` Drag to reorder the dashboard cards (#244)
+
+Every block on the Status page (hero, charts, the Braiins/Datum/Ocean pipeline, bids, Profit & Loss, and the rest) can now be reordered to taste. Hit **Rearrange** at the top of the page, drag any card by its title bar into the order you want - want lifetime P&L up top so you don't have to scroll on your phone? Put it there. The chosen order is saved daemon-side (not just in the browser), so it follows you to every device you open the dashboard on, and **Reset order** drops back to the default layout. Touch-friendly (press-and-hold to grab) and keyboard-accessible. New blocks added in future releases slot into their default position rather than getting buried at the bottom.
+
 ### `[Fix]` Rejection-rate chart line now appears on bucketed presets (1w / 1m / 1y / All) (#243 follow-up)
 
 Operator: line visible on 3h / 6h / 12h / 24h, completely absent on 1w / 1m / 1y / All. Cause: the chart's rate computation used a fixed 5-minute lookback window. Raw-data presets (3h-24h) return 60s-spaced points so the window captures ~5 ticks; bucketed presets return points spaced by the bucket interval (1w → 30 min, 1m → 1 h, 1y/All → 1 d). A 5-min lookback on 24h-spaced points sees only the current point as "earliest in window" → no Δ computable → emit lastKnown which started as NULL and never advanced → invisible line for the whole range. Switched to adjacent non-null point comparison: each point's rate is `Δr / Δp` versus the previous non-null counter point regardless of spacing. The cumulative-counter math is bucket-size-invariant, so this works uniformly across every preset. Carry-forward semantics preserved (Δp = 0 holds last rate); bid-rotation reset preserved (Δp < 0 or Δr < 0 breaks the chain).

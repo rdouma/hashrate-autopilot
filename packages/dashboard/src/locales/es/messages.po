@@ -613,6 +613,10 @@ msgstr "Rango de escaneo BIP 110"
 msgid "BIP 110 SIGNAL"
 msgstr "SEÑAL BIP 110"
 
+#: src/pages/Status.tsx
+msgid "BIP-110 scan"
+msgstr "Escaneo BIP-110"
+
 #: src/pages/Setup.tsx
 msgid "Bitcoin Knots (bitcoind RPC)"
 msgstr "Bitcoin Knots (bitcoind RPC)"
@@ -897,6 +901,10 @@ msgstr "Marcadores de la gráfica"
 #: src/pages/Config.tsx
 msgid "Chart smoothing"
 msgstr "Suavizado del gráfico"
+
+#: src/pages/Status.tsx
+msgid "Charts"
+msgstr "Gráficos"
 
 #: src/pages/Config.tsx
 msgid "Chat ID"
@@ -1304,6 +1312,18 @@ msgstr "Direcciones de pago distintas que actualmente minan en Ocean."
 #: src/pages/Config.tsx
 msgid "Do not scan"
 msgstr "No escanear"
+
+#: src/pages/Status.tsx
+msgid "Done"
+msgstr "Listo"
+
+#: src/pages/Status.tsx
+msgid "Drag the cards by their title bar to reorder. Your layout is saved and follows you across devices."
+msgstr "Arrastra las tarjetas por su barra de título para reordenarlas. Tu disposición se guarda y te sigue en todos tus dispositivos."
+
+#: src/pages/Status.tsx
+msgid "Drag to reorder"
+msgstr "Arrastra para reordenar"
 
 #: src/components/ModeBadge.tsx
 msgid "Dry Run"
@@ -2444,6 +2464,10 @@ msgid "Open Telegram and chat with <0>@BotFather</0>, send /newbot, follow the p
 msgstr "Abre Telegram y conversa con <0>@BotFather</0>, envía /newbot y sigue los pasos; @BotFather responde con el token. Pégalo aquí."
 
 #: src/pages/Status.tsx
+msgid "Operations & next action"
+msgstr "Operaciones y próxima acción"
+
+#: src/pages/Status.tsx
 msgid "Operator-entered offset for earnings the on-chain payout observer can't see - Lightning payouts, pre-autopilot Ocean history that's already been swept, etc. Set under Config → Pool & Payout → On-chain payouts."
 msgstr "Ajuste introducido por el operador para ingresos que el observador de pagos on-chain no puede ver - pagos por Lightning, historial de Ocean previo al autopilot que ya se ha movido, etc. Se configura en Config → Pool & Payout → Pagos on-chain."
 
@@ -2627,6 +2651,10 @@ msgstr "Oferta por tick = fillable_ask + este valor. Braiins usa pay-your-bid, a
 #: src/pages/Config.tsx
 msgid "Percentage of overpay below which the autopilot does NOT issue an EDIT_PRICE. Default 20 reproduces the legacy hard-coded behavior (overpay / 5). Raise to 50 to halve edit frequency and tolerate ~2x more price jitter before re-pricing - useful as a chart-noise reducer today, and as a per-edit-fee mitigation if Braiins ever introduces an EDIT fee. tick_size is always the hard floor; Braiins rejects sub-tick edits regardless."
 msgstr "Porcentaje de overpay por debajo del cual el autopiloto NO ejecuta un EDIT_PRICE. El valor por defecto 20 reproduce el comportamiento legacy (overpay / 5). Sube a 50 para reducir a la mitad la frecuencia de ediciones y tolerar ~2x más jitter de precio antes de reajustar - útil para reducir el ruido del gráfico hoy, y como mitigación de comisiones por edición si Braiins llega a introducir una comisión EDIT. tick_size es siempre el suelo absoluto; Braiins rechaza ediciones por debajo de este tamaño."
+
+#: src/pages/Status.tsx
+msgid "Pipeline"
+msgstr "Flujo"
 
 #: src/pages/Config.tsx
 msgid "Play a sound when a new pool block is detected paying our payout address. Off by default. Pick one of the bundled cues, upload your own, or leave it disabled. The cue fires once per new reward_events row; the dashboard tab needs to be open."
@@ -2862,6 +2890,10 @@ msgid "Read-only token"
 msgstr "Token de solo lectura"
 
 #: src/pages/Status.tsx
+msgid "Rearrange"
+msgstr "Reorganizar"
+
+#: src/pages/Status.tsx
 msgid "rebuild"
 msgstr "reconstruir"
 
@@ -2928,6 +2960,10 @@ msgstr "Reemplazar archivo…"
 #: src/pages/Config.tsx
 msgid "Reset all to defaults"
 msgstr "Restaurar todo a los valores predeterminados"
+
+#: src/pages/Status.tsx
+msgid "Reset order"
+msgstr "Restablecer orden"
 
 #: src/components/ChartColorPicker.tsx
 msgid "Reset to default"
@@ -3239,6 +3275,7 @@ msgid "Solo miner stratum URL drift"
 msgstr "Deriva de URL stratum en minero solo"
 
 #: src/components/SoloMinersCard.tsx
+#: src/pages/Status.tsx
 msgid "Solo miners"
 msgstr "Mineros en solitario"
 

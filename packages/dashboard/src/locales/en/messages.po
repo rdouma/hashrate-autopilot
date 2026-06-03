@@ -613,6 +613,10 @@ msgstr "BIP 110 scan range"
 msgid "BIP 110 SIGNAL"
 msgstr "BIP 110 SIGNAL"
 
+#: src/pages/Status.tsx
+msgid "BIP-110 scan"
+msgstr "BIP-110 scan"
+
 #: src/pages/Setup.tsx
 msgid "Bitcoin Knots (bitcoind RPC)"
 msgstr "Bitcoin Knots (bitcoind RPC)"
@@ -897,6 +901,10 @@ msgstr "Chart markers"
 #: src/pages/Config.tsx
 msgid "Chart smoothing"
 msgstr "Chart smoothing"
+
+#: src/pages/Status.tsx
+msgid "Charts"
+msgstr "Charts"
 
 #: src/pages/Config.tsx
 msgid "Chat ID"
@@ -1304,6 +1312,18 @@ msgstr "Distinct payout addresses currently mining on Ocean."
 #: src/pages/Config.tsx
 msgid "Do not scan"
 msgstr "Do not scan"
+
+#: src/pages/Status.tsx
+msgid "Done"
+msgstr "Done"
+
+#: src/pages/Status.tsx
+msgid "Drag the cards by their title bar to reorder. Your layout is saved and follows you across devices."
+msgstr "Drag the cards by their title bar to reorder. Your layout is saved and follows you across devices."
+
+#: src/pages/Status.tsx
+msgid "Drag to reorder"
+msgstr "Drag to reorder"
 
 #: src/components/ModeBadge.tsx
 msgid "Dry Run"
@@ -2444,6 +2464,10 @@ msgid "Open Telegram and chat with <0>@BotFather</0>, send /newbot, follow the p
 msgstr "Open Telegram and chat with <0>@BotFather</0>, send /newbot, follow the prompts; @BotFather replies with the token. Paste it here."
 
 #: src/pages/Status.tsx
+msgid "Operations & next action"
+msgstr "Operations & next action"
+
+#: src/pages/Status.tsx
 msgid "Operator-entered offset for earnings the on-chain payout observer can't see - Lightning payouts, pre-autopilot Ocean history that's already been swept, etc. Set under Config → Pool & Payout → On-chain payouts."
 msgstr "Operator-entered offset for earnings the on-chain payout observer can't see - Lightning payouts, pre-autopilot Ocean history that's already been swept, etc. Set under Config → Pool & Payout → On-chain payouts."
 
@@ -2627,6 +2651,10 @@ msgstr "Per-tick bid = fillable_ask + this. Braiins matches pay-your-bid, so thi
 #: src/pages/Config.tsx
 msgid "Percentage of overpay below which the autopilot does NOT issue an EDIT_PRICE. Default 20 reproduces the legacy hard-coded behavior (overpay / 5). Raise to 50 to halve edit frequency and tolerate ~2x more price jitter before re-pricing - useful as a chart-noise reducer today, and as a per-edit-fee mitigation if Braiins ever introduces an EDIT fee. tick_size is always the hard floor; Braiins rejects sub-tick edits regardless."
 msgstr "Percentage of overpay below which the autopilot does NOT issue an EDIT_PRICE. Default 20 reproduces the legacy hard-coded behavior (overpay / 5). Raise to 50 to halve edit frequency and tolerate ~2x more price jitter before re-pricing - useful as a chart-noise reducer today, and as a per-edit-fee mitigation if Braiins ever introduces an EDIT fee. tick_size is always the hard floor; Braiins rejects sub-tick edits regardless."
+
+#: src/pages/Status.tsx
+msgid "Pipeline"
+msgstr "Pipeline"
 
 #: src/pages/Config.tsx
 msgid "Play a sound when a new pool block is detected paying our payout address. Off by default. Pick one of the bundled cues, upload your own, or leave it disabled. The cue fires once per new reward_events row; the dashboard tab needs to be open."
@@ -2862,6 +2890,10 @@ msgid "Read-only token"
 msgstr "Read-only token"
 
 #: src/pages/Status.tsx
+msgid "Rearrange"
+msgstr "Rearrange"
+
+#: src/pages/Status.tsx
 msgid "rebuild"
 msgstr "rebuild"
 
@@ -2928,6 +2960,10 @@ msgstr "Replace file…"
 #: src/pages/Config.tsx
 msgid "Reset all to defaults"
 msgstr "Reset all to defaults"
+
+#: src/pages/Status.tsx
+msgid "Reset order"
+msgstr "Reset order"
 
 #: src/components/ChartColorPicker.tsx
 msgid "Reset to default"
@@ -3239,6 +3275,7 @@ msgid "Solo miner stratum URL drift"
 msgstr "Solo miner stratum URL drift"
 
 #: src/components/SoloMinersCard.tsx
+#: src/pages/Status.tsx
 msgid "Solo miners"
 msgstr "Solo miners"
 

@@ -22,6 +22,7 @@ import { ModeBadge } from '../components/ModeBadge';
 import { BtcSymbol } from '../components/BtcSymbol';
 import { SatSymbol } from '../components/SatSymbol';
 import { StaleUrlBanner } from '../components/StaleUrlBanner';
+import { SortableDashboard, type DashboardBlock } from '../components/SortableDashboard';
 import { Tooltip } from '../components/Tooltip';
 import {
   api,
@@ -53,9 +54,26 @@ import { actionModeLabel, bidStatusClass, bidStatusLabel } from '../lib/labels';
 import { useDateTimeLocale, useFormatters, useLocale } from '../lib/locale';
 import { localizedRangeLabel } from '../lib/range-label';
 import { useChartViewport } from '../lib/useChartViewport';
+import { useCardOrder } from '../lib/cardOrder';
 
 const RUN_MODES = ['DRY_RUN', 'LIVE', 'PAUSED'] as const;
 const STATUS_QUERY_KEY = ['status'] as const;
+
+// #244: built-in top-level dashboard block order. Each ID is a draggable
+// unit; the operator's reordering is reconciled against this list (see
+// lib/cardOrder), so adding a block here is enough to slot it in for
+// everyone, and a saved order referencing a removed ID degrades cleanly.
+// `proposals` keeps its position even when hidden (no last-tick data).
+const DEFAULT_BLOCK_ORDER = [
+  'hero',
+  'charts',
+  'pipeline',
+  'bids',
+  'finance',
+  'proposals',
+  'bip110',
+  'solo',
+] as const;
 
 // Frozen empties for chart props. Inline `?? []` allocates a fresh
 // array each render; both PriceChart and HashrateChart are wrapped
@@ -172,6 +190,12 @@ export function Status() {
   useEffect(() => {
     window.localStorage.setItem(PRICE_RIGHT_AXIS_KEY, priceRightAxis);
   }, [priceRightAxis]);
+
+  // #244: operator-defined dashboard block order (drag to reorder),
+  // persisted daemon-side so it follows them across devices. Called
+  // here, above the loading/error guards, so the hook order is stable.
+  const cardOrder = useCardOrder(DEFAULT_BLOCK_ORDER);
+  const [rearranging, setRearranging] = useState(false);
 
   const query = useQuery({
     queryKey: ['status'],
@@ -474,11 +498,12 @@ export function Status() {
     s.market !== null &&
     s.market.fillable_ask_sat_per_ph_day === null &&
     s.actual_hashrate_ph < 0.05;
-  return (
-    <div className="space-y-5">
-      {/* #113: stale-URL banner. Renders only when there's a real
-          mismatch between config and an active bid - silent otherwise. */}
-      <StaleUrlBanner />
+  // #244: each top-level dashboard block is a draggable unit. Build the
+  // nodes keyed by stable ID here, then render them in the operator's
+  // saved order (cardOrder) via <SortableDashboard>. StaleUrlBanner and
+  // the rearrange controls stay pinned outside the sortable region.
+  const blockNodes: Record<string, React.ReactNode> = {
+    hero: (
       <section className="grid grid-cols-1 lg:grid-cols-5 gap-4">
         <div className="lg:col-span-2 h-full">
           <OperationsCard
@@ -499,7 +524,9 @@ export function Status() {
           />
         </div>
       </section>
-
+    ),
+    charts: (
+      <div className="space-y-5">
       <FilterBar
         range={chartRange}
         activePreset={chartViewport.viewport.activePreset}
@@ -624,15 +651,14 @@ export function Status() {
           chartColorOverrides={configQuery.data?.config?.chart_color_overrides}
         />
       </div>
-
-      {/*
-       * Pipeline order: Braiins → Datum → Ocean (a share travels
-       * Braiins-marketplace → Datum-gateway → Ocean-pool). Caps
-       * live inside the Braiins card because they only describe
-       * what we do in the marketplace. P&L sits below Bids as its
-       * own full-width section; it's a financial summary of the
-       * pipeline, not a pipeline step.
-       */}
+      </div>
+    ),
+    // Pipeline order: Braiins -> Datum -> Ocean (a share travels
+    // Braiins-marketplace -> Datum-gateway -> Ocean-pool). Caps live
+    // inside the Braiins card because they only describe what we do in
+    // the marketplace. P&L sits below Bids as its own full-width
+    // section; it's a financial summary of the pipeline, not a step.
+    pipeline: (
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         <Card
           title="Braiins"
@@ -769,7 +795,8 @@ export function Status() {
         />
         <OceanPanel />
       </section>
-
+    ),
+    bids: (
       <section>
         <h3 className="text-xs uppercase tracking-wider text-slate-100 mb-2"><Trans>Bids</Trans></h3>
         {s.bids.length === 0 ? (
@@ -888,7 +915,8 @@ export function Status() {
           </>
         )}
       </section>
-
+    ),
+    finance: (
       <section>
         <FinancePanel
           data={financeQuery.data}
@@ -902,8 +930,9 @@ export function Status() {
           refreshing={financeQuery.isFetching || financeRangeQuery.isFetching}
         />
       </section>
-
-      {s.last_proposals.length > 0 && (
+    ),
+    proposals:
+      s.last_proposals.length > 0 ? (
         <section>
           <h3 className="text-xs uppercase tracking-wider text-slate-100 mb-2"><Trans>Last tick proposals</Trans></h3>
           <ul className="space-y-1">
@@ -914,11 +943,77 @@ export function Status() {
             ))}
           </ul>
         </section>
+      ) : null,
+    bip110: <Bip110ScanCard />,
+    solo: <SoloMinersCard />,
+  };
+
+  // #244: render blocks in the operator's saved order. Skip any whose
+  // node is null this cycle (e.g. `proposals` when there's no last-tick
+  // data) - the ID keeps its slot in the saved order for when it
+  // returns.
+  const blockLabels: Record<string, string> = {
+    hero: t`Operations & next action`,
+    charts: t`Charts`,
+    pipeline: t`Pipeline`,
+    bids: t`Bids`,
+    finance: t`Profit & Loss`,
+    proposals: t`Last tick proposals`,
+    bip110: t`BIP-110 scan`,
+    solo: t`Solo miners`,
+  };
+  const orderedBlocks: DashboardBlock[] = cardOrder.order
+    .filter((id) => blockNodes[id] != null)
+    .map((id) => ({ id, label: blockLabels[id] ?? id, node: blockNodes[id] }));
+
+  return (
+    <div className="space-y-5">
+      {/* #113: stale-URL banner. Renders only when there's a real
+          mismatch between config and an active bid - silent otherwise. */}
+      <StaleUrlBanner />
+      <div className="flex items-center justify-end gap-2">
+        {cardOrder.isCustomized && (
+          <button
+            type="button"
+            onClick={cardOrder.reset}
+            className="text-[11px] text-slate-400 underline underline-offset-2 hover:text-slate-200"
+          >
+            <Trans>Reset order</Trans>
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => setRearranging((v) => !v)}
+          className={`flex items-center gap-1.5 rounded border px-2.5 py-1 text-[11px] font-medium ${
+            rearranging
+              ? 'border-emerald-600 bg-emerald-600/20 text-emerald-300'
+              : 'border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700'
+          }`}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <circle cx="9" cy="5" r="1" />
+            <circle cx="9" cy="12" r="1" />
+            <circle cx="9" cy="19" r="1" />
+            <circle cx="15" cy="5" r="1" />
+            <circle cx="15" cy="12" r="1" />
+            <circle cx="15" cy="19" r="1" />
+          </svg>
+          {rearranging ? <Trans>Done</Trans> : <Trans>Rearrange</Trans>}
+        </button>
+      </div>
+      {rearranging && (
+        <p className="text-[11px] text-slate-500">
+          <Trans>
+            Drag the cards by their title bar to reorder. Your layout is saved and follows you across devices.
+          </Trans>
+        </p>
       )}
-
-      <Bip110ScanCard />
-
-      <SoloMinersCard />
+      <SortableDashboard
+        blocks={orderedBlocks}
+        editing={rearranging}
+        onReorder={cardOrder.setOrder}
+        dragHint={t`Drag to reorder`}
+      />
     </div>
   );
 }

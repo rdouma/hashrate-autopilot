@@ -50,6 +50,9 @@
 > chart's bucket-AVG aggregation doesn't smear the marker. Downstream `runPoolLuckRecompute` was
 > updated in the same release to bypass its 30d-eligibility gate for `synthetic = 1` rows so fresh
 > installs with shallow pool_blocks history still get pool_luck populated on gap synthetics.
+> Migration 0108 adds `dashboard_card_order TEXT NOT NULL DEFAULT '[]'`, a JSON array of dashboard
+> block IDs in the operator's drag-chosen order, persisted daemon-side so the Status-page layout
+> follows the operator across devices (#244).
 
 ## 1. High-level shape
 
@@ -316,6 +319,14 @@ CREATE TABLE config (
   -- unknown keys, non-string values, and non-hex strings are silently
   -- dropped at parse time on the dashboard.
   chart_color_overrides TEXT NOT NULL DEFAULT '{}',
+  -- Dashboard block display order (#244, migration 0108). JSON array of
+  -- stable block IDs (hero/charts/pipeline/bids/finance/...) in the
+  -- operator's drag-chosen order; persisted daemon-side so the Status
+  -- layout follows them across devices. The dashboard reconciles this
+  -- against the live block set on read - unknown IDs are dropped and
+  -- newly added blocks slot in at their default position; `'[]'` =
+  -- the built-in default order.
+  dashboard_card_order TEXT NOT NULL DEFAULT '[]',
   -- Dynamic DNS (#111, migrations 0067-0068)
   ddns_provider TEXT NOT NULL DEFAULT '',                            -- '' | 'noip' | 'duckdns' | 'dyndns2'
   ddns_hostname TEXT NOT NULL DEFAULT '',

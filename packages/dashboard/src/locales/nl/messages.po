@@ -613,6 +613,10 @@ msgstr "BIP 110-scanbereik"
 msgid "BIP 110 SIGNAL"
 msgstr "BIP 110-SIGNAAL"
 
+#: src/pages/Status.tsx
+msgid "BIP-110 scan"
+msgstr "BIP-110-scan"
+
 #: src/pages/Setup.tsx
 msgid "Bitcoin Knots (bitcoind RPC)"
 msgstr "Bitcoin Knots (bitcoind RPC)"
@@ -897,6 +901,10 @@ msgstr "Grafiek-markers"
 #: src/pages/Config.tsx
 msgid "Chart smoothing"
 msgstr "Grafiek-smoothing"
+
+#: src/pages/Status.tsx
+msgid "Charts"
+msgstr "Grafieken"
 
 #: src/pages/Config.tsx
 msgid "Chat ID"
@@ -1304,6 +1312,18 @@ msgstr "Verschillende uitbetaaladressen die momenteel op Ocean minen."
 #: src/pages/Config.tsx
 msgid "Do not scan"
 msgstr "Niet scannen"
+
+#: src/pages/Status.tsx
+msgid "Done"
+msgstr "Klaar"
+
+#: src/pages/Status.tsx
+msgid "Drag the cards by their title bar to reorder. Your layout is saved and follows you across devices."
+msgstr "Sleep de kaarten aan hun titelbalk om de volgorde te wijzigen. Je indeling wordt opgeslagen en volgt je op al je apparaten."
+
+#: src/pages/Status.tsx
+msgid "Drag to reorder"
+msgstr "Sleep om te herschikken"
 
 #: src/components/ModeBadge.tsx
 msgid "Dry Run"
@@ -2444,6 +2464,10 @@ msgid "Open Telegram and chat with <0>@BotFather</0>, send /newbot, follow the p
 msgstr "Open Telegram en start een chat met <0>@BotFather</0>, stuur /newbot en volg de stappen; @BotFather antwoordt met het token. Plak het hier."
 
 #: src/pages/Status.tsx
+msgid "Operations & next action"
+msgstr "Bediening & volgende actie"
+
+#: src/pages/Status.tsx
 msgid "Operator-entered offset for earnings the on-chain payout observer can't see - Lightning payouts, pre-autopilot Ocean history that's already been swept, etc. Set under Config → Pool & Payout → On-chain payouts."
 msgstr "Door de operator ingevoerde correctie voor inkomsten die de on-chain payout-observer niet kan zien - Lightning-uitbetalingen, Ocean-historie van vóór de autopilot die al weggezet is, enzovoort. In te stellen onder Config → Pool & Payout → On-chain uitbetalingen."
 
@@ -2627,6 +2651,10 @@ msgstr "Bid per tick = fillable_ask + dit bedrag. Braiins gebruikt pay-your-bid,
 #: src/pages/Config.tsx
 msgid "Percentage of overpay below which the autopilot does NOT issue an EDIT_PRICE. Default 20 reproduces the legacy hard-coded behavior (overpay / 5). Raise to 50 to halve edit frequency and tolerate ~2x more price jitter before re-pricing - useful as a chart-noise reducer today, and as a per-edit-fee mitigation if Braiins ever introduces an EDIT fee. tick_size is always the hard floor; Braiins rejects sub-tick edits regardless."
 msgstr "Percentage van overpay waaronder de autopilot GEEN EDIT_PRICE uitvoert. Standaard 20 reproduceert het oude gedrag (overpay / 5). Zet op 50 om de edit-frequentie te halveren en ~2x meer prijs-jitter te tolereren voordat opnieuw wordt geprijsd - handig om chart-ruis te dempen vandaag, en als bescherming tegen per-edit-fees als Braiins ooit een EDIT-fee invoert. tick_size is altijd de absolute ondergrens; Braiins weigert kleinere edits sowieso."
+
+#: src/pages/Status.tsx
+msgid "Pipeline"
+msgstr "Pijplijn"
 
 #: src/pages/Config.tsx
 msgid "Play a sound when a new pool block is detected paying our payout address. Off by default. Pick one of the bundled cues, upload your own, or leave it disabled. The cue fires once per new reward_events row; the dashboard tab needs to be open."
@@ -2862,6 +2890,10 @@ msgid "Read-only token"
 msgstr "Alleen-lezen token"
 
 #: src/pages/Status.tsx
+msgid "Rearrange"
+msgstr "Herschikken"
+
+#: src/pages/Status.tsx
 msgid "rebuild"
 msgstr "opnieuw opbouwen"
 
@@ -2928,6 +2960,10 @@ msgstr "Bestand vervangen…"
 #: src/pages/Config.tsx
 msgid "Reset all to defaults"
 msgstr "Alles terugzetten naar standaard"
+
+#: src/pages/Status.tsx
+msgid "Reset order"
+msgstr "Volgorde herstellen"
 
 #: src/components/ChartColorPicker.tsx
 msgid "Reset to default"
@@ -3239,6 +3275,7 @@ msgid "Solo miner stratum URL drift"
 msgstr "Solo-miner stratum-URL afwijking"
 
 #: src/components/SoloMinersCard.tsx
+#: src/pages/Status.tsx
 msgid "Solo miners"
 msgstr "Solo-miners"
 

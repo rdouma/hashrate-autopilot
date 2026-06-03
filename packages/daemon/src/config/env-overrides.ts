@@ -238,6 +238,13 @@ const APP_CONFIG_ENV: {
     varName: 'BHA_CHART_COLOR_OVERRIDES',
     coerce: asString,
   },
+  // #244: JSON array of dashboard block IDs in the operator's chosen
+  // order. The dashboard PATCHes it on drag; env override exists only
+  // for completeness/parity with the rest of the config surface.
+  dashboard_card_order: {
+    varName: 'BHA_DASHBOARD_CARD_ORDER',
+    coerce: asString,
+  },
   ddns_provider: { varName: 'BHA_DDNS_PROVIDER', coerce: asString },
   ddns_hostname: { varName: 'BHA_DDNS_HOSTNAME', coerce: asString },
   ddns_username: { varName: 'BHA_DDNS_USERNAME', coerce: asString },

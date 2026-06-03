@@ -65,6 +65,8 @@ export interface ConfigTable {
   display_date_layout: string;
   /** #238: per-series chart color overrides as a JSON string. Empty `{}` means defaults. */
   chart_color_overrides: string;
+  /** #244: dashboard block order as a JSON string array of block IDs. Empty `[]` means default order. */
+  dashboard_card_order: string;
   /** @deprecated Legacy column - kept for NOT NULL; ignored by the app. */
   hibernate_on_expensive_market: 0 | 1;
   electrs_host: string | null;
