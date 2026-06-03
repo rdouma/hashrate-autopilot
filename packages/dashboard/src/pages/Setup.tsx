@@ -550,7 +550,7 @@ function MiningStep({
             <Field label={t`RPC URL`}>
               <input
                 type="text"
-                placeholder="http://10.21.21.8:8332"
+                placeholder="http://bitcoind.startos:8332"
                 value={form.bitcoind_rpc_url}
                 onChange={(e) => update('bitcoind_rpc_url', e.target.value)}
                 className={textInputCss}
@@ -581,7 +581,7 @@ function MiningStep({
                 <Field label={t`Host`}>
                   <input
                     type="text"
-                    placeholder="10.21.21.8"
+                    placeholder="electrs.startos"
                     value={form.electrs_host}
                     onChange={(e) => update('electrs_host', e.target.value)}
                     className={textInputCss}
@@ -601,8 +601,8 @@ function MiningStep({
             </div>
             <p className="text-xs text-slate-500">
               <Trans>
-                Default Electrs port is 50001 (TCP). On Umbrel the in-cluster hostname is typically
-                <code> electrs_electrs_1</code>.
+                On StartOS use host <code>electrs.startos</code> and port <code>50001</code>.
+                Enter the host only, without <code>http://</code> or a path.
               </Trans>
             </p>
           </div>
