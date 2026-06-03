@@ -657,54 +657,21 @@ export function Status() {
             }
           />
           <Row k={t`floor`} v={denomination.formatHashrate(s.config_summary.minimum_floor_hashrate_ph)} />
-          {/* #243: share-rejection rate for the primary bid,
-              aggregated across whatever chart range the operator
-              picked at the top of the page (3h / 24h / 1w / 1m / All
-              etc.). `metricsQuery.data?.points` is already range-
-              scoped by chartRange, so summing Δrejected and
-              Δpurchased over the whole array gives the average rate
-              for that range. Same mental model as the AVG Braiins /
-              AVG Datum / AVG Ocean cards above. Skips samples whose
-              Δpurchased ≤ 0 (counter stayed flat between Braiins
-              batch updates, or went negative on a bid rotation where
-              the counter reset) - including those would either
-              pollute the divisor with zeros or fold a counter reset
-              into the rate. Em-dash when no usable delta in the
-              range. */}
+          {/* #243: range-true Braiins rejection rate, computed
+              server-side from raw tick_metrics rows (NOT the bucketed
+              chart data the chart line uses). Comes through
+              financeRangeQuery, which is already keyed off chartRange.
+              Bypasses the bucket-MAX precision loss that previously
+              made the card inconsistent across range presets - the
+              operator caught it on 2026-06-02 when 6h read 0.04% but
+              All read 0.17% on the same underlying data. Server picks
+              first/last non-null cumulative values in the range and
+              returns one number. */}
           <Row
             k={t`rejection rate`}
             v={(() => {
-              const pts = metricsQuery.data?.points ?? [];
-              if (pts.length < 2) return '—';
-              let dr = 0;
-              let dp = 0;
-              for (let i = 1; i < pts.length; i += 1) {
-                const prev = pts[i - 1]!;
-                const cur = pts[i]!;
-                const pp = prev.primary_bid_shares_purchased_m;
-                const cp = cur.primary_bid_shares_purchased_m;
-                const pr = prev.primary_bid_shares_rejected_m;
-                const cr = cur.primary_bid_shares_rejected_m;
-                if (pp === null || cp === null || pr === null || cr === null) continue;
-                const localDp = cp - pp;
-                const localDr = cr - pr;
-                // Skip non-positive Δpurchased (Braiins's batch-update
-                // pauses, plus bid-rotation counter resets) AND any
-                // sample where Δrejected < 0. The second guard handles
-                // the bucket-aggregation case on long ranges: with
-                // bucketMs = 1 day and MAX() per bucket, a bid rotation
-                // mid-bucket leaves MAX(rejected) carrying the OLD bid's
-                // final value while MAX(purchased) might pull from the
-                // NEW bid - so Δpurchased can be positive while
-                // Δrejected is negative. Without this guard a few
-                // rotation crossings can pull the sum negative on a
-                // very-low-rejection-rate range (operator saw -0.16%).
-                if (localDp <= 0 || localDr < 0) continue;
-                dp += localDp;
-                dr += localDr;
-              }
-              if (dp <= 0) return '—';
-              const pct = (dr / dp) * 100;
+              const pct = financeRangeQuery.data?.braiins_rejection_pct;
+              if (pct === null || pct === undefined) return '—';
               return `${new Intl.NumberFormat(intlLocale, {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,

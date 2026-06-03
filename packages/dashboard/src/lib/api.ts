@@ -1106,6 +1106,15 @@ export interface FinanceRangeResponse {
   projected_income_per_day_sat: number | null;
   net_per_day_sat: number | null;
   insufficient_history: boolean;
+  /**
+   * #243: Braiins primary-bid share rejection rate over the
+   * selected range, computed server-side from raw `tick_metrics`
+   * (NOT bucketed chart data). Bypasses the bucket-MAX precision
+   * loss that made the card-from-chart-data calculation inconsistent
+   * across range presets. Null on no data / no shares cleared / bid
+   * rotation.
+   */
+  braiins_rejection_pct: number | null;
 }
 
 export interface FinanceResponse {

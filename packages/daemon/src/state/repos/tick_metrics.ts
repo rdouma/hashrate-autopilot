@@ -474,6 +474,66 @@ export class TickMetricsRepo {
   }
 
   /**
+   * #243: range-true rejection rate from the cumulative-since-bid-creation
+   * share counters. Returns the percentage `(last - first) of rejected_m
+   * divided by (last - first) of purchased_m * 100`, computed against raw
+   * tick_metrics rows in the range (NOT the bucketed chart data that
+   * loses precision via MAX aggregation on long ranges).
+   *
+   * Bypasses the bucket-MAX information loss the operator caught on
+   * 2026-06-02: the chart endpoint with 1d-bucketed All-range data only
+   * captured end-of-bucket values, so the card's per-bucket delta walk
+   * computed the rate of the most recent partial day instead of the
+   * full range. Reading first/last directly from raw rows gives the
+   * actual total range delta.
+   *
+   * Returns null when:
+   *  - no non-null counter samples in range (pre-#243 only / observer disabled)
+   *  - Δpurchased <= 0 (no shares cleared, or counter reset on a single bid rotation)
+   *  - Δrejected < 0 (bid rotation across range where rejected reset)
+   *
+   * Doesn't try to segment across multiple bid rotations - a single
+   * rotation inside the range with both deltas ending up positive but
+   * fictitious would give a slightly off number. Acceptable for the
+   * card; the chart's per-window carry-forward path shows the
+   * granular behavior.
+   */
+  async braiinsRejectionPctSince(
+    sinceMs: number | null,
+    untilMs?: number,
+  ): Promise<number | null> {
+    const baseSelect = this.db
+      .selectFrom('tick_metrics')
+      .select(['primary_bid_shares_purchased_m', 'primary_bid_shares_rejected_m'])
+      .where('primary_bid_shares_purchased_m', 'is not', null)
+      .where('primary_bid_shares_rejected_m', 'is not', null);
+    const ranged = (qb: typeof baseSelect): typeof baseSelect => {
+      let q = qb;
+      if (sinceMs !== null) q = q.where('tick_at', '>=', sinceMs);
+      if (untilMs !== undefined) q = q.where('tick_at', '<=', untilMs);
+      return q;
+    };
+
+    const [first, last] = await Promise.all([
+      ranged(baseSelect).orderBy('tick_at', 'asc').limit(1).executeTakeFirst(),
+      ranged(baseSelect).orderBy('tick_at', 'desc').limit(1).executeTakeFirst(),
+    ]);
+    if (!first || !last) return null;
+    if (
+      first.primary_bid_shares_purchased_m === null ||
+      last.primary_bid_shares_purchased_m === null ||
+      first.primary_bid_shares_rejected_m === null ||
+      last.primary_bid_shares_rejected_m === null
+    ) {
+      return null;
+    }
+    const dp = last.primary_bid_shares_purchased_m - first.primary_bid_shares_purchased_m;
+    const dr = last.primary_bid_shares_rejected_m - first.primary_bid_shares_rejected_m;
+    if (dp <= 0 || dr < 0) return null;
+    return (dr / dp) * 100;
+  }
+
+  /**
    * Total sat actually consumed across ticks at or after `sinceMs`,
    * summed from valid inter-tick deltas of `primary_bid_consumed_sat`.
    *

@@ -169,6 +169,18 @@ export interface FinanceRangeResponse {
    * fields above are null in that case.
    */
   readonly insufficient_history: boolean;
+  /**
+   * #243: Braiins primary-bid share rejection rate across the
+   * range, computed server-side from raw `tick_metrics` rows (NOT
+   * the bucketed chart data). Bypasses the bucket-MAX information
+   * loss that made the chart-derived rate inconsistent across
+   * range presets. Formula: `(last_rejected - first_rejected) /
+   * (last_purchased - first_purchased) * 100` against the
+   * cumulative-since-bid-creation counters. Null when no usable
+   * counter samples in range, no shares cleared, or a single bid
+   * rotation made the deltas non-sensical.
+   */
+  readonly braiins_rejection_pct: number | null;
 }
 
 export async function registerFinanceRoute(
@@ -201,7 +213,10 @@ export async function registerFinanceRoute(
         sinceMs = spec.windowMs === null ? null : Date.now() - spec.windowMs;
       }
 
-      const agg = await deps.tickMetricsRepo.rangeFinanceAggregates(sinceMs, untilMs);
+      const [agg, braiinsRejectionPct] = await Promise.all([
+        deps.tickMetricsRepo.rangeFinanceAggregates(sinceMs, untilMs),
+        deps.tickMetricsRepo.braiinsRejectionPctSince(sinceMs, untilMs),
+      ]);
       const insufficient = agg.tick_count < MIN_TICKS_FOR_AVG;
 
       const avgHashpricePh =
@@ -243,6 +258,7 @@ export async function registerFinanceRoute(
         projected_income_per_day_sat: incomePerDay,
         net_per_day_sat: netPerDay,
         insufficient_history: insufficient,
+        braiins_rejection_pct: braiinsRejectionPct,
       };
     },
   );
