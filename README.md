@@ -398,22 +398,52 @@ Pick whichever matches how the rest of your stack is run.
 
 | Path | Best when | Footprint |
 |---|---|---|
-| **A - Umbrel app store** | You already run Umbrel and want a one-click install. | App-store install. Pending Phase 2 of [#56](https://github.com/rdouma/hashrate-autopilot/issues/56) - see below. |
+| **A - StartOS sideload** | You run StartOS and want the packaged service with StartOS dependency links, backups, and dashboard interface. | Build or download the `.s9pk`, sideload it into StartOS, then complete the web wizard. |
 | **B - Docker on a Linux box** | You have a small always-on Linux machine (NUC, Mini PC, Raspberry Pi, VPS) and don't want to install a Node.js toolchain on it. | One container, one volume, one port. Recommended for a fresh box. |
 | **C - Bare-metal Node install** | You want to run from source, hack on it, or already have Node 22 + pnpm 10 around. | A git checkout + `pnpm install` + `./scripts/start.sh`. Same wizard as Path B. |
 | **D - Power-user CLI with SOPS** | You want secrets at rest in a `sops`-encrypted file (because that's how the rest of your ops is structured), not in `state.db`. | Adds `sops` + `age` to the bare-metal install; runs `pnpm run setup` instead of the web wizard. |
 
-All four end up at the same dashboard on port **3010**. All four boot the daemon in **DRY-RUN** -
-nothing trades real money until you flip the switch from the dashboard's Status page.
+All four end up at the same dashboard. StartOS exposes it through the service interface; Docker and bare-metal
+installs expose it on port **3010** by default. All four boot the daemon in **DRY-RUN** - nothing trades real
+money until you flip the switch from the dashboard's Status page.
 
 > The wizard's setup endpoints are intentionally unauthenticated (the dashboard password is one of the
 > things you *create* there). On a public network, restrict access to port 3010 with a firewall,
-> Tailscale, or Tor until you've finished the wizard. Appliance platforms like Umbrel handle this
-> automatically - the dashboard is exposed only over Tor / LAN there.
+> Tailscale, or Tor until you've finished the wizard. On StartOS, open the dashboard through the
+> service interface after the package starts.
 
-### Path A - Umbrel Community App Store
+### Path A - StartOS sideload
 
-Add the community app store URL to your Umbrel's **Settings - App stores** and search for "Hashrate Autopilot". The app declares Bitcoin Knots, Electrs, and Datum Gateway as dependencies - Umbrel will prompt you to install any that are missing. Once installed, the daemon auto-discovers all three services across Umbrel's shared Docker network: Bitcoin RPC creds come from Umbrel's standard `APP_BITCOIN_*` env vars, the Electrs host/port and payout source are pre-set via `BHA_*` env overrides in docker-compose.yml, and Datum's API URL is injected the same way. The result is a turnkey setup where the wizard's Mining step has every field pre-filled - walk through it, confirm, and the dashboard is live.
+Build the StartOS package from this repository, or use a prebuilt `.s9pk` from the release artifacts:
+
+```bash
+# x86_64 StartOS server
+make x86
+
+# ARM64 StartOS server
+make arm
+```
+
+Then sideload the generated package through StartOS and install it:
+
+```text
+hashrate-autopilot-9_x86_64.s9pk
+hashrate-autopilot-9_aarch64.s9pk
+```
+
+The package declares StartOS dependencies for Bitcoin (`bitcoind`, covering Bitcoin Knots and Bitcoin Core),
+Electrs, and Datum Gateway. StartOS surfaces those links during install and warns if a dependency is missing or
+stopped. After the service starts, open the web interface from the StartOS service page and complete the wizard:
+
+1. Add Braiins Hashpower API credentials.
+2. Set the public Datum Gateway stratum endpoint Braiins will mine to.
+3. Set the Ocean payout address and payout observer backend.
+4. Create the dashboard password and keep the service in **DRY-RUN** until the Status page looks right.
+
+The StartOS package stores persistent state in the `main` volume mounted at `/app/data`; StartOS backup/restore
+handles configuration, secrets, tick history, bid history, and alerts for that volume. The package pre-sets Datum
+and Electrs defaults for the StartOS service network, but you can override Datum, Electrs, and Bitcoin RPC fields
+from the setup wizard or Config page if your local services use different ports or credentials.
 
 ### Path B - Docker on a Linux box
 
@@ -513,9 +543,9 @@ docker run -d \
   ghcr.io/rdouma/hashrate-autopilot:latest
 ```
 
-Bitcoin Knots RPC creds auto-detect from the standard `BITCOIN_RPC_*` env vars Umbrel injects when
-an app declares a Bitcoin Knots dependency - no override needed when running alongside Umbrel's
-bitcoind. Full list of `BHA_*` overrides: [`docs/configuration.md`](docs/configuration.md).
+For StartOS, prefer Path A so service dependencies, backups, and the dashboard interface are managed by StartOS.
+For plain Docker, provide Bitcoin RPC, Electrs, and Datum settings through the wizard or `BHA_*` overrides. Full
+list of `BHA_*` overrides: [`docs/configuration.md`](docs/configuration.md).
 
 #### B.5. Day-to-day
 
