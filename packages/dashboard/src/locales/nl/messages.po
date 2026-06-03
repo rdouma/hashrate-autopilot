@@ -963,8 +963,8 @@ msgid "collected (on-chain)"
 msgstr "ontvangen (on-chain)"
 
 #: src/pages/Status.tsx
-msgid "Collected on-chain + pre-installation (manual) + Ocean's unpaid earnings − spent on bids. Missing collected is treated as 0 (the on-chain row still shows - so the operator sees the gap). Negative = still recouping the initial deposit."
-msgstr "On-chain ontvangen + pre-installatie (handmatig) + Ocean's onbetaalde inkomsten − uitgegeven aan bids. Ontbrekend ontvangen wordt als 0 behandeld (de on-chain-regel blijft zichtbaar zodat je het gat ziet). Negatief = nog steeds bezig met het terugverdienen van de initiële inleg."
+msgid "Collected on-chain + pre-installation (manual) + Ocean's unpaid earnings − spent on bids. Missing collected is treated as 0 (the on-chain row still shows - so the operator sees the gap). Negative = still recouping the initial deposit. The percentage in parentheses is net ÷ spent: −100% means we've spent everything with nothing to show, 0% means we've broken even, and positive means we've earned more than we paid for hashrate."
+msgstr "On-chain ontvangen + pre-installatie (handmatig) + Ocean's onbetaalde inkomsten − uitgegeven aan bids. Ontbrekend ontvangen wordt als 0 behandeld (de on-chain-regel blijft zichtbaar zodat je het gat ziet). Negatief = nog steeds bezig met het terugverdienen van de initiële inleg. Het percentage tussen haakjes is net ÷ uitgegeven: −100% betekent dat we alles hebben uitgegeven zonder iets te tonen, 0% betekent dat we quitte staan, en positief betekent dat we meer hebben verdiend dan we voor hashrate hebben betaald."
 
 #: src/pages/Config.tsx
 msgid "Compact numeric time series - one row per tick (~1,440/day) with hashrate, prices, share-log %, spend. This is what backs the Hashrate / Price / Overpay charts, so set it to the longest range you want to be able to chart. Cheap on disk: a year is ~525k small rows. Default 0 = keep forever."
@@ -1318,6 +1318,7 @@ msgid "Done"
 msgstr "Klaar"
 
 #: src/components/Layout.tsx
+#: src/pages/Status.tsx
 msgid "Done rearranging"
 msgstr "Klaar met herschikken"
 
