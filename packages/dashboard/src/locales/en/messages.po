@@ -76,6 +76,15 @@ msgstr "(checked {0})"
 msgid "(no push attempted yet)"
 msgstr "(no push attempted yet)"
 
+#. placeholder {0}: events.length
+#: src/components/HashrateChart.tsx
+msgid "{0} events landed in the same daemon tick - the line shows their "
+"combined effect on the rolling-{windowLabel} window. Pool luck went from "
+"{luckBeforeText} to {luckAfterText}."
+msgstr "{0} events landed in the same daemon tick - the line shows their "
+"combined effect on the rolling-{windowLabel} window. Pool luck went "
+"from {luckBeforeText} to {luckAfterText}."
+
 #. placeholder {0}: formatNumber(n, {}, intlLocale)
 #: src/pages/Setup.tsx
 msgid "{0} sat/PH/day (default - tunable later)"
@@ -406,6 +415,10 @@ msgstr "After submit, the daemon writes everything to <0>state.db</0> and "
 "brings the controller online in-place. Boots in <1>DRY-RUN</1> mode; "
 "the dashboard signs you in automatically. Promote to LIVE from the "
 "Status page when you're ready."
+
+#: src/components/HashrateChart.tsx
+msgid "aged out"
+msgstr "aged out"
 
 #: src/components/HashrateChart.tsx
 msgid "aged out:"
@@ -827,13 +840,11 @@ msgstr "bitcoind RPC is not configured on the daemon. Set BHA_BITCOIND_RPC_URL "
 "/ _USER / _PASSWORD or fill the corresponding fields on the Config "
 "page."
 
-#. placeholder {0}: luckBefore === null ? '-' : `${luckBefore.toFixed(2)}×`
-#. placeholder {1}: luckAfter.toFixed(2)
 #: src/components/HashrateChart.tsx
 msgid "Block aged out of the rolling-{windowLabel} window - pool luck went from "
-"{0} to {1}×."
+"{luckBeforeText} to {luckAfterText}."
 msgstr "Block aged out of the rolling-{windowLabel} window - pool luck went "
-"from {0} to {1}×."
+"from {luckBeforeText} to {luckAfterText}."
 
 #: src/pages/Config.tsx
 msgid "Block explorer"
@@ -847,13 +858,11 @@ msgstr "block found:"
 msgid "block height"
 msgstr "block height"
 
-#. placeholder {0}: luckBefore === null ? '-' : `${luckBefore.toFixed(2)}×`
-#. placeholder {1}: luckAfter.toFixed(2)
 #: src/components/HashrateChart.tsx
-msgid "Block landed - pool luck went from {0} to {1}× (rolling-{windowLabel} "
-"window)."
-msgstr "Block landed - pool luck went from {0} to {1}× (rolling-{windowLabel} "
-"window)."
+msgid "Block landed - pool luck went from {luckBeforeText} to {luckAfterText} "
+"(rolling-{windowLabel} window)."
+msgstr "Block landed - pool luck went from {luckBeforeText} to {luckAfterText} "
+"(rolling-{windowLabel} window)."
 
 #: src/components/Bip110ScanCard.tsx
 msgid "Block range"
@@ -2093,6 +2102,7 @@ msgstr "Format: <btc-address>.<label>. Ocean TIDES credits shares by the "
 "address prefix - anything else routes shares to nobody."
 
 #: src/components/Bip110ScanCard.tsx
+#: src/components/HashrateChart.tsx
 #: src/pages/Status.tsx
 msgid "found"
 msgstr "found"
@@ -2100,10 +2110,6 @@ msgstr "found"
 #: src/components/HashrateChart.tsx
 msgid "found by us"
 msgstr "found by us"
-
-#: src/components/HashrateChart.tsx
-msgid "Found by us"
-msgstr "Found by us"
 
 #: src/components/HashrateChart.tsx
 msgid "FOUND BY US"
@@ -3484,6 +3490,11 @@ msgstr "pool hashrate"
 msgid "POOL LUCK -"
 msgstr "POOL LUCK -"
 
+#. placeholder {0}: events.length
+#: src/components/HashrateChart.tsx
+msgid "POOL LUCK · {0} EVENTS"
+msgstr "POOL LUCK · {0} EVENTS"
+
 #: src/pages/Status.tsx
 msgid "pool luck (24h)"
 msgstr "pool luck (24h)"
@@ -4080,10 +4091,6 @@ msgstr "signaling"
 #: src/components/Bip110ScanCard.tsx
 msgid "Signaling"
 msgstr "Signaling"
-
-#: src/components/HashrateChart.tsx
-msgid "Signaling BIP 110"
-msgstr "Signaling BIP 110"
 
 #: src/components/HashrateChart.tsx
 msgid "Signaling BIP 110 (Reduced Data Temporary Soft Fork)"

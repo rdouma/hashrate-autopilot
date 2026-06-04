@@ -517,10 +517,10 @@ export const HashrateChart = memo(function HashrateChart({
   const closeIpChangeTip = useCallback(() => setIpChangeTip(null), []);
 
   const onStepEnter = useCallback(
-    (event: PoolLuckStepEvent) => (e: React.MouseEvent) => {
+    (group: PoolLuckStepGroup) => (e: React.MouseEvent) => {
       setStepTip((prev) => {
         if (prev?.pinned) return prev;
-        return { event, x: e.clientX, y: e.clientY, pinned: false };
+        return { group, x: e.clientX, y: e.clientY, pinned: false };
       });
     },
     [],
@@ -529,9 +529,9 @@ export const HashrateChart = memo(function HashrateChart({
     setStepTip((prev) => (prev?.pinned ? prev : null));
   }, []);
   const onStepClick = useCallback(
-    (event: PoolLuckStepEvent) => (e: React.MouseEvent) => {
+    (group: PoolLuckStepGroup) => (e: React.MouseEvent) => {
       e.stopPropagation();
-      setStepTip({ event, x: e.clientX, y: e.clientY, pinned: true });
+      setStepTip({ group, x: e.clientX, y: e.clientY, pinned: true });
     },
     [],
   );
@@ -1268,9 +1268,14 @@ export const HashrateChart = memo(function HashrateChart({
   // when the cancellation hid the step (#250-something).
   const visibleLuckStepMarkers = useMemo(() => {
     const empty: Array<{
-      event: PoolLuckStepEvent;
+      group: PoolLuckStepGroup;
       cx: number;
       cy: number;
+      /** X position of the contributing block(s) - used for the dashed
+       *  connector when the dot sits later than the block icon. When a
+       *  group contains multiple events at different block timestamps
+       *  this picks the earliest, so the connector spans the full
+       *  region the group covers. */
       blockCx: number;
     }> = [];
     if (!chartData) return empty;
@@ -1287,15 +1292,19 @@ export const HashrateChart = memo(function HashrateChart({
                    : 30 * DAY_MS;
     const { dataMinX, dataMaxX, xScale, shareLogYScale } = chartData;
     const luckKey = rightAxisSeries as 'pool_luck_24h' | 'pool_luck_7d' | 'pool_luck_30d';
-    const out: typeof empty = [];
+    // Build raw events first, then group by the tick they resolve to.
+    type StagedEvent = {
+      kind: 'in' | 'out';
+      t: number;
+      block: OurBlockMarker;
+      afterIdx: number;
+    };
+    const staged: StagedEvent[] = [];
     for (const block of ourBlocks) {
       for (const kind of ['in', 'out'] as const) {
         const t =
           kind === 'in' ? block.timestamp_ms : block.timestamp_ms + windowMs;
         if (t < dataMinX || t > dataMaxX) continue;
-        // First tick at-or-after the event time. The daemon refreshes
-        // Ocean every tick (60 s), so this tick's `pool_luck_*` already
-        // reflects the count change in normal operation.
         let afterIdx = -1;
         for (let i = 0; i < points.length; i++) {
           if (points[i]!.tick_at >= t) {
@@ -1304,18 +1313,43 @@ export const HashrateChart = memo(function HashrateChart({
           }
         }
         if (afterIdx < 0) continue;
-        const after = points[afterIdx]!;
-        const before = afterIdx > 0 ? points[afterIdx - 1]! : null;
-        const luckAfter = after[luckKey];
-        const luckBefore = before === null ? null : before[luckKey];
-        if (luckAfter === null) continue;
-        out.push({
-          event: { kind, t, block, luckBefore, luckAfter, windowMs },
-          cx: xScale(after.tick_at),
-          cy: shareLogYScale(luckAfter),
-          blockCx: xScale(t),
-        });
+        staged.push({ kind, t, block, afterIdx });
       }
+    }
+    // Group by afterIdx so events that landed in the same daemon tick
+    // collapse into a single marker. The luck step the line actually
+    // shows is the combined effect of all events in the group.
+    const byTick = new Map<number, StagedEvent[]>();
+    for (const ev of staged) {
+      const arr = byTick.get(ev.afterIdx) ?? [];
+      arr.push(ev);
+      byTick.set(ev.afterIdx, arr);
+    }
+    const out: typeof empty = [];
+    for (const [afterIdx, events] of byTick) {
+      const after = points[afterIdx]!;
+      const before = afterIdx > 0 ? points[afterIdx - 1]! : null;
+      const luckAfter = after[luckKey];
+      const luckBefore = before === null ? null : before[luckKey];
+      if (luckAfter === null) continue;
+      // Connector anchor: use the earliest contributing event's
+      // timestamp so the dashed line covers the whole group when the
+      // block icons sit before the resolved tick.
+      const earliestT = events.reduce(
+        (m, e) => (e.t < m ? e.t : m),
+        events[0]!.t,
+      );
+      out.push({
+        group: {
+          events: events.map(({ kind, t, block }) => ({ kind, t, block })),
+          luckBefore,
+          luckAfter,
+          windowMs,
+        },
+        cx: xScale(after.tick_at),
+        cy: shareLogYScale(luckAfter),
+        blockCx: xScale(earliestT),
+      });
     }
     return out;
   }, [chartData, ourBlocks, points, rightAxisSeries]);
@@ -1631,12 +1665,12 @@ export const HashrateChart = memo(function HashrateChart({
             kinds use the same shape per operator preference; the
             tooltip tells direction. */}
         {rightAxis &&
-          visibleLuckStepMarkers.map(({ event, cx, cy, blockCx }) => (
+          visibleLuckStepMarkers.map(({ group, cx, cy, blockCx }) => (
             <g
-              key={`luckstep-${event.kind}-${event.block.height}`}
-              onMouseEnter={onStepEnter(event)}
+              key={`luckstep-${cx}-${group.events.map((e) => `${e.kind}${e.block.height}`).join('|')}`}
+              onMouseEnter={onStepEnter(group)}
               onMouseLeave={onStepLeave}
-              onClick={onStepClick(event)}
+              onClick={onStepClick(group)}
               style={{ cursor: 'pointer' }}
             >
               {Math.abs(cx - blockCx) > 2 && (
@@ -2402,11 +2436,29 @@ function RangePicker({
 //   - 'out': numerator -1 when the block ages out of the rolling
 //            window (line steps down, `windowMs` later)
 
+/**
+ * One block-level event contributing to a pool-luck step:
+ *   - 'in':  numerator +1 the moment the block lands.
+ *   - 'out': numerator -1 when the block ages out (windowMs later).
+ */
 interface PoolLuckStepEvent {
   readonly kind: 'in' | 'out';
-  /** Timestamp of the step. For 'in' = block.timestamp_ms; for 'out' = block.timestamp_ms + windowMs. */
+  /** Timestamp of the step. 'in' = block.timestamp_ms; 'out' = block.timestamp_ms + windowMs. */
   readonly t: number;
   readonly block: OurBlockMarker;
+}
+
+/**
+ * One marker on the pool-luck line. When two or more block events
+ * (e.g. one 'in' and one 'out') land in the same daemon tick, they
+ * collapse into a single group with one dot: the count net-changes
+ * by the sum of their contributions and the luck step the line
+ * actually shows is their combined effect. The tooltip lists each
+ * contributing event so the operator can see what's behind the
+ * step.
+ */
+interface PoolLuckStepGroup {
+  readonly events: ReadonlyArray<PoolLuckStepEvent>;
   /** Pool-luck value at the tick immediately before the step. Null if the chart's tick history starts after the step. */
   readonly luckBefore: number | null;
   /** Pool-luck value at the first tick at-or-after the step. */
@@ -2416,7 +2468,7 @@ interface PoolLuckStepEvent {
 }
 
 interface PoolLuckStepTooltipState {
-  readonly event: PoolLuckStepEvent;
+  readonly group: PoolLuckStepGroup;
   readonly x: number;
   readonly y: number;
   readonly pinned: boolean;
@@ -2436,8 +2488,8 @@ function PoolLuckStepTooltip({
   const { i18n } = useLingui();
   void i18n;
   const fmt = useFormatters();
-  const { event, pinned } = tip;
-  const { kind, block, luckBefore, luckAfter, windowMs } = event;
+  const { group, pinned } = tip;
+  const { events, luckBefore, luckAfter, windowMs } = group;
   const ref = useRef<HTMLDivElement | null>(null);
   const [pos, setPos] = useState<{ left: number; top: number; ready: boolean }>({
     left: tip.x + 12,
@@ -2457,27 +2509,36 @@ function PoolLuckStepTooltip({
     if (left < margin) left = margin;
     if (top < margin) top = margin;
     setPos({ left, top, ready: true });
-  }, [tip.x, tip.y, event.kind, block.height]);
+  }, [tip.x, tip.y, events.length, events[0]?.block.height]);
 
-  const url = applyExplorerTemplate(explorerTemplate, block);
-  const rewardBtc = block.total_reward_sat / 1e8;
   const DAY = 24 * 60 * 60 * 1000;
   const windowLabel = windowMs <= DAY ? '24h' : windowMs <= 7 * DAY ? '7d' : '30d';
+
+  // Combined direction line. When more than one event landed in the
+  // same daemon tick, the line jump on the chart is their net effect;
+  // we describe what happened as a list below this summary instead of
+  // pretending a single 'in' or 'out' explains the step. (#223 origin:
+  // earlier copy talked about the numerator going from X× to Y×; the
+  // luck multiplier is the thing the user sees, not the integer count
+  // - so the summary talks luck.)
+  const luckBeforeText = luckBefore === null ? '-' : `${luckBefore.toFixed(2)}×`;
+  const luckAfterText = `${luckAfter.toFixed(2)}×`;
   const headerLabel =
-    kind === 'in' ? t`POOL LUCK +` : t`POOL LUCK -`;
-  // #223: the previous copy said "numerator went from X× to Y×" which
-  // misframed the value - the numerator of the luck formula is the
-  // block count over the rolling window (an integer, N → N±1), not
-  // the luck multiplier itself. The values shown are the luck before
-  // and after the step. Rewording to talk about pool luck directly.
-  const directionText =
-    kind === 'in'
-      ? t`Block landed - pool luck went from ${
-          luckBefore === null ? '-' : `${luckBefore.toFixed(2)}×`
-        } to ${luckAfter.toFixed(2)}× (rolling-${windowLabel} window).`
-      : t`Block aged out of the rolling-${windowLabel} window - pool luck went from ${
-          luckBefore === null ? '-' : `${luckBefore.toFixed(2)}×`
-        } to ${luckAfter.toFixed(2)}×.`;
+    events.length === 1
+      ? events[0]!.kind === 'in'
+        ? t`POOL LUCK +`
+        : t`POOL LUCK -`
+      : t`POOL LUCK · ${events.length} EVENTS`;
+  const headerSuffix =
+    events.length === 1
+      ? ` #${events[0]!.block.height.toLocaleString(locale)}`
+      : '';
+  const summaryText =
+    events.length === 1
+      ? events[0]!.kind === 'in'
+        ? t`Block landed - pool luck went from ${luckBeforeText} to ${luckAfterText} (rolling-${windowLabel} window).`
+        : t`Block aged out of the rolling-${windowLabel} window - pool luck went from ${luckBeforeText} to ${luckAfterText}.`
+      : t`${events.length} events landed in the same daemon tick - the line shows their combined effect on the rolling-${windowLabel} window. Pool luck went from ${luckBeforeText} to ${luckAfterText}.`;
 
   return (
     <div
@@ -2488,7 +2549,7 @@ function PoolLuckStepTooltip({
     >
       <div className="flex items-start justify-between gap-3">
         <span className="font-semibold uppercase tracking-wider text-violet-300">
-          {headerLabel} #{block.height.toLocaleString(locale)}
+          {headerLabel}{headerSuffix}
         </span>
         {pinned && (
           <button
@@ -2502,48 +2563,88 @@ function PoolLuckStepTooltip({
         )}
       </div>
       <div className="text-slate-300 mt-1 whitespace-normal max-w-xs">
-        {directionText}
+        {summaryText}
       </div>
-      <div className="text-slate-500 mt-2 text-[11px]">
-        <Trans>block found:</Trans> {fmt.timestamp(block.timestamp_ms)}
-      </div>
-      <div className="text-slate-500 text-[10px]">
-        {formatTimestampUtc(block.timestamp_ms)}
-      </div>
-      {kind === 'out' && (
-        <div className="text-slate-500 mt-1 text-[11px]">
-          <Trans>aged out:</Trans>{' '}
-          {fmt.timestamp(block.timestamp_ms + windowMs)}
-        </div>
-      )}
-      <div className="mt-2 space-y-0.5 text-slate-300">
-        <BtcRow label={t`pool reward`} btc={rewardBtc} locale={locale} />
-      </div>
-      {block.signals_bip110 === true && (
-        <div className="mt-2 pt-2 border-t border-slate-800 text-amber-300 text-[11px]">
-          <Trans>Signaling BIP 110</Trans>
-        </div>
-      )}
-      {block.found_by_us && (
-        <div className="mt-2 pt-2 border-t border-slate-800 text-amber-300 text-[11px]">
-          <Trans>Found by us</Trans>
-        </div>
-      )}
+      {/* Per-event detail blocks. Single-event groups render the
+          familiar "block found / aged out / reward" stack the operator
+          has seen since #128. Multi-event groups list each event with
+          a small kind badge so it's clear which block contributed
+          what to the combined step. */}
+      {events.map((ev, i) => {
+        const { kind, block } = ev;
+        const url = applyExplorerTemplate(explorerTemplate, block);
+        const rewardBtc = block.total_reward_sat / 1e8;
+        const isLast = i === events.length - 1;
+        return (
+          <div
+            key={`${kind}-${block.height}`}
+            className={
+              i === 0
+                ? 'mt-3 pt-2 border-t border-slate-800'
+                : 'mt-2 pt-2 border-t border-slate-800'
+            }
+          >
+            <div className="flex items-baseline gap-2">
+              {events.length > 1 && (
+                <span
+                  className={`text-[10px] uppercase tracking-wider px-1 py-0.5 rounded ${
+                    kind === 'in'
+                      ? 'bg-emerald-900/40 text-emerald-300 border border-emerald-800'
+                      : 'bg-red-900/40 text-red-300 border border-red-800'
+                  }`}
+                >
+                  {kind === 'in' ? <Trans>found</Trans> : <Trans>aged out</Trans>}
+                </span>
+              )}
+              <span className="font-mono text-slate-300">
+                #{block.height.toLocaleString(locale)}
+              </span>
+              {block.found_by_us && (
+                <span className="text-amber-300 text-[10px] uppercase tracking-wider">
+                  <Trans>found by us</Trans>
+                </span>
+              )}
+              {block.signals_bip110 === true && (
+                <span className="text-amber-300 text-[10px] uppercase tracking-wider">
+                  BIP 110
+                </span>
+              )}
+            </div>
+            <div className="text-slate-500 mt-1 text-[11px]">
+              <Trans>block found:</Trans> {fmt.timestamp(block.timestamp_ms)}
+            </div>
+            <div className="text-slate-500 text-[10px]">
+              {formatTimestampUtc(block.timestamp_ms)}
+            </div>
+            {kind === 'out' && (
+              <div className="text-slate-500 mt-1 text-[11px]">
+                <Trans>aged out:</Trans>{' '}
+                {fmt.timestamp(block.timestamp_ms + windowMs)}
+              </div>
+            )}
+            <div className="mt-1 space-y-0.5 text-slate-300">
+              <BtcRow label={t`pool reward`} btc={rewardBtc} locale={locale} />
+            </div>
+            {pinned && isLast && url && (
+              <div className="mt-2 flex items-center justify-end gap-3">
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-amber-400 hover:underline text-[11px]"
+                >
+                  <Trans>open in explorer</Trans>
+                </a>
+              </div>
+            )}
+          </div>
+        );
+      })}
       {pinned && (
-        <div className="mt-3 pt-2 border-t border-slate-800 flex items-center justify-between gap-3">
+        <div className="mt-2 pt-2 border-t border-slate-800">
           <span className="text-[10px] text-slate-500">
             <Trans>click outside to close</Trans>
           </span>
-          {url && (
-            <a
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-amber-400 hover:underline text-[11px]"
-            >
-              <Trans>open in explorer</Trans>
-            </a>
-          )}
         </div>
       )}
     </div>

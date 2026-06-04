@@ -53,13 +53,13 @@ msgid "(avg cost delivered) minus the delta-weighted average hashprice during "
 "current difficulty), positive means above. Same delta weighting as the "
 "avg cost card so the two stay consistent. Updates with the range "
 "selector above."
-msgstr "(coste medio entregado) menos el hashprice promedio ponderado por "
-"delta durante los periodos que realmente nos facturaron, calculado "
-"sobre el rango de gráfico seleccionado. Negativo significa que "
-"pagamos por debajo del break-even (bien - más barato que minar a la "
-"dificultad actual), positivo significa por encima. Misma "
-"ponderación delta que la tarjeta avg cost, así las dos quedan "
-"consistentes. Se actualiza con el selector de rango de arriba."
+msgstr "(coste medio entregado) menos el hashprice promedio ponderado por delta "
+"durante los periodos que realmente nos facturaron, calculado sobre el "
+"rango de gráfico seleccionado. Negativo significa que pagamos por "
+"debajo del break-even (bien - más barato que minar a la dificultad "
+"actual), positivo significa por encima. Misma ponderación delta que la "
+"tarjeta avg cost, así las dos quedan consistentes. Se actualiza con el "
+"selector de rango de arriba."
 
 #: src/components/StaleUrlBanner.tsx
 msgid "(Braiins may deduct an exit fee)"
@@ -77,6 +77,16 @@ msgstr "(comprobado hace {0})"
 #: src/pages/Config.tsx
 msgid "(no push attempted yet)"
 msgstr "(no se ha intentado enviar nada todavía)"
+
+#. placeholder {0}: events.length
+#: src/components/HashrateChart.tsx
+msgid "{0} events landed in the same daemon tick - the line shows their "
+"combined effect on the rolling-{windowLabel} window. Pool luck went from "
+"{luckBeforeText} to {luckAfterText}."
+msgstr ""
+"{0} eventos cayeron en el mismo tick del daemon - la línea muestra su "
+"efecto combinado sobre la ventana móvil de {windowLabel}. La pool luck "
+"pasó de {luckBeforeText} a {luckAfterText}."
 
 #. placeholder {0}: formatNumber(n, {}, intlLocale)
 #: src/pages/Setup.tsx
@@ -411,6 +421,10 @@ msgstr "Tras enviar, el daemon escribe todo en <0>state.db</0> y pone el "
 "controlador en línea en el sitio. Arranca en modo <1>DRY-RUN</1>; el "
 "panel te conecta automáticamente. Cambia a LIVE desde la página Status "
 "cuando estés listo."
+
+#: src/components/HashrateChart.tsx
+msgid "aged out"
+msgstr "expirado"
 
 #: src/components/HashrateChart.tsx
 msgid "aged out:"
@@ -843,13 +857,12 @@ msgstr "bitcoind RPC no está configurado en el daemon. Defina "
 "BHA_BITCOIND_RPC_URL / _USER / _PASSWORD o complete los campos "
 "correspondientes en la página de Configuración."
 
-#. placeholder {0}: luckBefore === null ? '-' : `${luckBefore.toFixed(2)}×`
-#. placeholder {1}: luckAfter.toFixed(2)
 #: src/components/HashrateChart.tsx
 msgid "Block aged out of the rolling-{windowLabel} window - pool luck went from "
-"{0} to {1}×."
-msgstr "Bloque salido de la ventana rolling-{windowLabel} - la suerte del pool "
-"pasó de {0} a {1}×."
+"{luckBeforeText} to {luckAfterText}."
+msgstr ""
+"Bloque expiró de la ventana móvil de {windowLabel} - la pool luck pasó "
+"de {luckBeforeText} a {luckAfterText}."
 
 #: src/pages/Config.tsx
 msgid "Block explorer"
@@ -863,13 +876,12 @@ msgstr "bloque encontrado:"
 msgid "block height"
 msgstr "altura del bloque"
 
-#. placeholder {0}: luckBefore === null ? '-' : `${luckBefore.toFixed(2)}×`
-#. placeholder {1}: luckAfter.toFixed(2)
 #: src/components/HashrateChart.tsx
-msgid "Block landed - pool luck went from {0} to {1}× (rolling-{windowLabel} "
-"window)."
-msgstr "Bloque encontrado - la suerte del pool pasó de {0} a {1}× (ventana "
-"rolling-{windowLabel})."
+msgid "Block landed - pool luck went from {luckBeforeText} to {luckAfterText} "
+"(rolling-{windowLabel} window)."
+msgstr ""
+"Bloque encontrado - la pool luck pasó de {luckBeforeText} a "
+"{luckAfterText} (ventana móvil de {windowLabel})."
 
 #: src/components/Bip110ScanCard.tsx
 msgid "Block range"
@@ -1729,10 +1741,10 @@ msgid "Duration-weighted % of time with delivered hashrate > 0, computed over "
 "(time until the next tick) so gaps after restarts count proportionally. "
 "Updates with the range selector above."
 msgstr "% de tiempo ponderado por duración con hashrate entregado > 0, "
-"calculado sobre el rango de gráfico seleccionado. Cada tick se "
-"pondera por su duración real (tiempo hasta el siguiente tick) para "
-"que los huecos tras reinicios cuenten proporcionalmente. Se "
-"actualiza con el selector de rango de arriba."
+"calculado sobre el rango de gráfico seleccionado. Cada tick se pondera "
+"por su duración real (tiempo hasta el siguiente tick) para que los "
+"huecos tras reinicios cuenten proporcionalmente. Se actualiza con el "
+"selector de rango de arriba."
 
 #: src/pages/Status.tsx
 msgid "Duration-weighted average of the hashrate Braiins reports delivering, "
@@ -1741,9 +1753,9 @@ msgid "Duration-weighted average of the hashrate Braiins reports delivering, "
 "live card. Updates with the range selector above."
 msgstr "Promedio ponderado por duración del hashrate que Braiins reporta "
 "entregar, calculado sobre el rango de gráfico seleccionado. Incluye "
-"tiempo caído (donde entregado = 0) para que un mal tramo aparezca "
-"en el promedio, no solo en la tarjeta en vivo. Se actualiza con el "
-"selector de rango de arriba."
+"tiempo caído (donde entregado = 0) para que un mal tramo aparezca en el "
+"promedio, no solo en la tarjeta en vivo. Se actualiza con el selector "
+"de rango de arriba."
 
 #: src/pages/Status.tsx
 msgid "Duration-weighted average of the hashrate Datum measures at the gateway, "
@@ -1751,10 +1763,10 @@ msgid "Duration-weighted average of the hashrate Datum measures at the gateway, 
 "Braiins means Braiins is billing for hashrate Datum never saw arrive. "
 "Updates with the range selector above."
 msgstr "Promedio ponderado por duración del hashrate que Datum mide en el "
-"gateway, calculado sobre el rango de gráfico seleccionado. Una "
-"brecha sostenida por debajo del promedio Braiins significa que "
-"Braiins está cobrando por hashrate que Datum nunca vio llegar. Se "
-"actualiza con el selector de rango de arriba."
+"gateway, calculado sobre el rango de gráfico seleccionado. Una brecha "
+"sostenida por debajo del promedio Braiins significa que Braiins está "
+"cobrando por hashrate que Datum nunca vio llegar. Se actualiza con el "
+"selector de rango de arriba."
 
 #: src/pages/Status.tsx
 msgid "Duration-weighted average of the hashrate Ocean credits to our payout "
@@ -1768,13 +1780,13 @@ msgid "Duration-weighted average of the hashrate Ocean credits to our payout "
 msgstr "Promedio ponderado por duración del hashrate que Ocean acredita a "
 "nuestra dirección de pago, calculado sobre el rango de gráfico "
 "seleccionado. En cada tick (cada 60 s) el daemon llama al endpoint "
-"/v1/user_hashrate de Ocean y lee el campo `hashrate_300s` - la "
-"propia estimación de Ocean en una ventana móvil de 5 minutos para "
-"este wallet. Es decir: muestreado cada minuto, cada muestra es un "
-"valor suavizado de 5 minutos. Una brecha sostenida por debajo de "
-"promedio Braiins / promedio Datum significa que la pool no está "
-"acreditando trabajo que creemos haber entregado. Se actualiza con "
-"el selector de rango de arriba."
+"/v1/user_hashrate de Ocean y lee el campo `hashrate_300s` - la propia "
+"estimación de Ocean en una ventana móvil de 5 minutos para este wallet. "
+"Es decir: muestreado cada minuto, cada muestra es un valor suavizado de "
+"5 minutos. Una brecha sostenida por debajo de promedio Braiins / "
+"promedio Datum significa que la pool no está acreditando trabajo que "
+"creemos haber entregado. Se actualiza con el selector de rango de "
+"arriba."
 
 #: src/pages/Config.tsx
 msgid "Dynamic DNS"
@@ -2128,6 +2140,7 @@ msgstr "Formato: <dirección-btc>.<etiqueta>. Ocean TIDES acredita shares por el
 "prefijo de la dirección - cualquier otra cosa envía las shares a nadie."
 
 #: src/components/Bip110ScanCard.tsx
+#: src/components/HashrateChart.tsx
 #: src/pages/Status.tsx
 msgid "found"
 msgstr "encontrados"
@@ -2135,10 +2148,6 @@ msgstr "encontrados"
 #: src/components/HashrateChart.tsx
 msgid "found by us"
 msgstr "encontrado por nosotros"
-
-#: src/components/HashrateChart.tsx
-msgid "Found by us"
-msgstr "Encontrado por nosotros"
 
 #: src/components/HashrateChart.tsx
 msgid "FOUND BY US"
@@ -3547,6 +3556,11 @@ msgstr "hashrate del pool"
 msgid "POOL LUCK -"
 msgstr "POOL LUCK -"
 
+#. placeholder {0}: events.length
+#: src/components/HashrateChart.tsx
+msgid "POOL LUCK · {0} EVENTS"
+msgstr "POOL LUCK · {0} EVENTOS"
+
 #: src/pages/Status.tsx
 msgid "pool luck (24h)"
 msgstr "suerte del pool (24h)"
@@ -4104,12 +4118,11 @@ msgid "Share of Braiins-purchased shares the pool rejected, computed over the "
 msgstr "Proporción de shares compradas en Braiins que la pool rechazó, "
 "calculada sobre el rango de gráfico seleccionado. En el servidor: "
 "(Δrejected_m / Δpurchased_m) × 100 entre las primeras y últimas "
-"muestras no nulas del contador acumulado en el rango. Se actualiza "
-"con el selector de rango de arriba (3h / 6h / 24h / 1w / 1m / 1y / "
-"Todo). Línea base saludable ~0,05 %; valores sostenidos muy por "
-"encima significan que las shares llegan obsoletas (Datum se quedó "
-"atrás del trabajo) o son inválidas (worker mal configurado, "
-"problemas de ASIC)."
+"muestras no nulas del contador acumulado en el rango. Se actualiza con "
+"el selector de rango de arriba (3h / 6h / 24h / 1w / 1m / 1y / Todo). "
+"Línea base saludable ~0,05 %; valores sostenidos muy por encima "
+"significan que las shares llegan obsoletas (Datum se quedó atrás del "
+"trabajo) o son inválidas (worker mal configurado, problemas de ASIC)."
 
 #: src/pages/Status.tsx
 msgid "share_log %"
@@ -4151,10 +4164,6 @@ msgstr "señalizando"
 #: src/components/Bip110ScanCard.tsx
 msgid "Signaling"
 msgstr "Señalizando"
-
-#: src/components/HashrateChart.tsx
-msgid "Signaling BIP 110"
-msgstr "Señaliza BIP 110"
 
 #: src/components/HashrateChart.tsx
 msgid "Signaling BIP 110 (Reduced Data Temporary Soft Fork)"

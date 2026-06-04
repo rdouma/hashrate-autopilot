@@ -2,6 +2,10 @@
 
 ## 2026-06-04
 
+### `[UI]` Pool-luck dots group multi-event ticks into a single marker with a combined tooltip
+
+Build 595 fixed dots binding to the wrong block when two events landed in the same daemon tick, but it still showed two overlapping dots and each tooltip described only one block's contribution — misleading when, say, an aged-out and a found event cancel in the count but the luck still jumps (window denominator shifts). The marker now collapses all events at the same tick into a single dot. Tooltip behaviour: one event = the familiar single-block readout; multiple events = a "N events landed in the same daemon tick" summary plus a per-event block listing with a green `found` or red `aged out` badge, so the operator can see which blocks combined to produce the visible luck step. Translations cover en + nl + es.
+
 ### `[Infra]` Public-IP poll interval dropped from 5 min to 60 s
 
 The daemon polls api.ipify.org to keep its view of the box's public IPv4 in sync; that interval was 5 min, which meant up to 5 min between a router IP rotation and the DDNS updater noticing. Dropped to 60 s so the worst-case detection lag is now ~1 min, the DDNS A record gets refreshed correspondingly fast, and the rejection-rate spike that follows a router IP change (Datum and Braiins connections re-establishing) is shorter. ipify.org has no published rate limit and serves billions of requests/day; 60 calls/hour per box is well within "polite use."

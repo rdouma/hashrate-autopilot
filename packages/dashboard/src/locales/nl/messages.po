@@ -53,13 +53,13 @@ msgid "(avg cost delivered) minus the delta-weighted average hashprice during "
 "current difficulty), positive means above. Same delta weighting as the "
 "avg cost card so the two stay consistent. Updates with the range "
 "selector above."
-msgstr "(avg cost geleverd) minus de delta-gewogen gemiddelde hashprice "
-"tijdens perioden dat we daadwerkelijk gefactureerd werden, berekend "
-"over het geselecteerde grafiekbereik. Negatief betekent dat we onder "
-"break-even betaalden (goed - goedkoper dan minen bij huidige "
-"moeilijkheidsgraad), positief betekent erboven. Dezelfde "
-"delta-weging als de avg cost-kaart, dus die twee blijven consistent. "
-"Wijzigt mee met de bereikselector hierboven."
+msgstr "(avg cost geleverd) minus de delta-gewogen gemiddelde hashprice tijdens "
+"perioden dat we daadwerkelijk gefactureerd werden, berekend over het "
+"geselecteerde grafiekbereik. Negatief betekent dat we onder break-even "
+"betaalden (goed - goedkoper dan minen bij huidige moeilijkheidsgraad), "
+"positief betekent erboven. Dezelfde delta-weging als de avg cost-kaart, "
+"dus die twee blijven consistent. Wijzigt mee met de bereikselector "
+"hierboven."
 
 #: src/components/StaleUrlBanner.tsx
 msgid "(Braiins may deduct an exit fee)"
@@ -77,6 +77,16 @@ msgstr "(gecontroleerd {0})"
 #: src/pages/Config.tsx
 msgid "(no push attempted yet)"
 msgstr "(nog geen update verstuurd)"
+
+#. placeholder {0}: events.length
+#: src/components/HashrateChart.tsx
+msgid "{0} events landed in the same daemon tick - the line shows their "
+"combined effect on the rolling-{windowLabel} window. Pool luck went from "
+"{luckBeforeText} to {luckAfterText}."
+msgstr ""
+"{0} gebeurtenissen vielen in dezelfde daemon-tick - de lijn toont hun "
+"gecombineerde effect op het rollende {windowLabel}-venster. Pool luck "
+"ging van {luckBeforeText} naar {luckAfterText}."
 
 #. placeholder {0}: formatNumber(n, {}, intlLocale)
 #: src/pages/Setup.tsx
@@ -410,6 +420,10 @@ msgstr "Na indienen schrijft de daemon alles naar <0>state.db</0> en zet de "
 "controller direct online. Start in <1>DRY-RUN</1> modus; het dashboard "
 "logt je automatisch in. Schakel naar LIVE op de Status-pagina wanneer "
 "je klaar bent."
+
+#: src/components/HashrateChart.tsx
+msgid "aged out"
+msgstr "verlopen"
 
 #: src/components/HashrateChart.tsx
 msgid "aged out:"
@@ -836,13 +850,12 @@ msgstr "bitcoind RPC is niet geconfigureerd in de daemon. Stel "
 "BHA_BITCOIND_RPC_URL / _USER / _PASSWORD in of vul de corresponderende "
 "velden in op de Config-pagina."
 
-#. placeholder {0}: luckBefore === null ? '-' : `${luckBefore.toFixed(2)}×`
-#. placeholder {1}: luckAfter.toFixed(2)
 #: src/components/HashrateChart.tsx
 msgid "Block aged out of the rolling-{windowLabel} window - pool luck went from "
-"{0} to {1}×."
-msgstr "Blok uit het rolling-{windowLabel}-venster gevallen - pool luck ging "
-"van {0} naar {1}×."
+"{luckBeforeText} to {luckAfterText}."
+msgstr ""
+"Blok verliep uit het rollende {windowLabel}-venster - pool luck ging "
+"van {luckBeforeText} naar {luckAfterText}."
 
 #: src/pages/Config.tsx
 msgid "Block explorer"
@@ -856,13 +869,12 @@ msgstr "block gevonden:"
 msgid "block height"
 msgstr "blokhoogte"
 
-#. placeholder {0}: luckBefore === null ? '-' : `${luckBefore.toFixed(2)}×`
-#. placeholder {1}: luckAfter.toFixed(2)
 #: src/components/HashrateChart.tsx
-msgid "Block landed - pool luck went from {0} to {1}× (rolling-{windowLabel} "
-"window)."
-msgstr "Blok gevonden - pool luck ging van {0} naar {1}× "
-"(rolling-{windowLabel}-venster)."
+msgid "Block landed - pool luck went from {luckBeforeText} to {luckAfterText} "
+"(rolling-{windowLabel} window)."
+msgstr ""
+"Blok gevonden - pool luck ging van {luckBeforeText} naar "
+"{luckAfterText} (rollend {windowLabel}-venster)."
 
 #: src/components/Bip110ScanCard.tsx
 msgid "Block range"
@@ -1733,10 +1745,10 @@ msgid "Duration-weighted average of the hashrate Braiins reports delivering, "
 "delivered = 0) so a bad stretch shows up in the average, not just the "
 "live card. Updates with the range selector above."
 msgstr "Duur-gewogen gemiddelde van de hashrate die Braiins meldt te leveren, "
-"berekend over het geselecteerde grafiekbereik. Inclusief downtime "
-"(waar geleverd = 0) zodat een slechte periode in het gemiddelde "
-"terugkomt en niet alleen op de live kaart. Wijzigt mee met de "
-"bereikselector hierboven."
+"berekend over het geselecteerde grafiekbereik. Inclusief downtime (waar "
+"geleverd = 0) zodat een slechte periode in het gemiddelde terugkomt en "
+"niet alleen op de live kaart. Wijzigt mee met de bereikselector "
+"hierboven."
 
 #: src/pages/Status.tsx
 msgid "Duration-weighted average of the hashrate Datum measures at the gateway, "
@@ -1745,8 +1757,8 @@ msgid "Duration-weighted average of the hashrate Datum measures at the gateway, 
 "Updates with the range selector above."
 msgstr "Duur-gewogen gemiddelde van de hashrate die Datum bij de gateway meet, "
 "berekend over het geselecteerde grafiekbereik. Een aanhoudend tekort "
-"onder Gem. Braiins betekent dat Braiins kosten in rekening brengt "
-"voor hashrate die Datum nooit zag aankomen. Wijzigt mee met de "
+"onder Gem. Braiins betekent dat Braiins kosten in rekening brengt voor "
+"hashrate die Datum nooit zag aankomen. Wijzigt mee met de "
 "bereikselector hierboven."
 
 #: src/pages/Status.tsx
@@ -1760,13 +1772,13 @@ msgid "Duration-weighted average of the hashrate Ocean credits to our payout "
 "selector above."
 msgstr "Duur-gewogen gemiddelde van de hashrate die Ocean toeschrijft aan ons "
 "uitbetaaladres, berekend over het geselecteerde grafiekbereik. Elke "
-"tick (elke 60 s) roept de daemon Oceans /v1/user_hashrate-endpoint "
-"aan en leest het `hashrate_300s`-veld - Oceans eigen 5-minuten "
+"tick (elke 60 s) roept de daemon Oceans /v1/user_hashrate-endpoint aan "
+"en leest het `hashrate_300s`-veld - Oceans eigen 5-minuten "
 "schuivend-venster schatting voor deze wallet. Dus: elke minuut "
-"bemonsterd, elke meting is een 5-minuten gladde waarde. Een "
-"aanhoudend tekort onder Gem. Braiins / Gem. Datum betekent dat de "
-"pool geen werk credit geeft waarvan wij denken dat het geleverd is. "
-"Wijzigt mee met de bereikselector hierboven."
+"bemonsterd, elke meting is een 5-minuten gladde waarde. Een aanhoudend "
+"tekort onder Gem. Braiins / Gem. Datum betekent dat de pool geen werk "
+"credit geeft waarvan wij denken dat het geleverd is. Wijzigt mee met de "
+"bereikselector hierboven."
 
 #: src/pages/Config.tsx
 msgid "Dynamic DNS"
@@ -2118,6 +2130,7 @@ msgstr "Formaat: <btc-adres>.<label>. Ocean TIDES schrijft shares toe op basis "
 "van het adres-voorvoegsel - alles anders stuurt shares naar niemand."
 
 #: src/components/Bip110ScanCard.tsx
+#: src/components/HashrateChart.tsx
 #: src/pages/Status.tsx
 msgid "found"
 msgstr "gevonden"
@@ -2125,10 +2138,6 @@ msgstr "gevonden"
 #: src/components/HashrateChart.tsx
 msgid "found by us"
 msgstr "door ons gevonden"
-
-#: src/components/HashrateChart.tsx
-msgid "Found by us"
-msgstr "Door ons gevonden"
 
 #: src/components/HashrateChart.tsx
 msgid "FOUND BY US"
@@ -3533,6 +3542,11 @@ msgstr "pool-hashrate"
 msgid "POOL LUCK -"
 msgstr "POOL LUCK -"
 
+#. placeholder {0}: events.length
+#: src/components/HashrateChart.tsx
+msgid "POOL LUCK · {0} EVENTS"
+msgstr "POOL LUCK · {0} GEBEURTENISSEN"
+
 #: src/pages/Status.tsx
 msgid "pool luck (24h)"
 msgstr "pool-geluk (24u)"
@@ -4088,12 +4102,12 @@ msgid "Share of Braiins-purchased shares the pool rejected, computed over the "
 "identity misconfig, ASIC trouble)."
 msgstr "Aandeel door Braiins gekochte shares dat door de pool werd geweigerd, "
 "berekend over het geselecteerde grafiekbereik. Server-side: "
-"(Δrejected_m / Δpurchased_m) × 100 over de eerste en laatste "
-"niet-null cumulatieve teller-samples in het bereik. Wijzigt mee met "
-"de bereikselector hierboven (3u / 6u / 24u / 1w / 1m / 1j / Alles). "
-"Gezonde basislijn ~0,05 %; aanhoudende waarden veel boven dat "
-"betekenen dat shares oud arriveren (Datum loopt achter op werk) of "
-"ongeldig zijn (worker-identiteit misgeconfigureerd, ASIC-problemen)."
+"(Δrejected_m / Δpurchased_m) × 100 over de eerste en laatste niet-null "
+"cumulatieve teller-samples in het bereik. Wijzigt mee met de "
+"bereikselector hierboven (3u / 6u / 24u / 1w / 1m / 1j / Alles). "
+"Gezonde basislijn ~0,05 %; aanhoudende waarden veel boven dat betekenen "
+"dat shares oud arriveren (Datum loopt achter op werk) of ongeldig zijn "
+"(worker-identiteit misgeconfigureerd, ASIC-problemen)."
 
 #: src/pages/Status.tsx
 msgid "share_log %"
@@ -4135,10 +4149,6 @@ msgstr "signalerend"
 #: src/components/Bip110ScanCard.tsx
 msgid "Signaling"
 msgstr "Signaleert"
-
-#: src/components/HashrateChart.tsx
-msgid "Signaling BIP 110"
-msgstr "Signaleert BIP 110"
 
 #: src/components/HashrateChart.tsx
 msgid "Signaling BIP 110 (Reduced Data Temporary Soft Fork)"
