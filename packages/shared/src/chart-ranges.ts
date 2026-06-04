@@ -141,25 +141,42 @@ export function parseChartRange(input: unknown): ChartRange | null {
 }
 
 /**
- * Pick a reasonable bucket size for an arbitrary data span. The metrics
- * route applies this to every bounded preset using the lesser of the
- * preset window and the actual data span, so charts don't over-collapse
- * when history is shorter than the preset window (e.g. picking `1y` on
- * 6 days of data should not flatten the chart to ~6 daily points; see
- * #82).
+ * Pick a bucket size proportional to the data span. The bucket grows
+ * smoothly with the span instead of jumping in discrete steps - target
+ * is ~1440 buckets across the chart (≈ one per pixel of typical chart
+ * width). Returns the 0-sentinel below the tick interval so
+ * listAggregated takes its raw fast path.
  *
- * Boundaries are tuned to match the preset bucket scale exactly:
+ * Examples:
  *
- *   ≤ 24h  →  raw  (matches 24h preset, ~2880 raw points)
- *   ≤ 30d  →  30 min  (matches 1w preset on 7d, ~288-1440 points)
- *   ≤ 365d →  1 h  (matches 1y preset on 365d, ~720-8760 points)
- *   else   →  1 d  (matches `all` on multi-year history)
+ *     24h    →  60s computed  →  0 (raw, ~1440 ticks)
+ *     30h    →  75s
+ *     48h    →  2 min
+ *     7d     →  7 min
+ *     30d    →  30 min
+ *     365d   →  ~6h
+ *
+ * History: this used to be a 4-tier ladder (raw / 30 min / 1 h / 1 d).
+ * Crossing 24h jumped the bucket size 30× from 60s to 1800s, which the
+ * operator hit while scrolling 24h→26h - the chart's appearance
+ * changed dramatically for an 8% change in visible span. Proportional
+ * scaling matches the intuition that a small zoom should produce a
+ * small visual change. The metrics route applies this to every
+ * viewport request and to bounded presets (using the lesser of the
+ * preset window and the actual data span) so charts don't
+ * over-collapse when history is shorter than the preset.
  */
 export function pickBucketForSpan(spanMs: number): number {
-  if (spanMs <= 24 * HOUR) return 0; // raw
-  if (spanMs <= 30 * DAY) return 30 * MINUTE;
-  if (spanMs <= 365 * DAY) return HOUR;
-  return DAY;
+  if (spanMs <= 0) return 0;
+  const TICK_INTERVAL_MS = 60_000;
+  const TARGET_BUCKETS = 1440;
+  const bucketMs = Math.ceil(spanMs / TARGET_BUCKETS);
+  // Below the tick interval, bucketing adds nothing and the SQL
+  // aggregation path would just produce one-row buckets equivalent
+  // to raw rows but more expensive. 0 signals raw mode to
+  // listAggregated.
+  if (bucketMs <= TICK_INTERVAL_MS) return 0;
+  return bucketMs;
 }
 
 // ---------------------------------------------------------------------------

@@ -65,28 +65,38 @@ describe('parseChartRange', () => {
 });
 
 describe('pickBucketForSpan', () => {
-  it('returns raw (0) for spans up to 24 h', () => {
+  it('returns 0 (raw) when computed bucket is at or below the tick interval', () => {
+    // 24h / 1440 = exactly 60_000 ms = tick interval → raw.
     expect(pickBucketForSpan(0)).toBe(0);
     expect(pickBucketForSpan(HOUR)).toBe(0);
     expect(pickBucketForSpan(12 * HOUR)).toBe(0);
     expect(pickBucketForSpan(24 * HOUR)).toBe(0);
   });
 
-  it('returns 30 min between 24 h and 30 d (matches the 1w preset bucket)', () => {
-    expect(pickBucketForSpan(24 * HOUR + 1)).toBe(30 * MINUTE);
-    expect(pickBucketForSpan(7 * DAY)).toBe(30 * MINUTE);
-    expect(pickBucketForSpan(14 * DAY)).toBe(30 * MINUTE);
+  it('grows proportionally past 24 h instead of cliffing to 30 min', () => {
+    // Operator-stated expectation: 30h span → ~75s bucket (not 30 min).
+    expect(pickBucketForSpan(26 * HOUR)).toBe(65_000); // 26h / 1440 = 65s
+    expect(pickBucketForSpan(30 * HOUR)).toBe(75_000); // 30h / 1440 = 75s
+    expect(pickBucketForSpan(48 * HOUR)).toBe(120_000); // 48h / 1440 = 2 min
+  });
+
+  it('lands at 7 min for 7 d (vs the old 30 min)', () => {
+    expect(pickBucketForSpan(7 * DAY)).toBe(420_000); // 7 min
+    expect(pickBucketForSpan(14 * DAY)).toBe(840_000); // 14 min
+  });
+
+  it('lands at exactly 30 min for 30 d (same as the old tier table)', () => {
     expect(pickBucketForSpan(30 * DAY)).toBe(30 * MINUTE);
   });
 
-  it('returns 1 h between 30 d and 365 d', () => {
-    expect(pickBucketForSpan(30 * DAY + 1)).toBe(HOUR);
-    expect(pickBucketForSpan(180 * DAY)).toBe(HOUR);
-    expect(pickBucketForSpan(365 * DAY)).toBe(HOUR);
+  it('scales smoothly through 365 d (~6 h) instead of jumping to 1 h then 1 d', () => {
+    expect(pickBucketForSpan(60 * DAY)).toBe(HOUR); // 60d / 1440 = 1h exact
+    expect(pickBucketForSpan(180 * DAY)).toBe(3 * HOUR); // 180d / 1440 = 3h exact
+    expect(pickBucketForSpan(365 * DAY)).toBe(21_900_000); // ~6.083h
   });
 
-  it('returns 1 d past 1 year', () => {
-    expect(pickBucketForSpan(365 * DAY + 1)).toBe(DAY);
-    expect(pickBucketForSpan(5 * 365 * DAY)).toBe(DAY);
+  it('continues scaling past 1 year (no fixed ceiling)', () => {
+    expect(pickBucketForSpan(2 * 365 * DAY)).toBe(2 * 21_900_000); // ~12h
+    expect(pickBucketForSpan(5 * 365 * DAY)).toBe(5 * 21_900_000); // ~30h
   });
 });

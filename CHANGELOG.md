@@ -2,6 +2,10 @@
 
 ## 2026-06-03
 
+### `[UI]` Chart bucket size now scales smoothly with the visible span (no more 30× cliff at 24h)
+
+Operator hit this while scrolling the hashrate chart one wheel tick past 24h: the visible span grew from ~24h to ~26h (an 8% change) but the chart's bucket size jumped from 60s (raw) to 1800s (30 min) - a **30× step** - which made the rejection-rate line on the right axis flip from per-tick spikes (visible to 10%) to bucket-averaged smooth (<1%). Same underlying data, completely different appearance. Cause: `pickBucketForSpan` was a 4-tier ladder (`≤24h → raw`, `≤30d → 30 min`, `≤365d → 1 h`, `else → 1 d`) with hard boundaries. Replaced with a continuous formula: `bucketMs = ceil(spanMs / 1440)` clamped to the 60s tick interval floor. At 24h that's exactly 60s → raw mode (unchanged); at 30h it's 75s; at 7d it's 7 min (vs the old 30 min, so 1w charts now show 4× more detail); at 30d it lands back on 30 min (matches the old tier); at 365d it's ~6h. Smooth ramp end-to-end - no preset boundary jumps. Daemon-side change in `packages/shared/src/chart-ranges.ts` only, no migration. Existing presets stay at the same effective bucket where they previously sat; everything *between* presets is now a proportional ramp instead of a cliff.
+
 ### `[Infra]` Daemon crash safety net + `status.sh` now sees the systemd service (#251)
 
 The daemon had no global `uncaughtException`/`unhandledRejection` handler, so a single stray promise rejection anywhere could silently kill the whole process - on a systemd box that just looks like a mysterious restart. It now logs the stack, fires a best-effort Telegram alert ("crashed (...) - systemd will restart it"), and exits cleanly so systemd brings it back, instead of vanishing. Separately, `scripts/status.sh` only ever checked the nohup PID file, so on a systemd box it always reported "not running" no matter how healthy the service was; it now detects the systemd unit first and reports `systemctl is-active` plus recent journal lines, falling back to the PID file only on nohup installs. README C.4/C.5 clarified that the nohup helper scripts don't control a systemd-managed daemon.
