@@ -2,6 +2,10 @@
 
 ## 2026-06-04
 
+### `[UI]` Chart colors section reshuffled to follow chart layout, each row shows its actual marker icon
+
+The first reshuffle in build 601 grouped by element kind (Lines / Markers / Bid events), which lost the at-a-glance chart-by-chart structure. Reverted to three chart-shaped groups: **Hashrate chart** (its line series), **Price chart** (its line series + a "Bid-event markers" subgroup, because the bid markers only render on the price chart), and **Markers** (block + icon markers shared across both charts). Each row also now renders a small live preview of its actual glyph next to the label — a cube for the pool block row, a crown for the own-pool-block row, a pickaxe for retarget, a router for IP change, gems for the on-chain-payout and Braiins-deposit rows, and the per-kind glyph (+ / ● / ◆ / ×) for the bid events. The preview updates instantly as you pick new colours so the row labelled "own pool block" actually shows the crown rather than the parenthetical "(crown)" hint it had in build 601.
+
 ### `[Feature]` Marker colors now configurable + Chart colors section reorganised into Lines / Markers / Bid events
 
 The Config → Chart colors section grew five new keys for marker icons that previously used hardcoded hex values: BIP 110-signalling block (yellow cube), difficulty retarget (purple pickaxe), public-IP change (sky router), on-chain payout (emerald gem), and Braiins deposit (purple gem). All of them now go through the same `chart_color_overrides` JSON-bag mechanism the existing line colors used, so the picker UI, hex-validation, and "reset to defaults" all work identically. The section itself is reorganised into three groups - **Lines** (left + right axis series across both charts), **Markers** (block + icon markers), and **Bid events** (the per-tick create/edit/cancel glyphs) - so it's easier to find a specific colour without scanning the whole list.

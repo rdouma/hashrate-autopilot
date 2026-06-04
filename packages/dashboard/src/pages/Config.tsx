@@ -1947,49 +1947,63 @@ function ChartColorsSection({
   };
   const resetAll = () => onChange('chart_color_overrides', '{}');
 
-  const groups: { title: string; rows: Array<{ key: ChartColorKey; label: string }> }[] = [
+  // Groups follow chart layout: Hashrate chart (its lines), Price
+  // chart (its lines + bid-event markers, since events only render on
+  // the price chart), and Markers (block + icon markers that appear
+  // on both charts). Bid events are pinned under Price chart so the
+  // operator finds them where they actually render.
+  type Row = { key: ChartColorKey; label: string };
+  type Subgroup = { subtitle?: string; rows: Row[] };
+  const groups: Array<{ title: string; subgroups: Subgroup[] }> = [
     {
-      // Hashrate + price chart line series (left + right axis). All
-      // continuously-drawn paths and area fills live here.
-      title: t`Lines`,
-      rows: [
-        { key: 'hashrate.delivered', label: t`delivered (Braiins)` },
-        { key: 'hashrate.received_datum', label: t`received (Datum)` },
-        { key: 'hashrate.received_ocean', label: t`received (Ocean)` },
-        { key: 'hashrate.target', label: t`target` },
-        { key: 'hashrate.floor', label: t`floor` },
-        { key: 'hashrate.right_axis', label: t`hashrate right-axis line` },
-        { key: 'price.our_bid', label: t`our bid` },
-        { key: 'price.fillable', label: t`fillable` },
-        { key: 'price.hashprice', label: t`hashprice` },
-        { key: 'price.max_bid', label: t`max bid` },
-        { key: 'price.right_axis', label: t`price right-axis line` },
+      title: t`Hashrate chart`,
+      subgroups: [{
+        rows: [
+          { key: 'hashrate.delivered', label: t`delivered (Braiins)` },
+          { key: 'hashrate.received_datum', label: t`received (Datum)` },
+          { key: 'hashrate.received_ocean', label: t`received (Ocean)` },
+          { key: 'hashrate.target', label: t`target` },
+          { key: 'hashrate.floor', label: t`floor` },
+          { key: 'hashrate.right_axis', label: t`right-axis line` },
+        ],
+      }],
+    },
+    {
+      title: t`Price chart`,
+      subgroups: [
+        {
+          rows: [
+            { key: 'price.our_bid', label: t`our bid` },
+            { key: 'price.fillable', label: t`fillable` },
+            { key: 'price.hashprice', label: t`hashprice` },
+            { key: 'price.max_bid', label: t`max bid` },
+            { key: 'price.right_axis', label: t`right-axis line` },
+          ],
+        },
+        {
+          subtitle: t`Bid-event markers`,
+          rows: [
+            { key: 'events.create', label: t`create` },
+            { key: 'events.edit_price', label: t`edit price` },
+            { key: 'events.edit_speed', label: t`edit speed` },
+            { key: 'events.cancel', label: t`cancel` },
+          ],
+        },
       ],
     },
     {
-      // Block + icon markers at the top of the chart. Each marker is
-      // a glyph + a dashed connector to its data point; the colour
-      // here drives both.
       title: t`Markers`,
-      rows: [
-        { key: 'hashrate.pool_block_ours', label: t`own pool block (crown)` },
-        { key: 'hashrate.pool_block_others', label: t`pool block (cube)` },
-        { key: 'hashrate.pool_block_bip110', label: t`BIP 110-signalling block` },
-        { key: 'hashrate.marker_retarget', label: t`difficulty retarget (pickaxe)` },
-        { key: 'hashrate.marker_ip_change', label: t`public-IP change (router)` },
-        { key: 'price.marker_payout_gem', label: t`on-chain payout (gem)` },
-        { key: 'price.marker_deposit', label: t`Braiins deposit (gem)` },
-      ],
-    },
-    {
-      // Per-tick bid-event markers (small glyphs on the bid line).
-      title: t`Bid events`,
-      rows: [
-        { key: 'events.create', label: t`create` },
-        { key: 'events.edit_price', label: t`edit price` },
-        { key: 'events.edit_speed', label: t`edit speed` },
-        { key: 'events.cancel', label: t`cancel` },
-      ],
+      subgroups: [{
+        rows: [
+          { key: 'hashrate.pool_block_ours', label: t`own pool block` },
+          { key: 'hashrate.pool_block_others', label: t`pool block` },
+          { key: 'hashrate.pool_block_bip110', label: t`BIP 110-signalling block` },
+          { key: 'hashrate.marker_retarget', label: t`difficulty retarget` },
+          { key: 'hashrate.marker_ip_change', label: t`public-IP change` },
+          { key: 'price.marker_payout_gem', label: t`on-chain payout` },
+          { key: 'price.marker_deposit', label: t`Braiins deposit` },
+        ],
+      }],
     },
   ];
 
@@ -2025,27 +2039,169 @@ function ChartColorsSection({
             <div className="text-[11px] uppercase tracking-wider text-slate-500 mb-2">
               {group.title}
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
-              {group.rows.map((row) => {
-                const def = CHART_COLOR_DEFAULTS[row.key];
-                const cur = getChartColor(row.key, overrides);
-                return (
-                  <div key={row.key} className="flex items-center justify-between gap-3">
-                    <span className="text-sm text-slate-300">{row.label}</span>
-                    <ChartColorPicker
-                      value={cur}
-                      defaultValue={def}
-                      onChange={(next) => setColor(row.key, next)}
-                      isOverridden={overrides[row.key] !== undefined}
-                    />
+            <div className="space-y-4">
+              {group.subgroups.map((sg, sgi) => (
+                <div key={sg.subtitle ?? `_${sgi}`}>
+                  {sg.subtitle && (
+                    <div className="text-[10px] uppercase tracking-wider text-slate-600 mb-1.5">
+                      {sg.subtitle}
+                    </div>
+                  )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
+                    {sg.rows.map((row) => {
+                      const def = CHART_COLOR_DEFAULTS[row.key];
+                      const cur = getChartColor(row.key, overrides);
+                      return (
+                        <div key={row.key} className="flex items-center justify-between gap-3">
+                          <span className="text-sm text-slate-300 flex items-center gap-2">
+                            <ChartColorRowIcon keyId={row.key} color={cur} />
+                            {row.label}
+                          </span>
+                          <ChartColorPicker
+                            value={cur}
+                            defaultValue={def}
+                            onChange={(next) => setColor(row.key, next)}
+                            isOverridden={overrides[row.key] !== undefined}
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
           </div>
         ))}
       </div>
     </section>
+  );
+}
+
+/**
+ * Small SVG preview rendered to the left of each chart-color row's
+ * label. The shape mirrors what the operator sees on the chart so the
+ * row labelled "own pool block" actually shows the crown, not just the
+ * text. Lines render as a 14×3 horizontal stroke; markers replicate
+ * the chart's actual marker glyph in miniature; bid-event rows show
+ * the per-kind glyph (+, ●, ◆, ×). The `color` prop receives the
+ * resolved (override-or-default) hex so the preview updates live as
+ * the operator picks new colours.
+ */
+function ChartColorRowIcon({
+  keyId,
+  color,
+}: {
+  keyId: ChartColorKey;
+  color: string;
+}) {
+  // Lines and right-axis series render as a small horizontal stroke.
+  // Dashed for target/floor + hashprice, dotted-style is also dashed
+  // here for simplicity (the picker shows the swatch; the line preview
+  // is just kind cue).
+  if (keyId.endsWith('.target') || keyId.endsWith('.floor') || keyId === 'price.hashprice') {
+    return (
+      <svg width="18" height="10" viewBox="0 0 18 10" className="shrink-0">
+        <line x1="1" y1="5" x2="17" y2="5" stroke={color} strokeWidth="2" strokeDasharray="3 2" />
+      </svg>
+    );
+  }
+  if (keyId.includes('.right_axis') || keyId.startsWith('hashrate.delivered') || keyId.startsWith('hashrate.received') || keyId.startsWith('price.our_bid') || keyId === 'price.fillable' || keyId === 'price.max_bid') {
+    return (
+      <svg width="18" height="10" viewBox="0 0 18 10" className="shrink-0">
+        <line x1="1" y1="5" x2="17" y2="5" stroke={color} strokeWidth="2" />
+      </svg>
+    );
+  }
+  // Block-cube marker (pool block + BIP 110 variant): a tiny cube
+  // outline with the row's colour as stroke.
+  if (keyId === 'hashrate.pool_block_others' || keyId === 'hashrate.pool_block_bip110') {
+    return (
+      <svg width="14" height="14" viewBox="0 0 14 14" className="shrink-0">
+        <rect x="2" y="3" width="10" height="8" fill="none" stroke={color} strokeWidth="1.6" />
+        <line x1="2" y1="3" x2="7" y2="1" stroke={color} strokeWidth="1.2" />
+        <line x1="12" y1="3" x2="7" y2="1" stroke={color} strokeWidth="1.2" />
+      </svg>
+    );
+  }
+  // Crown (own pool block).
+  if (keyId === 'hashrate.pool_block_ours') {
+    return (
+      <svg width="14" height="14" viewBox="0 0 14 14" className="shrink-0">
+        <path d="M1 11 L2.5 5 L5 8 L7 2 L9 8 L11.5 5 L13 11 Z" fill={color} fillOpacity="0.4" stroke={color} strokeWidth="1.3" strokeLinejoin="round" />
+        <line x1="1" y1="12.5" x2="13" y2="12.5" stroke={color} strokeWidth="1.4" />
+      </svg>
+    );
+  }
+  // Pickaxe (difficulty retarget) - Lucide pickaxe minified.
+  if (keyId === 'hashrate.marker_retarget') {
+    return (
+      <svg width="14" height="14" viewBox="0 0 24 24" className="shrink-0" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="m14 13-8.381 8.38a1 1 0 0 1-3.001-3L11 9.999" />
+        <path d="M15.973 4.027A13 13 0 0 0 5.902 2.373c-1.398.342-1.092 2.158.277 2.601a19.9 19.9 0 0 1 5.822 3.024" />
+        <path d="M16.001 11.999a19.9 19.9 0 0 1 3.024 5.824c.444 1.369 2.26 1.676 2.603.278A13 13 0 0 0 20 8.069" />
+        <path d="M18.352 3.352a1.205 1.205 0 0 0-1.704 0l-5.296 5.296a1.205 1.205 0 0 0 0 1.704l2.296 2.296a1.205 1.205 0 0 0 1.704 0l5.296-5.296a1.205 1.205 0 0 0 0-1.704z" />
+      </svg>
+    );
+  }
+  // Router (public-IP change).
+  if (keyId === 'hashrate.marker_ip_change') {
+    return (
+      <svg width="14" height="14" viewBox="0 0 24 24" className="shrink-0" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect width="20" height="8" x="2" y="14" rx="2" />
+        <path d="M6.01 18H6" />
+        <path d="M10.01 18H10" />
+        <path d="M15 10v4" />
+        <path d="M17.84 7.17a4 4 0 0 0-5.66 0" />
+        <path d="M20.66 4.34a8 8 0 0 0-11.31 0" />
+      </svg>
+    );
+  }
+  // Gem (on-chain payout + Braiins deposit). Simple diamond glyph.
+  if (keyId === 'price.marker_payout_gem' || keyId === 'price.marker_deposit') {
+    return (
+      <svg width="14" height="14" viewBox="0 0 14 14" className="shrink-0">
+        <path d="M7 1 L13 6 L7 13 L1 6 Z" fill={color} fillOpacity="0.4" stroke={color} strokeWidth="1.4" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+  // Bid event markers - mirror the chart glyph.
+  if (keyId === 'events.create') {
+    return (
+      <svg width="14" height="14" viewBox="0 0 14 14" className="shrink-0">
+        <line x1="2" y1="7" x2="12" y2="7" stroke={color} strokeWidth="2.2" />
+        <line x1="7" y1="2" x2="7" y2="12" stroke={color} strokeWidth="2.2" />
+      </svg>
+    );
+  }
+  if (keyId === 'events.edit_price') {
+    return (
+      <svg width="14" height="14" viewBox="0 0 14 14" className="shrink-0">
+        <circle cx="7" cy="7" r="4.5" fill={color} stroke="#0f172a" strokeWidth="1.5" />
+      </svg>
+    );
+  }
+  if (keyId === 'events.edit_speed') {
+    return (
+      <svg width="14" height="14" viewBox="0 0 14 14" className="shrink-0">
+        <path d="M7 1 L13 7 L7 13 L1 7 Z" fill={color} stroke="#0f172a" strokeWidth="1.4" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+  if (keyId === 'events.cancel') {
+    return (
+      <svg width="14" height="14" viewBox="0 0 14 14" className="shrink-0">
+        <line x1="2" y1="2" x2="12" y2="12" stroke={color} strokeWidth="2.2" />
+        <line x1="2" y1="12" x2="12" y2="2" stroke={color} strokeWidth="2.2" />
+      </svg>
+    );
+  }
+  // Fallback: a small swatch square.
+  return (
+    <span
+      className="shrink-0 inline-block w-3.5 h-3.5 rounded-sm"
+      style={{ backgroundColor: color }}
+      aria-hidden="true"
+    />
   );
 }
 

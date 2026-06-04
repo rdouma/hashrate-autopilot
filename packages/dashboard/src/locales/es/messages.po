@@ -756,10 +756,6 @@ msgid "Bid above target - Braiins price-decrease cooldown active."
 msgstr "Oferta por encima del objetivo - cooldown de bajada de precio de "
 "Braiins activo."
 
-#: src/pages/Config.tsx
-msgid "Bid events"
-msgstr "Eventos de bid"
-
 #: src/pages/Status.tsx
 msgid "Bid filling at {speed}."
 msgstr "Oferta llenando a {speed}."
@@ -767,6 +763,10 @@ msgstr "Oferta llenando a {speed}."
 #: src/pages/Config.tsx
 msgid "Bid sustained-paused for"
 msgstr "Oferta sostenidamente Paused durante"
+
+#: src/pages/Config.tsx
+msgid "Bid-event markers"
+msgstr "Marcadores de eventos de bid"
 
 #: src/pages/Config.tsx
 msgid "Bid-event markers (CREATE / EDIT_PRICE / EDIT_SPEED / CANCEL) on the "
@@ -1028,8 +1028,8 @@ msgid "Braiins balance"
 msgstr "saldo Braiins"
 
 #: src/pages/Config.tsx
-msgid "Braiins deposit (gem)"
-msgstr "Depósito Braiins (gema)"
+msgid "Braiins deposit"
+msgstr "Depósito Braiins"
 
 #: src/pages/Config.tsx
 msgid "Braiins deposit lifecycle"
@@ -1680,8 +1680,8 @@ msgid "DIFFICULTY ADJUSTMENT"
 msgstr "AJUSTE DE DIFICULTAD"
 
 #: src/pages/Config.tsx
-msgid "difficulty retarget (pickaxe)"
-msgstr "reajuste de dificultad (pico)"
+msgid "difficulty retarget"
+msgstr "reajuste de dificultad"
 
 #: src/pages/Config.tsx
 msgid "Disabled"
@@ -2231,6 +2231,7 @@ msgstr "Hashrate"
 msgid "Hashrate below floor for"
 msgstr "Hashrate por debajo del mínimo durante"
 
+#: src/pages/Config.tsx
 #: src/pages/Status.tsx
 msgid "Hashrate chart"
 msgstr "Gráfico de hashrate"
@@ -2246,10 +2247,6 @@ msgstr "Hashrate que Ocean acredita a nuestra dirección de pago (ventana "
 "/v1/user_hashrate.hashrate_300s. Compara con AVG BRAIINS / AVG DATUM "
 "arriba; brechas sostenidas significan que se pierden shares en algún "
 "punto de la tubería Braiins -> Datum -> Ocean."
-
-#: src/pages/Config.tsx
-msgid "hashrate right-axis line"
-msgstr "línea del eje derecho del hashrate"
 
 #: src/pages/Config.tsx
 msgid "Hashrate right-axis line"
@@ -2569,10 +2566,6 @@ msgstr "Suma de toda la vida de (amount_sat - amount_remaining_sat) en cada "
 "oferta etiquetada por el autopilot. Excluye cualquier oferta colocada "
 "antes de activar el autopilot. Cambia a \"cuenta completa\" en Config → "
 "panel Money."
-
-#: src/pages/Config.tsx
-msgid "Lines"
-msgstr "Líneas"
 
 #: src/pages/Status.tsx
 msgid "live"
@@ -3142,16 +3135,13 @@ msgid "On target - bid at fillable + overpay."
 msgstr "En el objetivo - oferta igual a rellenable + sobrepago."
 
 #: src/components/PriceChart.tsx
+#: src/pages/Config.tsx
 msgid "on-chain payout"
 msgstr "pago on-chain"
 
 #: src/components/PriceChart.tsx
 msgid "ON-CHAIN PAYOUT"
 msgstr "PAGO ON-CHAIN"
-
-#: src/pages/Config.tsx
-msgid "on-chain payout (gem)"
-msgstr "pago on-chain (gema)"
 
 #: src/pages/Setup.tsx
 msgid "On-chain payout tracking (optional)"
@@ -3366,8 +3356,8 @@ msgstr "Sobrescribe el color de cualquier línea o marcador con nombre en los "
 "daemon, así la elección te sigue entre dispositivos."
 
 #: src/pages/Config.tsx
-msgid "own pool block (crown)"
-msgstr "bloque propio del pool (corona)"
+msgid "own pool block"
+msgstr "bloque propio del pool"
 
 #: src/pages/Status.tsx
 msgid "owner"
@@ -3541,16 +3531,13 @@ msgid "Pool & Payout"
 msgstr "Pool y pago"
 
 #: src/components/HashrateChart.tsx
+#: src/pages/Config.tsx
 msgid "pool block"
 msgstr "bloque del pool"
 
 #: src/components/HashrateChart.tsx
 msgid "POOL BLOCK"
 msgstr "BLOQUE DEL POOL"
-
-#: src/pages/Config.tsx
-msgid "pool block (cube)"
-msgstr "bloque del pool (cubo)"
 
 #: src/pages/Status.tsx
 msgid "pool blocks 24h"
@@ -3668,13 +3655,10 @@ msgstr "precio"
 msgid "Price"
 msgstr "Precio"
 
+#: src/pages/Config.tsx
 #: src/pages/Status.tsx
 msgid "Price chart"
 msgstr "Gráfico de precio"
-
-#: src/pages/Config.tsx
-msgid "price right-axis line"
-msgstr "línea del eje derecho del precio"
 
 #: src/pages/Config.tsx
 msgid "Price right-axis line"
@@ -3772,8 +3756,8 @@ msgid "provider error - try again later"
 msgstr "error del proveedor - inténtalo más tarde"
 
 #: src/pages/Config.tsx
-msgid "public-IP change (router)"
-msgstr "cambio de IP pública (router)"
+msgid "public-IP change"
+msgstr "cambio de IP pública"
 
 #: src/pages/Config.tsx
 msgid "Push outage alerts (Datum unreachable, hashrate floor breach, wallet "
@@ -3948,6 +3932,10 @@ msgstr "recompensa"
 #: src/pages/Status.tsx
 msgid "right axis"
 msgstr "eje derecho"
+
+#: src/pages/Config.tsx
+msgid "right-axis line"
+msgstr "línea del eje derecho"
 
 #: src/pages/Config.tsx
 msgid "Rolling-mean window applied to the hashrate chart. 1 = raw (no "

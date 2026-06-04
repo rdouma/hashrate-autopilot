@@ -740,10 +740,6 @@ msgstr "Bid {0} is {1} - waiting for it to become active."
 msgid "Bid above target - Braiins price-decrease cooldown active."
 msgstr "Bid above target - Braiins price-decrease cooldown active."
 
-#: src/pages/Config.tsx
-msgid "Bid events"
-msgstr "Bid events"
-
 #: src/pages/Status.tsx
 msgid "Bid filling at {speed}."
 msgstr "Bid filling at {speed}."
@@ -751,6 +747,10 @@ msgstr "Bid filling at {speed}."
 #: src/pages/Config.tsx
 msgid "Bid sustained-paused for"
 msgstr "Bid sustained-paused for"
+
+#: src/pages/Config.tsx
+msgid "Bid-event markers"
+msgstr "Bid-event markers"
 
 #: src/pages/Config.tsx
 msgid "Bid-event markers (CREATE / EDIT_PRICE / EDIT_SPEED / CANCEL) on the "
@@ -1009,8 +1009,8 @@ msgid "Braiins balance"
 msgstr "Braiins balance"
 
 #: src/pages/Config.tsx
-msgid "Braiins deposit (gem)"
-msgstr "Braiins deposit (gem)"
+msgid "Braiins deposit"
+msgstr "Braiins deposit"
 
 #: src/pages/Config.tsx
 msgid "Braiins deposit lifecycle"
@@ -1654,8 +1654,8 @@ msgid "DIFFICULTY ADJUSTMENT"
 msgstr "DIFFICULTY ADJUSTMENT"
 
 #: src/pages/Config.tsx
-msgid "difficulty retarget (pickaxe)"
-msgstr "difficulty retarget (pickaxe)"
+msgid "difficulty retarget"
+msgstr "difficulty retarget"
 
 #: src/pages/Config.tsx
 msgid "Disabled"
@@ -2194,6 +2194,7 @@ msgstr "Hashrate"
 msgid "Hashrate below floor for"
 msgstr "Hashrate below floor for"
 
+#: src/pages/Config.tsx
 #: src/pages/Status.tsx
 msgid "Hashrate chart"
 msgstr "Hashrate chart"
@@ -2209,10 +2210,6 @@ msgstr "Hashrate Ocean credits to our payout address (5-min sliding window). "
 "AVG BRAIINS / AVG DATUM at the top of the page; sustained gaps mean "
 "shares are getting lost somewhere in the Braiins -> Datum -> Ocean "
 "pipeline."
-
-#: src/pages/Config.tsx
-msgid "hashrate right-axis line"
-msgstr "hashrate right-axis line"
 
 #: src/pages/Config.tsx
 msgid "Hashrate right-axis line"
@@ -2524,10 +2521,6 @@ msgid "Lifetime sum of (amount_sat − amount_remaining_sat) across every bid th
 msgstr "Lifetime sum of (amount_sat − amount_remaining_sat) across every bid "
 "the autopilot has tagged. Excludes any bids placed before the autopilot "
 "was switched on. Switch to \"whole account\" via Config → Money panel."
-
-#: src/pages/Config.tsx
-msgid "Lines"
-msgstr "Lines"
 
 #: src/pages/Status.tsx
 msgid "live"
@@ -3087,16 +3080,13 @@ msgid "On target - bid at fillable + overpay."
 msgstr "On target - bid at fillable + overpay."
 
 #: src/components/PriceChart.tsx
+#: src/pages/Config.tsx
 msgid "on-chain payout"
 msgstr "on-chain payout"
 
 #: src/components/PriceChart.tsx
 msgid "ON-CHAIN PAYOUT"
 msgstr "ON-CHAIN PAYOUT"
-
-#: src/pages/Config.tsx
-msgid "on-chain payout (gem)"
-msgstr "on-chain payout (gem)"
 
 #: src/pages/Setup.tsx
 msgid "On-chain payout tracking (optional)"
@@ -3306,8 +3296,8 @@ msgstr "Override the color of any named line or event marker on the Hashrate "
 "across devices."
 
 #: src/pages/Config.tsx
-msgid "own pool block (crown)"
-msgstr "own pool block (crown)"
+msgid "own pool block"
+msgstr "own pool block"
 
 #: src/pages/Status.tsx
 msgid "owner"
@@ -3478,16 +3468,13 @@ msgid "Pool & Payout"
 msgstr "Pool & Payout"
 
 #: src/components/HashrateChart.tsx
+#: src/pages/Config.tsx
 msgid "pool block"
 msgstr "pool block"
 
 #: src/components/HashrateChart.tsx
 msgid "POOL BLOCK"
 msgstr "POOL BLOCK"
-
-#: src/pages/Config.tsx
-msgid "pool block (cube)"
-msgstr "pool block (cube)"
 
 #: src/pages/Status.tsx
 msgid "pool blocks 24h"
@@ -3605,13 +3592,10 @@ msgstr "price"
 msgid "Price"
 msgstr "Price"
 
+#: src/pages/Config.tsx
 #: src/pages/Status.tsx
 msgid "Price chart"
 msgstr "Price chart"
-
-#: src/pages/Config.tsx
-msgid "price right-axis line"
-msgstr "price right-axis line"
 
 #: src/pages/Config.tsx
 msgid "Price right-axis line"
@@ -3707,8 +3691,8 @@ msgid "provider error - try again later"
 msgstr "provider error - try again later"
 
 #: src/pages/Config.tsx
-msgid "public-IP change (router)"
-msgstr "public-IP change (router)"
+msgid "public-IP change"
+msgstr "public-IP change"
 
 #: src/pages/Config.tsx
 msgid "Push outage alerts (Datum unreachable, hashrate floor breach, wallet "
@@ -3881,6 +3865,10 @@ msgstr "reward"
 #: src/pages/Status.tsx
 msgid "right axis"
 msgstr "right axis"
+
+#: src/pages/Config.tsx
+msgid "right-axis line"
+msgstr "right-axis line"
 
 #: src/pages/Config.tsx
 msgid "Rolling-mean window applied to the hashrate chart. 1 = raw (no "
