@@ -748,7 +748,7 @@ export const HashrateChart = memo(function HashrateChart({
               if (v >= 1000) return `${(v / 1000).toFixed(2)} TH/s`;
               return `${v.toFixed(0)} GH/s`;
             },
-            axisLabel: 'solo hashrate',
+            axisLabel: 'Bitaxe hashrate',
             stroke: COLOR_RIGHT_AXIS,
           };
         }
@@ -757,7 +757,7 @@ export const HashrateChart = memo(function HashrateChart({
           return {
             values: projectSoloSeries(xs, soloSeries, (r) => r.device_count),
             formatTick: (v) => v.toFixed(0),
-            axisLabel: 'solo devices',
+            axisLabel: 'Bitaxe devices',
             stroke: COLOR_RIGHT_AXIS,
             // Whole-device counts only - prevents the degenerate
             // "constant value over a tight range" case where every
@@ -772,7 +772,7 @@ export const HashrateChart = memo(function HashrateChart({
           return {
             values: projectSoloSeries(xs, soloSeries, (r) => convert(r.max_temp_c)),
             formatTick: (v) => `${v.toFixed(1)} °${tempUnit}`,
-            axisLabel: tempUnit === 'F' ? 'solo max temp (°F)' : 'solo max temp (°C)',
+            axisLabel: tempUnit === 'F' ? 'Bitaxe max temp (°F)' : 'Bitaxe max temp (°C)',
             stroke: COLOR_RIGHT_AXIS,
           };
         }
@@ -796,7 +796,7 @@ export const HashrateChart = memo(function HashrateChart({
               if (v >= 1e3) return `${(v / 1e3).toFixed(1)}K`;
               return v.toFixed(0);
             },
-            axisLabel: 'solo best difficulty',
+            axisLabel: 'Bitaxe best difficulty',
             stroke: COLOR_RIGHT_AXIS,
           };
         }

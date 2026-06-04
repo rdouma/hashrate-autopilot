@@ -812,6 +812,58 @@ msgstr "BIP 110-signalling block"
 msgid "BIP-110 scan"
 msgstr "BIP-110 scan"
 
+#: src/pages/Status.tsx
+msgid "Bitaxe best difficulty"
+msgstr "Bitaxe best difficulty"
+
+#: src/pages/Status.tsx
+msgid "Bitaxe device count"
+msgstr "Bitaxe device count"
+
+#: src/pages/Status.tsx
+msgid "Bitaxe hashrate"
+msgstr "Bitaxe hashrate"
+
+#: src/pages/Status.tsx
+msgid "Bitaxe max temp"
+msgstr "Bitaxe max temp"
+
+#: src/pages/Config.tsx
+msgid "Bitaxe miner best difficulty record"
+msgstr "Bitaxe miner best difficulty record"
+
+#: src/components/SoloMinersCard.tsx
+msgid "Bitaxe miner monitoring is enabled but no devices have been added yet. "
+"Add a Bitaxe IP on Config → Display & Logging → Bitaxe miners."
+msgstr "Bitaxe miner monitoring is enabled but no devices have been added yet. "
+"Add a Bitaxe IP on Config → Display & Logging → Bitaxe miners."
+
+#: src/pages/Config.tsx
+msgid "Bitaxe miner offline / zero hashrate"
+msgstr "Bitaxe miner offline / zero hashrate"
+
+#: src/pages/Config.tsx
+msgid "Bitaxe miner overheating"
+msgstr "Bitaxe miner overheating"
+
+#: src/pages/Config.tsx
+msgid "Bitaxe miner share-rejection high"
+msgstr "Bitaxe miner share-rejection high"
+
+#: src/pages/Config.tsx
+msgid "Bitaxe miner stratum URL drift"
+msgstr "Bitaxe miner stratum URL drift"
+
+#: src/components/SoloMinersCard.tsx
+#: src/pages/Config.tsx
+#: src/pages/Status.tsx
+msgid "Bitaxe miners"
+msgstr "Bitaxe miners"
+
+#: src/pages/Status.tsx
+msgid "Bitaxe power (W)"
+msgstr "Bitaxe power (W)"
+
 #: src/pages/Setup.tsx
 msgid "Bitcoin Knots (bitcoind RPC)"
 msgstr "Bitcoin Knots (bitcoind RPC)"
@@ -1888,16 +1940,16 @@ msgid "Electrs host"
 msgstr "Electrs host"
 
 #: src/pages/Config.tsx
+msgid "Enable Bitaxe miner monitoring"
+msgstr "Enable Bitaxe miner monitoring"
+
+#: src/pages/Config.tsx
 msgid "Enable cheap mode"
 msgstr "Enable cheap mode"
 
 #: src/pages/Config.tsx
 msgid "Enable debug API endpoint"
 msgstr "Enable debug API endpoint"
-
-#: src/pages/Config.tsx
-msgid "Enable solo-mining monitoring"
-msgstr "Enable solo-mining monitoring"
 
 #: src/components/Bip110ScanCard.tsx
 msgid "Epoch"
@@ -2042,15 +2094,15 @@ msgstr "Fires when share rejection rate over the rolling window exceeds the "
 
 #: src/pages/Config.tsx
 msgid "Fires when the ASIC temp crosses 75 °C (configurable on Display & "
-"Logging → Solo miners) OR the VR temp crosses 100 °C, sustained for ~90 "
-"s. Thresholds match AxeOS firmware's own throttle points so the alert "
-"lines up with when the miner itself starts taking action. Recovery "
+"Logging → Bitaxe miners) OR the VR temp crosses 100 °C, sustained for "
+"~90 s. Thresholds match AxeOS firmware's own throttle points so the "
+"alert lines up with when the miner itself starts taking action. Recovery "
 "paired."
 msgstr "Fires when the ASIC temp crosses 75 °C (configurable on Display & "
-"Logging → Solo miners) OR the VR temp crosses 100 °C, sustained for ~90 "
-"s. Thresholds match AxeOS firmware's own throttle points so the alert "
-"lines up with when the miner itself starts taking action. Recovery "
-"paired."
+"Logging → Bitaxe miners) OR the VR temp crosses 100 °C, sustained for "
+"~90 s. Thresholds match AxeOS firmware's own throttle points so the "
+"alert lines up with when the miner itself starts taking action. "
+"Recovery paired."
 
 #: src/pages/Config.tsx
 msgid "Fires when the Braiins orderbook has no hashrate available for your "
@@ -4138,61 +4190,6 @@ msgstr "signing in…"
 #: src/components/Bip110ScanCard.tsx
 msgid "size"
 msgstr "size"
-
-#: src/pages/Status.tsx
-msgid "solo best difficulty"
-msgstr "solo best difficulty"
-
-#: src/pages/Status.tsx
-msgid "solo device count"
-msgstr "solo device count"
-
-#: src/pages/Config.tsx
-msgid "Solo fleet best difficulty record"
-msgstr "Solo fleet best difficulty record"
-
-#: src/pages/Status.tsx
-msgid "solo hashrate"
-msgstr "solo hashrate"
-
-#: src/pages/Status.tsx
-msgid "solo max temp"
-msgstr "solo max temp"
-
-#: src/pages/Config.tsx
-msgid "Solo miner offline / zero hashrate"
-msgstr "Solo miner offline / zero hashrate"
-
-#: src/pages/Config.tsx
-msgid "Solo miner overheating"
-msgstr "Solo miner overheating"
-
-#: src/pages/Config.tsx
-msgid "Solo miner share-rejection high"
-msgstr "Solo miner share-rejection high"
-
-#: src/pages/Config.tsx
-msgid "Solo miner stratum URL drift"
-msgstr "Solo miner stratum URL drift"
-
-#: src/components/SoloMinersCard.tsx
-#: src/pages/Status.tsx
-msgid "Solo miners"
-msgstr "Solo miners"
-
-#: src/pages/Config.tsx
-msgid "Solo miners (Bitaxe / AxeOS)"
-msgstr "Solo miners (Bitaxe / AxeOS)"
-
-#: src/pages/Status.tsx
-msgid "solo power (W)"
-msgstr "solo power (W)"
-
-#: src/components/SoloMinersCard.tsx
-msgid "Solo-mining monitoring is enabled but no devices have been added yet. "
-"Add a Bitaxe IP on Config → Display & Logging → Solo miners."
-msgstr "Solo-mining monitoring is enabled but no devices have been added yet. "
-"Add a Bitaxe IP on Config → Display & Logging → Solo miners."
 
 #: src/pages/Config.tsx
 msgid "Sound"

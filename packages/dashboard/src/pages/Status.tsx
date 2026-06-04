@@ -554,10 +554,10 @@ export function Status() {
             {/* #149: solo-mining series only listed when the master toggle is on. */}
             {soloMiningEnabled && (
               <>
-                <option value="solo_hashrate">{t`solo hashrate`}</option>
-                <option value="solo_device_count">{t`solo device count`}</option>
-                <option value="solo_max_temp">{t`solo max temp`}</option>
-                <option value="solo_best_diff">{t`solo best difficulty`}</option>
+                <option value="solo_hashrate">{t`Bitaxe hashrate`}</option>
+                <option value="solo_device_count">{t`Bitaxe device count`}</option>
+                <option value="solo_max_temp">{t`Bitaxe max temp`}</option>
+                <option value="solo_best_diff">{t`Bitaxe best difficulty`}</option>
               </>
             )}
           </select>
@@ -611,7 +611,7 @@ export function Status() {
             <option value="avg_overpay_settled">{t`avg overpay (settled)`}</option>
             {/* #149: solo power (W) only listed when the master toggle is on. */}
             {soloMiningEnabled && (
-              <option value="solo_power_watts">{t`solo power (W)`}</option>
+              <option value="solo_power_watts">{t`Bitaxe power (W)`}</option>
             )}
           </select>
         </div>
@@ -963,7 +963,7 @@ export function Status() {
     finance: t`Profit & Loss`,
     proposals: t`Last tick proposals`,
     bip110: t`BIP-110 scan`,
-    solo: t`Solo miners`,
+    solo: t`Bitaxe miners`,
   };
   const orderedBlocks: DashboardBlock[] = cardOrder.order
     .filter((id) => blockNodes[id] != null)

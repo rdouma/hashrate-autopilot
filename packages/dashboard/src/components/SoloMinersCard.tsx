@@ -80,12 +80,12 @@ export function SoloMinersCard() {
     return (
       <section>
         <h3 className="text-xs uppercase tracking-wider text-slate-100 mb-2">
-          <Trans>Solo miners</Trans>
+          <Trans>Bitaxe miners</Trans>
         </h3>
         <div className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-500 italic">
           <Trans>
-            Solo-mining monitoring is enabled but no devices have been added yet. Add a Bitaxe IP
-            on Config → Display &amp; Logging → Solo miners.
+            Bitaxe miner monitoring is enabled but no devices have been added yet. Add a Bitaxe IP
+            on Config → Display &amp; Logging → Bitaxe miners.
           </Trans>
         </div>
       </section>
@@ -97,7 +97,7 @@ export function SoloMinersCard() {
   return (
     <section>
       <h3 className="text-xs uppercase tracking-wider text-slate-100 mb-2">
-        <Trans>Solo miners</Trans>
+        <Trans>Bitaxe miners</Trans>
       </h3>
 
       {/* Mobile-only stacked card layout: one card per device with

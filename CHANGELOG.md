@@ -2,6 +2,12 @@
 
 ## 2026-06-04
 
+### `[UI]` 'Solo miners' renamed to 'Bitaxe miners' + chart-colors preview icons now byte-identical to the chart's
+
+The "Solo miners" naming overstated what the integration actually supports — only Bitaxe / AxeOS firmware, not solo mining in general (a Bitaxe can pool-mine too). Renamed across the dashboard card, Config tab and section heading, alert labels (overheating / offline / share-rejection / stratum drift / best-difficulty record), right-axis chart series ("Bitaxe hashrate" / "Bitaxe device count" / "Bitaxe max temp" / "Bitaxe best difficulty" / "Bitaxe power (W)"), and the empty-state copy. Internal code identifiers (`solo_*` field names, repo names) stay unchanged. Translations cover en + nl + es.
+
+Same pass: the chart-colors row previews for pool block, on-chain payout (gem), and Braiins deposit were drawn with approximated SVG paths in build 602 that didn't match what the chart actually renders. Replaced with the exact Lucide paths copied verbatim from `HashrateChart.tsx` (pool block cube) and `PriceChart.tsx` (gem + refuelling/fuel-pump icons), so the preview next to each row is byte-identical to what appears on the chart. Also fixed a wiring mistake: `price.marker_payout_gem` was inadvertently routed to the pool-block circles on the price chart while the actual on-chain-payout gem still used a module-level hardcoded colour. Now the override flows to the correct marker, and the pool-block circles share the `hashrate.pool_block_others` key with the hashrate chart's cubes.
+
 ### `[UI]` Chart colors section reshuffled to follow chart layout, each row shows its actual marker icon
 
 The first reshuffle in build 601 grouped by element kind (Lines / Markers / Bid events), which lost the at-a-glance chart-by-chart structure. Reverted to three chart-shaped groups: **Hashrate chart** (its line series), **Price chart** (its line series + a "Bid-event markers" subgroup, because the bid markers only render on the price chart), and **Markers** (block + icon markers shared across both charts). Each row also now renders a small live preview of its actual glyph next to the label — a cube for the pool block row, a crown for the own-pool-block row, a pickaxe for retarget, a router for IP change, gems for the on-chain-payout and Braiins-deposit rows, and the per-kind glyph (+ / ● / ◆ / ×) for the bid events. The preview updates instantly as you pick new colours so the row labelled "own pool block" actually shows the crown rather than the parenthetical "(crown)" hint it had in build 601.

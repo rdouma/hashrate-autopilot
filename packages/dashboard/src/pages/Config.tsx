@@ -920,9 +920,9 @@ function ConfigTabsAndContent({
       ],
     },
     'solo-miners': {
-      title: t`Solo miners (Bitaxe / AxeOS)`,
+      title: t`Bitaxe miners`,
       labels: [
-        t`Enable solo-mining monitoring`,
+        t`Enable Bitaxe miner monitoring`,
         t`Devices`,
         t`Add device`,
         t`Scan local network`,
@@ -2112,14 +2112,18 @@ function ChartColorRowIcon({
       </svg>
     );
   }
-  // Block-cube marker (pool block + BIP 110 variant): a tiny cube
-  // outline with the row's colour as stroke.
+  // Block cube (pool block + BIP 110 variant). Same Lucide `box`
+  // SVG path the chart uses for non-own pool blocks - copied verbatim
+  // from HashrateChart.tsx so the preview is byte-identical to what
+  // renders on the chart.
   if (keyId === 'hashrate.pool_block_others' || keyId === 'hashrate.pool_block_bip110') {
     return (
-      <svg width="14" height="14" viewBox="0 0 14 14" className="shrink-0">
-        <rect x="2" y="3" width="10" height="8" fill="none" stroke={color} strokeWidth="1.6" />
-        <line x1="2" y1="3" x2="7" y2="1" stroke={color} strokeWidth="1.2" />
-        <line x1="12" y1="3" x2="7" y2="1" stroke={color} strokeWidth="1.2" />
+      <svg width="14" height="14" viewBox="0 0 24 24" className="shrink-0"
+        fill="none" stroke={color} strokeWidth="2"
+        strokeLinecap="round" strokeLinejoin="round" opacity="0.95">
+        <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" fill={color} fillOpacity="0.25" />
+        <path d="m3.3 7 8.7 5 8.7-5" />
+        <path d="M12 22V12" />
       </svg>
     );
   }
@@ -2156,11 +2160,31 @@ function ChartColorRowIcon({
       </svg>
     );
   }
-  // Gem (on-chain payout + Braiins deposit). Simple diamond glyph.
-  if (keyId === 'price.marker_payout_gem' || keyId === 'price.marker_deposit') {
+  // On-chain payout gem - Lucide gem icon, copied verbatim from the
+  // reward-event marker rendering in PriceChart.tsx.
+  if (keyId === 'price.marker_payout_gem') {
     return (
-      <svg width="14" height="14" viewBox="0 0 14 14" className="shrink-0">
-        <path d="M7 1 L13 6 L7 13 L1 6 Z" fill={color} fillOpacity="0.4" stroke={color} strokeWidth="1.4" strokeLinejoin="round" />
+      <svg width="14" height="14" viewBox="0 0 24 24" className="shrink-0"
+        fill="none" stroke={color} strokeWidth="2"
+        strokeLinecap="round" strokeLinejoin="round" opacity="0.95">
+        <path d="M17 3a2 2 0 0 1 1.6.8l3 4a2 2 0 0 1 .013 2.382l-7.99 10.986a2 2 0 0 1-3.247 0l-7.99-10.986A2 2 0 0 1 2.4 7.8l2.998-3.997A2 2 0 0 1 7 3z" fill={color} fillOpacity="0.25" />
+        <path d="M2 9h20" />
+        <path d="M10.5 3 8 9l4 13 4-13-2.5-6" />
+      </svg>
+    );
+  }
+  // Braiins deposit - Lucide "fuel" / refuelling-pump icon (operator
+  // calls it the refuelling icon), copied verbatim from the
+  // deposit-marker rendering in PriceChart.tsx.
+  if (keyId === 'price.marker_deposit') {
+    return (
+      <svg width="14" height="14" viewBox="0 0 24 24" className="shrink-0"
+        fill="none" stroke={color} strokeWidth="2"
+        strokeLinecap="round" strokeLinejoin="round" opacity="0.95">
+        <path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 4 0v-6.998a2 2 0 0 0-.59-1.42L18 5" />
+        <path d="M14 21V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v16" />
+        <path d="M2 21h13" />
+        <path d="M3 9h11" />
       </svg>
     );
   }
@@ -2260,7 +2284,7 @@ function SoloMinersSection({
     <section className="bg-slate-900 border border-slate-800 rounded-lg p-4">
       <header className="mb-3">
         <h3 className="text-sm uppercase tracking-wider text-amber-400">
-          <Trans>Solo miners (Bitaxe / AxeOS)</Trans>
+          <Trans>Bitaxe miners</Trans>
         </h3>
         <p className="text-xs text-slate-500 mt-1">
           <Trans>
@@ -2278,7 +2302,7 @@ function SoloMinersSection({
           onChange={(e) => onChange('solo_mining_enabled', e.target.checked)}
           className="accent-amber-400 h-4 w-4"
         />
-        <Trans>Enable solo-mining monitoring</Trans>
+        <Trans>Enable Bitaxe miner monitoring</Trans>
       </label>
 
       {enabled && (
@@ -3432,15 +3456,15 @@ function EventClassSubscriptions({
     ? [
         {
           id: 'solo_overheating',
-          label: t`Solo miner overheating`,
-          help: t`Fires when the ASIC temp crosses 75 °C (configurable on Display & Logging → Solo miners) OR the VR temp crosses 100 °C, sustained for ~90 s. Thresholds match AxeOS firmware's own throttle points so the alert lines up with when the miner itself starts taking action. Recovery paired.`,
+          label: t`Bitaxe miner overheating`,
+          help: t`Fires when the ASIC temp crosses 75 °C (configurable on Display & Logging → Bitaxe miners) OR the VR temp crosses 100 °C, sustained for ~90 s. Thresholds match AxeOS firmware's own throttle points so the alert lines up with when the miner itself starts taking action. Recovery paired.`,
           enabled: !disabled.has('solo_overheating'),
           setEnabled: (n) => toggleClass('solo_overheating', n),
           severity: 'IMPORTANT',
         },
         {
           id: 'solo_zero_hashrate',
-          label: t`Solo miner offline / zero hashrate`,
+          label: t`Bitaxe miner offline / zero hashrate`,
           help: t`Fires when a device is unreachable OR reports 0 H/s for the configured number of consecutive minutes. Recovery paired.`,
           enabled: !disabled.has('solo_zero_hashrate'),
           setEnabled: (n) => toggleClass('solo_zero_hashrate', n),
@@ -3448,7 +3472,7 @@ function EventClassSubscriptions({
         },
         {
           id: 'solo_share_rejection',
-          label: t`Solo miner share-rejection high`,
+          label: t`Bitaxe miner share-rejection high`,
           help: t`Fires when share rejection rate over the rolling window exceeds the configured threshold. Re-armed once per window so a sustained bad period only fires periodically.`,
           enabled: !disabled.has('solo_share_rejection'),
           setEnabled: (n) => toggleClass('solo_share_rejection', n),
@@ -3456,7 +3480,7 @@ function EventClassSubscriptions({
         },
         {
           id: 'solo_stratum_drift',
-          label: t`Solo miner stratum URL drift`,
+          label: t`Bitaxe miner stratum URL drift`,
           help: t`Fires once whenever a device's stratum URL changes from the previously-observed value. Baselined silently on first poll so adding a device doesn't fire a spurious "drift detected" alert.`,
           enabled: !disabled.has('solo_stratum_drift'),
           setEnabled: (n) => toggleClass('solo_stratum_drift', n),
@@ -3464,7 +3488,7 @@ function EventClassSubscriptions({
         },
         {
           id: 'solo_best_difficulty',
-          label: t`Solo fleet best difficulty record`,
+          label: t`Bitaxe miner best difficulty record`,
           help: t`Fires whenever the fleet-wide best share difficulty exceeds the all-time high-water mark. One-shot (no recovery pairing). The message includes the new record, previous best, improvement factor, and the device that found it.`,
           enabled: !disabled.has('solo_best_difficulty'),
           setEnabled: (n) => toggleClass('solo_best_difficulty', n),
@@ -3635,7 +3659,7 @@ function EventClassSubscriptions({
           {oceanTiles.map(renderTile)}
           {soloTiles.length > 0 && (
             <>
-              {sectionHeader(t`Solo miners (Bitaxe / AxeOS)`)}
+              {sectionHeader(t`Bitaxe miners`)}
               {soloTiles.map(renderTile)}
             </>
           )}

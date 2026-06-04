@@ -842,7 +842,7 @@ export const PriceChart = memo(function PriceChart({
           return {
             values: projectSoloSeries(xs, soloSeries, (r) => r.total_power_w),
             stroke: COLOR_RIGHT_AXIS,
-            axisLabel: 'solo power (W)',
+            axisLabel: 'Bitaxe power (W)',
             // Watts displayed without the `k` shortening - home Bitaxe
             // fleets are typically 15-100W where kW scale would round
             // to zero.
@@ -2256,7 +2256,7 @@ export const PriceChart = memo(function PriceChart({
               cx={cx}
               cy={cy}
               r="4.5"
-              fill={COLOR_PAYOUT}
+              fill={COLOR_PAYOUT_GEM}
               stroke="#0f172a"
               strokeWidth="1.5"
             />
@@ -2288,7 +2288,7 @@ export const PriceChart = memo(function PriceChart({
             same rich tooltip the Hashrate chart uses (reward, our
             share, BIP-110 signal, explorer link). */}
         {visiblePoolBlockMarkers.map(({ block: b, cx, cy, blockCx }) => {
-          const fill = b.found_by_us ? COLOR_OUR_BLOCK : COLOR_PAYOUT_GEM;
+          const fill = b.found_by_us ? COLOR_OUR_BLOCK : COLOR_POOL_BLOCK;
           return (
             <g
               key={`pool-block-${b.block_hash || b.height}`}
@@ -2389,7 +2389,7 @@ export const PriceChart = memo(function PriceChart({
                 <line
                   x1={x} x2={x}
                   y1={PADDING.top + 8} y2={chartHeight - PADDING.bottom}
-                  stroke={COLOR_PAYOUT}
+                  stroke={COLOR_PAYOUT_GEM}
                   strokeWidth="1"
                   strokeDasharray="2 3"
                   opacity="0.55"
@@ -2399,11 +2399,11 @@ export const PriceChart = memo(function PriceChart({
                 <svg
                   x={x - 7} y={PADDING.top - 11}
                   width="14" height="14" viewBox="0 0 24 24"
-                  fill="none" stroke={COLOR_PAYOUT} strokeWidth="2"
+                  fill="none" stroke={COLOR_PAYOUT_GEM} strokeWidth="2"
                   strokeLinecap="round" strokeLinejoin="round"
                   opacity="0.85"
                 >
-                  <path d="M17 3a2 2 0 0 1 1.6.8l3 4a2 2 0 0 1 .013 2.382l-7.99 10.986a2 2 0 0 1-3.247 0l-7.99-10.986A2 2 0 0 1 2.4 7.8l2.998-3.997A2 2 0 0 1 7 3z" fill={COLOR_PAYOUT} fillOpacity="0.25" />
+                  <path d="M17 3a2 2 0 0 1 1.6.8l3 4a2 2 0 0 1 .013 2.382l-7.99 10.986a2 2 0 0 1-3.247 0l-7.99-10.986A2 2 0 0 1 2.4 7.8l2.998-3.997A2 2 0 0 1 7 3z" fill={COLOR_PAYOUT_GEM} fillOpacity="0.25" />
                   <path d="M2 9h20" />
                   <path d="M10.5 3 8 9l4 13 4-13-2.5-6" />
                 </svg>
