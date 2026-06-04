@@ -2,6 +2,12 @@
 
 ## 2026-06-04
 
+### `[Feature]` Marker colors now configurable + Chart colors section reorganised into Lines / Markers / Bid events
+
+The Config → Chart colors section grew five new keys for marker icons that previously used hardcoded hex values: BIP 110-signalling block (yellow cube), difficulty retarget (purple pickaxe), public-IP change (sky router), on-chain payout (emerald gem), and Braiins deposit (purple gem). All of them now go through the same `chart_color_overrides` JSON-bag mechanism the existing line colors used, so the picker UI, hex-validation, and "reset to defaults" all work identically. The section itself is reorganised into three groups - **Lines** (left + right axis series across both charts), **Markers** (block + icon markers), and **Bid events** (the per-tick create/edit/cancel glyphs) - so it's easier to find a specific colour without scanning the whole list.
+
+One key rename for cleanliness: `price.unpaid` (which never actually drove the unpaid sat line — it only ever coloured the deposit gem) is now `price.marker_deposit`. Any saved overrides under the old key are transparently migrated by the parser, so nobody has to re-pick their colour. Translations cover en + nl + es.
+
 ### `[UI]` Green `FOUND` / red `AGED OUT` badge now appears on every pool-luck tooltip
 
 The badge was added in build 597 only when two events combined in one tick. Operator preference is to keep it visible on every pool-luck event panel - the traffic-light cue (green = block landed, red = block aged out) is a faster visual read than the +/- in the header. The badge stays in the same fixed-width centered slot so block heights line up cleanly under it regardless of whether the panel is part of a single- or multi-event tooltip.

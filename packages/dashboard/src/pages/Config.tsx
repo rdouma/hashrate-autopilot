@@ -1949,31 +1949,41 @@ function ChartColorsSection({
 
   const groups: { title: string; rows: Array<{ key: ChartColorKey; label: string }> }[] = [
     {
-      title: t`Hashrate chart`,
+      // Hashrate + price chart line series (left + right axis). All
+      // continuously-drawn paths and area fills live here.
+      title: t`Lines`,
       rows: [
         { key: 'hashrate.delivered', label: t`delivered (Braiins)` },
         { key: 'hashrate.received_datum', label: t`received (Datum)` },
         { key: 'hashrate.received_ocean', label: t`received (Ocean)` },
         { key: 'hashrate.target', label: t`target` },
         { key: 'hashrate.floor', label: t`floor` },
-        { key: 'hashrate.pool_block_ours', label: t`our pool blocks` },
-        { key: 'hashrate.pool_block_others', label: t`other pool blocks` },
-        { key: 'hashrate.right_axis', label: t`right-axis line` },
-      ],
-    },
-    {
-      title: t`Price chart`,
-      rows: [
+        { key: 'hashrate.right_axis', label: t`hashrate right-axis line` },
         { key: 'price.our_bid', label: t`our bid` },
         { key: 'price.fillable', label: t`fillable` },
         { key: 'price.hashprice', label: t`hashprice` },
         { key: 'price.max_bid', label: t`max bid` },
-        { key: 'price.unpaid', label: t`unpaid (sat)` },
-        { key: 'price.right_axis', label: t`right-axis line` },
+        { key: 'price.right_axis', label: t`price right-axis line` },
       ],
     },
     {
-      title: t`Bid-event markers`,
+      // Block + icon markers at the top of the chart. Each marker is
+      // a glyph + a dashed connector to its data point; the colour
+      // here drives both.
+      title: t`Markers`,
+      rows: [
+        { key: 'hashrate.pool_block_ours', label: t`own pool block (crown)` },
+        { key: 'hashrate.pool_block_others', label: t`pool block (cube)` },
+        { key: 'hashrate.pool_block_bip110', label: t`BIP 110-signalling block` },
+        { key: 'hashrate.marker_retarget', label: t`difficulty retarget (pickaxe)` },
+        { key: 'hashrate.marker_ip_change', label: t`public-IP change (router)` },
+        { key: 'price.marker_payout_gem', label: t`on-chain payout (gem)` },
+        { key: 'price.marker_deposit', label: t`Braiins deposit (gem)` },
+      ],
+    },
+    {
+      // Per-tick bid-event markers (small glyphs on the bid line).
+      title: t`Bid events`,
       rows: [
         { key: 'events.create', label: t`create` },
         { key: 'events.edit_price', label: t`edit price` },

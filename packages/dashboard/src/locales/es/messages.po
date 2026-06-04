@@ -756,6 +756,10 @@ msgid "Bid above target - Braiins price-decrease cooldown active."
 msgstr "Oferta por encima del objetivo - cooldown de bajada de precio de "
 "Braiins activo."
 
+#: src/pages/Config.tsx
+msgid "Bid events"
+msgstr "Eventos de bid"
+
 #: src/pages/Status.tsx
 msgid "Bid filling at {speed}."
 msgstr "Oferta llenando a {speed}."
@@ -763,10 +767,6 @@ msgstr "Oferta llenando a {speed}."
 #: src/pages/Config.tsx
 msgid "Bid sustained-paused for"
 msgstr "Oferta sostenidamente Paused durante"
-
-#: src/pages/Config.tsx
-msgid "Bid-event markers"
-msgstr "Marcadores de eventos de oferta"
 
 #: src/pages/Config.tsx
 msgid "Bid-event markers (CREATE / EDIT_PRICE / EDIT_SPEED / CANCEL) on the "
@@ -819,6 +819,10 @@ msgstr "Rango de escaneo BIP 110"
 #: src/components/HashrateChart.tsx
 msgid "BIP 110 SIGNAL"
 msgstr "SEÑAL BIP 110"
+
+#: src/pages/Config.tsx
+msgid "BIP 110-signalling block"
+msgstr "Bloque que señaliza BIP 110"
 
 #: src/pages/Status.tsx
 msgid "BIP-110 scan"
@@ -1022,6 +1026,10 @@ msgstr "API de Braiins no accesible durante"
 #: src/pages/Status.tsx
 msgid "Braiins balance"
 msgstr "saldo Braiins"
+
+#: src/pages/Config.tsx
+msgid "Braiins deposit (gem)"
+msgstr "Depósito Braiins (gema)"
 
 #: src/pages/Config.tsx
 msgid "Braiins deposit lifecycle"
@@ -1672,6 +1680,10 @@ msgid "DIFFICULTY ADJUSTMENT"
 msgstr "AJUSTE DE DIFICULTAD"
 
 #: src/pages/Config.tsx
+msgid "difficulty retarget (pickaxe)"
+msgstr "reajuste de dificultad (pico)"
+
+#: src/pages/Config.tsx
 msgid "Disabled"
 msgstr "Deshabilitado"
 
@@ -2219,7 +2231,6 @@ msgstr "Hashrate"
 msgid "Hashrate below floor for"
 msgstr "Hashrate por debajo del mínimo durante"
 
-#: src/pages/Config.tsx
 #: src/pages/Status.tsx
 msgid "Hashrate chart"
 msgstr "Gráfico de hashrate"
@@ -2235,6 +2246,10 @@ msgstr "Hashrate que Ocean acredita a nuestra dirección de pago (ventana "
 "/v1/user_hashrate.hashrate_300s. Compara con AVG BRAIINS / AVG DATUM "
 "arriba; brechas sostenidas significan que se pierden shares en algún "
 "punto de la tubería Braiins -> Datum -> Ocean."
+
+#: src/pages/Config.tsx
+msgid "hashrate right-axis line"
+msgstr "línea del eje derecho del hashrate"
 
 #: src/pages/Config.tsx
 msgid "Hashrate right-axis line"
@@ -2555,6 +2570,10 @@ msgstr "Suma de toda la vida de (amount_sat - amount_remaining_sat) en cada "
 "antes de activar el autopilot. Cambia a \"cuenta completa\" en Config → "
 "panel Money."
 
+#: src/pages/Config.tsx
+msgid "Lines"
+msgstr "Líneas"
+
 #: src/pages/Status.tsx
 msgid "live"
 msgstr "en vivo"
@@ -2621,6 +2640,10 @@ msgstr "marcar como visto"
 msgid "Marker at tx time. Balance updates after Braiins confirms the deposit."
 msgstr "Marcador en tiempo de transaccion. El saldo se actualiza despues de que "
 "Braiins confirme el deposito."
+
+#: src/pages/Config.tsx
+msgid "Markers"
+msgstr "Marcadores"
 
 #: src/components/PriceChart.tsx
 msgid "Markers were hidden because the combined count (bid events + pool blocks "
@@ -3126,6 +3149,10 @@ msgstr "pago on-chain"
 msgid "ON-CHAIN PAYOUT"
 msgstr "PAGO ON-CHAIN"
 
+#: src/pages/Config.tsx
+msgid "on-chain payout (gem)"
+msgstr "pago on-chain (gema)"
+
 #: src/pages/Setup.tsx
 msgid "On-chain payout tracking (optional)"
 msgstr "Seguimiento de pagos on-chain (opcional)"
@@ -3338,6 +3365,10 @@ msgstr "Sobrescribe el color de cualquier línea o marcador con nombre en los "
 "la paleta o establecer un valor hex personalizado. Guardado en el "
 "daemon, así la elección te sigue entre dispositivos."
 
+#: src/pages/Config.tsx
+msgid "own pool block (crown)"
+msgstr "bloque propio del pool (corona)"
+
 #: src/pages/Status.tsx
 msgid "owner"
 msgstr "propietario"
@@ -3517,6 +3548,10 @@ msgstr "bloque del pool"
 msgid "POOL BLOCK"
 msgstr "BLOQUE DEL POOL"
 
+#: src/pages/Config.tsx
+msgid "pool block (cube)"
+msgstr "bloque del pool (cubo)"
+
 #: src/pages/Status.tsx
 msgid "pool blocks 24h"
 msgstr "bloques del pool 24h"
@@ -3633,10 +3668,13 @@ msgstr "precio"
 msgid "Price"
 msgstr "Precio"
 
-#: src/pages/Config.tsx
 #: src/pages/Status.tsx
 msgid "Price chart"
 msgstr "Gráfico de precio"
+
+#: src/pages/Config.tsx
+msgid "price right-axis line"
+msgstr "línea del eje derecho del precio"
 
 #: src/pages/Config.tsx
 msgid "Price right-axis line"
@@ -3732,6 +3770,10 @@ msgstr "Proveedor"
 #: src/pages/Config.tsx
 msgid "provider error - try again later"
 msgstr "error del proveedor - inténtalo más tarde"
+
+#: src/pages/Config.tsx
+msgid "public-IP change (router)"
+msgstr "cambio de IP pública (router)"
 
 #: src/pages/Config.tsx
 msgid "Push outage alerts (Datum unreachable, hashrate floor breach, wallet "
@@ -3906,10 +3948,6 @@ msgstr "recompensa"
 #: src/pages/Status.tsx
 msgid "right axis"
 msgstr "eje derecho"
-
-#: src/pages/Config.tsx
-msgid "right-axis line"
-msgstr "línea del eje derecho"
 
 #: src/pages/Config.tsx
 msgid "Rolling-mean window applied to the hashrate chart. 1 = raw (no "
@@ -4116,8 +4154,7 @@ msgid "Share of Braiins-purchased shares the pool rejected, computed over the "
 "stale shares from Datum being behind, worker identity misconfig, ASIC "
 "trouble, or pool-side issues. Rejected shares are still paid for under "
 "Braiins's terms (the buyer is responsible for target-pool quality)."
-msgstr ""
-"Proporción de shares compradas en Braiins que la pool rechazó, "
+msgstr "Proporción de shares compradas en Braiins que la pool rechazó, "
 "calculada sobre el rango de gráfico seleccionado. En el servidor: "
 "(Δrejected_m / Δpurchased_m) × 100 entre las primeras y últimas "
 "muestras no nulas del contador acumulado en el rango. Se actualiza con "
@@ -4129,7 +4166,8 @@ msgstr ""
 "sugieren investigar - shares obsoletas porque Datum se quedó atrás, "
 "worker mal configurado, problemas de ASIC, o problemas del lado de la "
 "pool. Las shares rechazadas se siguen pagando bajo los términos de "
-"Braiins (el comprador es responsable de la calidad de la pool objetivo)."
+"Braiins (el comprador es responsable de la calidad de la pool "
+"objetivo)."
 
 #: src/pages/Status.tsx
 msgid "share_log %"

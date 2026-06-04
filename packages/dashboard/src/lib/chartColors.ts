@@ -24,6 +24,9 @@ export type ChartColorKey =
   | 'hashrate.floor'
   | 'hashrate.pool_block_ours'
   | 'hashrate.pool_block_others'
+  | 'hashrate.pool_block_bip110'
+  | 'hashrate.marker_retarget'
+  | 'hashrate.marker_ip_change'
   // Hashrate chart right-axis (universal — applies to whichever
   // right-axis option is selected; difficulty/share-log/pool-hashrate
   // all share this one slot).
@@ -33,7 +36,8 @@ export type ChartColorKey =
   | 'price.fillable'
   | 'price.hashprice'
   | 'price.max_bid'
-  | 'price.unpaid'
+  | 'price.marker_payout_gem'
+  | 'price.marker_deposit'
   // Price chart right-axis (universal — same shape as the hashrate
   // right axis).
   | 'price.right_axis'
@@ -50,8 +54,11 @@ export const CHART_COLOR_DEFAULTS: Record<ChartColorKey, string> = {
   'hashrate.received_ocean': '#3b82f6',     // blue-500 — Ocean received
   'hashrate.target': '#64748b',             // slate-500 — dashed target
   'hashrate.floor': '#64748b',              // slate-500 — dashed floor
-  'hashrate.pool_block_ours': '#facc15',    // yellow-400 — our pool blocks
-  'hashrate.pool_block_others': '#3b82f6',  // sky/blue — non-own pool blocks
+  'hashrate.pool_block_ours': '#facc15',    // yellow-400 — own pool blocks (crown)
+  'hashrate.pool_block_others': '#3b82f6',  // sky/blue — non-own pool blocks (cube)
+  'hashrate.pool_block_bip110': '#fde047',  // yellow-300 — BIP 110-signalling cube
+  'hashrate.marker_retarget': '#c084fc',    // violet-400 — difficulty-retarget pickaxe
+  'hashrate.marker_ip_change': '#38bdf8',   // sky-400 — public-IP-change router
   // Hashrate right
   'hashrate.right_axis': '#c084fc',         // violet-400 — shared right-axis line
   // Price left
@@ -59,7 +66,8 @@ export const CHART_COLOR_DEFAULTS: Record<ChartColorKey, string> = {
   'price.fillable': '#22d3ee',              // cyan-400
   'price.hashprice': '#a78bfa',             // violet-400 dotted
   'price.max_bid': '#f87171',               // rose-400
-  'price.unpaid': '#c084fc',                // violet-400
+  'price.marker_payout_gem': '#10b981',     // emerald-500 — on-chain payout gem
+  'price.marker_deposit': '#c084fc',        // violet-400 — Braiins deposit gem
   // Price right
   'price.right_axis': '#c084fc',            // violet-400
   // Bid-event markers
@@ -94,6 +102,18 @@ export const CHART_COLOR_PRESETS: readonly string[] = [
 const HEX_PATTERN = /^#[0-9a-f]{6}$/i;
 
 /**
+ * Backward-compat key renames for `parseOverrides`. When a key is
+ * renamed in the schema (e.g. `price.unpaid` → `price.marker_deposit`
+ * because the original key was misnamed - the colour only ever drove
+ * the deposit gem marker, never the unpaid sat line), any saved
+ * overrides under the old key should still take effect under the new
+ * one. Old key on the left, current key on the right.
+ */
+const KEY_ALIASES: Record<string, ChartColorKey> = {
+  'price.unpaid': 'price.marker_deposit',
+};
+
+/**
  * Parse the JSON-string overrides bag stored on the daemon into a
  * partial map of valid `#RRGGBB` entries. Malformed JSON, non-object
  * roots, unknown keys, and non-hex values are silently dropped — the
@@ -111,10 +131,19 @@ export function parseOverrides(json: string | null | undefined): Partial<Record<
   if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) return {};
   const out: Partial<Record<ChartColorKey, string>> = {};
   for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
-    if (!(k in CHART_COLOR_DEFAULTS)) continue;
     if (typeof v !== 'string') continue;
     if (!HEX_PATTERN.test(v)) continue;
-    out[k as ChartColorKey] = v;
+    // Resolve old aliases (renamed keys) before checking against the
+    // current schema. The alias map intentionally only redirects when
+    // the new key isn't already present in the same blob - so an
+    // operator who already set the new key isn't silently overridden
+    // by a stale legacy value.
+    const aliased: ChartColorKey | undefined =
+      k in KEY_ALIASES && !((KEY_ALIASES[k] as string) in (raw as object))
+        ? KEY_ALIASES[k]
+        : (k as ChartColorKey);
+    if (!aliased || !(aliased in CHART_COLOR_DEFAULTS)) continue;
+    out[aliased] = v;
   }
   return out;
 }

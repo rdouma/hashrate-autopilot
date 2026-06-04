@@ -82,10 +82,6 @@ const COLOR_OUR_BLOCK = '#fbbf24';
 const COLOR_POOL_BLOCK = '#3b82f6';
 // Tailwind yellow-300 - distinct from the amber/gold of own blocks
 // and from the saturated Ocean blue of vanilla pool blocks. After
-// #115 this colour drives the BIP 110-signalling marker (a compact
-// yellow cube). Visually softer than the gold crown so the rare
-// own-block stays the loudest thing on the row.
-const COLOR_BIP110 = '#fde047';
 // Tailwind violet-400 - distinct from amber/green/blue/gray; reads
 // well against the slate background. Used for the opt-in `% of Ocean`
 // (share_log) overlay on the right Y-axis.
@@ -430,6 +426,9 @@ export const HashrateChart = memo(function HashrateChart({
   const COLOR_FLOOR = getChartColor('hashrate.floor', _colorOverrides);
   const COLOR_OUR_BLOCK = getChartColor('hashrate.pool_block_ours', _colorOverrides);
   const COLOR_POOL_BLOCK = getChartColor('hashrate.pool_block_others', _colorOverrides);
+  const COLOR_BIP110 = getChartColor('hashrate.pool_block_bip110', _colorOverrides);
+  const COLOR_RETARGET = getChartColor('hashrate.marker_retarget', _colorOverrides);
+  const COLOR_IP_CHANGE = getChartColor('hashrate.marker_ip_change', _colorOverrides);
   const COLOR_RIGHT_AXIS = getChartColor('hashrate.right_axis', _colorOverrides);
   /* eslint-enable @typescript-eslint/no-shadow */
   const dateTimeLocale = useDateTimeLocale();
@@ -1806,7 +1805,7 @@ export const HashrateChart = memo(function HashrateChart({
                   x2={x}
                   y1={PADDING.top + 8}
                   y2={chartHeight - PADDING.bottom}
-                  stroke="#c084fc"
+                  stroke={COLOR_RETARGET}
                   strokeWidth="1"
                   strokeDasharray="2 3"
                   opacity="0.4"
@@ -1822,7 +1821,7 @@ export const HashrateChart = memo(function HashrateChart({
                 <svg
                   x={x - 7} y={PADDING.top - 11}
                   width="14" height="14" viewBox="0 0 24 24"
-                  fill="none" stroke="#c084fc" strokeWidth="2"
+                  fill="none" stroke={COLOR_RETARGET} strokeWidth="2"
                   strokeLinecap="round" strokeLinejoin="round"
                   opacity="0.85"
                 >
@@ -1843,6 +1842,7 @@ export const HashrateChart = memo(function HashrateChart({
           dataMaxX={dataMaxX}
           topY={PADDING.top}
           bottomY={chartHeight - PADDING.bottom}
+          color={COLOR_IP_CHANGE}
           onMarkerEnter={onIpChangeEnter}
           onMarkerLeave={onIpChangeLeave}
           onMarkerClick={onIpChangeClick}

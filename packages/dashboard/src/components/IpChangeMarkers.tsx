@@ -32,7 +32,7 @@ export interface IpChangeTooltipState {
   pinned: boolean;
 }
 
-const COLOR = '#38bdf8'; // sky-400: distinct from retarget purple / block gold
+const DEFAULT_COLOR = '#38bdf8'; // sky-400: distinct from retarget purple / block gold
 
 export function IpChangeMarkers({
   events,
@@ -41,6 +41,7 @@ export function IpChangeMarkers({
   dataMaxX,
   topY,
   bottomY,
+  color = DEFAULT_COLOR,
   onMarkerEnter,
   onMarkerLeave,
   onMarkerClick,
@@ -53,6 +54,9 @@ export function IpChangeMarkers({
   topY: number;
   /** y of the plot bottom (tick line ends here). */
   bottomY: number;
+  /** Operator-configurable marker color (Config → Chart colors →
+   *  marker.ip_change). Defaults to the sky-400 hex when no override. */
+  color?: string;
   /** Hover handler: chart owns the hovered-state; tooltip renders
    *  outside the SVG. Receives the event + viewport coords. */
   onMarkerEnter?: (
@@ -84,7 +88,7 @@ export function IpChangeMarkers({
                 x2={x}
                 y1={topY + 8}
                 y2={bottomY}
-                stroke={COLOR}
+                stroke={color}
                 strokeWidth="1"
                 strokeDasharray="2 3"
                 opacity="0.4"
@@ -100,7 +104,7 @@ export function IpChangeMarkers({
                 height="14"
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke={COLOR}
+                stroke={color}
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"

@@ -750,6 +750,10 @@ msgstr "Bod {0} is {1} - wacht tot het actief wordt."
 msgid "Bid above target - Braiins price-decrease cooldown active."
 msgstr "Bod boven doel - Braiins-cooldown voor prijsverlaging actief."
 
+#: src/pages/Config.tsx
+msgid "Bid events"
+msgstr "Bid-gebeurtenissen"
+
 #: src/pages/Status.tsx
 msgid "Bid filling at {speed}."
 msgstr "Bod vult op {speed}."
@@ -757,10 +761,6 @@ msgstr "Bod vult op {speed}."
 #: src/pages/Config.tsx
 msgid "Bid sustained-paused for"
 msgstr "Bid aanhoudend Paused gedurende"
-
-#: src/pages/Config.tsx
-msgid "Bid-event markers"
-msgstr "Bod-gebeurtenismarkeringen"
 
 #: src/pages/Config.tsx
 msgid "Bid-event markers (CREATE / EDIT_PRICE / EDIT_SPEED / CANCEL) on the "
@@ -812,6 +812,10 @@ msgstr "BIP 110-scanbereik"
 #: src/components/HashrateChart.tsx
 msgid "BIP 110 SIGNAL"
 msgstr "BIP 110-SIGNAAL"
+
+#: src/pages/Config.tsx
+msgid "BIP 110-signalling block"
+msgstr "BIP 110-signalerend blok"
 
 #: src/pages/Status.tsx
 msgid "BIP-110 scan"
@@ -1015,6 +1019,10 @@ msgstr "Braiins API onbereikbaar gedurende"
 #: src/pages/Status.tsx
 msgid "Braiins balance"
 msgstr "Braiins-saldo"
+
+#: src/pages/Config.tsx
+msgid "Braiins deposit (gem)"
+msgstr "Braiins-deposit (gem)"
 
 #: src/pages/Config.tsx
 msgid "Braiins deposit lifecycle"
@@ -1666,6 +1674,10 @@ msgid "DIFFICULTY ADJUSTMENT"
 msgstr "DIFFICULTY ADJUSTMENT"
 
 #: src/pages/Config.tsx
+msgid "difficulty retarget (pickaxe)"
+msgstr "difficulty-retarget (pikhouweel)"
+
+#: src/pages/Config.tsx
 msgid "Disabled"
 msgstr "Uitgeschakeld"
 
@@ -2207,7 +2219,6 @@ msgstr "Hashrate"
 msgid "Hashrate below floor for"
 msgstr "Hashrate onder de vloer gedurende"
 
-#: src/pages/Config.tsx
 #: src/pages/Status.tsx
 msgid "Hashrate chart"
 msgstr "Hashrate-grafiek"
@@ -2223,6 +2234,10 @@ msgstr "Hashrate die Ocean toeschrijft aan ons uitbetaaladres (5-min schuivend "
 "Vergelijk met AVG BRAIINS / AVG DATUM bovenaan; aanhoudende verschillen "
 "betekenen dat shares onderweg verloren gaan in de Braiins -> Datum -> "
 "Ocean pijplijn."
+
+#: src/pages/Config.tsx
+msgid "hashrate right-axis line"
+msgstr "hashrate rechter-aslijn"
 
 #: src/pages/Config.tsx
 msgid "Hashrate right-axis line"
@@ -2543,6 +2558,10 @@ msgstr "Levenslange som van (amount_sat − amount_remaining_sat) over elk bod "
 "voordat de autopilot werd aangezet. Schakel via Config → Money-paneel "
 "naar \"hele account\"."
 
+#: src/pages/Config.tsx
+msgid "Lines"
+msgstr "Lijnen"
+
 #: src/pages/Status.tsx
 msgid "live"
 msgstr "live"
@@ -2609,6 +2628,10 @@ msgstr "als gezien markeren"
 msgid "Marker at tx time. Balance updates after Braiins confirms the deposit."
 msgstr "Markering op transactietijd. Saldo wordt bijgewerkt nadat Braiins de "
 "storting bevestigt."
+
+#: src/pages/Config.tsx
+msgid "Markers"
+msgstr "Markers"
 
 #: src/components/PriceChart.tsx
 msgid "Markers were hidden because the combined count (bid events + pool blocks "
@@ -3113,6 +3136,10 @@ msgstr "on-chain uitbetaling"
 msgid "ON-CHAIN PAYOUT"
 msgstr "UITBETALING ON-CHAIN"
 
+#: src/pages/Config.tsx
+msgid "on-chain payout (gem)"
+msgstr "on-chain uitbetaling (gem)"
+
 #: src/pages/Setup.tsx
 msgid "On-chain payout tracking (optional)"
 msgstr "On-chain uitbetaalmonitoring (optioneel)"
@@ -3325,6 +3352,10 @@ msgstr "Overschrijf de kleur van elke benoemde lijn of gebeurtenismarkering op "
 "palet te kiezen of stel een aangepaste hex-waarde in. Opgeslagen op de "
 "daemon, dus de keuze volgt je tussen apparaten."
 
+#: src/pages/Config.tsx
+msgid "own pool block (crown)"
+msgstr "eigen pool-blok (kroon)"
+
 #: src/pages/Status.tsx
 msgid "owner"
 msgstr "eigenaar"
@@ -3503,6 +3534,10 @@ msgstr "pool-blok"
 msgid "POOL BLOCK"
 msgstr "POOL-BLOK"
 
+#: src/pages/Config.tsx
+msgid "pool block (cube)"
+msgstr "pool-blok (kubus)"
+
 #: src/pages/Status.tsx
 msgid "pool blocks 24h"
 msgstr "pool-blokken 24h"
@@ -3619,10 +3654,13 @@ msgstr "prijs"
 msgid "Price"
 msgstr "Prijs"
 
-#: src/pages/Config.tsx
 #: src/pages/Status.tsx
 msgid "Price chart"
 msgstr "Prijsgrafiek"
+
+#: src/pages/Config.tsx
+msgid "price right-axis line"
+msgstr "prijs rechter-aslijn"
 
 #: src/pages/Config.tsx
 msgid "Price right-axis line"
@@ -3719,6 +3757,10 @@ msgstr "Provider"
 #: src/pages/Config.tsx
 msgid "provider error - try again later"
 msgstr "providerfout - probeer later opnieuw"
+
+#: src/pages/Config.tsx
+msgid "public-IP change (router)"
+msgstr "publieke-IP-wijziging (router)"
 
 #: src/pages/Config.tsx
 msgid "Push outage alerts (Datum unreachable, hashrate floor breach, wallet "
@@ -3892,10 +3934,6 @@ msgstr "beloning"
 #: src/pages/Status.tsx
 msgid "right axis"
 msgstr "rechter as"
-
-#: src/pages/Config.tsx
-msgid "right-axis line"
-msgstr "rechts-as-lijn"
 
 #: src/pages/Config.tsx
 msgid "Rolling-mean window applied to the hashrate chart. 1 = raw (no "
@@ -4101,8 +4139,7 @@ msgid "Share of Braiins-purchased shares the pool rejected, computed over the "
 "stale shares from Datum being behind, worker identity misconfig, ASIC "
 "trouble, or pool-side issues. Rejected shares are still paid for under "
 "Braiins's terms (the buyer is responsible for target-pool quality)."
-msgstr ""
-"Aandeel door Braiins gekochte shares dat door de pool werd geweigerd, "
+msgstr "Aandeel door Braiins gekochte shares dat door de pool werd geweigerd, "
 "berekend over het geselecteerde grafiekbereik. Server-side: "
 "(Δrejected_m / Δpurchased_m) × 100 over de eerste en laatste niet-null "
 "cumulatieve teller-samples in het bereik. Wijzigt mee met de "

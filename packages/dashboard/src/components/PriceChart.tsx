@@ -391,7 +391,12 @@ export const PriceChart = memo(function PriceChart({
   const COLOR_FILLABLE = getChartColor('price.fillable', _colorOverrides);
   const COLOR_HASHPRICE = getChartColor('price.hashprice', _colorOverrides);
   const COLOR_MAXBID = getChartColor('price.max_bid', _colorOverrides);
-  const COLOR_DEPOSIT = getChartColor('price.unpaid', _colorOverrides);
+  const COLOR_DEPOSIT = getChartColor('price.marker_deposit', _colorOverrides);
+  const COLOR_PAYOUT_GEM = getChartColor('price.marker_payout_gem', _colorOverrides);
+  const COLOR_OUR_BLOCK = getChartColor('hashrate.pool_block_ours', _colorOverrides);
+  const COLOR_POOL_BLOCK = getChartColor('hashrate.pool_block_others', _colorOverrides);
+  const COLOR_BIP110 = getChartColor('hashrate.pool_block_bip110', _colorOverrides);
+  const COLOR_RETARGET = getChartColor('hashrate.marker_retarget', _colorOverrides);
   const COLOR_CREATE = getChartColor('events.create', _colorOverrides);
   const COLOR_EDIT = getChartColor('events.edit_price', _colorOverrides);
   const COLOR_EDIT_SPEED = getChartColor('events.edit_speed', _colorOverrides);
@@ -2271,7 +2276,7 @@ export const PriceChart = memo(function PriceChart({
               cx={d.cx}
               cy={d.cy}
               r="4.5"
-              fill="#c084fc"
+              fill={COLOR_DEPOSIT}
               stroke="#0f172a"
               strokeWidth="1.5"
             />
@@ -2283,7 +2288,7 @@ export const PriceChart = memo(function PriceChart({
             same rich tooltip the Hashrate chart uses (reward, our
             share, BIP-110 signal, explorer link). */}
         {visiblePoolBlockMarkers.map(({ block: b, cx, cy, blockCx }) => {
-          const fill = b.found_by_us ? '#fbbf24' : '#38bdf8';
+          const fill = b.found_by_us ? COLOR_OUR_BLOCK : COLOR_PAYOUT_GEM;
           return (
             <g
               key={`pool-block-${b.block_hash || b.height}`}
@@ -2324,7 +2329,7 @@ export const PriceChart = memo(function PriceChart({
             const x = xScale(b.timestamp_ms);
             const isOurs = b.found_by_us;
             const isBip110 = !isOurs && b.signals_bip110 === true;
-            const color = isOurs ? '#fbbf24' : isBip110 ? '#fde047' : '#3b82f6';
+            const color = isOurs ? COLOR_OUR_BLOCK : isBip110 ? COLOR_BIP110 : COLOR_POOL_BLOCK;
             return (
               <g
                 key={`block-icon-${b.block_hash || b.height}`}
@@ -2520,14 +2525,14 @@ export const PriceChart = memo(function PriceChart({
                 <line
                   x1={x} x2={x}
                   y1={PADDING.top + 8} y2={chartHeight - PADDING.bottom}
-                  stroke="#c084fc" strokeWidth="1" strokeDasharray="2 3" opacity="0.4"
+                  stroke={COLOR_RETARGET} strokeWidth="1" strokeDasharray="2 3" opacity="0.4"
                   pointerEvents="none"
                 />
                 <rect x={x - 9} y={PADDING.top - 13} width={18} height={18} fill="transparent" />
                 <svg
                   x={x - 7} y={PADDING.top - 11}
                   width="14" height="14" viewBox="0 0 24 24"
-                  fill="none" stroke="#c084fc" strokeWidth="2"
+                  fill="none" stroke={COLOR_RETARGET} strokeWidth="2"
                   strokeLinecap="round" strokeLinejoin="round"
                   opacity="0.85"
                 >
