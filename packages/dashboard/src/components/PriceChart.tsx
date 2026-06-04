@@ -39,12 +39,7 @@ import {
   inferRetargetBlockHeight,
   projectSoloSeries,
 } from './HashrateChart';
-import {
-  IpChangeMarkers,
-  IpChangeTooltip,
-  type IpChangeMarkerEvent,
-  type IpChangeTooltipState,
-} from './IpChangeMarkers';
+import { type IpChangeMarkerEvent } from './IpChangeMarkers';
 import { applyExplorerTemplate } from '../lib/blockExplorer';
 import { getChartColor, parseOverrides } from '../lib/chartColors';
 import { copyToClipboard } from '../lib/clipboard';
@@ -413,8 +408,6 @@ export const PriceChart = memo(function PriceChart({
   const [rewardTip, setRewardTip] = useState<RewardTooltipState | null>(null);
   const [depositTip, setDepositTip] = useState<DepositTooltipState | null>(null);
   const [retargetTip, setRetargetTip] = useState<RetargetTooltipState | null>(null);
-  // #250: public-IP-change marker tooltip (router-icon hover).
-  const [ipChangeTip, setIpChangeTip] = useState<IpChangeTooltipState | null>(null);
   const [unpaidDropTip, setUnpaidDropTip] = useState<{
     tick_at: number; prev: number; cur: number;
     x: number; y: number; pinned: boolean;
@@ -1336,27 +1329,6 @@ export const PriceChart = memo(function PriceChart({
     [],
   );
   const closeRetargetTip = useCallback(() => setRetargetTip(null), []);
-
-  const onIpChangeEnter = useCallback(
-    (event: IpChangeMarkerEvent, e: React.MouseEvent) => {
-      setIpChangeTip((prev) => {
-        if (prev?.pinned) return prev;
-        return { event, x: e.clientX, y: e.clientY, pinned: false };
-      });
-    },
-    [],
-  );
-  const onIpChangeLeave = useCallback(() => {
-    setIpChangeTip((prev) => (prev?.pinned ? prev : null));
-  }, []);
-  const onIpChangeClick = useCallback(
-    (event: IpChangeMarkerEvent, e: React.MouseEvent) => {
-      e.stopPropagation();
-      setIpChangeTip({ event, x: e.clientX, y: e.clientY, pinned: true });
-    },
-    [],
-  );
-  const closeIpChangeTip = useCallback(() => setIpChangeTip(null), []);
 
   useEffect(() => {
     if (!retargetTip?.pinned) return;
@@ -2568,18 +2540,10 @@ export const PriceChart = memo(function PriceChart({
             );
           })}
 
-        {/* #250: public-IP change markers (router icon). Always shown. */}
-        <IpChangeMarkers
-          events={ipChangeEvents}
-          xScale={xScale}
-          dataMinX={dataMinX}
-          dataMaxX={dataMaxX}
-          topY={PADDING.top}
-          bottomY={chartHeight - PADDING.bottom}
-          onMarkerEnter={onIpChangeEnter}
-          onMarkerLeave={onIpChangeLeave}
-          onMarkerClick={onIpChangeClick}
-        />
+        {/* #250: public-IP change markers live on the hashrate chart
+            only - they correlate with delivered-vs-received hashrate
+            (Datum/Braiins re-establishing connections after a router
+            IP rotation), not with the price-axis content. */}
         </g>
 
         {hasRightAxis && rightAxis && (
@@ -2613,13 +2577,6 @@ export const PriceChart = memo(function PriceChart({
           locale={intlLocale}
           dateTimeLocale={dateTimeLocale}
           onClose={closeRetargetTip}
-        />
-      )}
-      {ipChangeTip && (
-        <IpChangeTooltip
-          tip={ipChangeTip}
-          onClose={closeIpChangeTip}
-          pinnedDomId="price-chart-pinned-ipchange-tooltip"
         />
       )}
       {rewardTip && (
