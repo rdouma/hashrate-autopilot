@@ -2,6 +2,10 @@
 
 ## 2026-06-04
 
+### `[UI]` Range-bound values now explain themselves on hover
+
+Several values in the side cards and stat bar update with the chart-range selector at the top of the Status page, but until now there was no way to tell which ones from the labels alone. Affected fields: the Braiins card's `rejection rate` row, the stat bar's `uptime` / `avg braiins` / `avg datum` / `avg ocean` / `avg cost vs hashprice` cards, and the mini `avg overpay (intent / settled)` cards. Tooltips on all of these now explicitly say the value is computed over the selected chart range and updates with the range selector. No visual marker — the discoverable hover pattern already used by every other row stays consistent. Translations cover en + nl + es.
+
 ### `[UI]` IP-change marker now uses the styled tooltip and locale-aware date/time (#250 follow-up)
 
 The router-icon marker on the hashrate and price charts used to surface a native browser tooltip via the SVG `<title>` element, with the date rendered through `toLocaleString()` (no locale arg) - so users with non-en preferences saw `6/4/2026, 3:22:17 AM` regardless of their dashboard language. Replaced with the same floating panel that pool-block and difficulty-retarget markers use: sky-300 uppercase header, monospace IP pair separated by the Unicode arrow `→`, and the timestamp formatted through `useFormatters().timestamp()` so it picks up both the display locale and the configured date layout. Hover to preview, click to pin. Translations cover en + nl + es.

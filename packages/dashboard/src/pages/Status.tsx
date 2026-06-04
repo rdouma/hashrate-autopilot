@@ -702,6 +702,7 @@ export function Status() {
                 maximumFractionDigits: 2,
               }).format(pct)}%`;
             })()}
+            tooltip={t`Share of Braiins-purchased shares the pool rejected, computed over the selected chart range. Server-side: (Δrejected_m / Δpurchased_m) × 100 across the first and last non-null cumulative counter samples in the range. Updates with the range selector above (3h / 6h / 24h / 1w / 1m / 1y / All). Healthy baseline is ~0.05 %; sustained values much above that mean shares are arriving stale (Datum behind on work) or invalid (worker identity misconfig, ASIC trouble).`}
           />
           {/* #144: gate on current-delivered-below-floor in addition to
               the daemon's debounce-held `below_floor_since` timer. The
@@ -1837,7 +1838,7 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
       <StatCard
         label={t`uptime`}
         value={uptime_pct !== null ? `${formatNumber(uptime_pct, { minimumFractionDigits: 1, maximumFractionDigits: 1 }, intlLocale)}%` : '\u2014'}
-        tooltip={t`Duration-weighted % of time with delivered hashrate > 0. Each tick is weighted by its actual duration (time until the next tick) so gaps after restarts count proportionally.`}
+        tooltip={t`Duration-weighted % of time with delivered hashrate > 0, computed over the selected chart range. Each tick is weighted by its actual duration (time until the next tick) so gaps after restarts count proportionally. Updates with the range selector above.`}
         color={
           uptime_pct === null
             ? 'text-slate-400'
@@ -1851,17 +1852,17 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
       <StatCard
         label={t`avg braiins`}
         value={denomination.formatHashrate(avg_hashrate_ph, intlLocale)}
-        tooltip={t`Duration-weighted average of the hashrate Braiins reports delivering. Includes downtime (where delivered = 0) so a bad stretch shows up in the average, not just the live card.`}
+        tooltip={t`Duration-weighted average of the hashrate Braiins reports delivering, computed over the selected chart range. Includes downtime (where delivered = 0) so a bad stretch shows up in the average, not just the live card. Updates with the range selector above.`}
       />
       <StatCard
         label={t`avg datum`}
         value={denomination.formatHashrate(avg_datum_hashrate_ph, intlLocale)}
-        tooltip={t`Duration-weighted average of the hashrate Datum measures at the gateway. A sustained gap below Avg Braiins means Braiins is billing for hashrate Datum never saw arrive.`}
+        tooltip={t`Duration-weighted average of the hashrate Datum measures at the gateway, computed over the selected chart range. A sustained gap below Avg Braiins means Braiins is billing for hashrate Datum never saw arrive. Updates with the range selector above.`}
       />
       <StatCard
         label={t`avg ocean`}
         value={denomination.formatHashrate(avg_ocean_hashrate_ph, intlLocale)}
-        tooltip={t`Duration-weighted average of the hashrate Ocean credits to our payout address. Each tick (every 60 s) the daemon calls Ocean's /v1/user_hashrate endpoint and reads the \`hashrate_300s\` field - Ocean's own 5-minute sliding-window estimate for this wallet. So: sampled every minute, each sample is a 5-minute smoothed value. A sustained gap below Avg Braiins / Avg Datum means the pool isn't crediting work we think we delivered.`}
+        tooltip={t`Duration-weighted average of the hashrate Ocean credits to our payout address, computed over the selected chart range. Each tick (every 60 s) the daemon calls Ocean's /v1/user_hashrate endpoint and reads the \`hashrate_300s\` field - Ocean's own 5-minute sliding-window estimate for this wallet. So: sampled every minute, each sample is a 5-minute smoothed value. A sustained gap below Avg Braiins / Avg Datum means the pool isn't crediting work we think we delivered. Updates with the range selector above.`}
       />
       <StatCard
         label={t`avg cost delivered`}
@@ -1871,7 +1872,7 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
       <StatCard
         label={t`avg cost vs hashprice`}
         value={avg_overpay_vs_hashprice_sat_per_ph_day !== null ? denomination.formatSatPerPhDay(Math.round(avg_overpay_vs_hashprice_sat_per_ph_day), intlLocale) : '\u2014'}
-        tooltip={t`(avg cost delivered) minus the delta-weighted average hashprice during periods we were actually billed. Negative means we paid below break-even (good - cheaper than mining at current difficulty), positive means above. Same delta weighting as the avg cost card so the two stay consistent.`}
+        tooltip={t`(avg cost delivered) minus the delta-weighted average hashprice during periods we were actually billed, computed over the selected chart range. Negative means we paid below break-even (good - cheaper than mining at current difficulty), positive means above. Same delta weighting as the avg cost card so the two stay consistent. Updates with the range selector above.`}
         color={
           avg_overpay_vs_hashprice_sat_per_ph_day === null
             ? 'text-slate-100'
