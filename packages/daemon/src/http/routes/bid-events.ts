@@ -123,6 +123,59 @@ export async function registerBidEventsRoute(
       return { events: rows.map(toView) };
     },
   );
+
+  // #256 follow-up: History page endpoints.
+  //
+  // GET /api/bid-history?limit=20&before_ms=<cursor>
+  //   Returns paginated bid summaries grouped by braiins_order_id,
+  //   newest-first. Cursor is `last_event_at_ms` from the oldest row
+  //   of the previous page.
+  app.get<{ Querystring: { limit?: string; before_ms?: string } }>(
+    '/api/bid-history',
+    async (req) => {
+      const limit = Math.max(
+        1,
+        Math.min(100, parseInt(req.query.limit ?? '20', 10) || 20),
+      );
+      const beforeMs = req.query.before_ms
+        ? Number.parseInt(req.query.before_ms, 10)
+        : undefined;
+      const args =
+        beforeMs && beforeMs > 0
+          ? { limit, beforeMs }
+          : { limit };
+      const summaries = await deps.bidEventsRepo.listBidSummaries(args);
+      return {
+        bids: summaries.map((s) => ({
+          braiins_order_id: s.braiins_order_id,
+          first_event_at_ms: s.first_event_at_ms,
+          last_event_at_ms: s.last_event_at_ms,
+          first_price_sat_per_ph_day:
+            s.first_price_sat !== null ? s.first_price_sat / EH_PER_PH : null,
+          last_price_sat_per_ph_day:
+            s.last_price_sat !== null ? s.last_price_sat / EH_PER_PH : null,
+          event_count: s.event_count,
+          status: s.has_cancel === 1 ? 'cancelled' : 'closed_or_active',
+        })),
+        next_cursor_ms:
+          summaries.length === limit
+            ? summaries[summaries.length - 1]!.last_event_at_ms
+            : null,
+      };
+    },
+  );
+
+  // GET /api/bid-history/:order_id/events
+  //   All events for one specific Braiins order, oldest first.
+  app.get<{ Params: { order_id: string } }>(
+    '/api/bid-history/:order_id/events',
+    async (req) => {
+      const rows = await deps.bidEventsRepo.listEventsForOrder(
+        req.params.order_id,
+      );
+      return { events: rows.map(toView) };
+    },
+  );
 }
 
 function toView(r: {

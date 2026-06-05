@@ -390,7 +390,7 @@ msgstr "confirmado {0}"
 msgid "Acknowledged and resolved ({0})"
 msgstr "Confirmado y resuelto ({0})"
 
-#: src/components/OrderHistoryCard.tsx
+#: src/pages/History.tsx
 msgid "Action"
 msgstr "Acción"
 
@@ -1344,9 +1344,9 @@ msgstr "Cadencia entre reintentos cuando una alerta no se entrega o el estado "
 msgid "calculating…"
 msgstr "calculando…"
 
-#: src/components/OrderHistoryCard.tsx
 #: src/components/PriceChart.tsx
 #: src/pages/Config.tsx
+#: src/pages/History.tsx
 msgid "cancel"
 msgstr "cancelar"
 
@@ -1380,6 +1380,10 @@ msgstr "¿Cancelar la oferta {0}? Braiins reembolsará aproximadamente {1} de "
 msgid "cancel event marker"
 msgstr "marcador de cancelación"
 
+#: src/pages/History.tsx
+msgid "cancelled"
+msgstr "cancelada"
+
 #: src/lib/labels.ts
 msgid "Cancelled"
 msgstr "Cancelada"
@@ -1402,8 +1406,8 @@ msgid "change"
 msgstr "cambio"
 
 #: src/components/OrderHistoryCard.tsx
-msgid "Change"
-msgstr "Cambio"
+#~ msgid "Change"
+#~ msgstr "Cambio"
 
 #: src/components/Layout.tsx
 msgid "changelog"
@@ -1463,6 +1467,10 @@ msgstr "Clic para expandir"
 #: src/components/PriceChart.tsx
 msgid "close"
 msgstr "cerrar"
+
+#: src/pages/History.tsx
+msgid "closed / active"
+msgstr "cerrada / activa"
 
 #: src/pages/Status.tsx
 msgid "closed bids"
@@ -1588,9 +1596,9 @@ msgstr "copiar JSON"
 msgid "copy URL"
 msgstr "copiar URL"
 
-#: src/components/OrderHistoryCard.tsx
 #: src/components/PriceChart.tsx
 #: src/pages/Config.tsx
+#: src/pages/History.tsx
 msgid "create"
 msgstr "crear"
 
@@ -1606,6 +1614,7 @@ msgstr "Crear oferta"
 msgid "create event marker"
 msgstr "marcador de creación"
 
+#: src/pages/History.tsx
 #: src/pages/Status.tsx
 msgid "created"
 msgstr "creada"
@@ -1852,6 +1861,10 @@ msgstr "tasa de entrega (durante la oferta)"
 msgid "delta"
 msgstr "delta"
 
+#: src/pages/History.tsx
+msgid "Delta"
+msgstr "Delta"
+
 #: src/pages/Status.tsx
 msgid "Delta-consumed-weighted average of (effective rate paid - fillable ask) "
 "per tick. Same delta weighting as the avg cost delivered card so the two "
@@ -2088,9 +2101,9 @@ msgstr "p.ej. http://192.168.1.121:8332 - tu endpoint RPC de Bitcoin Knots."
 msgid "Edit color"
 msgstr "Editar color"
 
-#: src/components/OrderHistoryCard.tsx
 #: src/components/PriceChart.tsx
 #: src/pages/Config.tsx
+#: src/pages/History.tsx
 msgid "edit price"
 msgstr "editar precio"
 
@@ -2102,9 +2115,9 @@ msgstr "Editar precio"
 msgid "EDIT PRICE"
 msgstr "EDIT PRICE"
 
-#: src/components/OrderHistoryCard.tsx
 #: src/components/PriceChart.tsx
 #: src/pages/Config.tsx
+#: src/pages/History.tsx
 msgid "edit speed"
 msgstr "editar velocidad"
 
@@ -2243,6 +2256,10 @@ msgstr "Aunque el endpoint se llama <0>/umbrel-api</0>, vive dentro de Datum "
 "Gateway - compilado mediante <1>#ifdef DATUM_API_FOR_UMBREL</1> y "
 "funciona en cualquier build de Datum con ese flag, sin importar la "
 "plataforma anfitriona."
+
+#: src/pages/History.tsx
+msgid "events"
+msgstr "eventos"
 
 #: src/pages/Config.tsx
 msgid "Every restart resets to DRY_RUN. You explicitly flip to LIVE from the "
@@ -2567,6 +2584,10 @@ msgstr "Ocultar"
 msgid "Hide value"
 msgstr "Ocultar valor"
 
+#: src/components/Layout.tsx
+msgid "History"
+msgstr "Historial"
+
 #: src/pages/Status.tsx
 msgid "host"
 msgstr "host"
@@ -2876,9 +2897,17 @@ msgstr "Objetivo de hashrate efectivo en vivo. Salta a cheap_target_hashrate_ph 
 msgid "load older"
 msgstr "cargar más antiguas"
 
+#: src/pages/History.tsx
+msgid "Load older bids"
+msgstr "Cargar ofertas anteriores"
+
 #: src/components/PriceChart.tsx
 msgid "loading decision…"
 msgstr "cargando decisión…"
+
+#: src/pages/History.tsx
+msgid "Loading events…"
+msgstr "Cargando eventos…"
 
 #: src/pages/Status.tsx
 msgid "Loading or daemon restart required."
@@ -2890,6 +2919,7 @@ msgstr "Cargando o se requiere reiniciar el daemon."
 msgid "loading…"
 msgstr "cargando…"
 
+#: src/pages/History.tsx
 #: src/pages/Setup.tsx
 msgid "Loading…"
 msgstr "Cargando…"
@@ -2910,8 +2940,8 @@ msgstr "suerte despues"
 msgid "luck before"
 msgstr "suerte antes"
 
-#: src/components/OrderHistoryCard.tsx
 #: src/components/PriceChart.tsx
+#: src/pages/History.tsx
 msgid "manual"
 msgstr "manual"
 
@@ -3194,14 +3224,19 @@ msgid "No AxeOS devices found on the local subnet."
 msgstr "No se encontraron dispositivos AxeOS en la subred local."
 
 #: src/components/OrderHistoryCard.tsx
-msgid "No bid events in the selected range. Widen the chart range above to see "
-"older events."
-msgstr "No hay eventos de oferta en el rango seleccionado. Amplía el rango "
-"arriba para ver eventos más antiguos."
+#~ msgid "No bid events in the selected range. Widen the chart range above to see "
+#~ "older events."
+#~ msgstr "No hay eventos de oferta en el rango seleccionado. Amplía el rango "
+#~ "arriba para ver eventos más antiguos."
 
 #: src/pages/Status.tsx
 msgid "no bids on this account"
 msgstr "sin ofertas en esta cuenta"
+
+#: src/pages/History.tsx
+msgid "No bids recorded yet. Once the controller submits its first bid, it'll "
+"show up here."
+msgstr "Aún no se registraron ofertas. En cuanto el controlador envíe su primera oferta, aparecerá aquí."
 
 #: src/pages/Config.tsx
 msgid "no change needed"
@@ -3214,6 +3249,10 @@ msgstr "aún no se ha observado ningún cambio"
 #: src/pages/Config.tsx
 msgid "No devices yet. Add one below."
 msgstr "Aun no hay dispositivos. Anade uno abajo."
+
+#: src/pages/History.tsx
+msgid "No events recorded for this bid."
+msgstr "No hay eventos registrados para esta oferta."
 
 #: src/pages/Status.tsx
 msgid "No hashrate available on the market right now."
@@ -3588,11 +3627,10 @@ msgstr "Opcional. Cuando se establece, cada mensaje de Telegram de este daemon "
 "bot/chat. Déjalo vacío para enviar mensajes sin prefijo."
 
 #: src/components/OrderHistoryCard.tsx
-msgid "Order"
-msgstr "Orden"
+#~ msgid "Order"
+#~ msgstr "Orden"
 
-#: src/components/OrderHistoryCard.tsx
-#: src/pages/Status.tsx
+#: src/pages/History.tsx
 msgid "Order history"
 msgstr "Historial de órdenes"
 
@@ -4135,7 +4173,7 @@ msgstr "Reorganizar"
 msgid "Rearrange cards"
 msgstr "Reorganizar tarjetas"
 
-#: src/components/OrderHistoryCard.tsx
+#: src/pages/History.tsx
 msgid "Reason"
 msgstr "Razón"
 
@@ -4563,8 +4601,8 @@ msgid "showing {0} of {totalCount}"
 msgstr "mostrando {0} de {totalCount}"
 
 #: src/components/OrderHistoryCard.tsx
-msgid "Showing the most recent {MAX_ROWS} events for this range."
-msgstr "Mostrando los {MAX_ROWS} eventos más recientes para este rango."
+#~ msgid "Showing the most recent {MAX_ROWS} events for this range."
+#~ msgstr "Mostrando los {MAX_ROWS} eventos más recientes para este rango."
 
 #: src/pages/Login.tsx
 msgid "sign in"
@@ -5133,7 +5171,7 @@ msgstr "Lo que nos ganó este último bloque, estimado como block_reward * "
 msgid "What to send to Telegram"
 msgstr "Qué enviar a Telegram"
 
-#: src/components/OrderHistoryCard.tsx
+#: src/pages/History.tsx
 msgid "When"
 msgstr "Cuándo"
 

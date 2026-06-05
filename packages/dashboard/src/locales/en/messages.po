@@ -384,7 +384,7 @@ msgstr "acknowledged {0}"
 msgid "Acknowledged and resolved ({0})"
 msgstr "Acknowledged and resolved ({0})"
 
-#: src/components/OrderHistoryCard.tsx
+#: src/pages/History.tsx
 msgid "Action"
 msgstr "Action"
 
@@ -1312,9 +1312,9 @@ msgstr "Cadence between retries when an alert fails to deliver or the bad state 
 msgid "calculating…"
 msgstr "calculating…"
 
-#: src/components/OrderHistoryCard.tsx
 #: src/components/PriceChart.tsx
 #: src/pages/Config.tsx
+#: src/pages/History.tsx
 msgid "cancel"
 msgstr "cancel"
 
@@ -1348,6 +1348,10 @@ msgstr "Cancel bid {0}? About {1} of unconsumed budget will be refunded by "
 msgid "cancel event marker"
 msgstr "cancel event marker"
 
+#: src/pages/History.tsx
+msgid "cancelled"
+msgstr "cancelled"
+
 #: src/lib/labels.ts
 msgid "Cancelled"
 msgstr "Cancelled"
@@ -1370,8 +1374,8 @@ msgid "change"
 msgstr "change"
 
 #: src/components/OrderHistoryCard.tsx
-msgid "Change"
-msgstr "Change"
+#~ msgid "Change"
+#~ msgstr "Change"
 
 #: src/components/Layout.tsx
 msgid "changelog"
@@ -1431,6 +1435,10 @@ msgstr "Click to expand"
 #: src/components/PriceChart.tsx
 msgid "close"
 msgstr "close"
+
+#: src/pages/History.tsx
+msgid "closed / active"
+msgstr "closed / active"
 
 #: src/pages/Status.tsx
 msgid "closed bids"
@@ -1556,9 +1564,9 @@ msgstr "copy JSON"
 msgid "copy URL"
 msgstr "copy URL"
 
-#: src/components/OrderHistoryCard.tsx
 #: src/components/PriceChart.tsx
 #: src/pages/Config.tsx
+#: src/pages/History.tsx
 msgid "create"
 msgstr "create"
 
@@ -1574,6 +1582,7 @@ msgstr "Create bid"
 msgid "create event marker"
 msgstr "create event marker"
 
+#: src/pages/History.tsx
 #: src/pages/Status.tsx
 msgid "created"
 msgstr "created"
@@ -1816,6 +1825,10 @@ msgstr "delivery rate (while bidding)"
 msgid "delta"
 msgstr "delta"
 
+#: src/pages/History.tsx
+msgid "Delta"
+msgstr "Delta"
+
 #: src/pages/Status.tsx
 msgid "Delta-consumed-weighted average of (effective rate paid - fillable ask) "
 "per tick. Same delta weighting as the avg cost delivered card so the two "
@@ -2041,9 +2054,9 @@ msgstr "e.g. http://192.168.1.121:8332 - your Bitcoin Knots RPC endpoint."
 msgid "Edit color"
 msgstr "Edit color"
 
-#: src/components/OrderHistoryCard.tsx
 #: src/components/PriceChart.tsx
 #: src/pages/Config.tsx
+#: src/pages/History.tsx
 msgid "edit price"
 msgstr "edit price"
 
@@ -2055,9 +2068,9 @@ msgstr "Edit price"
 msgid "EDIT PRICE"
 msgstr "EDIT PRICE"
 
-#: src/components/OrderHistoryCard.tsx
 #: src/components/PriceChart.tsx
 #: src/pages/Config.tsx
+#: src/pages/History.tsx
 msgid "edit speed"
 msgstr "edit speed"
 
@@ -2195,6 +2208,10 @@ msgstr "Even though the endpoint is named <0>/umbrel-api</0>, it lives inside "
 "Datum Gateway itself - compiled in via <1>#ifdef "
 "DATUM_API_FOR_UMBREL</1> and works on any Datum build with that flag "
 "set, regardless of host platform."
+
+#: src/pages/History.tsx
+msgid "events"
+msgstr "events"
 
 #: src/pages/Config.tsx
 msgid "Every restart resets to DRY_RUN. You explicitly flip to LIVE from the "
@@ -2513,6 +2530,10 @@ msgstr "Hide"
 msgid "Hide value"
 msgstr "Hide value"
 
+#: src/components/Layout.tsx
+msgid "History"
+msgstr "History"
+
 #: src/pages/Status.tsx
 msgid "host"
 msgstr "host"
@@ -2813,9 +2834,17 @@ msgstr "Live effective hashrate target. Steps to cheap_target_hashrate_ph when "
 msgid "load older"
 msgstr "load older"
 
+#: src/pages/History.tsx
+msgid "Load older bids"
+msgstr "Load older bids"
+
 #: src/components/PriceChart.tsx
 msgid "loading decision…"
 msgstr "loading decision…"
+
+#: src/pages/History.tsx
+msgid "Loading events…"
+msgstr "Loading events…"
 
 #: src/pages/Status.tsx
 msgid "Loading or daemon restart required."
@@ -2827,6 +2856,7 @@ msgstr "Loading or daemon restart required."
 msgid "loading…"
 msgstr "loading…"
 
+#: src/pages/History.tsx
 #: src/pages/Setup.tsx
 msgid "Loading…"
 msgstr "Loading…"
@@ -2847,8 +2877,8 @@ msgstr "luck after"
 msgid "luck before"
 msgstr "luck before"
 
-#: src/components/OrderHistoryCard.tsx
 #: src/components/PriceChart.tsx
+#: src/pages/History.tsx
 msgid "manual"
 msgstr "manual"
 
@@ -3126,14 +3156,20 @@ msgid "No AxeOS devices found on the local subnet."
 msgstr "No AxeOS devices found on the local subnet."
 
 #: src/components/OrderHistoryCard.tsx
-msgid "No bid events in the selected range. Widen the chart range above to see "
-"older events."
-msgstr "No bid events in the selected range. Widen the chart range above to see "
-"older events."
+#~ msgid "No bid events in the selected range. Widen the chart range above to see "
+#~ "older events."
+#~ msgstr "No bid events in the selected range. Widen the chart range above to see "
+#~ "older events."
 
 #: src/pages/Status.tsx
 msgid "no bids on this account"
 msgstr "no bids on this account"
+
+#: src/pages/History.tsx
+msgid "No bids recorded yet. Once the controller submits its first bid, it'll "
+"show up here."
+msgstr "No bids recorded yet. Once the controller submits its first bid, it'll "
+"show up here."
 
 #: src/pages/Config.tsx
 msgid "no change needed"
@@ -3146,6 +3182,10 @@ msgstr "no change observed yet"
 #: src/pages/Config.tsx
 msgid "No devices yet. Add one below."
 msgstr "No devices yet. Add one below."
+
+#: src/pages/History.tsx
+msgid "No events recorded for this bid."
+msgstr "No events recorded for this bid."
 
 #: src/pages/Status.tsx
 msgid "No hashrate available on the market right now."
@@ -3510,11 +3550,10 @@ msgstr "Optional. When set, every Telegram message from this daemon is prefixed 
 "messages without a prefix."
 
 #: src/components/OrderHistoryCard.tsx
-msgid "Order"
-msgstr "Order"
+#~ msgid "Order"
+#~ msgstr "Order"
 
-#: src/components/OrderHistoryCard.tsx
-#: src/pages/Status.tsx
+#: src/pages/History.tsx
 msgid "Order history"
 msgstr "Order history"
 
@@ -4050,7 +4089,7 @@ msgstr "Rearrange"
 msgid "Rearrange cards"
 msgstr "Rearrange cards"
 
-#: src/components/OrderHistoryCard.tsx
+#: src/pages/History.tsx
 msgid "Reason"
 msgstr "Reason"
 
@@ -4470,8 +4509,8 @@ msgid "showing {0} of {totalCount}"
 msgstr "showing {0} of {totalCount}"
 
 #: src/components/OrderHistoryCard.tsx
-msgid "Showing the most recent {MAX_ROWS} events for this range."
-msgstr "Showing the most recent {MAX_ROWS} events for this range."
+#~ msgid "Showing the most recent {MAX_ROWS} events for this range."
+#~ msgstr "Showing the most recent {MAX_ROWS} events for this range."
 
 #: src/pages/Login.tsx
 msgid "sign in"
@@ -5032,7 +5071,7 @@ msgstr "What this last block earned us, estimated as block_reward * "
 msgid "What to send to Telegram"
 msgstr "What to send to Telegram"
 
-#: src/components/OrderHistoryCard.tsx
+#: src/pages/History.tsx
 msgid "When"
 msgstr "When"
 

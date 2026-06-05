@@ -2,6 +2,14 @@
 
 ## 2026-06-05
 
+### `[Feature]` Standalone /history page with bid-grouped event log (#256 follow-up)
+
+Replaces the bottom-of-Status `OrderHistoryCard` from build 612 with a dedicated `/history` route (new "History" tab between Alerts and Config). Each bid renders as a collapsible parent row with summary stats (created → last event, first price → last price, event count, status badge); click to expand the bid and load every event for that order, oldest first. Modification table columns are `When | Action | Delta | Reason` (matches what Braiins's own Buy Order History tab shows). Bid headers paginate with a "Load older bids" button at the bottom — no more 200-row cap. Server-side: new `GET /api/bid-history?limit=N&before_ms=cursor` for the paginated bid summaries, `GET /api/bid-history/:order_id/events` for one bid's full event list. nl + es translations included.
+
+### `[Fix]` Tiles bar auto-flows past 6 columns + add-tile affordance no longer eats a row (#266 follow-up x2)
+
+Build 614's `lg:grid-cols-6` cap meant a wide 4K screen could only show 6 tiles per row even with room for 10+. Switched to `grid-template-columns: repeat(auto-fit, minmax(160px, 1fr))` so the grid stretches to the natural maximum at each viewport size. Same pass: the always-visible dashed "+ add" tile from build 614 consumed a full extra row whenever the tile count wasn't a multiple of the column count. Replaced with a slim ghost-tile-sized `+` button that sits at the row's end, still discoverable but doesn't eat vertical space.
+
 ### `[Fix]` Configurable tiles: picker now works in rearrange mode + visual styling matches the old StatCard (#266 follow-up)
 
 Two regressions caught immediately on first try: (1) the picker chevron and `+ add` button didn't respond to clicks while the page was in rearrange mode — SortableDashboard wraps block content in `pointer-events-none` while rearranging (intentional per #244 so a stray tap can't fire a button mid-drag), but that also killed the picker since the picker *is* the tile customisation flow. Picker controls now carry `pointer-events-auto` so they're exempt from the block-level inert wrapper while the rest of the content stays inert. (2) The tile rendering didn't match the original StatCard idiom — the value and unit ran together in the same big font. Now matches: centered value (big mono), slim grey unit caption below, sat symbol where appropriate. The whole tile header strip is clickable now (not just the tiny chevron triangle).

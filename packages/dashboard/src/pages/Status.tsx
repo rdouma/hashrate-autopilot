@@ -15,7 +15,6 @@ import {
 
 import { Bip110ScanCard } from '../components/Bip110ScanCard';
 import { SoloMinersCard } from '../components/SoloMinersCard';
-import { OrderHistoryCard } from '../components/OrderHistoryCard';
 import { TilesBar } from '../components/TilesBar';
 import { parseDashboardTiles } from '@hashrate-autopilot/shared';
 import { HashrateChart, type HashrateRightAxis } from '../components/HashrateChart';
@@ -971,13 +970,6 @@ export function Status() {
       ) : null,
     bip110: <Bip110ScanCard />,
     solo: <SoloMinersCard />,
-    // #256: Braiins-style order-change history.
-    order_history: (
-      <OrderHistoryCard
-        chartRange={chartRange}
-        chartColorOverrides={configQuery.data?.config?.chart_color_overrides}
-      />
-    ),
   };
 
   // #244: render blocks in the operator's saved order. Skip any whose
@@ -996,7 +988,6 @@ export function Status() {
     proposals: t`Last tick proposals`,
     bip110: t`BIP-110 scan`,
     solo: t`Bitaxe miners`,
-    order_history: t`Order history`,
   };
   const orderedBlocks: DashboardBlock[] = cardOrder.order
     .filter((id) => blockNodes[id] != null)

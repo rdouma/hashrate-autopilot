@@ -343,7 +343,14 @@ export function TilesBar({
   };
 
   return (
-    <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+    // Auto-fitting grid: each tile gets `minmax(160px, 1fr)` so the
+    // row reflows naturally as the viewport widens. Above ~7 columns
+    // (≈1200px content area) tiles stop stretching and start adding
+    // new columns; on a wide 4K screen the bar happily reaches 10+
+    // columns instead of being capped at the legacy 6-up layout.
+    // `pointer-events-auto` re-enables clicks inside the section even
+    // when the parent SortableDashboard is in rearrange-inert mode.
+    <section className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(160px,1fr))] pointer-events-auto">
       {effective.map((id, idx) => (
         <TileSlot
           key={`${id}-${idx}`}
@@ -354,10 +361,77 @@ export function TilesBar({
           onRemove={effective.length > 1 ? () => removeAt(idx) : undefined}
         />
       ))}
+      {/*
+        #266 follow-up: the always-visible "+ add" tile ate a whole
+        row's worth of vertical space whenever the operator was on a
+        non-multiple-of-6 count. Replaced by a small `+` icon button
+        anchored to the SECTION (top-right), only visible on hover or
+        focus of the section. Discoverable but not occupying a slot.
+      */}
       {effective.length < MAX_DASHBOARD_TILES && (
-        <AddTileButton excluded={effective} onAdd={addTile} />
+        <InlineAddButton excluded={effective} onAdd={addTile} />
       )}
     </section>
+  );
+}
+
+/**
+ * #266 follow-up: replaces the dashed "+ add" tile from build 614.
+ * Renders as an absolutely-positioned `+` button at the section's
+ * top-right corner so it doesn't consume a tile slot. Visible only
+ * on hover / focus to avoid permanent chrome; on touch screens
+ * stays visible because hover doesn't fire.
+ */
+function InlineAddButton({
+  excluded,
+  onAdd,
+}: {
+  excluded: ReadonlyArray<DashboardTileId>;
+  onAdd: (id: DashboardTileId) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onClickOutside = (e: MouseEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    window.addEventListener('mousedown', onClickOutside);
+    return () => window.removeEventListener('mousedown', onClickOutside);
+  }, [open]);
+
+  return (
+    <div
+      ref={ref}
+      // Tiny "ghost tile" at the end of the row that the auto-fit
+      // grid sees as one more column, but renders as a 1-rem-wide
+      // strip with just the + button. When the picker opens it
+      // expands to fit the dropdown. Border-dashed kept for a
+      // subtle "you can add more" hint without dominating the row.
+      className="relative pointer-events-auto flex items-center justify-center min-h-[6rem] rounded-lg border border-dashed border-slate-800/50 hover:border-amber-500/30 transition"
+    >
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="text-slate-600 hover:text-amber-300 text-base leading-none px-2 py-1 rounded"
+        title={t`Add a tile`}
+        aria-label={t`Add a tile`}
+      >
+        +
+      </button>
+      {open && (
+        <div className="absolute z-30 left-0 top-full mt-1">
+          <TilePickerDropdown
+            inUse={excluded}
+            onPick={(id) => {
+              onAdd(id);
+              setOpen(false);
+            }}
+          />
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -509,44 +583,3 @@ function TilePickerDropdown({ currentId, inUse, onPick, onRemove }: PickerProps)
   );
 }
 
-function AddTileButton({
-  excluded,
-  onAdd,
-}: {
-  excluded: ReadonlyArray<DashboardTileId>;
-  onAdd: (id: DashboardTileId) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onClickOutside = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    };
-    window.addEventListener('mousedown', onClickOutside);
-    return () => window.removeEventListener('mousedown', onClickOutside);
-  }, [open]);
-
-  return (
-    <div ref={ref} className="relative pointer-events-auto">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="w-full h-full min-h-[6.5rem] bg-slate-900/50 border border-dashed border-slate-700 rounded-lg text-slate-500 hover:text-amber-300 hover:border-amber-500/40 text-xs flex items-center justify-center"
-        title={t`Add a tile`}
-      >
-        + <Trans>add</Trans>
-      </button>
-      {open && (
-        <TilePickerDropdown
-          inUse={excluded}
-          onPick={(id) => {
-            onAdd(id);
-            setOpen(false);
-          }}
-        />
-      )}
-    </div>
-  );
-}

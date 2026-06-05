@@ -190,6 +190,23 @@ export interface MetricPoint {
   primary_bid_shares_rejected_m: number | null;
 }
 
+/** #256 follow-up: one bid's roll-up shown as a collapsible header on the History page. */
+export interface BidHistorySummary {
+  braiins_order_id: string;
+  first_event_at_ms: number;
+  last_event_at_ms: number;
+  first_price_sat_per_ph_day: number | null;
+  last_price_sat_per_ph_day: number | null;
+  event_count: number;
+  status: 'cancelled' | 'closed_or_active';
+}
+
+export interface BidHistoryPage {
+  bids: BidHistorySummary[];
+  /** Pass to `bidHistorySummaries` to fetch the next page; null when this was the last page. */
+  next_cursor_ms: number | null;
+}
+
 export interface BidEventView {
   id: number;
   occurred_at: number;
@@ -702,6 +719,15 @@ export const api = {
       `/api/bid-events?since=${since}&until=${until}${
         visibleSpan != null ? `&span=${visibleSpan}` : ''
       }`,
+    ),
+  // #256 follow-up: history page endpoints.
+  bidHistorySummaries: (limit = 20, beforeMs?: number) =>
+    request<BidHistoryPage>(
+      `/api/bid-history?limit=${limit}${beforeMs ? `&before_ms=${beforeMs}` : ''}`,
+    ),
+  bidHistoryEvents: (orderId: string) =>
+    request<{ events: BidEventView[] }>(
+      `/api/bid-history/${encodeURIComponent(orderId)}/events`,
     ),
   // #250: public-IP change markers for the charts.
   ipChangesViewport: (since: number, until: number) =>

@@ -32,6 +32,7 @@ function useNavItems() {
   return [
     { label: t`Status`, to: '/' },
     { label: t`Alerts`, to: '/alerts' },
+    { label: t`History`, to: '/history' },
     { label: t`Config`, to: '/config' },
   ];
 }

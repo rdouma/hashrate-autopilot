@@ -14,6 +14,7 @@ import { LocaleContext, useLocaleState } from './lib/locale';
 import { migrateLegacyStorageKeys } from './lib/storage-key-migration';
 import { Alerts } from './pages/Alerts';
 import { Config } from './pages/Config';
+import { History } from './pages/History';
 import { Login } from './pages/Login';
 import { Setup } from './pages/Setup';
 import { Status } from './pages/Status';
@@ -61,6 +62,7 @@ function AppShell() {
                   >
                     <Route index element={<Status />} />
                     <Route path="/alerts" element={<Alerts />} />
+                    <Route path="/history" element={<History />} />
                     <Route path="/config" element={<Config />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Route>
