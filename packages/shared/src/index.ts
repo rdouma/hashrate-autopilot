@@ -3,3 +3,4 @@ export * from './units.js';
 export * from './decision.js';
 export * from './chart-ranges.js';
 export * from './chart-axis.js';
+export * from './dashboard-tiles.js';

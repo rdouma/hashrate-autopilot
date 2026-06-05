@@ -135,6 +135,7 @@ describe('openDatabase - migrations', () => {
       '0107_scrub_orphan_acceptance_data.sql',
       '0108_dashboard_card_order.sql',
       '0109_ip_change_events.sql',
+      '0110_dashboard_tiles.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });

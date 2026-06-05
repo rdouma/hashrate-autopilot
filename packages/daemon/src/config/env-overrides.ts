@@ -238,6 +238,13 @@ const APP_CONFIG_ENV: {
     varName: 'BHA_CHART_COLOR_OVERRIDES',
     coerce: asString,
   },
+  // #266: JSON array of StatsBar tile ids in the operator's chosen
+  // order. Dashboard PATCHes on tile-picker change; env override
+  // exists for parity with the rest of the config surface.
+  dashboard_tiles: {
+    varName: 'BHA_DASHBOARD_TILES',
+    coerce: asString,
+  },
   // #244: JSON array of dashboard block IDs in the operator's chosen
   // order. The dashboard PATCHes it on drag; env override exists only
   // for completeness/parity with the rest of the config surface.

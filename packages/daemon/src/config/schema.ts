@@ -461,6 +461,14 @@ export const AppConfigSchema = z.object({
   // chart.
   chart_color_overrides: z.string().default('{}'),
 
+  // #266: configurable StatsBar tiles. JSON array of catalogue tile
+  // ids (e.g. ["uptime", "avg_braiins", "hashrate_target"]). Empty
+  // array means "use the dashboard's default set" so existing installs
+  // preserve the build-611 look. Dashboard does the catalogue lookup
+  // and renders that many tiles; ids that aren't in the catalogue (a
+  // tile removed in a future release) are filtered at render time.
+  dashboard_tiles: z.string().default('[]'),
+
   // #244: RESERVED / currently dormant. JSON array of dashboard block
   // IDs for the drag-to-reorder feature. The operator chose per-device
   // ordering (a phone and a desktop want different layouts), so the
@@ -661,6 +669,8 @@ export const APP_CONFIG_DEFAULTS: Omit<
   display_date_layout: 'system',
   // #238: empty JSON object = "use every series's built-in default".
   chart_color_overrides: '{}',
+  // #266: empty JSON array = "use the dashboard's default tile set".
+  dashboard_tiles: '[]',
   // #244: empty JSON array = "use the built-in dashboard block order".
   dashboard_card_order: '[]',
 
