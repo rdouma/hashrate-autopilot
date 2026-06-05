@@ -2752,8 +2752,24 @@ function ScanLocalNetworkButton() {
         />
         <button
           type="button"
-          onClick={() => startMutation.mutate()}
-          disabled={startMutation.isPending || isRunning}
+          // #259: when the operator closes the scan dialog mid-run, the
+          // scan keeps running server-side. Before the fix the button
+          // was disabled whenever `isRunning` was true, even when the
+          // dialog was closed - the operator had no way to re-open the
+          // dialog to see progress or to cancel and retry. Now: while
+          // a scan is running we *re-open* the dialog on click instead
+          // of trying to start a new one (server would reject with
+          // "scan already in progress" anyway). When no scan is
+          // running, click starts a fresh scan as before. Only the
+          // brief start-request round-trip keeps the button disabled.
+          onClick={() => {
+            if (isRunning) {
+              setOpen(true);
+            } else {
+              startMutation.mutate();
+            }
+          }}
+          disabled={startMutation.isPending}
           className="text-[11px] text-amber-300 border border-amber-700 rounded px-2 py-0.5 hover:bg-amber-500/10 disabled:opacity-40"
         >
           {isRunning ? <Trans>scanning…</Trans> : <Trans>Scan local network</Trans>}

@@ -23,6 +23,9 @@ export const DEFAULT_BLOCK_ORDER = [
   'pipeline',
   'bids',
   'finance',
+  // #256: Braiins-style order-change log. Sits between Profit & Loss
+  // and the rarely-populated proposals row.
+  'order_history',
   'proposals',
   'bip110',
   'solo',

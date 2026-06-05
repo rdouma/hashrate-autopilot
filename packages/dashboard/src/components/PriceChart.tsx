@@ -2234,9 +2234,15 @@ export const PriceChart = memo(function PriceChart({
         })}
         </g>
 
+        {/* #262: bottom x-axis line stops at the data-area edge
+            (WIDTH - padRight) instead of the SVG-padding edge
+            (WIDTH - PADDING.right). Without this, when a right axis
+            is rendered the line extends past the data area and into
+            the right-axis labels. The HashrateChart already does it
+            this way; the PriceChart had drifted. */}
         <line
           x1={PADDING.left}
-          x2={WIDTH - PADDING.right}
+          x2={WIDTH - padRight}
           y1={chartHeight - PADDING.bottom}
           y2={chartHeight - PADDING.bottom}
           stroke="#334155"

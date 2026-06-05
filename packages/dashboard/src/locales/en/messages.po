@@ -347,6 +347,10 @@ msgstr "acknowledged {0}"
 msgid "Acknowledged and resolved ({0})"
 msgstr "Acknowledged and resolved ({0})"
 
+#: src/components/OrderHistoryCard.tsx
+msgid "Action"
+msgstr "Action"
+
 #: src/pages/Status.tsx
 msgid "action mode blocks this"
 msgstr "action mode blocks this"
@@ -1183,6 +1187,7 @@ msgstr "Cadence between retries when an alert fails to deliver or the bad state 
 msgid "calculating…"
 msgstr "calculating…"
 
+#: src/components/OrderHistoryCard.tsx
 #: src/components/PriceChart.tsx
 #: src/pages/Config.tsx
 msgid "cancel"
@@ -1238,6 +1243,10 @@ msgstr "Celsius (°C)"
 #: src/components/HashrateChart.tsx
 msgid "change"
 msgstr "change"
+
+#: src/components/OrderHistoryCard.tsx
+msgid "Change"
+msgstr "Change"
 
 #: src/components/Layout.tsx
 msgid "changelog"
@@ -1422,6 +1431,7 @@ msgstr "copy JSON"
 msgid "copy URL"
 msgstr "copy URL"
 
+#: src/components/OrderHistoryCard.tsx
 #: src/components/PriceChart.tsx
 #: src/pages/Config.tsx
 msgid "create"
@@ -1770,6 +1780,28 @@ msgstr "Dry Run"
 msgid "DRY RUN"
 msgstr "DRY RUN"
 
+#. placeholder {0}: formatNumber( uptime_bid_coverage_pct, { minimumFractionDigits: 1, maximumFractionDigits: 1 }, intlLocale, )
+#. placeholder {1}: formatNumber( uptime_delivery_when_bid_active_pct, { minimumFractionDigits: 1, maximumFractionDigits: 1 }, intlLocale, )
+#: src/pages/Status.tsx
+msgid "Duration-weighted % of time with delivered hashrate > 0, computed over "
+"the selected chart range. Decomposes as bid coverage × delivery rate "
+"while bidding: {0}% of the window had an active Braiins bid (orderbook "
+"availability — low value here = \"nothing matched my criteria\", which "
+"is expected idle); of that bid-active time, {1}% was actually delivering "
+"hashrate (hardware / connection / Datum-side quality — low value here = "
+"unexpected downtime). Each tick is weighted by its actual duration (time "
+"until the next tick) so gaps after restarts count proportionally. "
+"Updates with the range selector above."
+msgstr "Duration-weighted % of time with delivered hashrate > 0, computed over "
+"the selected chart range. Decomposes as bid coverage × delivery rate "
+"while bidding: {0}% of the window had an active Braiins bid (orderbook "
+"availability — low value here = \"nothing matched my criteria\", which "
+"is expected idle); of that bid-active time, {1}% was actually "
+"delivering hashrate (hardware / connection / Datum-side quality — low "
+"value here = unexpected downtime). Each tick is weighted by its actual "
+"duration (time until the next tick) so gaps after restarts count "
+"proportionally. Updates with the range selector above."
+
 #: src/pages/Status.tsx
 msgid "Duration-weighted % of time with delivered hashrate > 0, computed over "
 "the selected chart range. Each tick is weighted by its actual duration "
@@ -1834,6 +1866,7 @@ msgstr "e.g. http://192.168.1.121:8332 - your Bitcoin Knots RPC endpoint."
 msgid "Edit color"
 msgstr "Edit color"
 
+#: src/components/OrderHistoryCard.tsx
 #: src/components/PriceChart.tsx
 #: src/pages/Config.tsx
 msgid "edit price"
@@ -1847,6 +1880,7 @@ msgstr "Edit price"
 msgid "EDIT PRICE"
 msgstr "EDIT PRICE"
 
+#: src/components/OrderHistoryCard.tsx
 #: src/components/PriceChart.tsx
 #: src/pages/Config.tsx
 msgid "edit speed"
@@ -2624,6 +2658,7 @@ msgstr "luck after"
 msgid "luck before"
 msgstr "luck before"
 
+#: src/components/OrderHistoryCard.tsx
 #: src/components/PriceChart.tsx
 msgid "manual"
 msgstr "manual"
@@ -2900,6 +2935,12 @@ msgstr "No auto-prune; growing ~ {dailyStr}/day"
 #: src/pages/Config.tsx
 msgid "No AxeOS devices found on the local subnet."
 msgstr "No AxeOS devices found on the local subnet."
+
+#: src/components/OrderHistoryCard.tsx
+msgid "No bid events in the selected range. Widen the chart range above to see "
+"older events."
+msgstr "No bid events in the selected range. Widen the chart range above to see "
+"older events."
 
 #: src/pages/Status.tsx
 msgid "no bids on this account"
@@ -3256,6 +3297,15 @@ msgstr "Optional. When set, every Telegram message from this daemon is prefixed 
 "with `[label] ` so you can tell which instance fired the alert if you "
 "run more than one daemon against the same bot/chat. Leave empty to send "
 "messages without a prefix."
+
+#: src/components/OrderHistoryCard.tsx
+msgid "Order"
+msgstr "Order"
+
+#: src/components/OrderHistoryCard.tsx
+#: src/pages/Status.tsx
+msgid "Order history"
+msgstr "Order history"
 
 #: src/pages/Config.tsx
 msgid "Order, separators, 12h vs 24h. Month names always follow your UI "
@@ -3776,6 +3826,10 @@ msgstr "Rearrange"
 msgid "Rearrange cards"
 msgstr "Rearrange cards"
 
+#: src/components/OrderHistoryCard.tsx
+msgid "Reason"
+msgstr "Reason"
+
 #: src/pages/Status.tsx
 msgid "rebuild"
 msgstr "rebuild"
@@ -4162,6 +4216,10 @@ msgstr "Show value"
 #: src/pages/Alerts.tsx
 msgid "showing {0} of {totalCount}"
 msgstr "showing {0} of {totalCount}"
+
+#: src/components/OrderHistoryCard.tsx
+msgid "Showing the most recent {MAX_ROWS} events for this range."
+msgstr "Showing the most recent {MAX_ROWS} events for this range."
 
 #: src/pages/Login.tsx
 msgid "sign in"
@@ -4712,6 +4770,10 @@ msgstr "What this last block earned us, estimated as block_reward * "
 #: src/pages/Config.tsx
 msgid "What to send to Telegram"
 msgstr "What to send to Telegram"
+
+#: src/components/OrderHistoryCard.tsx
+msgid "When"
+msgstr "When"
 
 #: src/pages/Config.tsx
 msgid "When any active bid carries a fee_rate_pct above this, the mutation gate "

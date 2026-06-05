@@ -2,6 +2,26 @@
 
 ## 2026-06-05
 
+### `[Fix]` Price chart bottom x-axis line no longer overlaps the right-axis labels (#262)
+
+The grey x-axis line at the bottom of the Price chart drew from `PADDING.left` to `WIDTH - PADDING.right` even when a right-axis was rendered. The right-axis labels live further left, in `padRight` instead of `PADDING.right`, so the x-axis line extended into the labels. The Hashrate chart already used `padRight`; the Price chart had drifted. One-character fix on the `x2` attribute.
+
+### `[Fix]` Bitaxe scan button no longer stays stuck on "scanning…" after the scan dialog is dismissed (#259)
+
+Closing the local-network scan popup with the X left the underlying scan running server-side. The scan button stayed disabled and showing "scanning…" until the scan finished naturally, with no way to re-open the dialog or cancel. Now the button stays clickable while the scan is in progress; clicking it during a scan re-opens the dialog showing live progress instead of trying to start a new scan that the server would reject anyway.
+
+### `[Feature]` Hashrate target line on the chart now steps when cheap-mode engages or disengages (#255)
+
+`tick_metrics.target_ph` was persisting the *configured* `target_hashrate_ph` regardless of cheap-mode state, so the dashed "target" line on the Hashrate chart stayed flat even when the controller had dropped to `cheap_target_hashrate_ph`. Now persists the *effective* target (post-cheap-mode), so the dashed line steps the moment cheap-mode engages and steps back when it disengages — gives the operator visibility into when the autopilot is being thrifty.
+
+### `[Feature]` Uptime tile decomposes into bid-coverage × delivery-when-bidding (#254)
+
+The UPTIME tile previously showed a single percentage that conflated "orderbook didn't cooperate" with "hardware/connection failed". Tooltip now breaks down the figure as two components: bid coverage (% of window with an active Braiins bid — orderbook availability) and delivery rate while bidding (% of that bid-active time that actually delivered hashrate — hardware/connection/Datum-side quality). The two multiply to the overall uptime number. New fields `uptime_bid_coverage_pct` and `uptime_delivery_when_bid_active_pct` on the stats API; tile catalogue (#266) will surface them as discrete tiles when that lands.
+
+### `[Feature]` Order history card on the Status page (#256)
+
+New card mirroring Braiins's History tab on the Buy Order window. Shows every controller action (CREATE / EDIT_PRICE / EDIT_SPEED / CANCEL) for the selected chart range as a scrollable table: timestamp, action with the same Lucide glyph as the chart marker, price change with delta, Braiins order ID, and the controller's reason. Newest first, capped at 200 rows per range. Operator no longer has to round-trip to braiins.com to see what the autopilot has been doing. Block ID `order_history`, sits between Profit & Loss and Last tick proposals in the default order; reorderable via the existing #244 drag-to-rearrange flow.
+
 ### `[UI]` Bid-event glyphs swapped for domain-meaningful Lucide icons (#265 follow-up x3)
 
 CREATE_BID now uses Lucide `circle-plus` (filled-feel new-bid mark), EDIT_SPEED uses `gauge` (literal speedometer for what's actually changing), CANCEL_BID uses `ban` (universal "no" symbol). Replaces the bare `plus` / `diamond` / `x` shapes from build 610 — same Lucide library, but icons that carry the meaning of the event rather than just acting as geometric markers. EDIT_PRICE stays as the bare yellow circle because the band-of-dots pattern *is* the meaning, no icon helps. Chart legend at the top and Config → Chart colors row-previews updated in lockstep so the operator's lookup ("see + in legend → find + on chart") keeps holding.

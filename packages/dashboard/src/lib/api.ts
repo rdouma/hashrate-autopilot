@@ -900,6 +900,10 @@ export const api = {
 
 export interface StatsResponse {
   uptime_pct: number | null;
+  /** #254: % of window time with an active Braiins bid (orderbook coverage). */
+  uptime_bid_coverage_pct: number | null;
+  /** #254: % of bid-active time that actually delivered hashrate (hardware/connection quality). */
+  uptime_delivery_when_bid_active_pct: number | null;
   avg_hashrate_ph: number | null;
   avg_datum_hashrate_ph: number | null;
   avg_ocean_hashrate_ph: number | null;

@@ -127,10 +127,19 @@ export class Controller {
       // `spend_sat` column null so downstream readers don't confuse it
       // with the real figure.
       const spendSat: number | null = null;
+      // #255: persist the EFFECTIVE target (post-cheap-mode) so the
+      // chart's dashed "target" line steps when cheap-mode engages /
+      // disengages. Previously this stored `config.target_hashrate_ph`
+      // (the configured ceiling) regardless of cheap-mode state, so
+      // the line was flat and the reporter had no way to see when the
+      // controller had dropped to `cheap_target_hashrate_ph`.
+      const effectiveTargetPh = state.cheap_mode_window?.engage
+        ? state.config.cheap_target_hashrate_ph
+        : state.config.target_hashrate_ph;
       await this.deps.tickMetricsRepo.insert({
         tick_at: state.tick_at,
         delivered_ph: state.actual_hashrate.total_ph,
-        target_ph: state.config.target_hashrate_ph,
+        target_ph: effectiveTargetPh,
         floor_ph: state.config.minimum_floor_hashrate_ph,
         owned_bid_count: state.owned_bids.length,
         unknown_bid_count: state.unknown_bids.length,

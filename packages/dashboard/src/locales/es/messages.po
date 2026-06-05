@@ -352,6 +352,10 @@ msgstr "confirmado {0}"
 msgid "Acknowledged and resolved ({0})"
 msgstr "Confirmado y resuelto ({0})"
 
+#: src/components/OrderHistoryCard.tsx
+msgid "Action"
+msgstr "Acción"
+
 #: src/pages/Status.tsx
 msgid "action mode blocks this"
 msgstr "el modo de acción bloquea esto"
@@ -1207,6 +1211,7 @@ msgstr "Cadencia entre reintentos cuando una alerta no se entrega o el estado "
 msgid "calculating…"
 msgstr "calculando…"
 
+#: src/components/OrderHistoryCard.tsx
 #: src/components/PriceChart.tsx
 #: src/pages/Config.tsx
 msgid "cancel"
@@ -1262,6 +1267,10 @@ msgstr "Celsius (°C)"
 #: src/components/HashrateChart.tsx
 msgid "change"
 msgstr "cambio"
+
+#: src/components/OrderHistoryCard.tsx
+msgid "Change"
+msgstr "Cambio"
 
 #: src/components/Layout.tsx
 msgid "changelog"
@@ -1446,6 +1455,7 @@ msgstr "copiar JSON"
 msgid "copy URL"
 msgstr "copiar URL"
 
+#: src/components/OrderHistoryCard.tsx
 #: src/components/PriceChart.tsx
 #: src/pages/Config.tsx
 msgid "create"
@@ -1797,6 +1807,30 @@ msgstr "Dry Run"
 msgid "DRY RUN"
 msgstr "DRY RUN"
 
+#. placeholder {0}: formatNumber( uptime_bid_coverage_pct, { minimumFractionDigits: 1, maximumFractionDigits: 1 }, intlLocale, )
+#. placeholder {1}: formatNumber( uptime_delivery_when_bid_active_pct, { minimumFractionDigits: 1, maximumFractionDigits: 1 }, intlLocale, )
+#: src/pages/Status.tsx
+msgid "Duration-weighted % of time with delivered hashrate > 0, computed over "
+"the selected chart range. Decomposes as bid coverage × delivery rate "
+"while bidding: {0}% of the window had an active Braiins bid (orderbook "
+"availability — low value here = \"nothing matched my criteria\", which "
+"is expected idle); of that bid-active time, {1}% was actually delivering "
+"hashrate (hardware / connection / Datum-side quality — low value here = "
+"unexpected downtime). Each tick is weighted by its actual duration (time "
+"until the next tick) so gaps after restarts count proportionally. "
+"Updates with the range selector above."
+msgstr "% del tiempo (ponderado por duración) con hashrate entregado > 0, "
+"calculado sobre el rango seleccionado. Se descompone como cobertura de "
+"órdenes × tasa de entrega durante la oferta: {0}% del rango tuvo una "
+"orden Braiins activa (disponibilidad del libro de órdenes — un valor "
+"bajo aquí = \"nada coincidió con mis criterios\", inactividad "
+"esperada); de ese tiempo con oferta activa, {1}% entregó realmente "
+"hashrate (calidad del hardware / conexión / lado Datum — un valor bajo "
+"aquí = inactividad inesperada). Cada tick se pondera por su duración "
+"real (tiempo hasta el siguiente tick) para que los huecos tras un "
+"reinicio cuenten proporcionalmente. Se actualiza con el selector de "
+"rango arriba."
+
 #: src/pages/Status.tsx
 msgid "Duration-weighted % of time with delivered hashrate > 0, computed over "
 "the selected chart range. Each tick is weighted by its actual duration "
@@ -1866,6 +1900,7 @@ msgstr "p.ej. http://192.168.1.121:8332 - tu endpoint RPC de Bitcoin Knots."
 msgid "Edit color"
 msgstr "Editar color"
 
+#: src/components/OrderHistoryCard.tsx
 #: src/components/PriceChart.tsx
 #: src/pages/Config.tsx
 msgid "edit price"
@@ -1879,6 +1914,7 @@ msgstr "Editar precio"
 msgid "EDIT PRICE"
 msgstr "EDIT PRICE"
 
+#: src/components/OrderHistoryCard.tsx
 #: src/components/PriceChart.tsx
 #: src/pages/Config.tsx
 msgid "edit speed"
@@ -2296,12 +2332,11 @@ msgid "Hashrate Ocean credits to our payout address (5-min sliding window). "
 "AVG BRAIINS / AVG DATUM at the top of the page; sustained gaps mean "
 "shares are getting lost somewhere in the Braiins → Datum → Ocean "
 "pipeline."
-msgstr ""
-"Hashrate que Ocean acredita a nuestra dirección de pago (ventana "
-"deslizante de 5 min). Tomado por tick de /v1/user_hashrate.hashrate_300s"
-". Compara con AVG BRAIINS / AVG DATUM arriba; brechas sostenidas "
-"significan que se pierden shares en algún punto de la tubería Braiins → "
-"Datum → Ocean."
+msgstr "Hashrate que Ocean acredita a nuestra dirección de pago (ventana "
+"deslizante de 5 min). Tomado por tick de "
+"/v1/user_hashrate.hashrate_300s. Compara con AVG BRAIINS / AVG DATUM "
+"arriba; brechas sostenidas significan que se pierden shares en algún "
+"punto de la tubería Braiins → Datum → Ocean."
 
 #: src/pages/Config.tsx
 msgid "Hashrate right-axis line"
@@ -2672,6 +2707,7 @@ msgstr "suerte despues"
 msgid "luck before"
 msgstr "suerte antes"
 
+#: src/components/OrderHistoryCard.tsx
 #: src/components/PriceChart.tsx
 msgid "manual"
 msgstr "manual"
@@ -2953,6 +2989,12 @@ msgstr "Sin auto-purga; creciendo ~ {dailyStr}/día"
 #: src/pages/Config.tsx
 msgid "No AxeOS devices found on the local subnet."
 msgstr "No se encontraron dispositivos AxeOS en la subred local."
+
+#: src/components/OrderHistoryCard.tsx
+msgid "No bid events in the selected range. Widen the chart range above to see "
+"older events."
+msgstr "No hay eventos de oferta en el rango seleccionado. Amplía el rango "
+"arriba para ver eventos más antiguos."
 
 #: src/pages/Status.tsx
 msgid "no bids on this account"
@@ -3317,6 +3359,15 @@ msgstr "Opcional. Cuando se establece, cada mensaje de Telegram de este daemon "
 "se antepone con `[etiqueta] ` para que puedas saber qué instancia "
 "disparó la alerta si ejecutas más de un daemon contra el mismo "
 "bot/chat. Déjalo vacío para enviar mensajes sin prefijo."
+
+#: src/components/OrderHistoryCard.tsx
+msgid "Order"
+msgstr "Orden"
+
+#: src/components/OrderHistoryCard.tsx
+#: src/pages/Status.tsx
+msgid "Order history"
+msgstr "Historial de órdenes"
 
 #: src/pages/Config.tsx
 msgid "Order, separators, 12h vs 24h. Month names always follow your UI "
@@ -3844,6 +3895,10 @@ msgstr "Reorganizar"
 msgid "Rearrange cards"
 msgstr "Reorganizar tarjetas"
 
+#: src/components/OrderHistoryCard.tsx
+msgid "Reason"
+msgstr "Razón"
+
 #: src/pages/Status.tsx
 msgid "rebuild"
 msgstr "reconstruir"
@@ -4236,6 +4291,10 @@ msgstr "Mostrar valor"
 #: src/pages/Alerts.tsx
 msgid "showing {0} of {totalCount}"
 msgstr "mostrando {0} de {totalCount}"
+
+#: src/components/OrderHistoryCard.tsx
+msgid "Showing the most recent {MAX_ROWS} events for this range."
+msgstr "Mostrando los {MAX_ROWS} eventos más recientes para este rango."
 
 #: src/pages/Login.tsx
 msgid "sign in"
@@ -4794,6 +4853,10 @@ msgstr "Lo que nos ganó este último bloque, estimado como block_reward * "
 #: src/pages/Config.tsx
 msgid "What to send to Telegram"
 msgstr "Qué enviar a Telegram"
+
+#: src/components/OrderHistoryCard.tsx
+msgid "When"
+msgstr "Cuándo"
 
 #: src/pages/Config.tsx
 msgid "When any active bid carries a fee_rate_pct above this, the mutation gate "

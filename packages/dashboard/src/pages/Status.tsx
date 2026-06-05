@@ -15,6 +15,7 @@ import {
 
 import { Bip110ScanCard } from '../components/Bip110ScanCard';
 import { SoloMinersCard } from '../components/SoloMinersCard';
+import { OrderHistoryCard } from '../components/OrderHistoryCard';
 import { HashrateChart, type HashrateRightAxis } from '../components/HashrateChart';
 import { type PriceRightAxis } from '../components/PriceChart';
 import { PriceChart } from '../components/PriceChart';
@@ -947,6 +948,13 @@ export function Status() {
       ) : null,
     bip110: <Bip110ScanCard />,
     solo: <SoloMinersCard />,
+    // #256: Braiins-style order-change history.
+    order_history: (
+      <OrderHistoryCard
+        chartRange={chartRange}
+        chartColorOverrides={configQuery.data?.config?.chart_color_overrides}
+      />
+    ),
   };
 
   // #244: render blocks in the operator's saved order. Skip any whose
@@ -965,6 +973,7 @@ export function Status() {
     proposals: t`Last tick proposals`,
     bip110: t`BIP-110 scan`,
     solo: t`Bitaxe miners`,
+    order_history: t`Order history`,
   };
   const orderedBlocks: DashboardBlock[] = cardOrder.order
     .filter((id) => blockNodes[id] != null)
@@ -1826,7 +1835,16 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
 
   if (statsData.tick_count < 2) return null;
 
-  const { uptime_pct, avg_hashrate_ph, avg_datum_hashrate_ph, avg_ocean_hashrate_ph, avg_cost_per_ph_sat_per_ph_day, avg_overpay_vs_hashprice_sat_per_ph_day } = statsData;
+  const {
+    uptime_pct,
+    uptime_bid_coverage_pct,
+    uptime_delivery_when_bid_active_pct,
+    avg_hashrate_ph,
+    avg_datum_hashrate_ph,
+    avg_ocean_hashrate_ph,
+    avg_cost_per_ph_sat_per_ph_day,
+    avg_overpay_vs_hashprice_sat_per_ph_day,
+  } = statsData;
   // total_ph_hours + mutation_count remain on the server-side
   // StatsResponse even though no card consumes them - keeping the
   // shape stable so we can re-surface either later without a backend
@@ -1839,7 +1857,24 @@ function StatsBar({ statsData }: { statsData: StatsResponse | undefined }) {
       <StatCard
         label={t`uptime`}
         value={uptime_pct !== null ? `${formatNumber(uptime_pct, { minimumFractionDigits: 1, maximumFractionDigits: 1 }, intlLocale)}%` : '\u2014'}
-        tooltip={t`Duration-weighted % of time with delivered hashrate > 0, computed over the selected chart range. Each tick is weighted by its actual duration (time until the next tick) so gaps after restarts count proportionally. Updates with the range selector above.`}
+        tooltip={
+          // #254: surface the orderbook-coverage vs delivery-quality
+          // breakdown so the operator can tell "expected" downtime
+          // (no order met our criteria) from "unexpected" downtime
+          // (hardware / connection / Datum-side failure while a bid
+          // was active). uptime_pct = bid_coverage \u00d7 delivery_when_bid_active.
+          uptime_bid_coverage_pct !== null && uptime_delivery_when_bid_active_pct !== null
+            ? t`Duration-weighted % of time with delivered hashrate > 0, computed over the selected chart range. Decomposes as bid coverage \u00d7 delivery rate while bidding: ${formatNumber(
+                uptime_bid_coverage_pct,
+                { minimumFractionDigits: 1, maximumFractionDigits: 1 },
+                intlLocale,
+              )}% of the window had an active Braiins bid (orderbook availability \u2014 low value here = "nothing matched my criteria", which is expected idle); of that bid-active time, ${formatNumber(
+                uptime_delivery_when_bid_active_pct,
+                { minimumFractionDigits: 1, maximumFractionDigits: 1 },
+                intlLocale,
+              )}% was actually delivering hashrate (hardware / connection / Datum-side quality \u2014 low value here = unexpected downtime). Each tick is weighted by its actual duration (time until the next tick) so gaps after restarts count proportionally. Updates with the range selector above.`
+            : t`Duration-weighted % of time with delivered hashrate > 0, computed over the selected chart range. Each tick is weighted by its actual duration (time until the next tick) so gaps after restarts count proportionally. Updates with the range selector above.`
+        }
         color={
           uptime_pct === null
             ? 'text-slate-400'

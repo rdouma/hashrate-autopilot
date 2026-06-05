@@ -31,6 +31,23 @@ const CACHE_TTL_MS = 60_000;
 
 export interface StatsResponse {
   readonly uptime_pct: number | null;
+  /**
+   * #254: of the total clock time in the window, what % did the
+   * controller have an active Braiins bid for? Independent of whether
+   * that bid actually delivered hashrate. Low value = orderbook
+   * unavailability ("nothing matched my criteria") - "expected"
+   * downtime per the reporter's framing. Null when no qualifying
+   * ticks.
+   */
+  readonly uptime_bid_coverage_pct: number | null;
+  /**
+   * #254: of the time we DID have an active bid, what % was actually
+   * delivering hashrate? Isolates hardware / connection / Datum-side
+   * failures from orderbook unavailability. Low value = "unexpected"
+   * downtime per the reporter's framing. Null when no bid-active
+   * ticks in the window.
+   */
+  readonly uptime_delivery_when_bid_active_pct: number | null;
   readonly avg_hashrate_ph: number | null;
   /**
    * Duration-weighted average of `datum_hashrate_ph` over ticks that
@@ -166,6 +183,8 @@ export async function registerStatsRoute(
       const mutationCount = await computeMutationCount(deps.bidEventsDb, sinceMs);
       const data: StatsResponse = {
         uptime_pct: metrics.uptime_pct,
+        uptime_bid_coverage_pct: metrics.uptime_bid_coverage_pct,
+        uptime_delivery_when_bid_active_pct: metrics.uptime_delivery_when_bid_active_pct,
         avg_hashrate_ph: metrics.avg_hashrate_ph,
         avg_datum_hashrate_ph: metrics.avg_datum_hashrate_ph,
         avg_ocean_hashrate_ph: metrics.avg_ocean_hashrate_ph,
@@ -191,6 +210,8 @@ async function computeMetrics(
   untilMs?: number,
 ): Promise<{
   uptime_pct: number | null;
+  uptime_bid_coverage_pct: number | null;
+  uptime_delivery_when_bid_active_pct: number | null;
   avg_hashrate_ph: number | null;
   avg_datum_hashrate_ph: number | null;
   avg_ocean_hashrate_ph: number | null;
@@ -253,6 +274,32 @@ async function computeMetrics(
              THEN dur ELSE 0 END) * 100.0
           / SUM(CASE WHEN dur BETWEEN 1 AND 300000 THEN dur ELSE 0 END)
       ELSE NULL END AS uptime_pct,
+
+      -- #254: of total clock time, what % did the controller have an
+      -- active bid? Independent of whether the bid was delivering -
+      -- this measures orderbook availability ("expected" downtime
+      -- when low: nothing matched our criteria).
+      CASE WHEN SUM(CASE WHEN dur BETWEEN 1 AND 300000 THEN dur ELSE 0 END) > 0 THEN
+        SUM(CASE WHEN dur BETWEEN 1 AND 300000
+                  AND our_bid > 0
+             THEN dur ELSE 0 END) * 100.0
+          / SUM(CASE WHEN dur BETWEEN 1 AND 300000 THEN dur ELSE 0 END)
+      ELSE NULL END AS uptime_bid_coverage_pct,
+
+      -- #254: of the time we DID have an active bid, what % was
+      -- actually delivering hashrate above the noise floor? Isolates
+      -- hardware / connection / Datum-side failures from orderbook
+      -- unavailability ("unexpected" downtime when low). Same
+      -- threshold logic as uptime_pct's numerator; denominator is
+      -- bid-active time instead of total time.
+      CASE WHEN SUM(CASE WHEN dur BETWEEN 1 AND 300000 AND our_bid > 0 THEN dur ELSE 0 END) > 0 THEN
+        SUM(CASE WHEN dur BETWEEN 1 AND 300000
+                  AND our_bid > 0
+                  AND delta IS NOT NULL AND delta >= 0
+                  AND delta * 86400000000.0 >= 0.05 * our_bid * dur
+             THEN dur ELSE 0 END) * 100.0
+          / SUM(CASE WHEN dur BETWEEN 1 AND 300000 AND our_bid > 0 THEN dur ELSE 0 END)
+      ELSE NULL END AS uptime_delivery_when_bid_active_pct,
 
       -- Avg Braiins delivered: computed from counter deltas, not the
       -- lagged avg_speed_ph field. Per-tick delivered_PH =
@@ -413,6 +460,8 @@ async function computeMetrics(
     return {
       tick_count: 0,
       uptime_pct: null,
+      uptime_bid_coverage_pct: null,
+      uptime_delivery_when_bid_active_pct: null,
       avg_hashrate_ph: null,
       avg_datum_hashrate_ph: null,
       avg_ocean_hashrate_ph: null,
@@ -427,6 +476,12 @@ async function computeMetrics(
   return {
     tick_count: Number(r['tick_count'] ?? 0),
     uptime_pct: r['uptime_pct'] !== null ? Number(r['uptime_pct']) : null,
+    uptime_bid_coverage_pct:
+      r['uptime_bid_coverage_pct'] !== null ? Number(r['uptime_bid_coverage_pct']) : null,
+    uptime_delivery_when_bid_active_pct:
+      r['uptime_delivery_when_bid_active_pct'] !== null
+        ? Number(r['uptime_delivery_when_bid_active_pct'])
+        : null,
     avg_hashrate_ph: r['avg_hashrate'] !== null ? Number(r['avg_hashrate']) : null,
     avg_datum_hashrate_ph:
       r['avg_datum_hashrate'] !== null ? Number(r['avg_datum_hashrate']) : null,
