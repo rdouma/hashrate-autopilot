@@ -119,7 +119,13 @@ export class BtcPriceService {
       this.cache = { usd_per_btc: usd, source, fetched_at_ms: this.now() };
       return { ok: true, usd_per_btc: usd, source, error: null };
     } catch (err) {
-      return { ok: false, usd_per_btc: null, source, error: describeFetchError(err) };
+      // HTTP-level errors already name the provider ("kraken returned
+      // HTTP 429"); timeouts and connection errors don't ("The
+      // operation was aborted due to timeout") - prefix those so the
+      // operator can tell which provider the message is about.
+      const msg = describeFetchError(err);
+      const error = msg.includes(source) ? msg : `${source}: ${msg}`;
+      return { ok: false, usd_per_btc: null, source, error };
     }
   }
 

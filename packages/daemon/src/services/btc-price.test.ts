@@ -80,7 +80,21 @@ describe('BtcPriceService.probe', () => {
 
     const result = await svc.probe('coinbase');
     expect(result.ok).toBe(false);
-    expect(result.error).toBe('fetch failed: connect ECONNREFUSED 1.2.3.4:443');
+    expect(result.error).toBe('coinbase: fetch failed: connect ECONNREFUSED 1.2.3.4:443');
+  });
+
+  it('prefixes provider-less messages (timeouts) with the source name', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new DOMException('The operation was aborted due to timeout', 'TimeoutError');
+      }),
+    );
+    const svc = new BtcPriceService();
+
+    const result = await svc.probe('coingecko');
+    expect(result.ok).toBe(false);
+    expect(result.error).toBe('coingecko: The operation was aborted due to timeout');
   });
 
   it('reports a malformed body as a missing-field error', async () => {
