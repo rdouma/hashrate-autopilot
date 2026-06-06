@@ -4819,10 +4819,17 @@ msgstr "Suma del consumo de potencia reportado por AxeOS en los Bitaxe "
 
 #: src/components/TilesBar.tsx
 msgid "Sum of the 1-minute hashrate Bitaxe miners are reporting (reachable "
-"devices only). Lines up with the Fleet total in the Bitaxe miners "
-"section."
-msgstr "Suma del hashrate a 1 minuto que reportan los Bitaxe alcanzables. "
-"Coincide con el total de la flota en la sección Bitaxe miners."
+"devices only). Always shown in TH/s - a typical Bitaxe is ~1 TH/s, so "
+"PH/EH would read as zero. Lines up with the Fleet total in the Bitaxe "
+"miners section."
+msgstr "Suma del hashrate a 1 minuto que reportan los Bitaxe (solo dispositivos alcanzables). Siempre en TH/s - un Bitaxe típico es ~1 TH/s, así que PH/EH sería cero. Coincide con el total de la flota en la sección Bitaxe miners."
+
+#: src/components/TilesBar.tsx
+#~ msgid "Sum of the 1-minute hashrate Bitaxe miners are reporting (reachable "
+#~ "devices only). Lines up with the Fleet total in the Bitaxe miners "
+#~ "section."
+#~ msgstr "Suma del hashrate a 1 minuto que reportan los Bitaxe alcanzables. "
+#~ "Coincide con el total de la flota en la sección Bitaxe miners."
 
 #: src/components/TilesBar.tsx
 msgid "Swap tile"

@@ -225,7 +225,7 @@ const TILE_RENDERERS: Record<DashboardTileId, (ctx: TileCtx) => TileResult> = {
         days >= 14 ? 'text-emerald-300' : days >= 7 ? 'text-amber-300' : 'text-red-300',
     };
   },
-  bitaxe_fleet_hashrate: ({ soloMiners, intlLocale, denomination }) => {
+  bitaxe_fleet_hashrate: ({ soloMiners, intlLocale }) => {
     const entries = soloMiners?.snapshot?.entries ?? [];
     let totalGhs = 0;
     let any = false;
@@ -238,9 +238,15 @@ const TILE_RENDERERS: Record<DashboardTileId, (ctx: TileCtx) => TileResult> = {
       }
     }
     if (!any) return DASH;
+    // #266 follow-up: Bitaxes always render in TH/s, ignoring the
+    // page-wide hashrate unit toggle. 1 PH/s ≈ 1000 Bitaxes, nobody
+    // owns 1000 Bitaxes; PH and EH read as "0,00" for the realistic
+    // fleet size. TH is the only meaningful unit for hobbyist-scale
+    // solo miners.
+    const ths = totalGhs / 1000;
     return {
-      value: denomination.formatHashrate(totalGhs / 1_000_000, intlLocale),
-      tooltip: t`Sum of the 1-minute hashrate Bitaxe miners are reporting (reachable devices only). Lines up with the Fleet total in the Bitaxe miners section.`,
+      value: `${formatNumber(ths, { minimumFractionDigits: 2, maximumFractionDigits: 2 }, intlLocale)} TH/s`,
+      tooltip: t`Sum of the 1-minute hashrate Bitaxe miners are reporting (reachable devices only). Always shown in TH/s - a typical Bitaxe is ~1 TH/s, so PH/EH would read as zero. Lines up with the Fleet total in the Bitaxe miners section.`,
     };
   },
   bitaxe_fleet_power: ({ soloMiners, intlLocale }) => {
@@ -323,6 +329,13 @@ function splitUnit(v: string): { num: string; unit: string } | null {
   if (usdRate?.[1] && usdRate[2]) return { num: usdRate[1], unit: usdRate[2] };
   const pct = v.match(/^(.+?)(%)$/);
   if (pct?.[1] && pct[2]) return { num: pct[1], unit: pct[2] };
+  // #266 follow-up: Bitaxe-fleet J/TH efficiency. Matches a space-
+  // separated suffix that is letter+slash+letters (e.g. "J/TH").
+  const slashUnit = v.match(/^(.+?)\s+([A-Z]+\/[A-Z]+)$/);
+  if (slashUnit?.[1] && slashUnit[2]) return { num: slashUnit[1], unit: slashUnit[2] };
+  // Single-letter unit suffix (e.g. "52,9 W").
+  const singleUnit = v.match(/^(.+?)\s+(W|V|A)$/);
+  if (singleUnit?.[1] && singleUnit[2]) return { num: singleUnit[1], unit: singleUnit[2] };
   // "17 days" / "1.5 days" - localised words emitted by the wallet
   // runway renderer.
   const wordSuffix = v.match(/^(.+?)\s+([\p{L}]+)$/u);

@@ -2,6 +2,10 @@
 
 ## 2026-06-05
 
+### `[UI]` Bitaxe tiles always in TH (#266 follow-up x2)
+
+(1) **Bitaxe hashrate tile always renders in TH/s**, ignoring the page-wide TH/PH/EH toggle. The toggle is right for big-network-scale figures (marketplace bid, Braiins delivered) but a typical Bitaxe is ~1 TH/s, so the global PH default rounded the fleet total to `0,00`. The tooltip now explains the deliberate unit choice. (2) **Bitaxe efficiency `J/TH` moved to the unit-caption line** (small grey below the number) to match the rest of the tile catalogue's "big number + grey unit" idiom — was previously rendering as `17,3 J/TH` all in the big-number style, breaking onto two lines.
+
 ### `[Fix]` NerdAxe miners never appeared on the Status page (#260)
 
 NerdAxe / NerdQAxe firmware (shufps/ESP-Miner-NerdQAxePlus family) reports `bestDiff` / `bestSessionDiff` as raw numbers where stock Bitaxe firmware reports magnitude-suffixed strings ("4.29G"). The daemon's difficulty parser crashed on the numeric form, killing the poll tick *after* a successful fetch but *before* the snapshot update - so every successful poll was silently discarded while failed polls rendered, freezing the Bitaxe Miners card on the last failure (or showing nothing at all). Numeric difficulty values are now accepted natively (same unit - share difficulty - just unformatted), formatted for display the way AxeOS itself does, and stored at full precision for best-difficulty records. One device's malformed payload can no longer take down the whole fleet's poll, and unreachable-device errors now include the underlying network error code instead of a bare "fetch failed".
