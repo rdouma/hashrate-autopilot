@@ -7,7 +7,7 @@ manifestVersion: 1
 id: rdouma-hashrate-autopilot
 category: bitcoin
 name: Hashrate Autopilot
-version: "1.12.0"
+version: "1.12.1"
 tagline: Autopilot for renting hashrate to mine on Ocean Mining
 icon: https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/assets/icon-512.png
 # Umbrel renders description literally - no YAML folding of soft
@@ -51,6 +51,11 @@ defaultPassword: ""
 submitter: Remco Douma
 submission: https://github.com/rdouma/hashrate-autopilot
 releaseNotes: |
+  v1.12.1 - hotfix: NerdAxe / NerdQAxe miners now appear on the Status page.
+
+  FIXES
+  - NerdAxe / NerdQAxe miners (#260): these firmwares report their best share difficulty as a raw number where stock Bitaxe firmware reports text like "4.29G". The daemon's parser crashed on the numeric form in a way that silently discarded every successful poll while letting failed polls through, so a NerdAxe added via the scanner never showed up on the Status page. Numeric values are now handled natively and displayed in the same "58.39M" style as Bitaxe units, one misbehaving device can no longer blank the whole miners card, and unreachable-device errors now show the underlying network error instead of a bare "fetch failed".
+
   v1.12.0 - public-IP change tracking, drag-to-reorder dashboard, configurable marker colors, return-on-spend, Bitaxe rename.
 
   NEW

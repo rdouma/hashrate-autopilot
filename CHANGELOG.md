@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-06-06
+
+### `[Release]` v1.12.1
+
+Hotfix release carrying only the NerdAxe fix (#260): NerdAxe / NerdQAxe miners now appear on the Status page, numeric best-difficulty values are handled natively, one misbehaving device can no longer freeze the whole miners card, and unreachable-device errors include the underlying network error code. Safe to upgrade from any 1.11.x / 1.12.x release; no new migrations.
+
 ## 2026-06-05
 
 ### `[Fix]` NerdAxe miners never appeared on the Status page (#260)
