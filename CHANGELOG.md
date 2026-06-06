@@ -2,6 +2,10 @@
 
 ## 2026-06-06
 
+### `[UI]` Drag-handle gutter for dashboard cards (#244 v2 follow-up)
+
+The hover-to-reveal handle from the previous commit floated awkwardly above each card's title row. Build 631 moves it into a slim 20 px left gutter next to every card so the handle sits *beside* the title rather than on top of it. Always faintly visible (slate-700), brightens to amber with a subtle glow on hover, full opacity during a drag — the discoverability the operator asked for. The title text inside each card flows normally; no per-card markup changes needed.
+
 ### `[Feature]` Drag any dashboard card to reorder (#244 v2)
 
 The "Rearrange" mode toggle in the header is gone. Hover any card on the Status page and a small grip handle fades in at its top-left; drag from there to slide it up or down (touch users get a 180 ms press-and-hold; on mobile-without-hover the grip is permanently faintly visible). The 6 px PointerSensor distance gate keeps a click near the grip from being treated as a drag, and charts keep their pan-and-zoom because drag listeners are bound to the grip button only, not the card body. Same pattern that's already on the TilesBar — now applied to every top-level card. The escape hatch is a tiny `reset layout` link that appears in the header on the Status page only when the saved order differs from the default.

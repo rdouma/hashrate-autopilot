@@ -85,32 +85,35 @@ function SortableItem({ block }: { block: DashboardBlock }) {
     <div
       ref={setNodeRef}
       style={style}
-      className={`relative group rounded-lg ${
+      className={`group flex items-stretch gap-1.5 rounded-lg ${
         isDragging ? 'ring-2 ring-amber-500 shadow-lg shadow-black/40' : ''
       }`}
     >
-      {/* Grip handle: top-left corner, hover-visible on devices that
-          can hover, permanently visible elsewhere (mobile-without-
-          hover, and during a drag so the operator can still see what
-          they're holding). Listeners are bound to the button only so
-          pointer events on the block content reach the chart / panel
-          handlers normally. touch-none keeps a touch-drag from also
-          scrolling the page. */}
-      <button
-        type="button"
-        {...attributes}
-        {...listeners}
-        aria-label={`${t`Drag to reorder`}: ${block.label}`}
-        title={`${t`Drag to reorder`}: ${block.label}`}
-        className={`absolute top-1 left-1 z-20 p-1.5 rounded text-slate-500 hover:text-amber-300 hover:bg-slate-800/80 cursor-grab active:cursor-grabbing touch-none transition-opacity ${
-          isDragging
-            ? 'opacity-100'
-            : 'opacity-0 md:opacity-0 md:group-hover:opacity-100 max-md:opacity-50'
-        }`}
-      >
-        <GripIcon />
-      </button>
-      {block.node}
+      {/* Grip handle gutter: a slim fixed-width column to the LEFT of
+          each card holds the grip, aligned with the card's title row
+          (pt-4 ≈ the cards' standard p-4 padding). Always visible at
+          a faint colour so it's discoverable without hovering; on
+          hover it lights up amber with a subtle glow. Listeners are
+          bound to the button only so pointer events on the card
+          content still route to chart pan/zoom and panel buttons.
+          touch-none keeps a touch-drag from scrolling the page. */}
+      <div className="flex-none w-5 flex justify-center pt-4">
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          aria-label={`${t`Drag to reorder`}: ${block.label}`}
+          title={`${t`Drag to reorder`}: ${block.label}`}
+          className={`p-0.5 rounded cursor-grab active:cursor-grabbing touch-none transition ${
+            isDragging
+              ? 'text-amber-300 drop-shadow-[0_0_6px_rgba(252,211,77,0.5)]'
+              : 'text-slate-700 hover:text-amber-300 hover:drop-shadow-[0_0_5px_rgba(252,211,77,0.45)]'
+          }`}
+        >
+          <GripIcon />
+        </button>
+      </div>
+      <div className="min-w-0 flex-1">{block.node}</div>
     </div>
   );
 }
