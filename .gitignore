@@ -52,3 +52,9 @@ scripts/test-stratum.sh
 # spreadsheets, scratch notes - not meant to be part of the project.
 Pool-luck-explainer.xlsx
 *.xlsx
+
+# Local research notes - deliberately never committed (scrubbed from history 2026-06-06)
+docs/hashrate-marketplace-landscape.md
+
+# IDE artifacts
+*.iml
