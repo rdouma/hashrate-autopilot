@@ -3425,20 +3425,38 @@ msgid "Ocean payout initiated"
 msgstr "Ocean payout initiated"
 
 #: src/components/TilesBar.tsx
+#~ msgid "Ocean pool luck over the past 24 h: actual blocks found ÷ statistically "
+#~ "expected blocks at the pool's hashrate. >1 = lucky, <1 = unlucky."
+#~ msgstr "Ocean pool luck over the past 24 h: actual blocks found ÷ statistically "
+#~ "expected blocks at the pool's hashrate. >1 = lucky, <1 = unlucky."
+
+#: src/components/TilesBar.tsx
 msgid "Ocean pool luck over the past 24 h: actual blocks found ÷ statistically "
-"expected blocks at the pool's hashrate. >1 = lucky, <1 = unlucky."
+"expected blocks at the pool's hashrate. >1 = lucky, <1 = unlucky. Short "
+"window — naturally noisy; colour bands are lenient."
 msgstr "Ocean pool luck over the past 24 h: actual blocks found ÷ statistically "
-"expected blocks at the pool's hashrate. >1 = lucky, <1 = unlucky."
+"expected blocks at the pool's hashrate. >1 = lucky, <1 = unlucky. Short "
+"window — naturally noisy; colour bands are lenient."
 
 #: src/components/TilesBar.tsx
 msgid "Ocean pool luck over the past 30 days: actual blocks found ÷ "
 "statistically expected blocks at the pool's hashrate. >1 = lucky, <1 = "
 "unlucky. Longest-window reading; closest to the long-run expectation of "
-"1.00×."
+"1.00×; tight colour bands because by 30 days the variance is small."
 msgstr "Ocean pool luck over the past 30 days: actual blocks found ÷ "
 "statistically expected blocks at the pool's hashrate. >1 = lucky, <1 = "
 "unlucky. Longest-window reading; closest to the long-run expectation of "
-"1.00×."
+"1.00×; tight colour bands because by 30 days the variance is small."
+
+#: src/components/TilesBar.tsx
+#~ msgid "Ocean pool luck over the past 30 days: actual blocks found ÷ "
+#~ "statistically expected blocks at the pool's hashrate. >1 = lucky, <1 = "
+#~ "unlucky. Longest-window reading; closest to the long-run expectation of "
+#~ "1.00×."
+#~ msgstr "Ocean pool luck over the past 30 days: actual blocks found ÷ "
+#~ "statistically expected blocks at the pool's hashrate. >1 = lucky, <1 = "
+#~ "unlucky. Longest-window reading; closest to the long-run expectation of "
+#~ "1.00×."
 
 #: src/components/TilesBar.tsx
 #~ msgid "Ocean pool luck over the past 30 days. Longest-window luck reading."

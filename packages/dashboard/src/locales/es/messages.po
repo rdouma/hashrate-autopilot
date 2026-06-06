@@ -3493,21 +3493,34 @@ msgid "Ocean payout initiated"
 msgstr "Pago de Ocean iniciado"
 
 #: src/components/TilesBar.tsx
+#~ msgid "Ocean pool luck over the past 24 h: actual blocks found ÷ statistically "
+#~ "expected blocks at the pool's hashrate. >1 = lucky, <1 = unlucky."
+#~ msgstr "Suerte del pool de Ocean en las últimas 24h: bloques reales encontrados "
+#~ "÷ bloques esperados estadísticamente al hashrate del pool. >1 = con "
+#~ "suerte, <1 = sin suerte."
+
+#: src/components/TilesBar.tsx
 msgid "Ocean pool luck over the past 24 h: actual blocks found ÷ statistically "
-"expected blocks at the pool's hashrate. >1 = lucky, <1 = unlucky."
-msgstr "Suerte del pool de Ocean en las últimas 24h: bloques reales encontrados "
-"÷ bloques esperados estadísticamente al hashrate del pool. >1 = con "
-"suerte, <1 = sin suerte."
+"expected blocks at the pool's hashrate. >1 = lucky, <1 = unlucky. Short "
+"window — naturally noisy; colour bands are lenient."
+msgstr "Suerte del pool Ocean en las últimas 24 h: bloques encontrados ÷ bloques estadísticamente esperados al hashrate del pool. >1 = con suerte, <1 = sin suerte. Ventana corta — ruidosa por naturaleza; las bandas de color son indulgentes."
 
 #: src/components/TilesBar.tsx
 msgid "Ocean pool luck over the past 30 days: actual blocks found ÷ "
 "statistically expected blocks at the pool's hashrate. >1 = lucky, <1 = "
 "unlucky. Longest-window reading; closest to the long-run expectation of "
-"1.00×."
-msgstr "Suerte del pool Ocean en los últimos 30 días: bloques encontrados ÷ "
-"bloques estadísticamente esperados al hashrate del pool. >1 = con "
-"suerte, <1 = sin suerte. Ventana más larga; la más cercana a la "
-"expectativa a largo plazo de 1,00×."
+"1.00×; tight colour bands because by 30 days the variance is small."
+msgstr "Suerte del pool Ocean en los últimos 30 días: bloques encontrados ÷ bloques estadísticamente esperados al hashrate del pool. >1 = con suerte, <1 = sin suerte. Ventana más larga; la más cercana a la expectativa a largo plazo de 1,00×; bandas de color estrechas porque a los 30 días la varianza es pequeña."
+
+#: src/components/TilesBar.tsx
+#~ msgid "Ocean pool luck over the past 30 days: actual blocks found ÷ "
+#~ "statistically expected blocks at the pool's hashrate. >1 = lucky, <1 = "
+#~ "unlucky. Longest-window reading; closest to the long-run expectation of "
+#~ "1.00×."
+#~ msgstr "Suerte del pool Ocean en los últimos 30 días: bloques encontrados ÷ "
+#~ "bloques estadísticamente esperados al hashrate del pool. >1 = con "
+#~ "suerte, <1 = sin suerte. Ventana más larga; la más cercana a la "
+#~ "expectativa a largo plazo de 1,00×."
 
 #: src/components/TilesBar.tsx
 #~ msgid "Ocean pool luck over the past 30 days. Longest-window luck reading."
@@ -3830,7 +3843,14 @@ msgid "Overall % of the selected chart range that hashrate was being delivered. 
 "\"did we have an order up?\" share (orderbook availability); delivery "
 "while bidding is the \"when we did, was it delivering?\" share (hardware "
 "/ pool quality). Duration-weighted so a long gap counts proportionally."
-msgstr "% global del rango seleccionado en el que se estaba entregando hashrate. Matemáticamente: cobertura de oferta × entrega con oferta activa. Si el uptime baja del 100 %, las otras dos tarjetas dicen por qué — cobertura de oferta es el \"¿teníamos una orden activa?\" (disponibilidad del orderbook); entrega con oferta activa es el \"¿cuando la teníamos, entregaba?\" (hardware / calidad del pool). Ponderado por duración, así que un hueco largo cuenta proporcionalmente."
+msgstr "% global del rango seleccionado en el que se estaba entregando "
+"hashrate. Matemáticamente: cobertura de oferta × entrega con oferta "
+"activa. Si el uptime baja del 100 %, las otras dos tarjetas dicen por "
+"qué — cobertura de oferta es el \"¿teníamos una orden activa?\" "
+"(disponibilidad del orderbook); entrega con oferta activa es el "
+"\"¿cuando la teníamos, entregaba?\" (hardware / calidad del pool). "
+"Ponderado por duración, así que un hueco largo cuenta "
+"proporcionalmente."
 
 #: src/pages/Status.tsx
 msgid "overdue {overdueFormatted}"

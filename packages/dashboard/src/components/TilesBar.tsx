@@ -214,18 +214,54 @@ const TILE_RENDERERS: Record<DashboardTileId, (ctx: TileCtx) => TileResult> = {
     value: ocean?.blocks_30d != null ? formatNumber(ocean.blocks_30d, {}, intlLocale) : EM_DASH,
     tooltip: t`Ocean blocks found in the past 30 days. Used by the pool-luck calculation as the numerator.`,
   }),
-  pool_luck_24h: ({ ocean, intlLocale }) => ({
-    value: fmtX(ocean?.pool_luck_24h ?? null, intlLocale),
-    tooltip: t`Ocean pool luck over the past 24 h: actual blocks found ÷ statistically expected blocks at the pool's hashrate. >1 = lucky, <1 = unlucky.`,
-  }),
-  pool_luck_7d: ({ ocean, intlLocale }) => ({
-    value: fmtX(ocean?.pool_luck_7d ?? null, intlLocale),
-    tooltip: t`Ocean pool luck over the past 7 days: actual blocks found ÷ statistically expected blocks at the pool's hashrate. >1 = lucky, <1 = unlucky. Longer window than 24 h, smooths the reading.`,
-  }),
-  pool_luck_30d: ({ ocean, intlLocale }) => ({
-    value: fmtX(ocean?.pool_luck_30d ?? null, intlLocale),
-    tooltip: t`Ocean pool luck over the past 30 days: actual blocks found ÷ statistically expected blocks at the pool's hashrate. >1 = lucky, <1 = unlucky. Longest-window reading; closest to the long-run expectation of 1.00×.`,
-  }),
+  pool_luck_24h: ({ ocean, intlLocale }) => {
+    const v = ocean?.pool_luck_24h ?? null;
+    // #266 follow-up: window-aware colour bands. Short windows are
+    // noisier (fewer expected blocks → wider Poisson variance) so the
+    // emerald / amber boundaries sit lower on 24h than on 30d.
+    return {
+      value: fmtX(v, intlLocale),
+      tooltip: t`Ocean pool luck over the past 24 h: actual blocks found ÷ statistically expected blocks at the pool's hashrate. >1 = lucky, <1 = unlucky. Short window — naturally noisy; colour bands are lenient.`,
+      color:
+        v === null
+          ? 'text-slate-100'
+          : v >= 0.9
+            ? 'text-emerald-300'
+            : v >= 0.5
+              ? 'text-amber-300'
+              : 'text-red-300',
+    };
+  },
+  pool_luck_7d: ({ ocean, intlLocale }) => {
+    const v = ocean?.pool_luck_7d ?? null;
+    return {
+      value: fmtX(v, intlLocale),
+      tooltip: t`Ocean pool luck over the past 7 days: actual blocks found ÷ statistically expected blocks at the pool's hashrate. >1 = lucky, <1 = unlucky. Longer window than 24 h, smooths the reading.`,
+      color:
+        v === null
+          ? 'text-slate-100'
+          : v >= 0.95
+            ? 'text-emerald-300'
+            : v >= 0.7
+              ? 'text-amber-300'
+              : 'text-red-300',
+    };
+  },
+  pool_luck_30d: ({ ocean, intlLocale }) => {
+    const v = ocean?.pool_luck_30d ?? null;
+    return {
+      value: fmtX(v, intlLocale),
+      tooltip: t`Ocean pool luck over the past 30 days: actual blocks found ÷ statistically expected blocks at the pool's hashrate. >1 = lucky, <1 = unlucky. Longest-window reading; closest to the long-run expectation of 1.00×; tight colour bands because by 30 days the variance is small.`,
+      color:
+        v === null
+          ? 'text-slate-100'
+          : v >= 1.0
+            ? 'text-emerald-300'
+            : v >= 0.85
+              ? 'text-amber-300'
+              : 'text-red-300',
+    };
+  },
   share_log_pct: ({ ocean, intlLocale }) => ({
     value: fmtPct(ocean?.user?.share_log_pct ?? null, 4, intlLocale),
     tooltip: t`Your share of Ocean's reward window. Approximately your hashrate ÷ pool hashrate; drives the unpaid-earnings line on the price chart.`,

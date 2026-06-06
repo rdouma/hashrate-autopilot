@@ -3473,21 +3473,34 @@ msgid "Ocean payout initiated"
 msgstr "Ocean-uitbetaling gestart"
 
 #: src/components/TilesBar.tsx
+#~ msgid "Ocean pool luck over the past 24 h: actual blocks found ÷ statistically "
+#~ "expected blocks at the pool's hashrate. >1 = lucky, <1 = unlucky."
+#~ msgstr "Ocean pool-geluk over de laatste 24u: werkelijk gevonden blokken ÷ "
+#~ "statistisch verwachte blokken op basis van de pool-hashrate. >1 = "
+#~ "geluk, <1 = pech."
+
+#: src/components/TilesBar.tsx
 msgid "Ocean pool luck over the past 24 h: actual blocks found ÷ statistically "
-"expected blocks at the pool's hashrate. >1 = lucky, <1 = unlucky."
-msgstr "Ocean pool-geluk over de laatste 24u: werkelijk gevonden blokken ÷ "
-"statistisch verwachte blokken op basis van de pool-hashrate. >1 = "
-"geluk, <1 = pech."
+"expected blocks at the pool's hashrate. >1 = lucky, <1 = unlucky. Short "
+"window — naturally noisy; colour bands are lenient."
+msgstr "Ocean pool-luck over de afgelopen 24 u: gevonden blokken gedeeld door statistisch verwachte blokken bij de pool-hashrate. >1 = geluk, <1 = pech. Kort venster — van nature onrustig; de kleurbanden zijn ruim."
 
 #: src/components/TilesBar.tsx
 msgid "Ocean pool luck over the past 30 days: actual blocks found ÷ "
 "statistically expected blocks at the pool's hashrate. >1 = lucky, <1 = "
 "unlucky. Longest-window reading; closest to the long-run expectation of "
-"1.00×."
-msgstr "Ocean pool-luck over de afgelopen 30 dagen: gevonden blokken gedeeld "
-"door statistisch verwachte blokken bij de pool-hashrate. >1 = geluk, <1 "
-"= pech. Langste venster; dichtst bij de lange-termijn verwachting van "
-"1,00×."
+"1.00×; tight colour bands because by 30 days the variance is small."
+msgstr "Ocean pool-luck over de afgelopen 30 dagen: gevonden blokken gedeeld door statistisch verwachte blokken bij de pool-hashrate. >1 = geluk, <1 = pech. Langste venster; dichtst bij de lange-termijn verwachting van 1,00×; krappe kleurbanden omdat de variantie na 30 dagen klein is."
+
+#: src/components/TilesBar.tsx
+#~ msgid "Ocean pool luck over the past 30 days: actual blocks found ÷ "
+#~ "statistically expected blocks at the pool's hashrate. >1 = lucky, <1 = "
+#~ "unlucky. Longest-window reading; closest to the long-run expectation of "
+#~ "1.00×."
+#~ msgstr "Ocean pool-luck over de afgelopen 30 dagen: gevonden blokken gedeeld "
+#~ "door statistisch verwachte blokken bij de pool-hashrate. >1 = geluk, <1 "
+#~ "= pech. Langste venster; dichtst bij de lange-termijn verwachting van "
+#~ "1,00×."
 
 #: src/components/TilesBar.tsx
 #~ msgid "Ocean pool luck over the past 30 days. Longest-window luck reading."
@@ -3808,7 +3821,12 @@ msgid "Overall % of the selected chart range that hashrate was being delivered. 
 "\"did we have an order up?\" share (orderbook availability); delivery "
 "while bidding is the \"when we did, was it delivering?\" share (hardware "
 "/ pool quality). Duration-weighted so a long gap counts proportionally."
-msgstr "Totaal-% van het geselecteerde bereik waarin hashrate werd geleverd. Wiskundig: bod-dekking × levering tijdens bod. Als uptime onder 100 % zit, vertellen de andere twee tegels waarom — bod-dekking is het \"stond er een order?\" deel (orderbook-beschikbaarheid); levering tijdens bod is het \"leverde die dan ook?\" deel (hardware / pool-kwaliteit). Duurgewogen, dus een lange dip telt evenredig mee."
+msgstr "Totaal-% van het geselecteerde bereik waarin hashrate werd geleverd. "
+"Wiskundig: bod-dekking × levering tijdens bod. Als uptime onder 100 % "
+"zit, vertellen de andere twee tegels waarom — bod-dekking is het "
+"\"stond er een order?\" deel (orderbook-beschikbaarheid); levering "
+"tijdens bod is het \"leverde die dan ook?\" deel (hardware / "
+"pool-kwaliteit). Duurgewogen, dus een lange dip telt evenredig mee."
 
 #: src/pages/Status.tsx
 msgid "overdue {overdueFormatted}"

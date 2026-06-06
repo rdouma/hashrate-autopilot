@@ -2,6 +2,10 @@
 
 ## 2026-06-06
 
+### `[UI]` Pool-luck tiles get window-aware colour bands (#266 follow-up)
+
+The three pool-luck tiles (24h / 7d / 30d) now colour-code the value the same way uptime / share-rejection / wallet-runway already do. Bands are window-aware because the underlying variance shrinks with window length — a 0.7× read on 24h is noisy randomness, the same read on 30d is genuinely concerning: 24h: emerald ≥ 0.90, amber 0.50–0.90, red < 0.50. 7d: emerald ≥ 0.95, amber 0.70–0.95, red < 0.70. 30d: emerald ≥ 1.00, amber 0.85–1.00, red < 0.85. Tooltips updated to mention the band-tightness choice.
+
 ### `[UI]` Uptime tooltip relates to its siblings, shorter delivery label, locale-aware best-diff (#266 follow-up x3)
 
 (1) **Uptime tile tooltip** now spells out the relationship to its two sibling tiles instead of describing uptime in isolation: `uptime = bid coverage × delivery while bidding`, and which one explains low uptime when it happens. The operator was reading uptime ≈ delivery rate and not seeing the difference; the difference is the denominator, and the tooltip now says so. (2) **"delivery rate (while bidding)" → "delivery while bidding"** — the longer label was wrapping to three lines on a narrow tile. The word "rate" was carrying no information; the `%` unit on the caption line already makes that clear. (3) **Bitaxe best-diff value is locale-formatted** ("149,53" in `nl-NL`, not `149.53`) and the magnitude prefix moves to the grey unit-caption line as its full SI name (`giga`, `tera`, `peta`, etc.) instead of the squashed single-letter form jammed into the number. Same idiom as every other tile.
