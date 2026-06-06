@@ -22,6 +22,7 @@ import {
   type AlertSeverity,
   type AppConfig,
   type BtcPriceTestResponse,
+  type DiagnosticsResponse,
   type DatumTestResponse,
   type DdnsTestResponse,
   type PoolUrlTestResponse,
@@ -29,6 +30,7 @@ import {
   type StorageEstimateResponse,
 } from '../lib/api';
 import { blockFoundSoundUrl } from '../lib/block-found-sound';
+import { copyToClipboard } from '../lib/clipboard';
 import { useDenomination } from '../lib/denomination';
 import {
   celsiusToFahrenheit,
@@ -790,7 +792,7 @@ const TAB_SECTIONS: Record<TabId, readonly string[]> = {
   strategy: ['hashrate-targets', 'cheap-mode', 'pricing', 'fee-protection', 'budget', 'daemon-startup'],
   pool: ['pool-destination', 'ddns', 'payout-source', 'profit-and-loss', 'btc-price-oracle'],
   notifications: ['notifications', 'block-found-sound'],
-  display: ['display-settings', 'chart-colors', 'solo-miners', 'block-explorer', 'chart-smoothing', 'chart-markers', 'log-retention', 'debug-api'],
+  display: ['display-settings', 'chart-colors', 'solo-miners', 'block-explorer', 'chart-smoothing', 'chart-markers', 'log-retention', 'debug-api', 'diagnostics'],
 };
 
 function isTabId(s: string | null): s is TabId {
@@ -853,6 +855,17 @@ function ConfigTabsAndContent({
     notifications: {
       title: t`Notifications`,
       labels: [t`Telegram bot token`, t`Chat ID`, t`Instance label (optional)`, t`Send messages to Telegram`, t`Retry interval`, t`Wallet runway below`, t`Ocean pool-block credited`],
+    },
+    diagnostics: {
+      title: t`Diagnostics`,
+      labels: [
+        t`Run diagnostics`,
+        t`Copy as Markdown`,
+        // Aliases - operators search by what they're trying to do.
+        'support bundle',
+        'connectivity',
+        'tech support',
+      ],
     },
     'display-settings': {
       title: t`Display`,
@@ -1030,6 +1043,9 @@ function ConfigTabsAndContent({
     }
     if (sid === 'solo-miners') {
       return wrapHighlight(sid, <SoloMinersSection draft={draft} onChange={onChange} />);
+    }
+    if (sid === 'diagnostics') {
+      return wrapHighlight(sid, <DiagnosticsSection />);
     }
     const std = sections.find((s) => s.id === sid);
     if (!std) return null;
@@ -5294,4 +5310,165 @@ function DdnsSection({
       </div>
     </section>
   );
+}
+
+/**
+ * #272: Diagnostics support bundle. One click runs the daemon-side
+ * connectivity sweep (every integration incl. all four price
+ * providers) and renders the result; "Copy as Markdown" produces a
+ * paste-ready block for GitHub issues. Secrets are stripped
+ * server-side and render as a loud asterisk marker so the operator
+ * can SEE the bundle is safe to paste.
+ */
+function DiagnosticsSection() {
+  const [copied, setCopied] = useState(false);
+  const diag = useMutation<DiagnosticsResponse, Error, void>({
+    mutationFn: () => api.diagnostics(),
+    onSuccess: () => setCopied(false),
+  });
+  const d = diag.data;
+
+  const onCopy = async () => {
+    if (!d) return;
+    await copyToClipboard(diagnosticsToMarkdown(d));
+    setCopied(true);
+  };
+
+  return (
+    <section className="bg-slate-900 border border-slate-800 rounded-lg p-4">
+      <header className="mb-3">
+        <h3 className="text-sm uppercase tracking-wider text-amber-400">
+          <Trans>Diagnostics</Trans>
+        </h3>
+        <p className="text-xs text-slate-500 mt-1">
+          <Trans>
+            One-click support bundle: probes every external service the daemon talks to
+            (marketplace, pool, node, price providers) and snapshots the configuration with
+            all secrets stripped. Use "Copy as Markdown" to paste the result into a bug
+            report.
+          </Trans>
+        </p>
+      </header>
+      <div className="flex flex-wrap gap-2 items-center">
+        <button
+          type="button"
+          onClick={() => diag.mutate()}
+          disabled={diag.isPending}
+          className="px-3 py-1.5 text-sm rounded bg-amber-400 text-slate-900 font-medium hover:bg-amber-300 disabled:opacity-50 whitespace-nowrap"
+        >
+          {diag.isPending ? <Trans>Running…</Trans> : <Trans>Run diagnostics</Trans>}
+        </button>
+        {d && (
+          <button
+            type="button"
+            onClick={() => void onCopy()}
+            className="px-3 py-1.5 text-sm rounded border border-slate-700 text-slate-300 hover:bg-slate-800 whitespace-nowrap"
+          >
+            {copied ? <Trans>Copied</Trans> : <Trans>Copy as Markdown</Trans>}
+          </button>
+        )}
+      </div>
+      {diag.isError && (
+        <div className="mt-2 text-xs text-red-400 font-mono break-words">
+          {diag.error.message}
+        </div>
+      )}
+      {d && (
+        <div className="mt-4 space-y-4 text-xs">
+          <div className="font-mono text-slate-400">
+            v{d.identity.version} · build {d.identity.build} · {d.identity.hash} ·{' '}
+            {d.identity.node} · {d.identity.platform} · {d.identity.run_mode ?? '?'} ·{' '}
+            <Trans>uptime</Trans> {formatUptime(d.identity.uptime_seconds)}
+          </div>
+          <table className="w-full text-left">
+            <thead>
+              <tr className="text-slate-500">
+                <th className="py-1 pr-3 font-normal"><Trans>Target</Trans></th>
+                <th className="py-1 pr-3 font-normal"><Trans>Status</Trans></th>
+                <th className="py-1 pr-3 font-normal"><Trans>Latency</Trans></th>
+                <th className="py-1 font-normal"><Trans>Detail</Trans></th>
+              </tr>
+            </thead>
+            <tbody className="font-mono">
+              {d.connectivity.map((probe) => (
+                <tr key={probe.target} className="border-t border-slate-800">
+                  <td className="py-1 pr-3 whitespace-nowrap">{probe.target}</td>
+                  <td
+                    className={
+                      'py-1 pr-3 whitespace-nowrap ' +
+                      (probe.status === 'ok'
+                        ? 'text-emerald-300'
+                        : probe.status === 'failed'
+                          ? 'text-red-400'
+                          : 'text-slate-500')
+                    }
+                  >
+                    {probe.status === 'ok' ? 'OK' : probe.status === 'failed' ? t`failed` : t`not configured`}
+                  </td>
+                  <td className="py-1 pr-3 whitespace-nowrap text-slate-400">
+                    {probe.latency_ms !== null && probe.status === 'ok' ? `${probe.latency_ms} ms` : ''}
+                  </td>
+                  <td className="py-1 break-words text-slate-400">
+                    {probe.detail ?? probe.error ?? ''}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <details>
+            <summary className="cursor-pointer text-slate-400">
+              <Trans>Configuration snapshot (secrets stripped)</Trans>
+            </summary>
+            <pre className="mt-2 bg-slate-950 border border-slate-800 rounded p-2 overflow-x-auto text-[11px] leading-snug">
+              {JSON.stringify(d.config, null, 2)}
+            </pre>
+          </details>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function formatUptime(seconds: number): string {
+  if (seconds < 3600) return `${Math.round(seconds / 60)}m`;
+  if (seconds < 86400) return `${(seconds / 3600).toFixed(1)}h`;
+  return `${(seconds / 86400).toFixed(1)}d`;
+}
+
+/** Build the paste-ready Markdown block. Plain string building - no i18n; the bundle is read by maintainers, not the operator. */
+function diagnosticsToMarkdown(d: DiagnosticsResponse): string {
+  const lines: string[] = [];
+  lines.push('### Hashrate Autopilot support bundle');
+  lines.push('');
+  lines.push(
+    `v${d.identity.version} · build ${d.identity.build} · ${d.identity.hash} · ${d.identity.node} · ${d.identity.platform} · ${d.identity.run_mode ?? '?'} · uptime ${formatUptime(d.identity.uptime_seconds)} · tick ${Math.round(d.identity.tick_interval_ms / 1000)}s`,
+  );
+  lines.push('');
+  lines.push('| target | status | latency | detail |');
+  lines.push('|---|---|---|---|');
+  for (const probe of d.connectivity) {
+    const status =
+      probe.status === 'ok' ? '✅ ok' : probe.status === 'failed' ? '❌ failed' : '– not configured';
+    const latency = probe.latency_ms !== null && probe.status === 'ok' ? `${probe.latency_ms} ms` : '';
+    const detail = (probe.detail ?? probe.error ?? '').replace(/\|/g, '\\|');
+    lines.push(`| ${probe.target} | ${status} | ${latency} | ${detail} |`);
+  }
+  lines.push('');
+  const th = d.tick_health;
+  lines.push(
+    `Last tick: ${th.last_tick_age_seconds !== null ? `${th.last_tick_age_seconds}s ago` : 'n/a'} · braiins ${fmtBool(th.braiins_reachable_last_tick)} · datum ${fmtBool(th.datum_data_last_tick)} · ocean ${fmtBool(th.ocean_data_last_tick)} · price cache ${th.btc_price_cache_age_seconds !== null ? `${th.btc_price_cache_age_seconds}s old` : 'cold'}`,
+  );
+  lines.push('');
+  lines.push('<details><summary>config (secrets stripped)</summary>');
+  lines.push('');
+  lines.push('```json');
+  lines.push(JSON.stringify(d.config, null, 2));
+  lines.push('```');
+  lines.push('');
+  lines.push('</details>');
+  return lines.join('\n');
+}
+
+function fmtBool(v: boolean | null): string {
+  return v === null ? 'n/a' : v ? 'ok' : 'no-data';
 }

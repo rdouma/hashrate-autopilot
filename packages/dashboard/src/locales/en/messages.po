@@ -1358,6 +1358,10 @@ msgstr "Config"
 msgid "Configuration"
 msgstr "Configuration"
 
+#: src/pages/Config.tsx
+msgid "Configuration snapshot (secrets stripped)"
+msgstr "Configuration snapshot (secrets stripped)"
+
 #: src/components/StaleUrlBanner.tsx
 msgid "Confirm cancel"
 msgstr "Confirm cancel"
@@ -1390,6 +1394,10 @@ msgstr "Controls how the P&L panel computes the \"spent\" figure that feeds the 
 msgid "Cooldown clears in"
 msgstr "Cooldown clears in"
 
+#: src/pages/Config.tsx
+msgid "Copied"
+msgstr "Copied"
+
 #: src/pages/Status.tsx
 msgid "copied bid ID"
 msgstr "copied bid ID"
@@ -1405,6 +1413,10 @@ msgstr "copied URL"
 #: src/components/ChartColorPicker.tsx
 msgid "Copied!"
 msgstr "Copied!"
+
+#: src/pages/Config.tsx
+msgid "Copy as Markdown"
+msgstr "Copy as Markdown"
 
 #: src/pages/Status.tsx
 msgid "copy bid ID"
@@ -1693,6 +1705,10 @@ msgstr "deployment"
 msgid "DEPOSIT"
 msgstr "DEPOSIT"
 
+#: src/pages/Config.tsx
+msgid "Detail"
+msgstr "Detail"
+
 #: src/components/SoloMinersCard.tsx
 msgid "Device"
 msgstr "Device"
@@ -1700,6 +1716,10 @@ msgstr "Device"
 #: src/pages/Config.tsx
 msgid "Devices"
 msgstr "Devices"
+
+#: src/pages/Config.tsx
+msgid "Diagnostics"
+msgstr "Diagnostics"
 
 #: src/components/HashrateChart.tsx
 msgid "DIFFICULTY ADJUSTMENT"
@@ -2028,6 +2048,10 @@ msgstr "expected"
 #: src/pages/Config.tsx
 msgid "Fahrenheit (°F)"
 msgstr "Fahrenheit (°F)"
+
+#: src/pages/Config.tsx
+msgid "failed"
+msgstr "failed"
 
 #: src/pages/Setup.tsx
 msgid "Failed to load setup data: {loadErr}"
@@ -2545,6 +2569,10 @@ msgid "last tick:"
 msgstr "last tick:"
 
 #: src/pages/Config.tsx
+msgid "Latency"
+msgstr "Latency"
+
+#: src/pages/Config.tsx
 msgid "Learn more →"
 msgstr "Learn more →"
 
@@ -2947,6 +2975,10 @@ msgstr "Normal"
 msgid "not a fully-qualified hostname"
 msgstr "not a fully-qualified hostname"
 
+#: src/pages/Config.tsx
+msgid "not configured"
+msgstr "not configured"
+
 #: src/pages/Status.tsx
 msgid "Not configured"
 msgstr "Not configured"
@@ -3147,6 +3179,16 @@ msgstr "On-chain payout tracking (optional)"
 #: src/pages/Config.tsx
 msgid "On-chain payouts"
 msgstr "On-chain payouts"
+
+#: src/pages/Config.tsx
+msgid "One-click support bundle: probes every external service the daemon talks "
+"to (marketplace, pool, node, price providers) and snapshots the "
+"configuration with all secrets stripped. Use \"Copy as Markdown\" to "
+"paste the result into a bug report."
+msgstr "One-click support bundle: probes every external service the daemon "
+"talks to (marketplace, pool, node, price providers) and snapshots the "
+"configuration with all secrets stripped. Use \"Copy as Markdown\" to "
+"paste the result into a bug report."
 
 #: src/pages/Config.tsx
 msgid "One-shot offset for earnings the on-chain payout observer can't see - "
@@ -3974,6 +4016,10 @@ msgstr "RPC username from your bitcoin.conf."
 msgid "Run decision now"
 msgstr "Run decision now"
 
+#: src/pages/Config.tsx
+msgid "Run diagnostics"
+msgstr "Run diagnostics"
+
 #: src/pages/Status.tsx
 msgid "Run the pending decision immediately - clears the post-edit lock and "
 "bypasses the patience/escalation timers so a waiting-to-settle "
@@ -3981,6 +4027,10 @@ msgid "Run the pending decision immediately - clears the post-edit lock and "
 msgstr "Run the pending decision immediately - clears the post-edit lock and "
 "bypasses the patience/escalation timers so a waiting-to-settle "
 "EDIT_PRICE fires on this tick instead of after the full window."
+
+#: src/pages/Config.tsx
+msgid "Running…"
+msgstr "Running…"
 
 #: src/pages/Status.tsx
 msgid "runway"
@@ -4237,6 +4287,7 @@ msgid "status"
 msgstr "status"
 
 #: src/components/Layout.tsx
+#: src/pages/Config.tsx
 msgid "Status"
 msgstr "Status"
 
@@ -4303,6 +4354,10 @@ msgstr "system default"
 #: src/pages/Status.tsx
 msgid "target"
 msgstr "target"
+
+#: src/pages/Config.tsx
+msgid "Target"
+msgstr "Target"
 
 #: src/pages/Setup.tsx
 msgid "Target (PH/s)"
@@ -4610,6 +4665,7 @@ msgstr "Uploaded - now active."
 msgid "Uploading…"
 msgstr "Uploading…"
 
+#: src/pages/Config.tsx
 #: src/pages/Status.tsx
 msgid "uptime"
 msgstr "uptime"

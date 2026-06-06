@@ -116,6 +116,22 @@ describe('BtcPriceService.probe', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
+  it('leaves the cache untouched with warmCache=false (#272 diagnostics sweep)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => jsonResponse({ bitcoin: { usd: 104_000 } })),
+    );
+    const svc = new BtcPriceService({ now: () => 1_000_000 });
+    svc.seedFromPersisted(99_000, 'kraken', 999_999);
+
+    const result = await svc.probe('coingecko', { warmCache: false });
+    expect(result.ok).toBe(true);
+    // Cache still holds the kraken snapshot - the sweep must not
+    // repoint it at whichever provider resolved last.
+    expect(svc.getLatest()?.source).toBe('kraken');
+    expect(svc.getLatest()?.usd_per_btc).toBe(99_000);
+  });
+
   it('bypasses a fresh cache from another source', async () => {
     const fetchSpy = vi.fn(async () => jsonResponse({ bitcoin: { usd: 104_000 } }));
     vi.stubGlobal('fetch', fetchSpy);

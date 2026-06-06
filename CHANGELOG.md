@@ -2,6 +2,10 @@
 
 ## 2026-06-06
 
+### `[Feature]` Diagnostics support bundle: one-click connectivity matrix + sanitized config (#272)
+
+New Config → Display & Logging → Diagnostics panel. "Run diagnostics" probes every external service the daemon talks to in parallel - Braiins API, Ocean API, Datum gateway, bitcoind RPC, electrs, Telegram, all four BTC price providers, public-IP service, plus a DNS-sanity check - each reporting latency or the concrete error (HTTP status, `ENOTFOUND`, timeout). "Copy as Markdown" produces a paste-ready block for bug reports: identity (version/build/node/uptime/run mode), the connectivity table, last-tick freshness per integration, and the full configuration with every secret rendered as a loud `********** [redacted]` marker so it's visibly safe to paste. The bug-report template now asks for it. Born out of #267, where diagnosing a failing price oracle took days of back-and-forth curls.
+
 ### `[Feature]` "Test connection" button for the BTC price oracle (#270)
 
 One click in Config → Pool & Payout → BTC price oracle now performs a live fetch against the selected provider (saved or not) and reports the result inline: the current BTC/USD price on success, or the concrete failure on error - the HTTP status (e.g. `429` rate-limited) or the underlying network error code (`ENOTFOUND`, `ECONNREFUSED`), instead of the USD toggle just silently not appearing (#267). A successful test warms the daemon's price cache so the header's USD toggle lights up immediately. Price fetches now also send an explicit User-Agent (bot-sensitive CDN endpoints reject anonymous requests) and daemon logs include the real network error instead of a bare "fetch failed".

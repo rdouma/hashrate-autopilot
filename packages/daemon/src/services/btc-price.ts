@@ -110,13 +110,22 @@ export class BtcPriceService {
    * the cache so the dashboard's USD toggle lights up immediately
    * after a green test.
    */
-  async probe(source: string): Promise<BtcPriceProbeResult> {
+  async probe(
+    source: string,
+    opts: { warmCache?: boolean } = {},
+  ): Promise<BtcPriceProbeResult> {
     if (source === 'none') {
       return { ok: false, usd_per_btc: null, source, error: 'price source is disabled' };
     }
     try {
       const usd = await fetchFromSource(source);
-      this.cache = { usd_per_btc: usd, source, fetched_at_ms: this.now() };
+      // The Config test button warms the cache so the USD toggle
+      // lights up right after a green test. The diagnostics sweep
+      // (#272) probes ALL providers and must NOT leave the cache
+      // pointing at whichever provider happened to resolve last.
+      if (opts.warmCache !== false) {
+        this.cache = { usd_per_btc: usd, source, fetched_at_ms: this.now() };
+      }
       return { ok: true, usd_per_btc: usd, source, error: null };
     } catch (err) {
       // HTTP-level errors already name the provider ("kraken returned

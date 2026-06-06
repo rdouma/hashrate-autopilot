@@ -769,6 +769,8 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ source }),
     }),
+  /** #272: one-shot support bundle (runs all connectivity probes server-side, ~5s). */
+  diagnostics: () => request<DiagnosticsResponse>('/api/diagnostics'),
   ddns: () => request<DdnsRouteResponse>('/api/ddns'),
   // #149: solo-mining device list + live AxeOS snapshot.
   soloMiners: () => request<SoloMinersResponse>('/api/solo-miners'),
@@ -977,6 +979,39 @@ export interface BtcPriceTestResponse {
   usd_per_btc: number | null;
   source: string;
   error: string | null;
+}
+
+/** #272: one entry of the diagnostics connectivity matrix. */
+export interface ConnectivityProbe {
+  target: string;
+  status: 'ok' | 'failed' | 'not_configured';
+  latency_ms: number | null;
+  detail: string | null;
+  error: string | null;
+}
+
+/** #272: GET /api/diagnostics support bundle. */
+export interface DiagnosticsResponse {
+  identity: {
+    version: string;
+    build: number;
+    hash: string;
+    node: string;
+    platform: string;
+    uptime_seconds: number;
+    run_mode: string | null;
+    tick_interval_ms: number;
+  };
+  config: Record<string, unknown>;
+  connectivity: ConnectivityProbe[];
+  tick_health: {
+    last_tick_at: number | null;
+    last_tick_age_seconds: number | null;
+    braiins_reachable_last_tick: boolean | null;
+    datum_data_last_tick: boolean | null;
+    ocean_data_last_tick: boolean | null;
+    btc_price_cache_age_seconds: number | null;
+  };
 }
 
 export interface Bip110ScanSignalingBlock {
