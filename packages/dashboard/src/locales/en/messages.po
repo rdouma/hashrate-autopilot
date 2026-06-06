@@ -1965,6 +1965,7 @@ msgstr "Drag the cards by their title bar to reorder."
 msgid "Drag the dashboard cards into the order you want"
 msgstr "Drag the dashboard cards into the order you want"
 
+#: src/components/TilesBar.tsx
 #: src/pages/Status.tsx
 msgid "Drag to reorder"
 msgstr "Drag to reorder"

@@ -1988,6 +1988,7 @@ msgstr "Sleep de kaarten aan hun titelbalk om de volgorde te wijzigen."
 msgid "Drag the dashboard cards into the order you want"
 msgstr "Sleep de dashboardkaarten in de gewenste volgorde"
 
+#: src/components/TilesBar.tsx
 #: src/pages/Status.tsx
 msgid "Drag to reorder"
 msgstr "Sleep om te herschikken"
@@ -3458,7 +3459,10 @@ msgid "Ocean pool luck over the past 30 days: actual blocks found ÷ "
 "statistically expected blocks at the pool's hashrate. >1 = lucky, <1 = "
 "unlucky. Longest-window reading; closest to the long-run expectation of "
 "1.00×."
-msgstr "Ocean pool-luck over de afgelopen 30 dagen: gevonden blokken gedeeld door statistisch verwachte blokken bij de pool-hashrate. >1 = geluk, <1 = pech. Langste venster; dichtst bij de lange-termijn verwachting van 1,00×."
+msgstr "Ocean pool-luck over de afgelopen 30 dagen: gevonden blokken gedeeld "
+"door statistisch verwachte blokken bij de pool-hashrate. >1 = geluk, <1 "
+"= pech. Langste venster; dichtst bij de lange-termijn verwachting van "
+"1,00×."
 
 #: src/components/TilesBar.tsx
 #~ msgid "Ocean pool luck over the past 30 days. Longest-window luck reading."
@@ -3469,7 +3473,9 @@ msgstr "Ocean pool-luck over de afgelopen 30 dagen: gevonden blokken gedeeld doo
 msgid "Ocean pool luck over the past 7 days: actual blocks found ÷ "
 "statistically expected blocks at the pool's hashrate. >1 = lucky, <1 = "
 "unlucky. Longer window than 24 h, smooths the reading."
-msgstr "Ocean pool-luck over de afgelopen 7 dagen: gevonden blokken gedeeld door statistisch verwachte blokken bij de pool-hashrate. >1 = geluk, <1 = pech. Langer venster dan 24 u, vlakt het cijfer af."
+msgstr "Ocean pool-luck over de afgelopen 7 dagen: gevonden blokken gedeeld "
+"door statistisch verwachte blokken bij de pool-hashrate. >1 = geluk, <1 "
+"= pech. Langer venster dan 24 u, vlakt het cijfer af."
 
 #: src/components/TilesBar.tsx
 #~ msgid "Ocean pool luck over the past 7 days. Same formula as 24 h, longer "

@@ -35,6 +35,25 @@ import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { useMemo, useRef, useState, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
+import {
+  DndContext,
+  PointerSensor,
+  TouchSensor,
+  KeyboardSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import { restrictToHorizontalAxis, restrictToParentElement } from '@dnd-kit/modifiers';
+import {
+  SortableContext,
+  arrayMove,
+  horizontalListSortingStrategy,
+  sortableKeyboardCoordinates,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { Tooltip } from './Tooltip';
 import type { FinanceRangeResponse, SoloMinersResponse, StatusResponse as StatusResp } from '../lib/api';
 
@@ -468,6 +487,28 @@ export function TilesBar({
     onTilesChange([...effective, id] as DashboardTileId[]);
   };
 
+  // #266 follow-up: always-on horizontal drag to reorder tiles. No
+  // rearrange-mode gate - hovering a tile reveals a small grip in the
+  // top-left; dragging from there shuffles tiles left/right. The 6 px
+  // distance gate stops a click on the grip's vicinity from being
+  // treated as a drag, so the picker chevron next to it stays
+  // clickable. Touch sensors carry a press-and-hold so vertical
+  // page scrolling on mobile isn't hijacked.
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const ids = [...effective] as DashboardTileId[];
+    const from = ids.indexOf(active.id as DashboardTileId);
+    const to = ids.indexOf(over.id as DashboardTileId);
+    if (from === -1 || to === -1) return;
+    onTilesChange(arrayMove(ids, from, to));
+  };
+
   return (
     // Wrapper holds both the bar and the floating "+ add" affordance
     // anchored to the section corner. `pointer-events-auto` re-enables
@@ -478,18 +519,30 @@ export function TilesBar({
           the tallest in the row so pool-luck (no unit caption) and
           uptime (with caption) share a baseline. `auto-fit` keeps
           the row reflowing past 6 columns on wide screens. */}
-      <section className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(160px,1fr))] auto-rows-fr">
-        {effective.map((id, idx) => (
-          <TileSlot
-            key={`${id}-${idx}`}
-            id={id}
-            inUse={effective}
-            result={(TILE_RENDERERS[id] ?? (() => DASH))(ctx)}
-            onReplace={(next) => replaceAt(idx, next)}
-            onRemove={effective.length > 1 ? () => removeAt(idx) : undefined}
-          />
-        ))}
-      </section>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        modifiers={[restrictToHorizontalAxis, restrictToParentElement]}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={effective as DashboardTileId[]}
+          strategy={horizontalListSortingStrategy}
+        >
+          <section className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(160px,1fr))] auto-rows-fr">
+            {effective.map((id, idx) => (
+              <TileSlot
+                key={id}
+                id={id}
+                inUse={effective}
+                result={(TILE_RENDERERS[id] ?? (() => DASH))(ctx)}
+                onReplace={(next) => replaceAt(idx, next)}
+                onRemove={effective.length > 1 ? () => removeAt(idx) : undefined}
+              />
+            ))}
+          </section>
+        </SortableContext>
+      </DndContext>
       {/*
         Small `+` button anchored to the section's top-right
         corner, OUTSIDE the grid. Always visible (no hover gate
@@ -571,6 +624,20 @@ function TileSlot({ id, inUse, result, onReplace, onRemove }: TileSlotProps) {
   // wrapper just owns open/close state.
   const chevronRef = useRef<HTMLButtonElement>(null);
 
+  // #266 follow-up: always-on drag-to-reorder. Each tile is a
+  // sortable item; the grip handle in the top-left corner carries
+  // the listeners. Distance gate (set on the sensor in the parent)
+  // means a click that doesn't move ~6 px doesn't register as a
+  // drag, so the chevron and tile body stay clickable.
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id });
+  const sortableStyle: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.85 : 1,
+    zIndex: isDragging ? 30 : undefined,
+  };
+
   // #266 follow-up: styled <Tooltip> wraps the entire tile body so
   // hovering ANYWHERE on the tile surfaces the tooltip. The question-
   // mark icon next to the label is gone - operator caught it as
@@ -593,7 +660,13 @@ function TileSlot({ id, inUse, result, onReplace, onRemove }: TileSlotProps) {
 
   return (
     <div
-      className="relative pointer-events-auto group bg-slate-900 border border-slate-800 rounded-lg p-4 hover:border-slate-700"
+      ref={setNodeRef}
+      style={sortableStyle}
+      className={`relative pointer-events-auto group bg-slate-900 border rounded-lg p-4 ${
+        isDragging
+          ? 'border-amber-500 shadow-lg shadow-black/40'
+          : 'border-slate-800 hover:border-slate-700'
+      }`}
     >
       {result.tooltip ? (
         <Tooltip text={result.tooltip}>
@@ -602,6 +675,30 @@ function TileSlot({ id, inUse, result, onReplace, onRemove }: TileSlotProps) {
       ) : (
         tileBody
       )}
+      {/* #266 follow-up: grip handle in the top-left, only visible on
+          hover (and during a drag). Drag listeners live on this
+          button only so clicking elsewhere on the tile still hovers
+          the tooltip / opens the picker. touch-none keeps a touch-
+          drag from also scrolling the page. */}
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        aria-label={t`Drag to reorder`}
+        title={t`Drag to reorder`}
+        className={`absolute top-0 left-0 p-2 text-slate-500 hover:text-amber-300 leading-none cursor-grab active:cursor-grabbing touch-none transition-opacity ${
+          isDragging ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+        }`}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <circle cx="9" cy="5" r="1" />
+          <circle cx="9" cy="12" r="1" />
+          <circle cx="9" cy="19" r="1" />
+          <circle cx="15" cy="5" r="1" />
+          <circle cx="15" cy="12" r="1" />
+          <circle cx="15" cy="19" r="1" />
+        </svg>
+      </button>
       {/* #266 follow-up: chevron's hit-box was just the 14×14 SVG -
           easy to miss. Wrapper button now has padding so the click
           target is ~28×28 while the chevron stays visually small,

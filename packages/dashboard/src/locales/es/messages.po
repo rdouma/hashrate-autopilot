@@ -1998,6 +1998,7 @@ msgstr "Arrastra las tarjetas por su barra de título para reordenarlas."
 msgid "Drag the dashboard cards into the order you want"
 msgstr "Arrastra las tarjetas del panel en el orden que quieras"
 
+#: src/components/TilesBar.tsx
 #: src/pages/Status.tsx
 msgid "Drag to reorder"
 msgstr "Arrastra para reordenar"
@@ -3478,7 +3479,10 @@ msgid "Ocean pool luck over the past 30 days: actual blocks found ÷ "
 "statistically expected blocks at the pool's hashrate. >1 = lucky, <1 = "
 "unlucky. Longest-window reading; closest to the long-run expectation of "
 "1.00×."
-msgstr "Suerte del pool Ocean en los últimos 30 días: bloques encontrados ÷ bloques estadísticamente esperados al hashrate del pool. >1 = con suerte, <1 = sin suerte. Ventana más larga; la más cercana a la expectativa a largo plazo de 1,00×."
+msgstr "Suerte del pool Ocean en los últimos 30 días: bloques encontrados ÷ "
+"bloques estadísticamente esperados al hashrate del pool. >1 = con "
+"suerte, <1 = sin suerte. Ventana más larga; la más cercana a la "
+"expectativa a largo plazo de 1,00×."
 
 #: src/components/TilesBar.tsx
 #~ msgid "Ocean pool luck over the past 30 days. Longest-window luck reading."
@@ -3489,7 +3493,10 @@ msgstr "Suerte del pool Ocean en los últimos 30 días: bloques encontrados ÷ b
 msgid "Ocean pool luck over the past 7 days: actual blocks found ÷ "
 "statistically expected blocks at the pool's hashrate. >1 = lucky, <1 = "
 "unlucky. Longer window than 24 h, smooths the reading."
-msgstr "Suerte del pool Ocean en los últimos 7 días: bloques encontrados ÷ bloques estadísticamente esperados al hashrate del pool. >1 = con suerte, <1 = sin suerte. Ventana más larga que 24 h, suaviza la lectura."
+msgstr "Suerte del pool Ocean en los últimos 7 días: bloques encontrados ÷ "
+"bloques estadísticamente esperados al hashrate del pool. >1 = con "
+"suerte, <1 = sin suerte. Ventana más larga que 24 h, suaviza la "
+"lectura."
 
 #: src/components/TilesBar.tsx
 #~ msgid "Ocean pool luck over the past 7 days. Same formula as 24 h, longer "
