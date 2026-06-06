@@ -201,11 +201,11 @@ const TILE_RENDERERS: Record<DashboardTileId, (ctx: TileCtx) => TileResult> = {
   }),
   pool_luck_7d: ({ ocean, intlLocale }) => ({
     value: fmtX(ocean?.pool_luck_7d ?? null, intlLocale),
-    tooltip: t`Ocean pool luck over the past 7 days. Same formula as 24 h, longer window.`,
+    tooltip: t`Ocean pool luck over the past 7 days: actual blocks found ÷ statistically expected blocks at the pool's hashrate. >1 = lucky, <1 = unlucky. Longer window than 24 h, smooths the reading.`,
   }),
   pool_luck_30d: ({ ocean, intlLocale }) => ({
     value: fmtX(ocean?.pool_luck_30d ?? null, intlLocale),
-    tooltip: t`Ocean pool luck over the past 30 days. Longest-window luck reading.`,
+    tooltip: t`Ocean pool luck over the past 30 days: actual blocks found ÷ statistically expected blocks at the pool's hashrate. >1 = lucky, <1 = unlucky. Longest-window reading; closest to the long-run expectation of 1.00×.`,
   }),
   share_log_pct: ({ ocean, intlLocale }) => ({
     value: fmtPct(ocean?.user?.share_log_pct ?? null, 4, intlLocale),
@@ -602,12 +602,17 @@ function TileSlot({ id, inUse, result, onReplace, onRemove }: TileSlotProps) {
       ) : (
         tileBody
       )}
+      {/* #266 follow-up: chevron's hit-box was just the 14×14 SVG -
+          easy to miss. Wrapper button now has padding so the click
+          target is ~28×28 while the chevron stays visually small,
+          and uses absolute-corner placement that doesn't push the
+          tile content. */}
       <button
         type="button"
         ref={chevronRef}
         onClick={() => setOpen((v) => !v)}
         aria-label={t`Swap tile`}
-        className="absolute top-2.5 right-2.5 text-slate-500 hover:text-amber-300 leading-none"
+        className="absolute top-0 right-0 p-2 text-slate-500 hover:text-amber-300 leading-none"
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
           <path d="m6 9 6 6 6-6" />

@@ -1285,7 +1285,9 @@ msgid "Braiins share-rejection rate over the selected chart range. Same figure "
 "as the \"rejection rate\" row in the Braiins panel below. Computed "
 "server-side from the first and last cumulative counter samples in the "
 "range."
-msgstr "Tasa de rechazo de shares de Braiins en el rango seleccionado. Mismo valor que la fila \"rejection rate\" en el panel Braiins. Calculado en el servidor con la primera y la última muestra acumulada del contador."
+msgstr "Tasa de rechazo de shares de Braiins en el rango seleccionado. Mismo "
+"valor que la fila \"rejection rate\" en el panel Braiins. Calculado en "
+"el servidor con la primera y la última muestra acumulada del contador."
 
 #: src/pages/Config.tsx
 msgid "Braiins's marketplace fees are currently zero (beta). These two knobs "
@@ -2654,7 +2656,10 @@ msgid "Highest best-difficulty seen on any reachable Bitaxe in the fleet. AxeOS 
 "reports this per device; the tile shows the leader. Best-difficulty "
 "grows over time as miners hit progressively rarer shares; resets when a "
 "worker restarts."
-msgstr "Best-difficulty máxima entre los Bitaxe alcanzables de la flota. AxeOS lo reporta por dispositivo; la tarjeta muestra el líder. La best-difficulty crece cuando los miners encuentran shares más raras; se reinicia al reiniciar un worker."
+msgstr "Best-difficulty máxima entre los Bitaxe alcanzables de la flota. AxeOS "
+"lo reporta por dispositivo; la tarjeta muestra el líder. La "
+"best-difficulty crece cuando los miners encuentran shares más raras; se "
+"reinicia al reiniciar un worker."
 
 #: src/components/Layout.tsx
 msgid "History"
@@ -3469,15 +3474,28 @@ msgstr "Suerte del pool de Ocean en las últimas 24h: bloques reales encontrados
 "suerte, <1 = sin suerte."
 
 #: src/components/TilesBar.tsx
-msgid "Ocean pool luck over the past 30 days. Longest-window luck reading."
-msgstr "Suerte del pool de Ocean en los últimos 30 días. Lectura de suerte con "
-"la ventana más larga."
+msgid "Ocean pool luck over the past 30 days: actual blocks found ÷ "
+"statistically expected blocks at the pool's hashrate. >1 = lucky, <1 = "
+"unlucky. Longest-window reading; closest to the long-run expectation of "
+"1.00×."
+msgstr "Suerte del pool Ocean en los últimos 30 días: bloques encontrados ÷ bloques estadísticamente esperados al hashrate del pool. >1 = con suerte, <1 = sin suerte. Ventana más larga; la más cercana a la expectativa a largo plazo de 1,00×."
 
 #: src/components/TilesBar.tsx
-msgid "Ocean pool luck over the past 7 days. Same formula as 24 h, longer "
-"window."
-msgstr "Suerte del pool de Ocean en los últimos 7 días. Misma fórmula que 24h, "
-"ventana más larga."
+#~ msgid "Ocean pool luck over the past 30 days. Longest-window luck reading."
+#~ msgstr "Suerte del pool de Ocean en los últimos 30 días. Lectura de suerte con "
+#~ "la ventana más larga."
+
+#: src/components/TilesBar.tsx
+msgid "Ocean pool luck over the past 7 days: actual blocks found ÷ "
+"statistically expected blocks at the pool's hashrate. >1 = lucky, <1 = "
+"unlucky. Longer window than 24 h, smooths the reading."
+msgstr "Suerte del pool Ocean en los últimos 7 días: bloques encontrados ÷ bloques estadísticamente esperados al hashrate del pool. >1 = con suerte, <1 = sin suerte. Ventana más larga que 24 h, suaviza la lectura."
+
+#: src/components/TilesBar.tsx
+#~ msgid "Ocean pool luck over the past 7 days. Same formula as 24 h, longer "
+#~ "window."
+#~ msgstr "Suerte del pool de Ocean en los últimos 7 días. Misma fórmula que 24h, "
+#~ "ventana más larga."
 
 #: src/pages/Config.tsx
 msgid "Ocean pool-block credited"

@@ -1273,7 +1273,10 @@ msgid "Braiins share-rejection rate over the selected chart range. Same figure "
 "as the \"rejection rate\" row in the Braiins panel below. Computed "
 "server-side from the first and last cumulative counter samples in the "
 "range."
-msgstr "Braiins share-afwijzingspercentage over het geselecteerde bereik. Zelfde getal als de \"rejection rate\" rij in het Braiins-paneel hieronder. Server-side berekend uit de eerste en laatste cumulatieve teller-monsters in het bereik."
+msgstr "Braiins share-afwijzingspercentage over het geselecteerde bereik. "
+"Zelfde getal als de \"rejection rate\" rij in het Braiins-paneel "
+"hieronder. Server-side berekend uit de eerste en laatste cumulatieve "
+"teller-monsters in het bereik."
 
 #: src/pages/Config.tsx
 msgid "Braiins's marketplace fees are currently zero (beta). These two knobs "
@@ -2633,7 +2636,10 @@ msgid "Highest best-difficulty seen on any reachable Bitaxe in the fleet. AxeOS 
 "reports this per device; the tile shows the leader. Best-difficulty "
 "grows over time as miners hit progressively rarer shares; resets when a "
 "worker restarts."
-msgstr "Hoogste best-difficulty over alle bereikbare Bitaxes in de vloot. AxeOS rapporteert dit per apparaat; de tegel toont de koploper. Best-difficulty groeit naarmate miners zeldzamere shares vinden; reset bij worker-herstart."
+msgstr "Hoogste best-difficulty over alle bereikbare Bitaxes in de vloot. AxeOS "
+"rapporteert dit per apparaat; de tegel toont de koploper. "
+"Best-difficulty groeit naarmate miners zeldzamere shares vinden; reset "
+"bij worker-herstart."
 
 #: src/components/Layout.tsx
 msgid "History"
@@ -3448,15 +3454,28 @@ msgstr "Ocean pool-geluk over de laatste 24u: werkelijk gevonden blokken ÷ "
 "geluk, <1 = pech."
 
 #: src/components/TilesBar.tsx
-msgid "Ocean pool luck over the past 30 days. Longest-window luck reading."
-msgstr "Ocean pool-geluk over de laatste 30 dagen. Langste-venster "
-"geluksmeting."
+msgid "Ocean pool luck over the past 30 days: actual blocks found ÷ "
+"statistically expected blocks at the pool's hashrate. >1 = lucky, <1 = "
+"unlucky. Longest-window reading; closest to the long-run expectation of "
+"1.00×."
+msgstr "Ocean pool-luck over de afgelopen 30 dagen: gevonden blokken gedeeld door statistisch verwachte blokken bij de pool-hashrate. >1 = geluk, <1 = pech. Langste venster; dichtst bij de lange-termijn verwachting van 1,00×."
 
 #: src/components/TilesBar.tsx
-msgid "Ocean pool luck over the past 7 days. Same formula as 24 h, longer "
-"window."
-msgstr "Ocean pool-geluk over de laatste 7 dagen. Zelfde formule als 24u, "
-"langer venster."
+#~ msgid "Ocean pool luck over the past 30 days. Longest-window luck reading."
+#~ msgstr "Ocean pool-geluk over de laatste 30 dagen. Langste-venster "
+#~ "geluksmeting."
+
+#: src/components/TilesBar.tsx
+msgid "Ocean pool luck over the past 7 days: actual blocks found ÷ "
+"statistically expected blocks at the pool's hashrate. >1 = lucky, <1 = "
+"unlucky. Longer window than 24 h, smooths the reading."
+msgstr "Ocean pool-luck over de afgelopen 7 dagen: gevonden blokken gedeeld door statistisch verwachte blokken bij de pool-hashrate. >1 = geluk, <1 = pech. Langer venster dan 24 u, vlakt het cijfer af."
+
+#: src/components/TilesBar.tsx
+#~ msgid "Ocean pool luck over the past 7 days. Same formula as 24 h, longer "
+#~ "window."
+#~ msgstr "Ocean pool-geluk over de laatste 7 dagen. Zelfde formule als 24u, "
+#~ "langer venster."
 
 #: src/pages/Config.tsx
 msgid "Ocean pool-block credited"

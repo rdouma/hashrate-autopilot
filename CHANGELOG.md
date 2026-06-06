@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-06-06
+
+### `[UI]` Self-contained pool-luck tooltips, bigger chevron hit-box (#266 follow-up x2)
+
+(1) **Pool luck 7d / 30d tooltips now stand on their own** — operator may only have one of the three pool-luck tiles on screen, so each tooltip carries the full formula and ">1 lucky / <1 unlucky" reading. No more "same formula as 24 h" cross-reference. (2) **Tile-chevron click target widened** from the 14×14 SVG to ~28×28 via padding; the visible icon is unchanged so the tile looks the same but the chevron is much easier to hit.
+
 ## 2026-06-05
 
 ### `[Feature]` Bitaxe best-diff tile + share-rejection consistency + pool-luck caption (#266 follow-up x3)
