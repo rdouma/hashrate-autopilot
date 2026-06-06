@@ -2,6 +2,10 @@
 
 ## 2026-06-06
 
+### `[Release]` v1.12.2
+
+Patch release: "Test connection" button for the BTC price oracle (#270) and the one-click Diagnostics support bundle with connectivity matrix + sanitized config snapshot (#272). Safe to upgrade from any 1.11.x / 1.12.x release; no new migrations.
+
 ### `[UI]` Pool-luck tiles get window-aware colour bands (#266 follow-up)
 
 The three pool-luck tiles (24h / 7d / 30d) now colour-code the value the same way uptime / share-rejection / wallet-runway already do. Bands are window-aware because the underlying variance shrinks with window length — a 0.7× read on 24h is noisy randomness, the same read on 30d is genuinely concerning: 24h: emerald ≥ 0.90, amber 0.50–0.90, red < 0.50. 7d: emerald ≥ 0.95, amber 0.70–0.95, red < 0.70. 30d: emerald ≥ 1.00, amber 0.85–1.00, red < 0.85. Tooltips updated to mention the band-tightness choice.
@@ -21,6 +25,13 @@ The hover-to-reveal handle from the previous commit floated awkwardly above each
 ### `[Feature]` Drag any dashboard card to reorder (#244 v2)
 
 The "Rearrange" mode toggle in the header is gone. Hover any card on the Status page and a small grip handle fades in at its top-left; drag from there to slide it up or down (touch users get a 180 ms press-and-hold; on mobile-without-hover the grip is permanently faintly visible). The 6 px PointerSensor distance gate keeps a click near the grip from being treated as a drag, and charts keep their pan-and-zoom because drag listeners are bound to the grip button only, not the card body. Same pattern that's already on the TilesBar — now applied to every top-level card. The escape hatch is a tiny `reset layout` link that appears in the header on the Status page only when the saved order differs from the default.
+### `[Feature]` Diagnostics support bundle: one-click connectivity matrix + sanitized config (#272)
+
+New Config → Display & Logging → Diagnostics panel. "Run diagnostics" probes every external service the daemon talks to in parallel - Braiins API, Ocean API, Datum gateway, bitcoind RPC, electrs, Telegram, all four BTC price providers, public-IP service, plus a DNS-sanity check - each reporting latency or the concrete error (HTTP status, `ENOTFOUND`, timeout). "Copy as Markdown" produces a paste-ready block for bug reports: identity (version/build/node/uptime/run mode), the connectivity table, last-tick freshness per integration, and the full configuration with every sensitive field rendered as a loud `********** [redacted]` marker so it's visibly safe to paste - credentials, payout address, pool/DDNS hostnames and the public IP are all stripped (LAN addresses stay, they're what support needs); a separate Copy JSON button copies just the config snapshot. The bug-report template now asks for it. Born out of #267, where diagnosing a failing price oracle took days of back-and-forth curls.
+
+### `[Feature]` "Test connection" button for the BTC price oracle (#270)
+
+One click in Config → Pool & Payout → BTC price oracle now performs a live fetch against the selected provider (saved or not) and reports the result inline: the current BTC/USD price on success, or the concrete failure on error - the HTTP status (e.g. `429` rate-limited) or the underlying network error code (`ENOTFOUND`, `ECONNREFUSED`), instead of the USD toggle just silently not appearing (#267). A successful test warms the daemon's price cache so the header's USD toggle lights up immediately. Price fetches now also send an explicit User-Agent (bot-sensitive CDN endpoints reject anonymous requests) and daemon logs include the real network error instead of a bare "fetch failed".
 
 ### `[Release]` v1.12.1
 

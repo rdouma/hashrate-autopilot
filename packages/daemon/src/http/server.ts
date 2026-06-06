@@ -47,6 +47,7 @@ import { registerBitcoindTestRoute } from './routes/bitcoind-test.js';
 import { registerElectrsTestRoute } from './routes/electrs-test.js';
 import { registerBlockFoundSoundRoute } from './routes/block-found-sound.js';
 import { registerBtcPriceRoute } from './routes/btc-price.js';
+import { registerDiagnosticsRoute } from './routes/diagnostics.js';
 import { registerConfigRoutes } from './routes/config.js';
 import { registerDecisionsRoutes } from './routes/decisions.js';
 import { registerDepositsRoute } from './routes/deposits.js';
@@ -253,6 +254,16 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<HttpServer
   await registerBtcPriceRoute(app, {
     btcPriceService: deps.btcPriceService,
     configRepo: deps.configRepo,
+  });
+  // #272: one-shot support bundle (connectivity matrix + sanitized config).
+  await registerDiagnosticsRoute(app, {
+    configRepo: deps.configRepo,
+    runtimeRepo: deps.runtimeRepo,
+    braiinsClient: deps.braiinsClient,
+    bitcoindClient: deps.bitcoindClient,
+    btcPriceService: deps.btcPriceService,
+    db: deps.db,
+    tickIntervalMs: deps.tickIntervalMs,
   });
   await registerDdnsRoute(app, {
     configRepo: deps.configRepo,

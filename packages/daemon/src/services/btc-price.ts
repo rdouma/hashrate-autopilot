@@ -11,10 +11,21 @@
  * is purely a display convenience.
  */
 
+import { USER_AGENT } from '../http/routes/build.js';
+
 export interface BtcPriceSnapshot {
   readonly usd_per_btc: number;
   readonly source: string;
   readonly fetched_at_ms: number;
+}
+
+/** Result of an operator-triggered live probe (#270 test button). */
+export interface BtcPriceProbeResult {
+  readonly ok: boolean;
+  readonly usd_per_btc: number | null;
+  readonly source: string;
+  /** Concrete failure, e.g. "coingecko returned HTTP 429" or "fetch failed: getaddrinfo ENOTFOUND api.kraken.com". */
+  readonly error: string | null;
 }
 
 export interface BtcPriceServiceOptions {
@@ -91,25 +102,83 @@ export class BtcPriceService {
     return result;
   }
 
+  /**
+   * #270: operator-triggered live probe for the Config panel's "Test
+   * connection" button. Always bypasses the cache and reports the
+   * concrete failure (HTTP status / network error code) instead of
+   * the silent null the cached path returns. A successful probe warms
+   * the cache so the dashboard's USD toggle lights up immediately
+   * after a green test.
+   */
+  async probe(
+    source: string,
+    opts: { warmCache?: boolean } = {},
+  ): Promise<BtcPriceProbeResult> {
+    if (source === 'none') {
+      return { ok: false, usd_per_btc: null, source, error: 'price source is disabled' };
+    }
+    try {
+      const usd = await fetchFromSource(source);
+      // The Config test button warms the cache so the USD toggle
+      // lights up right after a green test. The diagnostics sweep
+      // (#272) probes ALL providers and must NOT leave the cache
+      // pointing at whichever provider happened to resolve last.
+      if (opts.warmCache !== false) {
+        this.cache = { usd_per_btc: usd, source, fetched_at_ms: this.now() };
+      }
+      return { ok: true, usd_per_btc: usd, source, error: null };
+    } catch (err) {
+      // HTTP-level errors already name the provider ("kraken returned
+      // HTTP 429"); timeouts and connection errors don't ("The
+      // operation was aborted due to timeout") - prefix those so the
+      // operator can tell which provider the message is about.
+      const msg = describeFetchError(err);
+      const error = msg.includes(source) ? msg : `${source}: ${msg}`;
+      return { ok: false, usd_per_btc: null, source, error };
+    }
+  }
+
   private async doFetch(source: string): Promise<BtcPriceSnapshot | null> {
     try {
       const usd = await fetchFromSource(source);
-      if (usd === null) return null;
       return {
         usd_per_btc: usd,
         source,
         fetched_at_ms: this.now(),
       };
     } catch (err) {
-      console.warn(
-        `[btc-price] fetch from ${source} failed: ${(err as Error).message}`,
-      );
+      console.warn(`[btc-price] fetch from ${source} failed: ${describeFetchError(err)}`);
       return null;
     }
   }
 }
 
-async function fetchFromSource(source: string): Promise<number | null> {
+/**
+ * undici wraps every connection-level failure in a generic
+ * `TypeError: fetch failed` with the real code (ENOTFOUND /
+ * ECONNREFUSED / ETIMEDOUT / ...) hidden in `cause`. Surface it -
+ * same masking that made #260 and #267 needlessly hard to diagnose
+ * from logs.
+ */
+export function describeFetchError(err: unknown): string {
+  if (!(err instanceof Error)) return String(err);
+  if (err.cause instanceof Error && err.cause.message) {
+    return `${err.message}: ${err.cause.message}`;
+  }
+  return err.message;
+}
+
+/**
+ * Fetch the BTC/USD spot from one provider. Throws on ANY failure -
+ * non-2xx status, unparseable body, missing field, network error -
+ * with a message specific enough to act on. The cached path logs it;
+ * the probe path returns it to the operator verbatim.
+ *
+ * All requests send an explicit User-Agent: these are unauthenticated,
+ * bot-hammered CDN-fronted endpoints, and UA-less requests are exactly
+ * what their anti-abuse layers like to reject (#267).
+ */
+async function fetchFromSource(source: string): Promise<number> {
   switch (source) {
     case 'coingecko':
       return fetchCoingecko();
@@ -120,71 +189,59 @@ async function fetchFromSource(source: string): Promise<number | null> {
     case 'kraken':
       return fetchKraken();
     default:
-      console.warn(`[btc-price] unknown source: ${source}`);
-      return null;
+      throw new Error(`unknown price source: ${source}`);
   }
 }
 
-async function fetchCoingecko(): Promise<number | null> {
+function fetchOpts(): RequestInit {
+  return {
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    headers: { 'user-agent': USER_AGENT, accept: 'application/json' },
+  };
+}
+
+async function fetchCoingecko(): Promise<number> {
   const res = await fetch(
     'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd',
-    { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) },
+    fetchOpts(),
   );
-  if (!res.ok) {
-    console.warn(`[btc-price] coingecko returned ${res.status}`);
-    return null;
-  }
+  if (!res.ok) throw new Error(`coingecko returned HTTP ${res.status}`);
   const data = (await res.json()) as { bitcoin?: { usd?: number } };
   const usd = data?.bitcoin?.usd;
-  return typeof usd === 'number' && Number.isFinite(usd) ? usd : null;
+  if (typeof usd !== 'number' || !Number.isFinite(usd)) {
+    throw new Error('coingecko response missing bitcoin.usd');
+  }
+  return usd;
 }
 
-async function fetchCoinbase(): Promise<number | null> {
-  const res = await fetch(
-    'https://api.coinbase.com/v2/prices/BTC-USD/spot',
-    { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) },
-  );
-  if (!res.ok) {
-    console.warn(`[btc-price] coinbase returned ${res.status}`);
-    return null;
-  }
+async function fetchCoinbase(): Promise<number> {
+  const res = await fetch('https://api.coinbase.com/v2/prices/BTC-USD/spot', fetchOpts());
+  if (!res.ok) throw new Error(`coinbase returned HTTP ${res.status}`);
   const data = (await res.json()) as { data?: { amount?: string } };
   const amount = data?.data?.amount;
-  if (typeof amount !== 'string') return null;
-  const n = Number.parseFloat(amount);
-  return Number.isFinite(n) ? n : null;
+  const n = typeof amount === 'string' ? Number.parseFloat(amount) : NaN;
+  if (!Number.isFinite(n)) throw new Error('coinbase response missing data.amount');
+  return n;
 }
 
-async function fetchBitstamp(): Promise<number | null> {
-  const res = await fetch(
-    'https://www.bitstamp.net/api/v2/ticker/btcusd/',
-    { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) },
-  );
-  if (!res.ok) {
-    console.warn(`[btc-price] bitstamp returned ${res.status}`);
-    return null;
-  }
+async function fetchBitstamp(): Promise<number> {
+  const res = await fetch('https://www.bitstamp.net/api/v2/ticker/btcusd/', fetchOpts());
+  if (!res.ok) throw new Error(`bitstamp returned HTTP ${res.status}`);
   const data = (await res.json()) as { last?: string };
   const last = data?.last;
-  if (typeof last !== 'string') return null;
-  const n = Number.parseFloat(last);
-  return Number.isFinite(n) ? n : null;
+  const n = typeof last === 'string' ? Number.parseFloat(last) : NaN;
+  if (!Number.isFinite(n)) throw new Error('bitstamp response missing last');
+  return n;
 }
 
-async function fetchKraken(): Promise<number | null> {
-  const res = await fetch(
-    'https://api.kraken.com/0/public/Ticker?pair=XBTUSD',
-    { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) },
-  );
-  if (!res.ok) {
-    console.warn(`[btc-price] kraken returned ${res.status}`);
-    return null;
-  }
+async function fetchKraken(): Promise<number> {
+  const res = await fetch('https://api.kraken.com/0/public/Ticker?pair=XBTUSD', fetchOpts());
+  if (!res.ok) throw new Error(`kraken returned HTTP ${res.status}`);
   const data = (await res.json()) as {
     result?: { XXBTZUSD?: { c?: [string, ...unknown[]] } };
   };
   const c0 = data?.result?.XXBTZUSD?.c?.[0];
-  if (typeof c0 !== 'string') return null;
-  const n = Number.parseFloat(c0);
-  return Number.isFinite(n) ? n : null;
+  const n = typeof c0 === 'string' ? Number.parseFloat(c0) : NaN;
+  if (!Number.isFinite(n)) throw new Error('kraken response missing result ticker');
+  return n;
 }

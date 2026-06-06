@@ -7,7 +7,7 @@ manifestVersion: 1
 id: rdouma-hashrate-autopilot
 category: bitcoin
 name: Hashrate Autopilot
-version: "1.12.1"
+version: "1.12.2"
 tagline: Autopilot for renting hashrate to mine on Ocean Mining
 icon: https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/assets/icon-512.png
 # Umbrel renders description literally - no YAML folding of soft
@@ -51,6 +51,15 @@ defaultPassword: ""
 submitter: Remco Douma
 submission: https://github.com/rdouma/hashrate-autopilot
 releaseNotes: |
+  v1.12.2 - oracle test button + one-click diagnostics support bundle.
+
+  NEW
+  - Test connection button for the BTC price oracle (Config -> Pool & Payout): one click fetches a live price from the selected provider and shows the result inline - the current BTC/USD price on success, or the concrete failure (HTTP status like 429, or the network error code) instead of the USD toggle just silently not appearing. A successful test enables the USD toggle immediately.
+  - Diagnostics support bundle (Config -> Display & Logging -> Diagnostics): one click probes every service the app talks to - Braiins, Ocean, Datum, your Bitcoin node, electrs, Telegram, all four BTC price providers, public-IP service, plus a DNS check - each with latency or the exact error. "Copy as Markdown" produces a paste-ready block for bug reports: version info, the connectivity table, per-service freshness, and your configuration with every sensitive value (tokens, passwords, payout address, hostnames, public IP) visibly stripped as "********** [redacted]". The bug-report template now asks for this bundle, which should make support conversations much faster.
+
+  IMPROVEMENTS
+  - Price fetches send a proper User-Agent and daemon logs now include the underlying network error (e.g. ENOTFOUND) instead of a bare "fetch failed", making oracle problems diagnosable from a single log paste.
+
   v1.12.1 - hotfix: NerdAxe / NerdQAxe miners now appear on the Status page.
 
   FIXES

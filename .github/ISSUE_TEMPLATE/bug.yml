@@ -88,3 +88,14 @@ body:
         Bare-metal: from the terminal you ran `pnpm daemon` in.
         Tokens are redacted automatically; double-check before posting.
       render: shell
+
+  - type: textarea
+    id: support-bundle
+    attributes:
+      label: Support bundle, if you can reach the dashboard
+      description: |
+        Config → Display & Logging → Diagnostics → "Run diagnostics" →
+        "Copy as Markdown", then paste here. It probes every service
+        the app talks to and snapshots your configuration with all
+        secrets stripped (they render as `********** [redacted]`).
+        This usually answers most follow-up questions in one go.
