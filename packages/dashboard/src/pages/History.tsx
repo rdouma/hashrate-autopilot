@@ -35,6 +35,7 @@ import {
 import { useDenomination } from '../lib/denomination';
 import { useFormatters } from '../lib/locale';
 import { formatNumber } from '../lib/format';
+import { DatePicker } from '../components/DatePicker';
 
 const PAGE_SIZE = 100;
 type Kind = NonNullable<BidHistoryFilters['kinds']>[number];
@@ -147,38 +148,17 @@ function Toolbar({
     onChange({ ...filters, kinds: set.size > 0 ? Array.from(set) : undefined });
   };
 
-  // #256 v2 follow-up: parse the date input value as LOCAL time so
-  // clicking "2 June" sets 2 June at 00:00:00 local rather than UTC
-  // midnight (which becomes 1 June 21:00 in UTC-3 and was the cause
-  // of the off-by-one operator caught).
-  const updateDate = (key: 'sinceMs' | 'untilMs', v: string) => {
-    if (!v) {
-      const next = { ...filters };
-      delete next[key];
-      onChange(next);
-      return;
-    }
-    const m = v.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    if (!m) return;
-    const [, ys, ms, ds] = m;
-    const year = Number(ys);
-    const month = Number(ms);
-    const day = Number(ds);
-    const d = new Date(year, month - 1, day);
-    onChange({
-      ...filters,
-      [key]:
-        key === 'sinceMs'
-          ? d.setHours(0, 0, 0, 0)
-          : d.setHours(23, 59, 59, 999),
-    });
-  };
-
-  const isoDateValue = (ms: number | undefined): string => {
-    if (ms === undefined) return '';
-    const d = new Date(ms);
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  // #266 follow-up: locale-aware custom date picker (see DatePicker.tsx).
+  // Browser-native input[type=date] always rendered as mm/dd/yyyy
+  // regardless of dashboard language - unacceptable for non-en-US
+  // operators. The custom picker formats via Intl.DateTimeFormat in
+  // the active dashboard locale and emits a local-midnight ms
+  // timestamp (start-of-day for sinceMs, end-of-day for untilMs).
+  const updateDate = (key: 'sinceMs' | 'untilMs', ms: number | undefined) => {
+    const next = { ...filters };
+    if (ms === undefined) delete next[key];
+    else next[key] = ms;
+    onChange(next);
   };
 
   // #256 v2 follow-up: the Δ price filter input and the |Δ price|
@@ -239,20 +219,20 @@ function Toolbar({
       </div>
       <div className="flex flex-col gap-0.5">
         <label className="text-[10px] tracking-wider text-slate-500"><Trans>From</Trans></label>
-        <input
-          type="date"
-          value={isoDateValue(filters.sinceMs)}
-          onChange={(e) => updateDate('sinceMs', e.target.value)}
-          className="text-[11px] bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-slate-200 focus:outline-none focus:border-amber-700"
+        <DatePicker
+          value={filters.sinceMs}
+          snap="start"
+          onChange={(ms) => updateDate('sinceMs', ms)}
+          ariaLabel={t`From date`}
         />
       </div>
       <div className="flex flex-col gap-0.5">
         <label className="text-[10px] tracking-wider text-slate-500"><Trans>To</Trans></label>
-        <input
-          type="date"
-          value={isoDateValue(filters.untilMs)}
-          onChange={(e) => updateDate('untilMs', e.target.value)}
-          className="text-[11px] bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-slate-200 focus:outline-none focus:border-amber-700"
+        <DatePicker
+          value={filters.untilMs}
+          snap="end"
+          onChange={(ms) => updateDate('untilMs', ms)}
+          ariaLabel={t`To date`}
         />
       </div>
       <div className="flex flex-col gap-0.5">

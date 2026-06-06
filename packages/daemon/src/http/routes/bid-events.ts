@@ -238,18 +238,35 @@ export async function registerBidEventsRoute(
 
     const rows = await deps.bidEventsRepo.listEventsForHistory(args);
     return {
-      events: rows.map((r) => ({
-        ...toView(r),
-        // #256 v2 follow-up: prefer the SQL-coalesced effective IDs
-        // and speed so the table never shows an em-dash for a row
-        // that's provably tied to a known bid.
-        braiins_order_id: r.effective_braiins_order_id ?? r.braiins_order_id,
-        speed_limit_ph: r.effective_speed_limit_ph ?? r.speed_limit_ph,
-        fillable_at_event_sat_per_ph_day:
-          r.fillable_at_event_sat !== null
-            ? r.fillable_at_event_sat / EH_PER_PH
-            : null,
-      })),
+      events: rows.map((r) => {
+        const v = toView(r);
+        // #266 follow-up: EDIT_SPEED carries no price columns of its
+        // own. Fill from the effective last-known price so the row
+        // doesn't have an awkward blank where the bid demonstrably
+        // still has a live price; delta is zero by definition.
+        const lastPhDay =
+          r.kind === 'EDIT_SPEED' && r.effective_last_price_sat !== null
+            ? r.effective_last_price_sat / EH_PER_PH
+            : null;
+        return {
+          ...v,
+          ...(lastPhDay !== null
+            ? {
+                old_price_sat_per_ph_day: lastPhDay,
+                new_price_sat_per_ph_day: lastPhDay,
+              }
+            : {}),
+          // #256 v2 follow-up: prefer the SQL-coalesced effective IDs
+          // and speed so the table never shows an em-dash for a row
+          // that's provably tied to a known bid.
+          braiins_order_id: r.effective_braiins_order_id ?? r.braiins_order_id,
+          speed_limit_ph: r.effective_speed_limit_ph ?? r.speed_limit_ph,
+          fillable_at_event_sat_per_ph_day:
+            r.fillable_at_event_sat !== null
+              ? r.fillable_at_event_sat / EH_PER_PH
+              : null,
+        };
+      }),
       next_cursor_id: rows.length === limit ? rows[rows.length - 1]!.id : null,
     };
   });

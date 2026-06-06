@@ -1437,6 +1437,10 @@ msgstr "Cheap-mode target"
 msgid "Choose file…"
 msgstr "Choose file…"
 
+#: src/components/DatePicker.tsx
+msgid "Clear"
+msgstr "Clear"
+
 #: src/pages/History.tsx
 #~ msgid "Clear all"
 #~ msgstr "Clear all"
@@ -2454,6 +2458,10 @@ msgstr "FOUND BY US"
 msgid "From"
 msgstr "From"
 
+#: src/pages/History.tsx
+msgid "From date"
+msgstr "From date"
+
 #: src/pages/Setup.tsx
 msgid "From hashpower.braiins.com → API tokens. Required."
 msgstr "From hashpower.braiins.com → API tokens. Required."
@@ -3179,6 +3187,10 @@ msgstr "next block est."
 msgid "next in <0>{remainingSec}s</0>"
 msgstr "next in <0>{remainingSec}s</0>"
 
+#: src/components/DatePicker.tsx
+msgid "Next month"
+msgstr "Next month"
+
 #: src/pages/Status.tsx
 msgid "next payout"
 msgstr "next payout"
@@ -3830,6 +3842,10 @@ msgstr "Percentage of overpay below which the autopilot does NOT issue an "
 msgid "Period selector"
 msgstr "Period selector"
 
+#: src/components/DatePicker.tsx
+msgid "Pick a date"
+msgstr "Pick a date"
+
 #: src/components/TilesBar.tsx
 msgid "pick…"
 msgstr "pick…"
@@ -3997,6 +4013,10 @@ msgstr "Presets"
 #: src/components/HashrateChart.tsx
 msgid "previous"
 msgstr "previous"
+
+#: src/components/DatePicker.tsx
+msgid "Previous month"
+msgstr "Previous month"
 
 #: src/components/PriceChart.tsx
 #: src/pages/History.tsx
@@ -4920,6 +4940,14 @@ msgstr "tip"
 #: src/pages/History.tsx
 msgid "To"
 msgstr "To"
+
+#: src/pages/History.tsx
+msgid "To date"
+msgstr "To date"
+
+#: src/components/DatePicker.tsx
+msgid "Today"
+msgstr "Today"
 
 #: src/pages/Status.tsx
 msgid "total"

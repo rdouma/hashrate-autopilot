@@ -171,7 +171,10 @@ export function Layout() {
             <div className="text-amber-400 font-semibold leading-tight">Hashrate Autopilot</div>
           </div>
 
-          <nav className="flex items-center gap-1">
+          {/* #266 follow-up: nav inline only at sm+; on mobile it
+              folds into the hamburger so the top bar stays single-row
+              (operator caught it wrapping on iPhone). */}
+          <nav className="hidden sm:flex items-center gap-1">
             {navItems.map((item) => {
               const active =
                 item.to === '/'
@@ -220,7 +223,12 @@ export function Layout() {
           </div>
 
           <div className="sm:hidden ml-auto">
-            <MobileMenu onSignOut={logout} showRearrange={location.pathname === '/'} />
+            <MobileMenu
+              onSignOut={logout}
+              showRearrange={location.pathname === '/'}
+              navItems={navItems}
+              unreadCount={unreadCount}
+            />
           </div>
         </div>
         </header>
@@ -268,12 +276,17 @@ export function Layout() {
 function MobileMenu({
   onSignOut,
   showRearrange,
+  navItems,
+  unreadCount,
 }: {
   onSignOut: () => void;
   showRearrange: boolean;
+  navItems: Array<{ label: string; to: string }>;
+  unreadCount: number;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const location = useLocation();
   const { rearranging, setRearranging, isCustomized, reset } = useCardOrderContext();
 
   useEffect(() => {
@@ -313,6 +326,35 @@ function MobileMenu({
 
       {open && (
         <div className="absolute right-0 mt-2 w-64 bg-slate-900 border border-slate-700 rounded-lg shadow-lg p-3 z-30 space-y-3">
+          {/* #266 follow-up: nav links folded in for mobile. */}
+          <div className="flex flex-col gap-1">
+            {navItems.map((item) => {
+              const active =
+                item.to === '/'
+                  ? location.pathname === '/'
+                  : location.pathname.startsWith(item.to);
+              return (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  onClick={() => setOpen(false)}
+                  className={
+                    'px-3 py-1.5 text-sm rounded-md transition flex items-center justify-between ' +
+                    (active
+                      ? 'bg-slate-800 text-amber-400'
+                      : 'text-slate-300 hover:bg-slate-800/60')
+                  }
+                >
+                  <span>{item.label}</span>
+                  {item.to === '/alerts' && unreadCount > 0 && (
+                    <span className="inline-flex items-center justify-center min-w-[1.25rem] h-4 px-1 text-[10px] font-medium rounded-full bg-red-500 text-white">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
           {/* #244: dashboard layout - Status page only. Toggling closes
               the menu so the operator can immediately drag cards. */}
           {showRearrange && (

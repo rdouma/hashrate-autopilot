@@ -1260,7 +1260,9 @@ msgstr "Braiins-marktplaats leeg gedurende"
 msgid "Braiins share-rejection rate over the selected chart range: sum of "
 "per-tick Δrejected over sum of per-tick Δpurchased. Same data source as "
 "the chart's right-axis rejection series."
-msgstr "Braiins share-afwijzingspercentage over het geselecteerde bereik: som van Δafgewezen per tick gedeeld door som van Δgekocht per tick. Zelfde bron als de rechter chart-as."
+msgstr "Braiins share-afwijzingspercentage over het geselecteerde bereik: som "
+"van Δafgewezen per tick gedeeld door som van Δgekocht per tick. Zelfde "
+"bron als de rechter chart-as."
 
 #: src/pages/Config.tsx
 msgid "Braiins's marketplace fees are currently zero (beta). These two knobs "
@@ -1452,6 +1454,10 @@ msgstr "Goedkoop-modus doel"
 #: src/pages/Config.tsx
 msgid "Choose file…"
 msgstr "Kies bestand…"
+
+#: src/components/DatePicker.tsx
+msgid "Clear"
+msgstr "Wissen"
 
 #: src/pages/History.tsx
 #~ msgid "Clear all"
@@ -2430,7 +2436,8 @@ msgstr "Vloot"
 msgid "Fleet-level energy efficiency. Sum of reachable Bitaxe power draw "
 "divided by sum of reachable Bitaxe hashrate, converted to joules per "
 "TH/s."
-msgstr "Vloot-efficiëntie. Som van het vermogen gedeeld door de som van de hashrate van bereikbare Bitaxe-miners, omgerekend naar joule per TH/s."
+msgstr "Vloot-efficiëntie. Som van het vermogen gedeeld door de som van de "
+"hashrate van bereikbare Bitaxe-miners, omgerekend naar joule per TH/s."
 
 #: src/pages/Config.tsx
 msgid "Flip this on, curl the endpoint, flip it back. Supports ?hours=N "
@@ -2480,6 +2487,10 @@ msgstr "DOOR ONS GEVONDEN"
 #: src/pages/History.tsx
 msgid "From"
 msgstr "Vanaf"
+
+#: src/pages/History.tsx
+msgid "From date"
+msgstr "Vanaf datum"
 
 #: src/pages/Setup.tsx
 msgid "From hashpower.braiins.com → API tokens. Required."
@@ -3220,6 +3231,10 @@ msgstr "volgend blok schat."
 msgid "next in <0>{remainingSec}s</0>"
 msgstr "volgende over <0>{remainingSec}s</0>"
 
+#: src/components/DatePicker.tsx
+msgid "Next month"
+msgstr "Volgende maand"
+
 #: src/pages/Status.tsx
 msgid "next payout"
 msgstr "volgende uitbetaling"
@@ -3884,6 +3899,10 @@ msgstr "Percentage van overpay waaronder de autopilot GEEN EDIT_PRICE uitvoert. 
 msgid "Period selector"
 msgstr "Periodekiezer"
 
+#: src/components/DatePicker.tsx
+msgid "Pick a date"
+msgstr "Kies een datum"
+
 #: src/components/TilesBar.tsx
 msgid "pick…"
 msgstr "kiezen…"
@@ -4051,6 +4070,10 @@ msgstr "Voorkeuzes"
 #: src/components/HashrateChart.tsx
 msgid "previous"
 msgstr "vorige"
+
+#: src/components/DatePicker.tsx
+msgid "Previous month"
+msgstr "Vorige maand"
 
 #: src/components/PriceChart.tsx
 #: src/pages/History.tsx
@@ -4766,13 +4789,16 @@ msgstr "Som van counters_committed.amount_consumed_sat over elk bod op "
 
 #: src/components/TilesBar.tsx
 msgid "Sum of live AxeOS-reported power draw across reachable Bitaxe miners."
-msgstr "Som van het door AxeOS gerapporteerde vermogensverbruik over bereikbare Bitaxe-miners."
+msgstr "Som van het door AxeOS gerapporteerde vermogensverbruik over bereikbare "
+"Bitaxe-miners."
 
 #: src/components/TilesBar.tsx
 msgid "Sum of the 1-minute hashrate Bitaxe miners are reporting (reachable "
 "devices only). Lines up with the Fleet total in the Bitaxe miners "
 "section."
-msgstr "Som van de 1-minuut hashrate die Bitaxe-miners rapporteren (alleen bereikbare apparaten). Komt overeen met het Fleet-totaal in de Bitaxe-miners sectie."
+msgstr "Som van de 1-minuut hashrate die Bitaxe-miners rapporteren (alleen "
+"bereikbare apparaten). Komt overeen met het Fleet-totaal in de "
+"Bitaxe-miners sectie."
 
 #: src/components/TilesBar.tsx
 msgid "Swap tile"
@@ -4983,6 +5009,14 @@ msgstr "tip"
 #: src/pages/History.tsx
 msgid "To"
 msgstr "Tot"
+
+#: src/pages/History.tsx
+msgid "To date"
+msgstr "Tot datum"
+
+#: src/components/DatePicker.tsx
+msgid "Today"
+msgstr "Vandaag"
 
 #: src/pages/Status.tsx
 msgid "total"

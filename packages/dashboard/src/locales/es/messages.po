@@ -1272,7 +1272,9 @@ msgstr "Mercado Braiins vacío durante"
 msgid "Braiins share-rejection rate over the selected chart range: sum of "
 "per-tick Δrejected over sum of per-tick Δpurchased. Same data source as "
 "the chart's right-axis rejection series."
-msgstr "Tasa de rechazo de shares de Braiins en el rango seleccionado: suma de Δrechazadas por tick dividida entre la suma de Δcompradas por tick. Misma fuente que la serie del eje derecho del gráfico."
+msgstr "Tasa de rechazo de shares de Braiins en el rango seleccionado: suma de "
+"Δrechazadas por tick dividida entre la suma de Δcompradas por tick. "
+"Misma fuente que la serie del eje derecho del gráfico."
 
 #: src/pages/Config.tsx
 msgid "Braiins's marketplace fees are currently zero (beta). These two knobs "
@@ -1463,6 +1465,10 @@ msgstr "Objetivo en modo barato"
 #: src/pages/Config.tsx
 msgid "Choose file…"
 msgstr "Elegir archivo…"
+
+#: src/components/DatePicker.tsx
+msgid "Clear"
+msgstr "Borrar"
 
 #: src/pages/History.tsx
 #~ msgid "Clear all"
@@ -2448,7 +2454,9 @@ msgstr "Flota"
 msgid "Fleet-level energy efficiency. Sum of reachable Bitaxe power draw "
 "divided by sum of reachable Bitaxe hashrate, converted to joules per "
 "TH/s."
-msgstr "Eficiencia energética de la flota. Suma del consumo dividida entre la suma del hashrate de los Bitaxe alcanzables, convertida a julios por TH/s."
+msgstr "Eficiencia energética de la flota. Suma del consumo dividida entre la "
+"suma del hashrate de los Bitaxe alcanzables, convertida a julios por "
+"TH/s."
 
 #: src/pages/Config.tsx
 msgid "Flip this on, curl the endpoint, flip it back. Supports ?hours=N "
@@ -2498,6 +2506,10 @@ msgstr "ENCONTRADO POR NOSOTROS"
 #: src/pages/History.tsx
 msgid "From"
 msgstr "Desde"
+
+#: src/pages/History.tsx
+msgid "From date"
+msgstr "Fecha desde"
 
 #: src/pages/Setup.tsx
 msgid "From hashpower.braiins.com → API tokens. Required."
@@ -3240,6 +3252,10 @@ msgstr "próx. bloque est."
 msgid "next in <0>{remainingSec}s</0>"
 msgstr "siguiente en <0>{remainingSec}s</0>"
 
+#: src/components/DatePicker.tsx
+msgid "Next month"
+msgstr "Mes siguiente"
+
 #: src/pages/Status.tsx
 msgid "next payout"
 msgstr "próximo pago"
@@ -3905,6 +3921,10 @@ msgstr "Porcentaje de overpay por debajo del cual el autopiloto NO ejecuta un "
 msgid "Period selector"
 msgstr "Selector de período"
 
+#: src/components/DatePicker.tsx
+msgid "Pick a date"
+msgstr "Elige una fecha"
+
 #: src/components/TilesBar.tsx
 msgid "pick…"
 msgstr "elegir…"
@@ -4073,6 +4093,10 @@ msgstr "Predefinidos"
 #: src/components/HashrateChart.tsx
 msgid "previous"
 msgstr "anterior"
+
+#: src/components/DatePicker.tsx
+msgid "Previous month"
+msgstr "Mes anterior"
 
 #: src/components/PriceChart.tsx
 #: src/pages/History.tsx
@@ -4790,13 +4814,15 @@ msgstr "Suma de counters_committed.amount_consumed_sat en cada oferta de "
 
 #: src/components/TilesBar.tsx
 msgid "Sum of live AxeOS-reported power draw across reachable Bitaxe miners."
-msgstr "Suma del consumo de potencia reportado por AxeOS en los Bitaxe alcanzables."
+msgstr "Suma del consumo de potencia reportado por AxeOS en los Bitaxe "
+"alcanzables."
 
 #: src/components/TilesBar.tsx
 msgid "Sum of the 1-minute hashrate Bitaxe miners are reporting (reachable "
 "devices only). Lines up with the Fleet total in the Bitaxe miners "
 "section."
-msgstr "Suma del hashrate a 1 minuto que reportan los Bitaxe alcanzables. Coincide con el total de la flota en la sección Bitaxe miners."
+msgstr "Suma del hashrate a 1 minuto que reportan los Bitaxe alcanzables. "
+"Coincide con el total de la flota en la sección Bitaxe miners."
 
 #: src/components/TilesBar.tsx
 msgid "Swap tile"
@@ -5008,6 +5034,14 @@ msgstr "punta"
 #: src/pages/History.tsx
 msgid "To"
 msgstr "Hasta"
+
+#: src/pages/History.tsx
+msgid "To date"
+msgstr "Fecha hasta"
+
+#: src/components/DatePicker.tsx
+msgid "Today"
+msgstr "Hoy"
 
 #: src/pages/Status.tsx
 msgid "total"

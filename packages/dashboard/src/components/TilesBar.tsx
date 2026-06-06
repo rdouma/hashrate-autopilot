@@ -446,25 +446,13 @@ function FloatingAddButton({
   onAdd: (id: DashboardTileId) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    const onClickOutside = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    };
-    window.addEventListener('mousedown', onClickOutside);
-    return () => window.removeEventListener('mousedown', onClickOutside);
-  }, [open]);
-
-  // #266 follow-up: label lowercase to match the "right axis"
-  // affordance elsewhere on the page. Trigger button itself is the
-  // dropdown anchor (anchorRef path), so the picker is portal-
-  // rendered and viewport-clamped same as the per-tile picker - no
-  // more right-of-trigger overflow.
+  // #266 follow-up: outside-click detection lives inside
+  // TilePickerDropdown so it can see the portal contents AND the
+  // anchor. The local wrapper just owns open/close state.
   const buttonRef = useRef<HTMLButtonElement>(null);
   return (
-    <div ref={ref} className="absolute -top-7 right-0 flex items-center gap-2 pointer-events-auto">
+    <div className="absolute -top-7 right-0 flex items-center gap-2 pointer-events-auto">
       <span className="text-xs text-slate-400 lowercase">
         <Trans>add tile</Trans>
       </span>
@@ -490,6 +478,7 @@ function FloatingAddButton({
         <TilePickerDropdown
           inUse={excluded}
           anchorRef={buttonRef}
+          onClose={() => setOpen(false)}
           onPick={(id) => {
             onAdd(id);
             setOpen(false);
@@ -510,18 +499,11 @@ interface TileSlotProps {
 
 function TileSlot({ id, inUse, result, onReplace, onRemove }: TileSlotProps) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
   const split = splitUnit(result.value);
 
-  useEffect(() => {
-    if (!open) return;
-    const onClickOutside = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    };
-    window.addEventListener('mousedown', onClickOutside);
-    return () => window.removeEventListener('mousedown', onClickOutside);
-  }, [open]);
-
+  // #266 follow-up: outside-click detection moved into
+  // TilePickerDropdown (where it can see the portal). Local
+  // wrapper just owns open/close state.
   const chevronRef = useRef<HTMLButtonElement>(null);
 
   // #266 follow-up: styled <Tooltip> wraps the entire tile body so
@@ -546,7 +528,6 @@ function TileSlot({ id, inUse, result, onReplace, onRemove }: TileSlotProps) {
 
   return (
     <div
-      ref={ref}
       className="relative pointer-events-auto group bg-slate-900 border border-slate-800 rounded-lg p-4 hover:border-slate-700"
     >
       {result.tooltip ? (
@@ -572,6 +553,7 @@ function TileSlot({ id, inUse, result, onReplace, onRemove }: TileSlotProps) {
           currentId={id}
           inUse={inUse}
           anchorRef={chevronRef}
+          onClose={() => setOpen(false)}
           onPick={(next) => {
             onReplace(next);
             setOpen(false);
@@ -595,6 +577,7 @@ interface PickerProps {
   readonly inUse: ReadonlyArray<DashboardTileId>;
   readonly onPick: (id: DashboardTileId) => void;
   readonly onRemove?: () => void;
+  readonly onClose: () => void;
   /**
    * #266 follow-up: anchor element to position the dropdown next to
    * (the tile's chevron button). Without this the dropdown opened
@@ -605,7 +588,7 @@ interface PickerProps {
   readonly anchorRef?: React.RefObject<HTMLElement | null>;
 }
 
-function TilePickerDropdown({ currentId, inUse, onPick, onRemove, anchorRef }: PickerProps) {
+function TilePickerDropdown({ currentId, inUse, onPick, onRemove, onClose, anchorRef }: PickerProps) {
   const inUseSet = useMemo(() => new Set(inUse), [inUse]);
   const ref = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{ left: number; top: number; ready: boolean }>({
@@ -619,6 +602,29 @@ function TilePickerDropdown({ currentId, inUse, onPick, onRemove, anchorRef }: P
   // positioning is in raw viewport coordinates. Width is intrinsic
   // (content-fit, capped at 22rem) instead of a fixed w-72, so the
   // dropdown sizes itself to the actual labels.
+  // #266 follow-up: outside-click handler attached HERE (inside the
+  // portal component) so it can see both the portaled dropdown AND
+  // the anchor. Build 622's handler lived on the parent's tile ref,
+  // which - now that the dropdown is portaled to document.body - did
+  // not contain the dropdown. Result: clicking an option triggered
+  // mousedown -> "not inside ref" -> setOpen(false), unmounting the
+  // picker before the click event could land on the button. Hence
+  // "menus look great but they don't work."
+  useEffect(() => {
+    const onDocPointerDown = (e: PointerEvent) => {
+      const target = e.target as Node | null;
+      if (!target) return;
+      if (ref.current?.contains(target)) return;
+      if (anchorRef?.current?.contains(target)) return;
+      onClose();
+    };
+    // pointerdown rather than mousedown: same lifecycle (fires before
+    // click), works on touch + mouse + pen. capture:true so we beat
+    // any inner stopPropagation, though nothing inside us calls it.
+    document.addEventListener('pointerdown', onDocPointerDown, true);
+    return () => document.removeEventListener('pointerdown', onDocPointerDown, true);
+  }, [onClose, anchorRef]);
+
   useLayoutEffect(() => {
     if (!anchorRef?.current || !ref.current) return;
     const measure = () => {

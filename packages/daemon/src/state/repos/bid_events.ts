@@ -189,6 +189,14 @@ export class BidEventsRepo {
         fillable_at_event_sat: number | null;
         effective_braiins_order_id: string | null;
         effective_speed_limit_ph: number | null;
+        /**
+         * #266 follow-up: last-known new_price_sat for this bid at or
+         * before the row's occurred_at. Lets the dashboard fill the
+         * price columns on EDIT_SPEED rows (which carry NULL prices
+         * themselves) - operator finds blank prices odd because the
+         * bid clearly still has one.
+         */
+        effective_last_price_sat: number | null;
       }
     >
   > {
@@ -276,7 +284,16 @@ export class BidEventsRepo {
               AND e3.kind IN ('CREATE_BID', 'EDIT_SPEED')
             ORDER BY e3.occurred_at DESC
             LIMIT 1)
-        ) AS effective_speed_limit_ph
+        ) AS effective_speed_limit_ph,
+        (SELECT e4.new_price_sat
+           FROM events_with_effective_id e4
+          WHERE e4.effective_order_id = e.effective_order_id
+            AND e4.effective_order_id IS NOT NULL
+            AND e4.new_price_sat IS NOT NULL
+            AND e4.occurred_at <= e.occurred_at
+            AND e4.kind IN ('CREATE_BID', 'EDIT_PRICE')
+          ORDER BY e4.occurred_at DESC
+          LIMIT 1) AS effective_last_price_sat
         FROM events_with_effective_id e
         ${whereClauseRebased}
         ORDER BY e.id DESC
@@ -292,6 +309,7 @@ export class BidEventsRepo {
       fillable_at_event_sat: number | null;
       effective_braiins_order_id: string | null;
       effective_speed_limit_ph: number | null;
+      effective_last_price_sat: number | null;
     };
     const rows = (result as unknown as { rows: Row[] }).rows ?? [];
     return rows;
