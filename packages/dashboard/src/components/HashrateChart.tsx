@@ -1378,6 +1378,26 @@ export const HashrateChart = memo(function HashrateChart({
       const stepped = points[steppedIdx]!;
       const luckAfter = stepped[luckKey];
       if (luckAfter === null) continue;
+      // #266 follow-up: dot Y reflects the event KIND, not the
+      // post-step luck value. The operator's mental model is "FOUND
+      // makes luck go UP, AGED OUT makes it go DOWN" - so the FOUND
+      // dot anchors to the higher of the two flanking line segments,
+      // the AGED OUT dot to the lower. This is robust against
+      // mismatches between the tooltip's luckBefore→luckAfter pair
+      // and the line's visible step, which happens because Ocean's
+      // pool_luck is a snapshot of the whole 30d window (not just
+      // our block) and other simultaneous events can mute or invert
+      // the per-block direction.
+      const hasIn = events.some((e) => e.kind === 'in');
+      const hasOut = events.some((e) => e.kind === 'out');
+      const dotLuckY =
+        luckBefore === null
+          ? luckAfter
+          : hasIn && !hasOut
+            ? Math.max(luckBefore, luckAfter)
+            : hasOut && !hasIn
+              ? Math.min(luckBefore, luckAfter)
+              : luckAfter;
       // Connector anchor: use the earliest contributing event's
       // timestamp so the dashed line covers the whole group when the
       // block icons sit before the resolved tick.
@@ -1393,7 +1413,7 @@ export const HashrateChart = memo(function HashrateChart({
           windowMs,
         },
         cx: xScale(stepped.tick_at),
-        cy: shareLogYScale(luckAfter),
+        cy: shareLogYScale(dotLuckY),
         blockCx: xScale(earliestT),
       });
     }

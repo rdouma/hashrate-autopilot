@@ -2,6 +2,10 @@
 
 ## 2026-06-07
 
+### `[Fix]` Pool-luck step marker anchors at the higher line for FOUND, lower for AGED OUT
+
+The dot on the pool-luck overlay used to anchor at `luckAfter` for both event kinds, which only matched the operator's mental model ("FOUND = up, AGED = down") when the data co-operated. Because Ocean's `pool_luck` reading is a snapshot of the whole 30-day window (not just our block), other simultaneous events could mute or even invert the per-event direction — the FOUND dot would then sit at the lower line segment, confusing the read. v2 anchors a FOUND dot at `max(luckBefore, luckAfter)` and an AGED OUT dot at `min(luckBefore, luckAfter)`, so the dot's Y always matches the event's intuitive direction regardless of data noise. Mixed groups (both kinds in the same tick) keep `luckAfter` as before.
+
 ### `[Fix]` No more duplicate cancels on bids Braiins is already unwinding (#276)
 
 Braiins accepts a bid cancellation asynchronously - the order lingers in the bids list as `PENDING_CANCEL` for up to a few minutes before disappearing. The controller treated those bids as fully alive: the Datum-down cancel sweep re-cancelled them (two cancel markers for the same order on the Price chart, observed 2026-06-06 during a gateway outage), and a dying order could even be selected as primary and receive price edits. PENDING_CANCEL bids are now excluded from every mutation path while still blocking a replacement CREATE until the old order has actually left the list, so no overlap is possible.
