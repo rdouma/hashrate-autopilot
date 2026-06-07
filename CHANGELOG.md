@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-06-07
+
+### `[Fix]` No more duplicate cancels on bids Braiins is already unwinding (#276)
+
+Braiins accepts a bid cancellation asynchronously - the order lingers in the bids list as `PENDING_CANCEL` for up to a few minutes before disappearing. The controller treated those bids as fully alive: the Datum-down cancel sweep re-cancelled them (two cancel markers for the same order on the Price chart, observed 2026-06-06 during a gateway outage), and a dying order could even be selected as primary and receive price edits. PENDING_CANCEL bids are now excluded from every mutation path while still blocking a replacement CREATE until the old order has actually left the list, so no overlap is possible.
+
 ## 2026-06-06
 
 ### `[UI]` "rejection rate" renamed to "rejection ratio" everywhere

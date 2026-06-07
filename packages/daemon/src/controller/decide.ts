@@ -54,6 +54,18 @@ export function decide(state: State): readonly Proposal[] {
     ];
   }
 
+  // #276: bids Braiins is already unwinding. DELETE /spot/bid is
+  // accepted asynchronously - the order lingers in the bids list as
+  // BID_STATUS_PENDING_CANCEL (observed for ~3 minutes on 2026-06-06
+  // while the seller side couldn't deliver). Treat them as
+  // already-gone for mutation purposes: never re-cancel (duplicate
+  // markers + wasted mutations), never price/speed-edit a dying
+  // order. They still count for the CREATE gate below so a
+  // replacement bid is not posted until the old order has actually
+  // left the list - two live bids must never overlap.
+  const isPendingCancel = (b: { status: string }): boolean =>
+    b.status === 'BID_STATUS_PENDING_CANCEL';
+
   // Cancel all owned bids when Datum stratum has been down for 3+
   // consecutive ticks (#199). No point paying for hashrate that
   // cannot reach the pool.
@@ -62,8 +74,9 @@ export function decide(state: State): readonly Proposal[] {
     state.datum !== null &&
     state.datum.consecutive_failures >= DATUM_DOWN_CANCEL_THRESHOLD
   ) {
-    if (state.owned_bids.length === 0) return [];
-    return state.owned_bids.map((bid) => ({
+    const cancellable = state.owned_bids.filter((b) => !isPendingCancel(b));
+    if (cancellable.length === 0) return [];
+    return cancellable.map((bid) => ({
       kind: 'CANCEL_BID' as const,
       braiins_order_id: bid.braiins_order_id,
       reason: `Datum stratum down: ${state.datum!.consecutive_failures} consecutive failures - cancelling to stop spend`,
@@ -208,8 +221,15 @@ export function decide(state: State): readonly Proposal[] {
 
   const proposals: Proposal[] = [];
 
-  // Keep one owned bid - cancel any extras.
-  const [primary, ...extras] = [...owned_bids].sort((a, b) =>
+  // Keep one owned bid - cancel any extras. PENDING_CANCEL bids are
+  // excluded on both sides (#276): they must not be re-cancelled as
+  // extras, and a dying order must not be selected as primary and
+  // receive price/speed edits. When every owned bid is pending
+  // cancel, do nothing this tick - the CREATE branch above stays
+  // gated on the full owned_bids list, so the replacement waits for
+  // Braiins to actually drop the old order.
+  const actionable = owned_bids.filter((b) => !isPendingCancel(b));
+  const [primary, ...extras] = [...actionable].sort((a, b) =>
     a.braiins_order_id.localeCompare(b.braiins_order_id),
   );
   if (!primary) return [];

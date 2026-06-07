@@ -197,6 +197,58 @@ describe('decide - Datum stratum down auto-cancel (#199)', () => {
   });
 });
 
+describe('decide - PENDING_CANCEL bids are never re-mutated (#276)', () => {
+  const datumDown = (failures: number) => ({
+    reachable: false,
+    connections: null,
+    hashrate_ph: null,
+    last_ok_at: 1_700_000_000_000 - failures * 60_000,
+    consecutive_failures: failures,
+  });
+  const pendingCancel = (id = 'order-a') =>
+    owned({ braiins_order_id: id, status: 'BID_STATUS_PENDING_CANCEL' });
+
+  it('does not re-cancel a PENDING_CANCEL bid when Datum is down (empirical 2026-06-06: duplicate cancel markers)', () => {
+    const proposals = decide(state({
+      datum: datumDown(3),
+      owned_bids: [pendingCancel()],
+    }));
+    expect(proposals).toEqual([]);
+  });
+
+  it('cancels only the still-live bid when Datum is down and another is PENDING_CANCEL', () => {
+    const proposals = decide(state({
+      datum: datumDown(3),
+      owned_bids: [pendingCancel('order-a'), owned({ braiins_order_id: 'order-b' })],
+    }));
+    expect(proposals).toHaveLength(1);
+    expect(proposals[0]).toMatchObject({ kind: 'CANCEL_BID', braiins_order_id: 'order-b' });
+  });
+
+  it('does not CREATE a replacement while the old bid is still PENDING_CANCEL (no overlap)', () => {
+    const proposals = decide(state({
+      owned_bids: [pendingCancel()],
+    }));
+    expect(proposals).toEqual([]);
+  });
+
+  it('does not EDIT_PRICE a PENDING_CANCEL bid even when its price has drifted', () => {
+    const proposals = decide(state({
+      // Price far below fillable + overpay → would normally trigger
+      // an EDIT_PRICE well past any deadband.
+      owned_bids: [pendingCancel()].map((b) => ({ ...b, price_sat: 40_000_000 })),
+    }));
+    expect(proposals).toEqual([]);
+  });
+
+  it('does not cancel a PENDING_CANCEL bid as an extra in the keep-one-bid sweep', () => {
+    const proposals = decide(state({
+      owned_bids: [owned({ braiins_order_id: 'order-a' }), pendingCancel('order-b')],
+    }));
+    expect(proposals.filter((p) => p.kind === 'CANCEL_BID')).toEqual([]);
+  });
+});
+
 describe('decide - CREATE path', () => {
   it('creates at fillable + overpay when below the fixed cap', () => {
     const proposals = decide(state());

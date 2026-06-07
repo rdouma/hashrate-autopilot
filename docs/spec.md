@@ -398,6 +398,7 @@ The updater pushes on a 5-min cadence and on any save event that touches a DDNS-
 - `pool_outage_blip_tolerance_seconds` is the observer-side threshold below which the dashboard still
   reports the service as healthy (ignores transient blips).
 - When `state.datum.consecutive_failures >= 3` (three consecutive ticks of Datum stratum being unreachable), the controller cancels all active bids to stop spend (#199). There is no point paying for hashrate that cannot reach the pool. When stratum recovers (consecutive_failures drops back to 0), the controller resumes normal operation and creates a new bid on the next tick. The `datum_unreachable` alert copy reflects this auto-cancel behavior.
+- Braiins cancellation is asynchronous: after a successful `DELETE /spot/bid` the order lingers in the bids list as `BID_STATUS_PENDING_CANCEL` (observed up to ~3 minutes). The controller treats PENDING_CANCEL bids as already-gone for mutation purposes - it never re-cancels them (the Datum-down sweep and the keep-one-bid extras sweep both skip them) and never selects them as primary for price/speed edits - but they still gate CREATE, so a replacement bid is only posted once the old order has actually left the bids list (#276).
 
 **Braiins API unreachable:**
 
