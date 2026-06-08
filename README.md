@@ -296,6 +296,24 @@ Telegram setup is a 60-second walkthrough at [`docs/setup-telegram.md`](docs/set
 run more than one daemon against the same bot/chat, set an **Instance label** under Config →
 Notifications and every message gets prefixed with `[<label>] ` so you can tell them apart at a glance.
 
+## History
+
+Every bid event the autopilot or operator emitted - CREATE / EDIT_PRICE / EDIT_SPEED / CANCEL - lands in
+an append-only log surfaced at `/history` as a flat sortable table.
+
+![Order history page](docs/images/order-history.png)
+
+Toolbar filters: action-kind chips with Lucide glyphs matching the rows, full bid-id substring, From / To
+date range via a custom locale-aware date picker (the browser-native `<input type=date>` always rendered
+in the *browser's* locale rather than the dashboard's chosen language; the custom picker formats via
+`Intl.DateTimeFormat` in the active locale and emits a local-midnight ms timestamp), and a denomination-aware
+`|Δ price| ≥ N` filter whose input unit tracks the active TH / PH / EH toggle (converted to sat/EH/day on
+the wire). Columns: When, Bid (full id, no truncation), Action, Fillable-at-event, Price before, Price
+after, Δ price (green for downward, red for upward), Speed. Server-side infinite-scroll pagination via a
+`before_id` cursor. SQL coalesces the bid id forward on CREATE_BID rows that land before Braiins echoes the
+assigned id (1 h window) and carries the bid's speed and last-known price forward across events so cells
+aren't blank for an order that demonstrably had values.
+
 ## Configuration
 
 Everything that influences the controller - hashrate targets, price ceilings, cheap-mode thresholds, per-bid
@@ -309,7 +327,7 @@ The page is split across four tabs, each grouping fields by intent.
 
 ### Strategy
 
-![Config → Strategy tab](docs/images/config-strategy.jpg)
+![Config → Strategy tab](docs/images/config-strategy.png)
 
 **Hashrate targets** (just `target_hashrate_ph` + `minimum_floor_hashrate_ph` - the floor below which
 the safety detector escalates), **Cheap mode** (its own section with an explicit Enable checkbox; when

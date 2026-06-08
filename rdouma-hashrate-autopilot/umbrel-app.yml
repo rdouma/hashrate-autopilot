@@ -41,10 +41,12 @@ port: 3010
 # status-page-hero -> status-page-charts -> wizard-step-1
 # -> wizard-step-2. First image is the card hero.
 gallery:
-  - https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/rdouma-hashrate-autopilot/1.jpg
-  - https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/rdouma-hashrate-autopilot/2.jpg
-  - https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/rdouma-hashrate-autopilot/3.jpg
-  - https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/rdouma-hashrate-autopilot/4.jpg
+  - https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/rdouma-hashrate-autopilot/1.png
+  - https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/rdouma-hashrate-autopilot/2.png
+  - https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/rdouma-hashrate-autopilot/3.png
+  - https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/rdouma-hashrate-autopilot/4.png
+  - https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/rdouma-hashrate-autopilot/5.png
+  - https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/rdouma-hashrate-autopilot/6.png
 path: ""
 defaultUsername: ""
 defaultPassword: ""
