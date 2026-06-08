@@ -41,6 +41,12 @@ import {
   type IpChangeMarkerEvent,
   type IpChangeTooltipState,
 } from './IpChangeMarkers';
+import {
+  SpeedEditMarkers,
+  SpeedEditTooltip,
+  type SpeedEditMarkerEvent,
+  type SpeedEditTooltipState,
+} from './SpeedEditMarkers';
 import { getChartColor, parseOverrides } from '../lib/chartColors';
 import {
   formatAgeMinutes,
@@ -354,6 +360,7 @@ export const HashrateChart = memo(function HashrateChart({
   soloSeries = [],
   bestDiffEvents = [],
   ipChangeEvents = [],
+  speedEditEvents = [],
   markersHiddenCount = 0,
   viewportHandlers,
   wheelRef,
@@ -398,6 +405,12 @@ export const HashrateChart = memo(function HashrateChart({
   bestDiffEvents?: ReadonlyArray<{ recorded_at: number; difficulty: number }>;
   /** #250: public-IP change events, drawn as router-icon markers. */
   ipChangeEvents?: ReadonlyArray<IpChangeMarkerEvent>;
+  /** #281: EDIT_SPEED bid events, drawn as gauge-icon markers. A
+   *  speed-limit change moves the delivered-hashrate curve, so these
+   *  mirror the price chart's speed markers onto the hashrate chart.
+   *  Already filtered (kind + range gating + marker cap) by the
+   *  caller; this component just draws what it's given. */
+  speedEditEvents?: ReadonlyArray<SpeedEditMarkerEvent>;
   /** #172: number of markers hidden by the global marker cap. */
   markersHiddenCount?: number;
   viewportHandlers?: {
@@ -442,6 +455,10 @@ export const HashrateChart = memo(function HashrateChart({
   const COLOR_BIP110 = getChartColor('hashrate.pool_block_bip110', _colorOverrides);
   const COLOR_RETARGET = getChartColor('hashrate.marker_retarget', _colorOverrides);
   const COLOR_IP_CHANGE = getChartColor('hashrate.marker_ip_change', _colorOverrides);
+  // #281: same color key the price chart resolves for its EDIT_SPEED
+  // glyph, so the speed markers read identically on both charts and
+  // honor the operator's Chart-colors override.
+  const COLOR_EDIT_SPEED = getChartColor('events.edit_speed', _colorOverrides);
   const COLOR_RIGHT_AXIS = getChartColor('hashrate.right_axis', _colorOverrides);
   /* eslint-enable @typescript-eslint/no-shadow */
   const dateTimeLocale = useDateTimeLocale();
@@ -459,6 +476,8 @@ export const HashrateChart = memo(function HashrateChart({
   const [stepTip, setStepTip] = useState<PoolLuckStepTooltipState | null>(null);
   // #250: public-IP-change marker tooltip (router-icon hover).
   const [ipChangeTip, setIpChangeTip] = useState<IpChangeTooltipState | null>(null);
+  // #281: speed-edit marker tooltip (gauge-icon hover).
+  const [speedEditTip, setSpeedEditTip] = useState<SpeedEditTooltipState | null>(null);
   // #105: parity with PriceChart - operator can double chart height
   // for closer inspection of floor breaches / BIP 110 marker positions.
   // State is local; PriceChart's expand toggle is independent.
@@ -527,6 +546,27 @@ export const HashrateChart = memo(function HashrateChart({
     [],
   );
   const closeIpChangeTip = useCallback(() => setIpChangeTip(null), []);
+
+  const onSpeedEditEnter = useCallback(
+    (event: SpeedEditMarkerEvent, e: React.MouseEvent) => {
+      setSpeedEditTip((prev) => {
+        if (prev?.pinned) return prev;
+        return { event, x: e.clientX, y: e.clientY, pinned: false };
+      });
+    },
+    [],
+  );
+  const onSpeedEditLeave = useCallback(() => {
+    setSpeedEditTip((prev) => (prev?.pinned ? prev : null));
+  }, []);
+  const onSpeedEditClick = useCallback(
+    (event: SpeedEditMarkerEvent, e: React.MouseEvent) => {
+      e.stopPropagation();
+      setSpeedEditTip({ event, x: e.clientX, y: e.clientY, pinned: true });
+    },
+    [],
+  );
+  const closeSpeedEditTip = useCallback(() => setSpeedEditTip(null), []);
 
   const onStepEnter = useCallback(
     (group: PoolLuckStepGroup) => (e: React.MouseEvent) => {
@@ -1554,6 +1594,15 @@ export const HashrateChart = memo(function HashrateChart({
                 b.timestamp_ms <= chartData.maxX &&
                 b.found_by_us,
             ) && <Legend color={COLOR_OUR_BLOCK} label={t`found by us`} dashed />}
+          {/* #281: only advertise the speed-edit marker in the legend
+              when one is actually on screen, so the chip doesn't sit
+              there permanently on the (common) ranges with no recent
+              speed change. */}
+          {speedEditEvents.some(
+              (e) =>
+                e.occurred_at >= chartData.minX &&
+                e.occurred_at <= chartData.maxX,
+            ) && <Legend color={COLOR_EDIT_SPEED} label={t`edit speed`} dashed />}
           {markersHiddenCount > 0 && (
             <span
               className="text-[10px] text-slate-500 italic"
@@ -1991,6 +2040,23 @@ export const HashrateChart = memo(function HashrateChart({
           onMarkerClick={onIpChangeClick}
         />
 
+        {/* #281: speed-edit markers (gauge icon). A speed-limit change
+            moves the delivered-hashrate curve, so these mirror the
+            price chart's EDIT_SPEED markers here. Caller pre-filters
+            by kind, range gating, and the marker cap. */}
+        <SpeedEditMarkers
+          events={speedEditEvents}
+          xScale={xScale}
+          dataMinX={dataMinX}
+          dataMaxX={dataMaxX}
+          topY={PADDING.top}
+          bottomY={chartHeight - PADDING.bottom}
+          color={COLOR_EDIT_SPEED}
+          onMarkerEnter={onSpeedEditEnter}
+          onMarkerLeave={onSpeedEditLeave}
+          onMarkerClick={onSpeedEditClick}
+        />
+
         <defs>
           <linearGradient id="deliveredFill" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={COLOR_DELIVERED} stopOpacity="0.45" />
@@ -2178,6 +2244,13 @@ export const HashrateChart = memo(function HashrateChart({
           tip={ipChangeTip}
           onClose={closeIpChangeTip}
           pinnedDomId="hashrate-chart-pinned-ipchange-tooltip"
+        />
+      )}
+      {speedEditTip && (
+        <SpeedEditTooltip
+          tip={speedEditTip}
+          onClose={closeSpeedEditTip}
+          pinnedDomId="hashrate-chart-pinned-speededit-tooltip"
         />
       )}
     </div>

@@ -505,6 +505,20 @@ export function Status() {
     };
   }, [bidEventsQuery.data?.events, configQuery.data?.config?.chart_max_markers, allOurBlocks, allRewardEvents, vp.since_ms, vp.until_ms]);
 
+  // #281: EDIT_SPEED events for the hashrate chart - a speed-limit
+  // change moves the delivered-hashrate curve, so those markers
+  // mirror onto the hashrate chart. Derived from the same cap-filtered
+  // visibleBidEvents the price chart uses, gated by the active range's
+  // showEventKinds (EDIT_SPEED is a rare kind: shown through 1w,
+  // dropped at 1m+) so the two charts agree on what's visible.
+  const speedEditEvents = useMemo(() => {
+    const showKinds = vp.activePreset
+      ? CHART_RANGE_SPECS[vp.activePreset].showEventKinds
+      : showEventKindsForSpan(vp.until_ms - vp.since_ms);
+    if (!showKinds.includes('EDIT_SPEED')) return EMPTY_BID_EVENTS;
+    return visibleBidEvents.filter((e) => e.kind === 'EDIT_SPEED');
+  }, [visibleBidEvents, vp.activePreset, vp.since_ms, vp.until_ms]);
+
   if (query.isError && query.error instanceof UnauthorizedError) {
     navigate('/login');
     return null;
@@ -627,6 +641,7 @@ export function Status() {
           rightAxisSeries={hashrateRightAxis}
           soloSeries={soloSeries}
           bestDiffEvents={bestDiffEvents}
+          speedEditEvents={speedEditEvents}
           markersHiddenCount={markersHiddenCount}
           viewportHandlers={chartViewport.handlers}
           wheelRef={chartViewport.wheelRef}

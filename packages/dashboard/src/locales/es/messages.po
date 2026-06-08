@@ -1436,6 +1436,7 @@ msgstr "Clic para expandir"
 #: src/components/HashrateChart.tsx
 #: src/components/IpChangeMarkers.tsx
 #: src/components/PriceChart.tsx
+#: src/components/SpeedEditMarkers.tsx
 #: src/lib/chartCrosshair.tsx
 msgid "close"
 msgstr "cerrar"
@@ -2095,7 +2096,9 @@ msgstr "Editar precio"
 msgid "EDIT PRICE"
 msgstr "EDIT PRICE"
 
+#: src/components/HashrateChart.tsx
 #: src/components/PriceChart.tsx
+#: src/components/SpeedEditMarkers.tsx
 #: src/pages/Config.tsx
 #: src/pages/History.tsx
 msgid "edit speed"
@@ -3204,6 +3207,7 @@ msgid "new difficulty"
 msgstr "nueva dificultad"
 
 #: src/components/PriceChart.tsx
+#: src/components/SpeedEditMarkers.tsx
 msgid "new speed"
 msgstr "nueva velocidad"
 

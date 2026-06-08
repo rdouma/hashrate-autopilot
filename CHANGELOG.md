@@ -2,6 +2,10 @@
 
 ## 2026-06-08
 
+### `[Feature]` Speed-edit markers now appear on the hashrate chart (#281)
+
+A speed-limit (EDIT_SPEED) change resizes the bid's PH/s cap, which directly moves the delivered-hashrate curve - but until now those events only showed on the price chart, leaving the hashrate chart unannotated for the one bid event most relevant to it. The hashrate chart now draws the same gauge glyph at the moment of each speed edit (full-height dashed line, matching its existing retarget / IP-change markers), with a hover/click tooltip showing the new speed limit and the change reason. It reuses the price chart's `events.edit_speed` color and respects the same range gating (visible through 1w, hidden at 1m+) and the global marker cap. The price chart is unchanged.
+
 ### `[Fix]` BIP 110 mobile card header no longer pushed out of band by long miner tags (#278)
 
 On a narrow iPhone viewport, signaling-block cards whose template was built by a non-Ocean miner with a long tag (e.g. `ckpool$/Block Mined by …`) rendered the badge column out of band — the block-height number on the left and the badge column on the right stopped lining up cleanly, and the long tag dragged the row's baseline. The badge was using `inline-flex` + a fixed `max-w-[180px]`, which didn't cooperate with the parent column's width. v2 switches the badge to `flex` + `max-w-full min-w-0` so it sizes to the column, the column itself gets `min-w-0` so the `truncate` inside actually fires, and the card header moves from `items-baseline` to `items-start` so a tall or wrapping badge doesn't drag the height number's baseline. Ocean's tidy short-tag cards above are unaffected.

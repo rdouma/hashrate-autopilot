@@ -1429,6 +1429,7 @@ msgstr "Klik om uit te klappen"
 #: src/components/HashrateChart.tsx
 #: src/components/IpChangeMarkers.tsx
 #: src/components/PriceChart.tsx
+#: src/components/SpeedEditMarkers.tsx
 #: src/lib/chartCrosshair.tsx
 msgid "close"
 msgstr "sluiten"
@@ -2084,7 +2085,9 @@ msgstr "Prijs aanpassen"
 msgid "EDIT PRICE"
 msgstr "PRIJS AANPASSEN"
 
+#: src/components/HashrateChart.tsx
 #: src/components/PriceChart.tsx
+#: src/components/SpeedEditMarkers.tsx
 #: src/pages/Config.tsx
 #: src/pages/History.tsx
 msgid "edit speed"
@@ -3187,6 +3190,7 @@ msgid "new difficulty"
 msgstr "nieuwe moeilijkheid"
 
 #: src/components/PriceChart.tsx
+#: src/components/SpeedEditMarkers.tsx
 msgid "new speed"
 msgstr "nieuwe snelheid"
 
