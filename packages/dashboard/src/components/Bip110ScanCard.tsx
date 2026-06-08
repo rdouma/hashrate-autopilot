@@ -132,6 +132,10 @@ const MINER_COLORS = [
 ];
 
 function minerColor(tag: string): string {
+  // Ocean gets its brand blue regardless of the hash. Any tag that
+  // begins with "Ocean" matches so the colour is stable across the
+  // pool wrapper ("Ocean") and any future suffixed variant.
+  if (/^ocean/i.test(tag)) return 'bg-sky-500';
   let h = 0;
   for (let i = 0; i < tag.length; i++) h = (h * 31 + tag.charCodeAt(i)) | 0;
   return MINER_COLORS[Math.abs(h) % MINER_COLORS.length]!;
@@ -141,7 +145,12 @@ function MinerBadge({ tag }: { tag: string }): React.JSX.Element {
   const initial = tag.replace(/^[^a-zA-Z0-9]*/, '').charAt(0).toUpperCase() || '?';
   return (
     <span className="inline-flex items-center gap-1.5 text-xs text-slate-300 truncate max-w-[180px]" title={tag}>
-      <span className={`inline-flex items-center justify-center w-5 h-5 rounded text-[10px] font-bold text-white ${minerColor(tag)}`}>
+      {/* shrink-0 keeps the letter square w-5 h-5 even when the tag
+          is long enough to push the flex children to compete for
+          space (e.g. "ckpool$/Block Mined by ...") - without it the
+          letter was getting squashed narrower than the matching
+          icons on shorter tags. */}
+      <span className={`shrink-0 inline-flex items-center justify-center w-5 h-5 rounded text-[10px] font-bold text-white ${minerColor(tag)}`}>
         {initial}
       </span>
       <span className="truncate">{tag}</span>

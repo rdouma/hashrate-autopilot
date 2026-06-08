@@ -2,6 +2,10 @@
 
 ## 2026-06-07
 
+### `[UI]` BIP 110 pool/miner badge: even-width letter on long tags, blue for Ocean
+
+The deterministic letter avatars on each BIP 110 signalling row used to squash narrower when the tag next to them was long enough to force the flex children to compete for space (`ckpool$/Block Mined by …` next to a `C` came out clearly thinner than the matching `O` two rows below). Added `shrink-0` so every letter avatar keeps its `w-5 h-5` square regardless of tag length. Ocean also gets a special-case `bg-sky-500` (its brand blue) instead of whatever the hash-of-tag picked from the generic palette, so the dominant pool in every Ocean operator's scan reads at a glance.
+
 ### `[Fix]` Pool-luck step marker anchors at the higher line for FOUND, lower for AGED OUT
 
 The dot on the pool-luck overlay used to anchor at `luckAfter` for both event kinds, which only matched the operator's mental model ("FOUND = up, AGED = down") when the data co-operated. Because Ocean's `pool_luck` reading is a snapshot of the whole 30-day window (not just our block), other simultaneous events could mute or even invert the per-event direction — the FOUND dot would then sit at the lower line segment, confusing the read. v2 anchors a FOUND dot at `max(luckBefore, luckAfter)` and an AGED OUT dot at `min(luckBefore, luckAfter)`, so the dot's Y always matches the event's intuitive direction regardless of data noise. Mixed groups (both kinds in the same tick) keep `luckAfter` as before.
