@@ -34,6 +34,13 @@ export interface UseChartViewportReturn {
   reset: () => void;
   /** Tell the hook the earliest data timestamp so "All" uses real bounds. */
   setDataStart: (ms: number) => void;
+  /**
+   * #285: pan the viewport to centre on `centerMs`, optionally with a
+   * specific window width. Clears `liveEdge` and `activePreset` so the
+   * viewport doesn't snap back to "now" on the next tick. Used by the
+   * `?focus_event=` handler when navigating from History → chart.
+   */
+  jumpToWindow: (centerMs: number, durationMs?: number) => void;
   /** Ref callback - attach to each chart SVG so scroll-to-zoom
    *  uses a non-passive native listener (prevents page scrolling). */
   wheelRef: (node: SVGSVGElement | null) => void;
@@ -172,6 +179,29 @@ export function useChartViewport(): UseChartViewportReturn {
     const preset = viewport.activePreset ?? DEFAULT_CHART_RANGE;
     setPreset(preset);
   }, [viewport.activePreset, setPreset]);
+
+  // #285: centre the viewport on a specific timestamp. If durationMs
+  // is unspecified, preserve the current viewport's width so the
+  // operator doesn't lose their zoom level. liveEdge / activePreset
+  // are cleared so the auto-snap-to-now timer doesn't fight us back.
+  const jumpToWindow = useCallback(
+    (centerMs: number, durationMs?: number) => {
+      const width =
+        durationMs ?? Math.max(60_000, viewport.until_ms - viewport.since_ms);
+      const half = width / 2;
+      const vp: ViewportState = {
+        since_ms: centerMs - half,
+        until_ms: centerMs + half,
+        activePreset: null,
+        liveEdge: false,
+      };
+      setViewport(vp);
+      setSettledViewport(vp);
+      persist(vp);
+      if (settleTimer.current) clearTimeout(settleTimer.current);
+    },
+    [viewport.until_ms, viewport.since_ms],
+  );
 
   const reset = useCallback(() => {
     setPreset(DEFAULT_CHART_RANGE);
@@ -403,6 +433,7 @@ export function useChartViewport(): UseChartViewportReturn {
     goLive,
     reset,
     setDataStart,
+    jumpToWindow,
     wheelRef,
     handlers: { onPointerDown, onPointerMove, onPointerUp, onDoubleClick },
     isDragging,

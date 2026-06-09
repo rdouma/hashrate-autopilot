@@ -3,7 +3,7 @@ import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import {
   CHART_RANGES,
@@ -137,6 +137,7 @@ function readStoredPriceRightAxis(fallback: PriceRightAxis): PriceRightAxis {
 
 export function Status() {
   const navigate = useNavigate();
+  const location = useLocation();
   const qc = useQueryClient();
   const { intlLocale } = useLocale();
   const fmt = useFormatters();
@@ -236,6 +237,35 @@ export function Status() {
       chartViewport.setDataStart(firstPointAt);
     }
   }, [firstPointAt, chartViewport.setDataStart]);
+
+  // #285: ?focus_event=<id>&at=<ms> handoff from History → chart. We
+  // pass the timestamp directly so Status doesn't need a round-trip
+  // to look the event up; the id is along for future use. Pan the
+  // price chart to the event's timestamp, then strip the params
+  // (replaceState so the back button doesn't re-trigger the jump).
+  // The viewport jump preserves the operator's current zoom width
+  // when possible; if the chart was in a >24 h preset we fall back
+  // to a 1 h centred window so a marker doesn't get lost in a year-
+  // wide axis.
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const atRaw = params.get('at');
+    if (!atRaw) return;
+    const at = Number.parseInt(atRaw, 10);
+    if (!Number.isFinite(at)) return;
+    const currentWidth =
+      chartViewport.viewport.until_ms - chartViewport.viewport.since_ms;
+    const HOUR_MS = 60 * 60_000;
+    const DAY_MS = 24 * HOUR_MS;
+    const width = currentWidth > DAY_MS ? HOUR_MS : currentWidth;
+    chartViewport.jumpToWindow(at, width);
+    params.delete('focus_event');
+    params.delete('at');
+    const next = params.toString();
+    navigate(`/${next ? `?${next}` : ''}`, { replace: true });
+    // location-driven effect; depend only on the URL string.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
 
   const effectiveViewportSince = useMemo(() => {
     if (dataStartMs != null && chartViewport.viewport.since_ms < dataStartMs) {

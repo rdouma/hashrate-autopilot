@@ -15,6 +15,7 @@ import { useLingui } from '@lingui/react';
 import { useQuery } from '@tanstack/react-query';
 import type React from 'react';
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { sideTooltipPosition } from '../lib/tooltipPosition';
 
 import {
@@ -3180,6 +3181,7 @@ function EventTooltip({
   const { i18n } = useLingui();
   void i18n;
   const fmt = useFormatters();
+  const navigate = useNavigate();
   const ref = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
 
@@ -3514,9 +3516,18 @@ function EventTooltip({
       )}
       {tip.pinned && (
         <div className="mt-3 pt-2 border-t border-slate-800 flex items-center justify-between gap-3">
-          <span className="text-[10px] text-slate-500">
-            {detailLoading ? t`loading decision…` : t`click outside to close`}
-          </span>
+          {/* #285: jump from chart marker into the History page row.
+              Pairs with the drawer's "View on chart" link for
+              bidirectional context without embedding a chart on
+              /history. */}
+          <button
+            type="button"
+            onClick={() => navigate(`/history?focus_event=${e.id}`)}
+            className="text-[10px] text-amber-300 hover:underline"
+            title={t`Open the History row for this event`}
+          >
+            <Trans>Show in history</Trans>{' →'}
+          </button>
           <button
             type="button"
             onClick={copyJson}

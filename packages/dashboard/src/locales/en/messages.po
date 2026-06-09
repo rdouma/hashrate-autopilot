@@ -634,6 +634,7 @@ msgstr "Auto-save off. Changes only persist when you click Save."
 msgid "Auto-save on. Edits persist about a second after you stop typing."
 msgstr "Auto-save on. Edits persist about a second after you stop typing."
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 msgid "automatic"
 msgstr "automatic"
@@ -824,9 +825,17 @@ msgstr "Bid above target - Braiins price-decrease cooldown active."
 msgid "bid coverage"
 msgstr "bid coverage"
 
+#: src/components/BidEventDrawer.tsx
+msgid "Bid event detail"
+msgstr "Bid event detail"
+
 #: src/pages/Status.tsx
 msgid "Bid filling at {speed}."
 msgstr "Bid filling at {speed}."
+
+#: src/components/BidEventDrawer.tsx
+msgid "bid id"
+msgstr "bid id"
 
 #: src/pages/History.tsx
 msgid "Bid id contains"
@@ -835,6 +844,10 @@ msgstr "Bid id contains"
 #: src/pages/Config.tsx
 msgid "Bid sustained-paused for"
 msgstr "Bid sustained-paused for"
+
+#: src/components/BidEventDrawer.tsx
+msgid "Bid was cancelled. See reason above."
+msgstr "Bid was cancelled. See reason above."
 
 #: src/pages/Config.tsx
 msgid "Bid-event markers"
@@ -1267,6 +1280,7 @@ msgstr "BTC/USD"
 msgid "BTC/USD: ${priceStr} - select display currency"
 msgstr "BTC/USD: ${priceStr} - select display currency"
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 #: src/pages/Status.tsx
 msgid "budget"
@@ -1294,6 +1308,7 @@ msgstr "Cadence between retries when an alert fails to deliver or the bad state 
 msgid "calculating…"
 msgstr "calculating…"
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 #: src/pages/Config.tsx
 #: src/pages/History.tsx
@@ -1304,6 +1319,7 @@ msgstr "cancel"
 msgid "Cancel"
 msgstr "Cancel"
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 msgid "CANCEL"
 msgstr "CANCEL"
@@ -1396,7 +1412,6 @@ msgid "Clear"
 msgstr "Clear"
 
 #: src/components/HashrateChart.tsx
-#: src/components/PriceChart.tsx
 msgid "click outside to close"
 msgstr "click outside to close"
 
@@ -1418,6 +1433,7 @@ msgstr "Click to hide"
 msgid "Click to show"
 msgstr "Click to show"
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/HashrateChart.tsx
 #: src/components/IpChangeMarkers.tsx
 #: src/components/PriceChart.tsx
@@ -1522,6 +1538,10 @@ msgstr "Controls how the P&L panel computes the \"spent\" figure that feeds the 
 msgid "Cooldown clears in"
 msgstr "Cooldown clears in"
 
+#: src/components/BidEventDrawer.tsx
+msgid "copied"
+msgstr "copied"
+
 #: src/pages/Config.tsx
 msgid "Copied"
 msgstr "Copied"
@@ -1554,6 +1574,7 @@ msgstr "copy bid ID"
 msgid "Copy hex to clipboard"
 msgstr "Copy hex to clipboard"
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 msgid "copy JSON"
 msgstr "copy JSON"
@@ -1566,12 +1587,14 @@ msgstr "Copy JSON"
 msgid "copy URL"
 msgstr "copy URL"
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 #: src/pages/Config.tsx
 #: src/pages/History.tsx
 msgid "create"
 msgstr "create"
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 msgid "CREATE"
 msgstr "CREATE"
@@ -1823,6 +1846,7 @@ msgstr "Delivered hashrate has been under your floor for at least this many "
 msgid "delivery while bidding"
 msgstr "delivery while bidding"
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 msgid "delta"
 msgstr "delta"
@@ -2051,6 +2075,7 @@ msgstr "e.g. http://192.168.1.121:8332 - your Bitcoin Knots RPC endpoint."
 msgid "Edit color"
 msgstr "Edit color"
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 #: src/pages/Config.tsx
 #: src/pages/History.tsx
@@ -2061,10 +2086,12 @@ msgstr "edit price"
 msgid "Edit price"
 msgstr "Edit price"
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 msgid "EDIT PRICE"
 msgstr "EDIT PRICE"
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/HashrateChart.tsx
 #: src/components/PriceChart.tsx
 #: src/components/SpeedEditMarkers.tsx
@@ -2077,6 +2104,7 @@ msgstr "edit speed"
 msgid "Edit speed"
 msgstr "Edit speed"
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 msgid "EDIT SPEED"
 msgstr "EDIT SPEED"
@@ -2097,6 +2125,7 @@ msgstr "edit-speed event marker"
 msgid "effective"
 msgstr "effective"
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 #: src/pages/Status.tsx
 msgid "effective cap"
@@ -2298,6 +2327,7 @@ msgstr "Fetches the BTC/USD spot price from a public exchange API. Enables a "
 "sats/USD denomination toggle in the dashboard header. No API key "
 "required - uses unauthenticated public endpoints."
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 #: src/pages/Config.tsx
 msgid "fillable"
@@ -2480,6 +2510,7 @@ msgid "Hard ceiling. If fillable + overpay would exceed this, the bid is "
 msgstr "Hard ceiling. If fillable + overpay would exceed this, the bid is "
 "clamped down to this value (and may not fill)."
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 #: src/pages/Config.tsx
 msgid "hashprice"
@@ -2892,13 +2923,14 @@ msgid "load older"
 msgstr "load older"
 
 #: src/components/PriceChart.tsx
-msgid "loading decision…"
-msgstr "loading decision…"
+#~ msgid "loading decision…"
+#~ msgstr "loading decision…"
 
 #: src/pages/Status.tsx
 msgid "Loading or daemon restart required."
 msgstr "Loading or daemon restart required."
 
+#: src/components/BidEventDrawer.tsx
 #: src/pages/Alerts.tsx
 #: src/pages/Config.tsx
 #: src/pages/Status.tsx
@@ -2926,6 +2958,7 @@ msgstr "luck after"
 msgid "luck before"
 msgstr "luck before"
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 msgid "manual"
 msgstr "manual"
@@ -2960,6 +2993,7 @@ msgid "Markers were hidden because the combined count exceeded the configured "
 msgstr "Markers were hidden because the combined count exceeded the configured "
 "chart-marker cap. Adjust the cap on Config → Display & Logging."
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 msgid "market at this tick"
 msgstr "market at this tick"
@@ -2980,6 +3014,7 @@ msgstr "Match - hostname is pointing at this box."
 msgid "Max acceptable fee"
 msgstr "Max acceptable fee"
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 #: src/pages/Config.tsx
 #: src/pages/Status.tsx
@@ -3002,6 +3037,7 @@ msgstr "Max markers shown"
 msgid "max over hashprice"
 msgstr "max over hashprice"
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 msgid "max overpay vs hashprice"
 msgstr "max overpay vs hashprice"
@@ -3154,6 +3190,7 @@ msgstr "Network's break-even rate at current difficulty + block reward: "
 msgid "new difficulty"
 msgstr "new difficulty"
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 #: src/components/SpeedEditMarkers.tsx
 msgid "new speed"
@@ -3241,6 +3278,10 @@ msgid "No on-chain balance tracking. The Profit & Loss panel won't show "
 "collected BTC."
 msgstr "No on-chain balance tracking. The Profit & Loss panel won't show "
 "collected BTC."
+
+#: src/components/BidEventDrawer.tsx
+msgid "no tick recorded near this event"
+msgstr "no tick recorded near this event"
 
 #: src/pages/Status.tsx
 msgid "none"
@@ -3562,6 +3603,14 @@ msgid "Open Telegram and chat with <0>@BotFather</0>, send /newbot, follow the "
 msgstr "Open Telegram and chat with <0>@BotFather</0>, send /newbot, follow the "
 "prompts; @BotFather replies with the token. Paste it here."
 
+#: src/components/PriceChart.tsx
+msgid "Open the History row for this event"
+msgstr "Open the History row for this event"
+
+#: src/components/BidEventDrawer.tsx
+msgid "Open the price chart pinned to this event"
+msgstr "Open the price chart pinned to this event"
+
 #: src/pages/Status.tsx
 msgid "Operations & next action"
 msgstr "Operations & next action"
@@ -3704,6 +3753,7 @@ msgstr "Overall % of the selected chart range that hashrate was being "
 msgid "overdue {overdueFormatted}"
 msgstr "overdue {overdueFormatted}"
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 msgid "overpay"
 msgstr "overpay"
@@ -4044,6 +4094,7 @@ msgstr "previous"
 msgid "Previous month"
 msgstr "Previous month"
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 #: src/pages/History.tsx
 #: src/pages/Status.tsx
@@ -4193,6 +4244,14 @@ msgstr "Rearrange"
 #: src/components/Layout.tsx
 msgid "Rearrange cards"
 msgstr "Rearrange cards"
+
+#: src/components/BidEventDrawer.tsx
+msgid "reason"
+msgstr "reason"
+
+#: src/pages/History.tsx
+msgid "Reason"
+msgstr "Reason"
 
 #: src/pages/Status.tsx
 msgid "rebuild"
@@ -4605,6 +4664,10 @@ msgstr "Share-rejection window (minutes)"
 msgid "Show"
 msgstr "Show"
 
+#: src/components/PriceChart.tsx
+msgid "Show in history"
+msgstr "Show in history"
+
 #: src/pages/Setup.tsx
 msgid "Show value"
 msgstr "Show value"
@@ -4646,6 +4709,7 @@ msgstr "size"
 msgid "Sound"
 msgstr "Sound"
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 #: src/pages/History.tsx
 msgid "speed"
@@ -5172,6 +5236,10 @@ msgstr "UTXOs at the configured payout address. Read via Electrs (preferred, "
 #: src/pages/Setup.tsx
 msgid "v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
 msgstr "v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
+
+#: src/components/BidEventDrawer.tsx
+msgid "View on chart"
+msgstr "View on chart"
 
 #: src/components/SoloMinersCard.tsx
 msgid "VR temp"

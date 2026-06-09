@@ -648,6 +648,7 @@ msgid "Auto-save on. Edits persist about a second after you stop typing."
 msgstr "Guardado automático activado. Los cambios se guardan aproximadamente un "
 "segundo después de que dejes de escribir."
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 msgid "automatic"
 msgstr "automático"
@@ -842,9 +843,17 @@ msgstr "Oferta por encima del objetivo - cooldown de bajada de precio de "
 msgid "bid coverage"
 msgstr "cobertura de oferta"
 
+#: src/components/BidEventDrawer.tsx
+msgid "Bid event detail"
+msgstr "Detalle del evento de oferta"
+
 #: src/pages/Status.tsx
 msgid "Bid filling at {speed}."
 msgstr "Oferta llenando a {speed}."
+
+#: src/components/BidEventDrawer.tsx
+msgid "bid id"
+msgstr "id de oferta"
 
 #: src/pages/History.tsx
 msgid "Bid id contains"
@@ -853,6 +862,10 @@ msgstr "ID de oferta contiene"
 #: src/pages/Config.tsx
 msgid "Bid sustained-paused for"
 msgstr "Oferta sostenidamente Paused durante"
+
+#: src/components/BidEventDrawer.tsx
+msgid "Bid was cancelled. See reason above."
+msgstr "La oferta fue cancelada. Ver motivo arriba."
 
 #: src/pages/Config.tsx
 msgid "Bid-event markers"
@@ -1291,6 +1304,7 @@ msgstr "BTC/USD"
 msgid "BTC/USD: ${priceStr} - select display currency"
 msgstr "BTC/USD: ${priceStr} - elige moneda de visualización"
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 #: src/pages/Status.tsx
 msgid "budget"
@@ -1319,6 +1333,7 @@ msgstr "Cadencia entre reintentos cuando una alerta no se entrega o el estado "
 msgid "calculating…"
 msgstr "calculando…"
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 #: src/pages/Config.tsx
 #: src/pages/History.tsx
@@ -1329,6 +1344,7 @@ msgstr "cancelar"
 msgid "Cancel"
 msgstr "Cancelar"
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 msgid "CANCEL"
 msgstr "CANCELAR"
@@ -1421,7 +1437,6 @@ msgid "Clear"
 msgstr "Borrar"
 
 #: src/components/HashrateChart.tsx
-#: src/components/PriceChart.tsx
 msgid "click outside to close"
 msgstr "haz clic fuera para cerrar"
 
@@ -1443,6 +1458,7 @@ msgstr "Clic para ocultar"
 msgid "Click to show"
 msgstr "Clic para mostrar"
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/HashrateChart.tsx
 #: src/components/IpChangeMarkers.tsx
 #: src/components/PriceChart.tsx
@@ -1547,6 +1563,10 @@ msgstr "Controla cómo el panel de P&L calcula la cifra \"gastado\" que alimenta
 msgid "Cooldown clears in"
 msgstr "El cooldown se libera en"
 
+#: src/components/BidEventDrawer.tsx
+msgid "copied"
+msgstr "copiado"
+
 #: src/pages/Config.tsx
 msgid "Copied"
 msgstr "Copiado"
@@ -1579,6 +1599,7 @@ msgstr "copiar ID de oferta"
 msgid "Copy hex to clipboard"
 msgstr "Copiar hex al portapapeles"
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 msgid "copy JSON"
 msgstr "copiar JSON"
@@ -1591,12 +1612,14 @@ msgstr "Copiar JSON"
 msgid "copy URL"
 msgstr "copiar URL"
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 #: src/pages/Config.tsx
 #: src/pages/History.tsx
 msgid "create"
 msgstr "crear"
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 msgid "CREATE"
 msgstr "CREATE"
@@ -1852,6 +1875,7 @@ msgstr "La hashrate entregada lleva al menos este número de minutos por debajo 
 msgid "delivery while bidding"
 msgstr "entrega con oferta activa"
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 msgid "delta"
 msgstr "delta"
@@ -2092,6 +2116,7 @@ msgstr "p.ej. http://192.168.1.121:8332 - tu endpoint RPC de Bitcoin Knots."
 msgid "Edit color"
 msgstr "Editar color"
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 #: src/pages/Config.tsx
 #: src/pages/History.tsx
@@ -2102,10 +2127,12 @@ msgstr "editar precio"
 msgid "Edit price"
 msgstr "Editar precio"
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 msgid "EDIT PRICE"
 msgstr "EDIT PRICE"
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/HashrateChart.tsx
 #: src/components/PriceChart.tsx
 #: src/components/SpeedEditMarkers.tsx
@@ -2118,6 +2145,7 @@ msgstr "editar velocidad"
 msgid "Edit speed"
 msgstr "Editar velocidad"
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 msgid "EDIT SPEED"
 msgstr "EDIT SPEED"
@@ -2138,6 +2166,7 @@ msgstr "marcador de edición de velocidad"
 msgid "effective"
 msgstr "efectivo"
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 #: src/pages/Status.tsx
 msgid "effective cap"
@@ -2341,6 +2370,7 @@ msgstr "Obtiene el precio spot BTC/USD desde una API pública de exchange. "
 "Habilita un toggle de denominación sats/USD en la cabecera del panel. "
 "No requiere API key - usa endpoints públicos sin autenticación."
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 #: src/pages/Config.tsx
 msgid "fillable"
@@ -2528,6 +2558,7 @@ msgid "Hard ceiling. If fillable + overpay would exceed this, the bid is "
 msgstr "Tope duro. Si rellenable + sobrepago lo superara, la oferta se limita a "
 "este valor (y puede no rellenarse)."
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 #: src/pages/Config.tsx
 msgid "hashprice"
@@ -2949,13 +2980,14 @@ msgid "load older"
 msgstr "cargar más antiguas"
 
 #: src/components/PriceChart.tsx
-msgid "loading decision…"
-msgstr "cargando decisión…"
+#~ msgid "loading decision…"
+#~ msgstr "cargando decisión…"
 
 #: src/pages/Status.tsx
 msgid "Loading or daemon restart required."
 msgstr "Cargando o se requiere reiniciar el daemon."
 
+#: src/components/BidEventDrawer.tsx
 #: src/pages/Alerts.tsx
 #: src/pages/Config.tsx
 #: src/pages/Status.tsx
@@ -2983,6 +3015,7 @@ msgstr "suerte despues"
 msgid "luck before"
 msgstr "suerte antes"
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 msgid "manual"
 msgstr "manual"
@@ -3019,6 +3052,7 @@ msgstr "Los marcadores se han ocultado porque el recuento combinado ha superado 
 "el tope de marcadores del chart configurado. Ajusta el tope en Config → "
 "Display & Logging."
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 msgid "market at this tick"
 msgstr "mercado en este tick"
@@ -3040,6 +3074,7 @@ msgstr "Coinciden - el nombre de host apunta a esta máquina."
 msgid "Max acceptable fee"
 msgstr "Comisión máxima aceptable"
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 #: src/pages/Config.tsx
 #: src/pages/Status.tsx
@@ -3062,6 +3097,7 @@ msgstr "Máx. de marcadores mostrados"
 msgid "max over hashprice"
 msgstr "máx sobre hashprice"
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 msgid "max overpay vs hashprice"
 msgstr "sobrepago máximo vs hashprice"
@@ -3216,6 +3252,7 @@ msgstr "Tasa de equilibrio de la red a la dificultad y recompensa de bloque "
 msgid "new difficulty"
 msgstr "nueva dificultad"
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 #: src/components/SpeedEditMarkers.tsx
 msgid "new speed"
@@ -3303,6 +3340,10 @@ msgid "No on-chain balance tracking. The Profit & Loss panel won't show "
 "collected BTC."
 msgstr "Sin seguimiento de saldo on-chain. El panel de Profit & Loss no "
 "mostrará el BTC cobrado."
+
+#: src/components/BidEventDrawer.tsx
+msgid "no tick recorded near this event"
+msgstr "no hay tick registrado cerca de este evento"
 
 #: src/pages/Status.tsx
 msgid "none"
@@ -3634,6 +3675,14 @@ msgid "Open Telegram and chat with <0>@BotFather</0>, send /newbot, follow the "
 msgstr "Abre Telegram y conversa con <0>@BotFather</0>, envía /newbot y sigue "
 "los pasos; @BotFather responde con el token. Pégalo aquí."
 
+#: src/components/PriceChart.tsx
+msgid "Open the History row for this event"
+msgstr "Abre la fila de History para este evento"
+
+#: src/components/BidEventDrawer.tsx
+msgid "Open the price chart pinned to this event"
+msgstr "Abre la gráfica de precio fijada en este evento"
+
 #: src/pages/Status.tsx
 msgid "Operations & next action"
 msgstr "Operaciones y próxima acción"
@@ -3781,6 +3830,7 @@ msgstr "% global del rango seleccionado en el que se estaba entregando "
 msgid "overdue {overdueFormatted}"
 msgstr "atrasado {overdueFormatted}"
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 msgid "overpay"
 msgstr "sobrepago"
@@ -4124,6 +4174,7 @@ msgstr "anterior"
 msgid "Previous month"
 msgstr "Mes anterior"
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 #: src/pages/History.tsx
 #: src/pages/Status.tsx
@@ -4275,6 +4326,14 @@ msgstr "Reorganizar"
 #: src/components/Layout.tsx
 msgid "Rearrange cards"
 msgstr "Reorganizar tarjetas"
+
+#: src/components/BidEventDrawer.tsx
+msgid "reason"
+msgstr "motivo"
+
+#: src/pages/History.tsx
+msgid "Reason"
+msgstr "Motivo"
 
 #: src/pages/Status.tsx
 msgid "rebuild"
@@ -4693,6 +4752,10 @@ msgstr "Ventana de rechazo de shares (minutos)"
 msgid "Show"
 msgstr "Mostrar"
 
+#: src/components/PriceChart.tsx
+msgid "Show in history"
+msgstr "Ver en historial"
+
 #: src/pages/Setup.tsx
 msgid "Show value"
 msgstr "Mostrar valor"
@@ -4734,6 +4797,7 @@ msgstr "tamaño"
 msgid "Sound"
 msgstr "Sonido"
 
+#: src/components/BidEventDrawer.tsx
 #: src/components/PriceChart.tsx
 #: src/pages/History.tsx
 msgid "speed"
@@ -5269,6 +5333,10 @@ msgstr "UTXOs en la dirección de pago configurada. Se leen vía Electrs "
 #: src/pages/Setup.tsx
 msgid "v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
 msgstr "v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
+
+#: src/components/BidEventDrawer.tsx
+msgid "View on chart"
+msgstr "Ver en gráfica"
 
 #: src/components/SoloMinersCard.tsx
 msgid "VR temp"

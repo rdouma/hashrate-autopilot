@@ -2,6 +2,18 @@
 
 ## 2026-06-08
 
+### `[Feature]` History page: reason column + click-row detail drawer + bidirectional chart links (#285)
+
+Per discussion #284, where a user looked at an unexpected CANCEL→CREATE pair in History, was confused, then resolved it themselves by zooming into the chart and hovering the marker (the bid-event tooltip carries the reason; History didn't). Three changes:
+
+1. **`Reason` column** in History. Reads `bid_events.reason`, which `decide.ts` already populates for every autopilot-emitted event (e.g. `Datum stratum down: 3 consecutive failures — cancelling to stop spend`, `track fillable: X → Y sat/PH/day`, `create at <price> · cheap mode N PH/s`). Truncate-with-title in the cell; full text in the drawer.
+
+2. **Click-row → slide-over drawer** with the chart-tooltip's content. Reason in full, kind-specific rows (price/speed/delta), bid id, market snapshot at the event tick (fillable, hashprice, overpay, max bid, effective cap — fetched on drawer open via a tight ±60 s `/api/metrics` window so the table-load path stays cheap), and a `copy JSON` button. Esc / X / backdrop click dismisses. Full-screen takeover on mobile, right-aligned drawer on desktop.
+
+3. **Bidirectional chart ↔ History cross-links** without embedding a chart on /history. The drawer carries `View on chart →` (navigates to `/?focus_event=<id>&at=<ms>` — Status pans the price chart to the event's timestamp, preserves the current zoom width when reasonable, falls back to a 1 h centred window if the chart was at a > 24 h preset). The chart's pinned `BidEventTooltip` carries `Show in history →` (navigates to `/history?focus_event=<id>` — History scrolls the row into view and pulses it amber for 1.5 s). URL params are stripped after the first effect-firing via `replaceState` so navigating away and back doesn't relaunch the highlight.
+
+Embedded chart on /history was explicitly out of scope — multi-day work, real perf cost, mobile layout problems; the cross-page links cover the same need at a fraction of the cost. Revisit only if a specific need emerges after living with the above.
+
 ### `[Fix]` BIP 110 mobile block card no longer overflows the viewport (#278 follow-up)
 
 The previous #278 fix swapped the miner badge's fixed `max-w-[180px]` for `max-w-full`, but the card is a CSS grid item with the default `min-width: auto`, so a long miner tag (e.g. `ckpool$/Block Mined by …`) grew the card past the viewport edge - pushing the right-aligned reward / fees / txs values off-screen instead of truncating. The card now carries `min-w-0` and the grid uses an explicit shrinkable `grid-cols-1` track, so the tag truncates with an ellipsis and the card fits its column with all values visible. Verified at iPhone width: a 594px-wide overflowing card now renders at 358px.

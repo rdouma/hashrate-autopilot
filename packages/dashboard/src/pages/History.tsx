@@ -36,6 +36,8 @@ import { useDenomination } from '../lib/denomination';
 import { useFormatters } from '../lib/locale';
 import { formatNumber } from '../lib/format';
 import { DatePicker } from '../components/DatePicker';
+import { BidEventDrawer } from '../components/BidEventDrawer';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const PAGE_SIZE = 100;
 type Kind = NonNullable<BidHistoryFilters['kinds']>[number];
@@ -46,6 +48,10 @@ export function History() {
   const fmt = useFormatters();
   const denomination = useDenomination();
   const [filters, setFilters] = useState<BidHistoryFilters>({});
+  const [selectedEvent, setSelectedEvent] = useState<BidHistoryFlatEvent | null>(null);
+  const [highlightedEventId, setHighlightedEventId] = useState<number | null>(null);
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const query = useInfiniteQuery({
     queryKey: ['bid-history-flat', filters],
@@ -74,6 +80,42 @@ export function History() {
     return () => io.disconnect();
   }, [query]);
 
+  // #285: ?focus_event=<id> from the price chart's "Show in history"
+  // link. Pull more pages until the target row is loaded, scroll it
+  // into view, highlight it briefly, then strip the param so a
+  // subsequent navigation doesn't re-trigger the highlight loop.
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const raw = params.get('focus_event');
+    if (!raw) return;
+    const id = Number.parseInt(raw, 10);
+    if (!Number.isFinite(id)) return;
+    const match = events.find((e) => e.id === id);
+    if (match) {
+      // Defer the scroll a tick so the row is in the DOM and any
+      // pending re-render has settled.
+      requestAnimationFrame(() => {
+        const el = document.getElementById(`bid-event-row-${id}`);
+        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+      setHighlightedEventId(id);
+      window.setTimeout(() => setHighlightedEventId(null), 1500);
+      // Strip the param so reloads or in-app nav don't relaunch the
+      // highlight. Use replace so the browser back button doesn't
+      // land here.
+      params.delete('focus_event');
+      const next = params.toString();
+      navigate(`/history${next ? `?${next}` : ''}`, { replace: true });
+    } else if (query.hasNextPage && !query.isFetchingNextPage) {
+      // Row isn't in the loaded set; pull another page. The effect
+      // will re-run when the new events land and we'll retry.
+      void query.fetchNextPage();
+    }
+    // intentionally not depending on `events`/`query.hasNextPage`
+    // values to avoid extra firings; we read the latest snapshot.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search, events.length, query.hasNextPage]);
+
   return (
     <div className="space-y-3">
       <h2 className="text-sm uppercase tracking-wider text-slate-100">
@@ -92,15 +134,23 @@ export function History() {
               <th className="text-right font-normal py-1.5 px-3 normal-case"><Trans>Price after</Trans></th>
               <th className="text-right font-normal py-1.5 px-3 normal-case"><Trans>Δ price</Trans></th>
               <th className="text-right font-normal py-1.5 px-3 normal-case"><Trans>Speed</Trans></th>
+              <th className="text-left font-normal py-1.5 px-3 normal-case"><Trans>Reason</Trans></th>
             </tr>
           </thead>
           <tbody className="text-slate-200">
             {events.map((e) => (
-              <EventRow key={e.id} event={e} fmt={fmt} denomination={denomination} />
+              <EventRow
+                key={e.id}
+                event={e}
+                fmt={fmt}
+                denomination={denomination}
+                highlighted={highlightedEventId === e.id}
+                onClick={() => setSelectedEvent(e)}
+              />
             ))}
             {events.length === 0 && !query.isPending && (
               <tr>
-                <td colSpan={8} className="px-3 py-4 text-center text-xs text-slate-500 italic">
+                <td colSpan={9} className="px-3 py-4 text-center text-xs text-slate-500 italic">
                   <Trans>No events match the current filters.</Trans>
                 </td>
               </tr>
@@ -125,6 +175,12 @@ export function History() {
         {events.length}{' '}
         {query.hasNextPage ? <Trans>events loaded; scroll for more</Trans> : <Trans>events (end of history)</Trans>}
       </div>
+      {selectedEvent && (
+        <BidEventDrawer
+          event={selectedEvent}
+          onClose={() => setSelectedEvent(null)}
+        />
+      )}
     </div>
   );
 }
@@ -302,10 +358,16 @@ function EventRow({
   event,
   fmt,
   denomination,
+  highlighted,
+  onClick,
 }: {
   event: BidHistoryFlatEvent;
   fmt: ReturnType<typeof useFormatters>;
   denomination: ReturnType<typeof useDenomination>;
+  /** #285: ?focus_event= flash after navigation from the chart. */
+  highlighted: boolean;
+  /** #285: open the bid-event drawer for this row. */
+  onClick: () => void;
 }) {
   const { i18n } = useLingui();
   void i18n;
@@ -322,7 +384,15 @@ function EventRow({
       : '—';
 
   return (
-    <tr className="border-t border-slate-800/70 hover:bg-slate-800/30 align-top">
+    <tr
+      id={`bid-event-row-${event.id}`}
+      onClick={onClick}
+      className={`border-t border-slate-800/70 align-top cursor-pointer transition-colors ${
+        highlighted
+          ? 'bg-amber-500/10 ring-1 ring-amber-500/40'
+          : 'hover:bg-slate-800/30'
+      }`}
+    >
       <td className="py-1 px-3 font-mono text-slate-300 whitespace-nowrap">
         {fmt.timestamp(event.occurred_at)}
       </td>
@@ -359,6 +429,15 @@ function EventRow({
       </td>
       <td className="py-1 px-3 text-right font-mono text-slate-300 whitespace-nowrap">
         {speedText}
+      </td>
+      {/* #285: reason column. `bid_events.reason` is populated by
+          decide.ts for every autopilot-emitted event (CREATE / EDIT_PRICE
+          / EDIT_SPEED / CANCEL); operator-initiated rows render '—'.
+          Truncate-with-title keeps the column readable on dense screens
+          but the full reason is one hover away. The click-row drawer
+          carries it in full alongside the rest of the bid-event detail. */}
+      <td className="py-1 px-3 text-slate-400 max-w-[20rem] truncate" title={event.reason ?? undefined}>
+        {event.reason ?? '—'}
       </td>
     </tr>
   );
