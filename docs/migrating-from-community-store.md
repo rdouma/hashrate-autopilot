@@ -27,11 +27,10 @@ umbreld client apps.start.mutate --appId hashrate-autopilot
 umbreld client apps.uninstall.mutate --appId rdouma-hashrate-autopilot
 ```
 
-Five commands plus the UI install in step 2. Total time: under five minutes once the official app is downloaded.
 
 ## Why is this even necessary?
 
-Umbrel community app stores are required to prefix every app id with the store's own prefix. My community store ([rdouma/hashrate-autopilot](https://github.com/rdouma/hashrate-autopilot)) calls the app `rdouma-hashrate-autopilot`. The official Umbrel App Store has no prefix convention — there it's just `hashrate-autopilot`.
+Umbrel community app stores are required to prefix every app id with the store's own prefix. My community store ([rdouma/hashrate-autopilot](https://github.com/rdouma/hashrate-autopilot)) calls the app `rdouma-hashrate-autopilot`. The official Umbrel App Store has no prefix convention - there it's just `hashrate-autopilot`.
 
 Umbrel stores every app's persistent data under `~/umbrel/app-data/<app-id>/`. Because the two app ids differ, **Umbrel treats the two installs as two different apps**:
 
@@ -42,7 +41,8 @@ Umbrel stores every app's persistent data under `~/umbrel/app-data/<app-id>/`. B
 
 If you just click **Install** in the official store while keeping the community version, you end up with two instances running side by side, the new one with an empty database. If you uninstall the community version after installing the official one without migrating, your history goes with it.
 
-The Docker image is identical (`ghcr.io/rdouma/hashrate-autopilot:1.13.0` is what both installs pull), so the only thing that has to move between the two on-host directories is the SQLite database. That's what the steps below do.
+The Docker image is identical (at the time of writing, both installs pull `ghcr.io/rdouma/hashrate-autopilot:1.13.0`),
+so the only thing that has to move between the two on-host directories is the SQLite database. That's what the steps below do.
 
 ## Step by step
 
@@ -56,13 +56,14 @@ SSH into your Umbrel and run:
 umbreld client apps.stop.mutate --appId rdouma-hashrate-autopilot
 ```
 
-This brings the container down cleanly. Your data stays put under `~/umbrel/app-data/rdouma-hashrate-autopilot/` — stopping is not uninstalling.
+This brings the container down cleanly. Your data stays put under `~/umbrel/app-data/rdouma-hashrate-autopilot/`
+(stopping is not uninstalling).
 
 ### 2. Install the official version
 
 Open Umbrel's App Store in your browser, find **Hashrate Autopilot**, and install it. Wait for the install to complete and the app to boot once. This is what creates the fresh `~/umbrel/app-data/hashrate-autopilot/data/` directory with the correct ownership for the daemon to write to.
 
-You will see the dashboard come up empty (no config, no history). That's expected — you haven't migrated yet.
+You will see the setup wizard instead of the dashboard if you open it. That's expected, since you haven't migrated yet.
 
 ### 3. Stop the official version
 
@@ -89,11 +90,12 @@ sudo cp ~/umbrel/app-data/rdouma-hashrate-autopilot/data/state.db \
 umbreld client apps.start.mutate --appId hashrate-autopilot
 ```
 
-Open the dashboard. You should see your full history — bids, ticks, alerts, config — exactly as it was on the community version.
+Open the dashboard. You should see your full history - bids, ticks, alerts, config - exactly as it was on the community version.
 
 ### 6. Verify, then uninstall the community version (optional)
 
-Spend a few minutes on the dashboard confirming everything is there. Once you're satisfied, the community version is just taking up disk:
+Spend a few minutes on the dashboard confirming everything is there. Once you're satisfied all went well, the community 
+version is just taking up disk space and can be uninstalled:
 
 ```bash
 umbreld client apps.uninstall.mutate --appId rdouma-hashrate-autopilot
@@ -111,22 +113,7 @@ umbreld client apps.start.mutate --appId rdouma-hashrate-autopilot
 
 …and you're back where you started, on the community version, with all your data intact. The official version's empty data dir under `~/umbrel/app-data/hashrate-autopilot/data/` is harmless; you can uninstall the official version through the Umbrel UI if you want a clean slate before trying again.
 
-If you'd like a second pair of eyes, the [Migration discussion thread](https://github.com/rdouma/hashrate-autopilot/discussions) is the place to post what you ran and what you saw. Include the output of `ls -la ~/umbrel/app-data/rdouma-hashrate-autopilot/data/` and `ls -la ~/umbrel/app-data/hashrate-autopilot/data/` if you can — it usually makes the situation obvious.
-
-## Why this isn't automated
-
-A few asks come up here so worth answering up front.
-
-**Can the daemon detect the old data on first boot and migrate itself?** In principle yes, but it would require the official-store container to be able to read `app-data/rdouma-hashrate-autopilot/data/state.db` on the host. Umbrel containers are isolated to their own app-data dir by default, and arranging cross-app-data access would mean shipping a different `docker-compose.yml` to the official store than the community store carries, which Umbrel's review process doesn't make easy. The five-command path is honest about the structural reality.
-
-**Is Umbrel going to add a built-in "migrate from community store" flow?** Not that I've seen. The Migration Assistant they shipped in umbrelOS 0.5.4 is for hardware migration (Umbrel to Umbrel), not app-store migration.
-
-## Why does the official store version even exist if the community store one works?
-
-Convenience and trust. The official App Store appears in the default Umbrel UI without users having to add a community store URL first. Anyone discovering Hashrate Autopilot through Umbrel's main App Store browser sees it natively. The community store will keep working for as long as you want it to; the two are functionally identical for now.
-
-After ~30 days of the official store being live, I'll most likely stop publishing new versions to the community store and add a "this version is also available from Umbrel's official App Store; see the migration doc to switch" note to its release notes. The community store entry itself will keep working for anyone who never migrates.
-
----
-
-Questions? [Discussions](https://github.com/rdouma/hashrate-autopilot/discussions) is the right place — pinned post about this migration should be near the top of the list.
+If you run into issues, the [Migration discussion thread](https://github.com/rdouma/hashrate-autopilot/discussions/286)
+is the place to post what you ran and what you saw. 
+Include the output of `ls -la ~/umbrel/app-data/rdouma-hashrate-autopilot/data/` 
+and `ls -la ~/umbrel/app-data/hashrate-autopilot/data/` please.
