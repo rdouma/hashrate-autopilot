@@ -376,18 +376,80 @@ export function CrosshairReadout({
     const maxRight = chartRect
       ? Math.min(window.innerWidth - margin, chartRect.right - margin)
       : window.innerWidth - margin;
-    let left = anchorX + 12;
-    let top = anchorY + 12;
-    if (left + rect.width > maxRight) left = anchorX - rect.width - 12;
-    if (top + rect.height > maxBottom) top = anchorY - rect.height - 12;
-    if (left < minLeft) left = minLeft;
-    if (top < minTop) top = minTop;
-    // Last-resort: if the tooltip is still taller / wider than the
-    // chart it'll spill. Clamp the right/bottom edge so spill is at
-    // most into the chart's own padding area, never the next chart's.
-    if (top + rect.height > maxBottom) top = Math.max(minTop, maxBottom - rect.height);
-    if (left + rect.width > maxRight) left = Math.max(minLeft, maxRight - rect.width);
-    setPos({ left, top, ready: true });
+    const clampBox = (l: number, t: number): { left: number; top: number } => {
+      let left = l;
+      let top = t;
+      if (left + rect.width > maxRight) left = Math.max(minLeft, maxRight - rect.width);
+      if (top + rect.height > maxBottom) top = Math.max(minTop, maxBottom - rect.height);
+      if (left < minLeft) left = minLeft;
+      if (top < minTop) top = minTop;
+      return { left, top };
+    };
+
+    // Legacy single-candidate path (right-below the cursor, flip on
+    // chart-bounds overflow). Used verbatim when no pinned marker
+    // tooltip is on screen so behaviour is unchanged in the common
+    // case.
+    const legacyPosition = (): { left: number; top: number } => {
+      let left = anchorX + 12;
+      let top = anchorY + 12;
+      if (left + rect.width > maxRight) left = anchorX - rect.width - 12;
+      if (top + rect.height > maxBottom) top = anchorY - rect.height - 12;
+      return clampBox(left, top);
+    };
+
+    // Collision avoidance against pinned marker tooltips (operator
+    // report 2026-06-10): while a pinned panel (e.g. a BIP 110 block
+    // tooltip) is open, the cursor-trailing readout used to slide
+    // underneath it - same z-index, later DOM order wins - leaving
+    // the readout unreadable until the cursor moved on. Every pinned
+    // chart tooltip carries an `id` containing "-pinned-" (the
+    // click-outside handlers depend on that convention), so we can
+    // collect their rects without coupling to each component. When
+    // the default placement would overlap one, try the other three
+    // quadrants around the cursor and take the first collision-free
+    // spot; the moment the cursor moves far enough away, the default
+    // placement stops colliding and the box snaps back beside the
+    // cursor ("rejoins the dot").
+    const pinnedRects = Array.from(
+      document.querySelectorAll('[id*="-pinned-"]'),
+    ).map((n) => n.getBoundingClientRect());
+
+    if (pinnedRects.length === 0) {
+      const p = legacyPosition();
+      setPos({ left: p.left, top: p.top, ready: true });
+      return;
+    }
+
+    const overlapsPinned = (l: number, t: number): boolean =>
+      pinnedRects.some(
+        (r) =>
+          l < r.right &&
+          l + rect.width > r.left &&
+          t < r.bottom &&
+          t + rect.height > r.top,
+      );
+
+    // Candidate quadrants around the anchor, in preference order:
+    // right-below (default), left-below, right-above, left-above.
+    const candidates: Array<{ left: number; top: number }> = [
+      { left: anchorX + 12, top: anchorY + 12 },
+      { left: anchorX - rect.width - 12, top: anchorY + 12 },
+      { left: anchorX + 12, top: anchorY - rect.height - 12 },
+      { left: anchorX - rect.width - 12, top: anchorY - rect.height - 12 },
+    ];
+    for (const c of candidates) {
+      const p = clampBox(c.left, c.top);
+      if (!overlapsPinned(p.left, p.top)) {
+        setPos({ left: p.left, top: p.top, ready: true });
+        return;
+      }
+    }
+    // Every quadrant collides (pinned panel covers most of the chart).
+    // Fall back to the legacy spot - the pinned panel wins visually,
+    // which matches the previous behaviour.
+    const p = legacyPosition();
+    setPos({ left: p.left, top: p.top, ready: true });
   }, [state.clientX, state.clientY, state.tickAt, isSource, svgEl, lineXFrac, rows.length]);
 
   if (rows.length === 0) return null;
