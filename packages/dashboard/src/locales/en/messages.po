@@ -841,19 +841,23 @@ msgstr "bid id"
 msgid "Bid id contains"
 msgstr "Bid id contains"
 
+#: src/components/PriceChart.tsx
 #: src/pages/History.tsx
 msgid "bid paused"
 msgstr "bid paused"
 
 #: src/components/BidEventDrawer.tsx
+#: src/components/PriceChart.tsx
 msgid "BID PAUSED"
 msgstr "BID PAUSED"
 
+#: src/components/PriceChart.tsx
 #: src/pages/History.tsx
 msgid "bid resumed"
 msgstr "bid resumed"
 
 #: src/components/BidEventDrawer.tsx
+#: src/components/PriceChart.tsx
 msgid "BID RESUMED"
 msgstr "BID RESUMED"
 
@@ -3115,11 +3119,13 @@ msgstr "Mismatch. If your daemon and Datum Gateway are on the same home "
 msgid "mode"
 msgstr "mode"
 
+#: src/components/PriceChart.tsx
 #: src/pages/History.tsx
 msgid "mode change"
 msgstr "mode change"
 
 #: src/components/BidEventDrawer.tsx
+#: src/components/PriceChart.tsx
 msgid "MODE CHANGE"
 msgstr "MODE CHANGE"
 

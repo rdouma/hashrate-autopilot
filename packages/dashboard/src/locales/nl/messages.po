@@ -851,19 +851,23 @@ msgstr "bod-id"
 msgid "Bid id contains"
 msgstr "Bod-id bevat"
 
+#: src/components/PriceChart.tsx
 #: src/pages/History.tsx
 msgid "bid paused"
 msgstr "bod gepauzeerd"
 
 #: src/components/BidEventDrawer.tsx
+#: src/components/PriceChart.tsx
 msgid "BID PAUSED"
 msgstr "BOD GEPAUZEERD"
 
+#: src/components/PriceChart.tsx
 #: src/pages/History.tsx
 msgid "bid resumed"
 msgstr "bod hervat"
 
 #: src/components/BidEventDrawer.tsx
+#: src/components/PriceChart.tsx
 msgid "BID RESUMED"
 msgstr "BOD HERVAT"
 
@@ -3157,11 +3161,13 @@ msgstr "Geen match. Als je daemon en Datum Gateway in hetzelfde thuisnetwerk "
 msgid "mode"
 msgstr "modus"
 
+#: src/components/PriceChart.tsx
 #: src/pages/History.tsx
 msgid "mode change"
 msgstr "moduswissel"
 
 #: src/components/BidEventDrawer.tsx
+#: src/components/PriceChart.tsx
 msgid "MODE CHANGE"
 msgstr "MODUSWISSEL"
 

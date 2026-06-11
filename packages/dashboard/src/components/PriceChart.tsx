@@ -1251,12 +1251,20 @@ export const PriceChart = memo(function PriceChart({
     const xTickInterval = pickTimeTickInterval(maxX - minX);
     const xTicks = localAlignedTimeTicks(minX, maxX, xTickInterval);
 
-    const allowedKinds = new Set(showEventKinds);
-    const visibleEvents = allowedKinds.size === 0
-      ? []
-      : events.filter(
-          (e) => allowedKinds.has(e.kind) && e.occurred_at >= dataMinX && e.occurred_at <= dataMaxX,
-        );
+    // #287 follow-up: mode-change and pause/resume markers bypass the
+    // per-range kind fading ("always visible like pool blocks") - the
+    // fading exists to tame EDIT_PRICE noise, and these three are
+    // rare, high-signal events that often explain a gap you only
+    // notice when zoomed out.
+    const allowedKinds = new Set([
+      ...showEventKinds,
+      'MODE_CHANGE',
+      'BID_PAUSED',
+      'BID_RESUMED',
+    ]);
+    const visibleEvents = events.filter(
+      (e) => allowedKinds.has(e.kind) && e.occurred_at >= dataMinX && e.occurred_at <= dataMaxX,
+    );
 
     // #167/#173: contiguous spans where fillable_ask is null. Split into
     // "marketplace empty" (reachable but no supply) vs "Braiins API
@@ -2014,7 +2022,18 @@ export const PriceChart = memo(function PriceChart({
                 r.detected_at >= chartData.minX &&
                 r.detected_at <= chartData.maxX,
             ) && <Legend color={COLOR_PAYOUT} label={t`on-chain payout`} dashed hidden={isHidden('payout')} onToggle={() => toggle('payout')} />}
-          {showEventKinds.length > 0 && <EventLegend kinds={showEventKinds} />}
+          {/* #287 follow-up: the three always-visible kinds join the
+              legend only when at least one such marker is actually in
+              view - they're rare, so the legend stays uncluttered in
+              the common case. */}
+          {(() => {
+            const present = new Set(visibleEvents.map((ev) => ev.kind));
+            const extraKinds = (['MODE_CHANGE', 'BID_PAUSED', 'BID_RESUMED'] as const).filter(
+              (k) => present.has(k),
+            );
+            const legendKinds = [...showEventKinds, ...extraKinds];
+            return legendKinds.length > 0 ? <EventLegend kinds={legendKinds} /> : null;
+          })()}
           {markersHiddenKind != null && markersHiddenCount > 0 && (
             <span
               className="text-[10px] text-slate-500 italic"
@@ -2304,6 +2323,59 @@ export const PriceChart = memo(function PriceChart({
           const lineBottomY = cy - bubbleR;
           const hitTopY = GLYPH_Y - 1;
           const hitH = Math.max(GLYPH_W + 2, cy - hitTopY + bubbleR + 2);
+          // #287 follow-up: mode-change and pause/resume markers have
+          // no price anchor (no bid price on the row), so they render
+          // like pool blocks: top-edge glyph + full-height dashed
+          // guide line down to the plot baseline. One shared power
+          // icon for every mode change regardless of direction
+          // (operator: "let's not overdo it"); the tooltip's reason
+          // line carries the transition / Braiins pause reason.
+          if (e.kind === 'MODE_CHANGE' || e.kind === 'BID_PAUSED' || e.kind === 'BID_RESUMED') {
+            const stroke =
+              e.kind === 'MODE_CHANGE'
+                ? '#c4b5fd'
+                : e.kind === 'BID_PAUSED'
+                  ? '#fbbf24'
+                  : '#34d399';
+            const baselineY = chartHeight - PADDING.bottom;
+            return (
+              <g key={e.id} {...common}>
+                <svg
+                  x={GLYPH_X} y={GLYPH_Y}
+                  width={GLYPH_W} height={GLYPH_W} viewBox="0 0 24 24"
+                  fill="none" stroke={stroke} strokeWidth="2"
+                  strokeLinecap="round" strokeLinejoin="round"
+                >
+                  {e.kind === 'MODE_CHANGE' ? (
+                    <>
+                      {/* Lucide `power`. */}
+                      <path d="M12 2v10" />
+                      <path d="M18.4 6.6a9 9 0 1 1-12.77.04" />
+                    </>
+                  ) : e.kind === 'BID_PAUSED' ? (
+                    <>
+                      {/* Lucide `circle-pause`. */}
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="10" x2="10" y1="15" y2="9" />
+                      <line x1="14" x2="14" y1="15" y2="9" />
+                    </>
+                  ) : (
+                    <>
+                      {/* Lucide `circle-play`. */}
+                      <circle cx="12" cy="12" r="10" />
+                      <polygon points="10 8 16 12 10 16 10 8" />
+                    </>
+                  )}
+                </svg>
+                <line
+                  x1={cx} x2={cx} y1={lineTopY} y2={baselineY}
+                  stroke={stroke} strokeWidth="1"
+                  strokeDasharray="2 4" opacity="0.55" pointerEvents="none"
+                />
+                <rect x={cx - 8} y={hitTopY} width="16" height={GLYPH_W + 4} fill="transparent" />
+              </g>
+            );
+          }
           if (e.kind === 'CREATE_BID') {
             return (
               <g key={e.id} {...common}>
@@ -3350,7 +3422,13 @@ function EventTooltip({
         ? t`EDIT PRICE`
         : e.kind === 'EDIT_SPEED'
           ? t`EDIT SPEED`
-          : t`CANCEL`;
+          : e.kind === 'MODE_CHANGE'
+            ? t`MODE CHANGE`
+            : e.kind === 'BID_PAUSED'
+              ? t`BID PAUSED`
+              : e.kind === 'BID_RESUMED'
+                ? t`BID RESUMED`
+                : t`CANCEL`;
   const headerColor =
     e.kind === 'CREATE_BID'
       ? 'text-emerald-300'
@@ -3358,7 +3436,13 @@ function EventTooltip({
         ? 'text-amber-300'
         : e.kind === 'EDIT_SPEED'
           ? 'text-sky-300'
-          : 'text-red-300';
+          : e.kind === 'MODE_CHANGE'
+            ? 'text-violet-300'
+            : e.kind === 'BID_PAUSED'
+              ? 'text-amber-300'
+              : e.kind === 'BID_RESUMED'
+                ? 'text-emerald-300'
+                : 'text-red-300';
 
   const copyJson = async () => {
     const detail: DecisionDetail | null = decisionDetailQuery.data ?? null;
@@ -3752,6 +3836,34 @@ function EventLegend({ kinds }: { kinds: readonly BidEventKind[] }) {
             <path d="m4.9 4.9 14.2 14.2" />
           </svg>
           <Trans>cancel</Trans>
+        </span>
+      )}
+      {has('MODE_CHANGE') && (
+        <span className="flex items-center gap-1 whitespace-nowrap">
+          <svg {...iconProps} stroke="#c4b5fd">
+            <path d="M12 2v10" />
+            <path d="M18.4 6.6a9 9 0 1 1-12.77.04" />
+          </svg>
+          <Trans>mode change</Trans>
+        </span>
+      )}
+      {has('BID_PAUSED') && (
+        <span className="flex items-center gap-1 whitespace-nowrap">
+          <svg {...iconProps} stroke="#fbbf24">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="10" x2="10" y1="15" y2="9" />
+            <line x1="14" x2="14" y1="15" y2="9" />
+          </svg>
+          <Trans>bid paused</Trans>
+        </span>
+      )}
+      {has('BID_RESUMED') && (
+        <span className="flex items-center gap-1 whitespace-nowrap">
+          <svg {...iconProps} stroke="#34d399">
+            <circle cx="12" cy="12" r="10" />
+            <polygon points="10 8 16 12 10 16 10 8" />
+          </svg>
+          <Trans>bid resumed</Trans>
         </span>
       )}
     </span>

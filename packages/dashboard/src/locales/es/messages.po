@@ -859,19 +859,23 @@ msgstr "id de oferta"
 msgid "Bid id contains"
 msgstr "ID de oferta contiene"
 
+#: src/components/PriceChart.tsx
 #: src/pages/History.tsx
 msgid "bid paused"
 msgstr "oferta pausada"
 
 #: src/components/BidEventDrawer.tsx
+#: src/components/PriceChart.tsx
 msgid "BID PAUSED"
 msgstr "OFERTA PAUSADA"
 
+#: src/components/PriceChart.tsx
 #: src/pages/History.tsx
 msgid "bid resumed"
 msgstr "oferta reanudada"
 
 #: src/components/BidEventDrawer.tsx
+#: src/components/PriceChart.tsx
 msgid "BID RESUMED"
 msgstr "OFERTA REANUDADA"
 
@@ -3175,11 +3179,13 @@ msgstr "No coinciden. Si tu daemon y Datum Gateway están en la misma red "
 msgid "mode"
 msgstr "modo"
 
+#: src/components/PriceChart.tsx
 #: src/pages/History.tsx
 msgid "mode change"
 msgstr "cambio de modo"
 
 #: src/components/BidEventDrawer.tsx
+#: src/components/PriceChart.tsx
 msgid "MODE CHANGE"
 msgstr "CAMBIO DE MODO"
 

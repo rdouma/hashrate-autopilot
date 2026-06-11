@@ -30,6 +30,11 @@ import type { HttpServerDeps } from '../server.js';
 const EH_PER_PH = 1000;
 const DEFAULT_WINDOW_MS = 24 * 60 * 60 * 1000;
 
+/** #287 follow-up: kinds that render as chart markers at EVERY zoom
+ *  level, like pool blocks - rare, high-signal, and often the
+ *  explanation for a gap you only notice when zoomed out. */
+const ALWAYS_VISIBLE_KINDS = ['MODE_CHANGE', 'BID_PAUSED', 'BID_RESUMED'] as const;
+
 export interface BidEventView {
   readonly id: number;
   readonly occurred_at: number;
@@ -82,8 +87,11 @@ export async function registerBidEventsRoute(
             ? parsedSpan
             : parsedUntil - parsedSince;
         const kinds = showEventKindsForSpan(visibleSpan);
-        if (kinds.length === 0) return { events: [] };
-        const allowedKinds = new Set(kinds);
+        // #287 follow-up: mode-change and pause/resume markers are
+        // "always visible like pool blocks" - they're rare and
+        // high-signal, so they bypass the per-span kind fading that
+        // exists to tame EDIT_PRICE noise.
+        const allowedKinds = new Set([...kinds, ...ALWAYS_VISIBLE_KINDS]);
         const rows = await deps.bidEventsRepo.listSince(parsedSince, parsedUntil);
         return { events: rows.filter((r) => allowedKinds.has(r.kind)).map(toView) };
       }
@@ -97,11 +105,10 @@ export async function registerBidEventsRoute(
       const range = parseChartRange(req.query.range) ?? DEFAULT_CHART_RANGE;
       const spec = CHART_RANGE_SPECS[range];
 
-      if (spec.showEventKinds.length === 0) {
-        return { events: [] };
-      }
-
-      const allowedKinds = new Set(spec.showEventKinds);
+      const allowedKinds = new Set([
+        ...spec.showEventKinds,
+        ...ALWAYS_VISIBLE_KINDS,
+      ]);
       const sinceMs =
         spec.windowMs === null
           ? 0
