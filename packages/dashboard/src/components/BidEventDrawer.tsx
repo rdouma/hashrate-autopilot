@@ -119,7 +119,13 @@ export function BidEventDrawer({ event, onClose }: BidEventDrawerProps): React.J
         ? t`EDIT PRICE`
         : event.kind === 'EDIT_SPEED'
           ? t`EDIT SPEED`
-          : t`CANCEL`;
+          : event.kind === 'MODE_CHANGE'
+            ? t`MODE CHANGE`
+            : event.kind === 'BID_PAUSED'
+              ? t`BID PAUSED`
+              : event.kind === 'BID_RESUMED'
+                ? t`BID RESUMED`
+                : t`CANCEL`;
   const sourceLabel = event.source === 'OPERATOR' ? t`manual` : t`automatic`;
   const headerColor =
     event.kind === 'CREATE_BID'
@@ -128,7 +134,13 @@ export function BidEventDrawer({ event, onClose }: BidEventDrawerProps): React.J
         ? 'text-amber-300'
         : event.kind === 'EDIT_SPEED'
           ? 'text-sky-300'
-          : 'text-red-300';
+          : event.kind === 'MODE_CHANGE'
+            ? 'text-violet-300'
+            : event.kind === 'BID_PAUSED'
+              ? 'text-amber-300'
+              : event.kind === 'BID_RESUMED'
+                ? 'text-emerald-300'
+                : 'text-red-300';
 
   const oldPrice = event.old_price_sat_per_ph_day;
   const newPrice = event.new_price_sat_per_ph_day;

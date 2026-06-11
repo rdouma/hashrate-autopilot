@@ -317,7 +317,7 @@ function Toolbar({
       <div className="flex flex-col gap-0.5">
         <label className="text-[10px] tracking-wider text-slate-500"><Trans>Action</Trans></label>
         <div className="flex gap-1">
-          {(['CREATE_BID', 'EDIT_PRICE', 'EDIT_SPEED', 'CANCEL_BID'] as Kind[]).map((k) => (
+          {(['CREATE_BID', 'EDIT_PRICE', 'EDIT_SPEED', 'CANCEL_BID', 'MODE_CHANGE', 'BID_PAUSED', 'BID_RESUMED'] as Kind[]).map((k) => (
             <ActionChip
               key={k}
               kind={k}
@@ -516,6 +516,10 @@ function useActionLabels(): Record<BidEventView['kind'], string> {
     EDIT_PRICE: t`edit price`,
     EDIT_SPEED: t`edit speed`,
     CANCEL_BID: t`cancel`,
+    // #287: run-mode switches + observed Braiins pause/resume.
+    MODE_CHANGE: t`mode change`,
+    BID_PAUSED: t`bid paused`,
+    BID_RESUMED: t`bid resumed`,
   };
 }
 
@@ -525,6 +529,9 @@ function labelForKindShort(kind: Kind): string {
     case 'EDIT_PRICE': return t`price`;
     case 'EDIT_SPEED': return t`speed`;
     case 'CANCEL_BID': return t`cancel`;
+    case 'MODE_CHANGE': return t`mode`;
+    case 'BID_PAUSED': return t`paused`;
+    case 'BID_RESUMED': return t`resumed`;
   }
 }
 
@@ -560,6 +567,34 @@ function ActionGlyph({ kind }: { kind: BidEventView['kind'] }) {
       <svg {...base} stroke="#38bdf8">
         <path d="m12 14 4-4" />
         <path d="M3.34 19a10 10 0 1 1 17.32 0" />
+      </svg>
+    );
+  }
+  if (kind === 'MODE_CHANGE') {
+    // Lucide `power` - run-mode switch (DRY_RUN / LIVE / PAUSED).
+    return (
+      <svg {...base} stroke="#c4b5fd">
+        <path d="M12 2v10" />
+        <path d="M18.4 6.6a9 9 0 1 1-12.77.04" />
+      </svg>
+    );
+  }
+  if (kind === 'BID_PAUSED') {
+    // Lucide `circle-pause` - Braiins paused the bid.
+    return (
+      <svg {...base} stroke="#fbbf24">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="10" x2="10" y1="15" y2="9" />
+        <line x1="14" x2="14" y1="15" y2="9" />
+      </svg>
+    );
+  }
+  if (kind === 'BID_RESUMED') {
+    // Lucide `circle-play` - Braiins resumed the bid.
+    return (
+      <svg {...base} stroke="#34d399">
+        <circle cx="12" cy="12" r="10" />
+        <polygon points="10 8 16 12 10 16 10 8" />
       </svg>
     );
   }

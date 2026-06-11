@@ -859,6 +859,22 @@ msgstr "id de oferta"
 msgid "Bid id contains"
 msgstr "ID de oferta contiene"
 
+#: src/pages/History.tsx
+msgid "bid paused"
+msgstr "oferta pausada"
+
+#: src/components/BidEventDrawer.tsx
+msgid "BID PAUSED"
+msgstr "OFERTA PAUSADA"
+
+#: src/pages/History.tsx
+msgid "bid resumed"
+msgstr "oferta reanudada"
+
+#: src/components/BidEventDrawer.tsx
+msgid "BID RESUMED"
+msgstr "OFERTA REANUDADA"
+
 #: src/pages/Config.tsx
 msgid "Bid sustained-paused for"
 msgstr "Oferta sostenidamente Paused durante"
@@ -3155,6 +3171,18 @@ msgstr "No coinciden. Si tu daemon y Datum Gateway están en la misma red "
 "ha actualizado desde que el ISP cambió tu IP público - configura DDNS "
 "abajo para arreglarlo."
 
+#: src/pages/History.tsx
+msgid "mode"
+msgstr "modo"
+
+#: src/pages/History.tsx
+msgid "mode change"
+msgstr "cambio de modo"
+
+#: src/components/BidEventDrawer.tsx
+msgid "MODE CHANGE"
+msgstr "CAMBIO DE MODO"
+
 #: src/pages/Config.tsx
 msgid "Monitor a fleet of home Bitaxe / Nerdaxe / ESP-Miner units alongside the "
 "autopilot's rented Braiins hashrate. The daemon polls each device's "
@@ -3890,6 +3918,7 @@ msgstr "La paciencia se libera en"
 msgid "Pause"
 msgstr "Pausar"
 
+#: src/pages/History.tsx
 #: src/pages/Status.tsx
 msgid "paused"
 msgstr "pausado"
@@ -4466,6 +4495,10 @@ msgstr "Restaura los valores que había en esta página cuando la abriste."
 #: src/pages/Config.tsx
 msgid "Resume last mode"
 msgstr "Reanudar último modo"
+
+#: src/pages/History.tsx
+msgid "resumed"
+msgstr "reanudada"
 
 #: src/pages/Config.tsx
 msgid "Retry interval"

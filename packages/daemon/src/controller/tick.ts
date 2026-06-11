@@ -37,6 +37,16 @@ export class Controller {
   private aboveFloorTicks: number = 0;
   private lastResult: TickResult | null = null;
 
+  /**
+   * #287: previous tick's primary-bid pause observation, for
+   * BID_PAUSED / BID_RESUMED transition detection. In-process only:
+   * the first tick after a daemon restart establishes the baseline
+   * without emitting an event (same blind spot as the
+   * sustained_paused alert - a pause that happened entirely during
+   * daemon downtime is not retroactively logged).
+   */
+  private prevPauseObservation: { orderId: string; paused: boolean } | null = null;
+
   constructor(private readonly deps: TickDeps) {}
 
   /**
@@ -102,6 +112,59 @@ export class Controller {
           ),
       );
     state = { ...state, owned_bids: patchedOwnedBids };
+
+    // #287: detect Braiins-side pause/resume on the primary bid and
+    // log it to bid_events for the History page. The alert pipeline
+    // (sustained_paused) keeps its 10-min threshold for paging; this
+    // is the instant, unthresholded audit-trail row. Transition
+    // detection requires seeing the SAME bid in both ticks - a fresh
+    // bid that arrives already-paused doesn't fire (no transition we
+    // observed), and a restart re-baselines silently.
+    {
+      const primary = state.owned_bids.find(
+        (b) => b.status !== 'BID_STATUS_FULFILLED',
+      );
+      const cur =
+        primary?.braiins_order_id != null
+          ? {
+              orderId: primary.braiins_order_id,
+              paused: primary.status === 'BID_STATUS_PAUSED',
+            }
+          : null;
+      const prev = this.prevPauseObservation;
+      if (
+        prev !== null &&
+        cur !== null &&
+        prev.orderId === cur.orderId &&
+        prev.paused !== cur.paused
+      ) {
+        const pauseReason =
+          cur.paused && primary?.last_pause_reason
+            ? `Braiins paused the bid: ${primary.last_pause_reason}`
+            : cur.paused
+              ? 'Braiins paused the bid'
+              : 'Braiins resumed the bid';
+        await this.deps.bidEventsRepo
+          .insert({
+            occurred_at: state.tick_at,
+            source: 'AUTOPILOT',
+            kind: cur.paused ? 'BID_PAUSED' : 'BID_RESUMED',
+            braiins_order_id: cur.orderId,
+            old_price_sat: null,
+            new_price_sat: null,
+            speed_limit_ph: null,
+            amount_sat: null,
+            reason: pauseReason,
+            overpay_sat_per_eh_day: null,
+            max_overpay_vs_hashprice_sat_per_eh_day: null,
+          })
+          .catch(() => {
+            // Pre-0111 CHECK constraint or transient write failure -
+            // never let the audit row break the tick.
+          });
+      }
+      this.prevPauseObservation = cur;
+    }
 
     // Persist runtime diagnostics. The retired timers are nulled out
     // on every tick - their columns are kept only for backwards-compat

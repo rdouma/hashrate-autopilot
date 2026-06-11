@@ -851,6 +851,22 @@ msgstr "bod-id"
 msgid "Bid id contains"
 msgstr "Bod-id bevat"
 
+#: src/pages/History.tsx
+msgid "bid paused"
+msgstr "bod gepauzeerd"
+
+#: src/components/BidEventDrawer.tsx
+msgid "BID PAUSED"
+msgstr "BOD GEPAUZEERD"
+
+#: src/pages/History.tsx
+msgid "bid resumed"
+msgstr "bod hervat"
+
+#: src/components/BidEventDrawer.tsx
+msgid "BID RESUMED"
+msgstr "BOD HERVAT"
+
 #: src/pages/Config.tsx
 msgid "Bid sustained-paused for"
 msgstr "Bid aanhoudend Paused gedurende"
@@ -3137,6 +3153,18 @@ msgstr "Geen match. Als je daemon en Datum Gateway in hetzelfde thuisnetwerk "
 "DDNS niet is bijgewerkt sinds de ISP je publieke IP wijzigde - "
 "configureer DDNS hieronder om dit op te lossen."
 
+#: src/pages/History.tsx
+msgid "mode"
+msgstr "modus"
+
+#: src/pages/History.tsx
+msgid "mode change"
+msgstr "moduswissel"
+
+#: src/components/BidEventDrawer.tsx
+msgid "MODE CHANGE"
+msgstr "MODUSWISSEL"
+
 #: src/pages/Config.tsx
 msgid "Monitor a fleet of home Bitaxe / Nerdaxe / ESP-Miner units alongside the "
 "autopilot's rented Braiins hashrate. The daemon polls each device's "
@@ -3866,6 +3894,7 @@ msgstr "Geduld loopt af over"
 msgid "Pause"
 msgstr "Pauzeren"
 
+#: src/pages/History.tsx
 #: src/pages/Status.tsx
 msgid "paused"
 msgstr "gepauzeerd"
@@ -4441,6 +4470,10 @@ msgstr "Herstel de waarden die op deze pagina stonden toen je hem opende."
 #: src/pages/Config.tsx
 msgid "Resume last mode"
 msgstr "Laatste modus hervatten"
+
+#: src/pages/History.tsx
+msgid "resumed"
+msgstr "hervat"
 
 #: src/pages/Config.tsx
 msgid "Retry interval"

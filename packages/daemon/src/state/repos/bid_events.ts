@@ -252,7 +252,12 @@ export class BidEventsRepo {
       WITH events_with_effective_id AS (
         SELECT
           e.*,
-          COALESCE(
+          -- #287: MODE_CHANGE rows never inherit a bid id - a run-mode
+          -- switch has nothing to do with whatever bid happened to be
+          -- created within the next hour. Without this guard the
+          -- orphan-CREATE forward-coalesce would stamp them with an
+          -- unrelated order id on the History page.
+          CASE WHEN e.kind = 'MODE_CHANGE' THEN NULL ELSE COALESCE(
             e.braiins_order_id,
             (SELECT e2.braiins_order_id
                FROM bid_events e2
@@ -261,7 +266,7 @@ export class BidEventsRepo {
                 AND e2.braiins_order_id IS NOT NULL
               ORDER BY e2.occurred_at ASC
               LIMIT 1)
-          ) AS effective_order_id
+          ) END AS effective_order_id
           FROM bid_events e
       )
       SELECT

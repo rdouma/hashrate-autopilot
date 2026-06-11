@@ -29,8 +29,11 @@ export const DEFAULT_CHART_RANGE: ChartRange = '24h';
  * and for any caller that needs to reason about event types without
  * importing the dashboard's API view types.
  */
-export type BidEventKind = 'CREATE_BID' | 'EDIT_PRICE' | 'EDIT_SPEED' | 'CANCEL_BID';
+export type BidEventKind = 'CREATE_BID' | 'EDIT_PRICE' | 'EDIT_SPEED' | 'CANCEL_BID' | 'MODE_CHANGE' | 'BID_PAUSED' | 'BID_RESUMED';
 
+// Deliberately excludes MODE_CHANGE / BID_PAUSED / BID_RESUMED (#287):
+// those are History rows, never chart markers, so the per-range marker filters and the
+// "all kinds" chart helpers don't carry them.
 export const ALL_BID_EVENT_KINDS: readonly BidEventKind[] = [
   'CREATE_BID',
   'EDIT_PRICE',

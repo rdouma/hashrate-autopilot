@@ -209,7 +209,7 @@ export interface BidHistoryPage {
 
 /** #256 v2: flat-table toolbar filter shape. */
 export interface BidHistoryFilters {
-  kinds?: ReadonlyArray<'CREATE_BID' | 'EDIT_PRICE' | 'EDIT_SPEED' | 'CANCEL_BID'>;
+  kinds?: ReadonlyArray<'CREATE_BID' | 'EDIT_PRICE' | 'EDIT_SPEED' | 'CANCEL_BID' | 'MODE_CHANGE' | 'BID_PAUSED' | 'BID_RESUMED'>;
   source?: 'AUTOPILOT' | 'OPERATOR';
   orderIdContains?: string;
   sinceMs?: number;
@@ -233,7 +233,7 @@ export interface BidEventView {
   id: number;
   occurred_at: number;
   source: 'AUTOPILOT' | 'OPERATOR';
-  kind: 'CREATE_BID' | 'EDIT_PRICE' | 'EDIT_SPEED' | 'CANCEL_BID';
+  kind: 'CREATE_BID' | 'EDIT_PRICE' | 'EDIT_SPEED' | 'CANCEL_BID' | 'MODE_CHANGE' | 'BID_PAUSED' | 'BID_RESUMED';
   braiins_order_id: string | null;
   old_price_sat_per_ph_day: number | null;
   new_price_sat_per_ph_day: number | null;

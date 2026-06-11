@@ -368,6 +368,31 @@ async function bootOperational(
   }
   await runtimeRepo.patch({ run_mode: bootMode });
   log(`run mode set to ${bootMode} on boot (boot_mode=${cfg.boot_mode}, was=${priorMode})`);
+  // #287: surface boot-time mode transitions on the History page. Only
+  // when the boot actually changed the mode - a LAST_MODE restart that
+  // keeps LIVE stays quiet (restarts already render as offline gap
+  // bands on the charts). The classic case this catches: an overnight
+  // restart with boot_mode=ALWAYS_DRY_RUN silently dropping the
+  // controller out of LIVE.
+  if (bootMode !== priorMode) {
+    await bidEventsRepo.insert({
+      occurred_at: Date.now(),
+      source: 'AUTOPILOT',
+      kind: 'MODE_CHANGE',
+      braiins_order_id: null,
+      old_price_sat: null,
+      new_price_sat: null,
+      speed_limit_ph: null,
+      amount_sat: null,
+      reason: `boot: ${priorMode} → ${bootMode} (boot_mode=${cfg.boot_mode})`,
+      overpay_sat_per_eh_day: null,
+      max_overpay_vs_hashprice_sat_per_eh_day: null,
+    }).catch((e) => {
+      // Pre-0111 schema (CHECK constraint without MODE_CHANGE) or any
+      // other insert hiccup must not block boot.
+      log(`warn: failed to log boot mode change: ${e instanceof Error ? e.message : String(e)}`);
+    });
+  }
 
   const braiinsClient = createBraiinsClient({
     ownerToken: secrets.braiins_owner_token,

@@ -511,7 +511,11 @@ async function computeMutationCount(
   let q = db
     .selectFrom('bid_events')
     .select(sql<number>`COUNT(*)`.as('count'))
-    .where('occurred_at', '>=', sinceMs);
+    .where('occurred_at', '>=', sinceMs)
+    // #287: mode switches and observed Braiins pause/resume
+    // transitions live in bid_events for the History page but they
+    // aren't Braiins mutations - keep this counter's meaning.
+    .where('kind', 'not in', ['MODE_CHANGE', 'BID_PAUSED', 'BID_RESUMED']);
   if (untilMs !== undefined) q = q.where('occurred_at', '<=', untilMs);
   const row = await q.executeTakeFirst();
   return Number(row?.count ?? 0);

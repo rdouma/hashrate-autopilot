@@ -34,7 +34,7 @@ export interface BidEventView {
   readonly id: number;
   readonly occurred_at: number;
   readonly source: 'AUTOPILOT' | 'OPERATOR';
-  readonly kind: 'CREATE_BID' | 'EDIT_PRICE' | 'EDIT_SPEED' | 'CANCEL_BID';
+  readonly kind: 'CREATE_BID' | 'EDIT_PRICE' | 'EDIT_SPEED' | 'CANCEL_BID' | 'MODE_CHANGE' | 'BID_PAUSED' | 'BID_RESUMED';
   readonly braiins_order_id: string | null;
   readonly old_price_sat_per_ph_day: number | null;
   readonly new_price_sat_per_ph_day: number | null;
@@ -202,8 +202,8 @@ export async function registerBidEventsRoute(
       : undefined;
     const kinds = req.query.kinds
       ? (req.query.kinds.split(',').filter((s) =>
-          ['CREATE_BID', 'EDIT_PRICE', 'EDIT_SPEED', 'CANCEL_BID'].includes(s),
-        ) as Array<'CREATE_BID' | 'EDIT_PRICE' | 'EDIT_SPEED' | 'CANCEL_BID'>)
+          ['CREATE_BID', 'EDIT_PRICE', 'EDIT_SPEED', 'CANCEL_BID', 'MODE_CHANGE', 'BID_PAUSED', 'BID_RESUMED'].includes(s),
+        ) as Array<'CREATE_BID' | 'EDIT_PRICE' | 'EDIT_SPEED' | 'CANCEL_BID' | 'MODE_CHANGE' | 'BID_PAUSED' | 'BID_RESUMED'>)
       : undefined;
     const source =
       req.query.source === 'AUTOPILOT' || req.query.source === 'OPERATOR'
@@ -276,7 +276,7 @@ function toView(r: {
   id: number;
   occurred_at: number;
   source: 'AUTOPILOT' | 'OPERATOR';
-  kind: 'CREATE_BID' | 'EDIT_PRICE' | 'EDIT_SPEED' | 'CANCEL_BID';
+  kind: 'CREATE_BID' | 'EDIT_PRICE' | 'EDIT_SPEED' | 'CANCEL_BID' | 'MODE_CHANGE' | 'BID_PAUSED' | 'BID_RESUMED';
   braiins_order_id: string | null;
   old_price_sat: number | null;
   new_price_sat: number | null;
