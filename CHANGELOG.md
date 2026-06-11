@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-06-11
+
+### `[Fix]` Pool-luck AGED OUT dots no longer drift to the bottom of the decay (marker fix v2)
+
+Operator screenshot at build 653 showed AGED OUT dots sitting well below their steps. Build 652's "directional extremum over the window" rule was wrong for AGED OUT: the luck line decays continuously between events, so the window minimum is almost always the far END of the decay, not the step - the dot drifted right and down, disconnected from the step it belonged to. (FOUND looked correct only because a step up against decay genuinely is the local maximum.) v2 finds the step itself: the largest single-tick delta in the event's direction, with the `luckBefore → window[0]` transition as a candidate and a lower-median noise floor so uniform decay never reads as a step. Falls back to `luckBefore` at the event tick when Ocean hasn't published the post-event value yet. The dot now always sits on a value the line actually passes through at that tick. Test suite grown to 21 cases including a regression test built from the screenshot's exact shape (step then long decay).
+
 ## 2026-06-10
 
 ### `[UI]` Crosshair readout dodges pinned marker tooltips
