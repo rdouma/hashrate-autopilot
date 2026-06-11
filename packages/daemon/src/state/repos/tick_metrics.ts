@@ -130,6 +130,10 @@ export interface AggregatedTickMetricRow {
   primary_bid_shares_purchased_m: number | null;
   primary_bid_shares_accepted_m: number | null;
   primary_bid_shares_rejected_m: number | null;
+  /** #287 follow-up: run mode for the idle-state chart bands. Bucketed
+   *  as worst-in-bucket (PAUSED > DRY_RUN > LIVE) so any non-LIVE tick
+   *  inside a bucket keeps the band visible at zoomed-out presets. */
+  run_mode: 'DRY_RUN' | 'LIVE' | 'PAUSED';
 }
 
 export class TickMetricsRepo {
@@ -211,6 +215,7 @@ export class TickMetricsRepo {
         primary_bid_shares_purchased_m: r.primary_bid_shares_purchased_m,
         primary_bid_shares_accepted_m: r.primary_bid_shares_accepted_m,
         primary_bid_shares_rejected_m: r.primary_bid_shares_rejected_m,
+        run_mode: r.run_mode,
       }));
     }
 
@@ -310,6 +315,12 @@ export class TickMetricsRepo {
         sql<number | null>`MAX(primary_bid_shares_purchased_m)`.as('primary_bid_shares_purchased_m'),
         sql<number | null>`MAX(primary_bid_shares_accepted_m)`.as('primary_bid_shares_accepted_m'),
         sql<number | null>`MAX(primary_bid_shares_rejected_m)`.as('primary_bid_shares_rejected_m'),
+        // #287 follow-up: worst-in-bucket run mode for the idle-state
+        // chart bands. Any PAUSED tick makes the bucket PAUSED; else
+        // any DRY_RUN tick makes it DRY_RUN; else LIVE. Keeps the
+        // band visible at zoomed-out presets where a short pause
+        // would otherwise vanish into an AVG.
+        sql<'DRY_RUN' | 'LIVE' | 'PAUSED'>`CASE MAX(CASE run_mode WHEN 'PAUSED' THEN 2 WHEN 'DRY_RUN' THEN 1 ELSE 0 END) WHEN 2 THEN 'PAUSED' WHEN 1 THEN 'DRY_RUN' ELSE 'LIVE' END`.as('run_mode'),
       ])
       .where('tick_at', '>=', sinceMs)
       .$if(untilMs !== undefined, (qb) => qb.where('tick_at', '<=', untilMs!))

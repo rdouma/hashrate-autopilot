@@ -2125,6 +2125,9 @@ function ChartColorsSection({
             { key: 'events.edit_price', label: t`edit price` },
             { key: 'events.edit_speed', label: t`edit speed` },
             { key: 'events.cancel', label: t`cancel` },
+            { key: 'events.mode_change', label: t`mode change` },
+            { key: 'events.bid_paused', label: t`bid paused` },
+            { key: 'events.bid_resumed', label: t`bid resumed` },
           ],
         },
       ],
@@ -2369,6 +2372,47 @@ function ChartColorRowIcon({
       >
         <circle cx="12" cy="12" r="10" />
         <path d="m4.9 4.9 14.2 14.2" />
+      </svg>
+    );
+  }
+  // #287 follow-up: run-mode change (Lucide power) and Braiins
+  // pause/resume (Lucide circle-pause / circle-play), copied verbatim
+  // from the marker rendering in PriceChart.tsx. The mode-change and
+  // bid-paused colors also tint the idle background bands.
+  if (keyId === 'events.mode_change') {
+    return (
+      <svg
+        width="14" height="14" viewBox="0 0 24 24" className="shrink-0"
+        fill="none" stroke={color} strokeWidth="2"
+        strokeLinecap="round" strokeLinejoin="round"
+      >
+        <path d="M12 2v10" />
+        <path d="M18.4 6.6a9 9 0 1 1-12.77.04" />
+      </svg>
+    );
+  }
+  if (keyId === 'events.bid_paused') {
+    return (
+      <svg
+        width="14" height="14" viewBox="0 0 24 24" className="shrink-0"
+        fill="none" stroke={color} strokeWidth="2"
+        strokeLinecap="round" strokeLinejoin="round"
+      >
+        <circle cx="12" cy="12" r="10" />
+        <line x1="10" x2="10" y1="15" y2="9" />
+        <line x1="14" x2="14" y1="15" y2="9" />
+      </svg>
+    );
+  }
+  if (keyId === 'events.bid_resumed') {
+    return (
+      <svg
+        width="14" height="14" viewBox="0 0 24 24" className="shrink-0"
+        fill="none" stroke={color} strokeWidth="2"
+        strokeLinecap="round" strokeLinejoin="round"
+      >
+        <circle cx="12" cy="12" r="10" />
+        <polygon points="10 8 16 12 10 16 10 8" />
       </svg>
     );
   }

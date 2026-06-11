@@ -367,6 +367,7 @@ export const HashrateChart = memo(function HashrateChart({
   ipChangeEvents = [],
   speedEditEvents = [],
   markersHiddenCount = 0,
+  bidPauseIntervals = [],
   viewportHandlers,
   wheelRef,
   isDragging = false,
@@ -418,6 +419,14 @@ export const HashrateChart = memo(function HashrateChart({
   speedEditEvents?: ReadonlyArray<SpeedEditMarkerEvent>;
   /** #172: number of markers hidden by the global marker cap. */
   markersHiddenCount?: number;
+  /**
+   * #287 follow-up: Braiins-side bid-pause spans (BID_PAUSED →
+   * BID_RESUMED pairs, computed by the caller from the bid-event
+   * stream). Rendered as hatched background bands tinted with the
+   * `events.bid_paused` color slot. Open-ended intervals use
+   * ±Infinity and get clamped to the data range here.
+   */
+  bidPauseIntervals?: ReadonlyArray<{ x0: number; x1: number }>;
   viewportHandlers?: {
     onPointerDown: React.PointerEventHandler<SVGSVGElement>;
     onPointerMove: React.PointerEventHandler<SVGSVGElement>;
@@ -464,6 +473,10 @@ export const HashrateChart = memo(function HashrateChart({
   // glyph, so the speed markers read identically on both charts and
   // honor the operator's Chart-colors override.
   const COLOR_EDIT_SPEED = getChartColor('events.edit_speed', _colorOverrides);
+  // #287 follow-up: idle-band tints, same slots the price chart uses
+  // for its mode-change / bid-paused markers.
+  const COLOR_MODE_CHANGE = getChartColor('events.mode_change', _colorOverrides);
+  const COLOR_BID_PAUSED = getChartColor('events.bid_paused', _colorOverrides);
 
   // #280: clickable-legend series visibility. `hidden` feeds both the
   // render gates below and the Y-axis autoscale (inside chartData), so
@@ -1284,7 +1297,29 @@ export const HashrateChart = memo(function HashrateChart({
             }
           }
         }
-        return { marketplaceEmptyIntervals, braiinsUnreachableIntervals, daemonOfflineIntervals };
+
+        // #287 follow-up: contiguous non-LIVE run_mode spans →
+        // "autopilot idle" background bands, mirroring the price
+        // chart's computation so both charts band identically.
+        const idleModeIntervals: Array<{ x0: number; x1: number; mode: 'DRY_RUN' | 'PAUSED' }> = [];
+        {
+          let idleStart: number | null = null;
+          let idleMode: 'DRY_RUN' | 'PAUSED' | null = null;
+          for (const p of points) {
+            const m = p.run_mode === 'DRY_RUN' || p.run_mode === 'PAUSED' ? p.run_mode : null;
+            if (m !== idleMode) {
+              if (idleStart !== null && idleMode !== null) {
+                idleModeIntervals.push({ x0: idleStart, x1: p.tick_at, mode: idleMode });
+              }
+              idleStart = m !== null ? p.tick_at : null;
+              idleMode = m;
+            }
+          }
+          if (idleStart !== null && idleMode !== null) {
+            idleModeIntervals.push({ x0: idleStart, x1: lastT ?? idleStart, mode: idleMode });
+          }
+        }
+        return { marketplaceEmptyIntervals, braiinsUnreachableIntervals, daemonOfflineIntervals, idleModeIntervals };
       })(),
     };
   }, [
@@ -1586,7 +1621,7 @@ export const HashrateChart = memo(function HashrateChart({
     );
   }
 
-  const { minX, maxX, dataMinX, dataMaxX, xScale, yScale, deliveredPath, datumPath, hasDatum, oceanPath, hasOcean, targetPath, floorPath, yTicks, xTickInterval, xTicks, hasShareLog, shareLogPath, shareLogYTicks, shareLogYScale, padRight, rightAxis, marketplaceEmptyIntervals, braiinsUnreachableIntervals, daemonOfflineIntervals } = chartData;
+  const { minX, maxX, dataMinX, dataMaxX, xScale, yScale, deliveredPath, datumPath, hasDatum, oceanPath, hasOcean, targetPath, floorPath, yTicks, xTickInterval, xTicks, hasShareLog, shareLogPath, shareLogYTicks, shareLogYScale, padRight, rightAxis, marketplaceEmptyIntervals, braiinsUnreachableIntervals, daemonOfflineIntervals, idleModeIntervals } = chartData;
 
   return (
     <div className="bg-slate-900 border rounded-lg p-4 border-slate-800" data-chart-crosshair>
@@ -1821,6 +1856,76 @@ export const HashrateChart = memo(function HashrateChart({
             >
               <title>
                 {`Daemon offline (${formatDuration(iv.x1 - iv.x0)})`}
+              </title>
+            </rect>
+          );
+        })}
+        {/* #287 follow-up: idle-state bands, mirroring the price chart.
+            Run-mode bands tint with the mode-change marker color;
+            Braiins bid-pause bands tint with the bid-paused color. */}
+        {idleModeIntervals.length > 0 && (
+          <defs>
+            <pattern
+              id="idleModeHatchHr"
+              patternUnits="userSpaceOnUse"
+              width="10"
+              height="10"
+              patternTransform="rotate(45)"
+            >
+              <rect width="10" height="10" fill={COLOR_MODE_CHANGE} fillOpacity="0.08" />
+              <line x1="0" y1="0" x2="0" y2="10" stroke={COLOR_MODE_CHANGE} strokeWidth="1.5" strokeOpacity="0.3" />
+            </pattern>
+          </defs>
+        )}
+        {idleModeIntervals.map((iv, i) => {
+          const x0 = xScale(Math.max(dataMinX, iv.x0));
+          const x1 = xScale(Math.min(dataMaxX, iv.x1));
+          if (!Number.isFinite(x0) || !Number.isFinite(x1) || x1 <= x0) return null;
+          return (
+            <rect
+              key={`idle-mode-${i}`}
+              x={x0}
+              y={PADDING.top}
+              width={x1 - x0}
+              height={chartHeight - PADDING.top - PADDING.bottom}
+              fill="url(#idleModeHatchHr)"
+            >
+              <title>
+                {`Autopilot in ${iv.mode} (${formatDuration(iv.x1 - iv.x0)})`}
+              </title>
+            </rect>
+          );
+        })}
+        {bidPauseIntervals.length > 0 && (
+          <defs>
+            <pattern
+              id="bidPauseHatchHr"
+              patternUnits="userSpaceOnUse"
+              width="10"
+              height="10"
+              patternTransform="rotate(-45)"
+            >
+              <rect width="10" height="10" fill={COLOR_BID_PAUSED} fillOpacity="0.08" />
+              <line x1="0" y1="0" x2="0" y2="10" stroke={COLOR_BID_PAUSED} strokeWidth="1.5" strokeOpacity="0.3" />
+            </pattern>
+          </defs>
+        )}
+        {bidPauseIntervals.map((iv, i) => {
+          const x0 = xScale(Math.max(dataMinX, iv.x0));
+          const x1 = xScale(Math.min(dataMaxX, iv.x1));
+          if (!Number.isFinite(x0) || !Number.isFinite(x1) || x1 <= x0) return null;
+          const clampedSpan = Math.min(dataMaxX, iv.x1) - Math.max(dataMinX, iv.x0);
+          return (
+            <rect
+              key={`bid-pause-${i}`}
+              x={x0}
+              y={PADDING.top}
+              width={x1 - x0}
+              height={chartHeight - PADDING.top - PADDING.bottom}
+              fill="url(#bidPauseHatchHr)"
+            >
+              <title>
+                {`Bid paused by Braiins (${formatDuration(clampedSpan)})`}
               </title>
             </rect>
           );

@@ -89,6 +89,11 @@ const COLOR_EDIT = '#fbbf24';
 const COLOR_EDIT_SPEED = '#60a5fa';
 const COLOR_CANCEL = '#f87171';
 const COLOR_DEPOSIT = '#c084fc';
+// #287 follow-up defaults (legend chips; the in-chart markers resolve
+// the override-aware values via getChartColor inside the component).
+const COLOR_MODE_CHANGE_DEFAULT = '#c4b5fd';
+const COLOR_BID_PAUSED_DEFAULT = '#fbbf24';
+const COLOR_BID_RESUMED_DEFAULT = '#34d399';
 
 interface TooltipState {
   event: BidEventView;
@@ -266,6 +271,7 @@ export const PriceChart = memo(function PriceChart({
   markersHiddenKind = null,
   markersHiddenCount = 0,
   soloSeries = [],
+  bidPauseIntervals = [],
   viewportHandlers,
   wheelRef,
   isDragging = false,
@@ -375,6 +381,14 @@ export const PriceChart = memo(function PriceChart({
   markersHiddenCount?: number;
   /** #149: per-tick aggregated solo-mining fleet series; used when rightAxisSeries == 'solo_power_watts'. */
   soloSeries?: ReadonlyArray<SoloSeriesRow>;
+  /**
+   * #287 follow-up: Braiins-side bid-pause spans (BID_PAUSED →
+   * BID_RESUMED pairs, computed by the caller from the bid-event
+   * stream). Rendered as hatched background bands tinted with the
+   * `events.bid_paused` color slot. Open-ended intervals use
+   * ±Infinity and get clamped to the data range here.
+   */
+  bidPauseIntervals?: ReadonlyArray<{ x0: number; x1: number }>;
   viewportHandlers?: {
     onPointerDown: React.PointerEventHandler<SVGSVGElement>;
     onPointerMove: React.PointerEventHandler<SVGSVGElement>;
@@ -424,6 +438,11 @@ export const PriceChart = memo(function PriceChart({
   const COLOR_EDIT = getChartColor('events.edit_price', _colorOverrides);
   const COLOR_EDIT_SPEED = getChartColor('events.edit_speed', _colorOverrides);
   const COLOR_CANCEL = getChartColor('events.cancel', _colorOverrides);
+  // #287 follow-up: mode-change + pause/resume marker colours, also
+  // tinting the idle-state background bands.
+  const COLOR_MODE_CHANGE = getChartColor('events.mode_change', _colorOverrides);
+  const COLOR_BID_PAUSED = getChartColor('events.bid_paused', _colorOverrides);
+  const COLOR_BID_RESUMED = getChartColor('events.bid_resumed', _colorOverrides);
   const COLOR_RIGHT_AXIS = getChartColor('price.right_axis', _colorOverrides);
   /* eslint-enable @typescript-eslint/no-shadow */
   // #280: clickable-legend series visibility, persisted per device
@@ -1308,10 +1327,33 @@ export const PriceChart = memo(function PriceChart({
       }
     }
 
+    // #287 follow-up: contiguous non-LIVE run_mode spans → "autopilot
+    // idle" background bands. Derived from the per-tick run_mode
+    // column, so the bands are retroactive over all stored history.
+    const idleModeIntervals: Array<{ x0: number; x1: number; mode: 'DRY_RUN' | 'PAUSED' }> = [];
+    {
+      let idleStart: number | null = null;
+      let idleMode: 'DRY_RUN' | 'PAUSED' | null = null;
+      for (const p of points) {
+        const m = p.run_mode === 'DRY_RUN' || p.run_mode === 'PAUSED' ? p.run_mode : null;
+        if (m !== idleMode) {
+          if (idleStart !== null && idleMode !== null) {
+            idleModeIntervals.push({ x0: idleStart, x1: p.tick_at, mode: idleMode });
+          }
+          idleStart = m !== null ? p.tick_at : null;
+          idleMode = m;
+        }
+      }
+      if (idleStart !== null && idleMode !== null) {
+        const lastT = points[points.length - 1]?.tick_at ?? idleStart;
+        idleModeIntervals.push({ x0: idleStart, x1: lastT, mode: idleMode });
+      }
+    }
+
     // xs / smoothedPriceByTick / capByTick exposed for the #257
     // crosshair readout - the bid row mirrors the smoothed line the
     // chart draws, the cap row mirrors the per-tick effective cap.
-    return { pricePoints, xs, smoothedPriceByTick, capByTick, minX, maxX, dataMinX, dataMaxX, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, hashpricePath, fillablePath, fillableHasData: fillablePoints.length > 0, effectivePath, effectiveHasData: effectivePoints.length > 0, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents, rightAxis, hasRightAxis, rightAxisPath, rightYTicks, rightYScale, padRight, marketplaceEmptyIntervals, braiinsUnreachableIntervals, daemonOfflineIntervals };
+    return { pricePoints, xs, smoothedPriceByTick, capByTick, minX, maxX, dataMinX, dataMaxX, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, hashpricePath, fillablePath, fillableHasData: fillablePoints.length > 0, effectivePath, effectiveHasData: effectivePoints.length > 0, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents, rightAxis, hasRightAxis, rightAxisPath, rightYTicks, rightYScale, padRight, marketplaceEmptyIntervals, braiinsUnreachableIntervals, daemonOfflineIntervals, idleModeIntervals };
   }, [points, events, showEventKinds, priceSmoothingMinutes, historicalPayoutsOffsetSat, maxOverpayVsHashpriceSatPerPhDay, chartHeight, rightAxisSeries, soloSeries, denomination, intlLocale, viewportSince, viewportUntil, hidden]);
 
   const eventPriceAt = useCallback((e: BidEventView): number | null => {
@@ -1939,7 +1981,7 @@ export const PriceChart = memo(function PriceChart({
     );
   }
 
-  const { pricePoints, minX, maxX, dataMinX, dataMaxX, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, hashpricePath, fillablePath, fillableHasData, effectivePath, effectiveHasData, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents, rightAxis, hasRightAxis, rightAxisPath, rightYTicks, rightYScale, padRight, marketplaceEmptyIntervals, braiinsUnreachableIntervals, daemonOfflineIntervals } = chartData;
+  const { pricePoints, minX, maxX, dataMinX, dataMaxX, hasPrice, priceMin, priceMax, xScale, yScale, pricePath, priceAreaPath, hashpricePath, fillablePath, fillableHasData, effectivePath, effectiveHasData, capPath, capExclusionPolygon, yTicks, xTickInterval, xTicks, visibleEvents, rightAxis, hasRightAxis, rightAxisPath, rightYTicks, rightYScale, padRight, marketplaceEmptyIntervals, braiinsUnreachableIntervals, daemonOfflineIntervals, idleModeIntervals } = chartData;
 
   // Format Y-axis tick values via the denomination context so the
   // numbers track the currency + hashrate-unit toggle. The full
@@ -2251,6 +2293,76 @@ export const PriceChart = memo(function PriceChart({
             </rect>
           );
         })}
+        {/* #287 follow-up: idle-state bands. Run-mode bands (DRY_RUN /
+            PAUSED) tint with the mode-change marker color; Braiins
+            bid-pause bands tint with the bid-paused marker color. */}
+        {idleModeIntervals.length > 0 && (
+          <defs>
+            <pattern
+              id="idleModeHatchPx"
+              patternUnits="userSpaceOnUse"
+              width="10"
+              height="10"
+              patternTransform="rotate(45)"
+            >
+              <rect width="10" height="10" fill={COLOR_MODE_CHANGE} fillOpacity="0.08" />
+              <line x1="0" y1="0" x2="0" y2="10" stroke={COLOR_MODE_CHANGE} strokeWidth="1.5" strokeOpacity="0.3" />
+            </pattern>
+          </defs>
+        )}
+        {idleModeIntervals.map((iv, i) => {
+          const x0 = xScale(Math.max(dataMinX, iv.x0));
+          const x1 = xScale(Math.min(dataMaxX, iv.x1));
+          if (!Number.isFinite(x0) || !Number.isFinite(x1) || x1 <= x0) return null;
+          return (
+            <rect
+              key={`idle-mode-${i}`}
+              x={x0}
+              y={PADDING.top}
+              width={x1 - x0}
+              height={chartHeight - PADDING.top - PADDING.bottom}
+              fill="url(#idleModeHatchPx)"
+            >
+              <title>
+                {`Autopilot in ${iv.mode} (${formatDuration(iv.x1 - iv.x0)})`}
+              </title>
+            </rect>
+          );
+        })}
+        {bidPauseIntervals.length > 0 && (
+          <defs>
+            <pattern
+              id="bidPauseHatchPx"
+              patternUnits="userSpaceOnUse"
+              width="10"
+              height="10"
+              patternTransform="rotate(-45)"
+            >
+              <rect width="10" height="10" fill={COLOR_BID_PAUSED} fillOpacity="0.08" />
+              <line x1="0" y1="0" x2="0" y2="10" stroke={COLOR_BID_PAUSED} strokeWidth="1.5" strokeOpacity="0.3" />
+            </pattern>
+          </defs>
+        )}
+        {bidPauseIntervals.map((iv, i) => {
+          const x0 = xScale(Math.max(dataMinX, iv.x0));
+          const x1 = xScale(Math.min(dataMaxX, iv.x1));
+          if (!Number.isFinite(x0) || !Number.isFinite(x1) || x1 <= x0) return null;
+          const clampedSpan = Math.min(dataMaxX, iv.x1) - Math.max(dataMinX, iv.x0);
+          return (
+            <rect
+              key={`bid-pause-${i}`}
+              x={x0}
+              y={PADDING.top}
+              width={x1 - x0}
+              height={chartHeight - PADDING.top - PADDING.bottom}
+              fill="url(#bidPauseHatchPx)"
+            >
+              <title>
+                {`Bid paused by Braiins (${formatDuration(clampedSpan)})`}
+              </title>
+            </rect>
+          );
+        })}
         {capExclusionPolygon && !isHidden('maxBid') && (
           <>
             <defs>
@@ -2333,10 +2445,10 @@ export const PriceChart = memo(function PriceChart({
           if (e.kind === 'MODE_CHANGE' || e.kind === 'BID_PAUSED' || e.kind === 'BID_RESUMED') {
             const stroke =
               e.kind === 'MODE_CHANGE'
-                ? '#c4b5fd'
+                ? COLOR_MODE_CHANGE
                 : e.kind === 'BID_PAUSED'
-                  ? '#fbbf24'
-                  : '#34d399';
+                  ? COLOR_BID_PAUSED
+                  : COLOR_BID_RESUMED;
             const baselineY = chartHeight - PADDING.bottom;
             return (
               <g key={e.id} {...common}>
@@ -2473,7 +2585,15 @@ export const PriceChart = memo(function PriceChart({
           if (!focus) return null;
           const cx = xScale(focus.occurred_at);
           const priceAtEvent = eventPriceAt(focus);
-          const cy = priceAtEvent !== null ? yScale(priceAtEvent) : PADDING.top - 2;
+          // Mode-change / pause / resume markers have no price-line
+          // bubble - they render as top-edge glyphs - so the ring
+          // anchors on the glyph (its center sits at PADDING.top - 4)
+          // instead of the price line.
+          const isTopMarker =
+            focus.kind === 'MODE_CHANGE' || focus.kind === 'BID_PAUSED' || focus.kind === 'BID_RESUMED';
+          const cy = isTopMarker
+            ? PADDING.top - 4
+            : priceAtEvent !== null ? yScale(priceAtEvent) : PADDING.top - 2;
           return (
             <g pointerEvents="none">
               <style>{`
@@ -3840,7 +3960,7 @@ function EventLegend({ kinds }: { kinds: readonly BidEventKind[] }) {
       )}
       {has('MODE_CHANGE') && (
         <span className="flex items-center gap-1 whitespace-nowrap">
-          <svg {...iconProps} stroke="#c4b5fd">
+          <svg {...iconProps} stroke={COLOR_MODE_CHANGE_DEFAULT}>
             <path d="M12 2v10" />
             <path d="M18.4 6.6a9 9 0 1 1-12.77.04" />
           </svg>
@@ -3849,7 +3969,7 @@ function EventLegend({ kinds }: { kinds: readonly BidEventKind[] }) {
       )}
       {has('BID_PAUSED') && (
         <span className="flex items-center gap-1 whitespace-nowrap">
-          <svg {...iconProps} stroke="#fbbf24">
+          <svg {...iconProps} stroke={COLOR_BID_PAUSED_DEFAULT}>
             <circle cx="12" cy="12" r="10" />
             <line x1="10" x2="10" y1="15" y2="9" />
             <line x1="14" x2="14" y1="15" y2="9" />
@@ -3859,7 +3979,7 @@ function EventLegend({ kinds }: { kinds: readonly BidEventKind[] }) {
       )}
       {has('BID_RESUMED') && (
         <span className="flex items-center gap-1 whitespace-nowrap">
-          <svg {...iconProps} stroke="#34d399">
+          <svg {...iconProps} stroke={COLOR_BID_RESUMED_DEFAULT}>
             <circle cx="12" cy="12" r="10" />
             <polygon points="10 8 16 12 10 16 10 8" />
           </svg>

@@ -860,6 +860,7 @@ msgid "Bid id contains"
 msgstr "ID de oferta contiene"
 
 #: src/components/PriceChart.tsx
+#: src/pages/Config.tsx
 #: src/pages/History.tsx
 msgid "bid paused"
 msgstr "oferta pausada"
@@ -870,6 +871,7 @@ msgid "BID PAUSED"
 msgstr "OFERTA PAUSADA"
 
 #: src/components/PriceChart.tsx
+#: src/pages/Config.tsx
 #: src/pages/History.tsx
 msgid "bid resumed"
 msgstr "oferta reanudada"
@@ -3180,6 +3182,7 @@ msgid "mode"
 msgstr "modo"
 
 #: src/components/PriceChart.tsx
+#: src/pages/Config.tsx
 #: src/pages/History.tsx
 msgid "mode change"
 msgstr "cambio de modo"

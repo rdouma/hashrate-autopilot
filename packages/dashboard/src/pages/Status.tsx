@@ -273,12 +273,29 @@ export function Status() {
         timer = window.setTimeout(() => setFocusedEventId(null), 5_000);
       }
     }
+    // #287 follow-up (operator): the price chart can sit below the
+    // fold (hero cards above it, or a custom card order), so the jump
+    // also scrolls the chart block into view. Poll briefly - the
+    // block only mounts once the status query resolves, which on a
+    // cold navigation from /history lands a beat after this effect.
+    let scrollTries = 0;
+    const scrollTimer = window.setInterval(() => {
+      const el = document.getElementById('price-chart-block');
+      scrollTries += 1;
+      if (el !== null) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        window.clearInterval(scrollTimer);
+      } else if (scrollTries >= 30) {
+        window.clearInterval(scrollTimer);
+      }
+    }, 100);
     params.delete('focus_event');
     params.delete('at');
     const next = params.toString();
     navigate(`/${next ? `?${next}` : ''}`, { replace: true });
     return () => {
       if (timer !== null) window.clearTimeout(timer);
+      window.clearInterval(scrollTimer);
     };
     // location-driven effect; depend only on the URL string.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -566,6 +583,31 @@ export function Status() {
     return visibleBidEvents.filter((e) => e.kind === 'EDIT_SPEED');
   }, [visibleBidEvents, vp.activePreset, vp.since_ms, vp.until_ms]);
 
+  // #287 follow-up: Braiins-side bid-pause spans for the hatched
+  // background bands on both charts. Built from the raw (un-capped)
+  // event stream - bands are context, not markers, so the marker cap
+  // must not drop them. A RESUMED without a preceding PAUSED in the
+  // fetched window opens at -Infinity; a PAUSED without a RESUMED
+  // runs to +Infinity. The charts clamp to their data range.
+  const bidPauseIntervals = useMemo(() => {
+    const events = bidEventsQuery.data?.events ?? EMPTY_BID_EVENTS;
+    const transitions = events
+      .filter((e) => e.kind === 'BID_PAUSED' || e.kind === 'BID_RESUMED')
+      .sort((a, b) => a.occurred_at - b.occurred_at);
+    const intervals: Array<{ x0: number; x1: number }> = [];
+    let openAt: number | null = null;
+    for (const e of transitions) {
+      if (e.kind === 'BID_PAUSED') {
+        if (openAt === null) openAt = e.occurred_at;
+      } else {
+        intervals.push({ x0: openAt ?? Number.NEGATIVE_INFINITY, x1: e.occurred_at });
+        openAt = null;
+      }
+    }
+    if (openAt !== null) intervals.push({ x0: openAt, x1: Number.POSITIVE_INFINITY });
+    return intervals;
+  }, [bidEventsQuery.data?.events]);
+
   if (query.isError && query.error instanceof UnauthorizedError) {
     navigate('/login');
     return null;
@@ -690,6 +732,7 @@ export function Status() {
           bestDiffEvents={bestDiffEvents}
           speedEditEvents={speedEditEvents}
           markersHiddenCount={markersHiddenCount}
+          bidPauseIntervals={bidPauseIntervals}
           viewportHandlers={chartViewport.handlers}
           wheelRef={chartViewport.wheelRef}
           isDragging={chartViewport.isDragging}
@@ -703,7 +746,7 @@ export function Status() {
       </div>
     ),
     price: (
-      <div className="space-y-1">
+      <div className="space-y-1" id="price-chart-block">
         <div className="flex justify-end items-center gap-2 text-[11px] text-slate-400">
           <Trans>right axis</Trans>
           <select
@@ -757,6 +800,7 @@ export function Status() {
           blockExplorerTemplate={configQuery.data?.config?.block_explorer_url_template}
           txExplorerTemplate={configQuery.data?.config?.block_explorer_tx_url_template}
           shareLogPct={oceanQuery.data?.user?.share_log_pct ?? null}
+          bidPauseIntervals={bidPauseIntervals}
           viewportHandlers={chartViewport.handlers}
           wheelRef={chartViewport.wheelRef}
           isDragging={chartViewport.isDragging}

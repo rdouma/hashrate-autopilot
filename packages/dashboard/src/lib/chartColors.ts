@@ -45,7 +45,12 @@ export type ChartColorKey =
   | 'events.create'
   | 'events.edit_price'
   | 'events.edit_speed'
-  | 'events.cancel';
+  | 'events.cancel'
+  // #287 follow-up: mode-change + Braiins pause/resume markers and
+  // their idle-state background bands.
+  | 'events.mode_change'
+  | 'events.bid_paused'
+  | 'events.bid_resumed';
 
 export const CHART_COLOR_DEFAULTS: Record<ChartColorKey, string> = {
   // Hashrate left
@@ -75,6 +80,10 @@ export const CHART_COLOR_DEFAULTS: Record<ChartColorKey, string> = {
   'events.edit_price': '#facc15',           // yellow-400 — ●
   'events.edit_speed': '#38bdf8',           // sky-400 — ◆
   'events.cancel': '#f87171',               // rose-400 — ×
+  // #287 follow-up
+  'events.mode_change': '#c4b5fd',          // violet-300 — power glyph + DRY_RUN/PAUSED bands
+  'events.bid_paused': '#fbbf24',           // amber-400 — pause glyph + Braiins-pause bands
+  'events.bid_resumed': '#34d399',          // emerald-400 — play glyph
 };
 
 /** Curated swatches for the picker. Two brightness rows × six hues

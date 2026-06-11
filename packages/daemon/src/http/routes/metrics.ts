@@ -126,6 +126,8 @@ export interface MetricPoint {
   readonly primary_bid_shares_purchased_m: number | null;
   readonly primary_bid_shares_accepted_m: number | null;
   readonly primary_bid_shares_rejected_m: number | null;
+  /** #287 follow-up: run mode at the tick (worst-in-bucket when aggregated) for the idle-state chart bands. */
+  readonly run_mode: 'DRY_RUN' | 'LIVE' | 'PAUSED';
 }
 
 export async function registerMetricsRoute(
@@ -227,6 +229,7 @@ function toMetricPoint(r: {
   primary_bid_shares_purchased_m: number | null;
   primary_bid_shares_accepted_m: number | null;
   primary_bid_shares_rejected_m: number | null;
+  run_mode: 'DRY_RUN' | 'LIVE' | 'PAUSED';
 }): MetricPoint {
   return {
     tick_at: r.tick_at,
@@ -279,6 +282,7 @@ function toMetricPoint(r: {
     primary_bid_shares_purchased_m: r.primary_bid_shares_purchased_m,
     primary_bid_shares_accepted_m: r.primary_bid_shares_accepted_m,
     primary_bid_shares_rejected_m: r.primary_bid_shares_rejected_m,
+    run_mode: r.run_mode,
   };
 }
 

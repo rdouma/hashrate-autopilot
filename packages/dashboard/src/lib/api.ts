@@ -188,6 +188,8 @@ export interface MetricPoint {
   primary_bid_shares_purchased_m: number | null;
   primary_bid_shares_accepted_m: number | null;
   primary_bid_shares_rejected_m: number | null;
+  /** #287 follow-up: run mode at the tick (worst-in-bucket when aggregated). Drives the idle-state chart bands. */
+  run_mode: 'DRY_RUN' | 'LIVE' | 'PAUSED';
 }
 
 /** #256 follow-up: one bid's roll-up shown as a collapsible header on the History page. */

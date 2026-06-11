@@ -2,6 +2,14 @@
 
 ## 2026-06-11
 
+### `[Feature]` Idle-state background bands + configurable marker colors (#287 follow-up)
+
+Both charts now shade the spans where the autopilot wasn't actively trading: a violet diagonal hatch while the run mode was DRY RUN or PAUSED (derived from the per-tick `run_mode` column, so the bands are retroactive over all stored history), and an amber counter-diagonal hatch while Braiins had the bid paused (from the `bid paused` → `bid resumed` event pairs). Hovering a band names the state and its duration. The three new marker colors - mode change, bid paused, bid resumed - join Config → chart colors under "Bid-event markers" with their own glyph previews; the mode-change and bid-paused colors also tint the matching bands.
+
+### `[UI]` History → chart jump scrolls to the chart and rings top-edge markers (#285 follow-up)
+
+"View on chart" from the History drawer now scrolls the page to the price chart when it sits below the fold, and the focus pulse anchors on the top-edge glyph for mode-change / pause / resume markers instead of ringing an empty spot on the price line.
+
 ### `[Feature]` Mode-change and pause/resume markers on the price chart (#287 follow-up)
 
 The three new History kinds now also render as markers on the **price chart**: violet power glyph for `mode change` (one shared icon regardless of direction), amber pause and emerald play for the Braiins-side bid transitions. They use the pool-block idiom — top-edge glyph plus a full-height dashed guide line, since these events have no price anchor — and they're **always visible at every zoom level**, unlike the bid-event markers whose per-range fading exists to tame EDIT_PRICE noise; a mode change that explains a week-long gap stays visible at the 1m zoom where you'd actually notice the gap. Hover/click opens the standard pinned event tooltip; for `bid paused`, Braiins' own `last_pause_reason` rides along as the reason line. Legend chips for the three kinds appear only when at least one such marker is in view, so the legend stays uncluttered in the common case.
