@@ -90,8 +90,9 @@ Non-goals: SaaS / multi-user, cloud deployment, hands-free wallet funding, gaple
 - Each tick also polls the **Ocean pool API** (hashprice, pool stats, payout estimate, recent blocks) and - when
   a `datum_api_url` is configured - the **Datum Gateway's `/umbrel-api`** for a second hashrate reading measured
   at the gateway. Both integrations are informational; the control loop never depends on them being reachable.
-- Optionally reads `bitcoind` or Electrs for on-chain payout observation (income tracking, runway calculation). On
-  Electrs, lifetime earnings count **every coinbase tx ever credited to your payout address** - including
+- Optionally reads `bitcoind` or an Electrum server (electrs, Fulcrum, and ElectrumX all work) for on-chain payout
+  observation (income tracking, runway calculation). On
+  the Electrum path, lifetime earnings count **every coinbase tx ever credited to your payout address** - including
   historical Ocean payouts you've already swept to another wallet - so the P&L stays coherent even if you reuse a
   payout address across before-and-after-installation periods. A `Backfill now` button under Config -> Pool &
   Payout pulls historical receipts on demand. Operators with fresh-address discipline can disable the backfill via
@@ -163,7 +164,7 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
   [`docs/setup-datum-api.md`](docs/setup-datum-api.md) - on Umbrel the API port is not exposed by default and
   needs a one-line compose edit plus a full OS reboot (tested and stable since 2026-04-19).
 - **Measured P&L and runway** - spend is read from Braiins' account transaction ledger (settled cost, not
-  modelled bid × delivered) and income from on-chain payouts observed via Electrs or bitcoind. Runway on the
+  modelled bid × delivered) and income from on-chain payouts observed via your Electrum server or bitcoind. Runway on the
   Braiins service card is days-of-balance at the current measured spend rate.
 - **Dashboard** - hashrate and price charts with drag-to-pan and click-to-focus scroll-wheel zoom
   (TradingView-style; click a chart to activate zoom, click outside or press Escape to deactivate; blue
@@ -225,7 +226,7 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
   address - the lottery-win case) renders as a **gold crown**. **BIP 110-signalling pool block**
   (header version bit 4 set; Reduced Data Temporary Soft Fork) renders as a **yellow box**. **Default pool block**
   renders as a **blue box**. **Difficulty retargets** show a **violet pickaxe**. **Bitaxe miner best difficulty records** show a **gold trophy** with a dashed vertical line. Tooltip header label and colour follow the same precedence (own > BIP 110 >
-  default). Detection happens daemon-side via your bitcoind RPC (`getblockheader`) or Electrs
+  default). Detection happens daemon-side via your bitcoind RPC (`getblockheader`) or Electrum server
   (`blockchain.block.header`) - no third-party API. **Public-IP change markers** (sky router icons) appear at the top of the Hashrate chart whenever the daemon's IP poller (60 s cadence to `api.ipify.org`) observes a different public IP; the marker's styled tooltip shows the old → new IP pair and locale-formatted detection time, and the DDNS card on the Pool & Payout tab carries an "IP last changed" timestamp so rejection-rate spikes can be correlated against ISP rotation events. Each pool-luck step-marker tooltip carries a green `FOUND` or red `AGED OUT` badge per contributing block; multiple events landing in the same daemon tick (e.g. one block ages out while another lands) collapse into a single dot with both blocks' detail panels. A separate **BIP 110 scan card** on the Status page
   lets you scan signaling by difficulty epoch (toggle: `Current epoch` for the live MASF window, or `All` for everything since block 938,903 - the first known BIP 110 signaling block, found 2026-03-01). Per-epoch breakdown rows expand to show their signaling blocks inline (Pool / Miner column split - Ocean blocks surface both the pool wrapper and the inner template-author tag; non-Ocean blocks show the pool tag alone). Each row carries a MASF progress bar against the 55% threshold (`ceil(2016 × 0.55) = 1109` signaling blocks). The deployment-status badge has a lifecycle-aware tooltip naming both paths: miner-activated (MASF, 55% in any epoch locks in early) and user-activated (UASF, block height 965,664 enforced unconditionally regardless of signaling); when LOCKED_IN or ACTIVE the wording adapts. The forecasted UASF date is dynamic - `now + (965,664 − tip) × 600s`, matching every block-time calculator (currently early-September 2026 at typical block rate). Block markers and retarget icons are mirrored onto the price chart, so the operator sees these events in
   context on both charts. **Braiins deposit markers** (purple fuel-pump icons) appear on the Price chart whenever Braiins credits a deposit to your marketplace wallet. The marker is positioned at the Bitcoin transaction timestamp from the Braiins API. When the right-axis series is `total_balance_sat`, a purple dot appears on the balance line at the step-up caused by the deposit, with a dotted connector line back to the fuel icon so the operator can visually trace which deposit caused which balance jump. Hovering either the fuel icon or the dot opens the same tooltip with deposit amount, transaction ID, and timing. **On-chain payout gems** (emerald) appear at the top of the Price chart with a dashed vertical line whenever a payout is detected on-chain; clicking opens a tooltip with block height, date, amount, and a block-explorer deep-link. A purple dot on the unpaid-earnings line marks the earlier moment Ocean debited the balance (payout initiated), bridging the visual gap between the unpaid drop and the on-chain confirmation.
@@ -352,7 +353,7 @@ live).
 **Pool destination** (pool URL, BTC payout address, worker identity auto-derived from the address, Datum
 stats API URL), **Dynamic DNS** (No-IP / DuckDNS / generic dyndns2 - daemon-managed alternative to your
 router's DDNS client; pushes the current public IP every 5 min and immediately on any config save),
-**On-chain payouts** (payout-source backend: bitcoind RPC or Electrs, plus an *Include historical Ocean
+**On-chain payouts** (payout-source backend: bitcoind RPC or an Electrum server such as electrs, Fulcrum, or ElectrumX, plus an *Include historical Ocean
 payouts* toggle with a **Backfill now** button that walks the address history and folds historical
 coinbase payouts into the lifetime-earnings line, and a *Pre-installation earnings* field for off-chain
 or pre-autopilot income the on-chain observer can't see - Lightning payouts, swept Ocean history -
@@ -788,7 +789,7 @@ auto-redirects to `/setup`. Three steps:
 2. **Mining** - target + minimum-floor hashrate, your Datum gateway / pool URL, the BTC payout
    address, the worker identity (`<btc-address>.<label>` - auto-derived from the address; the period
    is mandatory or Ocean TIDES won't credit your shares), and an optional payout-tracking backend
-   (Bitcoin Knots RPC or Electrs).
+   (Bitcoin Knots RPC or an Electrum server - electrs, Fulcrum, ElectrumX).
 3. **Review** - sanity-check, submit.
 
 On submit the daemon writes everything to `state.db` and transitions to operational mode in-place

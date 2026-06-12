@@ -46,7 +46,7 @@ Umbrel, Docker and scripted installs. See README.md for details.
 - **Host:** a dedicated always-on machine on the operator's LAN. Can be the same physical box that runs the Bitcoin node + Datum Gateway, or a separate always-on machine alongside it. Tested on bare-metal Linux, Docker on Linux, and the Umbrel app store packaging; nothing in the daemon assumes any particular Bitcoin-node platform.
 - **Network access required:** Braiins Hashpower API (internet egress - `hashpower.braiins.com`), Datum Gateway
   stratum+tcp access (LAN, typically port 23334).
-- **Network access recommended:** Bitcoin RPC or **much** better Electrs endpoint (LAN). This will allow you to
+- **Network access recommended:** Bitcoin RPC or **much** better an Electrum-server endpoint on the LAN (electrs, Fulcrum, and ElectrumX all speak the same protocol). This will allow you to
   track your payout address and have a working Profit & Loss panel on the dashboard.
 - **Persistence:** state, ledger, and tick history must survive host reboots.
 - **Secrets:** Braiins owner token (required) + optional read-only token, optional `bitcoind` RPC credentials,
@@ -71,7 +71,7 @@ Umbrel, Docker and scripted installs. See README.md for details.
     - Fees: `GET /v1/spot/fee`
     - Market settings: `GET /v1/spot/settings`
     - Transactions (on-chain + internal): `GET /v1/account/transaction`
-- Block reward payouts observed via **Electrs** (preferred, instant lookups) or `bitcoind` RPC (`listreceivedbyaddress` / `gettransaction` / `scantxoutset` fallback) against any reachable Bitcoin node on the LAN. The node can be Bitcoin Knots / Bitcoin Knots running on Umbrel, Start9, a NAS, a VPS, or bare metal; the daemon just needs RPC or Electrum-protocol reach to it.
+- Block reward payouts observed via an **Electrum server** (electrs / Fulcrum / ElectrumX; preferred, instant lookups) or `bitcoind` RPC (`listreceivedbyaddress` / `gettransaction` / `scantxoutset` fallback) against any reachable Bitcoin node on the LAN. The node can be Bitcoin Knots / Bitcoin Knots running on Umbrel, Start9, a NAS, a VPS, or bare metal; the daemon just needs RPC or Electrum-protocol reach to it.
 - Datum Gateway endpoint reachability (TCP connect health check, port 23334).
 - Datum Gateway API (normally port 7152; no auth):
 - Ocean API (public)

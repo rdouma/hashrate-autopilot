@@ -108,7 +108,7 @@ issue #60.
 | Env var | Schema field | Notes |
 |---|---|---|
 | `BHA_DATUM_API_URL` | `datum_api_url` | Empty string disables. |
-| `BHA_ELECTRS_HOST` | `electrs_host` | Empty string disables. |
+| `BHA_ELECTRS_HOST` | `electrs_host` | Empty string disables. Any Electrum-protocol server works: electrs, Fulcrum, ElectrumX. |
 | `BHA_ELECTRS_PORT` | `electrs_port` | Empty string disables. |
 | `BHA_BITCOIND_RPC_URL` | `bitcoind_rpc_url` | Also accepted in secrets; either works. |
 | `BHA_BITCOIND_RPC_USER` | `bitcoind_rpc_user` | |

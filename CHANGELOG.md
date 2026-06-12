@@ -2,6 +2,10 @@
 
 ## 2026-06-11
 
+### `[UI]` Inclusive "Electrum server" labeling - Fulcrum and ElectrumX work too (#273)
+
+The payout-tracking backend was labeled "Electrs" throughout the UI, suggesting only electrs works. The daemon speaks the standard Electrum protocol, and Fulcrum has been confirmed working in the field (it's what prompted #273). Config, the setup wizard, Status tooltips, and the docs now say "Electrum server" with electrs / Fulcrum / ElectrumX named as known-good options; the Config search also finds the section via "fulcrum". Config keys (`electrs_host` / `electrs_port` / `payout_source=electrs`) are unchanged, so existing setups are unaffected.
+
 ### `[UI]` Idle-band hatching: crisper styling, edges aligned to the transition (#287 follow-up)
 
 Operator feedback on the first build: the light tint at low opacity read as a milky frosted-glass block instead of hatching. Bands now use a darkened variant of the slot color as the base with more saturated diagonal lines - the same visual language as the existing red "Braiins unreachable" band. Band edges also moved from "first tick after the transition" to the midpoint between the bracketing ticks, so the band no longer lags the mode-change markers by a full tick. Legend chips now follow the operator's color overrides too, instead of always showing the default colors.

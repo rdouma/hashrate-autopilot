@@ -837,7 +837,7 @@ function ConfigTabsAndContent({
       title: t`Payout source`,
       labels: [
         t`Bitcoin Knots RPC`,
-        t`Electrs`,
+        t`Electrum server (electrs / Fulcrum / ElectrumX)`,
         t`Disabled (no payout tracking)`,
         t`Include historical Ocean payouts in lifetime earnings`,
         t`Backfill now`,
@@ -3680,7 +3680,7 @@ function EventClassSubscriptions({
     {
       id: 'payout_confirmed',
       label: t`Ocean payout confirmed on-chain`,
-      help: t`Informational. Off by default. Fires when the on-chain payout scanner observes a coinbase output crediting your payout address - i.e. the transaction Ocean committed has now confirmed. Includes block height, payout amount, and a truncated tx id. Source: reward_events ledger (populated by Electrs or bitcoind scantxoutset, whichever the operator has wired).`,
+      help: t`Informational. Off by default. Fires when the on-chain payout scanner observes a coinbase output crediting your payout address - i.e. the transaction Ocean committed has now confirmed. Includes block height, payout amount, and a truncated tx id. Source: reward_events ledger (populated by your Electrum server or bitcoind scantxoutset, whichever the operator has wired).`,
       enabled: draft.notify_on_payout_confirmed,
       setEnabled: (n) => onChange('notify_on_payout_confirmed', n as never),
       severity: 'INFO',
@@ -3977,13 +3977,13 @@ function PayoutSourceSection({
     },
     {
       value: 'electrs',
-      label: t`Electrs (recommended)`,
-      help: t`Fast and lightweight. Polled every minute. Instant balance lookups via your Electrum server.`,
+      label: t`Electrum server (recommended)`,
+      help: t`Fast and lightweight. Polled every minute. Instant balance lookups. Works with any Electrum-protocol server: electrs, Fulcrum, ElectrumX.`,
     },
     {
       value: 'bitcoind',
       label: t`Bitcoin Knots RPC`,
-      help: t`Uses scantxoutset -- CPU-heavy, 30+ seconds per scan. Polled hourly. Use only if you don't have Electrs.`,
+      help: t`Uses scantxoutset -- CPU-heavy, 30+ seconds per scan. Polled hourly. Use only if you don't have an Electrum server.`,
     },
   ];
 
@@ -4161,9 +4161,9 @@ function HistoricalPayoutsControls({
               </Trans>
               <span className="block mt-2">
                 <Trans>
-                  The "Backfill now" button walks the full address history via Electrs
-                  and adds any historical Ocean coinbase payouts that aren't already
-                  recorded. Safe to run repeatedly.
+                  The "Backfill now" button walks the full address history via your
+                  Electrum server and adds any historical Ocean coinbase payouts that
+                  aren't already recorded. Safe to run repeatedly.
                 </Trans>
               </span>
             </InlineInfoPopover>
@@ -4316,7 +4316,7 @@ function ElectrsFields({
     <div className="grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_120px_auto] gap-x-3 gap-y-2 pt-1 items-start">
       <label className="block">
         <span className="block text-sm text-slate-300 mb-1">
-          <Trans>Electrs host</Trans>
+          <Trans>Electrum server host</Trans>
         </span>
         <input
           type="text"

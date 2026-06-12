@@ -507,6 +507,14 @@ msgstr "bedrag"
 msgid "Any active owned bid reports fee_rate_pct > 0."
 msgstr "Een actief eigen bod rapporteert fee_rate_pct > 0."
 
+#: src/pages/Setup.tsx
+msgid "Any Electrum-protocol server works: electrs, Fulcrum, ElectrumX. The "
+"default port is 50001 (TCP). On Umbrel, electrs' in-cluster hostname is "
+"typically<0> electrs_electrs_1</0>."
+msgstr "Elke Electrum-protocol-server werkt: electrs, Fulcrum, ElectrumX. De "
+"standaardpoort is 50001 (TCP). Op Umbrel is de in-cluster hostnaam van "
+"electrs doorgaans<0> electrs_electrs_1</0>."
+
 #: src/pages/Status.tsx
 msgid "API DOWN"
 msgstr "API OFFLINE"
@@ -1857,10 +1865,10 @@ msgid "Default 50001."
 msgstr "Standaard 50001."
 
 #: src/pages/Setup.tsx
-msgid "Default Electrs port is 50001 (TCP). On Umbrel the in-cluster hostname "
-"is typically<0> electrs_electrs_1</0>."
-msgstr "Standaard Electrs-poort is 50001 (TCP). Op Umbrel is de hostnaam binnen "
-"het cluster meestal<0> electrs_electrs_1</0>."
+#~ msgid "Default Electrs port is 50001 (TCP). On Umbrel the in-cluster hostname "
+#~ "is typically<0> electrs_electrs_1</0>."
+#~ msgstr "Standaard Electrs-poort is 50001 (TCP). Op Umbrel is de hostnaam binnen "
+#~ "het cluster meestal<0> electrs_electrs_1</0>."
 
 #: src/pages/Config.tsx
 msgid "Delete this device permanently. To pause without deleting, uncheck the "
@@ -2220,26 +2228,49 @@ msgid "Efficiency"
 msgstr "Efficiëntie"
 
 #: src/pages/Config.tsx
-msgid "Electrs"
-msgstr "Electrs"
+#~ msgid "Electrs"
+#~ msgstr "Electrs"
 
 #. placeholder {0}: form.electrs_host
 #. placeholder {1}: form.electrs_port
 #: src/pages/Setup.tsx
-msgid "Electrs ({0}:{1})"
-msgstr "Electrs ({0}:{1})"
+#~ msgid "Electrs ({0}:{1})"
+#~ msgstr "Electrs ({0}:{1})"
 
 #: src/pages/Setup.tsx
-msgid "Electrs (Electrum-style indexed lookup, faster)"
-msgstr "Electrs (Electrum-achtige geïndexeerde lookup, sneller)"
+#~ msgid "Electrs (Electrum-style indexed lookup, faster)"
+#~ msgstr "Electrs (Electrum-achtige geïndexeerde lookup, sneller)"
 
 #: src/pages/Config.tsx
-msgid "Electrs (recommended)"
-msgstr "Electrs (aanbevolen)"
+#~ msgid "Electrs (recommended)"
+#~ msgstr "Electrs (aanbevolen)"
 
 #: src/pages/Config.tsx
-msgid "Electrs host"
-msgstr "Electrs-host"
+#~ msgid "Electrs host"
+#~ msgstr "Electrs-host"
+
+#: src/pages/Setup.tsx
+msgid "Electrum server - electrs / Fulcrum / ElectrumX (indexed lookup, faster)"
+msgstr "Electrum-server - electrs / Fulcrum / ElectrumX (geïndexeerde lookup, "
+"sneller)"
+
+#. placeholder {0}: form.electrs_host
+#. placeholder {1}: form.electrs_port
+#: src/pages/Setup.tsx
+msgid "Electrum server ({0}:{1})"
+msgstr "Electrum-server ({0}:{1})"
+
+#: src/pages/Config.tsx
+msgid "Electrum server (electrs / Fulcrum / ElectrumX)"
+msgstr "Electrum-server (electrs / Fulcrum / ElectrumX)"
+
+#: src/pages/Config.tsx
+msgid "Electrum server (recommended)"
+msgstr "Electrum-server (aanbevolen)"
+
+#: src/pages/Config.tsx
+msgid "Electrum server host"
+msgstr "Electrum-server host"
 
 #: src/pages/Config.tsx
 msgid "Enable Bitaxe miner monitoring"
@@ -2356,10 +2387,16 @@ msgid "failed to load: {0}"
 msgstr "laden mislukt: {0}"
 
 #: src/pages/Config.tsx
-msgid "Fast and lightweight. Polled every minute. Instant balance lookups via "
-"your Electrum server."
-msgstr "Snel en lichtgewicht. Elke minuut bevraagd. Directe saldo-opzoekingen "
-"via je Electrum-server."
+#~ msgid "Fast and lightweight. Polled every minute. Instant balance lookups via "
+#~ "your Electrum server."
+#~ msgstr "Snel en lichtgewicht. Elke minuut bevraagd. Directe saldo-opzoekingen "
+#~ "via je Electrum-server."
+
+#: src/pages/Config.tsx
+msgid "Fast and lightweight. Polled every minute. Instant balance lookups. "
+"Works with any Electrum-protocol server: electrs, Fulcrum, ElectrumX."
+msgstr "Snel en lichtgewicht. Elke minuut bevraagd. Directe saldo-lookups. "
+"Werkt met elke Electrum-protocol-server: electrs, Fulcrum, ElectrumX."
 
 #: src/pages/Config.tsx
 msgid "Fee protection"
@@ -2791,18 +2828,33 @@ msgstr "Informatief. Standaard uit. Vuurt op het moment dat Ocean je "
 "eruit)."
 
 #: src/pages/Config.tsx
+#~ msgid "Informational. Off by default. Fires when the on-chain payout scanner "
+#~ "observes a coinbase output crediting your payout address - i.e. the "
+#~ "transaction Ocean committed has now confirmed. Includes block height, "
+#~ "payout amount, and a truncated tx id. Source: reward_events ledger "
+#~ "(populated by Electrs or bitcoind scantxoutset, whichever the operator "
+#~ "has wired)."
+#~ msgstr "Informatief. Standaard uit. Vuurt wanneer de on-chain payout-scanner "
+#~ "een coinbase-output naar je payout-adres ziet - oftewel de transactie "
+#~ "die Ocean heeft toegezegd is nu bevestigd. Bevat block-hoogte, "
+#~ "uitbetalingsbedrag en een verkorte tx id. Bron: reward_events ledger "
+#~ "(gevuld door Electrs of bitcoind scantxoutset, afhankelijk van wat de "
+#~ "operator heeft aangesloten)."
+
+#: src/pages/Config.tsx
 msgid "Informational. Off by default. Fires when the on-chain payout scanner "
 "observes a coinbase output crediting your payout address - i.e. the "
 "transaction Ocean committed has now confirmed. Includes block height, "
 "payout amount, and a truncated tx id. Source: reward_events ledger "
-"(populated by Electrs or bitcoind scantxoutset, whichever the operator "
-"has wired)."
-msgstr "Informatief. Standaard uit. Vuurt wanneer de on-chain payout-scanner "
-"een coinbase-output naar je payout-adres ziet - oftewel de transactie "
-"die Ocean heeft toegezegd is nu bevestigd. Bevat block-hoogte, "
-"uitbetalingsbedrag en een verkorte tx id. Bron: reward_events ledger "
-"(gevuld door Electrs of bitcoind scantxoutset, afhankelijk van wat de "
-"operator heeft aangesloten)."
+"(populated by your Electrum server or bitcoind scantxoutset, whichever "
+"the operator has wired)."
+msgstr "Informatief. Standaard uit. Vuurt wanneer de "
+"on-chain-uitbetalingsscanner een coinbase-output ziet die je "
+"uitbetalingsadres crediteert - d.w.z. de transactie die Ocean heeft "
+"vastgelegd is nu bevestigd. Bevat blokhoogte, uitbetalingsbedrag en een "
+"ingekorte tx-id. Bron: reward_events-grootboek (gevuld door je "
+"Electrum-server of bitcoind scantxoutset, wat de operator ook heeft "
+"aangesloten)."
 
 #: src/pages/Config.tsx
 msgid "Informational. Off by default. When on, every block Ocean credits to "
@@ -3394,15 +3446,26 @@ msgid "Not configured"
 msgstr "Niet geconfigureerd"
 
 #: src/pages/Status.tsx
-msgid "Not configured. Go to Config → On-chain payouts and select Electrs or "
-"Bitcoin Knots RPC to track your on-chain balance. The net line treats "
-"missing collected as 0 so the arithmetic still reads - a blank row here "
-"is the hint that a piece of the income side isn't wired up."
-msgstr "Niet geconfigureerd. Ga naar Config → On-chain uitbetalingen en kies "
-"Electrs of Bitcoin Knots RPC om je on-chain saldo te volgen. De "
-"netto-regel behandelt ontbrekende ontvangsten als 0 zodat de berekening "
-"blijft kloppen - een lege rij hier is de hint dat een deel van de "
-"inkomstenzijde niet is aangesloten."
+#~ msgid "Not configured. Go to Config → On-chain payouts and select Electrs or "
+#~ "Bitcoin Knots RPC to track your on-chain balance. The net line treats "
+#~ "missing collected as 0 so the arithmetic still reads - a blank row here "
+#~ "is the hint that a piece of the income side isn't wired up."
+#~ msgstr "Niet geconfigureerd. Ga naar Config → On-chain uitbetalingen en kies "
+#~ "Electrs of Bitcoin Knots RPC om je on-chain saldo te volgen. De "
+#~ "netto-regel behandelt ontbrekende ontvangsten als 0 zodat de berekening "
+#~ "blijft kloppen - een lege rij hier is de hint dat een deel van de "
+#~ "inkomstenzijde niet is aangesloten."
+
+#: src/pages/Status.tsx
+msgid "Not configured. Go to Config → On-chain payouts and select Electrum "
+"server or Bitcoin Knots RPC to track your on-chain balance. The net line "
+"treats missing collected as 0 so the arithmetic still reads - a blank "
+"row here is the hint that a piece of the income side isn't wired up."
+msgstr "Niet geconfigureerd. Ga naar Config → On-chain-uitbetalingen en kies "
+"Electrum-server of Bitcoin Knots RPC om je on-chain-saldo te volgen. De "
+"netto-regel behandelt ontbrekend geïnd als 0 zodat de rekensom leesbaar "
+"blijft - een lege rij hier is de hint dat een deel van de inkomstenkant "
+"niet is aangesloten."
 
 #: src/components/HashrateChart.tsx
 #: src/components/PriceChart.tsx
@@ -3932,11 +3995,19 @@ msgstr "UITBETALING GESTART"
 
 #: src/pages/Status.tsx
 msgid "Payout observer is starting up. Waiting for the first balance scan to "
-"complete - usually a few seconds with Electrs, up to a minute with "
-"bitcoind scantxoutset."
-msgstr "Uitbetaal-observer is aan het opstarten. Wachten op de eerste "
-"saldo-scan - meestal enkele seconden met Electrs, tot een minuut met "
-"bitcoind scantxoutset."
+"complete - usually a few seconds with an Electrum server, up to a minute "
+"with bitcoind scantxoutset."
+msgstr "De uitbetalingswaarnemer start op. Wachten tot de eerste saldoscan "
+"klaar is - meestal een paar seconden met een Electrum-server, tot een "
+"minuut met bitcoind scantxoutset."
+
+#: src/pages/Status.tsx
+#~ msgid "Payout observer is starting up. Waiting for the first balance scan to "
+#~ "complete - usually a few seconds with Electrs, up to a minute with "
+#~ "bitcoind scantxoutset."
+#~ msgstr "Uitbetaal-observer is aan het opstarten. Wachten op de eerste "
+#~ "saldo-scan - meestal enkele seconden met Electrs, tot een minuut met "
+#~ "bitcoind scantxoutset."
 
 #: src/pages/Config.tsx
 msgid "Payout source"
@@ -5015,12 +5086,21 @@ msgid "Testing…"
 msgstr "Bezig met testen…"
 
 #: src/pages/Config.tsx
-msgid "The \"Backfill now\" button walks the full address history via Electrs "
-"and adds any historical Ocean coinbase payouts that aren't already "
-"recorded. Safe to run repeatedly."
-msgstr "De knop \"Nu backfillen\" doorloopt de volledige adresgeschiedenis via "
-"Electrs en voegt historische Ocean coinbase-uitbetalingen toe die nog "
-"niet zijn vastgelegd. Veilig om herhaaldelijk uit te voeren."
+#~ msgid "The \"Backfill now\" button walks the full address history via Electrs "
+#~ "and adds any historical Ocean coinbase payouts that aren't already "
+#~ "recorded. Safe to run repeatedly."
+#~ msgstr "De knop \"Nu backfillen\" doorloopt de volledige adresgeschiedenis via "
+#~ "Electrs en voegt historische Ocean coinbase-uitbetalingen toe die nog "
+#~ "niet zijn vastgelegd. Veilig om herhaaldelijk uit te voeren."
+
+#: src/pages/Config.tsx
+msgid "The \"Backfill now\" button walks the full address history via your "
+"Electrum server and adds any historical Ocean coinbase payouts that "
+"aren't already recorded. Safe to run repeatedly."
+msgstr "De knop \"Nu aanvullen\" doorloopt de volledige adresgeschiedenis via "
+"je Electrum-server en voegt historische Ocean-coinbase-uitbetalingen "
+"toe die nog niet zijn vastgelegd. Veilig om herhaaldelijk uit te "
+"voeren."
 
 #: src/components/Bip110ScanCard.tsx
 msgid "The 55% miner-activation threshold has been crossed. BIP 110 will "
@@ -5334,15 +5414,27 @@ msgstr "gebruikt de huidige share_log - een benadering voor oudere blokken, "
 
 #: src/pages/Config.tsx
 msgid "Uses scantxoutset -- CPU-heavy, 30+ seconds per scan. Polled hourly. Use "
-"only if you don't have Electrs."
+"only if you don't have an Electrum server."
 msgstr "Gebruikt scantxoutset -- CPU-intensief, 30+ seconden per scan. Elk uur "
-"bevraagd. Gebruik alleen als je geen Electrs hebt."
+"bevraagd. Gebruik dit alleen als je geen Electrum-server hebt."
+
+#: src/pages/Config.tsx
+#~ msgid "Uses scantxoutset -- CPU-heavy, 30+ seconds per scan. Polled hourly. Use "
+#~ "only if you don't have Electrs."
+#~ msgstr "Gebruikt scantxoutset -- CPU-intensief, 30+ seconden per scan. Elk uur "
+#~ "bevraagd. Gebruik alleen als je geen Electrs hebt."
 
 #: src/pages/Status.tsx
-msgid "UTXOs at the configured payout address. Read via Electrs (preferred, "
-"instant) or bitcoind RPC (slower)."
-msgstr "UTXO's op het geconfigureerde uitbetaaladres. Gelezen via Electrs "
-"(voorkeur, direct) of bitcoind RPC (trager)."
+#~ msgid "UTXOs at the configured payout address. Read via Electrs (preferred, "
+#~ "instant) or bitcoind RPC (slower)."
+#~ msgstr "UTXO's op het geconfigureerde uitbetaaladres. Gelezen via Electrs "
+#~ "(voorkeur, direct) of bitcoind RPC (trager)."
+
+#: src/pages/Status.tsx
+msgid "UTXOs at the configured payout address. Read via your Electrum server "
+"(preferred, instant) or bitcoind RPC (slower)."
+msgstr "UTXO's op het geconfigureerde uitbetalingsadres. Gelezen via je "
+"Electrum-server (voorkeur, direct) of bitcoind RPC (langzamer)."
 
 #: src/pages/Setup.tsx
 msgid "v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__}"

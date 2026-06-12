@@ -531,7 +531,7 @@ function MiningStep({
           >
             <option value="none">{t`None - skip payout tracking`}</option>
             <option value="bitcoind">{t`Bitcoin Knots (bitcoind RPC)`}</option>
-            <option value="electrs">{t`Electrs (Electrum-style indexed lookup, faster)`}</option>
+            <option value="electrs">{t`Electrum server - electrs / Fulcrum / ElectrumX (indexed lookup, faster)`}</option>
           </select>
         </Field>
         {form.payout_source === 'bitcoind' && (
@@ -601,7 +601,8 @@ function MiningStep({
             </div>
             <p className="text-xs text-slate-500">
               <Trans>
-                Default Electrs port is 50001 (TCP). On Umbrel the in-cluster hostname is typically
+                Any Electrum-protocol server works: electrs, Fulcrum, ElectrumX. The default port
+                is 50001 (TCP). On Umbrel, electrs' in-cluster hostname is typically
                 <code> electrs_electrs_1</code>.
               </Trans>
             </p>
@@ -663,7 +664,7 @@ function ReviewStep({
             form.payout_source === 'bitcoind'
               ? t`Bitcoin Knots RPC (${form.bitcoind_rpc_url})`
               : form.payout_source === 'electrs'
-                ? t`Electrs (${form.electrs_host}:${form.electrs_port})`
+                ? t`Electrum server (${form.electrs_host}:${form.electrs_port})`
                 : t`None`
           }
         />
