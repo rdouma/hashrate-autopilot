@@ -234,12 +234,15 @@ async function computeMetrics(
       -- PH/s). Matches the operator-facing tooltip "% of time with
       -- delivered hashrate > 0".
       --
-      -- DENOMINATOR is total clock time over the window (every tick
-      -- with reasonable \`dur\`). Zero-delivery time MUST count toward
-      -- the denominator or "uptime" reads as a tautology - earlier
+      -- DENOMINATOR (computed JS-side since #290) is the wall-clock
+      -- length of the window, clamped to the first tick ever
+      -- recorded. Zero-delivery time MUST count toward the
+      -- denominator or "uptime" reads as a tautology - earlier
       -- versions filtered both sides on \`delivered_ph > 0.05\`, which
       -- excluded zero-delivery ticks entirely and let the metric
-      -- read 87.5% on a window with ~50% true delivery. (#86)
+      -- read 87.5% on a window with ~50% true delivery (#86); later
+      -- versions summed sane-dur ticks, which excluded daemon-offline
+      -- gaps from the clock and read ~99% across a 9 h outage (#290).
       --
       -- NUMERATOR uses the COUNTER (\`primary_bid_consumed_sat\`
       -- delta), not the Braiins-reported \`delivered_ph\` field.
@@ -266,25 +269,30 @@ async function computeMetrics(
       -- both the target-change case (low target -> low expected ->
       -- low actual, all consistent above 0.05) and the
       -- zero-delivery case (delta -> 0 -> below 0.05 -> downtime).
-      CASE WHEN SUM(CASE WHEN dur BETWEEN 1 AND 300000 THEN dur ELSE 0 END) > 0 THEN
-        SUM(CASE WHEN dur BETWEEN 1 AND 300000
-                  AND our_bid > 0
-                  AND delta IS NOT NULL AND delta >= 0
-                  AND delta * 86400000000.0 >= 0.05 * our_bid * dur
-             THEN dur ELSE 0 END) * 100.0
-          / SUM(CASE WHEN dur BETWEEN 1 AND 300000 THEN dur ELSE 0 END)
-      ELSE NULL END AS uptime_pct,
+      -- #290: numerator only - the percentage is computed in JS
+      -- against the wall-clock window length, NOT against the sum of
+      -- sane-dur ticks. The old denominator filtered dur <= 300000 on
+      -- both sides, which threw daemon-offline gaps (one tick whose
+      -- dur spans the whole gap) out of the clock entirely: a 9 h
+      -- outage in a 24 h window still read ~99% uptime. Offline time
+      -- counts as downtime; the 5-minute cap stays on the numerator
+      -- so gap time can never count as "up".
+      SUM(CASE WHEN dur BETWEEN 1 AND 300000
+                AND our_bid > 0
+                AND delta IS NOT NULL AND delta >= 0
+                AND delta * 86400000000.0 >= 0.05 * our_bid * dur
+           THEN dur ELSE 0 END) AS uptime_up_ms,
 
-      -- #254: of total clock time, what % did the controller have an
-      -- active bid? Independent of whether the bid was delivering -
-      -- this measures orderbook availability ("expected" downtime
-      -- when low: nothing matched our criteria).
-      CASE WHEN SUM(CASE WHEN dur BETWEEN 1 AND 300000 THEN dur ELSE 0 END) > 0 THEN
-        SUM(CASE WHEN dur BETWEEN 1 AND 300000
-                  AND our_bid > 0
-             THEN dur ELSE 0 END) * 100.0
-          / SUM(CASE WHEN dur BETWEEN 1 AND 300000 THEN dur ELSE 0 END)
-      ELSE NULL END AS uptime_bid_coverage_pct,
+      -- #254 / #290: time with an active bid (numerator for bid
+      -- coverage, same wall-clock denominator treatment as uptime).
+      -- Independent of whether the bid was delivering - this measures
+      -- orderbook availability ("expected" downtime when low:
+      -- nothing matched our criteria). Daemon-offline gaps count as
+      -- no-bid time (#290): no reconstruction of whether the bid
+      -- survived the gap.
+      SUM(CASE WHEN dur BETWEEN 1 AND 300000
+                AND our_bid > 0
+           THEN dur ELSE 0 END) AS bid_active_ms,
 
       -- #254: of the time we DID have an active bid, what % was
       -- actually delivering hashrate above the noise floor? Isolates
@@ -455,6 +463,23 @@ async function computeMetrics(
   `;
   const row = await sql.raw(queryText).execute(db);
 
+  // #290: wall-clock denominator for uptime + bid coverage. Clamped
+  // to the first tick ever recorded so a fresh install (or the All
+  // range with sinceMs=0) doesn't divide by pre-install time.
+  const firstTickRow = await db
+    .selectFrom('tick_metrics')
+    .select(db.fn.min('tick_at').as('first_tick'))
+    .executeTakeFirst();
+  const firstTickMs = firstTickRow?.first_tick != null ? Number(firstTickRow.first_tick) : null;
+  const nowMs = Date.now();
+  const windowEnd = Math.min(untilMs ?? nowMs, nowMs);
+  const windowStart = firstTickMs !== null ? Math.max(sinceMs, firstTickMs) : sinceMs;
+  const wallClockMs = windowEnd - windowStart;
+  const pctOfWallClock = (numeratorMs: number | null): number | null => {
+    if (numeratorMs === null || !(wallClockMs > 0)) return null;
+    return Math.min(100, (numeratorMs * 100) / wallClockMs);
+  };
+
   const r = (row as unknown as { rows: Array<Record<string, number | null>> }).rows?.[0];
   if (!r) {
     return {
@@ -473,11 +498,13 @@ async function computeMetrics(
     };
   }
 
+  const tickCount = Number(r['tick_count'] ?? 0);
   return {
-    tick_count: Number(r['tick_count'] ?? 0),
-    uptime_pct: r['uptime_pct'] !== null ? Number(r['uptime_pct']) : null,
-    uptime_bid_coverage_pct:
-      r['uptime_bid_coverage_pct'] !== null ? Number(r['uptime_bid_coverage_pct']) : null,
+    tick_count: tickCount,
+    // #290: percentages against wall clock; null when the window has
+    // no ticks at all (matches the previous no-data behavior).
+    uptime_pct: tickCount > 0 ? pctOfWallClock(r['uptime_up_ms'] !== null ? Number(r['uptime_up_ms']) : 0) : null,
+    uptime_bid_coverage_pct: tickCount > 0 ? pctOfWallClock(r['bid_active_ms'] !== null ? Number(r['bid_active_ms']) : 0) : null,
     uptime_delivery_when_bid_active_pct:
       r['uptime_delivery_when_bid_active_pct'] !== null
         ? Number(r['uptime_delivery_when_bid_active_pct'])

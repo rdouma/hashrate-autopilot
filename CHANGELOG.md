@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-06-12
+
+### `[Fix]` Uptime and bid-coverage tiles count daemon-offline time as downtime (#290)
+
+A daemon outage used to vanish from the uptime and bid-coverage percentages: the calculation weighed ticks by their duration but capped both numerator and denominator at 5 minutes per tick, so the single tick spanning an outage gap fell out of the clock entirely - a 24h window with a ~9h outage still read 99,6 % bid coverage. The denominator is now the wall-clock length of the window (clamped to the first tick ever recorded), so offline time counts as no uptime and no bid coverage. The "delivery while bidding" tile is unchanged - it deliberately isolates hardware/Datum failures from gaps, since during an outage there is no way to know whether a bid was active.
+
 ## 2026-06-11
 
 ### `[Release]` v1.14.0
