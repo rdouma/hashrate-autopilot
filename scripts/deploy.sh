@@ -44,9 +44,19 @@ fi
 echo "==> installing dependencies..."
 pnpm install --frozen-lockfile
 
-echo "==> cleaning stale build artifacts..."
+# Force a full recompile by dropping the incremental build cache, but
+# do NOT delete packages/*/dist up front. The daemon runs from source
+# via tsx yet resolves its sibling workspace packages through their
+# built dist/. If we nuke dist and the build (or the tests below) then
+# fails, `set -e` aborts mid-deploy with dist already gone, and a
+# Restart=always systemd unit flaps the daemon forever on
+# ERR_MODULE_NOT_FOUND. Letting tsc overwrite in place keeps the last
+# good dist intact on a failed build, so the running daemon survives.
+# (Deleting tsbuildinfo still forces every current source to re-emit;
+# an orphaned .js from a since-deleted source is dead weight, never
+# imported at runtime.)
+echo "==> forcing full recompile (clearing tsbuildinfo)..."
 find packages -name 'tsconfig.tsbuildinfo' -not -path '*/node_modules/*' -delete
-rm -rf packages/*/dist
 
 echo "==> building..."
 pnpm build

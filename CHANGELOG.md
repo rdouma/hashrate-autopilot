@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-06-13
+
+### `[Infra]` Deploy no longer leaves the daemon unrunnable if a build or test fails
+
+`deploy.sh` / `deploy-systemd.sh` used to `rm -rf packages/*/dist` before building. The daemon runs from source via tsx but resolves its sibling workspace packages through their built `dist/`, so a build or test failure after that clean left every `dist/` deleted - and a `Restart=always` systemd unit then flapped the daemon forever on `ERR_MODULE_NOT_FOUND`. The deploy now clears only the incremental build cache (`tsbuildinfo`) and lets `tsc` overwrite `dist/` in place, so a failed deploy leaves the previously running daemon intact instead of bringing it down.
+
 ## 2026-06-12
 
 ### `[Fix]` History → chart jump always lands on a visible, beaconed marker (#288)
