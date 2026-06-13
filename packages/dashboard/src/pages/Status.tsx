@@ -670,10 +670,20 @@ export function Status() {
     for (const e of transitions) {
       if (e.kind === 'BID_PAUSED') {
         if (openAt === null) openAt = e.occurred_at;
-      } else {
-        intervals.push({ x0: openAt ?? Number.NEGATIVE_INFINITY, x1: e.occurred_at });
+      } else if (openAt !== null) {
+        // BID_RESUMED with a matching open pause - shade [pause, resume].
+        intervals.push({ x0: openAt, x1: e.occurred_at });
         openAt = null;
       }
+      // An orphan BID_RESUMED (no open pause) is deliberately ignored.
+      // It means the daemon saw a paused->active transition but never
+      // recorded the pause start - the bid was paused during daemon
+      // downtime and a restart re-baselined as paused, or Braiins
+      // flapped the status for a tick. We have NO pause-start time, so
+      // the old `x0: -Infinity` painted the entire history as paused
+      // even while hashrate was plainly delivering (operator bug,
+      // 2026-06-13). Better to show nothing than a span we can't
+      // substantiate. The lone BID_RESUMED glyph marker still renders.
     }
     if (openAt !== null) intervals.push({ x0: openAt, x1: Number.POSITIVE_INFINITY });
     return intervals;

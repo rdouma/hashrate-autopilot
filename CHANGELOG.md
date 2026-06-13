@@ -2,6 +2,10 @@
 
 ## 2026-06-13
 
+### `[Fix]` Bid-pause bands no longer falsely shade long spans as paused (#292)
+
+Large red hatched "Bid paused by Braiins" bands were shading long stretches (e.g. "1d 15h") where the bid was clearly delivering hashrate. Cause: when the bid was paused while the daemon was down or restarting, the daemon re-baselined as paused without recording the pause, then emitted a lone `BID_RESUMED` on resume - and the dashboard rendered that orphan resume as "paused since the beginning of time", shading the whole history. Now the daemon only emits a resume when it logged the matching pause, and the dashboard draws no band for an orphan resume it can't place on a timeline. The genuine pauses still shade correctly.
+
 ### `[Fix]` Chart-jump beacon now shows in Firefox and Safari; jump homes in to a 3 h window (#288)
 
 The History → chart "homing beacon" was invisible in Firefox and Safari - it animated the SVG `r` attribute via CSS, which only Chrome/Blink supports, so the rings stayed at radius 0 elsewhere. The sonar rings now animate `transform: scale()` (animatable in every engine) on circles with a static radius. The jump also now always lands on a 3 h window centred on the event instead of preserving whatever zoom the chart was at, so the marker and beacon are easy to spot rather than a speck in a day-wide axis. Verified rendering in Chromium, Firefox, and WebKit.

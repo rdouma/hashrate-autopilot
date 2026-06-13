@@ -17,6 +17,7 @@ import { decide } from './decide.js';
 import { execute, type ExecuteDeps } from './execute.js';
 import { gate } from './gate.js';
 import { observe, type ObserveDeps } from './observe.js';
+import { decidePauseEvent } from './pause-events.js';
 import type { ExecutionResult, GateOutcome, Proposal, State } from './types.js';
 
 export interface TickDeps extends ObserveDeps, ExecuteDeps {
@@ -46,6 +47,15 @@ export class Controller {
    * daemon downtime is not retroactively logged).
    */
   private prevPauseObservation: { orderId: string; paused: boolean } | null = null;
+
+  /**
+   * #287 follow-up: the order id of a BID_PAUSED we have emitted and
+   * not yet matched with a BID_RESUMED. A resume only emits when this
+   * matches the current order - so a pause that began during downtime
+   * (restart re-baselines as paused, no pause event) doesn't produce
+   * an orphan resume that the dashboard can't place on a timeline.
+   */
+  private pauseEmittedOrderId: string | null = null;
 
   constructor(private readonly deps: TickDeps) {}
 
@@ -131,25 +141,25 @@ export class Controller {
               paused: primary.status === 'BID_STATUS_PAUSED',
             }
           : null;
-      const prev = this.prevPauseObservation;
-      if (
-        prev !== null &&
-        cur !== null &&
-        prev.orderId === cur.orderId &&
-        prev.paused !== cur.paused
-      ) {
+      const { emitKind, nextPauseEmittedOrderId } = decidePauseEvent(
+        this.prevPauseObservation,
+        cur,
+        this.pauseEmittedOrderId,
+      );
+      this.pauseEmittedOrderId = nextPauseEmittedOrderId;
+      if (emitKind !== null) {
         const pauseReason =
-          cur.paused && primary?.last_pause_reason
+          emitKind === 'BID_PAUSED' && primary?.last_pause_reason
             ? `Braiins paused the bid: ${primary.last_pause_reason}`
-            : cur.paused
+            : emitKind === 'BID_PAUSED'
               ? 'Braiins paused the bid'
               : 'Braiins resumed the bid';
         await this.deps.bidEventsRepo
           .insert({
             occurred_at: state.tick_at,
             source: 'AUTOPILOT',
-            kind: cur.paused ? 'BID_PAUSED' : 'BID_RESUMED',
-            braiins_order_id: cur.orderId,
+            kind: emitKind,
+            braiins_order_id: cur!.orderId,
             old_price_sat: null,
             new_price_sat: null,
             speed_limit_ph: null,
