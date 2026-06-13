@@ -2,6 +2,10 @@
 
 ## 2026-06-12
 
+### `[Fix]` History → chart jump always lands on a visible, beaconed marker (#288)
+
+Jumping to an event from the History drawer now force-renders that event's marker even when its kind is faded at the current zoom (price edits at week-plus ranges) or dropped by the marker cap, and highlights it with a pulsating sonar beacon - three expanding amber rings - instead of the old single ring. The beacon's countdown starts when the marker actually renders rather than at click time, so slow data loads no longer eat the highlight, and the page re-scrolls to the chart once the marker is on screen. Also fixes a bug where the highlight timer and the scroll-to-chart poller were cancelled almost immediately after the jump.
+
 ### `[Feature]` mempool.guide block-explorer preset (#289)
 
 The Config → Block explorer presets gain mempool.guide, a mempool.space fork whose block view surfaces BIP-110 signaling.

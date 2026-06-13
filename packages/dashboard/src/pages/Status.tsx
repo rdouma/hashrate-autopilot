@@ -2,7 +2,7 @@ import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import {
@@ -238,14 +238,57 @@ export function Status() {
     }
   }, [firstPointAt, chartViewport.setDataStart]);
 
-  // #285 follow-up: id of the bid event being focused after a
-  // History → chart jump. PriceChart pulses an amber ring around the
-  // matching marker for ~5 s, then this clears back to null.
+  // #285/#288: id of the bid event being focused after a History →
+  // chart jump. PriceChart renders a pulsing sonar beacon on the
+  // matching marker; the beacon clears a few seconds after the
+  // marker actually renders (handleFocusEventRendered below), with a
+  // long fallback in case it never appears at all.
   const [focusedEventId, setFocusedEventId] = useState<number | null>(null);
+  const focusClearTimer = useRef<number | null>(null);
+  const focusFallbackTimer = useRef<number | null>(null);
+  const focusScrollTimer = useRef<number | null>(null);
+
+  // #288: PriceChart calls this once the focused marker is present in
+  // its rendered set. The first call starts the clear countdown -
+  // anchoring the countdown to render time (not click time) keeps the
+  // beacon visible even when the metrics/events queries take a beat
+  // on a cold navigation from /history.
+  const handleFocusEventRendered = useCallback(() => {
+    if (focusClearTimer.current !== null) return;
+    if (focusFallbackTimer.current !== null) {
+      window.clearTimeout(focusFallbackTimer.current);
+      focusFallbackTimer.current = null;
+    }
+    // Re-anchor the scroll now that the marker exists - queries that
+    // resolve after the initial scroll can grow the cards above the
+    // chart and push it back out of view.
+    document
+      .getElementById('price-chart-block')
+      ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    focusClearTimer.current = window.setTimeout(() => {
+      focusClearTimer.current = null;
+      setFocusedEventId(null);
+    }, 6_000);
+  }, []);
+
+  // Unmount-only timer cleanup. The focus timers deliberately survive
+  // the URL-handoff effect's re-run: stripping the params changes
+  // location.search, which re-runs that effect immediately, so an
+  // effect-scoped cleanup would kill the timers (and the scroll
+  // poller) milliseconds after arming them - exactly the bug that
+  // made the original 5 s pulse and scroll-to-chart unreliable.
+  useEffect(
+    () => () => {
+      if (focusClearTimer.current !== null) window.clearTimeout(focusClearTimer.current);
+      if (focusFallbackTimer.current !== null) window.clearTimeout(focusFallbackTimer.current);
+      if (focusScrollTimer.current !== null) window.clearInterval(focusScrollTimer.current);
+    },
+    [],
+  );
 
   // #285: ?focus_event=<id>&at=<ms> handoff from History → chart. We
   // pass the timestamp directly so Status doesn't need a round-trip
-  // to look the event up; the id drives the marker pulse. Pan the
+  // to look the event up; the id drives the marker beacon. Pan the
   // price chart to the event's timestamp, then strip the params
   // (replaceState so the back button doesn't re-trigger the jump).
   // The viewport jump preserves the operator's current zoom width
@@ -265,12 +308,24 @@ export function Status() {
     const width = currentWidth > DAY_MS ? HOUR_MS : currentWidth;
     chartViewport.jumpToWindow(at, width);
     const idRaw = params.get('focus_event');
-    let timer: number | null = null;
     if (idRaw) {
       const id = Number.parseInt(idRaw, 10);
       if (Number.isFinite(id)) {
+        if (focusClearTimer.current !== null) {
+          window.clearTimeout(focusClearTimer.current);
+          focusClearTimer.current = null;
+        }
+        if (focusFallbackTimer.current !== null) {
+          window.clearTimeout(focusFallbackTimer.current);
+        }
         setFocusedEventId(id);
-        timer = window.setTimeout(() => setFocusedEventId(null), 5_000);
+        // Fallback: if the marker never renders (event id gone, or
+        // outside the fetched range), drop the focus after 60 s so a
+        // stale beacon request doesn't pulse forever.
+        focusFallbackTimer.current = window.setTimeout(() => {
+          focusFallbackTimer.current = null;
+          setFocusedEventId(null);
+        }, 60_000);
       }
     }
     // #287 follow-up (operator): the price chart can sit below the
@@ -278,25 +333,25 @@ export function Status() {
     // also scrolls the chart block into view. Poll briefly - the
     // block only mounts once the status query resolves, which on a
     // cold navigation from /history lands a beat after this effect.
+    if (focusScrollTimer.current !== null) window.clearInterval(focusScrollTimer.current);
     let scrollTries = 0;
-    const scrollTimer = window.setInterval(() => {
+    focusScrollTimer.current = window.setInterval(() => {
       const el = document.getElementById('price-chart-block');
       scrollTries += 1;
       if (el !== null) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        window.clearInterval(scrollTimer);
-      } else if (scrollTries >= 30) {
-        window.clearInterval(scrollTimer);
+      }
+      if (el !== null || scrollTries >= 30) {
+        if (focusScrollTimer.current !== null) {
+          window.clearInterval(focusScrollTimer.current);
+          focusScrollTimer.current = null;
+        }
       }
     }, 100);
     params.delete('focus_event');
     params.delete('at');
     const next = params.toString();
     navigate(`/${next ? `?${next}` : ''}`, { replace: true });
-    return () => {
-      if (timer !== null) window.clearTimeout(timer);
-      window.clearInterval(scrollTimer);
-    };
     // location-driven effect; depend only on the URL string.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search]);
@@ -569,6 +624,19 @@ export function Status() {
     };
   }, [bidEventsQuery.data?.events, configQuery.data?.config?.chart_max_markers, allOurBlocks, allRewardEvents, vp.since_ms, vp.until_ms]);
 
+  // #288: the marker cap must never hide the event the operator just
+  // jumped to from /history (the cap drops EDIT_PRICE first, which is
+  // also the most common kind to jump to). If the focused event got
+  // capped away, re-append it from the raw fetched stream.
+  const chartBidEvents = useMemo(() => {
+    if (focusedEventId === null) return visibleBidEvents;
+    if (visibleBidEvents.some((e) => e.id === focusedEventId)) return visibleBidEvents;
+    const focused = (bidEventsQuery.data?.events ?? EMPTY_BID_EVENTS).find(
+      (e) => e.id === focusedEventId,
+    );
+    return focused ? [...visibleBidEvents, focused] : visibleBidEvents;
+  }, [visibleBidEvents, focusedEventId, bidEventsQuery.data?.events]);
+
   // #281: EDIT_SPEED events for the hashrate chart - a speed-limit
   // change moves the delivered-hashrate curve, so those markers
   // mirror onto the hashrate chart. Derived from the same cap-filtered
@@ -819,7 +887,7 @@ export function Status() {
         </div>
         <PriceChart
           points={metricsQuery.data?.points ?? EMPTY_METRIC_POINTS}
-          events={visibleBidEvents}
+          events={chartBidEvents}
           markersHiddenKind={markersHiddenKind}
           markersHiddenCount={markersHiddenCount}
           showEventKinds={vp.activePreset
@@ -855,6 +923,7 @@ export function Status() {
           ipChangeEvents={ipChangesQuery.data?.events ?? EMPTY_IP_CHANGES}
           crosshair={chartCrosshair}
           focusEventId={focusedEventId}
+          onFocusEventRendered={handleFocusEventRendered}
         />
       </div>
     ),
