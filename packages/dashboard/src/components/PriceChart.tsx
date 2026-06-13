@@ -2618,31 +2618,51 @@ export const PriceChart = memo(function PriceChart({
             : priceAtEvent !== null ? yScale(priceAtEvent) : PADDING.top - 2;
           return (
             <g pointerEvents="none">
+              {/* #288 follow-up: the sonar rings animate `transform:
+                  scale()`, NOT the SVG `r` attribute. Animating SVG
+                  geometry attributes (r/cx/cy) via CSS @keyframes only
+                  works in Chrome/Blink - Firefox and Safari/WebKit
+                  ignore it, leaving the circles at their default r=0
+                  (invisible). So every ring carries a static `r` and we
+                  scale it instead, which is animatable in all engines.
+                  `transform-box: fill-box` + `transform-origin: center`
+                  makes the scale pivot on each circle's own centre so
+                  the rings stay anchored on the marker; the base r is
+                  small (5) and scales up ~6.8x to reach the old ~34px
+                  outer radius. `vector-effect: non-scaling-stroke`
+                  keeps the ring outline crisp as it expands. */}
               <style>{`
                 @keyframes priceChartFocusPing {
-                  0%   { r: 5;  opacity: 0.95; stroke-width: 2.5; }
-                  100% { r: 34; opacity: 0;    stroke-width: 0.5; }
+                  0%   { transform: scale(1);   opacity: 0.95; }
+                  100% { transform: scale(6.8); opacity: 0;    }
                 }
                 @keyframes priceChartFocusGlow {
-                  0%, 100% { r: 7; opacity: 0.85; }
-                  50%      { r: 9; opacity: 1;    }
+                  0%, 100% { transform: scale(0.875); opacity: 0.85; }
+                  50%      { transform: scale(1.125); opacity: 1;    }
                 }
                 .price-chart-focus-ping {
                   animation: priceChartFocusPing 2.4s ease-out infinite;
+                  transform-box: fill-box;
+                  transform-origin: center;
+                  vector-effect: non-scaling-stroke;
                   fill: none;
                   stroke: #fbbf24;
+                  stroke-width: 2;
                 }
                 .price-chart-focus-glow {
                   animation: priceChartFocusGlow 1.2s ease-in-out infinite;
+                  transform-box: fill-box;
+                  transform-origin: center;
+                  vector-effect: non-scaling-stroke;
                   fill: none;
                   stroke: #fde68a;
                   stroke-width: 1.5;
                 }
               `}</style>
-              <circle cx={cx} cy={cy} className="price-chart-focus-ping" />
-              <circle cx={cx} cy={cy} className="price-chart-focus-ping" style={{ animationDelay: '-0.8s' }} />
-              <circle cx={cx} cy={cy} className="price-chart-focus-ping" style={{ animationDelay: '-1.6s' }} />
-              <circle cx={cx} cy={cy} className="price-chart-focus-glow" />
+              <circle cx={cx} cy={cy} r={5} className="price-chart-focus-ping" />
+              <circle cx={cx} cy={cy} r={5} className="price-chart-focus-ping" style={{ animationDelay: '-0.8s' }} />
+              <circle cx={cx} cy={cy} r={5} className="price-chart-focus-ping" style={{ animationDelay: '-1.6s' }} />
+              <circle cx={cx} cy={cy} r={8} className="price-chart-focus-glow" />
             </g>
           );
         })()}

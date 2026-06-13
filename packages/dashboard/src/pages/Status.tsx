@@ -301,11 +301,14 @@ export function Status() {
     if (!atRaw) return;
     const at = Number.parseInt(atRaw, 10);
     if (!Number.isFinite(at)) return;
-    const currentWidth =
-      chartViewport.viewport.until_ms - chartViewport.viewport.since_ms;
+    // #288 follow-up (operator): always home in to a tight 3 h window
+    // centred on the event, rather than preserving whatever zoom the
+    // chart happened to be at. Landing on a 24 h (or wider) span left
+    // the marker a tiny speck lost in the axis; 3 h gives enough
+    // context around the event while making the beacon and marker
+    // obvious. (3 h is also the tightest standard range preset.)
     const HOUR_MS = 60 * 60_000;
-    const DAY_MS = 24 * HOUR_MS;
-    const width = currentWidth > DAY_MS ? HOUR_MS : currentWidth;
+    const width = 3 * HOUR_MS;
     chartViewport.jumpToWindow(at, width);
     const idRaw = params.get('focus_event');
     if (idRaw) {
