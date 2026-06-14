@@ -2,6 +2,10 @@
 
 ## 2026-06-14
 
+### `[Infra]` Bump esbuild to 0.28.1 (clears GHSA advisories)
+
+Pin esbuild `>=0.28.1` via a pnpm override to clear two Dependabot advisories (one high - a Deno-path RCE via `NPM_CONFIG_REGISTRY`, which doesn't apply to our Node/Vite usage but shouldn't ride along on a release; one low - the Windows dev-server file read). Build and tests unaffected. No runtime behavior change.
+
 ### `[UI]` mempool.guide is now the default block explorer (#289 follow-up)
 
 mempool.guide - a mempool.space fork that surfaces BIP-110 miner signaling - is now the default block/transaction explorer for fresh installs and the first preset in Config → Display & Logging → Block explorer, rendered as a highlighted yellow "preferred" pill with a tooltip explaining the BIP-110 rationale. Existing installs keep whatever explorer they configured; only the default and the preset order/styling change.
