@@ -151,8 +151,9 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
   total hashrate grows or your delivered PH/s fluctuates. Every TIDES-credited pool block appears on the
   hashrate chart as an isometric cube marker - **blue** for the common case (pool block credited via TIDES) and
   **gold** for the rare solo-lottery case where our own worker found the block. Clicking a cube opens it in
-  your configured block explorer (mempool.guide by default - a BIP-110-aware mempool.space fork; mempool.space /
-  blockstream / blockchair / btcscan / btc.com / your own local explorer are preset pills on the Config page). Tooltips show block height, reward / subsidy / fees, and an estimated
+  your configured block explorer (mempool.guide by default - a BIP-110-aware mempool.space fork; mempool.kilombino.com
+  (also BIP-110-aware) / mempool.space / blockstream / blockchair / btcscan / btc.com / your own local explorer are
+  preset pills on the Config page). Tooltips show block height, reward / subsidy / fees, and an estimated
   our-share for the block based on the current share_log.
 - **Datum Gateway integration (optional)** - when `datum_api_url` is configured, the daemon polls Datum's
   `/umbrel-api` each tick and records the gateway-measured hashrate alongside the Braiins-reported number. A
@@ -385,7 +386,8 @@ drop, two metallic clanks, an "Ocean mining found a block" voice clip - or uploa
 
 **Display** (number format, date layout, and temperature unit (°C / °F) - now daemon-managed config so Telegram render path uses the same formatting as the dashboard; database stays in °C, conversion at the display boundary only), **Chart colors** (per-series and per-marker color overrides for every named element on the Hashrate and Price charts - curated 12-swatch palette + native color picker + reset-to-default. Organised into three groups: **Lines** for each chart's left/right-axis line series, **Markers** for the cross-chart icons (pool block cube, BIP 110-signalling cube, own-pool-block crown, difficulty-retarget pickaxe, public-IP-change router, on-chain payout gem, Braiins deposit fuel pump), and **Bid events** for the per-tick create/edit/cancel glyphs plus the mode-change power, bid-paused circle-pause, and bid-resumed circle-play markers - the mode-change and bid-paused colors also tint the idle-state background bands on both charts. Each row carries a live preview of its actual chart glyph so the picker shows what the marker will look like; #238 + #287), **Block
 explorer** (separate URL templates for blocks and transactions; preset buttons for mempool.guide (the
-BIP-110-aware default, highlighted in yellow) / mempool.space / blockstream.info / blockchair / btcscan /
+BIP-110-aware default, highlighted in yellow) / mempool.kilombino.com (also BIP-110, yellow) / mempool.space /
+blockstream.info / blockchair / btcscan /
 btc.com set both at once, custom self-hosted explorers can fill in either independently), **Chart smoothing** (rolling-mean window per-source on the hashrate chart plus
 the price-chart `our bid` / `effective` smoothing), **Chart markers** (cap on all chart markers across both charts - counts bid events + pool blocks + reward events together; when over budget, drops EDIT_PRICE bid events first, then non-own pool blocks, then reward events, then everything; both charts show a "markers hidden" banner when the cap is active), and **Log retention** for the four append-only logs
 (`tick_metrics`, `alerts`, eventful + uneventful `decisions`) with a live storage-estimate hint so you

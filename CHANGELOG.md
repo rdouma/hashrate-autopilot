@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-06-15
+
+### `[UI]` Add mempool.kilombino.com as a second BIP-110 block explorer
+
+A second BIP-110-aware mempool instance, mempool.kilombino.com, joins the block-explorer presets, highlighted in yellow next to mempool.guide. Selecting it sets both the block and transaction URL templates.
+
 ## 2026-06-14
 
 ### `[UI]` Aviator favicon and header logo

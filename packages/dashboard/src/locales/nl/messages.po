@@ -510,6 +510,10 @@ msgid "amount"
 msgstr "bedrag"
 
 #: src/pages/Config.tsx
+msgid "Another BIP-110-aware mempool explorer that surfaces miner signaling."
+msgstr "Nog een BIP-110-bewuste mempool-verkenner die miner-signalering toont."
+
+#: src/pages/Config.tsx
 msgid "Any active owned bid reports fee_rate_pct > 0."
 msgstr "Een actief eigen bod rapporteert fee_rate_pct > 0."
 
@@ -3884,7 +3888,8 @@ msgstr "onze pool-blokken"
 #: src/pages/Config.tsx
 msgid "Our preferred explorer: a mempool.space fork that surfaces BIP-110 miner "
 "signaling."
-msgstr "Onze voorkeursverkenner: een mempool.space-fork die BIP-110 miner-signalering toont."
+msgstr "Onze voorkeursverkenner: een mempool.space-fork die BIP-110 "
+"miner-signalering toont."
 
 #: src/components/HashrateChart.tsx
 msgid "our share (est.)"

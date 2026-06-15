@@ -506,6 +506,10 @@ msgid "amount"
 msgstr "amount"
 
 #: src/pages/Config.tsx
+msgid "Another BIP-110-aware mempool explorer that surfaces miner signaling."
+msgstr "Another BIP-110-aware mempool explorer that surfaces miner signaling."
+
+#: src/pages/Config.tsx
 msgid "Any active owned bid reports fee_rate_pct > 0."
 msgstr "Any active owned bid reports fee_rate_pct > 0."
 

@@ -327,6 +327,16 @@ function useSections(): Section[] {
                 tooltip: t`Our preferred explorer: a mempool.space fork that surfaces BIP-110 miner signaling.`,
               },
               {
+                label: 'mempool.kilombino.com',
+                template: 'https://mempool.kilombino.com/block/{hash}',
+                secondary: {
+                  key: 'block_explorer_tx_url_template',
+                  template: 'https://mempool.kilombino.com/tx/{txid}',
+                },
+                highlight: true,
+                tooltip: t`Another BIP-110-aware mempool explorer that surfaces miner signaling.`,
+              },
+              {
                 label: 'mempool.space',
                 template: 'https://mempool.space/block/{hash}',
                 secondary: {
