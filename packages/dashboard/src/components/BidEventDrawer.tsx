@@ -317,10 +317,11 @@ export function BidEventDrawer({ event, onClose }: BidEventDrawerProps): React.J
           <button
             type="button"
             onClick={goToChart}
-            className="text-[11px] text-amber-300 hover:underline inline-flex items-center gap-1"
+            className="px-3 py-1.5 rounded-md bg-amber-400 hover:bg-amber-300 text-slate-950 font-semibold text-xs inline-flex items-center gap-1.5 shadow-sm"
             title={t`Open the price chart pinned to this event`}
           >
-            <Trans>View on chart</Trans>{' →'}
+            <Trans>View on chart</Trans>
+            <span aria-hidden="true">→</span>
           </button>
         </div>
       </aside>

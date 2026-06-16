@@ -2,6 +2,10 @@
 
 ## 2026-06-15
 
+### `[UI]` "View on chart" in the History event drawer is now a button
+
+The "View on chart" action at the bottom of a History event's detail drawer was a faint amber text link that was easy to miss. It's now a filled amber button, so jumping from an event to its spot on the price chart is an obvious, prominent action. "copy JSON" stays a subtle secondary control.
+
 ### `[UI]` App icon is now the aviator brand mark (#298)
 
 The Umbrel / app-store icon (`assets/icon.webp` + the 512/256 PNGs) is replaced with the aviator brand mark - vintage orange on navy, matching the new favicon and header logo - so the browser tab, in-app header, and store/home-screen tile share one identity. The old icon was an unrelated illustration that turned to mush at small sizes. The Community App Store picks it up via the existing URL; the official Umbrel store icon updates with the v1.15.0 PR.
