@@ -2,9 +2,9 @@
 
 ## 2026-06-16
 
-### `[Infra]` Move pnpm settings to pnpm-workspace.yaml for pnpm v11 (#299)
+### `[Infra]` pnpm v11 compatibility: settings + native-build approval in pnpm-workspace.yaml (#299)
 
-pnpm v11 stopped reading the `pnpm` field from `package.json`, which meant the build-script approvals (better-sqlite3, esbuild) and the dependency overrides (the esbuild / js-yaml / fast-uri security pins) were silently ignored on v11 - and `pnpm install` printed a warning on every update. Those settings now live in `pnpm-workspace.yaml`, where both our pinned pnpm v10 and pnpm v11 read them. The lockfile is unchanged, so frozen-lockfile installs are unaffected.
+pnpm v11 stopped reading the `pnpm` field from `package.json`, which meant the build-script approvals (better-sqlite3, esbuild) and the dependency overrides (the esbuild / js-yaml / fast-uri security pins) were silently ignored on v11 - and `pnpm install` printed a warning on every update. Those settings now live in `pnpm-workspace.yaml`, where both our pinned pnpm v10 and pnpm v11 read them. pnpm v11 also changed how native builds are approved: `onlyBuiltDependencies` (which v10 uses) is no longer honored for approval and a fresh v11 install hard-errors with `ERR_PNPM_IGNORED_BUILDS`, so the workspace file now also carries an `allowBuilds` block (v11's mechanism) with both keys present - a clean install builds better-sqlite3's native binding on either pnpm major. The lockfile is unchanged, so frozen-lockfile installs are unaffected.
 
 ### `[UI]` IP-change marker tooltip shows relative time
 

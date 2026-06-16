@@ -3,11 +3,23 @@ packages:
 
 # pnpm v11 no longer reads the `pnpm` field from package.json - these
 # settings (build-script approval + dependency version pins) live here
-# instead, where both pnpm v10 (our pinned packageManager) and v11 read
-# them. Keep package.json free of a `pnpm` block. See #299.
+# instead. Keep package.json free of a `pnpm` block. See #299.
+#
+# Native-build approval is version-split: pnpm v10 (our pinned
+# packageManager / corepack default) reads `onlyBuiltDependencies`;
+# pnpm v11 ignores that for approval and instead requires `allowBuilds`
+# with explicit per-package booleans (a bare `onlyBuiltDependencies`
+# under v11 hard-errors with ERR_PNPM_IGNORED_BUILDS on a *fresh*
+# install, so better-sqlite3's native binding never builds and the
+# daemon can't open the DB). Keep BOTH so a clean install works on
+# either pnpm major. Each pnpm version ignores the other's key silently.
 onlyBuiltDependencies:
   - better-sqlite3
   - esbuild
+
+allowBuilds:
+  better-sqlite3: true
+  esbuild: true
 
 overrides:
   fast-uri: ">=3.1.2"
