@@ -18,12 +18,12 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@hashrate-autopilot/shared": "workspace:*",
-    "@lingui/core": "^6.2.0",
-    "@lingui/react": "^6.2.0",
+    "@lingui/core": "^6.4.0",
+    "@lingui/react": "^6.4.0",
     "@tanstack/react-query": "^5.101.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "react-router-dom": "^7.17.0"
+    "react-router-dom": "^7.18.0"
   },
   "devDependencies": {
     "@babel/core": "^7.29.7",
