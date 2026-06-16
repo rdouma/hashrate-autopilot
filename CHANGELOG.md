@@ -2,6 +2,10 @@
 
 ## 2026-06-15
 
+### `[Infra]` Pin js-yaml to 4.2.0 (clears Dependabot advisory)
+
+Pin js-yaml `>=4.2.0` via a pnpm override to clear a medium Dependabot advisory (quadratic-complexity DoS in YAML merge-key handling). The dependency is dev-only - it rides in through `openapi-typescript`, a build-time codegen tool, and is never in the runtime image, so there is no production exposure. No runtime behavior change.
+
 ### `[Release]` v1.15.0
 
 Aviator branding (favicon, header logo, and app icon), the bid-vs-hashprice stats tile (#293), mempool.guide as the default block explorer plus mempool.kilombino.com as a second BIP-110-aware option (#289), reachable-but-not-hashing detection for Bitaxe miners (#291), and a sweep of fixes: stale-bid self-heal (#295), false bid-paused bands (#292), the cross-browser chart-jump beacon (#288), the year-long HTML cache, and daemon-offline downtime accounting. Safe to upgrade from any 1.14.x release.
