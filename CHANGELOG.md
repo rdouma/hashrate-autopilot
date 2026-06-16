@@ -2,6 +2,10 @@
 
 ## 2026-06-16
 
+### `[Infra]` Move pnpm settings to pnpm-workspace.yaml for pnpm v11 (#299)
+
+pnpm v11 stopped reading the `pnpm` field from `package.json`, which meant the build-script approvals (better-sqlite3, esbuild) and the dependency overrides (the esbuild / js-yaml / fast-uri security pins) were silently ignored on v11 - and `pnpm install` printed a warning on every update. Those settings now live in `pnpm-workspace.yaml`, where both our pinned pnpm v10 and pnpm v11 read them. The lockfile is unchanged, so frozen-lockfile installs are unaffected.
+
 ### `[UI]` IP-change marker tooltip shows relative time
 
 The public-IP-change marker tooltip on the charts now shows a relative age in parentheses after the absolute timestamp (e.g. "15 Jun 2026, 12:22:28 (12h 24m ago)"), so you can tell at a glance how long ago an ISP rotation happened without doing the math.

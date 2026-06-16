@@ -1,2 +1,15 @@
 packages:
   - "packages/*"
+
+# pnpm v11 no longer reads the `pnpm` field from package.json - these
+# settings (build-script approval + dependency version pins) live here
+# instead, where both pnpm v10 (our pinned packageManager) and v11 read
+# them. Keep package.json free of a `pnpm` block. See #299.
+onlyBuiltDependencies:
+  - better-sqlite3
+  - esbuild
+
+overrides:
+  fast-uri: ">=3.1.2"
+  esbuild: ">=0.28.1"
+  js-yaml: ">=4.2.0"
