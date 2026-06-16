@@ -1,6 +1,6 @@
 # Hashrate Autopilot - Specification (v2.13)
 
-> Status: current, aligned with code through 2026-06-07 (v1.13.0).
+> Status: current, aligned with code through 2026-06-15 (v1.15.0).
 >
 > This spec has been through three pricing regimes. **v1.x** used a depth-aware "fillable + overpay" controller with escalation timers, lowering-patience, and a dampening subsystem. **v2.0** (2026-04-23, same day) retired all of it on the hypothesis that Braiins matched CLOB-style and the bid was a matching-access ceiling. **v2.1** (2026-04-23, hours later) reversed v2.0 after a direct A/B on the live account showed Braiins matches pay-your-bid - the bid price *is* the paid price. The current controller tracks `fillable_ask + overpay_sat_per_eh_day` (the v1.x primitive) without the v1.x timer machinery (which was only needed to simulate that target under a misread of the mechanic); the retired escalation/patience/min-lower-delta knobs stay retired.
 >

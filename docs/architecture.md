@@ -1,4 +1,4 @@
-# Hashrate Autopilot - Architecture (v1.13)
+# Hashrate Autopilot - Architecture (v1.15)
 
 > Concretion of `docs/spec.md` into module boundaries, data flow, deployment shape, and a
 > milestone-ordered build plan.
