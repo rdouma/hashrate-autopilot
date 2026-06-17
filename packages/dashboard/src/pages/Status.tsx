@@ -2710,9 +2710,9 @@ function OceanPanel() {
               tooltip={
                 // State-aware: when the daemon emits the literal
                 // 'Next block' string the balance is already past
-                // threshold and the wording flips to explain what
-                // "next block" means in context (next pool block
-                // Ocean wins, not next Bitcoin block).
+                // threshold and the wording flips to explain that it's
+                // Ocean's projection - settlement is a batched sweep tx,
+                // not a coinbase of an Ocean-mined block.
                 o.user.time_to_payout_text === 'Next block'
                   ? t`Our unpaid balance (${denomination.formatSat(
                       o.user.unpaid_sat,
@@ -2720,7 +2720,7 @@ function OceanPanel() {
                     )}) has already crossed the payout threshold (${denomination.formatSat(
                       o.user.payout_threshold_sat,
                       intlLocale,
-                    )} ≈ 0,01 BTC). The accumulated balance ships as a coinbase output the next time Ocean wins a pool block - under TIDES the pool only pays out when it finds a block, since that's the only block where it controls the coinbase. "Next block" means the next Ocean pool block (~3/day at typical share), NOT the next Bitcoin block in general. The blue cubes on the hashrate chart above mark each pool block as it lands.`
+                    )} ≈ 0,01 BTC), so Ocean has queued us for payout. "Next block" is Ocean's own projection, not a literal trigger: Ocean settles operator payouts as a batched payment transaction from its pool wallet, broadcast on its own cadence and mined into whatever block by whatever pool - it is NOT a coinbase output and NOT necessarily an Ocean-mined block. When it confirms, a payout marker appears on the price chart.`
                   : t`Projected time until our unpaid balance (${denomination.formatSat(
                       o.user.unpaid_sat,
                       intlLocale,

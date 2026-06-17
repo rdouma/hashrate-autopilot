@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-06-17
+
+### `[UI]` Correct the Ocean payout-mechanism wording (it's a batched sweep, not a coinbase)
+
+Several tooltips and docs claimed Ocean pays you "in the coinbase of the next block Ocean finds." That's wrong: Ocean accumulates block rewards in a pool wallet and settles operator payouts as batched, multi-output transactions broadcast on its own cadence, mined into whatever block by whatever pool (not a coinbase, not necessarily an Ocean-mined block). The "next payout" tooltip on Status, the two payout-alert tooltips, and the historical-backfill tooltip on Config are reworded to match reality, and docs/spec.md + docs/research.md are corrected (the backfill code already matched any tx paying the address since #240). Translations updated for en/nl/es.
+
 ## 2026-06-16
 
 ### `[Infra]` pnpm v11 compatibility: settings + native-build approval in pnpm-workspace.yaml (#299)

@@ -3693,11 +3693,11 @@ function EventClassSubscriptions({
     // #226: payout lifecycle - two separate INFO toggles. Most operators
     // will want both on or both off; keeping them split mirrors how the
     // events actually fire (one when Ocean debits unpaid_sat, one when
-    // the coinbase confirms on-chain).
+    // the payout tx confirms on-chain).
     {
       id: 'payout_initiated',
       label: t`Ocean payout initiated`,
-      help: t`Informational. Off by default. Fires the moment Ocean debits your unpaid balance - the payout has been committed to the coinbase of the next block Ocean finds, but the transaction hasn't confirmed on-chain yet. Detection: the daemon's per-tick ocean_unpaid_sat drops by more than 30% AND the residual is below the 1,048,576-sat payout threshold (filters out tick noise / Ocean-side accounting bumps).`,
+      help: t`Informational. Off by default. Fires the moment Ocean debits your unpaid balance - Ocean has queued your payout and will settle it via a batched payment transaction, but it hasn't confirmed on-chain yet. Detection: the daemon's per-tick ocean_unpaid_sat drops by more than 30% AND the residual is below the 1,048,576-sat payout threshold (filters out tick noise / Ocean-side accounting bumps).`,
       enabled: draft.notify_on_payout_initiated,
       setEnabled: (n) => onChange('notify_on_payout_initiated', n as never),
       severity: 'INFO',
@@ -3705,7 +3705,7 @@ function EventClassSubscriptions({
     {
       id: 'payout_confirmed',
       label: t`Ocean payout confirmed on-chain`,
-      help: t`Informational. Off by default. Fires when the on-chain payout scanner observes a coinbase output crediting your payout address - i.e. the transaction Ocean committed has now confirmed. Includes block height, payout amount, and a truncated tx id. Source: reward_events ledger (populated by your Electrum server or bitcoind scantxoutset, whichever the operator has wired).`,
+      help: t`Informational. Off by default. Fires when the on-chain payout scanner observes a new transaction crediting your payout address - i.e. the payout Ocean queued has now confirmed (any tx, not just a coinbase - Ocean pays out via batched sweeps). Includes block height, payout amount, and a truncated tx id. Source: reward_events ledger (populated by your Electrum server or bitcoind scantxoutset, whichever the operator has wired).`,
       enabled: draft.notify_on_payout_confirmed,
       setEnabled: (n) => onChange('notify_on_payout_confirmed', n as never),
       severity: 'INFO',
@@ -4178,7 +4178,7 @@ function HistoricalPayoutsControls({
             <Trans>Include historical Ocean payouts in lifetime earnings</Trans>
             <InlineInfoPopover ariaLabel={t`More about historical payouts backfill`}>
               <Trans>
-                When on, lifetime earnings count every coinbase tx ever credited to this
+                When on, lifetime earnings count every payout tx ever credited to this
                 payout address - including payouts you have already swept to another
                 wallet. When off, only outputs still sitting at the address are counted
                 (the pre-1.7.5 behaviour). Most users want this on; turn it off if you
@@ -4187,8 +4187,8 @@ function HistoricalPayoutsControls({
               <span className="block mt-2">
                 <Trans>
                   The "Backfill now" button walks the full address history via your
-                  Electrum server and adds any historical Ocean coinbase payouts that
-                  aren't already recorded. Safe to run repeatedly.
+                  Electrum server and adds any historical Ocean payouts that aren't
+                  already recorded. Safe to run repeatedly.
                 </Trans>
               </span>
             </InlineInfoPopover>
