@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-06-22
+
+### `[Fix]` Block-explorer preset now sets both URLs in one click (#301)
+
+Clicking a block-explorer preset (mempool.guide, mempool.space, etc.) wrote only the Transaction URL template, leaving the Block URL template unchanged. The Config draft updater spread a stale snapshot, so the two writes a preset fires in one click landed in the same React batch and the second clobbered the first. The updater now uses a functional `setState`, so the writes compose - both URLs update together, for every preset.
+
 ## 2026-06-18
 
 ### `[Infra]` Dependency bumps: lingui 6.4, better-sqlite3 12.11.1, react-router 7.18, + tooling (#297, #300)

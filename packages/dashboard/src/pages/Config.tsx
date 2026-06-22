@@ -679,6 +679,14 @@ export function Config() {
       </div>
     );
 
+  // #301: always use a FUNCTIONAL setDraft updater. A single click can
+  // call `update` more than once synchronously (e.g. a block-explorer
+  // preset writes both the block URL and the tx URL). React batches
+  // those into one render, so a `setDraft({ ...draft, ... })` form would
+  // have every call spread the same stale `draft` snapshot and the last
+  // write would silently clobber the earlier ones - which is exactly why
+  // picking a preset only set the Transaction URL. Reading from `prev`
+  // makes sequential writes compose.
   const update = <K extends keyof AppConfig>(key: K, value: AppConfig[K]) => {
     if (key === 'btc_payout_address') {
       // Auto-bind worker identity to the address - same shape as the
@@ -688,27 +696,26 @@ export function Config() {
       // (or empty). Preserves any custom label the operator typed;
       // never silently overwrites a worker that intentionally points
       // at a different address.
-      const nextAddr = typeof value === 'string' ? value : '';
-      const oldAddr = (draft.btc_payout_address as string) ?? '';
-      const oldWorker = (draft.destination_pool_worker_name as string) ?? '';
-      const looksLikeOldDerivation =
-        oldAddr.length > 0 && oldWorker.startsWith(oldAddr + '.');
-      let nextWorker = oldWorker;
-      if (looksLikeOldDerivation || oldWorker.length === 0) {
-        const label =
-          oldWorker.length > 0
-            ? oldWorker.slice(oldAddr.length + 1) || 'autopilot'
-            : 'autopilot';
-        nextWorker = nextAddr.length > 0 ? `${nextAddr}.${label}` : '';
-      }
-      setDraft({
-        ...draft,
-        btc_payout_address: nextAddr,
-        destination_pool_worker_name: nextWorker,
+      setDraft((prev) => {
+        if (!prev) return prev;
+        const nextAddr = typeof value === 'string' ? value : '';
+        const oldAddr = (prev.btc_payout_address as string) ?? '';
+        const oldWorker = (prev.destination_pool_worker_name as string) ?? '';
+        const looksLikeOldDerivation =
+          oldAddr.length > 0 && oldWorker.startsWith(oldAddr + '.');
+        let nextWorker = oldWorker;
+        if (looksLikeOldDerivation || oldWorker.length === 0) {
+          const label =
+            oldWorker.length > 0
+              ? oldWorker.slice(oldAddr.length + 1) || 'autopilot'
+              : 'autopilot';
+          nextWorker = nextAddr.length > 0 ? `${nextAddr}.${label}` : '';
+        }
+        return { ...prev, btc_payout_address: nextAddr, destination_pool_worker_name: nextWorker };
       });
       return;
     }
-    setDraft({ ...draft, [key]: value });
+    setDraft((prev) => (prev ? { ...prev, [key]: value } : prev));
   };
 
   return (
