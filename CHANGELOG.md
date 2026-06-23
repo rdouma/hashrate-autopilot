@@ -2,6 +2,10 @@
 
 ## 2026-06-22
 
+### `[Fix]` Tiles bar "add tile" no longer overlaps the range selector on mobile (#302)
+
+On narrow screens the "add tile / pick…" control - anchored as a floating element above the tiles - overlapped the time-range buttons (3h / 6h / … / All) that sit directly above it, because the two blocks are closer together than the float's upward offset. On desktop the selector's right side is empty so it never collided. The control now floats in the top-right corner only from the `sm` breakpoint up; below that it flows as a right-aligned row beneath the tiles, so there's no overlap on phones.
+
 ### `[Fix]` Block-explorer preset now sets both URLs in one click (#301)
 
 Clicking a block-explorer preset (mempool.guide, mempool.space, etc.) wrote only the Transaction URL template, leaving the Block URL template unchanged. The Config draft updater spread a stale snapshot, so the two writes a preset fires in one click landed in the same React batch and the second clobbered the first. The updater now uses a functional `setState`, so the writes compose - both URLs update together, for every preset.

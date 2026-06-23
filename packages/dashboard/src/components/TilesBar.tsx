@@ -671,7 +671,15 @@ function FloatingAddButton({
   // anchor. The local wrapper just owns open/close state.
   const buttonRef = useRef<HTMLButtonElement>(null);
   return (
-    <div className="absolute -top-7 right-0 flex items-center gap-2 pointer-events-auto">
+    // #302: on narrow screens the floating `-top-7` corner anchor
+    // overlapped the period/range selector that sits directly above the
+    // tiles (the blocks are only `space-y-5` apart, less than the -7
+    // offset). On desktop the selector's right side is empty so the
+    // float is harmless; on mobile the buttons and this control collide.
+    // Below `sm` we drop the absolute positioning and let it flow as a
+    // right-aligned row beneath the tiles - no overlap. From `sm` up it
+    // floats in the section's top-right corner as before.
+    <div className="mt-3 flex items-center justify-end gap-2 pointer-events-auto sm:absolute sm:-top-7 sm:right-0 sm:mt-0">
       <span className="text-xs text-slate-400 lowercase">
         <Trans>add tile</Trans>
       </span>
