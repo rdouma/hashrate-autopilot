@@ -1,6 +1,6 @@
 # Hashrate Autopilot
 
-> 📦 **Already running the community-store version (`rdouma-hashrate-autopilot`) and switching to the official Umbrel App Store?** Don't just click Install — the official-store app id is different, so a straight install creates a second empty instance side-by-side with your existing data. Five-minute SSH-side migration recipe here: **[Migrating from the community store version](docs/migrating-from-community-store.md)**.
+> 📦 **Already running the community-store version (`rdouma-hashrate-autopilot`) and switching to the official Umbrel App Store?** Don't just click Install - the official-store app id is different, so a straight install creates a second empty instance side-by-side with your existing data. Five-minute migration recipe (every step done from the umbrelOS Files app, no terminal needed) here: **[Migrating from the community store version](docs/migrating-from-community-store.md)**.
 
 A personal-scale autopilot and monitor for the [Braiins Hashpower marketplace](https://hashpower.braiins.com/).
 Keeps a rented-hashrate bid continuously alive at an operator-chosen price ceiling, so purchased hashrate keeps
