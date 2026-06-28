@@ -28,6 +28,7 @@ export interface InsertTickMetricArgs {
   readonly fillable_ask_sat_per_eh_day: number | null;
   readonly hashprice_sat_per_eh_day: number | null;
   readonly max_bid_sat_per_eh_day: number | null;
+  readonly max_overpay_vs_hashprice_sat_per_eh_day: number | null;
   readonly available_balance_sat: number | null;
   readonly total_balance_sat: number | null;
   readonly datum_hashrate_ph: number | null;
@@ -101,6 +102,7 @@ export interface AggregatedTickMetricRow {
   fillable_ask_sat_per_eh_day: number | null;
   hashprice_sat_per_eh_day: number | null;
   max_bid_sat_per_eh_day: number | null;
+  max_overpay_vs_hashprice_sat_per_eh_day: number | null;
   available_balance_sat: number | null;
   total_balance_sat: number | null;
   datum_hashrate_ph: number | null;
@@ -189,6 +191,7 @@ export class TickMetricsRepo {
         fillable_ask_sat_per_eh_day: r.fillable_ask_sat_per_eh_day,
         hashprice_sat_per_eh_day: r.hashprice_sat_per_eh_day,
         max_bid_sat_per_eh_day: r.max_bid_sat_per_eh_day,
+        max_overpay_vs_hashprice_sat_per_eh_day: r.max_overpay_vs_hashprice_sat_per_eh_day,
         available_balance_sat: r.available_balance_sat,
         total_balance_sat: r.total_balance_sat,
         datum_hashrate_ph: r.datum_hashrate_ph,
@@ -239,6 +242,9 @@ export class TickMetricsRepo {
         ),
         sql<number | null>`AVG(max_bid_sat_per_eh_day)`.as(
           'max_bid_sat_per_eh_day',
+        ),
+        sql<number | null>`AVG(max_overpay_vs_hashprice_sat_per_eh_day)`.as(
+          'max_overpay_vs_hashprice_sat_per_eh_day',
         ),
         sql<number | null>`AVG(available_balance_sat)`.as('available_balance_sat'),
         sql<number | null>`AVG(total_balance_sat)`.as('total_balance_sat'),

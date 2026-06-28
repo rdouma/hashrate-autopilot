@@ -375,6 +375,11 @@ export interface TickMetricsTable {
   fillable_ask_sat_per_eh_day: number | null;
   hashprice_sat_per_eh_day: number | null;
   max_bid_sat_per_eh_day: number | null;
+  /** #312: config.max_overpay_vs_hashprice at the tick, so the chart's
+   *  effective-cap line (min(max_bid, hashprice + this)) is historically
+   *  accurate instead of using the current value across all of history.
+   *  NULL on pre-0112 rows; the chart falls back to current config. */
+  max_overpay_vs_hashprice_sat_per_eh_day: number | null;
   available_balance_sat: number | null;
   total_balance_sat: number | null;
   datum_hashrate_ph: number | null;

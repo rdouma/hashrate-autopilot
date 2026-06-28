@@ -224,6 +224,11 @@ export class Controller {
           ? state.hashprice_sat_per_ph_day * 1000
           : null,
         max_bid_sat_per_eh_day: state.config.max_bid_sat_per_eh_day,
+        // #312: historize the premium so the chart's effective-cap line
+        // is accurate per tick (was applied as the current value across
+        // all history, shifting the whole line when the knob changed).
+        max_overpay_vs_hashprice_sat_per_eh_day:
+          state.config.max_overpay_vs_hashprice_sat_per_eh_day,
         available_balance_sat: primaryBalance?.available_balance_sat ?? null,
         total_balance_sat: primaryBalance?.total_balance_sat ?? null,
         datum_hashrate_ph: state.datum?.hashrate_ph ?? null,

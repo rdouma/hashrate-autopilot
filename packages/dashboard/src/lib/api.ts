@@ -123,6 +123,10 @@ export interface MetricPoint {
   fillable_ask_sat_per_ph_day: number | null;
   hashprice_sat_per_ph_day: number | null;
   max_bid_sat_per_ph_day: number | null;
+  /** #312: config max-premium-over-hashprice at the tick (null on
+   *  pre-0112 rows). The effective-cap line uses this per-tick value so
+   *  changing the knob no longer shifts the whole history. */
+  max_overpay_vs_hashprice_sat_per_ph_day: number | null;
   available_balance_sat: number | null;
   total_balance_sat: number | null;
   datum_hashrate_ph: number | null;

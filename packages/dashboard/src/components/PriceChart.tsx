@@ -290,13 +290,12 @@ export const PriceChart = memo(function PriceChart({
    */
   showEventKinds: readonly BidEventKind[];
   /**
-   * Current config's dynamic-cap allowance. When set, the cap line is
-   * computed per-tick as `min(max_bid, hashprice + this)` rather than
-   * the flat `max_bid` - matches what decide() actually uses each
-   * tick. Null → fall back to max_bid. Applied as a constant across
-   * the history (we don't store historical config per tick), so past
-   * effective caps are approximate if the operator changed this
-   * value.
+   * Current config's dynamic-cap allowance. The cap line is computed
+   * per-tick as `min(max_bid, hashprice + premium)`. #312: the premium
+   * is now historized per tick, so the chart uses each tick's stored
+   * value and this prop is only the fallback for pre-0112 rows (where
+   * the per-tick column is null). Past effective caps are therefore
+   * accurate now, except on those old rows.
    */
   maxOverpayVsHashpriceSatPerPhDay?: number | null;
   /**
@@ -701,10 +700,19 @@ export const PriceChart = memo(function PriceChart({
     // max_bid and the dynamic hashprice+max_overpay. When the dynamic
     // cap isn't configured, this collapses to max_bid and the line
     // looks exactly like the previous "max bid" line.
+    // #312: the premium is now historized per tick. Use the per-tick
+    // value (`max_overpay_vs_hashprice_sat_per_ph_day`); only fall back
+    // to the current-config constant for pre-0112 rows where it's null,
+    // so changing the knob no longer shifts the whole history.
+    const effectivePremium = (p: MetricPoint): number | null =>
+      p.max_overpay_vs_hashprice_sat_per_ph_day != null
+        ? p.max_overpay_vs_hashprice_sat_per_ph_day
+        : maxOverpayVsHashpriceSatPerPhDay;
     const capPoints: PricePoint[] = points
       .filter((p) => {
         if (!Number.isFinite(p.max_bid_sat_per_ph_day)) return false;
-        if (maxOverpayVsHashpriceSatPerPhDay !== null && !Number.isFinite(p.hashprice_sat_per_ph_day)) return false;
+        if (effectivePremium(p) !== null && !Number.isFinite(p.hashprice_sat_per_ph_day))
+          return false;
         return true;
       })
       .map((p) => {
@@ -712,10 +720,8 @@ export const PriceChart = memo(function PriceChart({
         const hashprice = Number.isFinite(p.hashprice_sat_per_ph_day)
           ? (p.hashprice_sat_per_ph_day as number)
           : null;
-        const dynamic =
-          maxOverpayVsHashpriceSatPerPhDay !== null && hashprice !== null
-            ? hashprice + maxOverpayVsHashpriceSatPerPhDay
-            : null;
+        const premium = effectivePremium(p);
+        const dynamic = premium !== null && hashprice !== null ? hashprice + premium : null;
         const v = dynamic !== null ? Math.min(fixed, dynamic) : fixed;
         return { t: p.tick_at, v };
       });
@@ -1949,7 +1955,7 @@ export const PriceChart = memo(function PriceChart({
     if (cap !== null) {
       // No dot: the cap usually sits far above the auto-ranged
       // viewport, so a dot would render off-plot most of the time.
-      rows.push({ color: COLOR_MAXBID, label: t`max bid`, value: fmtRate(cap) });
+      rows.push({ color: COLOR_MAXBID, label: t`effective cap`, value: fmtRate(cap) });
     }
     if (hasRightAxis && rightAxis) {
       const v = rightAxis.values[i];
@@ -2059,7 +2065,7 @@ export const PriceChart = memo(function PriceChart({
             <Legend color={COLOR_EFFECTIVE} label={t`effective`} hidden={isHidden('rightAxis')} onToggle={() => toggle('rightAxis')} />
           )}
           <Legend color={COLOR_HASHPRICE} label={t`hashprice`} dashed hidden={isHidden('hashprice')} onToggle={() => toggle('hashprice')} />
-          <Legend color={COLOR_MAXBID} label={t`max bid`} hidden={isHidden('maxBid')} onToggle={() => toggle('maxBid')} />
+          <Legend color={COLOR_MAXBID} label={t`effective cap`} hidden={isHidden('maxBid')} onToggle={() => toggle('maxBid')} />
           {hasRightAxis && rightAxis && (
             <Legend color={rightAxis.stroke} label={rightAxis.axisLabel} hidden={isHidden('rightAxis')} onToggle={() => toggle('rightAxis')} />
           )}

@@ -41,6 +41,7 @@ export interface MetricPoint {
   readonly fillable_ask_sat_per_ph_day: number | null;
   readonly hashprice_sat_per_ph_day: number | null;
   readonly max_bid_sat_per_ph_day: number | null;
+  readonly max_overpay_vs_hashprice_sat_per_ph_day: number | null;
   readonly available_balance_sat: number | null;
   readonly total_balance_sat: number | null;
   /**
@@ -203,6 +204,7 @@ function toMetricPoint(r: {
   fillable_ask_sat_per_eh_day: number | null;
   hashprice_sat_per_eh_day: number | null;
   max_bid_sat_per_eh_day: number | null;
+  max_overpay_vs_hashprice_sat_per_eh_day: number | null;
   available_balance_sat: number | null;
   total_balance_sat: number | null;
   datum_hashrate_ph: number | null;
@@ -255,6 +257,10 @@ function toMetricPoint(r: {
     max_bid_sat_per_ph_day:
       r.max_bid_sat_per_eh_day !== null
         ? r.max_bid_sat_per_eh_day / EH_PER_PH
+        : null,
+    max_overpay_vs_hashprice_sat_per_ph_day:
+      r.max_overpay_vs_hashprice_sat_per_eh_day !== null
+        ? r.max_overpay_vs_hashprice_sat_per_eh_day / EH_PER_PH
         : null,
     available_balance_sat: r.available_balance_sat,
     total_balance_sat: r.total_balance_sat,

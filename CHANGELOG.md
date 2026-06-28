@@ -2,6 +2,12 @@
 
 ## 2026-06-28
 
+### `[Fix]` Effective-cap line on the Price chart is now historically accurate (#312)
+
+The red line on the Price chart is the effective cap, `min(max bid, hashprice + max premium over hashprice)`. Max bid was already stored per tick, but the premium was applied as the *current* config value across the whole history - so changing "Max premium over hashprice" shifted the entire line, including the past, making it look like you'd always had the new value. The premium is now historized per tick (migration 0112), exactly like max bid, so the line reflects what the premium actually was at each moment and tuning the knob only affects ticks from the change forward. Pre-migration history falls back to the current value (we can't know the past premium). The line is also relabeled from "max bid" to "effective cap" since that's what it actually plots.
+
+## 2026-06-28
+
 ### `[UI]` Electrum host/port help points to the server's connection page (#313)
 
 The "Electrum server host" / "Port" fields used a terse "Default 50001." hint, which left Fulcrum users unsure what to enter (the autopilot works with electrs, Fulcrum, or ElectrumX). The help now points to the authoritative source - your server's own connection page (on Umbrel, the Electrs/Fulcrum app page shows the address and port) - and calls out that the port isn't fixed by which server you run: convention is 50001 (TCP) / 50002 (TLS), and Umbrel keeps Electrs on 50001 but puts Fulcrum on 50002 so both can run at once. No per-implementation presets, since the right port is environment-specific and the autopilot can't know it. (#273 follow-up.)
