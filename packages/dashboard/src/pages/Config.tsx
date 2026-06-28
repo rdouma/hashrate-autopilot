@@ -4366,7 +4366,11 @@ function ElectrsFields({
           className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm font-mono"
         />
         <span className="block text-xs text-slate-500 mt-1">
-          <Trans>e.g. 192.168.1.121 or electrs_electrs_1 on Umbrel</Trans>
+          <Trans>
+            Your Electrum server's host. On Umbrel, the Electrs or Fulcrum app page shows the
+            address (e.g. umbrel.local); use electrs_electrs_1 when the autopilot runs on the same
+            Umbrel.
+          </Trans>
         </span>
       </label>
       <label className="block">
@@ -4381,7 +4385,11 @@ function ElectrsFields({
           noGrouping
         />
         <span className="block text-xs text-slate-500 mt-1">
-          <Trans>Default 50001.</Trans>
+          <Trans>
+            Check your server's connection page - the port isn't fixed by which Electrum server you
+            run. Convention is 50001 (TCP) / 50002 (TLS); Umbrel keeps Electrs on 50001 and puts
+            Fulcrum on 50002 so both can run at once.
+          </Trans>
         </span>
       </label>
       <div className="self-start mt-[26px]">

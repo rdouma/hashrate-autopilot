@@ -1141,6 +1141,10 @@ msgid "Cheap-mode target"
 msgstr "Cheap-mode target"
 
 #: src/pages/Config.tsx
+msgid "Check your server's connection page - the port isn't fixed by which Electrum server you run. Convention is 50001 (TCP) / 50002 (TLS); Umbrel keeps Electrs on 50001 and puts Fulcrum on 50002 so both can run at once."
+msgstr "Check your server's connection page - the port isn't fixed by which Electrum server you run. Convention is 50001 (TCP) / 50002 (TLS); Umbrel keeps Electrs on 50001 and puts Fulcrum on 50002 so both can run at once."
+
+#: src/pages/Config.tsx
 msgid "Choose file…"
 msgstr "Choose file…"
 
@@ -1489,8 +1493,8 @@ msgid "decrease"
 msgstr "decrease"
 
 #: src/pages/Config.tsx
-msgid "Default 50001."
-msgstr "Default 50001."
+#~ msgid "Default 50001."
+#~ msgstr "Default 50001."
 
 #: src/pages/Setup.tsx
 #~ msgid "Default Electrs port is 50001 (TCP). On Umbrel the in-cluster hostname is typically<0> electrs_electrs_1</0>."
@@ -1667,8 +1671,8 @@ msgid "Dynamic DNS"
 msgstr "Dynamic DNS"
 
 #: src/pages/Config.tsx
-msgid "e.g. 192.168.1.121 or electrs_electrs_1 on Umbrel"
-msgstr "e.g. 192.168.1.121 or electrs_electrs_1 on Umbrel"
+#~ msgid "e.g. 192.168.1.121 or electrs_electrs_1 on Umbrel"
+#~ msgstr "e.g. 192.168.1.121 or electrs_electrs_1 on Umbrel"
 
 #: src/pages/Config.tsx
 msgid "e.g. http://192.168.1.121:8332 - your Bitcoin Knots RPC endpoint."
@@ -4504,6 +4508,10 @@ msgstr "your Bitcoin node does not track BIP 110 as a named softfork"
 #: src/components/Bip110ScanCard.tsx
 msgid "Your Bitcoin node supports BIP 110, which is currently in its activation window. There are two paths it can activate by:"
 msgstr "Your Bitcoin node supports BIP 110, which is currently in its activation window. There are two paths it can activate by:"
+
+#: src/pages/Config.tsx
+msgid "Your Electrum server's host. On Umbrel, the Electrs or Fulcrum app page shows the address (e.g. umbrel.local); use electrs_electrs_1 when the autopilot runs on the same Umbrel."
+msgstr "Your Electrum server's host. On Umbrel, the Electrs or Fulcrum app page shows the address (e.g. umbrel.local); use electrs_electrs_1 when the autopilot runs on the same Umbrel."
 
 #: src/pages/Status.tsx
 msgid "Your layout is saved on this device."

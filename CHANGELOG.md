@@ -2,6 +2,12 @@
 
 ## 2026-06-28
 
+### `[UI]` Electrum host/port help points to the server's connection page (#313)
+
+The "Electrum server host" / "Port" fields used a terse "Default 50001." hint, which left Fulcrum users unsure what to enter (the autopilot works with electrs, Fulcrum, or ElectrumX). The help now points to the authoritative source - your server's own connection page (on Umbrel, the Electrs/Fulcrum app page shows the address and port) - and calls out that the port isn't fixed by which server you run: convention is 50001 (TCP) / 50002 (TLS), and Umbrel keeps Electrs on 50001 but puts Fulcrum on 50002 so both can run at once. No per-implementation presets, since the right port is environment-specific and the autopilot can't know it. (#273 follow-up.)
+
+## 2026-06-28
+
 ### `[Fix]` Clearer DATUM error when it's behind an auth proxy or its port moved (#310)
 
 When the DATUM stats API is unreachable, the panel and the "Test connection" button used to show unhelpful errors: a bare `fetch failed` (port gone), or `Unexpected token '<', "<!doctype "... is not valid JSON` (the request silently followed Umbrel's app-proxy 302 into a login page). The daemon now detects a redirect-to-login ("the Datum API is behind an auth proxy ... see docs/setup-datum-api.md"), an HTML response served with a 200, and rewrites connection-refused into "the port may have changed or a manual port mapping was reverted by an app update". `docs/setup-datum-api.md` is refreshed too: it now leads with the fact that Datum app updates revert the manual port mapping (the actual recurring failure mode), and documents the cleaner `PROXY_AUTH_ADD: "false"` / `PROXY_AUTH_WHITELIST` approach alongside the original direct-mapping method.
