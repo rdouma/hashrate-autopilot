@@ -1,14 +1,22 @@
 # Exposing the Datum Gateway API on Umbrel
 
-> **Status:** **WORKING and stable.** Verified live on 2026-04-19
-> and running uninterrupted since - the daemon has been polling
-> `/umbrel-api` every tick, recording `datum_hashrate_ph` on every
-> `tick_metrics` row, with zero post-setup interventions needed. The
-> recipe below is the verified path. It differs from the original
-> research notes in two important ways - the `sed` pattern must match
-> the quoted form, and the restart must be a full OS reboot (not
-> `umbreld apps.restart`). See "What NOT to do" below before
-> improvising.
+> **Status:** **WORKING**, but **every Datum app update reverts this and
+> the Datum panel goes blank again** (confirmed 2026-06-28 - the
+> nofile-limits hotfix #5263 regenerated `docker-compose.yml` and wiped
+> the manual port mapping). This is the single most common way the
+> integration breaks. If your Datum hashrate stops updating right after
+> you updated the Datum app, that's this - just re-apply the edit. Two
+> methods below: the direct port mapping (Method A) and disabling the
+> app-proxy auth (Method B, cleaner, what the latest incident used).
+> Both edit the same `docker-compose.yml`, so both get reverted on the
+> next app update. See "What NOT to do" before improvising.
+
+> **Why it breaks at all:** the official Umbrel Datum app only publishes
+> stratum (`23334`) to the host; the HTTP API lives on container port
+> `21000` behind Umbrel's auth-proxy, which 302-redirects unauthenticated
+> machine requests to the login page. So an off-Umbrel autopilot can't
+> reach it until you either expose the API port directly or turn the
+> proxy auth off.
 
 ## Background
 
@@ -84,7 +92,7 @@ authentication layer, which redirects unauthenticated requests to
 the Umbrel login page (port 2000). Not usable for machine-to-machine
 API calls. That's why we add a direct `7152:21000` mapping instead.
 
-## The fix (~2 minutes, requires a full umbrelOS reboot)
+## Method A - direct port mapping (~2 minutes, requires a full umbrelOS reboot)
 
 ### Prerequisites
 
@@ -172,6 +180,45 @@ Leaving this empty disables the integration - the dashboard shows
 a "Datum not configured" empty state and the daemon records nothing
 for Datum hashrate. This is intentional: the integration is
 informational-only and fully optional.
+
+## Method B - disable the app-proxy auth (alternative, no reboot)
+
+Instead of adding a direct port mapping, tell Umbrel's app-proxy not to
+gate the Datum API and point the daemon at the existing `21000` proxy
+port. This is what the 2026-06-28 recovery used - a one-line env change
+and a normal app restart, no full OS reboot.
+
+Edit the **`app_proxy`** service's environment in the Datum app's
+`docker-compose.yml`:
+
+```yaml
+services:
+  app_proxy:
+    environment:
+      APP_HOST: datum_datum_1
+      APP_PORT: 21000
+      PROXY_AUTH_ADD: "false"        # <- add this line
+```
+
+To keep the Datum dashboard behind Umbrel login and open only the stats
+path, leave `PROXY_AUTH_ADD: "true"` and add
+`PROXY_AUTH_WHITELIST: "/umbrel-api"` instead.
+
+Restart the app, then confirm and configure:
+
+```bash
+sudo ~/umbrel/scripts/app restart datum    # or stop+start from the Umbrel UI
+curl -s http://<umbrel-ip>:21000/umbrel-api | python3 -m json.tool   # expect JSON, not a 302
+```
+
+Set **Datum API URL** to `http://<umbrel-ip>:21000` (base only; the
+daemon appends `/umbrel-api`).
+
+Trade-offs vs Method A: no extra port and no full reboot, but
+`PROXY_AUTH_ADD: "false"` drops auth on the whole Datum app on the LAN
+(Method A's direct mapping is also unauthenticated, so neither is more
+exposed - only the `PROXY_AUTH_WHITELIST` variant keeps the dashboard
+behind login). Same caveat as Method A: an app update reverts it.
 
 ## ⚠️ What NOT to do
 

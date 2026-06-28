@@ -88,11 +88,42 @@ export class DatumService {
     try {
       const response = await fetch(`${this.apiUrl}/umbrel-api`, {
         signal: controller.signal,
+        // #310: don't silently follow a redirect. An auth proxy in front
+        // of the Datum API (e.g. Umbrel's app-proxy) answers an
+        // unauthenticated machine request with a 3xx to its login page;
+        // following it lands on HTML that then fails JSON.parse with a
+        // baffling "Unexpected token '<'". Surfacing the redirect lets us
+        // hand back an actionable hint instead.
+        redirect: 'manual',
       });
+      if (
+        response.type === 'opaqueredirect' ||
+        (response.status >= 300 && response.status < 400)
+      ) {
+        return this.fail(
+          checkedAt,
+          'redirected to a login page - the Datum API is behind an auth proxy (e.g. Umbrel app-proxy). Expose it directly or disable the proxy auth; see docs/setup-datum-api.md',
+        );
+      }
       if (!response.ok) {
         return this.fail(checkedAt, `HTTP ${response.status}`);
       }
-      const payload = (await response.json()) as UmbrelApiResponse;
+      // Read the body as text and parse explicitly, so an HTML page
+      // served with a 200 (some proxies inline the login page) yields a
+      // clear hint instead of an "Unexpected token '<'".
+      const body = await response.text();
+      let payload: UmbrelApiResponse;
+      try {
+        payload = JSON.parse(body) as UmbrelApiResponse;
+      } catch {
+        const looksLikeHtml = /^\s*<(!doctype|html)/i.test(body);
+        return this.fail(
+          checkedAt,
+          looksLikeHtml
+            ? 'the Datum API returned an HTML page, not JSON - likely a login page from an auth proxy in front of Datum (e.g. Umbrel app-proxy). Expose it directly or disable the proxy auth; see docs/setup-datum-api.md'
+            : `the Datum API returned a non-JSON response. Check the URL and port. Body starts: ${body.slice(0, 60).replace(/\s+/g, ' ')}`,
+        );
+      }
       const connections = extractNumber(payload, 'Connections');
       const hashrate_ph = extractHashratePh(payload);
       this.lastOkAt = checkedAt;
@@ -105,7 +136,14 @@ export class DatumService {
         error: null,
       };
     } catch (err) {
-      return this.fail(checkedAt, (err as Error).message ?? String(err));
+      // #310: a bare "fetch failed" is usually connection refused /
+      // nothing listening - common right after an Umbrel app update
+      // reverts a manual port mapping. Make that actionable.
+      const msg = (err as Error).message ?? String(err);
+      const friendly = /fetch failed|ECONNREFUSED|connect|refused/i.test(msg)
+        ? `cannot reach the Datum API at ${this.apiUrl} (connection refused - the port may have changed or a manual port mapping was reverted by an app update); see docs/setup-datum-api.md`
+        : msg;
+      return this.fail(checkedAt, friendly);
     } finally {
       clearTimeout(timeout);
     }
