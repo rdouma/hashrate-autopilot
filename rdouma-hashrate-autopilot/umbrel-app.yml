@@ -7,7 +7,7 @@ manifestVersion: 1
 id: rdouma-hashrate-autopilot
 category: bitcoin
 name: Hashrate Autopilot
-version: "1.15.0"
+version: "1.15.1"
 tagline: Autopilot for renting hashrate to mine on Ocean Mining
 icon: https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/assets/icon-512.png
 # Umbrel renders description literally - no YAML folding of soft
@@ -53,6 +53,18 @@ defaultPassword: ""
 submitter: Remco Douma
 submission: https://github.com/rdouma/hashrate-autopilot
 releaseNotes: |
+  v1.15.1 - effective-cap chart accuracy, payout-address validation, refresh and DATUM fixes.
+
+  FIXES
+  - The price chart's safety-ceiling line is now historically accurate (#312): it's relabeled "effective cap" and the "max premium over hashprice" knob is recorded per tick - and backfilled for older history - so changing it only moves the line from that point forward instead of rewriting your whole past.
+  - Invalid Bitcoin payout addresses are now rejected (#309): the payout-address field in Config and the first-run wizard validate that you've entered a real mainnet address, so a typo can't silently credit your rented hashrate's earnings to nobody.
+  - The Profit & Loss "Per Day" card no longer sticks on "refreshing..." (#311): its countdown ticks down and reloads like the rest of the dashboard.
+  - Clearer errors when the DATUM stats API is unreachable (#310): the panel now tells you when it's behind an auth proxy or its port moved, instead of a cryptic parse error.
+  - Clearer Electrum host/port help (#313): the fields point you to your Electrum server's own connection page for the right host and port.
+  - The IP-change marker tooltip shows how long ago the address changed.
+  - Mobile: the "add tile" control no longer overlaps the time-range buttons (#302); block-explorer presets set both the block and transaction URL in one click (#301).
+  - Ocean payout wording corrected throughout: payouts arrive as batched sweep transactions, not coinbase-direct.
+
   v1.15.0 - aviator branding, bid-vs-hashprice tile, BIP-110 explorers, not-hashing detection, stale-bid self-heal.
 
   NEW

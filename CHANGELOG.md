@@ -2,6 +2,12 @@
 
 ## 2026-06-28
 
+### `[Release]` v1.15.1
+
+Patch release: fixes and polish, no new headline features. The price chart's safety-ceiling line is relabeled "effective cap" and is now historically accurate - the "max premium over hashprice" knob is recorded per tick and backfilled for older history, so tuning it only moves the line from that point forward (#312). Invalid Bitcoin payout addresses are now rejected at save (#309), preventing silently lost earnings from a typo. The P&L "Per Day" card no longer sticks on "refreshing…" (#311), the DATUM stats API gives actionable errors when behind an auth proxy or on a moved port (#310), and the Electrum host/port help points to the server's own connection page (#313). Plus the IP-change tooltip relative-age, mobile tiles-bar overlap (#302), block-explorer preset both-URLs (#301), and corrected Ocean batched-sweep payout wording throughout.
+
+## 2026-06-28
+
 ### `[Fix]` Backfill the effective-cap line's historical premium (#312 follow-up)
 
 The #312 fix historized "max premium over hashprice" per tick going forward, but left every row recorded before that migration NULL - and the chart falls back to the *current* config value for NULL rows, so all of your pre-existing history still chased the live knob (exactly the bug #312 was meant to kill, only fixed from the migration forward). Lowering the premium still dragged the whole back-history down with it. Migration 0113 backfills that leading NULL block with the earliest premium the daemon actually recorded - the value in effect when per-tick recording began - carried backward over the old history. We can't know the true premium for ticks that predate recording (it was never stored), so this freezes the unknown past at a concrete historical value instead of letting it follow the current setting. Future knob changes now only move the line from the change forward. No-op if you never enabled the dynamic cap.
