@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-06-29
+
+### `[UI]` History filter toolbar laid out properly on mobile
+
+On a phone the Order History filter bar was a mess: the Action chips overflowed past the right edge of the card, and because the controls just wrapped in source order the From and To date fields ended up split across different rows in an illogical position, with the reset button stranded mid-bar. The toolbar is now mobile-first - Action chips wrap inside the card, Bid id and Δ price go full-width, From and To sit side-by-side as a single date-range row, and reset moves to its own right-aligned row at the bottom. The desktop layout is unchanged (the date pair dissolves back into the inline flow above the `sm` breakpoint).
+
 ## 2026-06-28
 
 ### `[Release]` v1.15.1

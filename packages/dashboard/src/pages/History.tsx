@@ -313,10 +313,10 @@ function Toolbar({
   };
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-lg p-3 flex flex-wrap items-end gap-x-4 gap-y-2 text-xs">
+    <div className="bg-slate-900 border border-slate-800 rounded-lg p-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end sm:gap-x-4 sm:gap-y-2 text-xs">
       <div className="flex flex-col gap-0.5">
         <label className="text-[10px] tracking-wider text-slate-500"><Trans>Action</Trans></label>
-        <div className="flex gap-1">
+        <div className="flex flex-wrap gap-1">
           {(['CREATE_BID', 'EDIT_PRICE', 'EDIT_SPEED', 'CANCEL_BID', 'MODE_CHANGE', 'BID_PAUSED', 'BID_RESUMED'] as Kind[]).map((k) => (
             <ActionChip
               key={k}
@@ -337,26 +337,33 @@ function Toolbar({
           spellCheck={false}
           autoCapitalize="none"
           autoCorrect="off"
-          className="w-32 text-[11px] font-mono bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-slate-200 focus:outline-none focus:border-amber-700"
+          className="w-full sm:w-32 text-[11px] font-mono bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-slate-200 focus:outline-none focus:border-amber-700"
         />
       </div>
-      <div className="flex flex-col gap-0.5">
-        <label className="text-[10px] tracking-wider text-slate-500"><Trans>From</Trans></label>
-        <DatePicker
-          value={filters.sinceMs}
-          snap="start"
-          onChange={(ms) => updateDate('sinceMs', ms)}
-          ariaLabel={t`From date`}
-        />
-      </div>
-      <div className="flex flex-col gap-0.5">
-        <label className="text-[10px] tracking-wider text-slate-500"><Trans>To</Trans></label>
-        <DatePicker
-          value={filters.untilMs}
-          snap="end"
-          onChange={(ms) => updateDate('untilMs', ms)}
-          ariaLabel={t`To date`}
-        />
+      {/* From + To form one logical date-range pair. On mobile they sit
+          side-by-side as a single row (sm:contents dissolves this wrapper
+          on desktop so each flows into the toolbar's wrap as before). */}
+      <div className="flex gap-3 sm:contents">
+        <div className="flex flex-col gap-0.5 flex-1 min-w-0 sm:flex-none">
+          <label className="text-[10px] tracking-wider text-slate-500"><Trans>From</Trans></label>
+          <DatePicker
+            value={filters.sinceMs}
+            snap="start"
+            onChange={(ms) => updateDate('sinceMs', ms)}
+            ariaLabel={t`From date`}
+            className="w-full sm:w-auto"
+          />
+        </div>
+        <div className="flex flex-col gap-0.5 flex-1 min-w-0 sm:flex-none">
+          <label className="text-[10px] tracking-wider text-slate-500"><Trans>To</Trans></label>
+          <DatePicker
+            value={filters.untilMs}
+            snap="end"
+            onChange={(ms) => updateDate('untilMs', ms)}
+            ariaLabel={t`To date`}
+            className="w-full sm:w-auto"
+          />
+        </div>
       </div>
       <div className="flex flex-col gap-0.5">
         <label className="text-[10px] tracking-wider text-slate-500">
@@ -369,16 +376,16 @@ function Toolbar({
           value={deltaInUnit}
           onChange={(e) => updateDelta(e.target.value)}
           placeholder="0"
-          className="no-spinner w-24 text-[11px] font-mono bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-slate-200 focus:outline-none focus:border-amber-700"
+          className="no-spinner w-full sm:w-24 text-[11px] font-mono bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-slate-200 focus:outline-none focus:border-amber-700"
         />
       </div>
       {/* #256 v2 follow-up: Reset button on the RIGHT side with a
           Lucide rotate-ccw icon, labelled "reset" rather than "clear
-          all". */}
+          all". Full-width, right-aligned row on mobile; ml-auto on desktop. */}
       <button
         type="button"
         onClick={() => onChange({})}
-        className="ml-auto flex items-center gap-1 text-[11px] text-slate-500 hover:text-amber-300 self-end"
+        className="w-full sm:w-auto sm:ml-auto flex items-center justify-end gap-1 text-[11px] text-slate-500 hover:text-amber-300 self-end"
         title={t`Reset all filters`}
       >
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">

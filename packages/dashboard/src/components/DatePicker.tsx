@@ -35,6 +35,8 @@ export interface DatePickerProps {
   readonly onChange: (next: number | undefined) => void;
   readonly placeholder?: string;
   readonly ariaLabel?: string;
+  /** Extra classes for the trigger button (e.g. `w-full sm:w-auto`). */
+  readonly className?: string;
 }
 
 export function DatePicker({
@@ -43,6 +45,7 @@ export function DatePicker({
   onChange,
   placeholder,
   ariaLabel,
+  className,
 }: DatePickerProps) {
   const { i18n } = useLingui();
   void i18n;
@@ -121,7 +124,7 @@ export function DatePicker({
         aria-label={ariaLabel}
         aria-haspopup="dialog"
         aria-expanded={open}
-        className="text-[11px] bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-left focus:outline-none focus:border-amber-700 flex items-center gap-1.5 min-w-[8.5rem] hover:border-slate-600"
+        className={`text-[11px] bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-left focus:outline-none focus:border-amber-700 flex items-center gap-1.5 min-w-[8.5rem] hover:border-slate-600 ${className ?? ''}`}
       >
         <svg
           width="11"
