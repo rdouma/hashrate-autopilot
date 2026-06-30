@@ -61,8 +61,8 @@ export function AlertConditionBands({
   idSuffix: string;
   /** #316: the span (open_id) jumped to from History; gets a sonar beacon. */
   focusSpanOpenId?: number | null;
-  /** #316: clicking an onset/recovery marker opens the detail drawer. */
-  onSpanClick?: (span: AlertConditionInterval['span']) => void;
+  /** #316: clicking an onset/recovery marker -> pinned pop-up at (x, y). */
+  onSpanClick?: (span: AlertConditionInterval['span'], clientX: number, clientY: number) => void;
 }) {
   const relevant = intervals.filter((iv) =>
     conditionSpanClass(iv.span.event_class)?.charts.includes(target),
@@ -120,9 +120,9 @@ export function AlertConditionBands({
         const recX = recoveredInView ? xScale(iv.span.end_ms as number) : null;
         const onsetInView = iv.x0 >= dataMinX && iv.x0 <= dataMaxX;
         const click = onSpanClick
-          ? (e: { stopPropagation: () => void }) => {
+          ? (e: { stopPropagation: () => void; clientX: number; clientY: number }) => {
               e.stopPropagation();
-              onSpanClick(iv.span);
+              onSpanClick(iv.span, e.clientX, e.clientY);
             }
           : undefined;
         const clickable = onSpanClick ? { cursor: 'pointer' as const } : undefined;

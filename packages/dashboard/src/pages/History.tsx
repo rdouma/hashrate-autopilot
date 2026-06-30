@@ -130,6 +130,7 @@ export function History() {
   const [selectedEvent, setSelectedEvent] = useState<BidHistoryFlatEvent | null>(null);
   const [selectedSpan, setSelectedSpan] = useState<AlertConditionSpanView | null>(null);
   const [highlightedEventId, setHighlightedEventId] = useState<number | null>(null);
+  const [highlightedSpanId, setHighlightedSpanId] = useState<number | null>(null);
   // #316: which alert-condition classes show as rows. Default: all on.
   // An empty set hides every alert row (matching the chip-off semantics).
   const [shownAlertClasses, setShownAlertClasses] = useState<Set<string>>(
@@ -182,12 +183,15 @@ export function History() {
     const spans = alertSpansQuery.data?.spans ?? [];
     return spans.filter(
       (s) =>
-        shownAlertClasses.has(s.event_class) &&
-        s.start_ms <= alertWindow.until &&
-        s.start_ms >= alertWindow.since &&
-        (oldestBidTs === null || s.start_ms >= oldestBidTs),
+        // A deep-linked span (highlighted via "View in history") is shown
+        // regardless of the bid-range bind so it can't vanish mid-jump.
+        s.open_id === highlightedSpanId ||
+        (shownAlertClasses.has(s.event_class) &&
+          s.start_ms <= alertWindow.until &&
+          s.start_ms >= alertWindow.since &&
+          (oldestBidTs === null || s.start_ms >= oldestBidTs)),
     );
-  }, [alertSpansQuery.data, shownAlertClasses, alertWindow, oldestBidTs]);
+  }, [alertSpansQuery.data, shownAlertClasses, alertWindow, oldestBidTs, highlightedSpanId]);
 
   // Recent alerts can sit just past the first bid page; since alert rows
   // are bound to the loaded bid range (to avoid a misleading time gap),
@@ -274,6 +278,51 @@ export function History() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search, events.length, query.hasNextPage]);
 
+  // #316: ?focus_span=<open_id> from a chart marker's "View in history"
+  // link. The target span is force-shown via highlightedSpanId (see
+  // visibleAlertSpans), so we don't need to page back to it - just
+  // highlight, scroll, and strip the param. The highlight (and thus the
+  // forced visibility) clears after 1.8 s.
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const raw = params.get('focus_span');
+    if (!raw) return;
+    const openId = Number.parseInt(raw, 10);
+    if (!Number.isFinite(openId)) return;
+    setHighlightedSpanId(openId);
+    params.delete('focus_span');
+    const next = params.toString();
+    navigate(`/history${next ? `?${next}` : ''}`, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
+
+  // The target row is force-shown by highlightedSpanId, but its data may
+  // arrive a beat after navigation (the alert-spans query is in flight).
+  // Poll until the row exists, then scroll to it and start the brief
+  // highlight-clear countdown - anchoring the flash to render time, not
+  // navigation time, so a slow query doesn't clear it before it shows.
+  useEffect(() => {
+    if (highlightedSpanId === null) return;
+    let tries = 0;
+    let clearTimer: number | null = null;
+    const poll = window.setInterval(() => {
+      tries += 1;
+      const el = document.getElementById(`alert-span-row-${highlightedSpanId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        window.clearInterval(poll);
+        clearTimer = window.setTimeout(() => setHighlightedSpanId(null), 1800);
+      } else if (tries >= 40) {
+        window.clearInterval(poll);
+        setHighlightedSpanId(null);
+      }
+    }, 100);
+    return () => {
+      window.clearInterval(poll);
+      if (clearTimer !== null) window.clearTimeout(clearTimer);
+    };
+  }, [highlightedSpanId]);
+
   return (
     <div className="space-y-3">
       <h2 className="text-sm uppercase tracking-wider text-slate-100">
@@ -316,6 +365,7 @@ export function History() {
                   key={`alert-${item.span.open_id}`}
                   span={item.span}
                   fmt={fmt}
+                  highlighted={highlightedSpanId === item.span.open_id}
                   onClick={() => setSelectedSpan(item.span)}
                 />
               ),
@@ -674,10 +724,12 @@ function EventRow({
 function AlertSpanRow({
   span,
   fmt,
+  highlighted,
   onClick,
 }: {
   span: AlertConditionSpanView;
   fmt: ReturnType<typeof useFormatters>;
+  highlighted: boolean;
   onClick: () => void;
 }) {
   const { i18n } = useLingui();
@@ -689,8 +741,11 @@ function AlertSpanRow({
   const dash = <span className="text-slate-600">—</span>;
   return (
     <tr
+      id={`alert-span-row-${span.open_id}`}
       onClick={onClick}
-      className="border-t border-slate-800/70 align-top cursor-pointer transition-colors hover:bg-slate-800/30"
+      className={`border-t border-slate-800/70 align-top cursor-pointer transition-colors ${
+        highlighted ? 'bg-amber-500/10 ring-1 ring-amber-500/40' : 'hover:bg-slate-800/30'
+      }`}
       title={t`Show details`}
     >
       <td className="py-1 px-3 font-mono text-slate-300 whitespace-nowrap">

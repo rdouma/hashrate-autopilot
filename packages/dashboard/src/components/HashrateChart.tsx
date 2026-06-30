@@ -450,7 +450,7 @@ export const HashrateChart = memo(function HashrateChart({
   /** #316: span (open_id) jumped to from History; gets a sonar beacon. */
   focusSpanOpenId?: number | null;
   /** #316: clicking a condition-band marker. */
-  onAlertSpanClick?: (span: AlertConditionInterval['span']) => void;
+  onAlertSpanClick?: (span: AlertConditionInterval['span'], clientX: number, clientY: number) => void;
   viewportHandlers?: {
     onPointerDown: React.PointerEventHandler<SVGSVGElement>;
     onPointerMove: React.PointerEventHandler<SVGSVGElement>;

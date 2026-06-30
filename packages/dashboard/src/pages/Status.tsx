@@ -20,7 +20,7 @@ import { parseDashboardTiles } from '@hashrate-autopilot/shared';
 import { HashrateChart, type HashrateRightAxis } from '../components/HashrateChart';
 import { type PriceRightAxis } from '../components/PriceChart';
 import { PriceChart } from '../components/PriceChart';
-import { AlertSpanDrawer } from '../components/AlertSpanDrawer';
+import { AlertSpanTooltip, type AlertSpanTooltipState } from '../components/AlertSpanTooltip';
 import { ModeBadge } from '../components/ModeBadge';
 import { BtcSymbol } from '../components/BtcSymbol';
 import { SatSymbol } from '../components/SatSymbol';
@@ -31,7 +31,6 @@ import {
   api,
   UnauthorizedError,
   type AlertConditionInterval,
-  type AlertConditionSpanView,
   type BalanceView,
   type BidView,
   type FinanceResponse,
@@ -251,8 +250,8 @@ export function Status() {
   const [focusedEventId, setFocusedEventId] = useState<number | null>(null);
   // #316: span (open_id) jumped to from a History alert row -> sonar beacon.
   const [focusedSpanId, setFocusedSpanId] = useState<number | null>(null);
-  // #316: condition span whose chart marker was clicked -> detail drawer.
-  const [chartSelectedSpan, setChartSelectedSpan] = useState<AlertConditionSpanView | null>(null);
+  // #316: pinned pop-up for a condition-band marker clicked on a chart.
+  const [alertTip, setAlertTip] = useState<AlertSpanTooltipState | null>(null);
   const focusSpanClearTimer = useRef<number | null>(null);
   const focusClearTimer = useRef<number | null>(null);
   const focusFallbackTimer = useRef<number | null>(null);
@@ -910,7 +909,7 @@ export function Status() {
           idleModeIntervals={idleModeIntervals}
           alertConditionIntervals={alertConditionIntervals}
           focusSpanOpenId={focusedSpanId}
-          onAlertSpanClick={setChartSelectedSpan}
+          onAlertSpanClick={(span, x, y) => setAlertTip({ span, x, y })}
           viewportHandlers={chartViewport.handlers}
           wheelRef={chartViewport.wheelRef}
           isDragging={chartViewport.isDragging}
@@ -982,7 +981,7 @@ export function Status() {
           idleModeIntervals={idleModeIntervals}
           alertConditionIntervals={alertConditionIntervals}
           focusSpanOpenId={focusedSpanId}
-          onAlertSpanClick={setChartSelectedSpan}
+          onAlertSpanClick={(span, x, y) => setAlertTip({ span, x, y })}
           viewportHandlers={chartViewport.handlers}
           wheelRef={chartViewport.wheelRef}
           isDragging={chartViewport.isDragging}
@@ -1356,13 +1355,10 @@ export function Status() {
         editing={rearranging}
         onReorder={cardOrder.setOrder}
       />
-      {/* #316: clicking a condition-band marker on either chart opens the
-          same alert detail drawer used in History. */}
-      {chartSelectedSpan && (
-        <AlertSpanDrawer
-          span={chartSelectedSpan}
-          onClose={() => setChartSelectedSpan(null)}
-        />
+      {/* #316: clicking a condition-band marker on either chart pins a
+          pop-up (same interaction language as the other chart markers). */}
+      {alertTip && (
+        <AlertSpanTooltip tip={alertTip} onClose={() => setAlertTip(null)} />
       )}
     </div>
   );

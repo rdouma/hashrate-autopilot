@@ -1202,6 +1202,7 @@ msgid "Click to show"
 msgstr "Klik om te tonen"
 
 #: src/components/AlertSpanDrawer.tsx
+#: src/components/AlertSpanTooltip.tsx
 #: src/components/BidEventDrawer.tsx
 #: src/components/HashrateChart.tsx
 #: src/components/IpChangeMarkers.tsx
@@ -1670,6 +1671,7 @@ msgid "DRY RUN"
 msgstr "DRY RUN"
 
 #: src/components/AlertSpanDrawer.tsx
+#: src/components/AlertSpanTooltip.tsx
 msgid "Duration"
 msgstr "Duur"
 
@@ -3032,6 +3034,7 @@ msgid "One-shot offset for earnings the on-chain payout observer can't see - Lig
 msgstr "Eenmalige correctie voor inkomsten die de on-chain payout-observer niet kan zien - Lightning-uitbetalingen, Ocean-uitbetalingen die binnenkwamen en al weggezet waren voordat je de autopilot installeerde, enzovoort. Schuift de startwaarde van de totale-inkomsten-grafiek met dit bedrag omhoog en wordt meegerekend in de netto P&L. Laat 0 staan als alles al door de on-chain backfill hierboven is gedekt."
 
 #: src/components/AlertSpanDrawer.tsx
+#: src/components/AlertSpanTooltip.tsx
 #: src/pages/History.tsx
 msgid "ongoing"
 msgstr "lopend"
@@ -3630,6 +3633,7 @@ msgid "recovered"
 msgstr "hersteld"
 
 #: src/components/AlertSpanDrawer.tsx
+#: src/components/AlertSpanTooltip.tsx
 msgid "Recovered"
 msgstr "Hersteld"
 
@@ -4065,6 +4069,7 @@ msgid "Start a chat with your bot, then send /start. Send any message to <0>@use
 msgstr "Start een chat met je bot en stuur /start. Stuur daarna een willekeurig bericht naar <0>@userinfobot</0> en kopieer de numerieke Id terug in dit veld. Test connection valideert de waarden uit het formulier, vóór het opslaan."
 
 #: src/components/AlertSpanDrawer.tsx
+#: src/components/AlertSpanTooltip.tsx
 msgid "Started"
 msgstr "Gestart"
 
@@ -4448,6 +4453,10 @@ msgstr "UTXO's op het geconfigureerde uitbetalingsadres. Gelezen via je Electrum
 #: src/pages/Setup.tsx
 msgid "v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
 msgstr "v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
+
+#: src/components/AlertSpanTooltip.tsx
+msgid "View in history"
+msgstr "Bekijk in geschiedenis"
 
 #: src/components/AlertSpanDrawer.tsx
 #: src/components/BidEventDrawer.tsx

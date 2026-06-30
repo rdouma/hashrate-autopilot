@@ -2,6 +2,10 @@
 
 ## 2026-06-30
 
+### `[UI]` Alert chart markers open a pinned pop-up with "View in history" (#316)
+
+Clicking an alert onset/recovery marker on a chart now pins a small pop-up at the marker - the same interaction language as the other chart markers (pool blocks, IP changes) - instead of the full slide-over drawer (which stays for the History rows). The pop-up shows the condition, severity, started/recovered/duration and body, and its action is "View in history" (you're already on the chart), which jumps to and briefly highlights the matching row on the History page.
+
 ### `[UI]` Alert chart markers are clickable; focus beacon auto-clears (#316)
 
 Two follow-ups from operator feedback. Clicking an onset or recovery marker on a chart band now opens the same alert detail drawer as the History rows (it had no info dialog before), with a generous click target over the small glyph. And the jump-to-chart focus beacon now auto-clears after ~6 seconds like the bid-event beacon, instead of pulsing for a full minute and re-appearing on every later zoom/pan of that span.

@@ -1202,6 +1202,7 @@ msgid "Click to show"
 msgstr "Clic para mostrar"
 
 #: src/components/AlertSpanDrawer.tsx
+#: src/components/AlertSpanTooltip.tsx
 #: src/components/BidEventDrawer.tsx
 #: src/components/HashrateChart.tsx
 #: src/components/IpChangeMarkers.tsx
@@ -1670,6 +1671,7 @@ msgid "DRY RUN"
 msgstr "DRY RUN"
 
 #: src/components/AlertSpanDrawer.tsx
+#: src/components/AlertSpanTooltip.tsx
 msgid "Duration"
 msgstr "Duración"
 
@@ -3032,6 +3034,7 @@ msgid "One-shot offset for earnings the on-chain payout observer can't see - Lig
 msgstr "Ajuste único para ingresos que el observador de pagos on-chain no puede ver - pagos por Lightning, pagos de Ocean que llegaron y se movieron antes de instalar el autopilot, etc. Eleva el valor inicial de la gráfica de ganancias totales en esta cantidad y se incluye en la P&L neta. Deja 0 si todo ya está cubierto por el backfill on-chain de arriba."
 
 #: src/components/AlertSpanDrawer.tsx
+#: src/components/AlertSpanTooltip.tsx
 #: src/pages/History.tsx
 msgid "ongoing"
 msgstr "en curso"
@@ -3630,6 +3633,7 @@ msgid "recovered"
 msgstr "recuperado"
 
 #: src/components/AlertSpanDrawer.tsx
+#: src/components/AlertSpanTooltip.tsx
 msgid "Recovered"
 msgstr "Recuperado"
 
@@ -4065,6 +4069,7 @@ msgid "Start a chat with your bot, then send /start. Send any message to <0>@use
 msgstr "Inicia un chat con tu bot y envía /start. Luego envía cualquier mensaje a <0>@userinfobot</0> y copia el Id numérico de vuelta en este campo. Test connection valida los valores actuales del formulario, antes de guardar."
 
 #: src/components/AlertSpanDrawer.tsx
+#: src/components/AlertSpanTooltip.tsx
 msgid "Started"
 msgstr "Iniciado"
 
@@ -4448,6 +4453,10 @@ msgstr "UTXOs en la dirección de pago configurada. Leído a través de tu servi
 #: src/pages/Setup.tsx
 msgid "v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
 msgstr "v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
+
+#: src/components/AlertSpanTooltip.tsx
+msgid "View in history"
+msgstr "Ver en el historial"
 
 #: src/components/AlertSpanDrawer.tsx
 #: src/components/BidEventDrawer.tsx

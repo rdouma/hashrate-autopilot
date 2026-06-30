@@ -1202,6 +1202,7 @@ msgid "Click to show"
 msgstr "Click to show"
 
 #: src/components/AlertSpanDrawer.tsx
+#: src/components/AlertSpanTooltip.tsx
 #: src/components/BidEventDrawer.tsx
 #: src/components/HashrateChart.tsx
 #: src/components/IpChangeMarkers.tsx
@@ -1670,6 +1671,7 @@ msgid "DRY RUN"
 msgstr "DRY RUN"
 
 #: src/components/AlertSpanDrawer.tsx
+#: src/components/AlertSpanTooltip.tsx
 msgid "Duration"
 msgstr "Duration"
 
@@ -3032,6 +3034,7 @@ msgid "One-shot offset for earnings the on-chain payout observer can't see - Lig
 msgstr "One-shot offset for earnings the on-chain payout observer can't see - Lightning payouts, Ocean payouts that landed and were swept before you installed the autopilot, etc. Shifts the lifetime-earnings chart's starting value up by this amount and folds into the net P&L. Leave 0 if everything is already covered by the on-chain backfill above."
 
 #: src/components/AlertSpanDrawer.tsx
+#: src/components/AlertSpanTooltip.tsx
 #: src/pages/History.tsx
 msgid "ongoing"
 msgstr "ongoing"
@@ -3630,6 +3633,7 @@ msgid "recovered"
 msgstr "recovered"
 
 #: src/components/AlertSpanDrawer.tsx
+#: src/components/AlertSpanTooltip.tsx
 msgid "Recovered"
 msgstr "Recovered"
 
@@ -4065,6 +4069,7 @@ msgid "Start a chat with your bot, then send /start. Send any message to <0>@use
 msgstr "Start a chat with your bot, then send /start. Send any message to <0>@userinfobot</0> and copy the numeric Id back into this field. Test connection validates the values currently in the form, before saving."
 
 #: src/components/AlertSpanDrawer.tsx
+#: src/components/AlertSpanTooltip.tsx
 msgid "Started"
 msgstr "Started"
 
@@ -4448,6 +4453,10 @@ msgstr "UTXOs at the configured payout address. Read via your Electrum server (p
 #: src/pages/Setup.tsx
 msgid "v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
 msgstr "v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
+
+#: src/components/AlertSpanTooltip.tsx
+msgid "View in history"
+msgstr "View in history"
 
 #: src/components/AlertSpanDrawer.tsx
 #: src/components/BidEventDrawer.tsx
