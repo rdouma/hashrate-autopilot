@@ -283,6 +283,10 @@ msgstr "A few questions to get the daemon operational. Defaults work for typical
 msgid "A mempool.space fork that surfaces BIP-110 miner signaling."
 msgstr "A mempool.space fork that surfaces BIP-110 miner signaling."
 
+#: src/lib/alertConditions.ts
+msgid "above floor again"
+msgstr "above floor again"
+
 #: src/pages/Setup.tsx
 msgid "Access"
 msgstr "Access"
@@ -378,6 +382,10 @@ msgstr "aged out:"
 #: src/pages/Config.tsx
 msgid "Alert condition bands"
 msgstr "Alert condition bands"
+
+#: src/components/AlertSpanDrawer.tsx
+msgid "Alert condition detail"
+msgstr "Alert condition detail"
 
 #: src/pages/Config.tsx
 msgid "Alert thresholds"
@@ -615,8 +623,8 @@ msgstr "bad credentials"
 msgid "Balance-check backend"
 msgstr "Balance-check backend"
 
+#: src/lib/alertConditions.ts
 #: src/pages/Config.tsx
-#: src/pages/History.tsx
 msgid "below floor"
 msgstr "below floor"
 
@@ -773,6 +781,10 @@ msgstr "Bitaxe best diff"
 msgid "Bitaxe best difficulty"
 msgstr "Bitaxe best difficulty"
 
+#: src/lib/alertConditions.ts
+msgid "Bitaxe cooled down"
+msgstr "Bitaxe cooled down"
+
 #: src/pages/Status.tsx
 msgid "Bitaxe device count"
 msgstr "Bitaxe device count"
@@ -820,8 +832,8 @@ msgstr "Bitaxe miner stratum URL drift"
 msgid "Bitaxe miners"
 msgstr "Bitaxe miners"
 
+#: src/lib/alertConditions.ts
 #: src/pages/Config.tsx
-#: src/pages/History.tsx
 msgid "Bitaxe overheating"
 msgstr "Bitaxe overheating"
 
@@ -1189,6 +1201,7 @@ msgstr "Click to hide"
 msgid "Click to show"
 msgstr "Click to show"
 
+#: src/components/AlertSpanDrawer.tsx
 #: src/components/BidEventDrawer.tsx
 #: src/components/HashrateChart.tsx
 #: src/components/IpChangeMarkers.tsx
@@ -1458,6 +1471,10 @@ msgstr "Datum /umbrel-api HTTP poll."
 msgid "datum hashrate"
 msgstr "datum hashrate"
 
+#: src/lib/alertConditions.ts
+msgid "DATUM reachable again"
+msgstr "DATUM reachable again"
+
 #: src/pages/Config.tsx
 msgid "Datum stats API (optional)"
 msgstr "Datum stats API (optional)"
@@ -1470,8 +1487,8 @@ msgstr "Datum stats not configured - set <0>datum_api_url</0> in Config to displ
 msgid "Datum stratum unreachable for"
 msgstr "Datum stratum unreachable for"
 
+#: src/lib/alertConditions.ts
 #: src/pages/Config.tsx
-#: src/pages/History.tsx
 msgid "DATUM unreachable"
 msgstr "DATUM unreachable"
 
@@ -1651,6 +1668,10 @@ msgstr "Dry Run"
 #: src/pages/Status.tsx
 msgid "DRY RUN"
 msgstr "DRY RUN"
+
+#: src/components/AlertSpanDrawer.tsx
+msgid "Duration"
+msgstr "Duration"
 
 #. placeholder {0}: formatNumber( uptime_bid_coverage_pct, { minimumFractionDigits: 1, maximumFractionDigits: 1 }, intlLocale, )
 #. placeholder {1}: formatNumber( uptime_delivery_when_bid_active_pct, { minimumFractionDigits: 1, maximumFractionDigits: 1 }, intlLocale, )
@@ -2122,6 +2143,10 @@ msgstr "Hashrate chart"
 msgid "Hashrate Ocean credits to our payout address (5-min sliding window). Sourced per-tick from /v1/user_hashrate.hashrate_300s. Compare against AVG BRAIINS / AVG DATUM at the top of the page; sustained gaps mean shares are getting lost somewhere in the Braiins → Datum → Ocean pipeline."
 msgstr "Hashrate Ocean credits to our payout address (5-min sliding window). Sourced per-tick from /v1/user_hashrate.hashrate_300s. Compare against AVG BRAIINS / AVG DATUM at the top of the page; sustained gaps mean shares are getting lost somewhere in the Braiins → Datum → Ocean pipeline."
 
+#: src/lib/alertConditions.ts
+msgid "hashrate restored"
+msgstr "hashrate restored"
+
 #: src/pages/Config.tsx
 msgid "Hashrate right-axis line"
 msgstr "Hashrate right-axis line"
@@ -2450,8 +2475,8 @@ msgstr "locked in"
 msgid "Log retention"
 msgstr "Log retention"
 
+#: src/lib/alertConditions.ts
 #: src/pages/Config.tsx
-#: src/pages/History.tsx
 msgid "low wallet runway"
 msgstr "low wallet runway"
 
@@ -2497,8 +2522,12 @@ msgstr "Markers were hidden because the combined count exceeded the configured c
 msgid "market at this tick"
 msgstr "market at this tick"
 
+#: src/lib/alertConditions.ts
+msgid "marketplace API back"
+msgstr "marketplace API back"
+
+#: src/lib/alertConditions.ts
 #: src/pages/Config.tsx
-#: src/pages/History.tsx
 msgid "marketplace API down"
 msgstr "marketplace API down"
 
@@ -3002,6 +3031,7 @@ msgstr "One-click support bundle: probes every external service the daemon talks
 msgid "One-shot offset for earnings the on-chain payout observer can't see - Lightning payouts, Ocean payouts that landed and were swept before you installed the autopilot, etc. Shifts the lifetime-earnings chart's starting value up by this amount and folds into the net P&L. Leave 0 if everything is already covered by the on-chain backfill above."
 msgstr "One-shot offset for earnings the on-chain payout observer can't see - Lightning payouts, Ocean payouts that landed and were swept before you installed the autopilot, etc. Shifts the lifetime-earnings chart's starting value up by this amount and folds into the net P&L. Leave 0 if everything is already covered by the on-chain backfill above."
 
+#: src/components/AlertSpanDrawer.tsx
 #: src/pages/History.tsx
 msgid "ongoing"
 msgstr "ongoing"
@@ -3040,6 +3070,10 @@ msgstr "Open Telegram and chat with <0>@BotFather</0>, send /newbot, follow the 
 #: src/components/PriceChart.tsx
 msgid "Open the History row for this event"
 msgstr "Open the History row for this event"
+
+#: src/components/AlertSpanDrawer.tsx
+msgid "Open the price chart pinned to this condition"
+msgstr "Open the price chart pinned to this condition"
 
 #: src/components/BidEventDrawer.tsx
 msgid "Open the price chart pinned to this event"
@@ -3591,6 +3625,14 @@ msgstr "received (Datum)"
 msgid "received (Ocean)"
 msgstr "received (Ocean)"
 
+#: src/lib/alertConditions.ts
+msgid "recovered"
+msgstr "recovered"
+
+#: src/components/AlertSpanDrawer.tsx
+msgid "Recovered"
+msgstr "Recovered"
+
 #: src/components/Layout.tsx
 msgid "Refresh"
 msgstr "Refresh"
@@ -3930,6 +3972,10 @@ msgstr "Share-rejection window (minutes)"
 msgid "Show"
 msgstr "Show"
 
+#: src/pages/History.tsx
+msgid "Show details"
+msgstr "Show details"
+
 #: src/components/PriceChart.tsx
 msgid "Show in history"
 msgstr "Show in history"
@@ -4017,6 +4063,10 @@ msgstr "spent (whole account)"
 #: src/pages/Config.tsx
 msgid "Start a chat with your bot, then send /start. Send any message to <0>@userinfobot</0> and copy the numeric Id back into this field. Test connection validates the values currently in the form, before saving."
 msgstr "Start a chat with your bot, then send /start. Send any message to <0>@userinfobot</0> and copy the numeric Id back into this field. Test connection validates the values currently in the form, before saving."
+
+#: src/components/AlertSpanDrawer.tsx
+msgid "Started"
+msgstr "Started"
 
 #: src/pages/Status.tsx
 msgid "status"
@@ -4399,8 +4449,8 @@ msgstr "UTXOs at the configured payout address. Read via your Electrum server (p
 msgid "v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
 msgstr "v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
 
+#: src/components/AlertSpanDrawer.tsx
 #: src/components/BidEventDrawer.tsx
-#: src/pages/History.tsx
 msgid "View on chart"
 msgstr "View on chart"
 
@@ -4420,6 +4470,10 @@ msgstr "wallet runway"
 msgid "Wallet runway below"
 msgstr "Wallet runway below"
 
+#: src/lib/alertConditions.ts
+msgid "wallet runway restored"
+msgstr "wallet runway restored"
+
 #: src/pages/Alerts.tsx
 msgid "warning"
 msgstr "warning"
@@ -4432,6 +4486,10 @@ msgstr "WARNING"
 #: src/pages/Alerts.tsx
 msgid "was open for {0}"
 msgstr "was open for {0}"
+
+#: src/components/AlertSpanDrawer.tsx
+msgid "What happened"
+msgstr "What happened"
 
 #: src/pages/Setup.tsx
 msgid "What the controller aims for."
@@ -4564,8 +4622,8 @@ msgstr "Your layout is saved on this device."
 msgid "Your share of Ocean's reward window. Approximately your hashrate ÷ pool hashrate; drives the unpaid-earnings line on the price chart."
 msgstr "Your share of Ocean's reward window. Approximately your hashrate ÷ pool hashrate; drives the unpaid-earnings line on the price chart."
 
+#: src/lib/alertConditions.ts
 #: src/pages/Config.tsx
-#: src/pages/History.tsx
 msgid "zero hashrate"
 msgstr "zero hashrate"
 

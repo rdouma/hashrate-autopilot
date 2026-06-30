@@ -41,8 +41,10 @@ import { useDenomination } from '../lib/denomination';
 import { useFormatters } from '../lib/locale';
 import { formatNumber, formatDuration } from '../lib/format';
 import { CHART_COLOR_DEFAULTS, type ChartColorKey } from '../lib/chartColors';
+import { conditionLabel } from '../lib/alertConditions';
 import { DatePicker } from '../components/DatePicker';
 import { BidEventDrawer } from '../components/BidEventDrawer';
+import { AlertSpanDrawer } from '../components/AlertSpanDrawer';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 const PAGE_SIZE = 100;
@@ -51,19 +53,6 @@ type Kind = NonNullable<BidHistoryFilters['kinds']>[number];
 /** #316: condition class shown as an alert row + filter chip in History. */
 const ALERT_FILTER_CLASSES = CONDITION_SPAN_CLASSES.map((c) => c.openClass);
 const YEAR_MS = 365 * 24 * 60 * 60 * 1000;
-
-/** Translated short label for a condition class (matches the chart bands). */
-function conditionLabel(openClass: string): string {
-  switch (openClass) {
-    case 'hashrate_below_floor': return t`below floor`;
-    case 'zero_hashrate': return t`zero hashrate`;
-    case 'datum_unreachable': return t`DATUM unreachable`;
-    case 'api_unreachable': return t`marketplace API down`;
-    case 'wallet_runway': return t`low wallet runway`;
-    case 'solo_overheating': return t`Bitaxe overheating`;
-    default: return openClass;
-  }
-}
 
 /**
  * #285 follow-up: persist History filters across navigation. Operator
@@ -139,6 +128,7 @@ export function History() {
     });
   };
   const [selectedEvent, setSelectedEvent] = useState<BidHistoryFlatEvent | null>(null);
+  const [selectedSpan, setSelectedSpan] = useState<AlertConditionSpanView | null>(null);
   const [highlightedEventId, setHighlightedEventId] = useState<number | null>(null);
   // #316: which alert-condition classes show as rows. Default: all on.
   // An empty set hides every alert row (matching the chip-off semantics).
@@ -198,6 +188,29 @@ export function History() {
         (oldestBidTs === null || s.start_ms >= oldestBidTs),
     );
   }, [alertSpansQuery.data, shownAlertClasses, alertWindow, oldestBidTs]);
+
+  // Recent alerts can sit just past the first bid page; since alert rows
+  // are bound to the loaded bid range (to avoid a misleading time gap),
+  // auto-load a few more bid pages until every shown alert in the last
+  // 7 days is covered. Capped so a long-idle install doesn't fetch the
+  // whole history on open.
+  const AUTO_LOAD_PAGE_CAP = 6;
+  const RECENT_ALERT_MS = 7 * 24 * 60 * 60 * 1000;
+  useEffect(() => {
+    if (!query.hasNextPage || query.isFetchingNextPage) return;
+    if ((query.data?.pages.length ?? 0) >= AUTO_LOAD_PAGE_CAP) return;
+    if (oldestBidTs === null) return;
+    const spans = alertSpansQuery.data?.spans ?? [];
+    const cutoff = Date.now() - RECENT_ALERT_MS;
+    const hiddenRecent = spans.some(
+      (s) =>
+        shownAlertClasses.has(s.event_class) &&
+        s.start_ms < oldestBidTs &&
+        s.start_ms >= cutoff &&
+        s.start_ms >= alertWindow.since,
+    );
+    if (hiddenRecent) void query.fetchNextPage();
+  }, [query, alertSpansQuery.data, shownAlertClasses, oldestBidTs, alertWindow.since]);
 
   // Merged, newest-first timeline of bid events + alert rows.
   type TimelineItem =
@@ -303,7 +316,7 @@ export function History() {
                   key={`alert-${item.span.open_id}`}
                   span={item.span}
                   fmt={fmt}
-                  onClick={() => navigate(`/?at=${item.span.start_ms}`)}
+                  onClick={() => setSelectedSpan(item.span)}
                 />
               ),
             )}
@@ -338,6 +351,12 @@ export function History() {
         <BidEventDrawer
           event={selectedEvent}
           onClose={() => setSelectedEvent(null)}
+        />
+      )}
+      {selectedSpan && (
+        <AlertSpanDrawer
+          span={selectedSpan}
+          onClose={() => setSelectedSpan(null)}
         />
       )}
     </div>
@@ -672,7 +691,7 @@ function AlertSpanRow({
     <tr
       onClick={onClick}
       className="border-t border-slate-800/70 align-top cursor-pointer transition-colors hover:bg-slate-800/30"
-      title={t`View on chart`}
+      title={t`Show details`}
     >
       <td className="py-1 px-3 font-mono text-slate-300 whitespace-nowrap">
         {fmt.timestamp(span.start_ms)}

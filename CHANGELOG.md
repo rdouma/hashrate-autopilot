@@ -2,6 +2,10 @@
 
 ## 2026-06-30
 
+### `[UI]` Alert timeline polish: detail drawer, onset/recovery markers, focus beacon (#316)
+
+Follow-up to the alerts-on-timeline work, from operator feedback. Clicking an alert row in History now slides out a detail drawer (like bid events) showing the condition, severity, when it started and recovered, the duration, and the full alert body, with a "View on chart" button. On the charts, each condition band now carries a small triangle marker at the top - a filled down-triangle at the onset and a hollow up-triangle at the recovery ("above floor again") - so even a few-minutes span is visible and you can see exactly when it cleared. Jumping from a History alert row pulses a sonar beacon on the band so you can spot what you landed on. History also auto-loads a few more pages on open so a recent alert just past the first page surfaces without manual scrolling.
+
 ### `[Feature]` Alerted conditions now show as bands on the charts (#316)
 
 Sustained alert conditions - delivered hashrate below floor, zero hashrate, DATUM or marketplace-API unreachable, low wallet runway, Bitaxe overheating - used to live only in the Alerts tab, disconnected from the timeline. They now render as hatched background bands on the charts over the exact period each condition was open, with a dashed onset line and a hover tooltip naming the condition and its duration. Hashrate-shaped conditions band the Hashrate chart (where the floor line is); connectivity ones band both charts. Each condition has its own color. Orphan conditions - an opener with no recovery, e.g. left by a daemon restart mid-condition - are bounded (closed at the next episode of the same condition, or capped) so a stale weeks-old alert can't tile the whole chart.

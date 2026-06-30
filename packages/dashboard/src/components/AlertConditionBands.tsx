@@ -1,12 +1,20 @@
 /**
- * #316: timeline background bands for alerted condition spans, shared by
- * HashrateChart and PriceChart. Each condition class is tinted with its
- * own configurable color slot and only renders on the chart(s) it
- * targets (CONDITION_SPAN_CLASSES[].charts). A diagonal hatch fill plus
- * a dashed onset line at the span start, mirroring the #287 idle/pause
- * band visual language. The native <title> tooltip names the condition,
- * the source alert title, and the duration - matching the existing
- * untranslated band tooltips on these charts.
+ * #316: timeline background bands + onset/recovery markers for alerted
+ * condition spans, shared by HashrateChart and PriceChart. Each condition
+ * class is tinted with its own configurable color slot and only renders
+ * on the chart(s) it targets (CONDITION_SPAN_CLASSES[].charts).
+ *
+ * Each span draws:
+ *   - a diagonal hatch band over its open period (#287 band language);
+ *   - a small DOWN triangle at the onset (entered the condition) and an
+ *     UP triangle at the recovery (returned to normal) at the top of the
+ *     chart, so even a few-minutes span is visible and you can see when
+ *     it cleared (operator feedback 2026-06-30);
+ *   - a pulsing sonar beacon when the span is the focus target (jumped to
+ *     from a History alert row via ?focus_span=).
+ *
+ * The native <title> tooltips name the condition, the source alert title,
+ * and the duration - matching the existing untranslated band tooltips.
  */
 
 import {
@@ -15,6 +23,10 @@ import {
 } from '@hashrate-autopilot/shared';
 
 import type { AlertConditionInterval } from '../lib/api';
+import {
+  conditionLabel,
+  conditionRecoveryLabel,
+} from '../lib/alertConditions';
 import {
   darkenHex,
   getChartColor,
@@ -33,6 +45,7 @@ export function AlertConditionBands({
   height,
   colorOverrides,
   idSuffix,
+  focusSpanOpenId = null,
 }: {
   intervals: ReadonlyArray<AlertConditionInterval>;
   target: AlertChartTarget;
@@ -45,6 +58,8 @@ export function AlertConditionBands({
   colorOverrides: ReturnType<typeof parseOverrides>;
   /** Unique-per-chart suffix so the <pattern> ids don't collide. */
   idSuffix: string;
+  /** #316: the span (open_id) jumped to from History; gets a sonar beacon. */
+  focusSpanOpenId?: number | null;
 }) {
   const relevant = intervals.filter((iv) =>
     conditionSpanClass(iv.span.event_class)?.charts.includes(target),
@@ -60,6 +75,9 @@ export function AlertConditionBands({
         .map((c) => [c.openClass, c]),
     ).values(),
   );
+
+  // y for the top-edge marker glyphs (just inside the plot top).
+  const markerY = top + 5;
 
   return (
     <>
@@ -86,36 +104,102 @@ export function AlertConditionBands({
         if (!cls) return null;
         const x0 = xScale(Math.max(dataMinX, iv.x0));
         const x1 = xScale(Math.min(dataMaxX, iv.x1));
-        if (!Number.isFinite(x0) || !Number.isFinite(x1) || x1 <= x0) return null;
+        if (!Number.isFinite(x0) || !Number.isFinite(x1) || x1 < x0) return null;
         const color = getChartColor(cls.colorSlot as ChartColorKey, colorOverrides);
         const clampedSpan = Math.min(dataMaxX, iv.x1) - Math.max(dataMinX, iv.x0);
         const ongoing = !Number.isFinite(iv.x1);
+        const label = conditionLabel(iv.span.event_class);
+        // Recovery marker only when the condition closed inside the view.
+        const recoveredInView =
+          iv.span.end_ms !== null &&
+          iv.span.end_ms >= dataMinX &&
+          iv.span.end_ms <= dataMaxX;
+        const recX = recoveredInView ? xScale(iv.span.end_ms as number) : null;
+        const onsetInView = iv.x0 >= dataMinX && iv.x0 <= dataMaxX;
         return (
           <g key={`alert-band-${iv.span.open_id}-${i}`}>
-            <rect
-              x={x0}
-              y={top}
-              width={x1 - x0}
-              height={height}
-              fill={`url(#alertBand_${cls.openClass}_${idSuffix})`}
-            >
-              <title>
-                {`${cls.label}: ${iv.span.title} (${formatDuration(clampedSpan)}${ongoing ? ', ongoing' : ''})`}
-              </title>
-            </rect>
-            {/* Onset line at the span start so the moment it began reads
-                clearly even when the band is narrow. */}
-            <line
-              x1={x0}
-              y1={top}
-              x2={x0}
-              y2={top + height}
-              stroke={color}
-              strokeWidth="1.2"
-              strokeOpacity="0.7"
-              strokeDasharray="3 2"
-              pointerEvents="none"
-            />
+            {x1 > x0 && (
+              <rect
+                x={x0}
+                y={top}
+                width={x1 - x0}
+                height={height}
+                fill={`url(#alertBand_${cls.openClass}_${idSuffix})`}
+              >
+                <title>
+                  {`${label}: ${iv.span.title} (${formatDuration(clampedSpan)}${ongoing ? ', ongoing' : ''})`}
+                </title>
+              </rect>
+            )}
+            {/* Onset line + DOWN triangle (entered the condition). */}
+            {onsetInView && (
+              <>
+                <line
+                  x1={x0}
+                  y1={top}
+                  x2={x0}
+                  y2={top + height}
+                  stroke={color}
+                  strokeWidth="1.2"
+                  strokeOpacity="0.7"
+                  strokeDasharray="3 2"
+                  pointerEvents="none"
+                />
+                <path
+                  d={`M${x0 - 5},${markerY - 5} L${x0 + 5},${markerY - 5} L${x0},${markerY + 4} Z`}
+                  fill={color}
+                >
+                  <title>{`${label} started · ${iv.span.title}`}</title>
+                </path>
+              </>
+            )}
+            {/* Recovery: dashed end line + hollow UP triangle (back to normal). */}
+            {recX !== null && (
+              <>
+                <line
+                  x1={recX}
+                  y1={top}
+                  x2={recX}
+                  y2={top + height}
+                  stroke={color}
+                  strokeWidth="1"
+                  strokeOpacity="0.4"
+                  strokeDasharray="2 3"
+                  pointerEvents="none"
+                />
+                <path
+                  d={`M${recX - 5},${markerY + 4} L${recX + 5},${markerY + 4} L${recX},${markerY - 5} Z`}
+                  fill="none"
+                  stroke={color}
+                  strokeWidth="1.6"
+                  strokeLinejoin="round"
+                >
+                  <title>{`${conditionRecoveryLabel(iv.span.event_class)} (${formatDuration(clampedSpan)})`}</title>
+                </path>
+              </>
+            )}
+            {/* Focus beacon when jumped to from a History alert row. */}
+            {focusSpanOpenId !== null && iv.span.open_id === focusSpanOpenId && (
+              <g pointerEvents="none">
+                <style>{`
+                  @keyframes alertFocusPing_${idSuffix} {
+                    0%   { transform: scale(1);   opacity: 0.95; }
+                    100% { transform: scale(6.8); opacity: 0;    }
+                  }
+                  .alert-focus-ping-${idSuffix} {
+                    animation: alertFocusPing_${idSuffix} 2.4s ease-out infinite;
+                    transform-box: fill-box;
+                    transform-origin: center;
+                    vector-effect: non-scaling-stroke;
+                    fill: none;
+                    stroke-width: 2;
+                  }
+                `}</style>
+                <circle cx={x0} cy={markerY} r={5} className={`alert-focus-ping-${idSuffix}`} stroke={color} />
+                <circle cx={x0} cy={markerY} r={5} className={`alert-focus-ping-${idSuffix}`} stroke={color} style={{ animationDelay: '-0.8s' }} />
+                <circle cx={x0} cy={markerY} r={5} className={`alert-focus-ping-${idSuffix}`} stroke={color} style={{ animationDelay: '-1.6s' }} />
+              </g>
+            )}
           </g>
         );
       })}

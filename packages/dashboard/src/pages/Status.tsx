@@ -247,6 +247,9 @@ export function Status() {
   // marker actually renders (handleFocusEventRendered below), with a
   // long fallback in case it never appears at all.
   const [focusedEventId, setFocusedEventId] = useState<number | null>(null);
+  // #316: span (open_id) jumped to from a History alert row -> sonar beacon.
+  const [focusedSpanId, setFocusedSpanId] = useState<number | null>(null);
+  const focusSpanClearTimer = useRef<number | null>(null);
   const focusClearTimer = useRef<number | null>(null);
   const focusFallbackTimer = useRef<number | null>(null);
   const focusScrollTimer = useRef<number | null>(null);
@@ -313,6 +316,20 @@ export function Status() {
     const HOUR_MS = 60 * 60_000;
     const width = 3 * HOUR_MS;
     chartViewport.jumpToWindow(at, width);
+    // #316: ?focus_span=<open_id> from a History alert row pulses a sonar
+    // beacon on the matching condition band (auto-clears after 60 s).
+    const spanRaw = params.get('focus_span');
+    if (spanRaw) {
+      const sid = Number.parseInt(spanRaw, 10);
+      if (Number.isFinite(sid)) {
+        if (focusSpanClearTimer.current !== null) window.clearTimeout(focusSpanClearTimer.current);
+        setFocusedSpanId(sid);
+        focusSpanClearTimer.current = window.setTimeout(() => {
+          focusSpanClearTimer.current = null;
+          setFocusedSpanId(null);
+        }, 60_000);
+      }
+    }
     const idRaw = params.get('focus_event');
     if (idRaw) {
       const id = Number.parseInt(idRaw, 10);
@@ -355,6 +372,7 @@ export function Status() {
       }
     }, 100);
     params.delete('focus_event');
+    params.delete('focus_span');
     params.delete('at');
     const next = params.toString();
     navigate(`/${next ? `?${next}` : ''}`, { replace: true });
@@ -884,6 +902,7 @@ export function Status() {
           bidPauseIntervals={bidPauseIntervals}
           idleModeIntervals={idleModeIntervals}
           alertConditionIntervals={alertConditionIntervals}
+          focusSpanOpenId={focusedSpanId}
           viewportHandlers={chartViewport.handlers}
           wheelRef={chartViewport.wheelRef}
           isDragging={chartViewport.isDragging}
@@ -954,6 +973,7 @@ export function Status() {
           bidPauseIntervals={bidPauseIntervals}
           idleModeIntervals={idleModeIntervals}
           alertConditionIntervals={alertConditionIntervals}
+          focusSpanOpenId={focusedSpanId}
           viewportHandlers={chartViewport.handlers}
           wheelRef={chartViewport.wheelRef}
           isDragging={chartViewport.isDragging}

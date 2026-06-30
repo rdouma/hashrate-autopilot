@@ -271,6 +271,7 @@ export const PriceChart = memo(function PriceChart({
   bidPauseIntervals = [],
   idleModeIntervals = [],
   alertConditionIntervals = [],
+  focusSpanOpenId = null,
   viewportHandlers,
   wheelRef,
   isDragging = false,
@@ -397,6 +398,8 @@ export const PriceChart = memo(function PriceChart({
   idleModeIntervals?: ReadonlyArray<{ x0: number; x1: number; mode: 'DRY_RUN' | 'PAUSED' }>;
   /** #316: alerted condition spans; only price-targeted classes render here. */
   alertConditionIntervals?: ReadonlyArray<AlertConditionInterval>;
+  /** #316: span (open_id) jumped to from History; gets a sonar beacon. */
+  focusSpanOpenId?: number | null;
   viewportHandlers?: {
     onPointerDown: React.PointerEventHandler<SVGSVGElement>;
     onPointerMove: React.PointerEventHandler<SVGSVGElement>;
@@ -2406,6 +2409,7 @@ export const PriceChart = memo(function PriceChart({
           height={chartHeight - PADDING.top - PADDING.bottom}
           colorOverrides={_colorOverrides}
           idSuffix="px"
+          focusSpanOpenId={focusSpanOpenId}
         />
         {capExclusionPolygon && !isHidden('maxBid') && (
           <>

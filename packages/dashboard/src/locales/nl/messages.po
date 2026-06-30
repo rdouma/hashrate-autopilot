@@ -283,6 +283,10 @@ msgstr "Een paar vragen om de daemon werkend te krijgen. De standaardwaarden wer
 msgid "A mempool.space fork that surfaces BIP-110 miner signaling."
 msgstr "Een mempool.space-fork die BIP-110 miner-signalering toont."
 
+#: src/lib/alertConditions.ts
+msgid "above floor again"
+msgstr "weer boven ondergrens"
+
 #: src/pages/Setup.tsx
 msgid "Access"
 msgstr "Toegang"
@@ -378,6 +382,10 @@ msgstr "uit venster:"
 #: src/pages/Config.tsx
 msgid "Alert condition bands"
 msgstr "Alarmconditie-banden"
+
+#: src/components/AlertSpanDrawer.tsx
+msgid "Alert condition detail"
+msgstr "Alarmconditie-detail"
 
 #: src/pages/Config.tsx
 msgid "Alert thresholds"
@@ -615,8 +623,8 @@ msgstr "ongeldige inloggegevens"
 msgid "Balance-check backend"
 msgstr "Saldo-check backend"
 
+#: src/lib/alertConditions.ts
 #: src/pages/Config.tsx
-#: src/pages/History.tsx
 msgid "below floor"
 msgstr "onder ondergrens"
 
@@ -773,6 +781,10 @@ msgstr "Bitaxe best diff"
 msgid "Bitaxe best difficulty"
 msgstr "Bitaxe beste difficulty"
 
+#: src/lib/alertConditions.ts
+msgid "Bitaxe cooled down"
+msgstr "Bitaxe afgekoeld"
+
 #: src/pages/Status.tsx
 msgid "Bitaxe device count"
 msgstr "Bitaxe-apparaten"
@@ -820,8 +832,8 @@ msgstr "Bitaxe-miner stratum-URL afwijking"
 msgid "Bitaxe miners"
 msgstr "Bitaxe-miners"
 
+#: src/lib/alertConditions.ts
 #: src/pages/Config.tsx
-#: src/pages/History.tsx
 msgid "Bitaxe overheating"
 msgstr "Bitaxe oververhit"
 
@@ -1189,6 +1201,7 @@ msgstr "Klik om te verbergen"
 msgid "Click to show"
 msgstr "Klik om te tonen"
 
+#: src/components/AlertSpanDrawer.tsx
 #: src/components/BidEventDrawer.tsx
 #: src/components/HashrateChart.tsx
 #: src/components/IpChangeMarkers.tsx
@@ -1458,6 +1471,10 @@ msgstr "Datum /umbrel-api HTTP-poll."
 msgid "datum hashrate"
 msgstr "datum hashrate"
 
+#: src/lib/alertConditions.ts
+msgid "DATUM reachable again"
+msgstr "DATUM weer bereikbaar"
+
 #: src/pages/Config.tsx
 msgid "Datum stats API (optional)"
 msgstr "Datum stats-API (optioneel)"
@@ -1470,8 +1487,8 @@ msgstr "Datum stats niet geconfigureerd - stel <0>datum_api_url</0> in via Confi
 msgid "Datum stratum unreachable for"
 msgstr "Datum stratum onbereikbaar gedurende"
 
+#: src/lib/alertConditions.ts
 #: src/pages/Config.tsx
-#: src/pages/History.tsx
 msgid "DATUM unreachable"
 msgstr "DATUM onbereikbaar"
 
@@ -1651,6 +1668,10 @@ msgstr "Dry Run"
 #: src/pages/Status.tsx
 msgid "DRY RUN"
 msgstr "DRY RUN"
+
+#: src/components/AlertSpanDrawer.tsx
+msgid "Duration"
+msgstr "Duur"
 
 #. placeholder {0}: formatNumber( uptime_bid_coverage_pct, { minimumFractionDigits: 1, maximumFractionDigits: 1 }, intlLocale, )
 #. placeholder {1}: formatNumber( uptime_delivery_when_bid_active_pct, { minimumFractionDigits: 1, maximumFractionDigits: 1 }, intlLocale, )
@@ -2122,6 +2143,10 @@ msgstr "Hashrate-grafiek"
 msgid "Hashrate Ocean credits to our payout address (5-min sliding window). Sourced per-tick from /v1/user_hashrate.hashrate_300s. Compare against AVG BRAIINS / AVG DATUM at the top of the page; sustained gaps mean shares are getting lost somewhere in the Braiins → Datum → Ocean pipeline."
 msgstr "Hashrate die Ocean toeschrijft aan ons uitbetaaladres (5-min schuivend venster). Per tick opgehaald uit /v1/user_hashrate.hashrate_300s. Vergelijk met AVG BRAIINS / AVG DATUM bovenaan; aanhoudende verschillen betekenen dat shares onderweg verloren gaan in de Braiins → Datum → Ocean pijplijn."
 
+#: src/lib/alertConditions.ts
+msgid "hashrate restored"
+msgstr "hashrate hersteld"
+
 #: src/pages/Config.tsx
 msgid "Hashrate right-axis line"
 msgstr "Hashrate rechts-as-lijn"
@@ -2450,8 +2475,8 @@ msgstr "vergrendeld"
 msgid "Log retention"
 msgstr "Logbewaring"
 
+#: src/lib/alertConditions.ts
 #: src/pages/Config.tsx
-#: src/pages/History.tsx
 msgid "low wallet runway"
 msgstr "lage wallet-runway"
 
@@ -2497,8 +2522,12 @@ msgstr "Markers zijn verborgen omdat het gecombineerde aantal de ingestelde char
 msgid "market at this tick"
 msgstr "markt op deze tick"
 
+#: src/lib/alertConditions.ts
+msgid "marketplace API back"
+msgstr "marktplaats-API terug"
+
+#: src/lib/alertConditions.ts
 #: src/pages/Config.tsx
-#: src/pages/History.tsx
 msgid "marketplace API down"
 msgstr "marktplaats-API onbereikbaar"
 
@@ -3002,6 +3031,7 @@ msgstr "Supportbundel met één klik: test elke externe service waarmee de daemo
 msgid "One-shot offset for earnings the on-chain payout observer can't see - Lightning payouts, Ocean payouts that landed and were swept before you installed the autopilot, etc. Shifts the lifetime-earnings chart's starting value up by this amount and folds into the net P&L. Leave 0 if everything is already covered by the on-chain backfill above."
 msgstr "Eenmalige correctie voor inkomsten die de on-chain payout-observer niet kan zien - Lightning-uitbetalingen, Ocean-uitbetalingen die binnenkwamen en al weggezet waren voordat je de autopilot installeerde, enzovoort. Schuift de startwaarde van de totale-inkomsten-grafiek met dit bedrag omhoog en wordt meegerekend in de netto P&L. Laat 0 staan als alles al door de on-chain backfill hierboven is gedekt."
 
+#: src/components/AlertSpanDrawer.tsx
 #: src/pages/History.tsx
 msgid "ongoing"
 msgstr "lopend"
@@ -3040,6 +3070,10 @@ msgstr "Open Telegram en start een chat met <0>@BotFather</0>, stuur /newbot en 
 #: src/components/PriceChart.tsx
 msgid "Open the History row for this event"
 msgstr "Open de History-rij voor dit event"
+
+#: src/components/AlertSpanDrawer.tsx
+msgid "Open the price chart pinned to this condition"
+msgstr "Open de prijsgrafiek vastgezet op deze conditie"
 
 #: src/components/BidEventDrawer.tsx
 msgid "Open the price chart pinned to this event"
@@ -3591,6 +3625,14 @@ msgstr "ontvangen (Datum)"
 msgid "received (Ocean)"
 msgstr "ontvangen (Ocean)"
 
+#: src/lib/alertConditions.ts
+msgid "recovered"
+msgstr "hersteld"
+
+#: src/components/AlertSpanDrawer.tsx
+msgid "Recovered"
+msgstr "Hersteld"
+
 #: src/components/Layout.tsx
 msgid "Refresh"
 msgstr "Vernieuwen"
@@ -3930,6 +3972,10 @@ msgstr "Share-verwerpingsvenster (minuten)"
 msgid "Show"
 msgstr "Toon"
 
+#: src/pages/History.tsx
+msgid "Show details"
+msgstr "Details tonen"
+
 #: src/components/PriceChart.tsx
 msgid "Show in history"
 msgstr "Toon in geschiedenis"
@@ -4017,6 +4063,10 @@ msgstr "uitgegeven (hele account)"
 #: src/pages/Config.tsx
 msgid "Start a chat with your bot, then send /start. Send any message to <0>@userinfobot</0> and copy the numeric Id back into this field. Test connection validates the values currently in the form, before saving."
 msgstr "Start een chat met je bot en stuur /start. Stuur daarna een willekeurig bericht naar <0>@userinfobot</0> en kopieer de numerieke Id terug in dit veld. Test connection valideert de waarden uit het formulier, vóór het opslaan."
+
+#: src/components/AlertSpanDrawer.tsx
+msgid "Started"
+msgstr "Gestart"
 
 #: src/pages/Status.tsx
 msgid "status"
@@ -4399,8 +4449,8 @@ msgstr "UTXO's op het geconfigureerde uitbetalingsadres. Gelezen via je Electrum
 msgid "v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
 msgstr "v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
 
+#: src/components/AlertSpanDrawer.tsx
 #: src/components/BidEventDrawer.tsx
-#: src/pages/History.tsx
 msgid "View on chart"
 msgstr "Bekijk in grafiek"
 
@@ -4420,6 +4470,10 @@ msgstr "wallet-runway"
 msgid "Wallet runway below"
 msgstr "Wallet-runway onder"
 
+#: src/lib/alertConditions.ts
+msgid "wallet runway restored"
+msgstr "wallet-runway hersteld"
+
 #: src/pages/Alerts.tsx
 msgid "warning"
 msgstr "waarschuwing"
@@ -4432,6 +4486,10 @@ msgstr "WAARSCHUWING"
 #: src/pages/Alerts.tsx
 msgid "was open for {0}"
 msgstr "was open gedurende {0}"
+
+#: src/components/AlertSpanDrawer.tsx
+msgid "What happened"
+msgstr "Wat er gebeurde"
 
 #: src/pages/Setup.tsx
 msgid "What the controller aims for."
@@ -4564,8 +4622,8 @@ msgstr "Je indeling wordt op dit apparaat opgeslagen."
 msgid "Your share of Ocean's reward window. Approximately your hashrate ÷ pool hashrate; drives the unpaid-earnings line on the price chart."
 msgstr "Jouw aandeel in het Ocean-beloningsvenster. Ongeveer jouw hashrate ÷ pool-hashrate; bepaalt de unpaid-earnings-lijn op de prijsgrafiek."
 
+#: src/lib/alertConditions.ts
 #: src/pages/Config.tsx
-#: src/pages/History.tsx
 msgid "zero hashrate"
 msgstr "nul hashrate"
 
