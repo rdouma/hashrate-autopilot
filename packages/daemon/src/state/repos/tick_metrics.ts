@@ -821,6 +821,33 @@ export class TickMetricsRepo {
   }
 
   /**
+   * #317: distinct network-difficulty epochs at or after `sinceMs`, each
+   * with the earliest tick that observed it, ordered by time. Difficulty
+   * is constant within an epoch, so grouping yields one row per epoch
+   * (a handful over months). The /api/retargets route walks these and
+   * emits a retarget wherever the value jumps >0.5% - the same threshold
+   * the Hashrate chart uses to place its retarget markers.
+   */
+  async difficultyEpochsSince(
+    sinceMs: number,
+  ): Promise<Array<{ difficulty: number; first_tick_at: number }>> {
+    const rows = await this.db
+      .selectFrom('tick_metrics')
+      .select((eb) => [
+        'network_difficulty as difficulty',
+        eb.fn.min<number>('tick_at').as('first_tick_at'),
+      ])
+      .where('network_difficulty', 'is not', null)
+      .where('tick_at', '>=', sinceMs)
+      .groupBy('network_difficulty')
+      .orderBy('first_tick_at', 'asc')
+      .execute();
+    return rows
+      .filter((r) => r.difficulty != null)
+      .map((r) => ({ difficulty: Number(r.difficulty), first_tick_at: Number(r.first_tick_at) }));
+  }
+
+  /**
    * #230: write `difficulty` to every row in `[fromTickAtMs, toTickAtMs)`
    * whose `network_difficulty` is currently NULL. The `IS NULL` guard
    * is load-bearing - backfill never overwrites a live observation,

@@ -191,6 +191,34 @@ export async function registerMetricsRoute(
       return { points: rows.map(toMetricPoint), range };
     },
   );
+
+  // #317: difficulty-retarget events for the unified History log, derived
+  // from tick_metrics.network_difficulty epochs (>0.5% jump = retarget,
+  // matching the Hashrate chart's marker threshold). Defaults to a 1-year
+  // look-back. Tiny result set (retargets are ~2 weeks apart).
+  app.get<{ Querystring: { since_ms?: string; until_ms?: string } }>(
+    '/api/retargets',
+    async (req): Promise<{ retargets: Array<{ tick_at: number; difficulty: number; previous: number }> }> => {
+      const now = Date.now();
+      const untilMs = req.query.until_ms ? Number(req.query.until_ms) : now;
+      const sinceMs = req.query.since_ms
+        ? Number(req.query.since_ms)
+        : untilMs - 365 * 24 * 60 * 60 * 1000;
+      if (!Number.isFinite(sinceMs) || !Number.isFinite(untilMs)) return { retargets: [] };
+      const epochs = await deps.tickMetricsRepo.difficultyEpochsSince(sinceMs);
+      const out: Array<{ tick_at: number; difficulty: number; previous: number }> = [];
+      let prev: number | null = null;
+      for (const e of epochs) {
+        if (prev !== null && Math.abs(e.difficulty - prev) / prev > 0.005) {
+          if (e.first_tick_at <= untilMs) {
+            out.push({ tick_at: e.first_tick_at, difficulty: e.difficulty, previous: prev });
+          }
+        }
+        prev = e.difficulty;
+      }
+      return { retargets: out };
+    },
+  );
 }
 
 function toMetricPoint(r: {

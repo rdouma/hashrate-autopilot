@@ -59,14 +59,15 @@ const ALERT_FILTER_CLASSES = CONDITION_SPAN_CLASSES.map((c) => c.openClass);
 const YEAR_MS = 365 * 24 * 60 * 60 * 1000;
 
 /** #317: extra event types folded into the unified log (besides bids + alerts). */
-type LogExtraKind = 'payout' | 'deposit' | 'block' | 'ip';
-const LOG_EXTRA_KINDS: readonly LogExtraKind[] = ['payout', 'deposit', 'block', 'ip'];
+type LogExtraKind = 'payout' | 'deposit' | 'block' | 'ip' | 'retarget';
+const LOG_EXTRA_KINDS: readonly LogExtraKind[] = ['payout', 'deposit', 'block', 'ip', 'retarget'];
 
 const LOG_EXTRA_COLOR_SLOT: Record<LogExtraKind, ChartColorKey> = {
   payout: 'price.marker_payout_gem',
   deposit: 'price.marker_deposit',
   block: 'hashrate.pool_block_ours',
   ip: 'hashrate.marker_ip_change',
+  retarget: 'hashrate.marker_retarget',
 };
 
 function logExtraColor(kind: LogExtraKind): string {
@@ -79,6 +80,7 @@ function logExtraLabel(kind: LogExtraKind): string {
     case 'deposit': return t`deposit`;
     case 'block': return t`pool block`;
     case 'ip': return t`IP change`;
+    case 'retarget': return t`difficulty retarget`;
   }
 }
 
@@ -139,6 +141,15 @@ function LogExtraGlyph({ kind }: { kind: LogExtraKind }) {
           <path d="M15 10v4" />
           <path d="M17.84 7.17a4 4 0 0 0-5.66 0" />
           <path d="M20.66 4.34a8 8 0 0 0-11.31 0" />
+        </svg>
+      );
+    case 'retarget': // Lucide pickaxe
+      return (
+        <svg {...base}>
+          <path d="m14 13-8.381 8.38a1 1 0 0 1-3.001-3L11 9.999" />
+          <path d="M15.973 4.027A13 13 0 0 0 5.902 2.373c-1.398.342-1.092 2.158.277 2.601a19.9 19.9 0 0 1 5.822 3.024" />
+          <path d="M16.001 11.999a19.9 19.9 0 0 1 3.024 5.824c.444 1.369 2.26 1.676 2.603.278A13 13 0 0 0 20 8.069" />
+          <path d="M18.352 3.352a1.205 1.205 0 0 0-1.704 0l-5.296 5.296a1.205 1.205 0 0 0 0 1.704l2.296 2.296a1.205 1.205 0 0 0 1.704 0l5.296-5.296a1.205 1.205 0 0 0 0-1.704z" />
         </svg>
       );
   }
@@ -317,6 +328,12 @@ export function History() {
     placeholderData: keepPreviousData,
     refetchInterval: 60_000,
   });
+  const retargetsQuery = useQuery({
+    queryKey: ['history-retargets', alertWindow.since, alertWindow.until],
+    queryFn: () => api.retargets(alertWindow.since, alertWindow.until),
+    placeholderData: keepPreviousData,
+    refetchInterval: 60_000,
+  });
 
   // Bound alert rows to the loaded bid-event range so an old alert can't
   // float at the bottom of the list below a gap of not-yet-loaded bids.
@@ -376,6 +393,15 @@ export function History() {
         summary: `${c.old_ip ?? '—'} → ${c.new_ip}`,
       });
     }
+    for (const r of retargetsQuery.data?.retargets ?? []) {
+      const pct = ((r.difficulty - r.previous) / r.previous) * 100;
+      all.push({
+        kind: 'retarget',
+        key: `retarget:${r.tick_at}`,
+        ts: r.tick_at,
+        summary: `${(r.difficulty / 1e12).toFixed(1)} T · ${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`,
+      });
+    }
     return all.filter(
       (it) =>
         it.key === highlightedRowKey ||
@@ -389,6 +415,7 @@ export function History() {
     depositsQuery.data,
     oceanQuery.data,
     ipChangesQuery.data,
+    retargetsQuery.data,
     shownExtraKinds,
     alertWindow,
     oldestBidTs,

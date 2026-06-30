@@ -2636,6 +2636,7 @@ export function RetargetTooltip({
 }) {
   void dateTimeLocale;
   const fmt = useFormatters();
+  const navigate = useNavigate();
   const { i18n } = useLingui();
   void i18n;
   const { event, pinned } = tip;
@@ -2787,6 +2788,18 @@ export function RetargetTooltip({
             <span className="text-slate-500"><Trans>luck before</Trans></span>
             <span className="font-mono tabular-nums text-slate-400">{fmtLuck(event.luckBefore!)}x</span>
           </div>
+        </div>
+      )}
+      {pinned && (
+        <div className="mt-2 pt-2 border-t border-slate-800">
+          <button
+            type="button"
+            onClick={() => navigate(`/history?focus=retarget:${event.tick_at}&ts=${event.tick_at}`)}
+            className="text-amber-300 hover:text-amber-200 inline-flex items-center gap-1 text-[11px]"
+          >
+            <Trans>View in history</Trans>
+            <span aria-hidden="true">→</span>
+          </button>
         </div>
       )}
     </div>

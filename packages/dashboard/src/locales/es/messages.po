@@ -1609,6 +1609,7 @@ msgid "DIFFICULTY ADJUSTMENT"
 msgstr "AJUSTE DE DIFICULTAD"
 
 #: src/pages/Config.tsx
+#: src/pages/History.tsx
 msgid "difficulty retarget"
 msgstr "reajuste de dificultad"
 
@@ -4472,6 +4473,10 @@ msgid "v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
 msgstr "v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
 
 #: src/components/AlertSpanTooltip.tsx
+#: src/components/HashrateChart.tsx
+#: src/components/IpChangeMarkers.tsx
+#: src/components/PriceChart.tsx
+#: src/components/SpeedEditMarkers.tsx
 msgid "View in history"
 msgstr "Ver en el historial"
 

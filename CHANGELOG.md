@@ -2,6 +2,10 @@
 
 ## 2026-06-30
 
+### `[Feature]` Difficulty retargets in the History log (#317)
+
+Difficulty-retarget events (the pickaxe markers) now appear as rows in the History log, with a "View in history" link on their chart tooltip - so you can jump from a retarget marker to its log row like the other events. A new `/api/retargets` endpoint derives them server-side from the per-tick network-difficulty epochs (a >0.5% jump = retarget, the same threshold the chart uses). Pool-luck step markers are intentionally left out of the log - they're too frequent to be log-worthy.
+
 ### `[UI]` Alert band onset/recovery markers reveal on cursor proximity (#317)
 
 The little down/up triangles that mark where a condition band starts and ends are now hidden by default - the chart just shows the hatch bands - and fade in only near the cursor, so they don't clutter the chart but are right there (and clickable) when you reach for one. The jumped-to (focused) span's markers always show. Bands themselves are unchanged.

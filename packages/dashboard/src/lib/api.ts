@@ -639,6 +639,13 @@ export interface IpChangeEvent {
   new_ip: string;
 }
 
+/** #317: a difficulty retarget event for the History log. */
+export interface RetargetView {
+  tick_at: number;
+  difficulty: number;
+  previous: number;
+}
+
 export interface DdnsRouteResponse {
   daemon_public_ip: string | null;
   daemon_public_ip_checked_at: number | null;
@@ -835,6 +842,11 @@ export const api = {
   ipChangesViewport: (since: number, until: number) =>
     request<{ events: IpChangeEvent[] }>(
       `/api/ip-changes?since=${since}&until=${until}`,
+    ),
+  // #317: difficulty-retarget events for the unified History log.
+  retargets: (since: number, until: number) =>
+    request<{ retargets: RetargetView[] }>(
+      `/api/retargets?since_ms=${since}&until_ms=${until}`,
     ),
   payouts: () => request<PayoutsResponse>('/api/payouts'),
   scanPayouts: () => request<{ ok: boolean; error?: string }>('/api/payouts/scan', { method: 'POST' }),
