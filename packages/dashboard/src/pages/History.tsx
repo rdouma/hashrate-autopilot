@@ -23,24 +23,47 @@
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery, keepPreviousData } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import {
+  CONDITION_SPAN_CLASSES,
+  conditionSpanClass,
+} from '@hashrate-autopilot/shared';
+import {
   api,
+  type AlertConditionSpanView,
   type BidHistoryFilters,
   type BidHistoryFlatEvent,
   type BidEventView,
 } from '../lib/api';
 import { useDenomination } from '../lib/denomination';
 import { useFormatters } from '../lib/locale';
-import { formatNumber } from '../lib/format';
+import { formatNumber, formatDuration } from '../lib/format';
+import { CHART_COLOR_DEFAULTS, type ChartColorKey } from '../lib/chartColors';
 import { DatePicker } from '../components/DatePicker';
 import { BidEventDrawer } from '../components/BidEventDrawer';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 const PAGE_SIZE = 100;
 type Kind = NonNullable<BidHistoryFilters['kinds']>[number];
+
+/** #316: condition class shown as an alert row + filter chip in History. */
+const ALERT_FILTER_CLASSES = CONDITION_SPAN_CLASSES.map((c) => c.openClass);
+const YEAR_MS = 365 * 24 * 60 * 60 * 1000;
+
+/** Translated short label for a condition class (matches the chart bands). */
+function conditionLabel(openClass: string): string {
+  switch (openClass) {
+    case 'hashrate_below_floor': return t`below floor`;
+    case 'zero_hashrate': return t`zero hashrate`;
+    case 'datum_unreachable': return t`DATUM unreachable`;
+    case 'api_unreachable': return t`marketplace API down`;
+    case 'wallet_runway': return t`low wallet runway`;
+    case 'solo_overheating': return t`Bitaxe overheating`;
+    default: return openClass;
+  }
+}
 
 /**
  * #285 follow-up: persist History filters across navigation. Operator
@@ -117,6 +140,18 @@ export function History() {
   };
   const [selectedEvent, setSelectedEvent] = useState<BidHistoryFlatEvent | null>(null);
   const [highlightedEventId, setHighlightedEventId] = useState<number | null>(null);
+  // #316: which alert-condition classes show as rows. Default: all on.
+  // An empty set hides every alert row (matching the chip-off semantics).
+  const [shownAlertClasses, setShownAlertClasses] = useState<Set<string>>(
+    () => new Set(ALERT_FILTER_CLASSES),
+  );
+  const toggleAlertClass = (c: string) =>
+    setShownAlertClasses((prev) => {
+      const next = new Set(prev);
+      if (next.has(c)) next.delete(c);
+      else next.add(c);
+      return next;
+    });
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -133,6 +168,49 @@ export function History() {
     () => query.data?.pages.flatMap((p) => p.events) ?? [],
     [query.data],
   );
+
+  // #316: alert-condition spans, fetched for the toolbar's date window
+  // (default: last year) and merged into the feed as rows. Sparse, so a
+  // single fetch covers the whole window.
+  const alertWindow = useMemo(() => {
+    const until = filters.untilMs ?? Date.now();
+    const since = filters.sinceMs ?? until - YEAR_MS;
+    return { since, until };
+  }, [filters.sinceMs, filters.untilMs]);
+  const alertSpansQuery = useQuery({
+    queryKey: ['history-alert-spans', alertWindow.since, alertWindow.until],
+    queryFn: () => api.alertSpans(alertWindow.since, alertWindow.until),
+    placeholderData: keepPreviousData,
+    refetchInterval: 60_000,
+  });
+
+  // Bound alert rows to the loaded bid-event range so an old alert can't
+  // float at the bottom of the list below a gap of not-yet-loaded bids.
+  // When there are no bid events at all, show everything in the window.
+  const oldestBidTs = events.length > 0 ? events[events.length - 1]!.occurred_at : null;
+  const visibleAlertSpans: AlertConditionSpanView[] = useMemo(() => {
+    const spans = alertSpansQuery.data?.spans ?? [];
+    return spans.filter(
+      (s) =>
+        shownAlertClasses.has(s.event_class) &&
+        s.start_ms <= alertWindow.until &&
+        s.start_ms >= alertWindow.since &&
+        (oldestBidTs === null || s.start_ms >= oldestBidTs),
+    );
+  }, [alertSpansQuery.data, shownAlertClasses, alertWindow, oldestBidTs]);
+
+  // Merged, newest-first timeline of bid events + alert rows.
+  type TimelineItem =
+    | { kind: 'bid'; ts: number; ev: BidHistoryFlatEvent }
+    | { kind: 'alert'; ts: number; span: AlertConditionSpanView };
+  const timelineItems: TimelineItem[] = useMemo(() => {
+    const items: TimelineItem[] = [
+      ...events.map((ev) => ({ kind: 'bid' as const, ts: ev.occurred_at, ev })),
+      ...visibleAlertSpans.map((span) => ({ kind: 'alert' as const, ts: span.start_ms, span })),
+    ];
+    items.sort((a, b) => b.ts - a.ts);
+    return items;
+  }, [events, visibleAlertSpans]);
 
   const sentinelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -188,7 +266,12 @@ export function History() {
       <h2 className="text-sm uppercase tracking-wider text-slate-100">
         <Trans>Order history</Trans>
       </h2>
-      <Toolbar filters={filters} onChange={setFilters} />
+      <Toolbar
+        filters={filters}
+        onChange={setFilters}
+        shownAlertClasses={shownAlertClasses}
+        onToggleAlertClass={toggleAlertClass}
+      />
       <div className="bg-slate-900 border border-slate-800 rounded-lg overflow-x-auto">
         <table className="w-full text-xs">
           <thead className="text-slate-500 tracking-wider bg-slate-950/40">
@@ -205,17 +288,26 @@ export function History() {
             </tr>
           </thead>
           <tbody className="text-slate-200">
-            {events.map((e) => (
-              <EventRow
-                key={e.id}
-                event={e}
-                fmt={fmt}
-                denomination={denomination}
-                highlighted={highlightedEventId === e.id}
-                onClick={() => setSelectedEvent(e)}
-              />
-            ))}
-            {events.length === 0 && !query.isPending && (
+            {timelineItems.map((item) =>
+              item.kind === 'bid' ? (
+                <EventRow
+                  key={`bid-${item.ev.id}`}
+                  event={item.ev}
+                  fmt={fmt}
+                  denomination={denomination}
+                  highlighted={highlightedEventId === item.ev.id}
+                  onClick={() => setSelectedEvent(item.ev)}
+                />
+              ) : (
+                <AlertSpanRow
+                  key={`alert-${item.span.open_id}`}
+                  span={item.span}
+                  fmt={fmt}
+                  onClick={() => navigate(`/?at=${item.span.start_ms}`)}
+                />
+              ),
+            )}
+            {timelineItems.length === 0 && !query.isPending && (
               <tr>
                 <td colSpan={9} className="px-3 py-4 text-center text-xs text-slate-500 italic">
                   <Trans>No events match the current filters.</Trans>
@@ -255,9 +347,14 @@ export function History() {
 function Toolbar({
   filters,
   onChange,
+  shownAlertClasses,
+  onToggleAlertClass,
 }: {
   filters: BidHistoryFilters;
   onChange: (next: BidHistoryFilters) => void;
+  /** #316: condition classes currently shown as alert rows. */
+  shownAlertClasses: Set<string>;
+  onToggleAlertClass: (openClass: string) => void;
 }) {
   const { i18n } = useLingui();
   void i18n;
@@ -325,6 +422,38 @@ function Toolbar({
               onClick={() => toggleKind(k)}
             />
           ))}
+        </div>
+      </div>
+      {/* #316: alert-condition rows toggle. Default all on; turning a
+          chip off hides that condition's rows (client-side filter). */}
+      <div className="flex flex-col gap-0.5">
+        <label className="text-[10px] tracking-wider text-slate-500"><Trans>Alerts</Trans></label>
+        <div className="flex flex-wrap gap-1">
+          {ALERT_FILTER_CLASSES.map((openClass) => {
+            const active = shownAlertClasses.has(openClass);
+            const color =
+              CHART_COLOR_DEFAULTS[
+                (conditionSpanClass(openClass)?.colorSlot ?? 'events.alert_below_floor') as ChartColorKey
+              ];
+            return (
+              <button
+                key={openClass}
+                type="button"
+                onClick={() => onToggleAlertClass(openClass)}
+                className={`flex items-center gap-1 px-1.5 py-0.5 rounded border text-[11px] ${
+                  active
+                    ? 'border-slate-600 bg-slate-800 text-slate-200'
+                    : 'border-slate-800 text-slate-500 hover:text-slate-300'
+                }`}
+              >
+                <span
+                  className="inline-block w-2 h-2 rounded-full"
+                  style={{ backgroundColor: active ? color : 'transparent', border: `1px solid ${color}` }}
+                />
+                {conditionLabel(openClass)}
+              </button>
+            );
+          })}
         </div>
       </div>
       <div className="flex flex-col gap-0.5">
@@ -512,6 +641,73 @@ function EventRow({
           carries it in full alongside the rest of the bid-event detail. */}
       <td className="py-1 px-3 text-slate-400 max-w-[20rem] truncate" title={event.reason ?? undefined}>
         {event.reason ?? '—'}
+      </td>
+    </tr>
+  );
+}
+
+/**
+ * #316: an alerted condition span rendered as a History row. Shares the
+ * table grid with bid-event rows; the numeric bid columns are blank.
+ * The condition glyph + label are tinted with the same color slot as the
+ * chart band. Clicking pans the price chart to the span start.
+ */
+function AlertSpanRow({
+  span,
+  fmt,
+  onClick,
+}: {
+  span: AlertConditionSpanView;
+  fmt: ReturnType<typeof useFormatters>;
+  onClick: () => void;
+}) {
+  const { i18n } = useLingui();
+  void i18n;
+  const cls = conditionSpanClass(span.event_class);
+  const color = cls ? CHART_COLOR_DEFAULTS[cls.colorSlot as ChartColorKey] : '#fb923c';
+  const ongoing = span.end_ms === null;
+  const durationMs = (span.end_ms ?? Date.now()) - span.start_ms;
+  const dash = <span className="text-slate-600">—</span>;
+  return (
+    <tr
+      onClick={onClick}
+      className="border-t border-slate-800/70 align-top cursor-pointer transition-colors hover:bg-slate-800/30"
+      title={t`View on chart`}
+    >
+      <td className="py-1 px-3 font-mono text-slate-300 whitespace-nowrap">
+        {fmt.timestamp(span.start_ms)}
+      </td>
+      <td className="py-1 px-3 font-mono whitespace-nowrap">{dash}</td>
+      <td className="py-1 px-3 whitespace-nowrap">
+        <svg
+          width={12}
+          height={12}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke={color}
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="inline-block align-middle"
+        >
+          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
+          <path d="M12 9v4" />
+          <path d="M12 17h.01" />
+        </svg>
+        <span className="ml-1.5" style={{ color }}>
+          {conditionLabel(span.event_class)}
+        </span>
+        <span className="ml-2 text-[11px] text-slate-500 font-mono">
+          {ongoing ? t`ongoing` : formatDuration(durationMs)}
+        </span>
+      </td>
+      <td className="py-1 px-3 text-right">{dash}</td>
+      <td className="py-1 px-3 text-right">{dash}</td>
+      <td className="py-1 px-3 text-right">{dash}</td>
+      <td className="py-1 px-3 text-right">{dash}</td>
+      <td className="py-1 px-3 text-right">{dash}</td>
+      <td className="py-1 px-3 text-slate-400 max-w-[20rem] truncate" title={span.body}>
+        {span.body}
       </td>
     </tr>
   );

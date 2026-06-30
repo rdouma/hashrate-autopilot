@@ -2171,6 +2171,17 @@ function ChartColorsSection({
             { key: 'events.bid_resumed', label: t`bid resumed` },
           ],
         },
+        {
+          subtitle: t`Alert condition bands`,
+          rows: [
+            { key: 'events.alert_below_floor', label: t`below floor` },
+            { key: 'events.alert_zero_hashrate', label: t`zero hashrate` },
+            { key: 'events.alert_datum_unreachable', label: t`DATUM unreachable` },
+            { key: 'events.alert_api_unreachable', label: t`marketplace API down` },
+            { key: 'events.alert_wallet_runway', label: t`low wallet runway` },
+            { key: 'events.alert_solo_overheating', label: t`Bitaxe overheating` },
+          ],
+        },
       ],
     },
     {

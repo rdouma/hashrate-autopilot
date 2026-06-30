@@ -4,7 +4,11 @@
 
 ### `[Feature]` Alerted conditions now show as bands on the charts (#316)
 
-Sustained alert conditions - delivered hashrate below floor, zero hashrate, DATUM or marketplace-API unreachable, low wallet runway, Bitaxe overheating - used to live only in the Alerts tab, disconnected from the timeline. They now render as hatched background bands on the charts over the exact period each condition was open, with a dashed onset line and a hover tooltip naming the condition and its duration. Hashrate-shaped conditions band the Hashrate chart (where the floor line is); connectivity ones band both charts. Each condition has its own color. Orphan conditions - an opener with no recovery, e.g. left by a daemon restart mid-condition - are bounded (closed at the next episode of the same condition, or capped) so a stale weeks-old alert can't tile the whole chart. This is the first half of unifying alerts into the timeline; the History tab gets matching rows next.
+Sustained alert conditions - delivered hashrate below floor, zero hashrate, DATUM or marketplace-API unreachable, low wallet runway, Bitaxe overheating - used to live only in the Alerts tab, disconnected from the timeline. They now render as hatched background bands on the charts over the exact period each condition was open, with a dashed onset line and a hover tooltip naming the condition and its duration. Hashrate-shaped conditions band the Hashrate chart (where the floor line is); connectivity ones band both charts. Each condition has its own color. Orphan conditions - an opener with no recovery, e.g. left by a daemon restart mid-condition - are bounded (closed at the next episode of the same condition, or capped) so a stale weeks-old alert can't tile the whole chart.
+
+### `[Feature]` Alerts now appear as rows in the History timeline (#316)
+
+The second half of unifying alerts into the timeline: the History tab now interleaves alerted condition spans as rows, so a sustained problem sits in the same chronological feed as the bid activity around it. Each alert row shows the condition glyph + label (tinted to match its chart band), its duration or "ongoing", and the alert body in the Reason column; clicking it pans the price chart to when it started. A new "Alerts" chip group in the toolbar toggles each condition on or off. The six band colors are configurable under Config -> chart colors ("Alert condition bands"). Strings are translated to nl/es.
 
 ## 2026-06-29
 

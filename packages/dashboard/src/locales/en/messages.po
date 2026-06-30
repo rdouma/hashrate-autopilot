@@ -376,12 +376,17 @@ msgid "aged out:"
 msgstr "aged out:"
 
 #: src/pages/Config.tsx
+msgid "Alert condition bands"
+msgstr "Alert condition bands"
+
+#: src/pages/Config.tsx
 msgid "Alert thresholds"
 msgstr "Alert thresholds"
 
 #: src/components/Layout.tsx
 #: src/pages/Alerts.tsx
 #: src/pages/Config.tsx
+#: src/pages/History.tsx
 msgid "Alerts"
 msgstr "Alerts"
 
@@ -610,6 +615,11 @@ msgstr "bad credentials"
 msgid "Balance-check backend"
 msgstr "Balance-check backend"
 
+#: src/pages/Config.tsx
+#: src/pages/History.tsx
+msgid "below floor"
+msgstr "below floor"
+
 #. placeholder {0}: formatAge(s.below_floor_since)
 #: src/pages/Status.tsx
 msgid "below floor since {0}"
@@ -809,6 +819,11 @@ msgstr "Bitaxe miner stratum URL drift"
 #: src/pages/Status.tsx
 msgid "Bitaxe miners"
 msgstr "Bitaxe miners"
+
+#: src/pages/Config.tsx
+#: src/pages/History.tsx
+msgid "Bitaxe overheating"
+msgstr "Bitaxe overheating"
 
 #: src/components/TilesBar.tsx
 msgid "Bitaxe power"
@@ -1454,6 +1469,11 @@ msgstr "Datum stats not configured - set <0>datum_api_url</0> in Config to displ
 #: src/pages/Config.tsx
 msgid "Datum stratum unreachable for"
 msgstr "Datum stratum unreachable for"
+
+#: src/pages/Config.tsx
+#: src/pages/History.tsx
+msgid "DATUM unreachable"
+msgstr "DATUM unreachable"
 
 #: src/components/TilesBar.tsx
 #: src/pages/Config.tsx
@@ -2430,6 +2450,11 @@ msgstr "locked in"
 msgid "Log retention"
 msgstr "Log retention"
 
+#: src/pages/Config.tsx
+#: src/pages/History.tsx
+msgid "low wallet runway"
+msgstr "low wallet runway"
+
 #: src/components/HashrateChart.tsx
 msgid "luck after"
 msgstr "luck after"
@@ -2471,6 +2496,11 @@ msgstr "Markers were hidden because the combined count exceeded the configured c
 #: src/components/PriceChart.tsx
 msgid "market at this tick"
 msgstr "market at this tick"
+
+#: src/pages/Config.tsx
+#: src/pages/History.tsx
+msgid "marketplace API down"
+msgstr "marketplace API down"
 
 #: src/pages/Config.tsx
 msgid "Marketplace API has been unreachable for at least this many minutes."
@@ -2971,6 +3001,10 @@ msgstr "One-click support bundle: probes every external service the daemon talks
 #: src/pages/Config.tsx
 msgid "One-shot offset for earnings the on-chain payout observer can't see - Lightning payouts, Ocean payouts that landed and were swept before you installed the autopilot, etc. Shifts the lifetime-earnings chart's starting value up by this amount and folds into the net P&L. Leave 0 if everything is already covered by the on-chain backfill above."
 msgstr "One-shot offset for earnings the on-chain payout observer can't see - Lightning payouts, Ocean payouts that landed and were swept before you installed the autopilot, etc. Shifts the lifetime-earnings chart's starting value up by this amount and folds into the net P&L. Leave 0 if everything is already covered by the on-chain backfill above."
+
+#: src/pages/History.tsx
+msgid "ongoing"
+msgstr "ongoing"
 
 #: src/pages/Config.tsx
 msgid "Only engage cheap-mode when every tick in the last N minutes had our bid below the threshold, and there are at least N ticks of complete data (one per minute at the 60 s cadence). Literal sustained-below: one outlier doesn't trigger, one missing tick keeps it off. 0 = per-tick spot check (legacy)."
@@ -4366,6 +4400,7 @@ msgid "v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
 msgstr "v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
 
 #: src/components/BidEventDrawer.tsx
+#: src/pages/History.tsx
 msgid "View on chart"
 msgstr "View on chart"
 
@@ -4528,6 +4563,11 @@ msgstr "Your layout is saved on this device."
 #: src/components/TilesBar.tsx
 msgid "Your share of Ocean's reward window. Approximately your hashrate ÷ pool hashrate; drives the unpaid-earnings line on the price chart."
 msgstr "Your share of Ocean's reward window. Approximately your hashrate ÷ pool hashrate; drives the unpaid-earnings line on the price chart."
+
+#: src/pages/Config.tsx
+#: src/pages/History.tsx
+msgid "zero hashrate"
+msgstr "zero hashrate"
 
 #: src/pages/Config.tsx
 msgid "Zero hashrate for"

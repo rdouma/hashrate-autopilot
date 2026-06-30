@@ -132,7 +132,7 @@ v1.5 (#100) - via **Telegram notifications**. The notification subsystem is buil
 interface (currently only `TelegramSink`; future Nostr / ntfy / email backends can slot in). An `AlertEvaluator`
 detects state transitions each tick, the `AlertManager` writes rows to the `alerts` table with a retry ladder, and
 a `TelegramReceiver` long-polls `getUpdates` to process inline-keyboard acknowledgements from the operator's phone.
-Alerts and their delivery state are also surfaced on a dedicated `/alerts` dashboard page.
+Alerts and their delivery state are also surfaced on a dedicated `/alerts` dashboard page. **#316:** alert openers that arrive as open/recovery pairs (`hashrate_below_floor`, `zero_hashrate`, `datum_unreachable`, `api_unreachable`, `wallet_runway`, `solo_overheating`) are also exposed as timeline spans via `GET /api/alert-spans` (`AlertsRepo.conditionSpansSince`): each opener is matched to its recovery via the recovery row's `paired_alert_id`, and an orphan opener with no recovery is bounded - closed at the next same-class opener, kept open-ended only if it started within 6 h of now, else capped at start + 6 h - so a stale alert can't render as an infinite band. The shared `CONDITION_SPAN_CLASSES` taxonomy (in `packages/shared`) names each class, its chart target(s), and its color slot. These spans feed both the chart background bands and the History-feed alert rows.
 
 ## 2. Repository layout
 

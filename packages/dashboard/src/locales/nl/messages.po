@@ -376,12 +376,17 @@ msgid "aged out:"
 msgstr "uit venster:"
 
 #: src/pages/Config.tsx
+msgid "Alert condition bands"
+msgstr "Alarmconditie-banden"
+
+#: src/pages/Config.tsx
 msgid "Alert thresholds"
 msgstr "Alarmdrempels"
 
 #: src/components/Layout.tsx
 #: src/pages/Alerts.tsx
 #: src/pages/Config.tsx
+#: src/pages/History.tsx
 msgid "Alerts"
 msgstr "Meldingen"
 
@@ -610,6 +615,11 @@ msgstr "ongeldige inloggegevens"
 msgid "Balance-check backend"
 msgstr "Saldo-check backend"
 
+#: src/pages/Config.tsx
+#: src/pages/History.tsx
+msgid "below floor"
+msgstr "onder ondergrens"
+
 #. placeholder {0}: formatAge(s.below_floor_since)
 #: src/pages/Status.tsx
 msgid "below floor since {0}"
@@ -809,6 +819,11 @@ msgstr "Bitaxe-miner stratum-URL afwijking"
 #: src/pages/Status.tsx
 msgid "Bitaxe miners"
 msgstr "Bitaxe-miners"
+
+#: src/pages/Config.tsx
+#: src/pages/History.tsx
+msgid "Bitaxe overheating"
+msgstr "Bitaxe oververhit"
 
 #: src/components/TilesBar.tsx
 msgid "Bitaxe power"
@@ -1454,6 +1469,11 @@ msgstr "Datum stats niet geconfigureerd - stel <0>datum_api_url</0> in via Confi
 #: src/pages/Config.tsx
 msgid "Datum stratum unreachable for"
 msgstr "Datum stratum onbereikbaar gedurende"
+
+#: src/pages/Config.tsx
+#: src/pages/History.tsx
+msgid "DATUM unreachable"
+msgstr "DATUM onbereikbaar"
 
 #: src/components/TilesBar.tsx
 #: src/pages/Config.tsx
@@ -2430,6 +2450,11 @@ msgstr "vergrendeld"
 msgid "Log retention"
 msgstr "Logbewaring"
 
+#: src/pages/Config.tsx
+#: src/pages/History.tsx
+msgid "low wallet runway"
+msgstr "lage wallet-runway"
+
 #: src/components/HashrateChart.tsx
 msgid "luck after"
 msgstr "luck na"
@@ -2471,6 +2496,11 @@ msgstr "Markers zijn verborgen omdat het gecombineerde aantal de ingestelde char
 #: src/components/PriceChart.tsx
 msgid "market at this tick"
 msgstr "markt op deze tick"
+
+#: src/pages/Config.tsx
+#: src/pages/History.tsx
+msgid "marketplace API down"
+msgstr "marktplaats-API onbereikbaar"
 
 #: src/pages/Config.tsx
 msgid "Marketplace API has been unreachable for at least this many minutes."
@@ -2971,6 +3001,10 @@ msgstr "Supportbundel met één klik: test elke externe service waarmee de daemo
 #: src/pages/Config.tsx
 msgid "One-shot offset for earnings the on-chain payout observer can't see - Lightning payouts, Ocean payouts that landed and were swept before you installed the autopilot, etc. Shifts the lifetime-earnings chart's starting value up by this amount and folds into the net P&L. Leave 0 if everything is already covered by the on-chain backfill above."
 msgstr "Eenmalige correctie voor inkomsten die de on-chain payout-observer niet kan zien - Lightning-uitbetalingen, Ocean-uitbetalingen die binnenkwamen en al weggezet waren voordat je de autopilot installeerde, enzovoort. Schuift de startwaarde van de totale-inkomsten-grafiek met dit bedrag omhoog en wordt meegerekend in de netto P&L. Laat 0 staan als alles al door de on-chain backfill hierboven is gedekt."
+
+#: src/pages/History.tsx
+msgid "ongoing"
+msgstr "lopend"
 
 #: src/pages/Config.tsx
 msgid "Only engage cheap-mode when every tick in the last N minutes had our bid below the threshold, and there are at least N ticks of complete data (one per minute at the 60 s cadence). Literal sustained-below: one outlier doesn't trigger, one missing tick keeps it off. 0 = per-tick spot check (legacy)."
@@ -4366,6 +4400,7 @@ msgid "v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
 msgstr "v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
 
 #: src/components/BidEventDrawer.tsx
+#: src/pages/History.tsx
 msgid "View on chart"
 msgstr "Bekijk in grafiek"
 
@@ -4528,6 +4563,11 @@ msgstr "Je indeling wordt op dit apparaat opgeslagen."
 #: src/components/TilesBar.tsx
 msgid "Your share of Ocean's reward window. Approximately your hashrate ÷ pool hashrate; drives the unpaid-earnings line on the price chart."
 msgstr "Jouw aandeel in het Ocean-beloningsvenster. Ongeveer jouw hashrate ÷ pool-hashrate; bepaalt de unpaid-earnings-lijn op de prijsgrafiek."
+
+#: src/pages/Config.tsx
+#: src/pages/History.tsx
+msgid "zero hashrate"
+msgstr "nul hashrate"
 
 #: src/pages/Config.tsx
 msgid "Zero hashrate for"

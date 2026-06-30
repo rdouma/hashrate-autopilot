@@ -68,8 +68,20 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:3000',
+        target: process.env.VITE_PROXY_TARGET ?? 'http://127.0.0.1:3000',
         changeOrigin: true,
+        // Optional basic-auth injection for proxying to a protected
+        // daemon (e.g. the canary) during local verification.
+        configure: process.env.VITE_PROXY_AUTH
+          ? (proxy: { on: (e: string, cb: (pr: { setHeader: (k: string, v: string) => void }) => void) => void }) => {
+              proxy.on('proxyReq', (proxyReq) => {
+                proxyReq.setHeader(
+                  'authorization',
+                  'Basic ' + Buffer.from(process.env.VITE_PROXY_AUTH as string).toString('base64'),
+                );
+              });
+            }
+          : undefined,
       },
     },
   },
