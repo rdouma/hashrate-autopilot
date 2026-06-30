@@ -11,6 +11,7 @@
 // hovered-state machinery.
 
 import { useLayoutEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { t } from '@lingui/core/macro';
 import { Trans, useLingui } from '@lingui/react/macro';
@@ -146,6 +147,7 @@ export function IpChangeTooltip({
   const { i18n } = useLingui();
   void i18n;
   const fmt = useFormatters();
+  const navigate = useNavigate();
   const { event, pinned } = tip;
   const ref = useRef<HTMLDivElement | null>(null);
   const [pos, setPos] = useState<{ left: number; top: number; ready: boolean }>({
@@ -199,6 +201,16 @@ export function IpChangeTooltip({
         {fmt.timestamp(event.occurred_at)}{' '}
         <span className="text-slate-600">({formatAgeMinutes(event.occurred_at)})</span>
       </div>
+      {pinned && (
+        <button
+          type="button"
+          onClick={() => navigate(`/history?focus=ip:${event.id}`)}
+          className="mt-2 text-amber-300 hover:text-amber-200 inline-flex items-center gap-1 text-[11px]"
+        >
+          <Trans>View in history</Trans>
+          <span aria-hidden="true">→</span>
+        </button>
+      )}
     </div>
   );
 }

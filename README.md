@@ -20,7 +20,10 @@ difficulty-retarget pickaxe icons, on-chain payout gem markers, and public-IP-ch
 rejection-rate spike can be lined up against an ISP IP rotation). Sustained alert conditions (delivered
 hashrate below floor, zero hashrate, DATUM or marketplace-API unreachable, low wallet runway, Bitaxe
 overheating) render as colored background bands over the exact period each was open, and appear as rows in
-the History tab interleaved with bid activity - so an alert lives in the timeline, not just in a separate list. The price chart carries all four bid
+the History tab interleaved with bid activity - so an alert lives in the timeline, not just in a separate list.
+The History tab is a unified event log: on-chain payouts, Braiins deposits, blocks your pool found, and IP
+changes show as rows too, and every clickable chart marker has a "View in history" link that jumps to and
+highlights its row in the log. The price chart carries all four bid
 events (create / edit price / edit speed / cancel); the hashrate chart additionally mirrors the speed-edit
 (gauge) markers, since a speed-limit change is the one bid event that directly moves the delivered-hashrate
 curve. The price chart draws your bid (amber), the fillable ask the

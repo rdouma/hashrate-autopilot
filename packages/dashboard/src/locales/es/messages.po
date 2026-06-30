@@ -1580,6 +1580,10 @@ msgstr "denominación"
 msgid "deployment"
 msgstr "despliegue"
 
+#: src/pages/History.tsx
+msgid "deposit"
+msgstr "depósito"
+
 #: src/components/PriceChart.tsx
 msgid "DEPOSIT"
 msgstr "DEPÓSITO"
@@ -1888,6 +1892,10 @@ msgstr "Tope estimado con la configuración actual: ~ {totalStr} (solo logs, sin
 #: src/pages/Config.tsx
 msgid "Even though the endpoint is named <0>/umbrel-api</0>, it lives inside Datum Gateway itself - compiled in via <1>#ifdef DATUM_API_FOR_UMBREL</1> and works on any Datum build with that flag set, regardless of host platform."
 msgstr "Aunque el endpoint se llama <0>/umbrel-api</0>, vive dentro de Datum Gateway - compilado mediante <1>#ifdef DATUM_API_FOR_UMBREL</1> y funciona en cualquier build de Datum con ese flag, sin importar la plataforma anfitriona."
+
+#: src/pages/History.tsx
+msgid "Events"
+msgstr "Eventos"
 
 #: src/pages/History.tsx
 msgid "events (end of history)"
@@ -2327,6 +2335,10 @@ msgstr "IP"
 #: src/pages/Config.tsx
 msgid "IP / host"
 msgstr "IP / host"
+
+#: src/pages/History.tsx
+msgid "IP change"
+msgstr "cambio de IP"
 
 #: src/components/IpChangeMarkers.tsx
 msgid "IP changed"
@@ -3251,6 +3263,10 @@ msgstr "PAUSADO"
 msgid "Paused - no bids will be placed or edited until run mode changes."
 msgstr "Pausado - no se colocarán ni editarán ofertas hasta que cambie el modo de ejecución."
 
+#: src/pages/History.tsx
+msgid "payout"
+msgstr "pago"
+
 #: src/pages/Setup.tsx
 msgid "Payout address"
 msgstr "Dirección de pago"
@@ -3346,6 +3362,7 @@ msgstr "Pool y pago"
 
 #: src/components/HashrateChart.tsx
 #: src/pages/Config.tsx
+#: src/pages/History.tsx
 msgid "pool block"
 msgstr "bloque del pool"
 
@@ -4460,6 +4477,7 @@ msgstr "Ver en el historial"
 
 #: src/components/AlertSpanDrawer.tsx
 #: src/components/BidEventDrawer.tsx
+#: src/pages/History.tsx
 msgid "View on chart"
 msgstr "Ver en gráfica"
 

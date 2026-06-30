@@ -36,6 +36,10 @@ import {
   type BidHistoryFilters,
   type BidHistoryFlatEvent,
   type BidEventView,
+  type RewardEventView,
+  type DepositView,
+  type OurBlockMarker,
+  type IpChangeEvent,
 } from '../lib/api';
 import { useDenomination } from '../lib/denomination';
 import { useFormatters } from '../lib/locale';
@@ -53,6 +57,92 @@ type Kind = NonNullable<BidHistoryFilters['kinds']>[number];
 /** #316: condition class shown as an alert row + filter chip in History. */
 const ALERT_FILTER_CLASSES = CONDITION_SPAN_CLASSES.map((c) => c.openClass);
 const YEAR_MS = 365 * 24 * 60 * 60 * 1000;
+
+/** #317: extra event types folded into the unified log (besides bids + alerts). */
+type LogExtraKind = 'payout' | 'deposit' | 'block' | 'ip';
+const LOG_EXTRA_KINDS: readonly LogExtraKind[] = ['payout', 'deposit', 'block', 'ip'];
+
+const LOG_EXTRA_COLOR_SLOT: Record<LogExtraKind, ChartColorKey> = {
+  payout: 'price.marker_payout_gem',
+  deposit: 'price.marker_deposit',
+  block: 'hashrate.pool_block_ours',
+  ip: 'hashrate.marker_ip_change',
+};
+
+function logExtraColor(kind: LogExtraKind): string {
+  return CHART_COLOR_DEFAULTS[LOG_EXTRA_COLOR_SLOT[kind]];
+}
+
+function logExtraLabel(kind: LogExtraKind): string {
+  switch (kind) {
+    case 'payout': return t`payout`;
+    case 'deposit': return t`deposit`;
+    case 'block': return t`pool block`;
+    case 'ip': return t`IP change`;
+  }
+}
+
+/** A merged log entry for one of the extra event types. */
+interface LogExtraItem {
+  kind: LogExtraKind;
+  /** Stable per-type key (numeric id or hash/txid). */
+  key: string;
+  ts: number;
+  summary: string;
+}
+
+/** Lucide glyph per extra kind, tinted with its marker color. */
+function LogExtraGlyph({ kind }: { kind: LogExtraKind }) {
+  const base = {
+    width: 12,
+    height: 12,
+    viewBox: '0 0 24 24',
+    fill: 'none' as const,
+    stroke: logExtraColor(kind),
+    strokeWidth: 2,
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+    className: 'inline-block align-middle',
+  };
+  switch (kind) {
+    case 'payout': // Lucide gem
+      return (
+        <svg {...base}>
+          <path d="M6 3h12l4 6-10 13L2 9Z" />
+          <path d="M11 3 8 9l4 13 4-13-3-6" />
+          <path d="M2 9h20" />
+        </svg>
+      );
+    case 'deposit': // Lucide fuel
+      return (
+        <svg {...base}>
+          <line x1="3" x2="15" y1="22" y2="22" />
+          <line x1="4" x2="14" y1="9" y2="9" />
+          <path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18" />
+          <path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2a2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5" />
+        </svg>
+      );
+    case 'block': // Lucide box
+      return (
+        <svg {...base}>
+          <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
+          <path d="m3.3 7 8.7 5 8.7-5" />
+          <path d="M12 22V12" />
+        </svg>
+      );
+    case 'ip': // Lucide router
+      return (
+        <svg {...base}>
+          <rect width="20" height="8" x="2" y="14" rx="2" />
+          <path d="M6.01 18H6" />
+          <path d="M10.01 18H10" />
+          <path d="M15 10v4" />
+          <path d="M17.84 7.17a4 4 0 0 0-5.66 0" />
+          <path d="M20.66 4.34a8 8 0 0 0-11.31 0" />
+        </svg>
+      );
+  }
+}
 
 /**
  * #285 follow-up: persist History filters across navigation. Operator
@@ -131,6 +221,19 @@ export function History() {
   const [selectedSpan, setSelectedSpan] = useState<AlertConditionSpanView | null>(null);
   const [highlightedEventId, setHighlightedEventId] = useState<number | null>(null);
   const [highlightedSpanId, setHighlightedSpanId] = useState<number | null>(null);
+  // #317: generic focus key (`<kind>:<key>`) for the extra log rows.
+  const [highlightedRowKey, setHighlightedRowKey] = useState<string | null>(null);
+  // #317: which extra event kinds show as rows. Default: all on.
+  const [shownExtraKinds, setShownExtraKinds] = useState<Set<LogExtraKind>>(
+    () => new Set(LOG_EXTRA_KINDS),
+  );
+  const toggleExtraKind = (k: LogExtraKind) =>
+    setShownExtraKinds((prev) => {
+      const next = new Set(prev);
+      if (next.has(k)) next.delete(k);
+      else next.add(k);
+      return next;
+    });
   // #316: which alert-condition classes show as rows. Default: all on.
   // An empty set hides every alert row (matching the chip-off semantics).
   const [shownAlertClasses, setShownAlertClasses] = useState<Set<string>>(
@@ -175,6 +278,33 @@ export function History() {
     refetchInterval: 60_000,
   });
 
+  // #317: extra event types folded into the log. Reuse the existing
+  // endpoints; these are all sparse so a single fetch each is fine.
+  const payoutsQuery = useQuery({
+    queryKey: ['history-reward-events'],
+    queryFn: () => api.rewardEvents(),
+    placeholderData: keepPreviousData,
+    refetchInterval: 60_000,
+  });
+  const depositsQuery = useQuery({
+    queryKey: ['history-deposits'],
+    queryFn: () => api.deposits(),
+    placeholderData: keepPreviousData,
+    refetchInterval: 60_000,
+  });
+  const oceanQuery = useQuery({
+    queryKey: ['history-ocean'],
+    queryFn: () => api.ocean(),
+    placeholderData: keepPreviousData,
+    refetchInterval: 60_000,
+  });
+  const ipChangesQuery = useQuery({
+    queryKey: ['history-ip-changes', alertWindow.since, alertWindow.until],
+    queryFn: () => api.ipChangesViewport(alertWindow.since, alertWindow.until),
+    placeholderData: keepPreviousData,
+    refetchInterval: 60_000,
+  });
+
   // Bound alert rows to the loaded bid-event range so an old alert can't
   // float at the bottom of the list below a gap of not-yet-loaded bids.
   // When there are no bid events at all, show everything in the window.
@@ -192,6 +322,65 @@ export function History() {
           (oldestBidTs === null || s.start_ms >= oldestBidTs)),
     );
   }, [alertSpansQuery.data, shownAlertClasses, alertWindow, oldestBidTs, highlightedSpanId]);
+
+  // #317: build the extra log rows (payouts / deposits / our pool blocks /
+  // IP changes) from their queries, then bound to the loaded bid range
+  // (or force-show a deep-linked row) exactly like the alert rows.
+  const visibleExtras: LogExtraItem[] = useMemo(() => {
+    const all: LogExtraItem[] = [];
+    for (const e of payoutsQuery.data?.events ?? []) {
+      if (e.reorged) continue;
+      all.push({
+        kind: 'payout',
+        key: `payout:${e.id}`,
+        ts: e.detected_at,
+        summary: `${formatNumber(e.value_sat, {})} sat · block ${e.block_height}`,
+      });
+    }
+    for (const d of depositsQuery.data?.deposits ?? []) {
+      const ts = d.credited_at_ms ?? d.tx_timestamp_ms ?? d.first_seen_at_ms;
+      all.push({
+        kind: 'deposit',
+        key: `deposit:${d.tx_id}`,
+        ts,
+        summary: `${formatNumber(d.amount_sat, {})} sat`,
+      });
+    }
+    for (const b of oceanQuery.data?.our_recent_blocks ?? []) {
+      if (!b.found_by_us) continue;
+      all.push({
+        kind: 'block',
+        key: `block:${b.block_hash}`,
+        ts: b.timestamp_ms,
+        summary: `block ${b.height} · ${formatNumber(b.total_reward_sat, {})} sat`,
+      });
+    }
+    for (const c of ipChangesQuery.data?.events ?? []) {
+      all.push({
+        kind: 'ip',
+        key: `ip:${c.id}`,
+        ts: c.occurred_at,
+        summary: `${c.old_ip ?? '—'} → ${c.new_ip}`,
+      });
+    }
+    return all.filter(
+      (it) =>
+        it.key === highlightedRowKey ||
+        (shownExtraKinds.has(it.kind) &&
+          it.ts <= alertWindow.until &&
+          it.ts >= alertWindow.since &&
+          (oldestBidTs === null || it.ts >= oldestBidTs)),
+    );
+  }, [
+    payoutsQuery.data,
+    depositsQuery.data,
+    oceanQuery.data,
+    ipChangesQuery.data,
+    shownExtraKinds,
+    alertWindow,
+    oldestBidTs,
+    highlightedRowKey,
+  ]);
 
   // Recent alerts can sit just past the first bid page; since alert rows
   // are bound to the loaded bid range (to avoid a misleading time gap),
@@ -216,18 +405,20 @@ export function History() {
     if (hiddenRecent) void query.fetchNextPage();
   }, [query, alertSpansQuery.data, shownAlertClasses, oldestBidTs, alertWindow.since]);
 
-  // Merged, newest-first timeline of bid events + alert rows.
+  // Merged, newest-first timeline of bid events + alert rows + extras.
   type TimelineItem =
     | { kind: 'bid'; ts: number; ev: BidHistoryFlatEvent }
-    | { kind: 'alert'; ts: number; span: AlertConditionSpanView };
+    | { kind: 'alert'; ts: number; span: AlertConditionSpanView }
+    | { kind: 'extra'; ts: number; extra: LogExtraItem };
   const timelineItems: TimelineItem[] = useMemo(() => {
     const items: TimelineItem[] = [
       ...events.map((ev) => ({ kind: 'bid' as const, ts: ev.occurred_at, ev })),
       ...visibleAlertSpans.map((span) => ({ kind: 'alert' as const, ts: span.start_ms, span })),
+      ...visibleExtras.map((extra) => ({ kind: 'extra' as const, ts: extra.ts, extra })),
     ];
     items.sort((a, b) => b.ts - a.ts);
     return items;
-  }, [events, visibleAlertSpans]);
+  }, [events, visibleAlertSpans, visibleExtras]);
 
   const sentinelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -323,6 +514,42 @@ export function History() {
     };
   }, [highlightedSpanId]);
 
+  // #317: generic ?focus=<kind>:<key> from an extra chart marker's "View
+  // in history" link. Same shape as focus_span: force-show the row (see
+  // visibleExtras), poll for it, scroll, briefly highlight.
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const raw = params.get('focus');
+    if (!raw) return;
+    setHighlightedRowKey(raw);
+    params.delete('focus');
+    const next = params.toString();
+    navigate(`/history${next ? `?${next}` : ''}`, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
+
+  useEffect(() => {
+    if (highlightedRowKey === null) return;
+    let tries = 0;
+    let clearTimer: number | null = null;
+    const poll = window.setInterval(() => {
+      tries += 1;
+      const el = document.getElementById(`log-row-${highlightedRowKey}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        window.clearInterval(poll);
+        clearTimer = window.setTimeout(() => setHighlightedRowKey(null), 1800);
+      } else if (tries >= 40) {
+        window.clearInterval(poll);
+        setHighlightedRowKey(null);
+      }
+    }, 100);
+    return () => {
+      window.clearInterval(poll);
+      if (clearTimer !== null) window.clearTimeout(clearTimer);
+    };
+  }, [highlightedRowKey]);
+
   return (
     <div className="space-y-3">
       <h2 className="text-sm uppercase tracking-wider text-slate-100">
@@ -333,6 +560,8 @@ export function History() {
         onChange={setFilters}
         shownAlertClasses={shownAlertClasses}
         onToggleAlertClass={toggleAlertClass}
+        shownExtraKinds={shownExtraKinds}
+        onToggleExtraKind={toggleExtraKind}
       />
       <div className="bg-slate-900 border border-slate-800 rounded-lg overflow-x-auto">
         <table className="w-full text-xs">
@@ -360,13 +589,21 @@ export function History() {
                   highlighted={highlightedEventId === item.ev.id}
                   onClick={() => setSelectedEvent(item.ev)}
                 />
-              ) : (
+              ) : item.kind === 'alert' ? (
                 <AlertSpanRow
                   key={`alert-${item.span.open_id}`}
                   span={item.span}
                   fmt={fmt}
                   highlighted={highlightedSpanId === item.span.open_id}
                   onClick={() => setSelectedSpan(item.span)}
+                />
+              ) : (
+                <LogExtraRow
+                  key={item.extra.key}
+                  extra={item.extra}
+                  fmt={fmt}
+                  highlighted={highlightedRowKey === item.extra.key}
+                  onClick={() => navigate(`/?at=${item.extra.ts}`)}
                 />
               ),
             )}
@@ -418,12 +655,17 @@ function Toolbar({
   onChange,
   shownAlertClasses,
   onToggleAlertClass,
+  shownExtraKinds,
+  onToggleExtraKind,
 }: {
   filters: BidHistoryFilters;
   onChange: (next: BidHistoryFilters) => void;
   /** #316: condition classes currently shown as alert rows. */
   shownAlertClasses: Set<string>;
   onToggleAlertClass: (openClass: string) => void;
+  /** #317: extra event kinds currently shown as rows. */
+  shownExtraKinds: Set<LogExtraKind>;
+  onToggleExtraKind: (kind: LogExtraKind) => void;
 }) {
   const { i18n } = useLingui();
   void i18n;
@@ -520,6 +762,35 @@ function Toolbar({
                   style={{ backgroundColor: active ? color : 'transparent', border: `1px solid ${color}` }}
                 />
                 {conditionLabel(openClass)}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      {/* #317: extra event-type rows toggle (payouts / deposits / our pool
+          blocks / IP changes). Default all on. */}
+      <div className="flex flex-col gap-0.5">
+        <label className="text-[10px] tracking-wider text-slate-500"><Trans>Events</Trans></label>
+        <div className="flex flex-wrap gap-1">
+          {LOG_EXTRA_KINDS.map((kind) => {
+            const active = shownExtraKinds.has(kind);
+            const color = logExtraColor(kind);
+            return (
+              <button
+                key={kind}
+                type="button"
+                onClick={() => onToggleExtraKind(kind)}
+                className={`flex items-center gap-1 px-1.5 py-0.5 rounded border text-[11px] ${
+                  active
+                    ? 'border-slate-600 bg-slate-800 text-slate-200'
+                    : 'border-slate-800 text-slate-500 hover:text-slate-300'
+                }`}
+              >
+                <span
+                  className="inline-block w-2 h-2 rounded-full"
+                  style={{ backgroundColor: active ? color : 'transparent', border: `1px solid ${color}` }}
+                />
+                {logExtraLabel(kind)}
               </button>
             );
           })}
@@ -782,6 +1053,57 @@ function AlertSpanRow({
       <td className="py-1 px-3 text-right">{dash}</td>
       <td className="py-1 px-3 text-slate-400 max-w-[20rem] truncate" title={span.body}>
         {span.body}
+      </td>
+    </tr>
+  );
+}
+
+/**
+ * #317: a non-bid, non-alert event (payout / deposit / pool block / IP
+ * change) as a log row. Shares the table grid; numeric bid columns blank.
+ * Clicking pans the price chart to the event time.
+ */
+function LogExtraRow({
+  extra,
+  fmt,
+  highlighted,
+  onClick,
+}: {
+  extra: LogExtraItem;
+  fmt: ReturnType<typeof useFormatters>;
+  highlighted: boolean;
+  onClick: () => void;
+}) {
+  const { i18n } = useLingui();
+  void i18n;
+  const color = logExtraColor(extra.kind);
+  const dash = <span className="text-slate-600">—</span>;
+  return (
+    <tr
+      id={`log-row-${extra.key}`}
+      onClick={onClick}
+      className={`border-t border-slate-800/70 align-top cursor-pointer transition-colors ${
+        highlighted ? 'bg-amber-500/10 ring-1 ring-amber-500/40' : 'hover:bg-slate-800/30'
+      }`}
+      title={t`View on chart`}
+    >
+      <td className="py-1 px-3 font-mono text-slate-300 whitespace-nowrap">
+        {fmt.timestamp(extra.ts)}
+      </td>
+      <td className="py-1 px-3 font-mono whitespace-nowrap">{dash}</td>
+      <td className="py-1 px-3 whitespace-nowrap">
+        <LogExtraGlyph kind={extra.kind} />
+        <span className="ml-1.5" style={{ color }}>
+          {logExtraLabel(extra.kind)}
+        </span>
+      </td>
+      <td className="py-1 px-3 text-right">{dash}</td>
+      <td className="py-1 px-3 text-right">{dash}</td>
+      <td className="py-1 px-3 text-right">{dash}</td>
+      <td className="py-1 px-3 text-right">{dash}</td>
+      <td className="py-1 px-3 text-right">{dash}</td>
+      <td className="py-1 px-3 text-slate-400 max-w-[20rem] truncate" title={extra.summary}>
+        {extra.summary}
       </td>
     </tr>
   );

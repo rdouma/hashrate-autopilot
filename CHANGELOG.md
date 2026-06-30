@@ -2,6 +2,10 @@
 
 ## 2026-06-30
 
+### `[Feature]` History becomes a unified event log with "View in history" from every marker (#317)
+
+The History tab now folds in the other notable account events as rows alongside bids and alerts: on-chain payouts, Braiins deposits, blocks your pool found, and public-IP changes - each with its own glyph, color, and an "Events" filter chip. And every clickable chart marker's pinned tooltip gains a "View in history" link that jumps to the matching row in the log and briefly highlights it, even if the event is weeks old (the row is surfaced on demand). This extends the chart-to-log jump you liked on the alert markers to the whole chart.
+
 ### `[UI]` Alert chart markers open a pinned pop-up with "View in history" (#316)
 
 Clicking an alert onset/recovery marker on a chart now pins a small pop-up at the marker - the same interaction language as the other chart markers (pool blocks, IP changes) - instead of the full slide-over drawer (which stays for the History rows). The pop-up shows the condition, severity, started/recovered/duration and body, and its action is "View in history" (you're already on the chart), which jumps to and briefly highlights the matching row on the History page.

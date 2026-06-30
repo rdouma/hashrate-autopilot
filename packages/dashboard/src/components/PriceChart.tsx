@@ -3264,6 +3264,7 @@ function RewardEventTooltip({
   void i18n;
   void dateTimeLocale;
   const fmt = useFormatters();
+  const navigate = useNavigate();
   const { reward, pinned } = tip;
   const ref = useRef<HTMLDivElement | null>(null);
   const [pos, setPos] = useState<{ left: number; top: number; ready: boolean }>({
@@ -3338,16 +3339,28 @@ function RewardEventTooltip({
         <span className="font-mono tabular-nums">{valueText}</span>
       </div>
 
-      {url && (
-        <div className="mt-3 pt-2 border-t border-slate-800">
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sky-400 hover:text-sky-300 underline text-[11px]"
-          >
-            <Trans>open in block explorer →</Trans>
-          </a>
+      {(url || pinned) && (
+        <div className="mt-3 pt-2 border-t border-slate-800 flex flex-col gap-1.5">
+          {url && (
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sky-400 hover:text-sky-300 underline text-[11px]"
+            >
+              <Trans>open in block explorer →</Trans>
+            </a>
+          )}
+          {pinned && (
+            <button
+              type="button"
+              onClick={() => navigate(`/history?focus=payout:${reward.id}`)}
+              className="text-amber-300 hover:text-amber-200 inline-flex items-center gap-1 text-[11px] self-start"
+            >
+              <Trans>View in history</Trans>
+              <span aria-hidden="true">→</span>
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -3370,6 +3383,7 @@ function DepositTooltip({
   const { i18n } = useLingui();
   void i18n;
   const fmt = useFormatters();
+  const navigate = useNavigate();
   const { deposit, pinned } = tip;
   const ref = useRef<HTMLDivElement | null>(null);
   const [pos, setPos] = useState<{ left: number; top: number; ready: boolean }>({
@@ -3465,16 +3479,28 @@ function DepositTooltip({
         </div>
       )}
 
-      {url && (
-        <div className="mt-3 pt-2 border-t border-slate-800">
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sky-400 hover:text-sky-300 underline text-[11px]"
-          >
-            <Trans>open in block explorer →</Trans>
-          </a>
+      {(url || pinned) && (
+        <div className="mt-3 pt-2 border-t border-slate-800 flex flex-col gap-1.5">
+          {url && (
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sky-400 hover:text-sky-300 underline text-[11px]"
+            >
+              <Trans>open in block explorer →</Trans>
+            </a>
+          )}
+          {pinned && (
+            <button
+              type="button"
+              onClick={() => navigate(`/history?focus=deposit:${deposit.tx_id}`)}
+              className="text-amber-300 hover:text-amber-200 inline-flex items-center gap-1 text-[11px] self-start"
+            >
+              <Trans>View in history</Trans>
+              <span aria-hidden="true">→</span>
+            </button>
+          )}
         </div>
       )}
     </div>

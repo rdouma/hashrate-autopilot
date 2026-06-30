@@ -13,6 +13,7 @@ import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { memo, useCallback, useEffect, useMemo, useState, useRef, useLayoutEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { sideTooltipPosition } from '../lib/tooltipPosition';
 import { pickLuckStepDot } from '../lib/luckStepDot';
 import type React from 'react';
@@ -2467,6 +2468,7 @@ export function PoolBlockTooltip({
   const { i18n } = useLingui();
   void i18n;
   const fmt = useFormatters();
+  const navigate = useNavigate();
   const { block, pinned } = tip;
   const ref = useRef<HTMLDivElement | null>(null);
   const [pos, setPos] = useState<{ left: number; top: number; ready: boolean }>({
@@ -2589,7 +2591,7 @@ export function PoolBlockTooltip({
         );
       })()}
 
-      <div className="mt-3 pt-2 border-t border-slate-800">
+      <div className="mt-3 pt-2 border-t border-slate-800 flex flex-col gap-1.5">
         <a
           href={url}
           target="_blank"
@@ -2598,6 +2600,16 @@ export function PoolBlockTooltip({
         >
           <Trans>open in block explorer →</Trans>
         </a>
+        {pinned && isOurs && (
+          <button
+            type="button"
+            onClick={() => navigate(`/history?focus=block:${block.block_hash}`)}
+            className="text-amber-300 hover:text-amber-200 inline-flex items-center gap-1 text-[11px] self-start"
+          >
+            <Trans>View in history</Trans>
+            <span aria-hidden="true">→</span>
+          </button>
+        )}
       </div>
     </div>
   );
