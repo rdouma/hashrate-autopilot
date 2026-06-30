@@ -46,6 +46,7 @@ export function AlertConditionBands({
   colorOverrides,
   idSuffix,
   focusSpanOpenId = null,
+  hoverTickAt = null,
   onSpanClick,
 }: {
   intervals: ReadonlyArray<AlertConditionInterval>;
@@ -61,9 +62,22 @@ export function AlertConditionBands({
   idSuffix: string;
   /** #316: the span (open_id) jumped to from History; gets a sonar beacon. */
   focusSpanOpenId?: number | null;
+  /**
+   * #317: the crosshair's hovered timestamp. The onset/recovery markers
+   * are hidden by default (just the hatch band shows) and fade in only
+   * near the cursor, so the chart stays clean but the clickable glyphs
+   * surface when you reach for them. Null = not hovering -> markers
+   * hidden (except the focused span).
+   */
+  hoverTickAt?: number | null;
   /** #316: clicking an onset/recovery marker -> pinned pop-up at (x, y). */
   onSpanClick?: (span: AlertConditionInterval['span'], clientX: number, clientY: number) => void;
 }) {
+  // px radius over which a marker fades in around the cursor.
+  const REVEAL_PX = 90;
+  const hoverX = hoverTickAt != null ? xScale(hoverTickAt) : null;
+  const proximity = (mx: number): number =>
+    hoverX == null ? 0 : Math.max(0, 1 - Math.abs(mx - hoverX) / REVEAL_PX);
   const relevant = intervals.filter((iv) =>
     conditionSpanClass(iv.span.event_class)?.charts.includes(target),
   );
@@ -126,6 +140,12 @@ export function AlertConditionBands({
             }
           : undefined;
         const clickable = onSpanClick ? { cursor: 'pointer' as const } : undefined;
+        // Markers are hidden by default and fade in near the cursor; the
+        // focused (jumped-to) span's markers always show.
+        const focused = focusSpanOpenId !== null && iv.span.open_id === focusSpanOpenId;
+        const onsetOp = focused ? 1 : proximity(x0);
+        const recOp = focused ? 1 : recX !== null ? proximity(recX) : 0;
+        const hitEvents = (op: number) => (op > 0.35 ? 'auto' : 'none');
         return (
           <g key={`alert-band-${iv.span.open_id}-${i}`}>
             {x1 > x0 && (
@@ -143,26 +163,27 @@ export function AlertConditionBands({
                 </title>
               </rect>
             )}
-            {/* Onset line + DOWN triangle (entered the condition). */}
+            {/* Onset line + DOWN triangle (entered the condition).
+                Fades in near the cursor (see proximity). */}
             {onsetInView && (
               <>
-                <line
-                  x1={x0}
-                  y1={top}
-                  x2={x0}
-                  y2={top + height}
-                  stroke={color}
-                  strokeWidth="1.2"
-                  strokeOpacity="0.7"
-                  strokeDasharray="3 2"
-                  pointerEvents="none"
-                />
-                <path
-                  d={`M${x0 - 5},${markerY - 5} L${x0 + 5},${markerY - 5} L${x0},${markerY + 4} Z`}
-                  fill={color}
-                  pointerEvents="none"
-                />
-                {/* Generous transparent hit target over the onset glyph. */}
+                <g opacity={onsetOp} style={{ transition: 'opacity 120ms' }} pointerEvents="none">
+                  <line
+                    x1={x0}
+                    y1={top}
+                    x2={x0}
+                    y2={top + height}
+                    stroke={color}
+                    strokeWidth="1.2"
+                    strokeOpacity="0.7"
+                    strokeDasharray="3 2"
+                  />
+                  <path
+                    d={`M${x0 - 5},${markerY - 5} L${x0 + 5},${markerY - 5} L${x0},${markerY + 4} Z`}
+                    fill={color}
+                  />
+                </g>
+                {/* Generous transparent hit target; only clickable when shown. */}
                 <rect
                   x={x0 - 8}
                   y={markerY - 8}
@@ -171,6 +192,7 @@ export function AlertConditionBands({
                   fill="transparent"
                   onClick={click}
                   style={clickable}
+                  pointerEvents={hitEvents(onsetOp)}
                 >
                   <title>{`${label} started · ${iv.span.title}`}</title>
                 </rect>
@@ -179,25 +201,25 @@ export function AlertConditionBands({
             {/* Recovery: dashed end line + hollow UP triangle (back to normal). */}
             {recX !== null && (
               <>
-                <line
-                  x1={recX}
-                  y1={top}
-                  x2={recX}
-                  y2={top + height}
-                  stroke={color}
-                  strokeWidth="1"
-                  strokeOpacity="0.4"
-                  strokeDasharray="2 3"
-                  pointerEvents="none"
-                />
-                <path
-                  d={`M${recX - 5},${markerY + 4} L${recX + 5},${markerY + 4} L${recX},${markerY - 5} Z`}
-                  fill="none"
-                  stroke={color}
-                  strokeWidth="1.6"
-                  strokeLinejoin="round"
-                  pointerEvents="none"
-                />
+                <g opacity={recOp} style={{ transition: 'opacity 120ms' }} pointerEvents="none">
+                  <line
+                    x1={recX}
+                    y1={top}
+                    x2={recX}
+                    y2={top + height}
+                    stroke={color}
+                    strokeWidth="1"
+                    strokeOpacity="0.4"
+                    strokeDasharray="2 3"
+                  />
+                  <path
+                    d={`M${recX - 5},${markerY + 4} L${recX + 5},${markerY + 4} L${recX},${markerY - 5} Z`}
+                    fill="none"
+                    stroke={color}
+                    strokeWidth="1.6"
+                    strokeLinejoin="round"
+                  />
+                </g>
                 <rect
                   x={recX - 8}
                   y={markerY - 8}
@@ -206,6 +228,7 @@ export function AlertConditionBands({
                   fill="transparent"
                   onClick={click}
                   style={clickable}
+                  pointerEvents={hitEvents(recOp)}
                 >
                   <title>{`${conditionRecoveryLabel(iv.span.event_class)} (${formatDuration(clampedSpan)})`}</title>
                 </rect>

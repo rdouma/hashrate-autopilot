@@ -1950,6 +1950,7 @@ export const HashrateChart = memo(function HashrateChart({
           colorOverrides={_colorOverrides}
           idSuffix="hr"
           focusSpanOpenId={focusSpanOpenId}
+          hoverTickAt={crosshair?.state?.tickAt ?? null}
           onSpanClick={onAlertSpanClick}
         />
         {/* #280: each series render is gated on its legend toggle. */}

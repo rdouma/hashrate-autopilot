@@ -2,6 +2,10 @@
 
 ## 2026-06-30
 
+### `[UI]` Alert band onset/recovery markers reveal on cursor proximity (#317)
+
+The little down/up triangles that mark where a condition band starts and ends are now hidden by default - the chart just shows the hatch bands - and fade in only near the cursor, so they don't clutter the chart but are right there (and clickable) when you reach for one. The jumped-to (focused) span's markers always show. Bands themselves are unchanged.
+
 ### `[UI]` Config color rows show the real marker icon; "View in history" on every event popup (#317)
 
 The six alert-condition color rows in Config -> Display -> Chart colors now show the actual marker glyph (the filled down-triangle the chart draws at a condition's onset) instead of a plain swatch, so they're recognizable next to the other marker rows. And the speed-edit marker popup on the hashrate chart gained a "View in history" link, so now every clickable chart popup that maps to a log row - bid events, alerts, payouts, deposits, blocks, IP changes, speed edits - can jump to its row. Those jumps also use the efficient date-window jump for old events.

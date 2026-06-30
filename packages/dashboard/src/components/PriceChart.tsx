@@ -2413,6 +2413,7 @@ export const PriceChart = memo(function PriceChart({
           colorOverrides={_colorOverrides}
           idSuffix="px"
           focusSpanOpenId={focusSpanOpenId}
+          hoverTickAt={crosshair?.state?.tickAt ?? null}
           onSpanClick={onAlertSpanClick}
         />
         {capExclusionPolygon && !isHidden('maxBid') && (
