@@ -3580,9 +3580,20 @@ function EventTooltip({
   const { i18n } = useLingui();
   void i18n;
   const fmt = useFormatters();
+  const denomination = useDenomination();
   const navigate = useNavigate();
   const ref = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
+
+  // Rate values in the active denomination. `rate` returns the full
+  // string incl. unit (single-value rows); `rateVal` returns the bare
+  // number for compound rows that append the unit once. The shared Row
+  // helper mutes the trailing unit via splitUnit.
+  const rate = (satPerPhDay: number | null): string =>
+    denomination.formatSatPerPhDay(satPerPhDay);
+  const rateVal = (satPerPhDay: number | null): string =>
+    denomination.formatSatPerPhDayValue(satPerPhDay);
+  const rateUnit = denomination.rateSuffix;
 
   // Find the tick_metrics row for the event's timestamp so the
   // tooltip can surface fillable / hashprice / max_bid at that
@@ -3795,9 +3806,9 @@ function EventTooltip({
 
       {e.kind === 'CREATE_BID' && (
         <div className="mt-2 space-y-0.5 text-slate-300">
-          <Row label={t`price`} value={`${formatNumber(Math.round(e.new_price_sat_per_ph_day ?? 0))} sat/PH/day`} />
-          <Row label={t`speed`} value={`${e.speed_limit_ph ?? '-'} PH/s`} />
-          <Row label={t`budget`} value={`${formatNumber(e.amount_sat ?? 0)} sat`} />
+          <Row label={t`price`} value={rate(e.new_price_sat_per_ph_day ?? null)} />
+          <Row label={t`speed`} value={denomination.formatHashrate(e.speed_limit_ph)} />
+          <Row label={t`budget`} value={denomination.formatSat(e.amount_sat ?? null)} />
         </div>
       )}
 
@@ -3805,14 +3816,14 @@ function EventTooltip({
         <div className="mt-2 space-y-0.5 text-slate-300">
           <Row
             label={t`price`}
-            value={`${formatNumber(Math.round(e.old_price_sat_per_ph_day ?? 0))} → ${formatNumber(Math.round(e.new_price_sat_per_ph_day ?? 0))} sat/PH/day`}
+            value={`${rateVal(e.old_price_sat_per_ph_day ?? null)} → ${rateVal(e.new_price_sat_per_ph_day ?? null)} ${rateUnit}`}
           />
           {e.old_price_sat_per_ph_day !== null && e.new_price_sat_per_ph_day !== null && (
             <Row
               label={t`delta`}
-              value={`${e.new_price_sat_per_ph_day >= e.old_price_sat_per_ph_day ? '+' : ''}${formatNumber(
-                Math.round(e.new_price_sat_per_ph_day - e.old_price_sat_per_ph_day),
-              )} sat/PH/day`}
+              value={`${e.new_price_sat_per_ph_day > e.old_price_sat_per_ph_day ? '+' : ''}${rateVal(
+                e.new_price_sat_per_ph_day - e.old_price_sat_per_ph_day,
+              )} ${rateUnit}`}
             />
           )}
         </div>
@@ -3820,7 +3831,7 @@ function EventTooltip({
 
       {e.kind === 'EDIT_SPEED' && (
         <div className="mt-2 space-y-0.5 text-slate-300">
-          <Row label={t`new speed`} value={`${e.speed_limit_ph ?? '-'} PH/s`} />
+          <Row label={t`new speed`} value={denomination.formatHashrate(e.speed_limit_ph)} />
         </div>
       )}
 
@@ -3830,53 +3841,31 @@ function EventTooltip({
             <Trans>market at this tick</Trans>
           </div>
           {marketAtEvent.fillable_ask_sat_per_ph_day !== null && (
-            <Row
-              label={t`fillable`}
-              value={`${formatNumber(Math.round(marketAtEvent.fillable_ask_sat_per_ph_day))} sat/PH/day`}
-            />
+            <Row label={t`fillable`} value={rate(marketAtEvent.fillable_ask_sat_per_ph_day)} />
           )}
           {overpayAtEvent !== null && (
-            <Row
-              label={t`overpay`}
-              value={`${formatNumber(Math.round(overpayAtEvent))} sat/PH/day`}
-            />
+            <Row label={t`overpay`} value={rate(overpayAtEvent)} />
           )}
           {marketAtEvent.hashprice_sat_per_ph_day !== null ? (
-            <Row
-              label={t`hashprice`}
-              value={`${formatNumber(Math.round(marketAtEvent.hashprice_sat_per_ph_day))} sat/PH/day`}
-            />
+            <Row label={t`hashprice`} value={rate(marketAtEvent.hashprice_sat_per_ph_day)} />
           ) : (
             <Row label={t`hashprice`} value={t`- (not recorded this tick)`} />
           )}
           {maxOverpayAtEvent !== null && (
-            <Row
-              label={t`max overpay vs hashprice`}
-              value={`${formatNumber(Math.round(maxOverpayAtEvent))} sat/PH/day`}
-            />
+            <Row label={t`max overpay vs hashprice`} value={rate(maxOverpayAtEvent)} />
           )}
           {maxOverpayAtEvent !== null &&
             marketAtEvent.hashprice_sat_per_ph_day !== null && (
               <Row
                 label={t`hashprice + max overpay`}
-                value={`${formatNumber(
-                  Math.round(
-                    marketAtEvent.hashprice_sat_per_ph_day + maxOverpayAtEvent,
-                  ),
-                )} sat/PH/day`}
+                value={rate(marketAtEvent.hashprice_sat_per_ph_day + maxOverpayAtEvent)}
               />
             )}
           {marketAtEvent.max_bid_sat_per_ph_day !== null && (
-            <Row
-              label={t`max bid`}
-              value={`${formatNumber(Math.round(marketAtEvent.max_bid_sat_per_ph_day))} sat/PH/day`}
-            />
+            <Row label={t`max bid`} value={rate(marketAtEvent.max_bid_sat_per_ph_day)} />
           )}
           {effectiveCapAtEvent !== null && (
-            <Row
-              label={t`effective cap`}
-              value={`${formatNumber(Math.round(effectiveCapAtEvent))} sat/PH/day`}
-            />
+            <Row label={t`effective cap`} value={rate(effectiveCapAtEvent)} />
           )}
           {/* #224 (#222): deadband at the tick. Shown as a percentage
               with the equivalent sat/PH/day floor inline so the
@@ -3897,15 +3886,8 @@ function EventTooltip({
               <span className="font-mono tabular-nums">
                 {formatNumber(marketAtEvent.bid_edit_deadband_pct)}
                 <span className="text-slate-500 text-[11px] ml-1">% ≈</span>{' '}
-                {formatNumber(
-                  Math.round(
-                    (overpayAtEvent * marketAtEvent.bid_edit_deadband_pct) / 100,
-                  ),
-                )}
-                <span className="text-slate-500 text-[11px] ml-1">
-                  <SatSymbol className="opacity-70" />
-                  {t`/PH/day`}
-                </span>
+                {rateVal((overpayAtEvent * marketAtEvent.bid_edit_deadband_pct) / 100)}
+                <span className="text-slate-500 text-[11px] ml-1">{rateUnit}</span>
               </span>
             </div>
           )}
@@ -3984,18 +3966,26 @@ function Row({ label, value }: { label: string; value: string }) {
  * doesn't import from pages/.
  */
 function splitUnit(v: string): { num: string; unit: string } | null {
-  const m = v.match(/^(.+?)\s+(sat\/PH\/day|PH\/s|PH·h|sat)(\s*(?:\(.*\))?)$/);
+  // Space-separated unit: any denomination rate ("48,288 sat/EH/day",
+  // "0.48288000 ₿/PH/day"), any hashrate ("3.00 EH/s"), legacy PH·h, or
+  // bare sat. The rate suffix now varies with the units toggle, so the
+  // hashrate portion is TH|PH|EH rather than a hardcoded PH.
+  const m = v.match(/^(.+?)\s+((?:sat|₿)\/(?:TH|PH|EH)\/day|(?:TH|PH|EH)\/s|PH·h|sat)(\s*(?:\(.*\))?)$/);
   if (m?.[1] && m[2]) return { num: m[1], unit: m[2] + (m[3] ?? '') };
-  const usdPhDay = v.match(/^(.+?)(\/PH\/day)$/);
-  if (usdPhDay?.[1] && usdPhDay[2]) return { num: usdPhDay[1], unit: usdPhDay[2] };
+  // USD rate has the symbol on the number and no space before the slash:
+  // "$28,756.80/EH/day".
+  const usd = v.match(/^(.+?)(\/(?:TH|PH|EH)\/day)$/);
+  if (usd?.[1] && usd[2]) return { num: usd[1], unit: usd[2] };
   return null;
 }
 
 function SatUnit({ unit }: { unit: string }) {
-  // Localize the `/PH/day` slug before rendering. Mirror of Status.tsx
-  // SatUnit so chart tooltips translate in NL/ES alongside the rest.
-  const phDayLabel = t`/PH/day`;
-  const localized = unit.replace('/PH/day', phDayLabel);
+  // Localize the trailing `day` slug for any hashrate unit (NL "dag",
+  // ES "dia") and swap a leading "sat" for the ≡ glyph. Mirror of
+  // Status.tsx SatUnit so chart tooltips translate alongside the rest.
+  const phDay = t`/PH/day`;
+  const dayWord = phDay.slice(phDay.lastIndexOf('/') + 1);
+  const localized = unit.replace(/day$/, dayWord);
   if (localized.startsWith('sat')) {
     return (
       <>
