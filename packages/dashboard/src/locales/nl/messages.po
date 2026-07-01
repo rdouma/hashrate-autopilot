@@ -3081,8 +3081,9 @@ msgid "Open ({0})"
 msgstr "Open ({0})"
 
 #: src/components/Bip110ScanCard.tsx
+#: src/pages/History.tsx
 msgid "open in block explorer"
-msgstr "open in block explorer"
+msgstr "openen in blokverkenner"
 
 #: src/components/HashrateChart.tsx
 #: src/components/PriceChart.tsx

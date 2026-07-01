@@ -47,6 +47,8 @@ import { useDenomination } from '../lib/denomination';
 import { useFormatters } from '../lib/locale';
 import { formatNumber, formatDuration } from '../lib/format';
 import { CHART_COLOR_DEFAULTS, type ChartColorKey } from '../lib/chartColors';
+import { formatConfigChange, type HashrateUnit } from '../lib/configFieldFormat';
+import { applyExplorerTemplate } from '../lib/blockExplorer';
 import {
   logExtraJumpUrl,
   type BlockVariant,
@@ -464,6 +466,12 @@ export function History() {
     placeholderData: keepPreviousData,
     refetchInterval: 60_000,
   });
+  // #318 follow-up: config carries the block-explorer URL templates so the
+  // detail drawer can deep-link deposits / payouts / blocks to an explorer.
+  // Shares the cached ['config'] query with the rest of the app.
+  const configQuery = useQuery({ queryKey: ['config'], queryFn: () => api.config() });
+  const txUrlTemplate = configQuery.data?.config?.block_explorer_tx_url_template ?? '';
+  const blockUrlTemplate = configQuery.data?.config?.block_explorer_url_template ?? '';
 
   // Bound alert rows to the loaded bid-event range so an old alert can't
   // float at the bottom of the list below a gap of not-yet-loaded bids.
@@ -569,11 +577,16 @@ export function History() {
     }
     for (const s of systemEventsQuery.data?.events ?? []) {
       if (s.kind === 'config_change') {
+        const unit = denomination.hashrateUnit as HashrateUnit;
+        const human = s.field
+          ? formatConfigChange(s.field, s.old_value, s.new_value, unit, (n) => formatNumber(n, {}))
+          : { label: t`config change`, change: `${s.old_value ?? '—'} → ${s.new_value ?? '—'}` };
         all.push({
           kind: 'config',
           key: `config:${s.id}`,
           ts: s.occurred_at,
-          summary: `${s.field ?? '?'}: ${s.old_value ?? '—'} → ${s.new_value ?? '—'}`,
+          summary: `${human.label}: ${human.change}`,
+          system: s,
         });
       } else if (s.kind === 'daemon_started') {
         all.push({
@@ -581,6 +594,7 @@ export function History() {
           key: `boot:${s.id}`,
           ts: s.occurred_at,
           summary: s.detail ?? '',
+          system: s,
         });
       }
     }
@@ -600,6 +614,7 @@ export function History() {
     retargetsQuery.data,
     alertsLogQuery.data,
     systemEventsQuery.data,
+    denomination.hashrateUnit,
     shownExtraKinds,
     alertWindow,
     oldestBidTs,
@@ -1056,6 +1071,8 @@ export function History() {
         <LogExtraDrawer
           extra={selectedExtra}
           fmt={fmt}
+          txUrlTemplate={txUrlTemplate}
+          blockUrlTemplate={blockUrlTemplate}
           onClose={() => setSelectedExtra(null)}
         />
       )}
@@ -1612,10 +1629,14 @@ function LogExtraRow({
 function LogExtraDrawer({
   extra,
   fmt,
+  txUrlTemplate,
+  blockUrlTemplate,
   onClose,
 }: {
   extra: LogExtraItem;
   fmt: ReturnType<typeof useFormatters>;
+  txUrlTemplate: string;
+  blockUrlTemplate: string;
   onClose: () => void;
 }) {
   const { i18n } = useLingui();
@@ -1673,7 +1694,11 @@ function LogExtraDrawer({
             </button>
           )}
 
-          <LogExtraDetail extra={extra} />
+          <LogExtraDetail
+            extra={extra}
+            txUrlTemplate={txUrlTemplate}
+            blockUrlTemplate={blockUrlTemplate}
+          />
         </div>
       </aside>
     </div>
@@ -1727,20 +1752,50 @@ function CopyableValue({ value }: { value: string }) {
   );
 }
 
+/** #318 follow-up: "open in block explorer" link for the detail drawer. */
+function ExplorerLink({ url }: { url: string }) {
+  const { i18n } = useLingui();
+  void i18n;
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-sky-400 hover:text-sky-300 underline text-[11px] inline-flex items-center gap-1"
+    >
+      <Trans>open in block explorer</Trans>
+      <span aria-hidden="true">→</span>
+    </a>
+  );
+}
+
 /**
  * #318 follow-up: per-kind detail for the log drawer, mirroring what the
  * event's chart tooltip shows (operator: the side panel should be
  * symmetric with the graph tooltip). Falls back to the row summary for
  * kinds without a rich tooltip (alert / config / daemon start).
  */
-function LogExtraDetail({ extra }: { extra: LogExtraItem }) {
+function LogExtraDetail({
+  extra,
+  txUrlTemplate,
+  blockUrlTemplate,
+}: {
+  extra: LogExtraItem;
+  txUrlTemplate: string;
+  blockUrlTemplate: string;
+}) {
   const { i18n } = useLingui();
   void i18n;
   const sat = (n: number) => `${formatNumber(n, {})} sat`;
+  const txUrl = (txid: string) =>
+    txUrlTemplate ? applyExplorerTemplate(txUrlTemplate, { txid }) : '';
 
   if (extra.kind === 'block' && extra.block) {
     const b = extra.block;
     const share = b.share_log_pct_at_block;
+    const blockUrl = blockUrlTemplate
+      ? applyExplorerTemplate(blockUrlTemplate, { block_hash: b.block_hash, height: b.height })
+      : '';
     return (
       <>
         <section className="space-y-1">
@@ -1769,6 +1824,7 @@ function LogExtraDetail({ extra }: { extra: LogExtraItem }) {
           </div>
           <CopyableValue value={b.block_hash} />
         </section>
+        {blockUrl && <ExplorerLink url={blockUrl} />}
       </>
     );
   }
@@ -1786,6 +1842,7 @@ function LogExtraDetail({ extra }: { extra: LogExtraItem }) {
           </div>
           <CopyableValue value={`${e.txid}:${e.vout}`} />
         </section>
+        {txUrl(e.txid) && <ExplorerLink url={txUrl(e.txid)} />}
       </>
     );
   }
@@ -1803,6 +1860,7 @@ function LogExtraDetail({ extra }: { extra: LogExtraItem }) {
           </div>
           <CopyableValue value={d.tx_id} />
         </section>
+        {txUrl(d.tx_id) && <ExplorerLink url={txUrl(d.tx_id)} />}
       </>
     );
   }

@@ -13,6 +13,7 @@ import type {
   OurBlockMarker,
   RetargetView,
   RewardEventView,
+  SystemEventView,
 } from './api';
 
 export type LogExtraKind =
@@ -62,6 +63,9 @@ export interface LogExtraItem {
   deposit?: DepositView;
   ip?: IpChangeEvent;
   retarget?: RetargetView;
+  /** #318 follow-up: raw config-change / daemon-start system event, so
+   *  the drawer can render a human-readable field change. */
+  system?: SystemEventView;
 }
 
 /**

@@ -2,6 +2,10 @@
 
 ## 2026-07-01
 
+### `[UI]` Richer timeline detail panels: build on daemon-start, human-readable config changes, explorer links
+
+Three improvements to the timeline side panels: a **daemon started** row now shows the build that launched (e.g. `build 721 · v1.15.1 · abc1234`). A **config change** now reads in plain language and your chosen hashrate unit - `max_overpay_vs_hashprice_sat_per_eh_day: 2000000 -> 1500000` becomes "Max overpay vs hashprice: 2,000 → 1,500 sat/PH/day". And **deposit / payout / pool-block** panels now carry an "open in block explorer" link. (The daemon-start build detail only appears for boots after this update.)
+
 ### `[Perf]` Timeline export is now streaming, with no row cap (#320)
 
 Replaced the Excel writer (exceljs, which held every cell in memory and forced the 200k-row cap) with a streaming one built on fflate: the worksheet is written and compressed row-by-row, so memory stays flat regardless of size - it runs comfortably on the light hardware Hashrate Autopilot targets. The row cap is gone. The Excel library also shrank from ~930 kB to ~8 kB.

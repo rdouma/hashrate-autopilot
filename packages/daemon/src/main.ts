@@ -16,6 +16,7 @@ import { resolve } from 'node:path';
 
 import { createBitcoindClient } from '@hashrate-autopilot/bitcoind-client';
 import { BlockVersionService } from './services/block-version.js';
+import { BUILD } from './http/routes/build.js';
 import { createBraiinsClient } from '@hashrate-autopilot/braiins-client';
 
 import { applyEnvOverridesToConfig } from './config/env-overrides.js';
@@ -323,9 +324,15 @@ async function bootOperational(
   } = deps;
   let dbCfg = dbCfgIn;
   // #318: record a boot event so a restart shows in the History log even
-  // when the run mode didn't change. Best-effort; never blocks startup.
+  // when the run mode didn't change. Detail carries the launched build so
+  // the timeline drawer answers "what version started here?". Best-effort;
+  // never blocks startup.
   void systemEventsRepo
-    .insert({ occurred_at: Date.now(), kind: 'daemon_started' })
+    .insert({
+      occurred_at: Date.now(),
+      kind: 'daemon_started',
+      detail: `build ${BUILD.build} · v${BUILD.version} · ${BUILD.hash}`,
+    })
     .catch((err) => console.warn(`[system-events] boot insert failed: ${(err as Error).message}`));
 
   // Seed bitcoind credentials from secrets into config on first boot

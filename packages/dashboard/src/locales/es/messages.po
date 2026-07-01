@@ -3081,6 +3081,7 @@ msgid "Open ({0})"
 msgstr "Abiertos ({0})"
 
 #: src/components/Bip110ScanCard.tsx
+#: src/pages/History.tsx
 msgid "open in block explorer"
 msgstr "abrir en block explorer"
 
