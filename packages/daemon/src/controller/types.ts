@@ -115,6 +115,25 @@ export interface State {
 
   readonly owned_bids: readonly OwnedBidSnapshot[];
   readonly unknown_bids: readonly UnknownBidSnapshot[];
+  /**
+   * True when this tick's Braiins bid-list fetch (`getCurrentBids`)
+   * definitively succeeded. False when it failed/returned null - in
+   * which case `owned_bids` being empty means "unknown", NOT "we own
+   * nothing". decide() must not CREATE on an unconfirmed-empty read
+   * (it'd place a duplicate the "multiple owned bids" guard then has to
+   * cancel; see #319).
+   */
+  readonly bids_fetch_ok: boolean;
+  /**
+   * Count of bids the local ledger still considers live (non-terminal
+   * status). When `owned_bids` is empty but this is > 0, the API
+   * snapshot simply didn't include a bid we believe we own (a fetch
+   * blip or eventual-consistency gap) - decide() waits rather than
+   * creating a duplicate. The prune path (gated on a successful fetch,
+   * 3-min grace) clears genuinely-vanished ledger bids, so a legitimate
+   * create resumes once this reaches 0.
+   */
+  readonly active_ledger_bid_count: number;
 
   readonly actual_hashrate: ActualHashrate;
   /** When we first observed hashrate below floor, or null if currently OK. */

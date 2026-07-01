@@ -62,6 +62,11 @@ function state(overrides: Partial<State> = {}): State {
     balance: null,
     owned_bids: [],
     unknown_bids: [],
+    // Default to the confirmed-empty case: the bid-list fetch succeeded
+    // and the ledger agrees we own nothing, so a CREATE is legitimate.
+    // The #319 guard is exercised by explicit overrides.
+    bids_fetch_ok: true,
+    active_ledger_bid_count: 0,
     actual_hashrate: { owned_ph: 0, unknown_ph: 0, total_ph: 0 },
     below_floor_since: null,
     above_floor_ticks: 0,
@@ -193,6 +198,50 @@ describe('decide - Datum stratum down auto-cancel (#199)', () => {
       owned_bids: [],
     }));
     expect(proposals).toHaveLength(1);
+    expect(proposals[0]).toMatchObject({ kind: 'CREATE_BID' });
+  });
+});
+
+describe('decide - no duplicate CREATE off a bid-list blip (#319)', () => {
+  it('CREATEs when the empty snapshot is confirmed (fetch ok + ledger empty)', () => {
+    const proposals = decide(state({
+      owned_bids: [],
+      bids_fetch_ok: true,
+      active_ledger_bid_count: 0,
+    }));
+    expect(proposals).toHaveLength(1);
+    expect(proposals[0]).toMatchObject({ kind: 'CREATE_BID' });
+  });
+
+  it('does NOT create when the bid-list fetch failed this tick', () => {
+    // getCurrentBids() returned null -> owned_bids empty is "unknown",
+    // not "we own nothing". Acting blind would duplicate a live bid.
+    const proposals = decide(state({
+      owned_bids: [],
+      bids_fetch_ok: false,
+      active_ledger_bid_count: 0,
+    }));
+    expect(proposals).toEqual([]);
+  });
+
+  it('does NOT create when the ledger still holds an active bid the snapshot omitted', () => {
+    // The exact 2026-07-01 incident: fetch succeeded but didn't include
+    // a bid we still believe we own -> wait for the prune/reconcile path
+    // instead of placing a duplicate.
+    const proposals = decide(state({
+      owned_bids: [],
+      bids_fetch_ok: true,
+      active_ledger_bid_count: 1,
+    }));
+    expect(proposals).toEqual([]);
+  });
+
+  it('resumes CREATE once the stale ledger entry has been pruned to zero', () => {
+    const proposals = decide(state({
+      owned_bids: [],
+      bids_fetch_ok: true,
+      active_ledger_bid_count: 0,
+    }));
     expect(proposals[0]).toMatchObject({ kind: 'CREATE_BID' });
   });
 });

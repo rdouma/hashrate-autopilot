@@ -194,6 +194,22 @@ export function decide(state: State): readonly Proposal[] {
 
   // Case: no owned bids → CREATE at the target price.
   if (owned_bids.length === 0) {
+    // #319: only create when the empty snapshot is
+    // CONFIRMED, not a bid-list blip. Two ways `owned_bids` goes empty
+    // without us actually owning nothing:
+    //   1. getCurrentBids() failed this tick (bids_fetch_ok === false)
+    //      → we simply don't know; acting blind would duplicate a live
+    //      bid.
+    //   2. the fetch succeeded but didn't include a bid our ledger still
+    //      believes is live (active_ledger_bid_count > 0) → an
+    //      eventual-consistency gap; the prune path clears the ledger
+    //      entry (after a grace window) if the bid is genuinely gone,
+    //      at which point a legitimate create resumes.
+    // In both cases we wait rather than place a duplicate that the
+    // "multiple owned bids" guard below would then have to cancel -
+    // wasteful (a few minutes of paid-for hashrate on a doomed bid) and
+    // confusing in the timeline.
+    if (!state.bids_fetch_ok || state.active_ledger_bid_count > 0) return [];
     // Budget resolution (#40). 0 = use full wallet balance, clamped to
     // 1 BTC. Skip the tick silently when balance is missing or empty.
     let effectiveBudgetSat: number;

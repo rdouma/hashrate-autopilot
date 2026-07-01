@@ -531,6 +531,19 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
     marketSnapshot !== null,
   );
 
+  // #319: signals decide() uses to avoid creating a
+  // duplicate bid off a transient bid-list blip. `bids_fetch_ok` is a
+  // definitively-successful getCurrentBids(); `active_ledger_bid_count`
+  // is how many bids our local ledger still believes are live (matching
+  // the prune path's non-terminal-status definition).
+  const bids_fetch_ok = bidsResponse !== null;
+  const active_ledger_bid_count = ledgerRows.filter(
+    (r) =>
+      r.last_known_status === null ||
+      (r.last_known_status !== 'BID_STATUS_CANCELED' &&
+        r.last_known_status !== 'BID_STATUS_FULFILLED'),
+  ).length;
+
   return {
     tick_at: tickAt,
     run_mode: runtime.run_mode,
@@ -540,6 +553,8 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
     balance,
     owned_bids,
     unknown_bids,
+    bids_fetch_ok,
+    active_ledger_bid_count,
     actual_hashrate,
     below_floor_since: floorCheck.below_floor_since,
     above_floor_ticks: floorCheck.above_floor_ticks,

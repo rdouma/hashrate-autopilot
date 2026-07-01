@@ -2,6 +2,10 @@
 
 ## 2026-07-01
 
+### `[Fix]` Autopilot no longer places a duplicate bid on a bid-list fetch blip (#319)
+
+When the Braiins bid-list read transiently failed (or momentarily didn't include our bid) while the orderbook read succeeded, the decision loop saw "no owned bids" and created a **second** bid, which its own "multiple owned bids" guard then cancelled a few minutes later - wasting a little hashrate spend and showing a confusing extra `create` in the Timeline. The create path now waits unless the bid-list fetch definitively succeeded AND the local ledger agrees there are no live bids, mirroring the caution already applied to ledger pruning. Strictly conservative: it can only prevent spurious creates.
+
 ### `[UI]` Timeline polish: renamed, columns reordered, filter fields on one row, real reset button
 
 The History page is now called **Timeline** (nav tab + heading), since it's a unified log of every event, not just orders. The **Action** column moves ahead of **Bid** so the most useful column shows first - especially on mobile, where the long bid id used to hog the second slot. The filter toolbar's text/date fields (Bid id, From, To, Δ price) now share one dedicated row instead of Δ price sitting alone, and **reset** is a real amber button rather than a faint text link.
