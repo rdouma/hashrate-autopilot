@@ -402,6 +402,10 @@ msgstr "Umbrales de alerta"
 msgid "Alerts"
 msgstr "Alertas"
 
+#: src/pages/History.tsx
+msgid "all"
+msgstr "todos"
+
 #: src/components/Bip110ScanCard.tsx
 msgid "All"
 msgstr "Todo"
@@ -2796,6 +2800,7 @@ msgstr "Sin seguimiento de saldo on-chain. El panel de Profit & Loss no mostrar√
 msgid "no tick recorded near this event"
 msgstr "no hay tick registrado cerca de este evento"
 
+#: src/pages/History.tsx
 #: src/pages/Status.tsx
 msgid "none"
 msgstr "ninguno"

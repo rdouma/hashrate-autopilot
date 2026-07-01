@@ -402,6 +402,10 @@ msgstr "Alert thresholds"
 msgid "Alerts"
 msgstr "Alerts"
 
+#: src/pages/History.tsx
+msgid "all"
+msgstr "all"
+
 #: src/components/Bip110ScanCard.tsx
 msgid "All"
 msgstr "All"
@@ -2796,6 +2800,7 @@ msgstr "No on-chain balance tracking. The Profit & Loss panel won't show collect
 msgid "no tick recorded near this event"
 msgstr "no tick recorded near this event"
 
+#: src/pages/History.tsx
 #: src/pages/Status.tsx
 msgid "none"
 msgstr "none"

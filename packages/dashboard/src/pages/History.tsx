@@ -361,6 +361,13 @@ export function History() {
       else next.add(c);
       return next;
     });
+  // #318 follow-up: bulk all/none per opt-out group, so isolating a
+  // single event type (e.g. "only create") doesn't mean deselecting a
+  // dozen alert + event chips by hand.
+  const setAllAlertClasses = (on: boolean) =>
+    setShownAlertClasses(on ? new Set(ALERT_FILTER_CLASSES) : new Set());
+  const setAllExtraKinds = (on: boolean) =>
+    setShownExtraKinds(on ? new Set(LOG_EXTRA_KINDS) : new Set());
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -777,8 +784,10 @@ export function History() {
         onChange={setFilters}
         shownAlertClasses={shownAlertClasses}
         onToggleAlertClass={toggleAlertClass}
+        onSetAllAlertClasses={setAllAlertClasses}
         shownExtraKinds={shownExtraKinds}
         onToggleExtraKind={toggleExtraKind}
+        onSetAllExtraKinds={setAllExtraKinds}
       />
       <div className="bg-slate-900 border border-slate-800 rounded-lg overflow-x-auto">
         <table className="w-full text-xs">
@@ -879,17 +888,23 @@ function Toolbar({
   onChange,
   shownAlertClasses,
   onToggleAlertClass,
+  onSetAllAlertClasses,
   shownExtraKinds,
   onToggleExtraKind,
+  onSetAllExtraKinds,
 }: {
   filters: BidHistoryFilters;
   onChange: (next: BidHistoryFilters) => void;
   /** #316: condition classes currently shown as alert rows. */
   shownAlertClasses: Set<string>;
   onToggleAlertClass: (openClass: string) => void;
+  /** #318: bulk show/hide every alert class. */
+  onSetAllAlertClasses: (on: boolean) => void;
   /** #317: extra event kinds currently shown as rows. */
   shownExtraKinds: Set<LogExtraKind>;
   onToggleExtraKind: (kind: LogExtraKind) => void;
+  /** #318: bulk show/hide every extra event kind. */
+  onSetAllExtraKinds: (on: boolean) => void;
 }) {
   const { i18n } = useLingui();
   void i18n;
@@ -962,7 +977,10 @@ function Toolbar({
       {/* #316: alert-condition rows toggle. Default all on; turning a
           chip off hides that condition's rows (client-side filter). */}
       <div className="flex flex-col gap-0.5">
-        <label className="text-[10px] tracking-wider text-slate-500"><Trans>Alerts</Trans></label>
+        <div className="flex items-center gap-2">
+          <label className="text-[10px] tracking-wider text-slate-500"><Trans>Alerts</Trans></label>
+          <AllNone onAll={() => onSetAllAlertClasses(true)} onNone={() => onSetAllAlertClasses(false)} />
+        </div>
         <div className="flex flex-wrap gap-1">
           {ALERT_FILTER_CLASSES.map((openClass) => {
             const active = shownAlertClasses.has(openClass);
@@ -994,7 +1012,10 @@ function Toolbar({
       {/* #317: extra event-type rows toggle (payouts / deposits / our pool
           blocks / IP changes). Default all on. */}
       <div className="flex flex-col gap-0.5">
-        <label className="text-[10px] tracking-wider text-slate-500"><Trans>Events</Trans></label>
+        <div className="flex items-center gap-2">
+          <label className="text-[10px] tracking-wider text-slate-500"><Trans>Events</Trans></label>
+          <AllNone onAll={() => onSetAllExtraKinds(true)} onNone={() => onSetAllExtraKinds(false)} />
+        </div>
         <div className="flex flex-wrap gap-1">
           {LOG_EXTRA_KINDS.map((kind) => {
             const active = shownExtraKinds.has(kind);
@@ -1094,6 +1115,28 @@ function Toolbar({
         </button>
       </div>
     </div>
+  );
+}
+
+/**
+ * #318 follow-up: compact "all · none" bulk toggle shown next to an
+ * opt-out filter group's label (Alerts / Events). Lets the operator
+ * clear a whole group in one click when isolating a single event type,
+ * instead of deselecting every chip by hand.
+ */
+function AllNone({ onAll, onNone }: { onAll: () => void; onNone: () => void }) {
+  const { i18n } = useLingui();
+  void i18n;
+  return (
+    <span className="flex items-center gap-1 text-[10px]">
+      <button type="button" onClick={onAll} className="text-slate-500 hover:text-amber-300">
+        <Trans>all</Trans>
+      </button>
+      <span className="text-slate-700" aria-hidden="true">·</span>
+      <button type="button" onClick={onNone} className="text-slate-500 hover:text-amber-300">
+        <Trans>none</Trans>
+      </button>
+    </span>
   );
 }
 

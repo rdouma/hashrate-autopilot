@@ -402,6 +402,10 @@ msgstr "Alarmdrempels"
 msgid "Alerts"
 msgstr "Meldingen"
 
+#: src/pages/History.tsx
+msgid "all"
+msgstr "alle"
+
 #: src/components/Bip110ScanCard.tsx
 msgid "All"
 msgstr "Alles"
@@ -2796,6 +2800,7 @@ msgstr "Geen on-chain saldo-tracking. Het Profit & Loss-paneel toont geen ontvan
 msgid "no tick recorded near this event"
 msgstr "geen tick rond dit moment vastgelegd"
 
+#: src/pages/History.tsx
 #: src/pages/Status.tsx
 msgid "none"
 msgstr "geen"
