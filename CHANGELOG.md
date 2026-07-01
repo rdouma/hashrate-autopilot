@@ -2,6 +2,14 @@
 
 ## 2026-06-30
 
+### `[UI]` Pool-block log rows: crown/blue/yellow icons, reveal beacon, "View in history" for every block (#318)
+
+Follow-up to the unified log. Pool-block rows in the History log now use the same marker language as the chart: a gold crown for our own block, a blue cube for other miners' blocks, and a yellow cube for BIP-110-signalling blocks (previously every block row was a plain yellow cube). Clicking a block row now pulses a sonar beacon on the matching cube/crown on the hashrate chart when it jumps there (it just panned before, with no way to tell which cube). And a block's chart tooltip now offers "View in history" for every block, not only our own.
+
+### `[UI]` One shared "alert condition" marker color instead of six (#318)
+
+The six per-condition alert-band colors (below floor, zero hashrate, DATUM unreachable, marketplace API, wallet runway, Bitaxe overheating) are consolidated into a single **alert condition** color that tints every alert-condition band and its onset/recovery markers - the band label already tells you which condition it is. The setting moves from its own "Alert condition bands" group into the **Markers** section of Config -> Display -> Chart colors. Any custom color you'd set on one of the old rows carries over to the shared slot.
+
 ### `[Feature]` Complete unified log: every alert type, config changes, daemon restarts (#318)
 
 Continuing the "one log of everything relevant" direction. The History tab now also shows: every remaining Telegram alert as a row (payout-initiated, Bitaxe best-difficulty, fee/beta-exit, plus any future alert class automatically - excluding ones already shown as a span or from a dedicated source); `marketplace_empty` and `sustained_paused` as log-only span rows (no extra chart band); **config changes, one row per changed field** (e.g. `max_bid: 49000 -> 50000`), recorded on save; and a **"daemon started"** row on every boot (so a restart shows even when the run mode didn't change). Config/boot events are stored in a new `system_events` table (migration 0114) and served by `/api/system-events`. The payout-initiated (unpaid-drop) dot on the price chart gains a "View in history" link that jumps the log to that time. Each new kind has a filter chip.

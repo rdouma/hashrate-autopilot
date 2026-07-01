@@ -384,8 +384,8 @@ msgid "alert"
 msgstr "alerta"
 
 #: src/pages/Config.tsx
-msgid "Alert condition bands"
-msgstr "Bandas de condición de alerta"
+msgid "alert condition"
+msgstr "condición de alerta"
 
 #: src/components/AlertSpanDrawer.tsx
 msgid "Alert condition detail"
@@ -421,10 +421,6 @@ msgstr "Siempre live (para despliegues de confianza)"
 #: src/components/PriceChart.tsx
 msgid "amount"
 msgstr "monto"
-
-#: src/pages/Config.tsx
-#~ msgid "Another BIP-110-aware mempool explorer that surfaces miner signaling."
-#~ msgstr "Otro explorador mempool compatible con BIP-110 que muestra la señalización de los mineros."
 
 #: src/pages/Config.tsx
 msgid "Any active owned bid reports fee_rate_pct > 0."
@@ -628,7 +624,6 @@ msgid "Balance-check backend"
 msgstr "Backend de verificación de saldo"
 
 #: src/lib/alertConditions.ts
-#: src/pages/Config.tsx
 msgid "below floor"
 msgstr "bajo el mínimo"
 
@@ -754,6 +749,10 @@ msgstr "Oferta:"
 msgid "Bids"
 msgstr "Ofertas"
 
+#: src/pages/History.tsx
+msgid "BIP 110 block"
+msgstr "bloque BIP 110"
+
 #: src/components/Bip110ScanCard.tsx
 msgid "BIP 110 is active. Activated at the UASF flag-day block {uasfHeightStr} on {sinceDateStr}. Your Bitcoin node is enforcing the new consensus rules."
 msgstr "BIP 110 está activo. Activado en el bloque del día-bandera UASF {uasfHeightStr} el {sinceDateStr}. Tu nodo Bitcoin está aplicando las nuevas reglas de consenso."
@@ -846,7 +845,6 @@ msgid "Bitaxe miners"
 msgstr "Mineros Bitaxe"
 
 #: src/lib/alertConditions.ts
-#: src/pages/Config.tsx
 msgid "Bitaxe overheating"
 msgstr "Bitaxe sobrecalentándose"
 
@@ -1181,10 +1179,6 @@ msgid "Cheap-mode target"
 msgstr "Objetivo en modo barato"
 
 #: src/pages/Config.tsx
-#~ msgid "Check your server's connection page - the port isn't fixed by which Electrum server you run. Convention is 50001 (TCP) / 50002 (TLS); Umbrel keeps Electrs on 50001 and puts Fulcrum on 50002 so both can run at once."
-#~ msgstr "Comprueba la página de conexión de tu servidor - el puerto no lo fija qué servidor Electrum ejecutas. La convención es 50001 (TCP) / 50002 (TLS); Umbrel mantiene Electrs en 50001 y pone Fulcrum en 50002 para que ambos puedan funcionar a la vez."
-
-#: src/pages/Config.tsx
 msgid "Choose file…"
 msgstr "Elegir archivo…"
 
@@ -1510,7 +1504,6 @@ msgid "Datum stratum unreachable for"
 msgstr "Stratum de Datum no accesible durante"
 
 #: src/lib/alertConditions.ts
-#: src/pages/Config.tsx
 msgid "DATUM unreachable"
 msgstr "DATUM inaccesible"
 
@@ -1550,14 +1543,6 @@ msgstr "Registro de decisiones - sin eventos"
 #: src/pages/Config.tsx
 msgid "decrease"
 msgstr "disminuir"
-
-#: src/pages/Config.tsx
-#~ msgid "Default 50001."
-#~ msgstr "Predeterminado 50001."
-
-#: src/pages/Setup.tsx
-#~ msgid "Default Electrs port is 50001 (TCP). On Umbrel the in-cluster hostname is typically<0> electrs_electrs_1</0>."
-#~ msgstr "El puerto Electrs predeterminado es 50001 (TCP). En Umbrel el nombre de host dentro del clúster suele ser<0> electrs_electrs_1</0>."
 
 #: src/pages/Config.tsx
 msgid "Delete this device permanently. To pause without deleting, uncheck the box at the left of the row."
@@ -1740,10 +1725,6 @@ msgid "Dynamic DNS"
 msgstr "Dynamic DNS"
 
 #: src/pages/Config.tsx
-#~ msgid "e.g. 192.168.1.121 or electrs_electrs_1 on Umbrel"
-#~ msgstr "p.ej. 192.168.1.121 o electrs_electrs_1 en Umbrel"
-
-#: src/pages/Config.tsx
 msgid "e.g. http://192.168.1.121:8332 - your Bitcoin Knots RPC endpoint."
 msgstr "p.ej. http://192.168.1.121:8332 - tu endpoint RPC de Bitcoin Knots."
 
@@ -1834,28 +1815,6 @@ msgstr "Prácticamente sin entrega durante al menos este número de minutos."
 #: src/components/SoloMinersCard.tsx
 msgid "Efficiency"
 msgstr "Eficiencia"
-
-#: src/pages/Config.tsx
-#~ msgid "Electrs"
-#~ msgstr "Electrs"
-
-#. placeholder {0}: form.electrs_host
-#. placeholder {1}: form.electrs_port
-#: src/pages/Setup.tsx
-#~ msgid "Electrs ({0}:{1})"
-#~ msgstr "Electrs ({0}:{1})"
-
-#: src/pages/Setup.tsx
-#~ msgid "Electrs (Electrum-style indexed lookup, faster)"
-#~ msgstr "Electrs (búsqueda indexada estilo Electrum, más rápida)"
-
-#: src/pages/Config.tsx
-#~ msgid "Electrs (recommended)"
-#~ msgstr "Electrs (recomendado)"
-
-#: src/pages/Config.tsx
-#~ msgid "Electrs host"
-#~ msgstr "Host de Electrs"
 
 #: src/pages/Setup.tsx
 msgid "Electrum server - electrs / Fulcrum / ElectrumX (indexed lookup, faster)"
@@ -1973,10 +1932,6 @@ msgstr "No se pudieron cargar los datos de configuración: {loadErr}"
 #: src/pages/Status.tsx
 msgid "failed to load: {0}"
 msgstr "fallo al cargar: {0}"
-
-#: src/pages/Config.tsx
-#~ msgid "Fast and lightweight. Polled every minute. Instant balance lookups via your Electrum server."
-#~ msgstr "Rápido y ligero. Consultado cada minuto. Búsqueda instantánea de saldo vía tu servidor Electrum."
 
 #: src/pages/Config.tsx
 msgid "Fast and lightweight. Polled every minute. Instant balance lookups. Works with any Electrum-protocol server: electrs, Fulcrum, ElectrumX."
@@ -2327,18 +2282,6 @@ msgid "Informational. Off by default. Fires the moment Ocean debits your unpaid 
 msgstr "Informativo. Desactivado por defecto. Se activa en cuanto Ocean descuenta tu saldo no pagado - Ocean ha puesto tu pago en cola y lo liquidara mediante una transaccion de pago por lotes, pero aun no se ha confirmado on-chain. Deteccion: el ocean_unpaid_sat por tick del daemon cae mas de un 30% Y el resto queda por debajo del umbral de pago de 1.048.576 sat (filtra el ruido de tick / ajustes contables de Ocean)."
 
 #: src/pages/Config.tsx
-#~ msgid "Informational. Off by default. Fires the moment Ocean debits your unpaid balance - the payout has been committed to the coinbase of the next block Ocean finds, but the transaction hasn't confirmed on-chain yet. Detection: the daemon's per-tick ocean_unpaid_sat drops by more than 30% AND the residual is below the 1,048,576-sat payout threshold (filters out tick noise / Ocean-side accounting bumps)."
-#~ msgstr "Informativo. Desactivado por defecto. Se dispara en el momento en que Ocean debita tu saldo no pagado - el pago se ha comprometido a la coinbase del próximo bloque que Ocean encuentre, pero la transacción aún no se ha confirmado en cadena. Detección: el ocean_unpaid_sat por tick del daemon cae más del 30% Y el residuo está por debajo del umbral de pago de 1.048.576 sat (filtra ruido de tick / ajustes contables de Ocean)."
-
-#: src/pages/Config.tsx
-#~ msgid "Informational. Off by default. Fires when the on-chain payout scanner observes a coinbase output crediting your payout address - i.e. the transaction Ocean committed has now confirmed. Includes block height, payout amount, and a truncated tx id. Source: reward_events ledger (populated by Electrs or bitcoind scantxoutset, whichever the operator has wired)."
-#~ msgstr "Informativo. Desactivado por defecto. Se dispara cuando el escáner de pagos on-chain observa una salida de coinbase que acredita tu dirección de pago - es decir, la transacción que Ocean comprometió ya se ha confirmado. Incluye altura del bloque, importe del pago y un tx id truncado. Fuente: ledger reward_events (rellenado por Electrs o bitcoind scantxoutset, lo que el operador haya conectado)."
-
-#: src/pages/Config.tsx
-#~ msgid "Informational. Off by default. Fires when the on-chain payout scanner observes a coinbase output crediting your payout address - i.e. the transaction Ocean committed has now confirmed. Includes block height, payout amount, and a truncated tx id. Source: reward_events ledger (populated by your Electrum server or bitcoind scantxoutset, whichever the operator has wired)."
-#~ msgstr "Informativo. Desactivado por defecto. Se dispara cuando el escáner de pagos on-chain observa una salida coinbase que acredita tu dirección de pago - es decir, la transacción que Ocean comprometió ya se ha confirmado. Incluye altura de bloque, importe del pago y un id de transacción truncado. Fuente: libro mayor reward_events (poblado por tu servidor Electrum o bitcoind scantxoutset, según lo que el operador haya conectado)."
-
-#: src/pages/Config.tsx
 msgid "Informational. Off by default. Fires when the on-chain payout scanner observes a new transaction crediting your payout address - i.e. the payout Ocean queued has now confirmed (any tx, not just a coinbase - Ocean pays out via batched sweeps). Includes block height, payout amount, and a truncated tx id. Source: reward_events ledger (populated by your Electrum server or bitcoind scantxoutset, whichever the operator has wired)."
 msgstr "Informativo. Desactivado por defecto. Se activa cuando el escaner de pagos on-chain detecta una nueva transaccion que acredita tu direccion de pago - es decir, el pago que Ocean puso en cola ya se ha confirmado (cualquier transaccion, no solo una coinbase - Ocean paga mediante barridos por lotes). Incluye altura de bloque, importe del pago y un id de tx truncado. Fuente: el libro reward_events (rellenado por tu servidor Electrum o bitcoind scantxoutset, segun lo que haya configurado el operador)."
 
@@ -2487,10 +2430,6 @@ msgstr "Cargar más"
 msgid "load older"
 msgstr "cargar más antiguas"
 
-#: src/components/PriceChart.tsx
-#~ msgid "loading decision…"
-#~ msgstr "cargando decisión…"
-
 #: src/pages/Status.tsx
 msgid "Loading or daemon restart required."
 msgstr "Cargando o se requiere reiniciar el daemon."
@@ -2516,7 +2455,6 @@ msgid "Log retention"
 msgstr "Retención de logs"
 
 #: src/lib/alertConditions.ts
-#: src/pages/Config.tsx
 msgid "low wallet runway"
 msgstr "wallet runway baja"
 
@@ -2567,7 +2505,6 @@ msgid "marketplace API back"
 msgstr "API del mercado de vuelta"
 
 #: src/lib/alertConditions.ts
-#: src/pages/Config.tsx
 msgid "marketplace API down"
 msgstr "API del mercado caída"
 
@@ -2883,10 +2820,6 @@ msgid "Not configured"
 msgstr "No configurado"
 
 #: src/pages/Status.tsx
-#~ msgid "Not configured. Go to Config → On-chain payouts and select Electrs or Bitcoin Knots RPC to track your on-chain balance. The net line treats missing collected as 0 so the arithmetic still reads - a blank row here is the hint that a piece of the income side isn't wired up."
-#~ msgstr "No configurado. Ve a Config → On-chain payouts y selecciona Electrs o Bitcoin Knots RPC para hacer seguimiento de tu saldo on-chain. La línea neta trata el cobrado faltante como 0 para que la cuenta siga leyéndose - una fila en blanco aquí es la pista de que falta cablear una parte del lado del ingreso."
-
-#: src/pages/Status.tsx
 msgid "Not configured. Go to Config → On-chain payouts and select Electrum server or Bitcoin Knots RPC to track your on-chain balance. The net line treats missing collected as 0 so the arithmetic still reads - a blank row here is the hint that a piece of the income side isn't wired up."
 msgstr "No configurado. Ve a Config → Pagos on-chain y selecciona Servidor Electrum o Bitcoin Knots RPC para seguir tu saldo on-chain. La línea neta trata lo recaudado ausente como 0 para que la aritmética siga siendo legible - una fila en blanco aquí es la pista de que una parte del lado de ingresos no está conectada."
 
@@ -3189,10 +3122,6 @@ msgstr "nuestras ganancias (est.)"
 msgid "our pool blocks"
 msgstr "nuestros bloques del pool"
 
-#: src/pages/Config.tsx
-#~ msgid "Our preferred explorer: a mempool.space fork that surfaces BIP-110 miner signaling."
-#~ msgstr "Nuestro explorador preferido: un fork de mempool.space que muestra la señalización de BIP-110 por los mineros."
-
 #: src/components/HashrateChart.tsx
 msgid "our share (est.)"
 msgstr "nuestra parte (est.)"
@@ -3206,12 +3135,6 @@ msgstr "Nuestra porción de la ventana TIDES de Ocean. El sistema de pagos de Oc
 #: src/pages/Status.tsx
 msgid "Our unpaid balance ({0}) has already crossed the payout threshold ({1} ≈ 0,01 BTC), so Ocean has queued us for payout. \"Next block\" is Ocean's own projection, not a literal trigger: Ocean settles operator payouts as a batched payment transaction from its pool wallet, broadcast on its own cadence and mined into whatever block by whatever pool - it is NOT a coinbase output and NOT necessarily an Ocean-mined block. When it confirms, a payout marker appears on the price chart."
 msgstr "Nuestro saldo no pagado ({0}) ya ha superado el umbral de pago ({1} ≈ 0,01 BTC), asi que Ocean nos ha puesto en cola para el pago. \"Next block\" es la propia prevision de Ocean, no un disparador literal: Ocean liquida los pagos a los operadores como una transaccion de pago por lotes desde su monedero de pool, difundida a su propio ritmo y minada en cualquier bloque por cualquier pool - NO es una salida coinbase y NO necesariamente un bloque minado por Ocean. Cuando se confirma, aparece un marcador de pago en el grafico de precios."
-
-#. placeholder {0}: denomination.formatSat( o.user.unpaid_sat, intlLocale, )
-#. placeholder {1}: denomination.formatSat( o.user.payout_threshold_sat, intlLocale, )
-#: src/pages/Status.tsx
-#~ msgid "Our unpaid balance ({0}) has already crossed the payout threshold ({1} ≈ 0,01 BTC). The accumulated balance ships as a coinbase output the next time Ocean wins a pool block - under TIDES the pool only pays out when it finds a block, since that's the only block where it controls the coinbase. \"Next block\" means the next Ocean pool block (~3/day at typical share), NOT the next Bitcoin block in general. The blue cubes on the hashrate chart above mark each pool block as it lands."
-#~ msgstr "Nuestro saldo no pagado ({0}) ya ha superado el umbral de pago ({1} ≈ 0,01 BTC). El saldo acumulado se envía como una salida coinbase la próxima vez que Ocean gane un bloque de pool - bajo TIDES la pool solo paga cuando encuentra un bloque, porque es el único bloque donde controla el coinbase. \"Next block\" significa el siguiente bloque de la pool de Ocean (~3 al día con el reparto típico), NO el siguiente bloque de Bitcoin en general. Los cubos azules en el gráfico de hashrate de arriba marcan cada bloque de pool a medida que llega."
 
 #: src/components/TilesBar.tsx
 msgid "Overall % of the selected chart range that hashrate was being delivered. Mathematically: bid coverage × delivery while bidding. When uptime is below 100 %, the other two tiles tell you why — bid coverage is the \"did we have an order up?\" share (orderbook availability); delivery while bidding is the \"when we did, was it delivering?\" share (hardware / pool quality). Duration-weighted so a long gap counts proportionally."
@@ -3244,6 +3167,7 @@ msgid "Override the color of any named line or event marker on the Hashrate and 
 msgstr "Sobrescribe el color de cualquier línea o marcador con nombre en los gráficos de hashrate y precio. Haz clic en una muestra para elegir de la paleta o establecer un valor hex personalizado. Guardado en el daemon, así la elección te sigue entre dispositivos."
 
 #: src/pages/Config.tsx
+#: src/pages/History.tsx
 msgid "own pool block"
 msgstr "bloque propio del pool"
 
@@ -3316,10 +3240,6 @@ msgstr "PAGO INICIADO"
 #: src/pages/Status.tsx
 msgid "Payout observer is starting up. Waiting for the first balance scan to complete - usually a few seconds with an Electrum server, up to a minute with bitcoind scantxoutset."
 msgstr "El observador de pagos está arrancando. Esperando a que termine el primer escaneo de saldo - normalmente unos segundos con un servidor Electrum, hasta un minuto con bitcoind scantxoutset."
-
-#: src/pages/Status.tsx
-#~ msgid "Payout observer is starting up. Waiting for the first balance scan to complete - usually a few seconds with Electrs, up to a minute with bitcoind scantxoutset."
-#~ msgstr "El observador de pagos está iniciando. Esperando a que finalice el primer escaneo de saldo - normalmente unos segundos con Electrs, hasta un minuto con bitcoind scantxoutset."
 
 #: src/pages/Config.tsx
 msgid "Payout source"
@@ -4257,14 +4177,6 @@ msgid "Testing…"
 msgstr "Probando…"
 
 #: src/pages/Config.tsx
-#~ msgid "The \"Backfill now\" button walks the full address history via Electrs and adds any historical Ocean coinbase payouts that aren't already recorded. Safe to run repeatedly."
-#~ msgstr "El botón \"Backfill ahora\" recorre todo el historial de la dirección vía Electrs y añade cualquier pago coinbase histórico de Ocean que aún no esté registrado. Seguro ejecutarlo varias veces."
-
-#: src/pages/Config.tsx
-#~ msgid "The \"Backfill now\" button walks the full address history via your Electrum server and adds any historical Ocean coinbase payouts that aren't already recorded. Safe to run repeatedly."
-#~ msgstr "El botón \"Rellenar ahora\" recorre todo el historial de la dirección a través de tu servidor Electrum y añade los pagos coinbase históricos de Ocean que aún no estén registrados. Seguro de ejecutar repetidamente."
-
-#: src/pages/Config.tsx
 msgid "The \"Backfill now\" button walks the full address history via your Electrum server and adds any historical Ocean payouts that aren't already recorded. Safe to run repeatedly."
 msgstr "El boton \"Backfill now\" recorre todo el historial de la direccion a traves de tu servidor Electrum y anade cualquier pago historico de Ocean que aun no este registrado. Seguro de ejecutar repetidamente."
 
@@ -4493,14 +4405,6 @@ msgstr "usa el share_log actual - una aproximación para bloques antiguos, ya qu
 msgid "Uses scantxoutset -- CPU-heavy, 30+ seconds per scan. Polled hourly. Use only if you don't have an Electrum server."
 msgstr "Usa scantxoutset -- intensivo en CPU, 30+ segundos por escaneo. Consultado cada hora. Úsalo solo si no tienes un servidor Electrum."
 
-#: src/pages/Config.tsx
-#~ msgid "Uses scantxoutset -- CPU-heavy, 30+ seconds per scan. Polled hourly. Use only if you don't have Electrs."
-#~ msgstr "Usa scantxoutset - intensivo en CPU, 30+ segundos por escaneo. Consultado cada hora. Úsalo solo si no tienes Electrs."
-
-#: src/pages/Status.tsx
-#~ msgid "UTXOs at the configured payout address. Read via Electrs (preferred, instant) or bitcoind RPC (slower)."
-#~ msgstr "UTXOs en la dirección de pago configurada. Se leen vía Electrs (preferido, instantáneo) o bitcoind RPC (más lento)."
-
 #: src/pages/Status.tsx
 msgid "UTXOs at the configured payout address. Read via your Electrum server (preferred, instant) or bitcoind RPC (slower)."
 msgstr "UTXOs en la dirección de pago configurada. Leído a través de tu servidor Electrum (preferido, instantáneo) o bitcoind RPC (más lento)."
@@ -4583,10 +4487,6 @@ msgstr "Cuando cualquier oferta activa tiene un fee_rate_pct por encima de este 
 #: src/pages/Config.tsx
 msgid "When more than this many markers would render on the price chart, the dashboard hides EDIT_PRICE markers first (CREATE / EDIT_SPEED / CANCEL stay because they're rare and diagnostic). If even after hiding EDIT_PRICE the count still exceeds the cap, all markers are hidden. 0 = no count-based filter (all markers render subject to the existing per-range rule). Useful at low-overpay settings where EDIT_PRICE fires every couple of minutes and clutters the chart."
 msgstr "Cuando se renderizarían más marcadores de los aquí indicados en la gráfica de precios, el panel oculta primero los marcadores EDIT_PRICE (CREATE / EDIT_SPEED / CANCEL se mantienen porque son raros y diagnósticos). Si incluso tras quitar EDIT_PRICE el total sigue por encima del tope, se ocultan todos los marcadores. 0 = sin filtro por cantidad (todos los marcadores se muestran sujetos a la regla por rango existente). Útil con overpay bajo donde EDIT_PRICE se dispara cada pocos minutos y satura la gráfica."
-
-#: src/pages/Config.tsx
-#~ msgid "When on, lifetime earnings count every coinbase tx ever credited to this payout address - including payouts you have already swept to another wallet. When off, only outputs still sitting at the address are counted (the pre-1.7.5 behaviour). Most users want this on; turn it off if you rotate to a fresh payout address per accounting period."
-#~ msgstr "Cuando está activado, las ganancias totales cuentan cada tx coinbase que se haya acreditado a esta dirección de pago - incluidos pagos que ya hayas movido a otra wallet. Cuando está desactivado, solo cuentan las salidas que aún están en la dirección (el comportamiento anterior a 1.7.5). La mayoría de usuarios lo quieren activado; desactívalo si rotas a una dirección de pago nueva por período contable."
 
 #: src/pages/Config.tsx
 msgid "When on, lifetime earnings count every payout tx ever credited to this payout address - including payouts you have already swept to another wallet. When off, only outputs still sitting at the address are counted (the pre-1.7.5 behaviour). Most users want this on; turn it off if you rotate to a fresh payout address per accounting period."
@@ -4679,10 +4579,6 @@ msgstr "tu nodo Bitcoin no registra BIP 110 como una softfork con nombre"
 msgid "Your Bitcoin node supports BIP 110, which is currently in its activation window. There are two paths it can activate by:"
 msgstr "Tu nodo Bitcoin admite BIP 110, que actualmente está en su ventana de activación. Hay dos caminos por los que puede activarse:"
 
-#: src/pages/Config.tsx
-#~ msgid "Your Electrum server's host. On Umbrel, the Electrs or Fulcrum app page shows the address (e.g. umbrel.local); use electrs_electrs_1 when the autopilot runs on the same Umbrel."
-#~ msgstr "El host de tu servidor Electrum. En Umbrel, la página de la app Electrs o Fulcrum muestra la dirección (p. ej. umbrel.local); usa electrs_electrs_1 cuando el autopilot se ejecuta en el mismo Umbrel."
-
 #: src/pages/Status.tsx
 msgid "Your layout is saved on this device."
 msgstr "Tu disposición se guarda en este dispositivo."
@@ -4692,7 +4588,6 @@ msgid "Your share of Ocean's reward window. Approximately your hashrate ÷ pool 
 msgstr "Tu cuota en la ventana de recompensas de Ocean. Aproximadamente tu hashrate ÷ hashrate del pool; impulsa la línea de ganancias no pagadas en el gráfico de precios."
 
 #: src/lib/alertConditions.ts
-#: src/pages/Config.tsx
 msgid "zero hashrate"
 msgstr "hashrate cero"
 

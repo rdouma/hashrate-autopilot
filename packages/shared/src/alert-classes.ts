@@ -30,7 +30,12 @@ export interface ConditionSpanClass {
   readonly recoveryClass: string;
   /** Which chart(s) the background band renders on. */
   readonly charts: readonly AlertChartTarget[];
-  /** chart_color_overrides slot that tints the band + onset marker. */
+  /**
+   * chart_color_overrides slot that tints the band + onset/recovery
+   * markers. #316/#318: every condition span shares the single
+   * `events.alert_condition` slot — the span label carries the meaning,
+   * so one color keeps the Config surface small.
+   */
   readonly colorSlot: string;
   /** Stable English label; the dashboard translates by `openClass`. */
   readonly label: string;
@@ -47,60 +52,60 @@ export const CONDITION_SPAN_CLASSES: readonly ConditionSpanClass[] = [
     openClass: 'hashrate_below_floor',
     recoveryClass: 'hashrate_below_floor_recovery',
     charts: ['hashrate'],
-    colorSlot: 'events.alert_below_floor',
+    colorSlot: 'events.alert_condition',
     label: 'Below floor',
   },
   {
     openClass: 'zero_hashrate',
     recoveryClass: 'zero_hashrate_recovery',
     charts: ['hashrate'],
-    colorSlot: 'events.alert_zero_hashrate',
+    colorSlot: 'events.alert_condition',
     label: 'Zero hashrate',
   },
   {
     openClass: 'datum_unreachable',
     recoveryClass: 'datum_unreachable_recovery',
     charts: ['hashrate', 'price'],
-    colorSlot: 'events.alert_datum_unreachable',
+    colorSlot: 'events.alert_condition',
     label: 'DATUM unreachable',
   },
   {
     openClass: 'api_unreachable',
     recoveryClass: 'api_unreachable_recovery',
     charts: ['hashrate', 'price'],
-    colorSlot: 'events.alert_api_unreachable',
+    colorSlot: 'events.alert_condition',
     label: 'Marketplace API unreachable',
   },
   {
     openClass: 'wallet_runway',
     recoveryClass: 'wallet_runway_recovery',
     charts: ['price'],
-    colorSlot: 'events.alert_wallet_runway',
+    colorSlot: 'events.alert_condition',
     label: 'Low wallet runway',
   },
   {
     openClass: 'solo_overheating',
     recoveryClass: 'solo_overheating_recovery',
     charts: ['hashrate'],
-    colorSlot: 'events.alert_solo_overheating',
+    colorSlot: 'events.alert_condition',
     label: 'Bitaxe overheating',
   },
   // #318: log-only span classes (charts: [] -> they appear as History
   // span rows but draw no chart band, since #167 fillable-null and #287
-  // bid-pause bands already cover them on the charts). Colors reuse an
-  // existing, semantically-close slot so no new Config rows are needed.
+  // bid-pause bands already cover them on the charts). They share the
+  // same single alert-condition color as every other span.
   {
     openClass: 'marketplace_empty',
     recoveryClass: 'marketplace_empty_recovery',
     charts: [],
-    colorSlot: 'events.alert_api_unreachable',
+    colorSlot: 'events.alert_condition',
     label: 'Marketplace empty',
   },
   {
     openClass: 'sustained_paused',
     recoveryClass: 'sustained_paused_recovery',
     charts: [],
-    colorSlot: 'events.bid_paused',
+    colorSlot: 'events.alert_condition',
     label: 'Bid paused (sustained)',
   },
 ];

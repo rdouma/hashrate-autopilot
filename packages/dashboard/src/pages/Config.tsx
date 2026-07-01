@@ -2171,17 +2171,6 @@ function ChartColorsSection({
             { key: 'events.bid_resumed', label: t`bid resumed` },
           ],
         },
-        {
-          subtitle: t`Alert condition bands`,
-          rows: [
-            { key: 'events.alert_below_floor', label: t`below floor` },
-            { key: 'events.alert_zero_hashrate', label: t`zero hashrate` },
-            { key: 'events.alert_datum_unreachable', label: t`DATUM unreachable` },
-            { key: 'events.alert_api_unreachable', label: t`marketplace API down` },
-            { key: 'events.alert_wallet_runway', label: t`low wallet runway` },
-            { key: 'events.alert_solo_overheating', label: t`Bitaxe overheating` },
-          ],
-        },
       ],
     },
     {
@@ -2195,6 +2184,10 @@ function ChartColorsSection({
           { key: 'hashrate.marker_ip_change', label: t`public-IP change` },
           { key: 'price.marker_payout_gem', label: t`on-chain payout` },
           { key: 'price.marker_deposit', label: t`Braiins deposit` },
+          // #316/#318: one shared color for every alert-condition band +
+          // its onset/recovery markers (the band label carries the
+          // meaning, so a per-condition palette wasn't worth it).
+          { key: 'events.alert_condition', label: t`alert condition` },
         ],
       }],
     },

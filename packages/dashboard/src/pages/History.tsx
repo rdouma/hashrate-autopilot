@@ -92,10 +92,20 @@ const LOG_EXTRA_COLOR_SLOT: Record<
   retarget: 'hashrate.marker_retarget',
 };
 
-function logExtraColor(kind: LogExtraKind): string {
+/** #318: block-variant color slot, mirroring the chart marker colors. */
+const BLOCK_VARIANT_SLOT: Record<BlockVariant, ChartColorKey> = {
+  ours: 'hashrate.pool_block_ours',
+  others: 'hashrate.pool_block_others',
+  bip110: 'hashrate.pool_block_bip110',
+};
+
+function logExtraColor(kind: LogExtraKind, blockVariant?: BlockVariant): string {
   if (kind === 'alert') return '#fbbf24'; // amber-400 - generic alert
   if (kind === 'config') return '#a78bfa'; // violet-400 - config change
   if (kind === 'boot') return '#34d399'; // emerald-400 - daemon started
+  if (kind === 'block') {
+    return CHART_COLOR_DEFAULTS[BLOCK_VARIANT_SLOT[blockVariant ?? 'others']];
+  }
   return CHART_COLOR_DEFAULTS[LOG_EXTRA_COLOR_SLOT[kind]];
 }
 
@@ -122,6 +132,14 @@ function pointAlertLabel(eventClass: string): string {
   }
 }
 
+/**
+ * #318: pool-block row variant. Mirrors the chart's marker semantics
+ * (HashrateChart precedence): our own block reads as a crown, a
+ * BIP-110-signalling block as a yellow cube, everything else as the
+ * default blue cube. Drives both the row glyph and its color.
+ */
+type BlockVariant = 'ours' | 'others' | 'bip110';
+
 /** A merged log entry for one of the extra event types. */
 interface LogExtraItem {
   kind: LogExtraKind;
@@ -131,21 +149,40 @@ interface LogExtraItem {
   summary: string;
   /** Overrides the kind's generic label (used for point alerts / config). */
   label?: string;
+  /** #318: for `kind === 'block'`, which marker variant to render. */
+  blockVariant?: BlockVariant;
+  /** #318: block hash for `kind === 'block'`, so the row can reveal the
+   *  matching cube on the chart with a sonar beacon. */
+  blockHash?: string;
 }
 
 /** Lucide glyph per extra kind, tinted with its marker color. */
-function LogExtraGlyph({ kind }: { kind: LogExtraKind }) {
+function LogExtraGlyph({ kind, blockVariant }: { kind: LogExtraKind; blockVariant?: BlockVariant }) {
+  const color = logExtraColor(kind, blockVariant);
   const base = {
     width: 12,
     height: 12,
     viewBox: '0 0 24 24',
     fill: 'none' as const,
-    stroke: logExtraColor(kind),
+    stroke: color,
     strokeWidth: 2,
     strokeLinecap: 'round' as const,
     strokeLinejoin: 'round' as const,
     className: 'inline-block align-middle',
   };
+  // #318: our own block reads as a crown (same 10×10 path the chart
+  // draws), matching the chart marker; others/BIP-110 keep the cube,
+  // distinguished by color (blue vs yellow).
+  if (kind === 'block' && blockVariant === 'ours') {
+    return (
+      <svg width="12" height="12" viewBox="0 0 10 10" className="inline-block align-middle">
+        <g fill={color} fillOpacity="0.45" stroke={color} strokeWidth="1.1" strokeLinejoin="round">
+          <path d="M0 8 L1.5 3 L4 5.5 L5 1 L6 5.5 L8.5 3 L10 8 Z" />
+          <line x1="0" y1="9.5" x2="10" y2="9.5" stroke={color} strokeWidth="1.4" />
+        </g>
+      </svg>
+    );
+  }
   switch (kind) {
     case 'payout': // Lucide gem
       return (
@@ -462,11 +499,28 @@ export function History() {
     for (const b of oceanQuery.data?.our_recent_blocks ?? []) {
       // #318: all pool blocks, not just ours. Ocean's own blocks (found
       // by other miners) are context; ours are flagged in the summary.
+      // Variant mirrors the chart marker precedence: ours -> crown,
+      // BIP-110-signalling -> yellow cube, otherwise blue cube.
+      const blockVariant: BlockVariant = b.found_by_us
+        ? 'ours'
+        : b.signals_bip110 === true
+          ? 'bip110'
+          : 'others';
+      // The variant now rides on the glyph + label; keep the summary to
+      // the block height + reward so it doesn't repeat "found by us".
+      const blockLabel = blockVariant === 'ours'
+        ? t`own pool block`
+        : blockVariant === 'bip110'
+          ? t`BIP 110 block`
+          : t`pool block`;
       all.push({
         kind: 'block',
         key: `block:${b.block_hash}`,
         ts: b.timestamp_ms,
-        summary: `block ${b.height} · ${formatNumber(b.total_reward_sat, {})} sat${b.found_by_us ? ' · found by us' : ''}`,
+        summary: `block ${b.height} · ${formatNumber(b.total_reward_sat, {})} sat`,
+        label: blockLabel,
+        blockVariant,
+        blockHash: b.block_hash,
       });
     }
     for (const c of ipChangesQuery.data?.events ?? []) {
@@ -779,7 +833,15 @@ export function History() {
                   extra={item.extra}
                   fmt={fmt}
                   highlighted={highlightedRowKey === item.extra.key}
-                  onClick={() => navigate(`/?at=${item.extra.ts}`)}
+                  onClick={() =>
+                    navigate(
+                      // #318: block rows carry the hash so the chart pulses
+                      // a sonar beacon on the matching cube/crown marker.
+                      item.extra.kind === 'block' && item.extra.blockHash
+                        ? `/?at=${item.extra.ts}&focus_block=${item.extra.blockHash}`
+                        : `/?at=${item.extra.ts}`,
+                    )
+                  }
                 />
               ),
             )}
@@ -920,7 +982,7 @@ function Toolbar({
             const active = shownAlertClasses.has(openClass);
             const color =
               CHART_COLOR_DEFAULTS[
-                (conditionSpanClass(openClass)?.colorSlot ?? 'events.alert_below_floor') as ChartColorKey
+                (conditionSpanClass(openClass)?.colorSlot ?? 'events.alert_condition') as ChartColorKey
               ];
             return (
               <button
@@ -1252,7 +1314,7 @@ function LogExtraRow({
 }) {
   const { i18n } = useLingui();
   void i18n;
-  const color = logExtraColor(extra.kind);
+  const color = logExtraColor(extra.kind, extra.blockVariant);
   const dash = <span className="text-slate-600">—</span>;
   return (
     <tr
@@ -1268,7 +1330,7 @@ function LogExtraRow({
       </td>
       <td className="py-1 px-3 font-mono whitespace-nowrap">{dash}</td>
       <td className="py-1 px-3 whitespace-nowrap">
-        <LogExtraGlyph kind={extra.kind} />
+        <LogExtraGlyph kind={extra.kind} blockVariant={extra.blockVariant} />
         <span className="ml-1.5" style={{ color }}>
           {extra.label ?? logExtraLabel(extra.kind)}
         </span>

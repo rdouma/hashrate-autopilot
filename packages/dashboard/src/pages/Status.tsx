@@ -250,9 +250,13 @@ export function Status() {
   const [focusedEventId, setFocusedEventId] = useState<number | null>(null);
   // #316: span (open_id) jumped to from a History alert row -> sonar beacon.
   const [focusedSpanId, setFocusedSpanId] = useState<number | null>(null);
+  // #318: pool-block hash jumped to from a History block row -> sonar
+  // beacon on the matching cube/crown marker.
+  const [focusedBlockHash, setFocusedBlockHash] = useState<string | null>(null);
   // #316: pinned pop-up for a condition-band marker clicked on a chart.
   const [alertTip, setAlertTip] = useState<AlertSpanTooltipState | null>(null);
   const focusSpanClearTimer = useRef<number | null>(null);
+  const focusBlockClearTimer = useRef<number | null>(null);
   const focusClearTimer = useRef<number | null>(null);
   const focusFallbackTimer = useRef<number | null>(null);
   const focusScrollTimer = useRef<number | null>(null);
@@ -292,6 +296,7 @@ export function Status() {
       if (focusFallbackTimer.current !== null) window.clearTimeout(focusFallbackTimer.current);
       if (focusScrollTimer.current !== null) window.clearInterval(focusScrollTimer.current);
       if (focusSpanClearTimer.current !== null) window.clearTimeout(focusSpanClearTimer.current);
+      if (focusBlockClearTimer.current !== null) window.clearTimeout(focusBlockClearTimer.current);
     },
     [],
   );
@@ -336,6 +341,17 @@ export function Status() {
         }, 6_000);
       }
     }
+    // #318: ?focus_block=<hash> from a History pool-block row pulses a
+    // sonar beacon on the matching cube/crown marker (auto-clears ~6 s).
+    const blockRaw = params.get('focus_block');
+    if (blockRaw) {
+      if (focusBlockClearTimer.current !== null) window.clearTimeout(focusBlockClearTimer.current);
+      setFocusedBlockHash(blockRaw);
+      focusBlockClearTimer.current = window.setTimeout(() => {
+        focusBlockClearTimer.current = null;
+        setFocusedBlockHash(null);
+      }, 6_000);
+    }
     const idRaw = params.get('focus_event');
     if (idRaw) {
       const id = Number.parseInt(idRaw, 10);
@@ -362,10 +378,13 @@ export function Status() {
     // also scrolls the chart block into view. Poll briefly - the
     // block only mounts once the status query resolves, which on a
     // cold navigation from /history lands a beat after this effect.
+    // #318: pool blocks live on the hashrate chart, so a block reveal
+    // scrolls that block into view instead of the price chart.
+    const scrollTargetId = blockRaw ? 'hashrate-chart-block' : 'price-chart-block';
     if (focusScrollTimer.current !== null) window.clearInterval(focusScrollTimer.current);
     let scrollTries = 0;
     focusScrollTimer.current = window.setInterval(() => {
-      const el = document.getElementById('price-chart-block');
+      const el = document.getElementById(scrollTargetId);
       scrollTries += 1;
       if (el !== null) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -379,6 +398,7 @@ export function Status() {
     }, 100);
     params.delete('focus_event');
     params.delete('focus_span');
+    params.delete('focus_block');
     params.delete('at');
     const next = params.toString();
     navigate(`/${next ? `?${next}` : ''}`, { replace: true });
@@ -862,7 +882,7 @@ export function Status() {
       />
     ),
     hashrate: (
-      <div className="space-y-1">
+      <div className="space-y-1" id="hashrate-chart-block">
         <div className="flex justify-end items-center gap-2 text-[11px] text-slate-400">
           <Trans>right axis</Trans>
           <select
@@ -919,6 +939,7 @@ export function Status() {
           chartColorOverrides={configQuery.data?.config?.chart_color_overrides}
           ipChangeEvents={ipChangesQuery.data?.events ?? EMPTY_IP_CHANGES}
           crosshair={chartCrosshair}
+          focusBlockHash={focusedBlockHash}
         />
       </div>
     ),

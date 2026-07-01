@@ -373,6 +373,7 @@ export const HashrateChart = memo(function HashrateChart({
   idleModeIntervals = [],
   alertConditionIntervals = [],
   focusSpanOpenId = null,
+  focusBlockHash = null,
   onAlertSpanClick,
   viewportHandlers,
   wheelRef,
@@ -450,6 +451,9 @@ export const HashrateChart = memo(function HashrateChart({
   alertConditionIntervals?: ReadonlyArray<AlertConditionInterval>;
   /** #316: span (open_id) jumped to from History; gets a sonar beacon. */
   focusSpanOpenId?: number | null;
+  /** #318: pool-block hash jumped to from a History block row; the
+   *  matching cube/crown marker gets a sonar beacon (auto-clears). */
+  focusBlockHash?: string | null;
   /** #316: clicking a condition-band marker. */
   onAlertSpanClick?: (span: AlertConditionInterval['span'], clientX: number, clientY: number) => void;
   viewportHandlers?: {
@@ -2154,6 +2158,30 @@ export const HashrateChart = memo(function HashrateChart({
                       <path d="M12 22V12" />
                     </svg>
                   )}
+                  {/* #318: sonar beacon when jumped to from a History
+                      block row. Same scale-transform pattern as the
+                      alert-span beacon (r-animation is Blink-only). */}
+                  {focusBlockHash !== null && b.block_hash === focusBlockHash && (
+                    <g pointerEvents="none">
+                      <style>{`
+                        @keyframes blockFocusPing {
+                          0%   { transform: scale(1);   opacity: 0.95; }
+                          100% { transform: scale(6.8); opacity: 0;    }
+                        }
+                        .block-focus-ping {
+                          animation: blockFocusPing 2.4s ease-out infinite;
+                          transform-box: fill-box;
+                          transform-origin: center;
+                          vector-effect: non-scaling-stroke;
+                          fill: none;
+                          stroke-width: 2;
+                        }
+                      `}</style>
+                      <circle cx={x} cy={PADDING.top - 4} r={5} className="block-focus-ping" stroke={color} />
+                      <circle cx={x} cy={PADDING.top - 4} r={5} className="block-focus-ping" stroke={color} style={{ animationDelay: '-0.8s' }} />
+                      <circle cx={x} cy={PADDING.top - 4} r={5} className="block-focus-ping" stroke={color} style={{ animationDelay: '-1.6s' }} />
+                    </g>
+                  )}
                 </g>
               );
             })}
@@ -2601,7 +2629,7 @@ export function PoolBlockTooltip({
         >
           <Trans>open in block explorer →</Trans>
         </a>
-        {pinned && isOurs && (
+        {pinned && (
           <button
             type="button"
             onClick={() => navigate(`/history?focus=block:${block.block_hash}&ts=${block.timestamp_ms}`)}
