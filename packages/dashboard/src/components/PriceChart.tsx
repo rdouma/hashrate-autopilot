@@ -38,6 +38,7 @@ import {
   type RewardEventView,
 } from '../lib/api';
 import { AlertConditionBands } from './AlertConditionBands';
+import { MarkerBeacon } from './MarkerBeacon';
 import {
   countPriorEpochPoolBlocks,
   inferRetargetBlockHeight,
@@ -282,6 +283,7 @@ export const PriceChart = memo(function PriceChart({
   chartColorOverrides,
   crosshair,
   focusEventId = null,
+  focusMarker = null,
   onFocusEventRendered,
 }: {
   points: readonly MetricPoint[];
@@ -427,6 +429,11 @@ export const PriceChart = memo(function PriceChart({
    *  through the normal onMarkerClick path. Status clears this back
    *  to null a few seconds after onFocusEventRendered fires. */
   focusEventId?: number | null;
+  /** #318 follow-up: `<kind>:<key>` of a non-bid marker jumped to from a
+   *  History log row (payout:<id>, deposit:<txid>, unpaid:<ts>). The
+   *  matching payout gem / deposit fuel / unpaid-drop marker renders a
+   *  MarkerBeacon. Status clears it back to null after ~6 s. */
+  focusMarker?: string | null;
   /** #288: fired (possibly more than once) when the focused event's
    *  marker is actually present in the rendered set. Status starts
    *  the beacon's clear countdown on the first call, so slow metrics/
@@ -1861,6 +1868,23 @@ export const PriceChart = memo(function PriceChart({
     return out;
   }, [chartData, rightAxisSeries, points]);
 
+  // #318 follow-up: the "payout initiated" log row targets the
+  // unpaid-drop marker, but the point-alert and the tick-derived drop
+  // aren't id-linked - so resolve which drop to beacon by nearest tick
+  // to the jumped-to timestamp (`unpaid:<ts>`), within an hour.
+  const focusUnpaidTickAt = useMemo(() => {
+    if (!focusMarker || !focusMarker.startsWith('unpaid:')) return null;
+    const ts = Number.parseInt(focusMarker.slice('unpaid:'.length), 10);
+    if (!Number.isFinite(ts)) return null;
+    let best: number | null = null;
+    let bestDist = Infinity;
+    for (const d of unpaidDropMarkers) {
+      const dist = Math.abs(d.tick_at - ts);
+      if (dist < bestDist) { bestDist = dist; best = d.tick_at; }
+    }
+    return bestDist <= 60 * 60 * 1000 ? best : null;
+  }, [focusMarker, unpaidDropMarkers]);
+
   const difficultyRetargets = useMemo<RetargetEvent[]>(() => {
     const n = points.length;
     if (n === 0) return [];
@@ -1901,6 +1925,23 @@ export const PriceChart = memo(function PriceChart({
     }
     return out;
   }, [points, ourBlocks]);
+
+  // #318 follow-up: the log's retarget key is the API's tick_at, which
+  // can differ from this chart's locally-derived epoch-boundary tick by
+  // a tick or two - so resolve the beacon target by nearest, within a
+  // few minutes.
+  const focusRetargetTickAt = useMemo(() => {
+    if (!focusMarker || !focusMarker.startsWith('retarget:')) return null;
+    const ts = Number.parseInt(focusMarker.slice('retarget:'.length), 10);
+    if (!Number.isFinite(ts)) return null;
+    let best: number | null = null;
+    let bestDist = Infinity;
+    for (const r of difficultyRetargets) {
+      const dist = Math.abs(r.tick_at - ts);
+      if (dist < bestDist) { bestDist = dist; best = r.tick_at; }
+    }
+    return bestDist <= 10 * 60 * 1000 ? best : null;
+  }, [focusMarker, difficultyRetargets]);
 
   // #257: crosshair wiring - mirror of the HashrateChart block. The
   // svg ref is shared with the wheel-zoom ref callback; pointer
@@ -2810,6 +2851,9 @@ export const PriceChart = memo(function PriceChart({
               strokeWidth="1.5"
             />
             <rect x={d.cx - 9} y={d.cy - 9} width="18" height="18" fill="transparent" />
+            {focusUnpaidTickAt !== null && d.tick_at === focusUnpaidTickAt && (
+              <MarkerBeacon cx={d.cx} cy={d.cy} color={COLOR_DEPOSIT} />
+            )}
           </g>
         ))}
 
@@ -2936,6 +2980,9 @@ export const PriceChart = memo(function PriceChart({
                   <path d="M2 9h20" />
                   <path d="M10.5 3 8 9l4 13 4-13-2.5-6" />
                 </svg>
+                {focusMarker === `payout:${r.id}` && (
+                  <MarkerBeacon cx={x} cy={PADDING.top - 4} color={COLOR_PAYOUT_GEM} />
+                )}
               </g>
             );
           })}
@@ -3034,6 +3081,9 @@ export const PriceChart = memo(function PriceChart({
                   <path d="M2 21h13" />
                   <path d="M3 9h11" />
                 </svg>
+                {focusMarker === `deposit:${d.tx_id}` && (
+                  <MarkerBeacon cx={x} cy={PADDING.top - 4} color={COLOR_DEPOSIT} />
+                )}
               </g>
             );
           });
@@ -3070,6 +3120,9 @@ export const PriceChart = memo(function PriceChart({
                   <path d="M16.001 11.999a19.9 19.9 0 0 1 3.024 5.824c.444 1.369 2.26 1.676 2.603.278A13 13 0 0 0 20 8.069" />
                   <path d="M18.352 3.352a1.205 1.205 0 0 0-1.704 0l-5.296 5.296a1.205 1.205 0 0 0 0 1.704l2.296 2.296a1.205 1.205 0 0 0 1.704 0l5.296-5.296a1.205 1.205 0 0 0 0-1.704z" />
                 </svg>
+                {focusRetargetTickAt !== null && r.tick_at === focusRetargetTickAt && (
+                  <MarkerBeacon cx={x} cy={PADDING.top - 4} color={COLOR_RETARGET} />
+                )}
               </g>
             );
           })}

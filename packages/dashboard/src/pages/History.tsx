@@ -47,6 +47,12 @@ import { useDenomination } from '../lib/denomination';
 import { useFormatters } from '../lib/locale';
 import { formatNumber, formatDuration } from '../lib/format';
 import { CHART_COLOR_DEFAULTS, type ChartColorKey } from '../lib/chartColors';
+import {
+  logExtraJumpUrl,
+  type BlockVariant,
+  type LogExtraItem,
+  type LogExtraKind,
+} from '../lib/logExtra';
 import { conditionLabel } from '../lib/alertConditions';
 import { DatePicker } from '../components/DatePicker';
 import { BidEventDrawer } from '../components/BidEventDrawer';
@@ -77,7 +83,6 @@ const ALERT_COVERED_ELSEWHERE = new Set<string>([
 ]);
 
 /** #317/#318: extra event types folded into the unified log (besides bids + alerts). */
-type LogExtraKind = 'payout' | 'deposit' | 'block' | 'ip' | 'retarget' | 'alert' | 'config' | 'boot';
 const LOG_EXTRA_KINDS: readonly LogExtraKind[] = [
   'payout', 'deposit', 'block', 'ip', 'retarget', 'alert', 'config', 'boot',
 ];
@@ -131,30 +136,6 @@ function pointAlertLabel(eventClass: string): string {
     case 'beta_exit': return t`fee change`;
     default: return eventClass.replace(/_/g, ' ');
   }
-}
-
-/**
- * #318: pool-block row variant. Mirrors the chart's marker semantics
- * (HashrateChart precedence): our own block reads as a crown, a
- * BIP-110-signalling block as a yellow cube, everything else as the
- * default blue cube. Drives both the row glyph and its color.
- */
-type BlockVariant = 'ours' | 'others' | 'bip110';
-
-/** A merged log entry for one of the extra event types. */
-interface LogExtraItem {
-  kind: LogExtraKind;
-  /** Stable per-type key (numeric id or hash/txid). */
-  key: string;
-  ts: number;
-  summary: string;
-  /** Overrides the kind's generic label (used for point alerts / config). */
-  label?: string;
-  /** #318: for `kind === 'block'`, which marker variant to render. */
-  blockVariant?: BlockVariant;
-  /** #318: block hash for `kind === 'block'`, so the row can reveal the
-   *  matching cube on the chart with a sonar beacon. */
-  blockHash?: string;
 }
 
 /** Lucide glyph per extra kind, tinted with its marker color. */
@@ -554,6 +535,7 @@ export function History() {
         ts: a.created_at,
         label: pointAlertLabel(ec),
         summary: a.body || a.title,
+        eventClass: ec,
       });
     }
     for (const s of systemEventsQuery.data?.events ?? []) {
@@ -1351,32 +1333,6 @@ function LogExtraRow({
       </td>
     </tr>
   );
-}
-
-/**
- * #318 follow-up: nav URL that jumps the chart to an extra log entry's
- * marker, or null when the kind has no chart representation (config /
- * daemon-started). Block rows pulse a sonar beacon on the matching
- * cube/crown (`focus_block`); the other kinds pan the chart to the event
- * time. (Per-marker beacons for payout / deposit / IP / retarget /
- * point-alert markers are a follow-up.)
- */
-function logExtraJumpUrl(extra: LogExtraItem): string | null {
-  switch (extra.kind) {
-    case 'block':
-      return extra.blockHash
-        ? `/?at=${extra.ts}&focus_block=${extra.blockHash}`
-        : `/?at=${extra.ts}`;
-    case 'payout':
-    case 'deposit':
-    case 'ip':
-    case 'retarget':
-    case 'alert':
-      return `/?at=${extra.ts}`;
-    case 'config':
-    case 'boot':
-      return null;
-  }
 }
 
 /**

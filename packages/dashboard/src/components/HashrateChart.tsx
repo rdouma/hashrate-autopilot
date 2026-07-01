@@ -30,6 +30,7 @@ import {
 
 import type { AlertConditionInterval, MetricPoint, OurBlockMarker } from '../lib/api';
 import { AlertConditionBands } from './AlertConditionBands';
+import { MarkerBeacon } from './MarkerBeacon';
 import {
   clientXToTickAt,
   CrosshairReadout,
@@ -374,6 +375,7 @@ export const HashrateChart = memo(function HashrateChart({
   alertConditionIntervals = [],
   focusSpanOpenId = null,
   focusBlockHash = null,
+  focusMarker = null,
   onAlertSpanClick,
   viewportHandlers,
   wheelRef,
@@ -454,6 +456,10 @@ export const HashrateChart = memo(function HashrateChart({
   /** #318: pool-block hash jumped to from a History block row; the
    *  matching cube/crown marker gets a sonar beacon (auto-clears). */
   focusBlockHash?: string | null;
+  /** #318 follow-up: `<kind>:<key>` of a non-block marker jumped to from
+   *  a History log row. Here it drives the IP-change (ip:<id>) and
+   *  difficulty-retarget (retarget:<tick_at>) sonar beacons. */
+  focusMarker?: string | null;
   /** #316: clicking a condition-band marker. */
   onAlertSpanClick?: (span: AlertConditionInterval['span'], clientX: number, clientY: number) => void;
   viewportHandlers?: {
@@ -750,6 +756,30 @@ export const HashrateChart = memo(function HashrateChart({
     }
     return out;
   }, [points, rightAxisSeries, ourBlocks]);
+
+  // #318 follow-up: resolve which retarget marker gets the sonar beacon
+  // when jumped to from a History retarget row (`retarget:<tick_at>`).
+  // Nearest-within-a-few-minutes, since the API's tick_at can differ
+  // from this chart's locally-derived epoch-boundary tick by a tick.
+  const focusRetargetTickAt = useMemo(() => {
+    if (!focusMarker || !focusMarker.startsWith('retarget:')) return null;
+    const ts = Number.parseInt(focusMarker.slice('retarget:'.length), 10);
+    if (!Number.isFinite(ts)) return null;
+    let best: number | null = null;
+    let bestDist = Infinity;
+    for (const r of difficultyRetargets) {
+      const dist = Math.abs(r.tick_at - ts);
+      if (dist < bestDist) { bestDist = dist; best = r.tick_at; }
+    }
+    return bestDist <= 10 * 60 * 1000 ? best : null;
+  }, [focusMarker, difficultyRetargets]);
+
+  // #318 follow-up: the IP-change focus target (`ip:<id>`), parsed once.
+  const focusIpId = useMemo(() => {
+    if (!focusMarker || !focusMarker.startsWith('ip:')) return null;
+    const id = Number.parseInt(focusMarker.slice('ip:'.length), 10);
+    return Number.isFinite(id) ? id : null;
+  }, [focusMarker]);
 
   const chartData = useMemo(() => {
     if (points.length < 2) return null;
@@ -2228,6 +2258,9 @@ export const HashrateChart = memo(function HashrateChart({
                   <path d="M16.001 11.999a19.9 19.9 0 0 1 3.024 5.824c.444 1.369 2.26 1.676 2.603.278A13 13 0 0 0 20 8.069" />
                   <path d="M18.352 3.352a1.205 1.205 0 0 0-1.704 0l-5.296 5.296a1.205 1.205 0 0 0 0 1.704l2.296 2.296a1.205 1.205 0 0 0 1.704 0l5.296-5.296a1.205 1.205 0 0 0 0-1.704z" />
                 </svg>
+                {focusRetargetTickAt !== null && r.tick_at === focusRetargetTickAt && (
+                  <MarkerBeacon cx={x} cy={PADDING.top - 4} color={COLOR_RETARGET} />
+                )}
               </g>
             );
           })}
@@ -2241,6 +2274,7 @@ export const HashrateChart = memo(function HashrateChart({
           topY={PADDING.top}
           bottomY={chartHeight - PADDING.bottom}
           color={COLOR_IP_CHANGE}
+          focusId={focusIpId}
           onMarkerEnter={onIpChangeEnter}
           onMarkerLeave={onIpChangeLeave}
           onMarkerClick={onIpChangeClick}

@@ -253,10 +253,15 @@ export function Status() {
   // #318: pool-block hash jumped to from a History block row -> sonar
   // beacon on the matching cube/crown marker.
   const [focusedBlockHash, setFocusedBlockHash] = useState<string | null>(null);
+  // #318 follow-up: generic `<kind>:<key>` of a non-block marker jumped
+  // to from a History log row (payout / deposit / IP / retarget /
+  // unpaid-drop) -> sonar beacon on the matching chart marker.
+  const [focusedMarker, setFocusedMarker] = useState<string | null>(null);
   // #316: pinned pop-up for a condition-band marker clicked on a chart.
   const [alertTip, setAlertTip] = useState<AlertSpanTooltipState | null>(null);
   const focusSpanClearTimer = useRef<number | null>(null);
   const focusBlockClearTimer = useRef<number | null>(null);
+  const focusMarkerClearTimer = useRef<number | null>(null);
   const focusClearTimer = useRef<number | null>(null);
   const focusFallbackTimer = useRef<number | null>(null);
   const focusScrollTimer = useRef<number | null>(null);
@@ -297,6 +302,7 @@ export function Status() {
       if (focusScrollTimer.current !== null) window.clearInterval(focusScrollTimer.current);
       if (focusSpanClearTimer.current !== null) window.clearTimeout(focusSpanClearTimer.current);
       if (focusBlockClearTimer.current !== null) window.clearTimeout(focusBlockClearTimer.current);
+      if (focusMarkerClearTimer.current !== null) window.clearTimeout(focusMarkerClearTimer.current);
     },
     [],
   );
@@ -352,6 +358,18 @@ export function Status() {
         setFocusedBlockHash(null);
       }, 6_000);
     }
+    // #318 follow-up: ?focus_marker=<kind>:<key> from any other History
+    // log row pulses a beacon on the matching payout / deposit / IP /
+    // retarget / unpaid-drop marker (auto-clears ~6 s).
+    const markerRaw = params.get('focus_marker');
+    if (markerRaw) {
+      if (focusMarkerClearTimer.current !== null) window.clearTimeout(focusMarkerClearTimer.current);
+      setFocusedMarker(markerRaw);
+      focusMarkerClearTimer.current = window.setTimeout(() => {
+        focusMarkerClearTimer.current = null;
+        setFocusedMarker(null);
+      }, 6_000);
+    }
     const idRaw = params.get('focus_event');
     if (idRaw) {
       const id = Number.parseInt(idRaw, 10);
@@ -378,9 +396,13 @@ export function Status() {
     // also scrolls the chart block into view. Poll briefly - the
     // block only mounts once the status query resolves, which on a
     // cold navigation from /history lands a beat after this effect.
-    // #318: pool blocks live on the hashrate chart, so a block reveal
-    // scrolls that block into view instead of the price chart.
-    const scrollTargetId = blockRaw ? 'hashrate-chart-block' : 'price-chart-block';
+    // #318: pool blocks + IP-change + retarget markers live on the
+    // hashrate chart; payout / deposit / unpaid-drop live on the price
+    // chart. Scroll whichever carries the jumped-to marker into view.
+    const markerKind = markerRaw ? markerRaw.split(':')[0] : null;
+    const onHashrateChart =
+      blockRaw !== null || markerKind === 'ip' || markerKind === 'retarget';
+    const scrollTargetId = onHashrateChart ? 'hashrate-chart-block' : 'price-chart-block';
     if (focusScrollTimer.current !== null) window.clearInterval(focusScrollTimer.current);
     let scrollTries = 0;
     focusScrollTimer.current = window.setInterval(() => {
@@ -399,6 +421,7 @@ export function Status() {
     params.delete('focus_event');
     params.delete('focus_span');
     params.delete('focus_block');
+    params.delete('focus_marker');
     params.delete('at');
     const next = params.toString();
     navigate(`/${next ? `?${next}` : ''}`, { replace: true });
@@ -940,6 +963,7 @@ export function Status() {
           ipChangeEvents={ipChangesQuery.data?.events ?? EMPTY_IP_CHANGES}
           crosshair={chartCrosshair}
           focusBlockHash={focusedBlockHash}
+          focusMarker={focusedMarker}
         />
       </div>
     ),
@@ -1013,6 +1037,7 @@ export function Status() {
           ipChangeEvents={ipChangesQuery.data?.events ?? EMPTY_IP_CHANGES}
           crosshair={chartCrosshair}
           focusEventId={focusedEventId}
+          focusMarker={focusedMarker}
           onFocusEventRendered={handleFocusEventRendered}
         />
       </div>

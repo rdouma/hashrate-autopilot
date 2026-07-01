@@ -2,6 +2,10 @@
 
 ## 2026-06-30
 
+### `[UI]` Universal sonar beacon when jumping from a log row to its chart marker (#318)
+
+Completes the graph <-> log round-trip: every event in the History log now pulses a sonar beacon on its chart marker when you click "View on chart" in the detail panel - not just pool blocks. Payout (gem), deposit (fuel), IP-change (router), and difficulty-retarget (pickaxe) markers each get the ping, and the "payout initiated" alert homes in on the matching unpaid-drop marker on the price chart. So from either direction - marker popup "View in history", or log row "View on chart" - you land on the counterpart with a beacon showing exactly which one. (The unpaid-drop marker only exists when the price chart's right axis is set to unpaid or lifetime earnings; the others beacon regardless of axis.)
+
 ### `[UI]` History log rows open a detail panel instead of jumping straight to the chart (#318)
 
 Clicking a log entry (payout, deposit, pool block, IP change, retarget, alert, config change, daemon start) now opens a slide-over detail panel - matching how bid events and alert-condition rows already behave - instead of immediately panning the chart. The panel shows the event time and details, plus a "View on chart" button that does the jump (blocks still pulse the sonar beacon on their cube/crown; config and daemon-start events have no chart marker, so they show details only). Per-marker sonar beacons for the remaining marker types are a follow-up.
