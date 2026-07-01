@@ -3081,7 +3081,6 @@ msgid "Open ({0})"
 msgstr "Open ({0})"
 
 #: src/components/Bip110ScanCard.tsx
-#: src/pages/History.tsx
 msgid "open in block explorer"
 msgstr "openen in blokverkenner"
 
@@ -3113,6 +3112,10 @@ msgstr "Open de prijsgrafiek vastgezet op deze conditie"
 #: src/components/BidEventDrawer.tsx
 msgid "Open the price chart pinned to this event"
 msgstr "Open de prijsgrafiek vastgezet op dit event"
+
+#: src/pages/History.tsx
+msgid "Open this on-chain event in a block explorer"
+msgstr "Open deze on-chain gebeurtenis in een blokverkenner"
 
 #: src/pages/Status.tsx
 msgid "Operations & next action"
@@ -4480,6 +4483,10 @@ msgstr "v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
 #: src/pages/History.tsx
 msgid "View details"
 msgstr "Details bekijken"
+
+#: src/pages/History.tsx
+msgid "View in block explorer"
+msgstr "Bekijk in blokverkenner"
 
 #: src/components/AlertSpanTooltip.tsx
 #: src/components/HashrateChart.tsx

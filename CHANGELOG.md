@@ -2,6 +2,10 @@
 
 ## 2026-07-01
 
+### `[UI]` Filter chips show their real icons; "View in block explorer" button on on-chain events
+
+The Alerts and Events filter chips now carry the same glyph as their timeline rows instead of a generic colored dot - so the daemon-started chip shows the power icon (and is finally recognizable as its filter), payout shows the gem, deposit the fuel pump, alerts the warning triangle, and so on. And on-chain events (payout, deposit, pool block) get a proper **"View in block explorer"** button next to "View on chart" in the detail panel, replacing the small text link.
+
 ### `[UI]` Mode-change gets its own icon so it stops colliding with daemon-started
 
 The "mode" action and the "daemon started" event both drew the Lucide power icon, so the mode filter chip looked like it might be a daemon-started filter. Mode-change now uses a distinct left-right arrow (⇄) everywhere - timeline rows + filter chip, chart markers, and the Config color swatch - leaving the power icon to mean daemon-started. (The daemon-started filter already lives in the Events row.)

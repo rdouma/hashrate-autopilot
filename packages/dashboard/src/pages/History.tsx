@@ -1218,10 +1218,18 @@ function Toolbar({
                     : 'border-slate-800 text-slate-500 hover:text-slate-300'
                 }`}
               >
-                <span
-                  className="inline-block w-2 h-2 rounded-full"
-                  style={{ backgroundColor: active ? color : 'transparent', border: `1px solid ${color}` }}
-                />
+                {/* #318 follow-up: the alert triangle (same glyph the
+                    condition rows use), not a dot. Dimmed when off. */}
+                <svg
+                  width="12" height="12" viewBox="0 0 24 24"
+                  fill="none" stroke={color} strokeWidth="2"
+                  strokeLinecap="round" strokeLinejoin="round"
+                  className={`inline-block align-middle shrink-0 ${active ? '' : 'opacity-40'}`}
+                >
+                  <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
+                  <path d="M12 9v4" />
+                  <path d="M12 17h.01" />
+                </svg>
                 {conditionLabel(openClass)}
               </button>
             );
@@ -1238,7 +1246,6 @@ function Toolbar({
         <div className="flex flex-wrap gap-1">
           {LOG_EXTRA_KINDS.map((kind) => {
             const active = shownExtraKinds.has(kind);
-            const color = logExtraColor(kind);
             return (
               <button
                 key={kind}
@@ -1250,10 +1257,12 @@ function Toolbar({
                     : 'border-slate-800 text-slate-500 hover:text-slate-300'
                 }`}
               >
-                <span
-                  className="inline-block w-2 h-2 rounded-full"
-                  style={{ backgroundColor: active ? color : 'transparent', border: `1px solid ${color}` }}
-                />
+                {/* #318 follow-up: the chip carries the row's own glyph
+                    (not a dot) so the filter is recognizable - e.g. the
+                    power icon = daemon-started. Dimmed when off. */}
+                <span className={active ? '' : 'opacity-40'}>
+                  <LogExtraGlyph kind={kind} />
+                </span>
                 {logExtraLabel(kind)}
               </button>
             );
@@ -1620,11 +1629,33 @@ function LogExtraRow({
 }
 
 /**
+ * #318 follow-up: block-explorer URL for an on-chain log entry (block ->
+ * block URL, payout/deposit -> tx URL), or '' when it has no on-chain
+ * component or no template is configured.
+ */
+function logExtraExplorerUrl(extra: LogExtraItem, txTpl: string, blockTpl: string): string {
+  if (extra.kind === 'block' && extra.block && blockTpl) {
+    return applyExplorerTemplate(blockTpl, {
+      block_hash: extra.block.block_hash,
+      height: extra.block.height,
+    });
+  }
+  if (extra.kind === 'payout' && extra.payout && txTpl) {
+    return applyExplorerTemplate(txTpl, { txid: extra.payout.txid });
+  }
+  if (extra.kind === 'deposit' && extra.deposit && txTpl) {
+    return applyExplorerTemplate(txTpl, { txid: extra.deposit.tx_id });
+  }
+  return '';
+}
+
+/**
  * #318 follow-up: slide-over detail panel for an extra log entry,
  * mirroring BidEventDrawer / AlertSpanDrawer. Clicking a payout / deposit
  * / block / IP / retarget / point-alert / config / boot row opens this
  * instead of jumping straight to the chart - the operator expects a
- * detail step first, with an explicit "View on chart" button.
+ * detail step first, with explicit "View on chart" / "View in block
+ * explorer" buttons.
  */
 function LogExtraDrawer({
   extra,
@@ -1645,6 +1676,9 @@ function LogExtraDrawer({
   const color = logExtraColor(extra.kind, extra.blockVariant);
   const label = extra.label ?? logExtraLabel(extra.kind);
   const jumpUrl = logExtraJumpUrl(extra);
+  // #318 follow-up: on-chain events get a "View in block explorer" button
+  // next to "View on chart" (block -> block URL, payout/deposit -> tx URL).
+  const explorerUrl = logExtraExplorerUrl(extra, txUrlTemplate, blockUrlTemplate);
 
   const body = (
     <div className="fixed inset-0 z-40 flex">
@@ -1682,23 +1716,39 @@ function LogExtraDrawer({
         </div>
 
         <div className="flex-1 px-4 py-3 space-y-3">
-          {jumpUrl !== null && (
-            <button
-              type="button"
-              onClick={() => navigate(jumpUrl)}
-              className="px-3 py-1.5 rounded-md bg-amber-400 hover:bg-amber-300 text-slate-950 font-semibold text-xs inline-flex items-center gap-1.5 shadow-sm"
-              title={t`Open the chart at this event`}
-            >
-              <Trans>View on chart</Trans>
-              <span aria-hidden="true">→</span>
-            </button>
+          {(jumpUrl !== null || explorerUrl) && (
+            <div className="flex flex-wrap gap-2">
+              {jumpUrl !== null && (
+                <button
+                  type="button"
+                  onClick={() => navigate(jumpUrl)}
+                  className="px-3 py-1.5 rounded-md bg-amber-400 hover:bg-amber-300 text-slate-950 font-semibold text-xs inline-flex items-center gap-1.5 shadow-sm"
+                  title={t`Open the chart at this event`}
+                >
+                  <Trans>View on chart</Trans>
+                  <span aria-hidden="true">→</span>
+                </button>
+              )}
+              {explorerUrl && (
+                <a
+                  href={explorerUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 rounded-md border border-slate-600 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs inline-flex items-center gap-1.5"
+                  title={t`Open this on-chain event in a block explorer`}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M15 3h6v6" />
+                    <path d="M10 14 21 3" />
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                  </svg>
+                  <Trans>View in block explorer</Trans>
+                </a>
+              )}
+            </div>
           )}
 
-          <LogExtraDetail
-            extra={extra}
-            txUrlTemplate={txUrlTemplate}
-            blockUrlTemplate={blockUrlTemplate}
-          />
+          <LogExtraDetail extra={extra} />
         </div>
       </aside>
     </div>
@@ -1752,50 +1802,21 @@ function CopyableValue({ value }: { value: string }) {
   );
 }
 
-/** #318 follow-up: "open in block explorer" link for the detail drawer. */
-function ExplorerLink({ url }: { url: string }) {
-  const { i18n } = useLingui();
-  void i18n;
-  return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="text-sky-400 hover:text-sky-300 underline text-[11px] inline-flex items-center gap-1"
-    >
-      <Trans>open in block explorer</Trans>
-      <span aria-hidden="true">→</span>
-    </a>
-  );
-}
-
 /**
  * #318 follow-up: per-kind detail for the log drawer, mirroring what the
  * event's chart tooltip shows (operator: the side panel should be
  * symmetric with the graph tooltip). Falls back to the row summary for
- * kinds without a rich tooltip (alert / config / daemon start).
+ * kinds without a rich tooltip (alert / config / daemon start). The
+ * on-chain explorer link is a button in the drawer header, not here.
  */
-function LogExtraDetail({
-  extra,
-  txUrlTemplate,
-  blockUrlTemplate,
-}: {
-  extra: LogExtraItem;
-  txUrlTemplate: string;
-  blockUrlTemplate: string;
-}) {
+function LogExtraDetail({ extra }: { extra: LogExtraItem }) {
   const { i18n } = useLingui();
   void i18n;
   const sat = (n: number) => `${formatNumber(n, {})} sat`;
-  const txUrl = (txid: string) =>
-    txUrlTemplate ? applyExplorerTemplate(txUrlTemplate, { txid }) : '';
 
   if (extra.kind === 'block' && extra.block) {
     const b = extra.block;
     const share = b.share_log_pct_at_block;
-    const blockUrl = blockUrlTemplate
-      ? applyExplorerTemplate(blockUrlTemplate, { block_hash: b.block_hash, height: b.height })
-      : '';
     return (
       <>
         <section className="space-y-1">
@@ -1824,7 +1845,6 @@ function LogExtraDetail({
           </div>
           <CopyableValue value={b.block_hash} />
         </section>
-        {blockUrl && <ExplorerLink url={blockUrl} />}
       </>
     );
   }
@@ -1842,7 +1862,6 @@ function LogExtraDetail({
           </div>
           <CopyableValue value={`${e.txid}:${e.vout}`} />
         </section>
-        {txUrl(e.txid) && <ExplorerLink url={txUrl(e.txid)} />}
       </>
     );
   }
@@ -1860,7 +1879,6 @@ function LogExtraDetail({
           </div>
           <CopyableValue value={d.tx_id} />
         </section>
-        {txUrl(d.tx_id) && <ExplorerLink url={txUrl(d.tx_id)} />}
       </>
     );
   }
