@@ -2,6 +2,10 @@
 
 ## 2026-07-01
 
+### `[UI]` Timeline: "payout initiated" no longer looks like an alarm; reset re-enables everything; localized + auto-fit export
+
+Grab-bag of timeline fixes. "Payout initiated" was drawn with the alarm bell in alert-amber, which read as a problem - it now uses a payout (hand-coins) glyph in payout green, since it's good news. The **reset** button now re-enables every filter group (Actions, Alerts, and Events), not just the actions. And the Excel export now follows the interface language (headers + sheet tab translated to nl/es; the values were already localized) and marks its columns best-fit with header-aware widths so a longer localized header isn't clipped and double-clicking a column separator refits it.
+
 ### `[UI]` Filter chips show their real icons; "View in block explorer" button on on-chain events
 
 The Alerts and Events filter chips now carry the same glyph as their timeline rows instead of a generic colored dot - so the daemon-started chip shows the power icon (and is finally recognizable as its filter), payout shows the gem, deposit the fuel pump, alerts the warning triangle, and so on. And on-chain events (payout, deposit, pool block) get a proper **"View in block explorer"** button next to "View on chart" in the detail panel, replacing the small text link.

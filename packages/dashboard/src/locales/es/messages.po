@@ -2010,6 +2010,10 @@ msgstr "rellenable"
 msgid "Fillable"
 msgstr "Disponible"
 
+#: src/pages/History.tsx
+msgid "Fillable (sat/PH/day)"
+msgstr "Disponible (sat/PH/day)"
+
 #: src/pages/Alerts.tsx
 msgid "fired"
 msgstr "activado"
@@ -4075,6 +4079,10 @@ msgstr "velocidad"
 msgid "Speed"
 msgstr "Velocidad"
 
+#: src/pages/History.tsx
+msgid "Speed (PH/s)"
+msgstr "Velocidad (PH/s)"
+
 #: src/pages/Config.tsx
 msgid "Spend scope"
 msgstr "Alcance del gasto"
@@ -4361,6 +4369,10 @@ msgstr "tx"
 msgid "txs"
 msgstr "txs"
 
+#: src/pages/History.tsx
+msgid "Type"
+msgstr "Tipo"
+
 #: src/pages/Alerts.tsx
 msgid "unacknowledged only"
 msgstr "solo no confirmadas"
@@ -4554,6 +4566,14 @@ msgstr "Qué enviar a Telegram"
 #: src/pages/History.tsx
 msgid "When"
 msgstr "Cuándo"
+
+#: src/pages/History.tsx
+msgid "When (local)"
+msgstr "Cuándo (local)"
+
+#: src/pages/History.tsx
+msgid "When (UTC)"
+msgstr "Cuándo (UTC)"
 
 #: src/pages/Config.tsx
 msgid "When any active bid carries a fee_rate_pct above this, the mutation gate blocks CREATE_BID, EDIT_PRICE, and EDIT_SPEED. CANCEL_BID is still allowed so you (or the Datum-down auto-cancel) can bail out of a fee-bearing bid. Default 0 = halt the moment Braiins exits beta and charges any fee at all, matching the existing beta_exit Telegram alert. Set higher (e.g. 0.5) to tolerate a known fee without stopping the autopilot."

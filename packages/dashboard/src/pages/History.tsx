@@ -121,8 +121,12 @@ const BLOCK_VARIANT_SLOT: Record<BlockVariant, ChartColorKey> = {
   bip110: 'hashrate.pool_block_bip110',
 };
 
-function logExtraColor(kind: LogExtraKind, blockVariant?: BlockVariant): string {
-  if (kind === 'alert') return '#fbbf24'; // amber-400 - generic alert
+function logExtraColor(kind: LogExtraKind, blockVariant?: BlockVariant, eventClass?: string): string {
+  if (kind === 'alert') {
+    // #318 follow-up: "payout initiated" is good news, not a problem -
+    // give it the positive payout-gem green instead of the alert amber.
+    return eventClass === 'payout_initiated' ? '#10b981' : '#fbbf24';
+  }
   if (kind === 'config') return '#a78bfa'; // violet-400 - config change
   if (kind === 'boot') return '#34d399'; // emerald-400 - daemon started
   if (kind === 'block') {
@@ -155,8 +159,16 @@ function pointAlertLabel(eventClass: string): string {
 }
 
 /** Lucide glyph per extra kind, tinted with its marker color. */
-function LogExtraGlyph({ kind, blockVariant }: { kind: LogExtraKind; blockVariant?: BlockVariant }) {
-  const color = logExtraColor(kind, blockVariant);
+function LogExtraGlyph({
+  kind,
+  blockVariant,
+  eventClass,
+}: {
+  kind: LogExtraKind;
+  blockVariant?: BlockVariant;
+  eventClass?: string;
+}) {
+  const color = logExtraColor(kind, blockVariant, eventClass);
   const base = {
     width: 12,
     height: 12,
@@ -178,6 +190,20 @@ function LogExtraGlyph({ kind, blockVariant }: { kind: LogExtraKind; blockVarian
           <path d="M0 8 L1.5 3 L4 5.5 L5 1 L6 5.5 L8.5 3 L10 8 Z" />
           <line x1="0" y1="9.5" x2="10" y2="9.5" stroke={color} strokeWidth="1.4" />
         </g>
+      </svg>
+    );
+  }
+  // #318 follow-up: "payout initiated" is a positive event, so it gets
+  // Lucide `hand-coins` (a payout) instead of the alarm bell that made it
+  // read as a problem.
+  if (kind === 'alert' && eventClass === 'payout_initiated') {
+    return (
+      <svg {...base}>
+        <path d="M11 15h2a2 2 0 1 0 0-4h-3c-.6 0-1.1.2-1.4.6L3 17" />
+        <path d="m7 21 1.6-1.4c.3-.4.8-.6 1.4-.6h4c1.1 0 2.1-.4 2.8-1.2l4.6-4.4a2 2 0 0 0-2.75-2.91l-4.2 3.9" />
+        <path d="m2 16 6 6" />
+        <circle cx="16" cy="9" r="2.9" />
+        <circle cx="6" cy="5" r="3" />
       </svg>
     );
   }
@@ -773,7 +799,24 @@ export function History() {
         while (ei < extras.length) yield extras[ei++]!.row;
       }
 
-      const blob = await streamTimelineXlsx(mergedRows());
+      // #320: localize the sheet - headers + tab name follow the UI
+      // language (Type/reason values are already translated by their
+      // label functions). Order must match the export columns.
+      const blob = await streamTimelineXlsx(mergedRows(), {
+        sheetName: t`Timeline`,
+        headers: [
+          t`When (UTC)`,
+          t`When (local)`,
+          t`Type`,
+          t`Bid`,
+          t`Fillable (sat/PH/day)`,
+          t`Price before`,
+          t`Price after`,
+          t`Δ price`,
+          t`Speed (PH/s)`,
+          t`Reason`,
+        ],
+      });
       const stamp = new Date().toISOString().slice(0, 10);
       downloadBlob(blob, `hashrate-autopilot-timeline-${stamp}.xlsx`);
     } catch (err) {
@@ -1347,7 +1390,14 @@ function Toolbar({
             field row; full-width on mobile. */}
         <button
           type="button"
-          onClick={() => onChange({})}
+          onClick={() => {
+            // #318 follow-up: a full reset - not just the bid-event filters,
+            // but every group back on (operator: reset should re-enable
+            // everything, not only the actions).
+            onChange({});
+            onSetAllAlertClasses(true);
+            onSetAllExtraKinds(true);
+          }}
           className="w-full sm:w-auto flex items-center justify-center gap-1.5 text-[11px] font-semibold rounded-md px-3 py-1.5 bg-amber-400 hover:bg-amber-300 text-slate-950 self-end shadow-sm"
           title={t`Reset all filters`}
         >
@@ -1595,7 +1645,7 @@ function LogExtraRow({
 }) {
   const { i18n } = useLingui();
   void i18n;
-  const color = logExtraColor(extra.kind, extra.blockVariant);
+  const color = logExtraColor(extra.kind, extra.blockVariant, extra.eventClass);
   const dash = <span className="text-slate-600">—</span>;
   return (
     <tr
@@ -1610,7 +1660,7 @@ function LogExtraRow({
         {fmt.timestamp(extra.ts)}
       </td>
       <td className="py-1 px-3 whitespace-nowrap">
-        <LogExtraGlyph kind={extra.kind} blockVariant={extra.blockVariant} />
+        <LogExtraGlyph kind={extra.kind} blockVariant={extra.blockVariant} eventClass={extra.eventClass} />
         <span className="ml-1.5" style={{ color }}>
           {extra.label ?? logExtraLabel(extra.kind)}
         </span>
@@ -1673,7 +1723,7 @@ function LogExtraDrawer({
   const { i18n } = useLingui();
   void i18n;
   const navigate = useNavigate();
-  const color = logExtraColor(extra.kind, extra.blockVariant);
+  const color = logExtraColor(extra.kind, extra.blockVariant, extra.eventClass);
   const label = extra.label ?? logExtraLabel(extra.kind);
   const jumpUrl = logExtraJumpUrl(extra);
   // #318 follow-up: on-chain events get a "View in block explorer" button
@@ -1698,7 +1748,7 @@ function LogExtraDrawer({
               className="text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5"
               style={{ color }}
             >
-              <LogExtraGlyph kind={extra.kind} blockVariant={extra.blockVariant} />
+              <LogExtraGlyph kind={extra.kind} blockVariant={extra.blockVariant} eventClass={extra.eventClass} />
               {label}
             </div>
             <div className="text-xs text-slate-300 mt-1 font-mono whitespace-nowrap">

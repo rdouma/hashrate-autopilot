@@ -89,10 +89,24 @@ function cellXml(letter: string, r: number, value: string | number | null, numer
   return `<c r="${ref}" t="inlineStr" s="0"><is><t xml:space="preserve">${xmlEscape(String(value))}</t></is></c>`;
 }
 
-function headerRowXml(): string {
+/** Translated labels the caller injects so the sheet matches the UI language. */
+export interface ExportLabels {
+  /** Column headers, in COLUMNS order. */
+  headers: readonly string[];
+  /** Worksheet + workbook tab name. */
+  sheetName: string;
+}
+
+/** Default (English) labels, e.g. for tests. */
+export const DEFAULT_EXPORT_LABELS: ExportLabels = {
+  headers: COLUMNS.map((c) => c.header),
+  sheetName: 'Timeline',
+};
+
+function headerRowXml(headers: readonly string[]): string {
   let s = '<row r="1">';
   COLUMNS.forEach((c, i) => {
-    s += `<c r="${COL_LETTERS[i]}1" t="inlineStr" s="1"><is><t xml:space="preserve">${xmlEscape(c.header)}</t></is></c>`;
+    s += `<c r="${COL_LETTERS[i]}1" t="inlineStr" s="1"><is><t xml:space="preserve">${xmlEscape(headers[i] ?? c.header)}</t></is></c>`;
   });
   return s + '</row>';
 }
@@ -121,11 +135,16 @@ const ROOT_RELS =
   '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>' +
   '</Relationships>';
 
-const WORKBOOK =
-  '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
-  '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
-  '<sheets><sheet name="Timeline" sheetId="1" r:id="rId1"/></sheets>' +
-  '</workbook>';
+function workbookXml(sheetName: string): string {
+  // Sheet names cap at 31 chars and can't contain []:*?/\ - sanitize.
+  const safe = xmlEscape(sheetName.replace(/[[\]:*?/\\]/g, ' ').slice(0, 31)) || 'Timeline';
+  return (
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+    `<sheets><sheet name="${safe}" sheetId="1" r:id="rId1"/></sheets>` +
+    '</workbook>'
+  );
+}
 
 const WB_RELS =
   '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
@@ -152,10 +171,14 @@ const STYLES =
   '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>' +
   '</styleSheet>';
 
-function sheetHead(): string {
-  const cols = COLUMNS.map(
-    (c, i) => `<col min="${i + 1}" max="${i + 1}" width="${c.width}" customWidth="1"/>`,
-  ).join('');
+function sheetHead(headers: readonly string[]): string {
+  // #320: `bestFit` marks the column auto-sized (double-clicking the
+  // separator refits it), and the base width is widened to fit the
+  // translated header so a longer localized label isn't clipped.
+  const cols = COLUMNS.map((c, i) => {
+    const w = Math.max(c.width, (headers[i] ?? c.header).length + 3);
+    return `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1" bestFit="1"/>`;
+  }).join('');
   return (
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
     '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
@@ -173,6 +196,7 @@ function sheetHead(): string {
  */
 export async function streamTimelineXlsx(
   rows: AsyncIterable<TimelineExportRow>,
+  labels: ExportLabels = DEFAULT_EXPORT_LABELS,
 ): Promise<Blob> {
   const { Zip, ZipDeflate, strToU8 } = await import('fflate');
   const parts: Uint8Array[] = [];
@@ -197,13 +221,13 @@ export async function streamTimelineXlsx(
   };
   addFull('[Content_Types].xml', CONTENT_TYPES);
   addFull('_rels/.rels', ROOT_RELS);
-  addFull('xl/workbook.xml', WORKBOOK);
+  addFull('xl/workbook.xml', workbookXml(labels.sheetName));
   addFull('xl/_rels/workbook.xml.rels', WB_RELS);
   addFull('xl/styles.xml', STYLES);
 
   const sheet = new ZipDeflate('xl/worksheets/sheet1.xml', { level: 6 });
   zip.add(sheet);
-  sheet.push(strToU8(sheetHead() + headerRowXml()), false);
+  sheet.push(strToU8(sheetHead(labels.headers) + headerRowXml(labels.headers)), false);
   let count = 1;
   let buf = '';
   for await (const row of rows) {
