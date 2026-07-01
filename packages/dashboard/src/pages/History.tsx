@@ -377,12 +377,13 @@ export function History() {
       });
     }
     for (const b of oceanQuery.data?.our_recent_blocks ?? []) {
-      if (!b.found_by_us) continue;
+      // #318: all pool blocks, not just ours. Ocean's own blocks (found
+      // by other miners) are context; ours are flagged in the summary.
       all.push({
         kind: 'block',
         key: `block:${b.block_hash}`,
         ts: b.timestamp_ms,
-        summary: `block ${b.height} · ${formatNumber(b.total_reward_sat, {})} sat`,
+        summary: `block ${b.height} · ${formatNumber(b.total_reward_sat, {})} sat${b.found_by_us ? ' · found by us' : ''}`,
       });
     }
     for (const c of ipChangesQuery.data?.events ?? []) {
