@@ -897,6 +897,10 @@ msgstr "Block explorer"
 msgid "block found:"
 msgstr "block found:"
 
+#: src/pages/History.tsx
+msgid "Block hash"
+msgstr "Block hash"
+
 #: src/components/HashrateChart.tsx
 msgid "block height"
 msgstr "block height"
@@ -1216,6 +1220,7 @@ msgstr "Click to show"
 #: src/components/PriceChart.tsx
 #: src/components/SpeedEditMarkers.tsx
 #: src/lib/chartCrosshair.tsx
+#: src/pages/History.tsx
 msgid "close"
 msgstr "close"
 
@@ -1598,6 +1603,10 @@ msgstr "DEPOSIT"
 msgid "Detail"
 msgstr "Detail"
 
+#: src/pages/History.tsx
+msgid "Details"
+msgstr "Details"
+
 #: src/components/SoloMinersCard.tsx
 msgid "Device"
 msgstr "Device"
@@ -1873,6 +1882,10 @@ msgstr "Estimated cap at current settings: ~ {totalStr} (logs only, indexes excl
 #: src/pages/Config.tsx
 msgid "Even though the endpoint is named <0>/umbrel-api</0>, it lives inside Datum Gateway itself - compiled in via <1>#ifdef DATUM_API_FOR_UMBREL</1> and works on any Datum build with that flag set, regardless of host platform."
 msgstr "Even though the endpoint is named <0>/umbrel-api</0>, it lives inside Datum Gateway itself - compiled in via <1>#ifdef DATUM_API_FOR_UMBREL</1> and works on any Datum build with that flag set, regardless of host platform."
+
+#: src/pages/History.tsx
+msgid "Event detail"
+msgstr "Event detail"
 
 #: src/pages/History.tsx
 msgid "Events"
@@ -3048,6 +3061,10 @@ msgstr "open in explorer"
 #: src/pages/Config.tsx
 msgid "Open Telegram and chat with <0>@BotFather</0>, send /newbot, follow the prompts; @BotFather replies with the token. Paste it here."
 msgstr "Open Telegram and chat with <0>@BotFather</0>, send /newbot, follow the prompts; @BotFather replies with the token. Paste it here."
+
+#: src/pages/History.tsx
+msgid "Open the chart at this event"
+msgstr "Open the chart at this event"
 
 #: src/components/PriceChart.tsx
 msgid "Open the History row for this event"
@@ -4412,6 +4429,10 @@ msgstr "UTXOs at the configured payout address. Read via your Electrum server (p
 #: src/pages/Setup.tsx
 msgid "v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
 msgstr "v{__APP_VERSION__} · build {__BUILD_NUMBER__} · {__BUILD_HASH__}"
+
+#: src/pages/History.tsx
+msgid "View details"
+msgstr "View details"
 
 #: src/components/AlertSpanTooltip.tsx
 #: src/components/HashrateChart.tsx

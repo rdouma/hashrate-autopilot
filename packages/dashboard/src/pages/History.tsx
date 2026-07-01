@@ -52,6 +52,7 @@ import { DatePicker } from '../components/DatePicker';
 import { BidEventDrawer } from '../components/BidEventDrawer';
 import { AlertSpanDrawer } from '../components/AlertSpanDrawer';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 
 const PAGE_SIZE = 100;
 type Kind = NonNullable<BidHistoryFilters['kinds']>[number];
@@ -348,6 +349,10 @@ export function History() {
   };
   const [selectedEvent, setSelectedEvent] = useState<BidHistoryFlatEvent | null>(null);
   const [selectedSpan, setSelectedSpan] = useState<AlertConditionSpanView | null>(null);
+  // #318 follow-up: clicking an extra log row opens a detail side panel
+  // (like bid events + alert spans) rather than jumping straight to the
+  // chart; the panel carries a "View on chart" button.
+  const [selectedExtra, setSelectedExtra] = useState<LogExtraItem | null>(null);
   const [highlightedEventId, setHighlightedEventId] = useState<number | null>(null);
   const [highlightedSpanId, setHighlightedSpanId] = useState<number | null>(null);
   // #317: generic focus key (`<kind>:<key>`) for the extra log rows.
@@ -833,15 +838,7 @@ export function History() {
                   extra={item.extra}
                   fmt={fmt}
                   highlighted={highlightedRowKey === item.extra.key}
-                  onClick={() =>
-                    navigate(
-                      // #318: block rows carry the hash so the chart pulses
-                      // a sonar beacon on the matching cube/crown marker.
-                      item.extra.kind === 'block' && item.extra.blockHash
-                        ? `/?at=${item.extra.ts}&focus_block=${item.extra.blockHash}`
-                        : `/?at=${item.extra.ts}`,
-                    )
-                  }
+                  onClick={() => setSelectedExtra(item.extra)}
                 />
               ),
             )}
@@ -882,6 +879,13 @@ export function History() {
         <AlertSpanDrawer
           span={selectedSpan}
           onClose={() => setSelectedSpan(null)}
+        />
+      )}
+      {selectedExtra && (
+        <LogExtraDrawer
+          extra={selectedExtra}
+          fmt={fmt}
+          onClose={() => setSelectedExtra(null)}
         />
       )}
     </div>
@@ -1297,9 +1301,11 @@ function AlertSpanRow({
 }
 
 /**
- * #317: a non-bid, non-alert event (payout / deposit / pool block / IP
- * change) as a log row. Shares the table grid; numeric bid columns blank.
- * Clicking pans the price chart to the event time.
+ * #317/#318: a non-bid, non-alert event (payout / deposit / pool block /
+ * IP change / retarget / point-alert / config / boot) as a log row.
+ * Shares the table grid; numeric bid columns blank. Clicking opens the
+ * detail side panel (LogExtraDrawer), which carries the "View on chart"
+ * jump.
  */
 function LogExtraRow({
   extra,
@@ -1323,7 +1329,7 @@ function LogExtraRow({
       className={`border-t border-slate-800/70 align-top cursor-pointer transition-colors ${
         highlighted ? 'bg-amber-500/10 ring-1 ring-amber-500/40' : 'hover:bg-slate-800/30'
       }`}
-      title={t`View on chart`}
+      title={t`View details`}
     >
       <td className="py-1 px-3 font-mono text-slate-300 whitespace-nowrap">
         {fmt.timestamp(extra.ts)}
@@ -1345,6 +1351,130 @@ function LogExtraRow({
       </td>
     </tr>
   );
+}
+
+/**
+ * #318 follow-up: nav URL that jumps the chart to an extra log entry's
+ * marker, or null when the kind has no chart representation (config /
+ * daemon-started). Block rows pulse a sonar beacon on the matching
+ * cube/crown (`focus_block`); the other kinds pan the chart to the event
+ * time. (Per-marker beacons for payout / deposit / IP / retarget /
+ * point-alert markers are a follow-up.)
+ */
+function logExtraJumpUrl(extra: LogExtraItem): string | null {
+  switch (extra.kind) {
+    case 'block':
+      return extra.blockHash
+        ? `/?at=${extra.ts}&focus_block=${extra.blockHash}`
+        : `/?at=${extra.ts}`;
+    case 'payout':
+    case 'deposit':
+    case 'ip':
+    case 'retarget':
+    case 'alert':
+      return `/?at=${extra.ts}`;
+    case 'config':
+    case 'boot':
+      return null;
+  }
+}
+
+/**
+ * #318 follow-up: slide-over detail panel for an extra log entry,
+ * mirroring BidEventDrawer / AlertSpanDrawer. Clicking a payout / deposit
+ * / block / IP / retarget / point-alert / config / boot row opens this
+ * instead of jumping straight to the chart - the operator expects a
+ * detail step first, with an explicit "View on chart" button.
+ */
+function LogExtraDrawer({
+  extra,
+  fmt,
+  onClose,
+}: {
+  extra: LogExtraItem;
+  fmt: ReturnType<typeof useFormatters>;
+  onClose: () => void;
+}) {
+  const { i18n } = useLingui();
+  void i18n;
+  const navigate = useNavigate();
+  const color = logExtraColor(extra.kind, extra.blockVariant);
+  const label = extra.label ?? logExtraLabel(extra.kind);
+  const jumpUrl = logExtraJumpUrl(extra);
+
+  const body = (
+    <div className="fixed inset-0 z-40 flex">
+      <div
+        className="flex-1 bg-black/40 backdrop-blur-[1px]"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <aside
+        className="bg-slate-900 border-l border-slate-700 shadow-2xl w-full sm:w-[24rem] max-w-full overflow-y-auto pointer-events-auto flex flex-col"
+        role="dialog"
+        aria-label={t`Event detail`}
+      >
+        <div className="flex items-start justify-between gap-3 px-4 py-3 border-b border-slate-800 sticky top-0 bg-slate-900 z-10">
+          <div className="min-w-0">
+            <div
+              className="text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5"
+              style={{ color }}
+            >
+              <LogExtraGlyph kind={extra.kind} blockVariant={extra.blockVariant} />
+              {label}
+            </div>
+            <div className="text-xs text-slate-300 mt-1 font-mono whitespace-nowrap">
+              {fmt.timestamp(extra.ts)}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t`close`}
+            className="text-slate-500 hover:text-slate-200 leading-none text-lg -mt-0.5 px-1"
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="flex-1 px-4 py-3 space-y-3">
+          {jumpUrl !== null && (
+            <button
+              type="button"
+              onClick={() => navigate(jumpUrl)}
+              className="px-3 py-1.5 rounded-md bg-amber-400 hover:bg-amber-300 text-slate-950 font-semibold text-xs inline-flex items-center gap-1.5 shadow-sm"
+              title={t`Open the chart at this event`}
+            >
+              <Trans>View on chart</Trans>
+              <span aria-hidden="true">→</span>
+            </button>
+          )}
+
+          <section>
+            <div className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">
+              <Trans>Details</Trans>
+            </div>
+            <p className="text-xs text-slate-200 whitespace-normal leading-snug break-words">
+              {extra.summary}
+            </p>
+          </section>
+
+          {extra.kind === 'block' && extra.blockHash && (
+            <section>
+              <div className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">
+                <Trans>Block hash</Trans>
+              </div>
+              <p className="text-[11px] text-slate-300 font-mono break-all leading-snug">
+                {extra.blockHash}
+              </p>
+            </section>
+          )}
+        </div>
+      </aside>
+    </div>
+  );
+
+  return createPortal(body, document.body);
 }
 
 function useActionLabels(): Record<BidEventView['kind'], string> {

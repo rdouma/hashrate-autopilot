@@ -2,6 +2,10 @@
 
 ## 2026-06-30
 
+### `[UI]` History log rows open a detail panel instead of jumping straight to the chart (#318)
+
+Clicking a log entry (payout, deposit, pool block, IP change, retarget, alert, config change, daemon start) now opens a slide-over detail panel - matching how bid events and alert-condition rows already behave - instead of immediately panning the chart. The panel shows the event time and details, plus a "View on chart" button that does the jump (blocks still pulse the sonar beacon on their cube/crown; config and daemon-start events have no chart marker, so they show details only). Per-marker sonar beacons for the remaining marker types are a follow-up.
+
 ### `[UI]` Pool-block log rows: crown/blue/yellow icons, reveal beacon, "View in history" for every block (#318)
 
 Follow-up to the unified log. Pool-block rows in the History log now use the same marker language as the chart: a gold crown for our own block, a blue cube for other miners' blocks, and a yellow cube for BIP-110-signalling blocks (previously every block row was a plain yellow cube). Clicking a block row now pulses a sonar beacon on the matching cube/crown on the hashrate chart when it jumps there (it just panned before, with no way to tell which cube). And a block's chart tooltip now offers "View in history" for every block, not only our own.
