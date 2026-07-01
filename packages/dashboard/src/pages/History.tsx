@@ -1410,12 +1410,27 @@ function Toolbar({
             className="no-spinner w-full sm:w-24 text-[11px] font-mono bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-slate-200 focus:outline-none focus:border-amber-700"
           />
         </div>
-        {/* #318 follow-up: global all/none - flips every chip in every
-            group at once (Actions + Alerts + Events). Starts the
-            right-aligned button cluster. */}
-        <div className="hidden sm:flex items-center gap-2 sm:ml-auto self-end pb-1.5">
-          <span className="text-[10px] uppercase tracking-wider text-slate-500"><Trans>Filters</Trans></span>
-          <AllNone onAll={() => selectAllGroups(true)} onNone={() => selectAllGroups(false)} />
+        {/* #318 follow-up: global select-all / select-none - two clear
+            buttons (operator: the gray "all · none" text wasn't
+            recognizable) that flip every chip in all three groups at
+            once. Starts the right-aligned button cluster. */}
+        <div className="hidden sm:flex items-center gap-2 sm:ml-auto self-end">
+          <button
+            type="button"
+            onClick={() => selectAllGroups(true)}
+            className="flex items-center justify-center gap-1.5 text-[11px] font-semibold rounded-md px-3 py-1.5 border border-slate-600 bg-slate-800 hover:bg-slate-700 text-slate-200"
+            title={t`Enable every filter chip (all groups)`}
+          >
+            <Trans>select all</Trans>
+          </button>
+          <button
+            type="button"
+            onClick={() => selectAllGroups(false)}
+            className="flex items-center justify-center gap-1.5 text-[11px] font-semibold rounded-md px-3 py-1.5 border border-slate-600 bg-slate-800 hover:bg-slate-700 text-slate-200"
+            title={t`Clear every filter chip (all groups)`}
+          >
+            <Trans>select none</Trans>
+          </button>
         </div>
         {/* #318 follow-up: live-tail toggle. Emerald + pulsing dot when
             on. export + reset follow. */}
@@ -1444,11 +1459,19 @@ function Toolbar({
           className="w-full sm:w-auto flex items-center justify-center gap-1.5 text-[11px] font-semibold rounded-md px-3 py-1.5 border border-slate-600 bg-slate-800 hover:bg-slate-700 text-slate-200 self-end disabled:opacity-50 disabled:cursor-wait"
           title={t`Download all matching rows as an Excel (.xlsx) file`}
         >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-            <polyline points="7 10 12 15 17 10" />
-            <line x1="12" x2="12" y1="15" y2="3" />
-          </svg>
+          {exporting ? (
+            // Lucide loader-circle, spinning - clearer than "..." that
+            // the export is working.
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="animate-spin">
+              <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+            </svg>
+          ) : (
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" x2="12" y1="15" y2="3" />
+            </svg>
+          )}
           {exporting ? <Trans>exporting…</Trans> : <Trans>export</Trans>}
         </button>
         {/* #318 follow-up: reset is now a real amber button (operator:
@@ -1479,21 +1502,22 @@ function Toolbar({
 }
 
 /**
- * #318 follow-up: compact "all · none" bulk toggle shown next to an
- * opt-out filter group's label (Alerts / Events). Lets the operator
- * clear a whole group in one click when isolating a single event type,
- * instead of deselecting every chip by hand.
+ * #318 follow-up: bulk all/none control for an opt-out filter group.
+ * Rendered as a segmented button pair (bordered pills) so it clearly
+ * reads as clickable - the operator missed the old faint gray "all · none"
+ * text entirely, thinking it was part of the header.
  */
 function AllNone({ onAll, onNone }: { onAll: () => void; onNone: () => void }) {
   const { i18n } = useLingui();
   void i18n;
+  const seg =
+    'px-1.5 py-0.5 text-[10px] font-medium text-slate-300 hover:bg-slate-700 hover:text-white';
   return (
-    <span className="flex items-center gap-1 text-[10px]">
-      <button type="button" onClick={onAll} className="text-slate-500 hover:text-amber-300">
+    <span className="inline-flex items-stretch rounded border border-slate-600 overflow-hidden bg-slate-800/60">
+      <button type="button" onClick={onAll} className={seg}>
         <Trans>all</Trans>
       </button>
-      <span className="text-slate-700" aria-hidden="true">·</span>
-      <button type="button" onClick={onNone} className="text-slate-500 hover:text-amber-300">
+      <button type="button" onClick={onNone} className={`${seg} border-l border-slate-600`}>
         <Trans>none</Trans>
       </button>
     </span>

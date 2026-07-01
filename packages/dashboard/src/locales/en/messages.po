@@ -1198,6 +1198,10 @@ msgstr "Choose file…"
 msgid "Clear"
 msgstr "Clear"
 
+#: src/pages/History.tsx
+msgid "Clear every filter chip (all groups)"
+msgstr "Clear every filter chip (all groups)"
+
 #: src/components/HashrateChart.tsx
 msgid "click outside to close"
 msgstr "click outside to close"
@@ -1879,6 +1883,10 @@ msgstr "Enable cheap mode"
 msgid "Enable debug API endpoint"
 msgstr "Enable debug API endpoint"
 
+#: src/pages/History.tsx
+msgid "Enable every filter chip (all groups)"
+msgstr "Enable every filter chip (all groups)"
+
 #: src/components/Bip110ScanCard.tsx
 msgid "Epoch"
 msgstr "Epoch"
@@ -2013,10 +2021,6 @@ msgstr "Fillable"
 #: src/pages/History.tsx
 msgid "Fillable (sat/PH/day)"
 msgstr "Fillable (sat/PH/day)"
-
-#: src/pages/History.tsx
-msgid "Filters"
-msgstr "Filters"
 
 #: src/pages/Alerts.tsx
 msgid "fired"
@@ -3965,6 +3969,10 @@ msgstr "Search titles + bodies..."
 msgid "Select a price source to test."
 msgstr "Select a price source to test."
 
+#: src/pages/History.tsx
+msgid "select all"
+msgstr "select all"
+
 #: src/components/Layout.tsx
 msgid "Select display currency"
 msgstr "Select display currency"
@@ -3972,6 +3980,10 @@ msgstr "Select display currency"
 #: src/components/Layout.tsx
 msgid "Select hashrate unit (1 EH = 1,000 PH = 1,000,000 TH)"
 msgstr "Select hashrate unit (1 EH = 1,000 PH = 1,000,000 TH)"
+
+#: src/pages/History.tsx
+msgid "select none"
+msgstr "select none"
 
 #: src/pages/Config.tsx
 msgid "send failed"

@@ -2,6 +2,10 @@
 
 ## 2026-07-01
 
+### `[UI]` Clearer filter controls + a spinning export indicator
+
+The bulk filter controls now read as controls: each group's "all · none" is a segmented button pair (bordered pills) instead of faint gray text that didn't look clickable, and the global control is two plain "select all" / "select none" buttons in the toolbar cluster (reset stays alongside). The export button now shows a spinning loader while it works instead of a "…", so it's obvious something is happening.
+
 ### `[UI]` Timeline: global "Filters all · none" toggle
 
 Next to the reset button there's now a global **all · none** that flips every chip in all three filter groups (Actions, Alerts, Events) at once - a quick way to start from "everything" or "nothing" and then pick. Reset stays as the full reset (also clears the text/date filters).

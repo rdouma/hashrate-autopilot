@@ -1198,6 +1198,10 @@ msgstr "Kies bestand…"
 msgid "Clear"
 msgstr "Wissen"
 
+#: src/pages/History.tsx
+msgid "Clear every filter chip (all groups)"
+msgstr "Alle filterchips wissen (alle groepen)"
+
 #: src/components/HashrateChart.tsx
 msgid "click outside to close"
 msgstr "klik buiten om te sluiten"
@@ -1879,6 +1883,10 @@ msgstr "Goedkoop-modus inschakelen"
 msgid "Enable debug API endpoint"
 msgstr "Debug-API-endpoint inschakelen"
 
+#: src/pages/History.tsx
+msgid "Enable every filter chip (all groups)"
+msgstr "Alle filterchips inschakelen (alle groepen)"
+
 #: src/components/Bip110ScanCard.tsx
 msgid "Epoch"
 msgstr "Epoch"
@@ -2013,10 +2021,6 @@ msgstr "Invulbaar"
 #: src/pages/History.tsx
 msgid "Fillable (sat/PH/day)"
 msgstr "Invulbaar (sat/PH/day)"
-
-#: src/pages/History.tsx
-msgid "Filters"
-msgstr "Filters"
 
 #: src/pages/Alerts.tsx
 msgid "fired"
@@ -3965,6 +3969,10 @@ msgstr "Zoek in titels + bodies..."
 msgid "Select a price source to test."
 msgstr "Selecteer een prijsbron om te testen."
 
+#: src/pages/History.tsx
+msgid "select all"
+msgstr "alles selecteren"
+
 #: src/components/Layout.tsx
 msgid "Select display currency"
 msgstr "Kies weergavevaluta"
@@ -3972,6 +3980,10 @@ msgstr "Kies weergavevaluta"
 #: src/components/Layout.tsx
 msgid "Select hashrate unit (1 EH = 1,000 PH = 1,000,000 TH)"
 msgstr "Kies hashratemaat (1 EH = 1.000 PH = 1.000.000 TH)"
+
+#: src/pages/History.tsx
+msgid "select none"
+msgstr "niets selecteren"
 
 #: src/pages/Config.tsx
 msgid "send failed"

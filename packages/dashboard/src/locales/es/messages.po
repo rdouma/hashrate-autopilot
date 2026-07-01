@@ -1198,6 +1198,10 @@ msgstr "Elegir archivo…"
 msgid "Clear"
 msgstr "Borrar"
 
+#: src/pages/History.tsx
+msgid "Clear every filter chip (all groups)"
+msgstr "Borrar todos los filtros (todos los grupos)"
+
 #: src/components/HashrateChart.tsx
 msgid "click outside to close"
 msgstr "haz clic fuera para cerrar"
@@ -1879,6 +1883,10 @@ msgstr "Habilitar modo barato"
 msgid "Enable debug API endpoint"
 msgstr "Activar endpoint de API de depuracion"
 
+#: src/pages/History.tsx
+msgid "Enable every filter chip (all groups)"
+msgstr "Activar todos los filtros (todos los grupos)"
+
 #: src/components/Bip110ScanCard.tsx
 msgid "Epoch"
 msgstr "Época"
@@ -2013,10 +2021,6 @@ msgstr "Disponible"
 #: src/pages/History.tsx
 msgid "Fillable (sat/PH/day)"
 msgstr "Disponible (sat/PH/day)"
-
-#: src/pages/History.tsx
-msgid "Filters"
-msgstr "Filtros"
 
 #: src/pages/Alerts.tsx
 msgid "fired"
@@ -3965,6 +3969,10 @@ msgstr "Buscar en títulos + cuerpos..."
 msgid "Select a price source to test."
 msgstr "Elige una fuente de precio para probar."
 
+#: src/pages/History.tsx
+msgid "select all"
+msgstr "seleccionar todo"
+
 #: src/components/Layout.tsx
 msgid "Select display currency"
 msgstr "Elige moneda de visualización"
@@ -3972,6 +3980,10 @@ msgstr "Elige moneda de visualización"
 #: src/components/Layout.tsx
 msgid "Select hashrate unit (1 EH = 1,000 PH = 1,000,000 TH)"
 msgstr "Elige unidad de hashrate (1 EH = 1.000 PH = 1.000.000 TH)"
+
+#: src/pages/History.tsx
+msgid "select none"
+msgstr "no seleccionar nada"
 
 #: src/pages/Config.tsx
 msgid "send failed"
