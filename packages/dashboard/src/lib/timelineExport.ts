@@ -30,17 +30,25 @@ export interface TimelineExportRow {
   reason: string;
 }
 
-const COLUMNS: Array<{ key: keyof TimelineExportRow; header: string; width: number; numeric: boolean }> = [
-  { key: 'whenUtc', header: 'When (UTC)', width: 21, numeric: false },
-  { key: 'whenLocal', header: 'When (local)', width: 21, numeric: false },
-  { key: 'type', header: 'Type', width: 16, numeric: false },
-  { key: 'bid', header: 'Bid', width: 22, numeric: false },
-  { key: 'fillable', header: 'Fillable (sat/PH/day)', width: 18, numeric: true },
-  { key: 'priceBefore', header: 'Price before', width: 13, numeric: true },
-  { key: 'priceAfter', header: 'Price after', width: 13, numeric: true },
-  { key: 'deltaPrice', header: 'Δ price', width: 10, numeric: true },
-  { key: 'speed', header: 'Speed (PH/s)', width: 12, numeric: true },
-  { key: 'reason', header: 'Reason', width: 70, numeric: false },
+// Cell style buckets. 'text' = inline string (s=0). 'rate' = a
+// sat/BTC/USD-per-unit-per-day number (s=2, formatted with the caller's
+// rate number-format). 'speed' = a hashrate number (s=3, formatted with
+// the caller's speed number-format). The two numeric buckets exist so a
+// single style each can carry the denomination-dependent decimal count.
+type CellStyle = 'text' | 'rate' | 'speed';
+const STYLE_INDEX: Record<CellStyle, number> = { text: 0, rate: 2, speed: 3 };
+
+const COLUMNS: Array<{ key: keyof TimelineExportRow; header: string; width: number; style: CellStyle }> = [
+  { key: 'whenUtc', header: 'When (UTC)', width: 21, style: 'text' },
+  { key: 'whenLocal', header: 'When (local)', width: 21, style: 'text' },
+  { key: 'type', header: 'Type', width: 16, style: 'text' },
+  { key: 'bid', header: 'Bid', width: 22, style: 'text' },
+  { key: 'fillable', header: 'Fillable (sat/PH/day)', width: 18, style: 'rate' },
+  { key: 'priceBefore', header: 'Price before', width: 14, style: 'rate' },
+  { key: 'priceAfter', header: 'Price after', width: 14, style: 'rate' },
+  { key: 'deltaPrice', header: 'Δ price', width: 12, style: 'rate' },
+  { key: 'speed', header: 'Speed (PH/s)', width: 12, style: 'speed' },
+  { key: 'reason', header: 'Reason', width: 70, style: 'text' },
 ];
 const COL_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
 const LAST_COL = COL_LETTERS[COLUMNS.length - 1]!;
@@ -82,12 +90,27 @@ function xmlEscape(s: string): string {
     .replace(/>/g, '&gt;');
 }
 
-function cellXml(letter: string, r: number, value: string | number | null, numeric: boolean): string {
+function cellXml(letter: string, r: number, value: string | number | null, style: CellStyle): string {
   if (value === null || value === '') return '';
   const ref = `${letter}${r}`;
-  if (numeric) return `<c r="${ref}" t="n" s="2"><v>${value}</v></c>`;
+  if (style !== 'text') return `<c r="${ref}" t="n" s="${STYLE_INDEX[style]}"><v>${value}</v></c>`;
   return `<c r="${ref}" t="inlineStr" s="0"><is><t xml:space="preserve">${xmlEscape(String(value))}</t></is></c>`;
 }
+
+/**
+ * Excel number-format codes (numFmt formatCode) for the two numeric
+ * buckets, chosen by the caller from the active denomination so the
+ * exported decimals match what the dashboard shows (e.g. sat = integer,
+ * BTC = 8 decimals, USD = 2; PH speed = 2 decimals, EH speed = 5).
+ */
+export interface ExportNumberFormats {
+  /** Format for the four rate columns (fillable / prices / delta). */
+  rate: string;
+  /** Format for the speed column. */
+  speed: string;
+}
+
+const DEFAULT_NUMBER_FORMATS: ExportNumberFormats = { rate: '#,##0', speed: '#,##0.00' };
 
 /** Translated labels the caller injects so the sheet matches the UI language. */
 export interface ExportLabels {
@@ -95,12 +118,15 @@ export interface ExportLabels {
   headers: readonly string[];
   /** Worksheet + workbook tab name. */
   sheetName: string;
+  /** Denomination-dependent number formats for the numeric columns. */
+  numberFormats?: ExportNumberFormats;
 }
 
 /** Default (English) labels, e.g. for tests. */
 export const DEFAULT_EXPORT_LABELS: ExportLabels = {
   headers: COLUMNS.map((c) => c.header),
   sheetName: 'Timeline',
+  numberFormats: DEFAULT_NUMBER_FORMATS,
 };
 
 function headerRowXml(headers: readonly string[]): string {
@@ -114,7 +140,7 @@ function headerRowXml(headers: readonly string[]): string {
 function dataRowXml(row: TimelineExportRow, r: number): string {
   let s = `<row r="${r}">`;
   COLUMNS.forEach((c, i) => {
-    s += cellXml(COL_LETTERS[i]!, r, row[c.key] as string | number | null, c.numeric);
+    s += cellXml(COL_LETTERS[i]!, r, row[c.key] as string | number | null, c.style);
   });
   return s + '</row>';
 }
@@ -153,31 +179,43 @@ const WB_RELS =
   '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
   '</Relationships>';
 
-// s=0 default text; s=1 bold header on a yellow fill; s=2 integer number.
-const STYLES =
-  '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
-  '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
-  '<numFmts count="1"><numFmt numFmtId="164" formatCode="#,##0"/></numFmts>' +
-  '<fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts>' +
-  '<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>' +
-  '<fill><patternFill patternType="solid"><fgColor rgb="FFFACC15"/></patternFill></fill></fills>' +
-  '<borders count="1"><border/></borders>' +
-  '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
-  '<cellXfs count="3">' +
-  '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>' +
-  '<xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/>' +
-  '<xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>' +
-  '</cellXfs>' +
-  '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>' +
-  '</styleSheet>';
+// s=0 default text; s=1 bold header on a yellow fill; s=2 rate number
+// (numFmtId 164); s=3 speed/hashrate number (numFmtId 165). The two
+// numeric formats are injected so exported decimals follow the active
+// denomination (sat/BTC/USD and TH/PH/EH).
+function stylesXml(fmts: ExportNumberFormats): string {
+  return (
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+    '<numFmts count="2">' +
+    `<numFmt numFmtId="164" formatCode="${xmlEscape(fmts.rate)}"/>` +
+    `<numFmt numFmtId="165" formatCode="${xmlEscape(fmts.speed)}"/>` +
+    '</numFmts>' +
+    '<fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts>' +
+    '<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>' +
+    '<fill><patternFill patternType="solid"><fgColor rgb="FFFACC15"/></patternFill></fill></fills>' +
+    '<borders count="1"><border/></borders>' +
+    '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
+    '<cellXfs count="4">' +
+    '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>' +
+    '<xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/>' +
+    '<xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>' +
+    '<xf numFmtId="165" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>' +
+    '</cellXfs>' +
+    '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>' +
+    '</styleSheet>'
+  );
+}
 
 function sheetHead(headers: readonly string[]): string {
-  // #320: `bestFit` marks the column auto-sized (double-clicking the
-  // separator refits it), and the base width is widened to fit the
-  // translated header so a longer localized label isn't clipped.
+  // Fixed column widths - no `bestFit`. `bestFit` makes Excel rescan
+  // every cell in the column to auto-size it when the file opens, which
+  // is measurably slow on large exports (20k+ rows). The widths here are
+  // stable enough that a fixed value looks right; we still widen the base
+  // to fit a longer translated/unit-bearing header so it isn't clipped.
   const cols = COLUMNS.map((c, i) => {
     const w = Math.max(c.width, (headers[i] ?? c.header).length + 3);
-    return `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1" bestFit="1"/>`;
+    return `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`;
   }).join('');
   return (
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
@@ -223,7 +261,7 @@ export async function streamTimelineXlsx(
   addFull('_rels/.rels', ROOT_RELS);
   addFull('xl/workbook.xml', workbookXml(labels.sheetName));
   addFull('xl/_rels/workbook.xml.rels', WB_RELS);
-  addFull('xl/styles.xml', STYLES);
+  addFull('xl/styles.xml', stylesXml(labels.numberFormats ?? DEFAULT_NUMBER_FORMATS));
 
   const sheet = new ZipDeflate('xl/worksheets/sheet1.xml', { level: 6 });
   zip.add(sheet);

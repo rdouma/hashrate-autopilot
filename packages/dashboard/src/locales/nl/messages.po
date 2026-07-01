@@ -2019,8 +2019,8 @@ msgid "Fillable"
 msgstr "Invulbaar"
 
 #: src/pages/History.tsx
-msgid "Fillable (sat/PH/day)"
-msgstr "Invulbaar (sat/PH/day)"
+#~ msgid "Fillable (sat/PH/day)"
+#~ msgstr "Invulbaar (sat/PH/day)"
 
 #: src/pages/Alerts.tsx
 msgid "fired"
@@ -4108,8 +4108,8 @@ msgid "Speed"
 msgstr "Snelheid"
 
 #: src/pages/History.tsx
-msgid "Speed (PH/s)"
-msgstr "Snelheid (PH/s)"
+#~ msgid "Speed (PH/s)"
+#~ msgstr "Snelheid (PH/s)"
 
 #: src/pages/Config.tsx
 msgid "Spend scope"

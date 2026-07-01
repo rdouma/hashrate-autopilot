@@ -33,12 +33,34 @@ const DENOMINATION_STORAGE_KEY = 'hashrate-autopilot.denomination';
 const HASHRATE_UNIT_STORAGE_KEY = 'hashrate-autopilot.hashrateUnit';
 const POLL_INTERVAL_MS = 5 * 60_000;
 
-const SAT_PER_BTC = 100_000_000;
+export const SAT_PER_BTC = 100_000_000;
 const PH_PER_TH = 0.001;
 const PH_PER_EH = 1000;
 
 export type DenominationMode = 'sats' | 'btc' | 'usd';
 export type HashrateUnit = 'TH' | 'PH' | 'EH';
+
+/**
+ * Multiplier to turn a canonical PH/s hashrate into the given unit.
+ * PH stays 1×, TH is ×1000, EH is ×0.001. Exported so non-React code
+ * (e.g. the Excel exporter) can convert without duplicating the ratios.
+ */
+export function hashrateUnitMultiplier(unit: HashrateUnit): number {
+  return unit === 'TH' ? 1 / PH_PER_TH : unit === 'EH' ? 1 / PH_PER_EH : 1;
+}
+
+/**
+ * Multiplier to turn a canonical sat/PH/day rate into sat/<unit>/day.
+ * PH stays 1×, TH is ×0.001, EH is ×1000.
+ */
+export function rateUnitMultiplier(unit: HashrateUnit): number {
+  return unit === 'TH' ? PH_PER_TH : unit === 'EH' ? PH_PER_EH : 1;
+}
+
+/** Convert a sat amount to USD at the given price. */
+export function satToUsd(sat: number, usdPerBtc: number): number {
+  return (sat / SAT_PER_BTC) * usdPerBtc;
+}
 
 export interface DenominationContextValue {
   /** Current currency denomination. */
@@ -105,10 +127,6 @@ function setStoredDenomination(mode: DenominationMode): void {
 
 function setStoredHashrateUnit(unit: HashrateUnit): void {
   window.localStorage.setItem(HASHRATE_UNIT_STORAGE_KEY, unit);
-}
-
-function satToUsd(sat: number, usdPerBtc: number): number {
-  return (sat / SAT_PER_BTC) * usdPerBtc;
 }
 
 function formatUsd(usd: number, locale?: string): string {

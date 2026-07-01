@@ -43,7 +43,13 @@ import {
   type OurBlockMarker,
   type IpChangeEvent,
 } from '../lib/api';
-import { useDenomination } from '../lib/denomination';
+import {
+  useDenomination,
+  hashrateUnitMultiplier,
+  rateUnitMultiplier,
+  satToUsd,
+  SAT_PER_BTC,
+} from '../lib/denomination';
 import { useFormatters } from '../lib/locale';
 import { formatNumber, formatDuration } from '../lib/format';
 import { CHART_COLOR_DEFAULTS, type ChartColorKey } from '../lib/chartColors';
@@ -745,6 +751,24 @@ export function History() {
             reason,
           },
         });
+      // Convert canonical values (sat/PH/day rates, PH/s hashrate) into
+      // the operator's active denomination so the Excel matches what the
+      // dashboard shows. Full precision is stored; the Excel number
+      // format (set below) controls displayed decimals, so sorting and
+      // formulas stay exact.
+      const { mode, hashrateUnit, btcPrice } = denomination;
+      const rateMul = rateUnitMultiplier(hashrateUnit);
+      const hrMul = hashrateUnitMultiplier(hashrateUnit);
+      const rateVal = (satPerPhDay: number | null): number | null => {
+        if (satPerPhDay == null) return null;
+        const scaled = satPerPhDay * rateMul; // sat/<unit>/day
+        if (mode === 'usd' && btcPrice != null) return satToUsd(scaled, btcPrice);
+        if (mode === 'btc') return scaled / SAT_PER_BTC;
+        return scaled;
+      };
+      const speedVal = (ph: number | null): number | null =>
+        ph == null ? null : ph * hrMul;
+
       const bidToRow = (e: BidHistoryFlatEvent): TimelineExportRow => {
         const before = e.old_price_sat_per_ph_day;
         const after = e.new_price_sat_per_ph_day;
@@ -753,14 +777,11 @@ export function History() {
           whenLocal: fmt.timestamp(e.occurred_at),
           type: actionLabels[e.kind],
           bid: e.braiins_order_id,
-          fillable:
-            e.fillable_at_event_sat_per_ph_day != null
-              ? Math.round(e.fillable_at_event_sat_per_ph_day)
-              : null,
-          priceBefore: before != null ? Math.round(before) : null,
-          priceAfter: after != null ? Math.round(after) : null,
-          deltaPrice: before != null && after != null ? Math.round(after - before) : null,
-          speed: e.speed_limit_ph,
+          fillable: rateVal(e.fillable_at_event_sat_per_ph_day),
+          priceBefore: rateVal(before),
+          priceAfter: rateVal(after),
+          deltaPrice: before != null && after != null ? rateVal(after - before) : null,
+          speed: speedVal(e.speed_limit_ph),
           reason: e.reason ?? '',
         };
       };
@@ -828,7 +849,22 @@ export function History() {
 
       // #320: localize the sheet - headers + tab name follow the UI
       // language (Type/reason values are already translated by their
-      // label functions). Order must match the export columns.
+      // label functions). Order must match the export columns. The rate
+      // and speed headers carry the active denomination unit so the
+      // exported numbers are self-describing (e.g. "Fillable (BTC/EH/day)").
+      const curLabel = mode === 'usd' ? 'USD' : mode === 'btc' ? 'BTC' : 'sat';
+      const rateUnitLabel = `${curLabel}/${hashrateUnit}/day`;
+      const speedUnitLabel = `${hashrateUnit}/s`;
+      const rateNumFmt =
+        mode === 'usd'
+          ? '#,##0.00'
+          : mode === 'btc'
+            ? '#,##0.00000000'
+            : hashrateUnit === 'TH'
+              ? '#,##0.000'
+              : '#,##0';
+      const speedNumFmt =
+        hashrateUnit === 'TH' ? '#,##0.0' : hashrateUnit === 'EH' ? '#,##0.00000' : '#,##0.00';
       const blob = await streamTimelineXlsx(mergedRows(), {
         sheetName: t`Timeline`,
         headers: [
@@ -836,13 +872,14 @@ export function History() {
           t`When (local)`,
           t`Type`,
           t`Bid`,
-          t`Fillable (sat/PH/day)`,
-          t`Price before`,
-          t`Price after`,
-          t`Δ price`,
-          t`Speed (PH/s)`,
+          `${t`Fillable`} (${rateUnitLabel})`,
+          `${t`Price before`} (${rateUnitLabel})`,
+          `${t`Price after`} (${rateUnitLabel})`,
+          `${t`Δ price`} (${rateUnitLabel})`,
+          `${t`Speed`} (${speedUnitLabel})`,
           t`Reason`,
         ],
+        numberFormats: { rate: rateNumFmt, speed: speedNumFmt },
       });
       const stamp = new Date().toISOString().slice(0, 10);
       downloadBlob(blob, `hashrate-autopilot-timeline-${stamp}.xlsx`);
@@ -856,6 +893,7 @@ export function History() {
     exporting,
     filters,
     fmt,
+    denomination,
     actionLabels,
     shownExtraKinds,
     shownAlertClasses,

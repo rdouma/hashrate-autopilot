@@ -77,7 +77,20 @@ describe('streamTimelineXlsx', () => {
     const sheet = strFromU8(files['xl/worksheets/sheet1.xml']!);
     expect(sheet).toContain('&lt;&amp; more&gt;'); // '<& more>' escaped
     expect(sheet).not.toContain('<& more>');
-    expect(sheet).toContain('t="n" s="2"><v>47200</v>'); // priceAfter as a number
+    expect(sheet).toContain('t="n" s="2"><v>47200</v>'); // priceAfter as a rate number
+    expect(sheet).toContain('t="n" s="3"><v>3</v>'); // speed as a hashrate number
+  });
+
+  it('injects the caller-supplied number formats into the stylesheet', async () => {
+    const blob = await streamTimelineXlsx(toAsync(sample), {
+      headers: Array.from({ length: 10 }, (_, i) => `H${i}`),
+      sheetName: 'S',
+      numberFormats: { rate: '#,##0.00000000', speed: '#,##0.00000' },
+    });
+    const files = unzipSync(new Uint8Array(await blob.arrayBuffer()));
+    const styles = strFromU8(files['xl/styles.xml']!);
+    expect(styles).toContain('numFmtId="164" formatCode="#,##0.00000000"'); // BTC rate
+    expect(styles).toContain('numFmtId="165" formatCode="#,##0.00000"'); // EH speed
   });
 
   it('omits empty cells rather than emitting blank string cells', async () => {
