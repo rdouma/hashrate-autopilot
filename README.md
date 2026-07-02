@@ -20,10 +20,13 @@ difficulty-retarget pickaxe icons, on-chain payout gem markers, and public-IP-ch
 rejection-rate spike can be lined up against an ISP IP rotation). Sustained alert conditions (delivered
 hashrate below floor, zero hashrate, DATUM or marketplace-API unreachable, low wallet runway, Bitaxe
 overheating) render as colored background bands over the exact period each was open, and appear as rows in
-the History tab interleaved with bid activity - so an alert lives in the timeline, not just in a separate list.
-The History tab is a unified event log: on-chain payouts, Braiins deposits, blocks your pool found, and IP
-changes show as rows too, and every clickable chart marker has a "View in history" link that jumps to and
-highlights its row in the log. The price chart carries all four bid
+the Timeline tab interleaved with bid activity - so an alert lives in the timeline, not just in a separate list.
+The Timeline tab is a unified event log: on-chain payouts, Braiins deposits, blocks your pool found, daemon
+restarts, and IP changes show as rows too, and every clickable chart marker has a "View in timeline" link that
+jumps to and highlights its row in the log (and the log rows jump back to the chart). Every rate and hashrate on
+the Timeline - columns, detail drawer, chart tooltip, the free-text reason, and the streaming Excel export -
+follows the global currency (sats/BTC/USD) and hashrate-unit (TH/PH/EH) toggles, with "sat" shown as the Satoshi
+glyph. A "follow" toggle live-tails the feed. The price chart carries all four bid
 events (create / edit price / edit speed / cancel); the hashrate chart additionally mirrors the speed-edit
 (gauge) markers, since a speed-limit change is the one bid event that directly moves the delivered-hashrate
 curve. The price chart draws your bid (amber), the fillable ask the
@@ -206,13 +209,17 @@ Full design: [`docs/spec.md`](docs/spec.md) · [`docs/architecture.md`](docs/arc
   been spent still counts; the lifetime panel also carries a dedicated **return on spend** row showing
   `net / spent` as a percentage so the operator can read the rate of return alongside the absolute net
   figure - #249), live bid table with full IDs, and a full config editor with live reload.
-- **History page** - dedicated `/history` route (#256 v2) with a flat filterable table of every bid event
-  (CREATE / EDIT_PRICE / EDIT_SPEED / CANCEL) the autopilot or operator emitted, replacing the older per-bid
-  collapsible view. Filter chips with action glyphs, full bid ID, denomination-aware `|Δ price| ≥ N` filter
+- **Timeline page** - dedicated `/history` route (#256 v2; titled "Timeline" in the nav) with a flat filterable
+  table of every bid event (CREATE / EDIT_PRICE / EDIT_SPEED / CANCEL) the autopilot or operator emitted,
+  replacing the older per-bid collapsible view, interleaved with alert spans, on-chain events, and daemon
+  restarts. Filter chips with action glyphs, full bid ID, denomination-aware `|Δ price| ≥ N` filter
   (input units track the active TH/PH/EH toggle), locale-aware custom date picker, server-side infinite-scroll
-  pagination. Columns: when, bid id, action, fillable-at-event, price before / after, Δ price (green
-  down / red up), speed. SQL coalesces orphan-CREATE rows whose `braiins_order_id` lands a few ticks later,
-  and carries speed / last-price forward so cells aren't blank for an order that demonstrably had values.
+  pagination, per-group and global all/none toggles, and a "follow" live-tail. Columns: when, bid id, action,
+  fillable-at-event, price before / after, Δ price (green down / red up), speed - all converted to the active
+  currency + hashrate unit (with the Satoshi glyph for "sat"), including the free-text reason. SQL coalesces
+  orphan-CREATE rows whose `braiins_order_id` lands a few ticks later, and carries speed / last-price forward so
+  cells aren't blank for an order that demonstrably had values. A streaming **Excel export** writes the current
+  filtered feed to a denomination-aware `.xlsx` (frozen header, autofilter, flat memory, no row cap).
 - **Unit toggles in the header** - hashrate displays as TH/s, PH/s, or EH/s and prices as sat, ₿ (BTC), or
   USD. Both pickers persist per browser. The USD path uses a live BTC oracle (CoinGecko, Coinbase, Bitstamp,
   or Kraken; pick one) refreshed daemon-side every 4 minutes so it stays current even when the dashboard tab
@@ -311,23 +318,31 @@ Telegram setup is a 60-second walkthrough at [`docs/setup-telegram.md`](docs/set
 run more than one daemon against the same bot/chat, set an **Instance label** under Config →
 Notifications and every message gets prefixed with `[<label>] ` so you can tell them apart at a glance.
 
-## History
+## Timeline
 
 Every bid event the autopilot or operator emitted - CREATE / EDIT_PRICE / EDIT_SPEED / CANCEL - lands in
-an append-only log surfaced at `/history` as a flat sortable table.
+an append-only log surfaced at `/history` (titled "Timeline" in the nav) as a flat sortable table,
+interleaved with alert spans, on-chain events, difficulty retargets, and daemon restarts.
 
-![Order history page](docs/images/order-history.png)
+![Timeline page](docs/images/order-history.png)
 
 Toolbar filters: action-kind chips with Lucide glyphs matching the rows, full bid-id substring, From / To
 date range via a custom locale-aware date picker (the browser-native `<input type=date>` always rendered
 in the *browser's* locale rather than the dashboard's chosen language; the custom picker formats via
 `Intl.DateTimeFormat` in the active locale and emits a local-midnight ms timestamp), and a denomination-aware
 `|Δ price| ≥ N` filter whose input unit tracks the active TH / PH / EH toggle (converted to sat/EH/day on
-the wire). Columns: When, Bid (full id, no truncation), Action, Fillable-at-event, Price before, Price
-after, Δ price (green for downward, red for upward), Speed. Server-side infinite-scroll pagination via a
-`before_id` cursor. SQL coalesces the bid id forward on CREATE_BID rows that land before Braiins echoes the
-assigned id (1 h window) and carries the bid's speed and last-known price forward across events so cells
-aren't blank for an order that demonstrably had values.
+the wire). Per-group and global all/none toggles reset the chip selection quickly, and a **follow** toggle
+live-tails the feed. Columns: When, Bid (full id, no truncation), Action, Fillable-at-event, Price before,
+Price after, Δ price (green for downward, red for upward), Speed. Every rate/hashrate - columns, the
+click-through detail drawer, the price-chart event tooltip, and the free-text reason - is converted to the
+active currency (sats/BTC/USD) and hashrate unit (TH/PH/EH), with "sat" rendered as the Satoshi glyph.
+Server-side infinite-scroll pagination via a `before_id` cursor. SQL coalesces the bid id forward on
+CREATE_BID rows that land before Braiins echoes the assigned id (1 h window) and carries the bid's speed and
+last-known price forward across events so cells aren't blank for an order that demonstrably had values.
+
+A **streaming Excel export** (toolbar button) writes the current filtered feed to a `.xlsx` - frozen header,
+autofilter, fixed column widths, denomination-aware values and unit-labelled headers - built row-by-row so
+memory stays flat regardless of row count (no cap).
 
 ## Configuration
 

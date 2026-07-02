@@ -80,7 +80,7 @@
 > lifecycle kinds (#287): `MODE_CHANGE` (operator/boot run-mode switches), `BID_PAUSED` and
 > `BID_RESUMED` (Braiins-side bid status flips observed per tick, with Braiins'
 > `last_pause_reason` in `reason`). The three are excluded from the Stats page `mutation_count`
-> and never inherit a bid id from the orphan-CREATE coalesce; they render as History rows,
+> and never inherit a bid id from the orphan-CREATE coalesce; they render as Timeline rows,
 > always-visible price-chart markers, and feed the idle-state background bands on both charts
 > (run-mode bands from per-tick `tick_metrics.run_mode`, now exposed raw + worst-in-bucket via
 > `/api/metrics`; bid-pause bands from BID_PAUSED→BID_RESUMED event pairs).
@@ -97,7 +97,7 @@
 > fell back to live config - with the earliest premium ever recorded (the value in effect when
 > per-tick recording began), carried backward; no-op when the dynamic cap was never enabled.
 > Migration 0114 (#318) adds `system_events` (config changes + daemon boots) for the unified
-> History log: `config_change` rows (one per changed field, written by the config-save route via
+> Timeline log: `config_change` rows (one per changed field, written by the config-save route via
 > `SystemEventsRepo`) and `daemon_started` rows (written on boot). Served by `GET /api/system-events`;
 > `GET /api/retargets` (#317) derives difficulty retargets from `tick_metrics.network_difficulty`.
 
@@ -136,7 +136,7 @@ v1.5 (#100) - via **Telegram notifications**. The notification subsystem is buil
 interface (currently only `TelegramSink`; future Nostr / ntfy / email backends can slot in). An `AlertEvaluator`
 detects state transitions each tick, the `AlertManager` writes rows to the `alerts` table with a retry ladder, and
 a `TelegramReceiver` long-polls `getUpdates` to process inline-keyboard acknowledgements from the operator's phone.
-Alerts and their delivery state are also surfaced on a dedicated `/alerts` dashboard page. **#316:** alert openers that arrive as open/recovery pairs (`hashrate_below_floor`, `zero_hashrate`, `datum_unreachable`, `api_unreachable`, `wallet_runway`, `solo_overheating`) are also exposed as timeline spans via `GET /api/alert-spans` (`AlertsRepo.conditionSpansSince`): each opener is matched to its recovery via the recovery row's `paired_alert_id`, and an orphan opener with no recovery is bounded - closed at the next same-class opener, kept open-ended only if it started within 6 h of now, else capped at start + 6 h - so a stale alert can't render as an infinite band. The shared `CONDITION_SPAN_CLASSES` taxonomy (in `packages/shared`) names each class, its chart target(s), and its color slot. These spans feed both the chart background bands and the History-feed alert rows.
+Alerts and their delivery state are also surfaced on a dedicated `/alerts` dashboard page. **#316:** alert openers that arrive as open/recovery pairs (`hashrate_below_floor`, `zero_hashrate`, `datum_unreachable`, `api_unreachable`, `wallet_runway`, `solo_overheating`) are also exposed as timeline spans via `GET /api/alert-spans` (`AlertsRepo.conditionSpansSince`): each opener is matched to its recovery via the recovery row's `paired_alert_id`, and an orphan opener with no recovery is bounded - closed at the next same-class opener, kept open-ended only if it started within 6 h of now, else capped at start + 6 h - so a stale alert can't render as an infinite band. The shared `CONDITION_SPAN_CLASSES` taxonomy (in `packages/shared`) names each class, its chart target(s), and its color slot. These spans feed both the chart background bands and the Timeline-feed alert rows.
 
 ## 2. Repository layout
 
