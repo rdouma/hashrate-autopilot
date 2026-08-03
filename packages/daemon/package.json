@@ -34,8 +34,8 @@
     "@hashrate-autopilot/shared": "workspace:*",
     "@inquirer/prompts": "^8.5.2",
     "bech32": "^2.0.0",
-    "better-sqlite3": "~12.11.1",
-    "fastify": "^5.10.0",
+    "better-sqlite3": "~13.0.2",
+    "fastify": "^5.11.0",
     "kysely": "^0.29.4",
     "yaml": "^2.9.0",
     "zod": "^4.4.3"
