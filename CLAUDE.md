@@ -1,5 +1,25 @@
 # Project conventions for Claude sessions
 
+## Model tiers (imported from the Domizello workflow, 2026-08-20)
+
+**Plan expensive, execute cheap.** The session model (Fable) does the
+strategy, architecture, triage judgment, issue/PR management, release
+management, and ALL prose a human reads (docs, spec, CHANGELOG,
+issue/PR bodies and comments, release notes). The actual coding is
+delegated to **Opus subagents** (`Agent` tool, `model: opus`) with a
+tight brief once the approach is decided, and so is test execution
+(suite runs, dashboard smoke tests, live-probe verification). Sonnet
+for broad read-only exploration; Haiku for mechanical sweeps.
+
+Rules of thumb: never delegate final triage, quality judgment, or the
+review of a worker's gating output downward; never tier down security
+triage, migration design, mutation-gate or payout-accounting logic,
+or anything that rewrites an operator's database in place. If a
+cheaper tier flails twice on a chunk, escalate one tier instead of
+retrying. The orchestrator rewrites worker prose rather than passing
+it through verbatim. Full local policy (with current model IDs):
+`.claude/rules/model-tiers.md` (operator-private, not committed).
+
 ## Diagnostic credentials
 
 `data/diagnostics.json` (gitignored) carries read-only credentials
