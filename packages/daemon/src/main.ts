@@ -69,7 +69,7 @@ import { AlertManager } from './services/alert-manager.js';
 import { BraiinsDepositWatcherService } from './services/braiins-deposit-watcher.js';
 import { TelegramSink, type SendOptions } from './services/notifier.js';
 import { TelegramReceiver } from './services/telegram-receiver.js';
-import { runOceanUnpaidCleanup } from './services/ocean-unpaid-cleanup.js';
+import { runOceanUnpaidCleanup, runOceanUnpaidRestore } from './services/ocean-unpaid-cleanup.js';
 import { runNetworkDifficultyBackfill } from './services/network-difficulty-backfill.js';
 import { runPoolBlocksBackfill } from './services/pool-blocks-backfill.js';
 import { runPoolLuckRecompute } from './services/pool-luck-recompute.js';
@@ -745,6 +745,12 @@ async function bootOperational(
   // them. Idempotent across boots.
   await runOceanUnpaidCleanup({ db: handle.db, log: (m) => log(m) }).catch(
     (err) => log(`[ocean-unpaid-cleanup] ${(err as Error).message}`),
+  );
+  // #369: heal what the pre-fix (unbounded) cleanup wrongly wiped -
+  // restore ocean_unpaid_sat from the per-tick observed state stored
+  // in decisions.observed_json. Idempotent; no-op once healed.
+  await runOceanUnpaidRestore({ db: handle.db, log: (m) => log(m) }).catch(
+    (err) => log(`[ocean-unpaid-restore] ${(err as Error).message}`),
   );
 
   // Boot chain order (#241):

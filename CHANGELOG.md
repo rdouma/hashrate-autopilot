@@ -2,6 +2,10 @@
 
 ## 2026-08-20
 
+### `[Fix]` Unpaid-earnings history no longer wiped when the balance runs high (#369)
+
+A boot-time cleanup (shipped v1.10.0 to revert an old bad reconstruction of historical unpaid values) assumed no real unpaid balance could ever exceed 1.5M sat. With larger hashrate targets and Ocean's post-split payout cadence occasionally running long, a genuine balance crossed that threshold - and the next daemon restart wiped the entire unpaid-earnings history up to that point, with no way back from the P&L rebuild or hard reset. The cleanup is now bounded to the spring-2026 contamination era it was written for, so a high balance can never trigger it again, and a new boot-time self-heal restores previously wiped values from the per-tick decision log (recent history recovers completely; older history recovers at every tick that had bid activity).
+
 ### `[Release]` v1.18.0
 
 The BIP110 release. A new "Ocean chain" setting (Config → Pool & Payout) lets miners on Ocean's BIP110 endpoint declare their chain: the daemon stops asking Ocean's API (which covers only the mainstream chain - Ocean has confirmed no BIP110 API exists and scraping is unsupported), collected earnings derive from on-chain payouts seen by your own Bitcoin node, the hashprice-dependent dynamic cap and cheap mode are disabled with clear explanations (your fixed Maximum stays the ceiling and bidding continues), and every Ocean/hashprice dashboard surface is marked "n/a on BIP110" rather than showing dashes - with pre-switch history still plotting. Mainstream-chain operators see no behavior change. Also includes routine dependency maintenance and a js-yaml security pin. See the new README chapter "Mining on Ocean's BIP110 chain".
