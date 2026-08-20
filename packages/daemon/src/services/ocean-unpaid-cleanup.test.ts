@@ -7,10 +7,18 @@
  * contamination era, and the restore pass heals wrongly-nulled rows
  * from the per-tick observed state kept in decisions.observed_json.
  */
+import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { closeDatabase, openDatabase, type DatabaseHandle } from '../state/db.js';
-import { runOceanUnpaidCleanup, runOceanUnpaidRestore } from './ocean-unpaid-cleanup.js';
+import {
+  runOceanUnpaidCleanup,
+  runOceanUnpaidImport,
+  runOceanUnpaidRestore,
+} from './ocean-unpaid-cleanup.js';
 
 // Inside the contamination era (before 2026-05-09).
 const ERA_MS = Date.UTC(2026, 3, 15); // 2026-04-15
@@ -141,6 +149,46 @@ describe('runOceanUnpaidRestore (#369 self-heal)', () => {
 
     const m = await unpaidByTick();
     expect(m.get(MODERN_MS)).toBe(123_456);
+  });
+
+  it('imports an operator backup file into wiped rows exactly once (#369)', async () => {
+    await insertTick(MODERN_MS, null); // wiped
+    await insertTick(MODERN_MS + 60_000, 42); // live value - must survive
+    await insertTick(MODERN_MS + 120_000, null); // wiped, not in backup
+
+    const dir = await mkdtemp(join(tmpdir(), 'unpaid-import-'));
+    const importPath = join(dir, 'ocean-unpaid-import.json');
+    await writeFile(
+      importPath,
+      JSON.stringify([
+        [MODERN_MS, 777_000],
+        [MODERN_MS + 60_000, 999_999], // targets a non-null row - ignored
+      ]),
+    );
+
+    await runOceanUnpaidImport({ db: handle.db, importPath });
+
+    const m = await unpaidByTick();
+    expect(m.get(MODERN_MS)).toBe(777_000);
+    expect(m.get(MODERN_MS + 60_000)).toBe(42);
+    expect(m.get(MODERN_MS + 120_000)).toBeNull();
+    // Consumed exactly once: file renamed, second run is a no-op.
+    await expect(readFile(importPath, 'utf8')).rejects.toThrow();
+    await expect(readFile(`${importPath}.imported`, 'utf8')).resolves.toBeTruthy();
+    await runOceanUnpaidImport({ db: handle.db, importPath });
+    expect((await unpaidByTick()).get(MODERN_MS)).toBe(777_000);
+  });
+
+  it('leaves a malformed import file in place without touching data', async () => {
+    await insertTick(MODERN_MS, null);
+    const dir = await mkdtemp(join(tmpdir(), 'unpaid-import-'));
+    const importPath = join(dir, 'ocean-unpaid-import.json');
+    await writeFile(importPath, '{"not":"an array"}');
+
+    await runOceanUnpaidImport({ db: handle.db, importPath });
+
+    expect((await unpaidByTick()).get(MODERN_MS)).toBeNull();
+    await expect(readFile(importPath, 'utf8')).resolves.toBeTruthy();
   });
 
   it('cleanup followed by restore round-trips the incident', async () => {

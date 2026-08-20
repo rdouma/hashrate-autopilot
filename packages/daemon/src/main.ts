@@ -69,7 +69,7 @@ import { AlertManager } from './services/alert-manager.js';
 import { BraiinsDepositWatcherService } from './services/braiins-deposit-watcher.js';
 import { TelegramSink, type SendOptions } from './services/notifier.js';
 import { TelegramReceiver } from './services/telegram-receiver.js';
-import { runOceanUnpaidCleanup, runOceanUnpaidRestore } from './services/ocean-unpaid-cleanup.js';
+import { runOceanUnpaidCleanup, runOceanUnpaidImport, runOceanUnpaidRestore } from './services/ocean-unpaid-cleanup.js';
 import { runNetworkDifficultyBackfill } from './services/network-difficulty-backfill.js';
 import { runPoolBlocksBackfill } from './services/pool-blocks-backfill.js';
 import { runPoolLuckRecompute } from './services/pool-luck-recompute.js';
@@ -752,6 +752,19 @@ async function bootOperational(
   await runOceanUnpaidRestore({ db: handle.db, log: (m) => log(m) }).catch(
     (err) => log(`[ocean-unpaid-restore] ${(err as Error).message}`),
   );
+  // #369: operator-supplied backup merge - drop an
+  // ocean-unpaid-import.json next to state.db and the next boot fills
+  // wiped rows from it (exactly once; file renamed .imported after).
+  await runOceanUnpaidImport({
+    db: handle.db,
+    log: (m) => log(m),
+    // Same resolution main() uses for state.db - the import file lives
+    // beside the database.
+    importPath: resolve(
+      dirname(process.env['DB_PATH'] ?? resolve(process.cwd(), 'data/state.db')),
+      'ocean-unpaid-import.json',
+    ),
+  }).catch((err) => log(`[ocean-unpaid-import] ${(err as Error).message}`));
 
   // Boot chain order (#241):
   //   1. pool-blocks-backfill - pull Ocean's pool_blocks for the

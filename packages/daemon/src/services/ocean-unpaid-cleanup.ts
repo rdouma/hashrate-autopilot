@@ -24,6 +24,8 @@
  * function no-ops.
  */
 
+import { readFile, rename } from 'node:fs/promises';
+
 import { sql, type Kysely } from 'kysely';
 
 import type { Database } from '../state/types.js';
@@ -134,5 +136,91 @@ export async function runOceanUnpaidRestore(
     log(
       `ocean-unpaid-restore: recovered ocean_unpaid_sat on ${affected} tick_metrics row(s) from decisions.observed_json (#369)`,
     );
+  }
+}
+
+/**
+ * #369: operator-supplied backup import. When an operator has an old
+ * copy of state.db (or any export) from before the wipe, they can
+ * recover the stretch the decision log no longer covers by dropping a
+ * JSON file next to the live database:
+ *
+ *   <data dir>/ocean-unpaid-import.json
+ *   -> [[tick_at_ms, unpaid_sat], ...]
+ *
+ * On the next boot the daemon merges it - exact tick_at match, and
+ * ONLY into rows whose ocean_unpaid_sat is NULL, so live readings are
+ * never overwritten and re-running is harmless. The file is renamed
+ * to `.imported` afterwards so it applies exactly once. A malformed
+ * file is left in place and logged, never deleted.
+ */
+export async function runOceanUnpaidImport(
+  deps: OceanUnpaidCleanupDeps & { readonly importPath: string },
+): Promise<void> {
+  const log = deps.log ?? (() => undefined);
+
+  let raw: string;
+  try {
+    raw = await readFile(deps.importPath, 'utf8');
+  } catch {
+    return; // no import file - the overwhelmingly common case
+  }
+
+  let pairs: Array<[number, number]>;
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) throw new Error('top level is not an array');
+    pairs = parsed.filter(
+      (p): p is [number, number] =>
+        Array.isArray(p) &&
+        p.length === 2 &&
+        Number.isFinite(p[0]) &&
+        Number.isFinite(p[1]),
+    );
+  } catch (err) {
+    log(
+      `ocean-unpaid-import: ${deps.importPath} is not a valid [[tick_at_ms, unpaid_sat], ...] JSON array (${(err as Error).message}); leaving it in place`,
+    );
+    return;
+  }
+
+  // Stage the pairs in a temp table (chunked inserts), then merge in
+  // one indexed UPDATE. SQLite has no column aliases on a bare VALUES
+  // table, and a temp table keeps the statements small for ~100k-pair
+  // backups.
+  await sql`CREATE TEMP TABLE IF NOT EXISTS unpaid_import (tick_at INTEGER PRIMARY KEY, unpaid INTEGER NOT NULL)`.execute(
+    deps.db,
+  );
+  await sql`DELETE FROM unpaid_import`.execute(deps.db);
+  const CHUNK = 5_000;
+  for (let i = 0; i < pairs.length; i += CHUNK) {
+    const chunk = pairs.slice(i, i + CHUNK);
+    const valuesSql = sql.join(
+      chunk.map(([t, v]) => sql`(${t}, ${v})`),
+      sql`, `,
+    );
+    await sql`INSERT OR REPLACE INTO unpaid_import (tick_at, unpaid) VALUES ${valuesSql}`.execute(
+      deps.db,
+    );
+  }
+
+  const result = await sql`
+    UPDATE tick_metrics
+    SET ocean_unpaid_sat = (
+      SELECT unpaid FROM unpaid_import WHERE unpaid_import.tick_at = tick_metrics.tick_at
+    )
+    WHERE ocean_unpaid_sat IS NULL
+      AND tick_at IN (SELECT tick_at FROM unpaid_import)
+  `.execute(deps.db);
+  const restored = Number(result.numAffectedRows ?? 0);
+  await sql`DROP TABLE IF EXISTS unpaid_import`.execute(deps.db);
+
+  log(
+    `ocean-unpaid-import: merged ${restored} value(s) from ${deps.importPath} (${pairs.length} pairs in file)`,
+  );
+  try {
+    await rename(deps.importPath, `${deps.importPath}.imported`);
+  } catch (err) {
+    log(`ocean-unpaid-import: could not rename import file: ${(err as Error).message}`);
   }
 }
