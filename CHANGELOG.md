@@ -2,6 +2,10 @@
 
 ## 2026-08-20
 
+### `[Release]` v1.18.1
+
+Emergency patch for the unpaid-history wipe (#369). The boot-time cleanup that could destroy genuine unpaid-earnings history when the balance ran above 1.5M sats is fenced to the spring-2026 data problem it was written for; a startup self-heal restores wiped values from the decision log automatically; and operators with an old database copy can merge the remainder back via an `ocean-unpaid-import.json` drop-in. Recovery runs automatically after the update. Affects every release from v1.10.0 through v1.18.0.
+
 ### `[Fix]` Unpaid-earnings history no longer wiped when the balance runs high (#369)
 
 A boot-time cleanup (shipped v1.10.0 to revert an old bad reconstruction of historical unpaid values) assumed no real unpaid balance could ever exceed 1.5M sat. With larger hashrate targets and Ocean's post-split payout cadence occasionally running long, a genuine balance crossed that threshold - and the next daemon restart wiped the entire unpaid-earnings history up to that point, with no way back from the P&L rebuild or hard reset. The cleanup is now bounded to the spring-2026 contamination era it was written for, so a high balance can never trigger it again, and a new boot-time self-heal restores previously wiped values from the per-tick decision log (recent history recovers completely; older history recovers at every tick that had bid activity). Operators holding an old copy of their database can recover the rest: export `[[tick_at_ms, unpaid_sat], ...]` pairs to an `ocean-unpaid-import.json` file next to `state.db` and the next boot merges them into the wiped rows exactly once - existing values are never overwritten.

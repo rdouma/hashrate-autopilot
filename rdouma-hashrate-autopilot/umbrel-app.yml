@@ -7,7 +7,7 @@ manifestVersion: 1
 id: rdouma-hashrate-autopilot
 category: bitcoin
 name: Hashrate Autopilot
-version: "1.18.0"
+version: "1.18.1"
 tagline: Autopilot for renting hashrate to mine on Ocean Mining
 icon: https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/assets/icon-512.png
 # Umbrel renders description literally - no YAML folding of soft
@@ -53,6 +53,15 @@ defaultPassword: ""
 submitter: Remco Douma
 submission: https://github.com/rdouma/hashrate-autopilot
 releaseNotes: |
+  v1.18.1 - unpaid-earnings history protected and restored.
+
+  FIXED
+  - A boot-time data cleanup could wipe your entire unpaid-earnings chart history if your unpaid balance ever legitimately climbed above 1.5M sats (larger hashrate targets, or an Ocean payout landing late). The cleanup is now strictly fenced to the old spring-2026 data problem it was written for and can never touch genuine readings again.
+  - The daemon now heals previously wiped history automatically on startup, restoring the values from its own decision log - the last week comes back completely, and older history comes back at every tick that had bid activity.
+  - If you keep an old copy of your database, the rest can be recovered too: place an ocean-unpaid-import.json file next to state.db (format: [[tick_at_ms, unpaid_sat], ...]) and the next start merges it into the wiped rows exactly once, never overwriting live readings.
+
+  Recovery runs automatically after the update. Safe to upgrade from any 1.17.x or 1.18.0 release.
+
   v1.18.0 - choose which Ocean chain you mine on: full support for miners on Ocean's BIP110 endpoint.
 
   NEW
