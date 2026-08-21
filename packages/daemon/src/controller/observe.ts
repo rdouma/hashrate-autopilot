@@ -74,6 +74,17 @@ export interface ObserveDeps {
    */
   readonly datumPoller?: DatumPoller;
   /**
+   * #373: live read of the bid-guard's CREATE hold (churn breaker /
+   * marketplace blacklist). Absent = no guard wired = never held.
+   */
+  readonly getCreateHold?: () => import('./types.js').CreateHold | null;
+  /**
+   * #373: live read of the node-staleness signal (the operator's own
+   * Bitcoin node - the one DATUM builds templates from - has been
+   * unreachable beyond the threshold). Absent = unknowable = false.
+   */
+  readonly getNodeStale?: () => boolean;
+  /**
    * Optional Ocean client. When present and `btc_payout_address` is
    * configured, each tick reads the operator's 5-min sliding-window
    * hashrate from Ocean's stats response (issue #36) - sourced from
@@ -594,6 +605,11 @@ export async function observe(deps: ObserveDeps, inputs: ObserveInputs): Promise
     fillable_ask_sat_per_eh_day,
     cheap_mode_window,
     bypass_pacing: inputs.bypassPacing,
+    // #373: CREATE hold + node staleness, live-read from the services
+    // wired in main. getHold() self-clears an expired blacklist hold,
+    // so the auto-resume happens at tick cadence with no timer.
+    create_hold: deps.getCreateHold?.() ?? null,
+    node_stale: deps.getNodeStale?.() ?? false,
   };
 }
 

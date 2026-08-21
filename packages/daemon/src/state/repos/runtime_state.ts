@@ -24,6 +24,11 @@ export interface RuntimeStateRow {
   above_floor_ticks: number;
   solo_best_difficulty_all_time: number | null;
   last_backfilled_payout_address: string | null;
+  /** #373: persisted CREATE hold (churn breaker / blacklist), null when none. */
+  create_hold_kind: string | null;
+  create_hold_until_ms: number | null;
+  create_hold_detail: string | null;
+  create_hold_since_ms: number | null;
 }
 
 export class RuntimeStateRepo {
@@ -88,5 +93,9 @@ function toDomain(row: RuntimeStateTable): RuntimeStateRow {
     above_floor_ticks: row.above_floor_ticks,
     solo_best_difficulty_all_time: row.solo_best_difficulty_all_time ?? null,
     last_backfilled_payout_address: row.last_backfilled_payout_address ?? null,
+    create_hold_kind: row.create_hold_kind ?? null,
+    create_hold_until_ms: row.create_hold_until_ms ?? null,
+    create_hold_detail: row.create_hold_detail ?? null,
+    create_hold_since_ms: row.create_hold_since_ms ?? null,
   };
 }

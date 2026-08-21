@@ -98,6 +98,20 @@ export interface ActualHashrate {
   readonly total_ph: number;
 }
 
+/**
+ * #373: an active CREATE hold - the autopilot must not place new bids.
+ * 'churn': the churn breaker tripped (bids repeatedly created and
+ * market-canceled with zero delivery); released MANUALLY by the
+ * operator. 'blacklist': the marketplace rejected a CREATE with its
+ * "blacklisted until <ts>" error; auto-releases at `until_ms`.
+ */
+export interface CreateHold {
+  readonly kind: 'churn' | 'blacklist';
+  readonly until_ms: number | null;
+  readonly detail: string;
+  readonly since_ms: number;
+}
+
 export interface State {
   readonly tick_at: number;
   readonly run_mode: RunMode;
@@ -148,6 +162,22 @@ export interface State {
   readonly above_floor_ticks: number;
 
   readonly pool: PoolHealth;
+
+  /**
+   * #373: active CREATE hold (churn breaker / marketplace blacklist),
+   * or null. decide() proposes no CREATE_BID while set; the alert
+   * evaluator and the Next Action card key on it.
+   */
+  readonly create_hold: CreateHold | null;
+  /**
+   * #373: true when the operator's Bitcoin node (the one DATUM builds
+   * templates from, on supported setups) has been unreachable long
+   * enough that the destination pool must be assumed work-less. Full
+   * parity with the Datum-stratum-down protection: block CREATEs and
+   * cancel active bids, so rented hashrate never burns against a
+   * template-less pool. False when no node is configured (unknowable).
+   */
+  readonly node_stale: boolean;
 
   /**
    * Datum Gateway stats (null when the integration is disabled via

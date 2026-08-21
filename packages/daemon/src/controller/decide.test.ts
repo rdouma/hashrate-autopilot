@@ -72,6 +72,8 @@ function state(overrides: Partial<State> = {}): State {
     above_floor_ticks: 0,
     manual_override_until_ms: null,
     pool: { reachable: true, last_ok_at: 1_700_000_000_000, consecutive_failures: 0, error: null, latency_ms: null },
+    create_hold: null,
+    node_stale: false,
     datum: null,
     ocean_hashrate_ph: null,
     share_log_pct: null,
@@ -151,6 +153,46 @@ describe('decide - case selection', () => {
     expect(proposals.length).toBeGreaterThan(0);
     // The fixed max_bid still applies as the only ceiling.
     expect(proposals[0]!.kind).toBe('CREATE_BID');
+  });
+
+  it('#373: an active CREATE hold blocks the create (churn breaker / blacklist)', () => {
+    const churn = state({
+      create_hold: { kind: 'churn', until_ms: null, detail: 'held', since_ms: 1 },
+    });
+    expect(decide(churn)).toEqual([]);
+    const blacklist = state({
+      create_hold: { kind: 'blacklist', until_ms: Date.now() + 60_000, detail: 'held', since_ms: 1 },
+    });
+    expect(decide(blacklist)).toEqual([]);
+    // Sanity: identical state without the hold DOES create.
+    const free = state({ create_hold: null });
+    expect(decide(free).some((p) => p.kind === 'CREATE_BID')).toBe(true);
+  });
+
+  it('#373: a stale Bitcoin node cancels active bids and blocks creates (parity with #199)', () => {
+    const withBid = state({
+      node_stale: true,
+      owned_bids: [
+        {
+          braiins_order_id: 'B1',
+          cl_order_id: null,
+          price_sat: 50_000_000,
+          amount_sat: 1_000_000,
+          speed_limit_ph: 3,
+          avg_speed_ph: 3,
+          progress_pct: 10,
+          amount_remaining_sat: 900_000,
+          amount_consumed_sat: 100_000,
+          status: 'BID_STATUS_ACTIVE',
+        },
+      ] as never,
+    });
+    const proposals = decide(withBid);
+    expect(proposals).toHaveLength(1);
+    expect(proposals[0]!.kind).toBe('CANCEL_BID');
+    // And with no bids: nothing gets created while stale.
+    const empty = state({ node_stale: true, owned_bids: [] });
+    expect(empty && decide(empty)).toEqual([]);
   });
 });
 
@@ -235,6 +277,8 @@ describe('decide - Datum stratum down auto-cancel (#199)', () => {
   it('does not block CREATE after the stratum probe recovers', () => {
     const proposals = decide(state({
       pool: { reachable: true, last_ok_at: Date.now(), consecutive_failures: 0, error: null, latency_ms: 4 },
+      create_hold: null,
+      node_stale: false,
       owned_bids: [],
     }));
     expect(proposals).toHaveLength(1);

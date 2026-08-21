@@ -163,6 +163,11 @@ export interface RuntimeStateTable {
   above_floor_ticks: number;
   /** #204: fleet-wide all-time best difficulty high-water mark. */
   solo_best_difficulty_all_time: number | null;
+  /** #373: persisted CREATE hold - 'churn' | 'blacklist' | null (migration 0124). */
+  create_hold_kind: string | null;
+  create_hold_until_ms: number | null;
+  create_hold_detail: string | null;
+  create_hold_since_ms: number | null;
   /**
    * #240 follow-up: the `btc_payout_address` value that was last
    * processed through `runHistoricalBackfill`. Compared against

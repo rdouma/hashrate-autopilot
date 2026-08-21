@@ -199,6 +199,10 @@ export class AlertEvaluator {
   private marketplace_empty: EventState = INITIAL;
   /** #372: every bid mutation the tick actually attempted was rejected. */
   private mutation_failed: EventState = INITIAL;
+  /** #373: churn breaker tripped - CREATEs held until manual resume. */
+  private bid_churn_hold: EventState = INITIAL;
+  /** #373: marketplace blacklisted the pool target - CREATEs held to expiry. */
+  private target_blacklisted: EventState = INITIAL;
   /**
    * #372: count of consecutive ticks that attempted at least one bid
    * mutation and had at least one FAILED outcome. Ticks that attempt
@@ -351,6 +355,8 @@ export class AlertEvaluator {
       ['wallet_runway', (s) => { this.wallet_runway = s; }],
       ['marketplace_empty', (s) => { this.marketplace_empty = s; }],
       ['mutation_failed', (s) => { this.mutation_failed = s; }],
+      ['bid_churn_hold', (s) => { this.bid_churn_hold = s; }],
+      ['target_blacklisted', (s) => { this.target_blacklisted = s; }],
     ];
     for (const [cls, setter] of classes) {
       const open = await alertsRepo.findOpenAlert(cls);
@@ -404,6 +410,7 @@ export class AlertEvaluator {
     await this.evaluateWalletRunway(state, disabled);
     await this.evaluateMarketplaceEmpty(state, disabled);
     await this.evaluateMutationFailed(state, executed ?? [], disabled);
+    await this.evaluateCreateHold(state, disabled);
     await this.evaluatePoolBlockCredited(state, disabled);
     // #226: payout lifecycle. Order matters lightly: initiated reads
     // state.ocean_unpaid_sat against the prior tick's snapshot, then
@@ -832,6 +839,48 @@ export class AlertEvaluator {
     if (disabledClasses.has('mutation_failed')) {
       this.mutationFailedStreak = 0;
     }
+  }
+
+  /**
+   * #373: the bid-guard's CREATE holds, surfaced as two alert classes.
+   * The hold itself is the state machine (set by the guard, cleared
+   * manually or on blacklist expiry); these transitions just mirror it
+   * into alert rows + Telegram, firing on set and pairing a recovery
+   * on clear. Count/state-based, so thresholdMs is zero.
+   */
+  private async evaluateCreateHold(state: State, disabledClasses: ReadonlySet<string>): Promise<void> {
+    const hold = state.create_hold;
+    const untilText =
+      hold?.until_ms != null ? new Date(hold.until_ms).toISOString() : '';
+    this.bid_churn_hold = await this.runTransition({
+      event_class: 'bid_churn_hold',
+      severity: 'IMPORTANT',
+      isBad: hold?.kind === 'churn',
+      thresholdMs: 0,
+      currentState: this.bid_churn_hold,
+      disabledClasses,
+      title: copyFor(state).bid_churn_hold_title(),
+      titleForRecovery: copyFor(state).bid_churn_hold_title_recovery(),
+      bodyForFiring: () =>
+        copyFor(state).bid_churn_hold_body({ detail: hold?.detail ?? '' }),
+      bodyForRecovery: () => copyFor(state).bid_churn_hold_body_recovery(),
+    });
+    this.target_blacklisted = await this.runTransition({
+      event_class: 'target_blacklisted',
+      severity: 'IMPORTANT',
+      isBad: hold?.kind === 'blacklist',
+      thresholdMs: 0,
+      currentState: this.target_blacklisted,
+      disabledClasses,
+      title: copyFor(state).target_blacklisted_title(),
+      titleForRecovery: copyFor(state).target_blacklisted_title_recovery(),
+      bodyForFiring: () =>
+        copyFor(state).target_blacklisted_body({
+          until: untilText,
+          detail: hold?.detail ?? '',
+        }),
+      bodyForRecovery: () => copyFor(state).target_blacklisted_body_recovery(),
+    });
   }
 
   private async evaluatePoolBlockCredited(state: State, disabledClasses: ReadonlySet<string>): Promise<void> {

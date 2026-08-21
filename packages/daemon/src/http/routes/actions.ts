@@ -28,6 +28,18 @@ export async function registerActionRoutes(
   app: FastifyInstance,
   deps: ActionDeps,
 ): Promise<void> {
+  // #373: operator resume control for the CREATE hold (churn breaker /
+  // blacklist). Clears the persisted hold; the next tick may CREATE
+  // again. Manual by design for churn holds (operator interview
+  // 2026-08-21) - the operator confirms the cause is fixed first.
+  app.post('/api/actions/create-hold/clear', async () => {
+    if (!deps.bidGuard) {
+      return { ok: false, error: 'bid guard not wired' };
+    }
+    deps.bidGuard.clearHold();
+    return { ok: true };
+  });
+
   app.post('/api/actions/tick-now', async (_req, reply) => {
     try {
       // Manual operator action - just run a fresh tick. Post-#49

@@ -87,6 +87,8 @@ import { registerDebugDumpRoute } from './routes/debug-dump.js';
 
 export interface HttpServerDeps {
   readonly controller: Controller;
+  /** #373: churn breaker / blacklist CREATE-hold guard (resume endpoint). */
+  readonly bidGuard?: import('../services/bid-guard.js').BidGuardService;
   readonly configRepo: ConfigRepo;
   readonly runtimeRepo: RuntimeStateRepo;
   readonly ownedBidsRepo: OwnedBidsRepo;

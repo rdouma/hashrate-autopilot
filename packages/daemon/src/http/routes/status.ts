@@ -508,6 +508,30 @@ function describeNextAction(state: State, runMode: State['run_mode']): NextActio
     ? `effective cap ${targetPH.toLocaleString('en-US')} sat/PH/day (desired fillable + overpay exceeds cap)`
     : `${targetPH.toLocaleString('en-US')} sat/PH/day (fillable + overpay)`;
 
+  // #373: an active CREATE hold replaces the will-create story - the
+  // autopilot is deliberately NOT going to place a bid. Only shown when
+  // a create would otherwise be next (no owned bids); with a live bid
+  // the normal maintain-story below still applies (holds never block
+  // edits/cancels).
+  if (state.owned_bids.length === 0 && state.create_hold) {
+    const h = state.create_hold;
+    return {
+      descriptor: {
+        kind: 'create_hold',
+        hold_kind: h.kind,
+        until_ms: h.until_ms,
+        detail: h.detail,
+        since_ms: h.since_ms,
+      },
+      summary:
+        h.kind === 'blacklist'
+          ? `Bidding on hold - the marketplace blacklisted the pool target; resumes automatically at ${h.until_ms ? new Date(h.until_ms).toISOString() : 'expiry'}.`
+          : 'Bidding on hold - repeated create/cancel churn detected; resume manually once the cause is fixed.',
+      detail: h.detail,
+      ...noEvent,
+    };
+  }
+
   if (state.owned_bids.length === 0) {
     const verb = runMode === 'LIVE' ? 'place' : 'log (dry-run)';
     let budgetText: string;

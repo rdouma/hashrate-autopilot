@@ -70,6 +70,7 @@ import { BraiinsDepositWatcherService } from './services/braiins-deposit-watcher
 import { TelegramSink, type SendOptions } from './services/notifier.js';
 import { TelegramReceiver } from './services/telegram-receiver.js';
 import { runOceanUnpaidCleanup, runOceanUnpaidImport, runOceanUnpaidRestore } from './services/ocean-unpaid-cleanup.js';
+import { BidGuardService } from './services/bid-guard.js';
 import { runNetworkDifficultyBackfill } from './services/network-difficulty-backfill.js';
 import { runPoolBlocksBackfill } from './services/pool-blocks-backfill.js';
 import { runPoolLuckRecompute } from './services/pool-luck-recompute.js';
@@ -705,6 +706,23 @@ async function bootOperational(
     }
   })();
 
+  // #373: churn breaker + marketplace-blacklist hold. Constructed
+  // before the controller so its hold feeds observe() from tick one;
+  // hydrated from runtime_state so a restart can't silently resume
+  // creating into a broken pool or an active blacklist.
+  const bidGuard = new BidGuardService({ runtimeRepo, log: (m) => log(m) });
+  {
+    const rt = await runtimeRepo.get().catch(() => null);
+    if (rt) bidGuard.hydrate(rt);
+  }
+  /**
+   * #373: node considered stale after 30 min without a successful RPC
+   * round-trip from the chain-tip poller (NOT tip age - a slow block
+   * must never read as a dead node). While stale, decide() cancels
+   * active bids and blocks CREATE - full parity with stratum-down.
+   */
+  const NODE_STALE_AFTER_MS = 30 * 60_000;
+
   const controller = new Controller({
     braiins,
     braiinsClient,
@@ -728,6 +746,14 @@ async function bootOperational(
       cfgRefHolder.value.ocean_chain === 'bip110'
         ? null
         : hashpriceCache.getFresh(HASHPRICE_STALENESS_MS),
+    // #373: CREATE hold (churn breaker / blacklist) + node staleness.
+    // chainTipPoller is declared later in boot; the closures only run
+    // once the tick loop starts, well after it exists.
+    getCreateHold: () => bidGuard.getHold(),
+    getNodeStale: () => {
+      const ref = chainTipPoller?.getNodeHealthRefMs() ?? null;
+      return ref !== null && Date.now() - ref > NODE_STALE_AFTER_MS;
+    },
   });
   // Restore floor-tracking state so the escalation timer keeps counting
   // across daemon restarts (#11).
@@ -1015,6 +1041,13 @@ async function bootOperational(
       // edits without a restart. tick.ts re-reads config on every
       // tick into r.state.config.
       cfgRefHolder.value = r.state.config;
+      // #373: feed the bid guard in intra-tick order - the bid set was
+      // observed BEFORE this tick's executions. observeBids classifies
+      // bids that vanished since last tick (churn detection);
+      // observeExecuted remembers our own CANCELs and spots the
+      // marketplace's blacklist rejection on failed CREATEs.
+      bidGuard.observeBids(r.state.owned_bids, r.state.bids_fetch_ok);
+      bidGuard.observeExecuted(r.executed);
       // Fire-and-forget: alert evaluation must not block the tick
       // loop. Errors are logged but never bubble up.
       void alertEvaluator
@@ -1203,6 +1236,7 @@ async function bootOperational(
     btcPriceService,
     hashpriceCache,
     chainTipPoller,
+    bidGuard,
     blockVersionService,
     bitcoindClient,
     publicIpService,

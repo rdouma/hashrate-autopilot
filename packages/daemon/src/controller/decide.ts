@@ -85,6 +85,23 @@ export function decide(state: State): readonly Proposal[] {
     }));
   }
 
+  // #373: full parity with the stratum-down protection when the
+  // operator's Bitcoin node is stale/unreachable. DATUM can accept
+  // TCP connections while the node behind it is hung - the gateway
+  // then has no templates and rented hashrate burns against a
+  // work-less pool (2026-08-21 incident: hours of create/cancel churn
+  // ended in a 24h marketplace blacklist of the target). Cancel
+  // active bids and, by returning here, never CREATE while stale.
+  if (state.node_stale) {
+    const cancellable = state.owned_bids.filter((b) => !isPendingCancel(b));
+    return cancellable.map((bid) => ({
+      kind: 'CANCEL_BID' as const,
+      braiins_order_id: bid.braiins_order_id,
+      reason:
+        'Bitcoin node behind the pool is stale/unreachable - no templates can be built; cancelling to stop spend',
+    }));
+  }
+
   // No pool URL configured - can't create or maintain bids.
   if (!state.config.destination_pool_url) return [];
 
@@ -219,6 +236,11 @@ export function decide(state: State): readonly Proposal[] {
     // wasteful (a few minutes of paid-for hashrate on a doomed bid) and
     // confusing in the timeline.
     if (!state.bids_fetch_ok || state.active_ledger_bid_count > 0) return [];
+    // #373: active CREATE hold - churn breaker (manual release) or
+    // marketplace blacklist (auto-release at its expiry, checked by
+    // the guard on read). Edits/cancels above stay allowed; only the
+    // placing of NEW bids is held.
+    if (state.create_hold !== null) return [];
     // Budget resolution (#40). 0 = use full wallet balance, clamped to
     // 1 BTC. Skip the tick silently when balance is missing or empty.
     let effectiveBudgetSat: number;

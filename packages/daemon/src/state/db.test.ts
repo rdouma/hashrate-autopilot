@@ -149,6 +149,7 @@ describe('openDatabase - migrations', () => {
       '0121_negative_unpaid_repair.sql',
       '0122_tick_metrics_ocean_chain.sql',
       '0123_config_ocean_chain.sql',
+      '0124_runtime_create_hold.sql',
     ]);
     expect(handle.migrations.skipped).toEqual([]);
   });

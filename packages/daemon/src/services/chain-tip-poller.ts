@@ -58,6 +58,10 @@ export class ChainTipPoller {
   private snapshot: ChainTipSnapshot | null = null;
   private lastHeight = -1;
   private timer: ReturnType<typeof setInterval> | null = null;
+  /** #373: last successful getblockchaininfo round-trip (any tip). */
+  private lastRpcOkMs: number | null = null;
+  /** #373: when polling began - the never-succeeded baseline. */
+  private startedAtMs: number | null = null;
   private inFlight = false;
   private readonly intervalMs: number;
   private readonly log: (msg: string) => void;
@@ -79,8 +83,19 @@ export class ChainTipPoller {
     this.pools = opts.pools ?? defaultPoolIdentifier;
   }
 
+  /**
+   * #373: reference timestamp for the node-staleness check - the last
+   * successful RPC round-trip, or the poller start time while the node
+   * has never answered this run. Null before start() (staleness
+   * unknowable, treated as healthy).
+   */
+  getNodeHealthRefMs(): number | null {
+    return this.lastRpcOkMs ?? this.startedAtMs;
+  }
+
   start(): void {
     if (this.timer) return;
+    this.startedAtMs = this.now();
     // Prime once so the tile isn't blank for a full interval after boot.
     void this.runOnce();
     this.timer = setInterval(() => {
@@ -106,6 +121,11 @@ export class ChainTipPoller {
   async runOnce(): Promise<void> {
     try {
       const info = await this.client.getBlockchainInfo();
+      // #373: node-health timestamp. Deliberately NOT snapshot.fetchedAtMs
+      // - that only moves on a NEW tip, so a slow block (or a near-frozen
+      // chain like post-split BIP110) would read as a dead node. This
+      // stamps every successful RPC round-trip regardless of tip change.
+      this.lastRpcOkMs = this.now();
       const height = info.blocks;
       // Same tip as last poll: keep the cached Ocean/BIP-110 verdict.
       if (height === this.lastHeight && this.snapshot) return;

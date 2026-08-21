@@ -63,6 +63,14 @@ export type NextActionDescriptor =
   | { kind: 'awaiting_hashprice' }
   | { kind: 'no_market_supply' }
   | {
+      /** #373: CREATE hold - churn breaker (manual release) or marketplace blacklist (auto-release at until_ms). */
+      kind: 'create_hold';
+      hold_kind: 'churn' | 'blacklist';
+      until_ms: number | null;
+      detail: string;
+      since_ms: number;
+    }
+  | {
       kind: 'will_create_bid';
       run_mode: 'LIVE' | 'DRY_RUN';
       target_ph: number;

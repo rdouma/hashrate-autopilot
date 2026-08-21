@@ -2,6 +2,10 @@
 
 ## 2026-08-21
 
+### `[Fix]` Churn breaker, blacklist-aware hold, and node-health bid protection (#373)
+
+Three protections born from the Aug 21 incident where a hung Bitcoin node caused hours of create/cancel churn and a 24h marketplace blacklist of the pool target. The autopilot now stops creating after 3 consecutive bids that were created and market-canceled without delivering hashrate, holding until you press Resume (manual by design - no automated retry can re-trip the marketplace's anti-abuse). A marketplace blacklist rejection is parsed for its expiry: one alert with the end time, a hold instead of a failing tick per minute, and automatic resume after it passes. And when your Bitcoin node has been unreachable for 30 minutes, the destination pool is treated as work-less with full parity to the Datum-down protection - active bids are canceled and no new ones are placed, because DATUM cannot build templates without its node. Two new alert classes (bidding held / pool blacklisted) with Telegram notifications in all languages.
+
 ### `[Fix]` Failed bid actions now say why (#372)
 
 When the marketplace rejected a bid action, the Status page showed a bare orange FAILED badge and nothing else - the actual reason (for example "Target not allowed (blacklisted until ...)") was recorded but only reachable through the raw decisions API. The failed row now prints the marketplace's own error message underneath it, shortened to fit, with the full text on hover.
