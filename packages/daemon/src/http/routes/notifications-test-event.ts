@@ -176,6 +176,22 @@ export const SAMPLE_BUILDERS: Record<
       is_recovery: false,
     };
   },
+  mutation_failed: (locale) => {
+    const c = getAlertCopy(locale);
+    return {
+      severity: 'IMPORTANT',
+      title: c.mutation_failed_title(),
+      body: c.mutation_failed_body({
+        ticks: 3,
+        kind: 'CREATE_BID',
+        // Verbatim shape of a real Braiins rejection - untranslated on
+        // purpose, exactly as the live alert would carry it.
+        error:
+          'Braiins API POST /spot/bid returned 400 - Target not allowed (blacklisted until 2026-08-22T19:01:40 UTC)',
+      }),
+      is_recovery: false,
+    };
+  },
   wallet_runway: (locale, fmt) => {
     const c = getAlertCopy(locale);
     return {

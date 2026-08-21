@@ -26,6 +26,8 @@
  *                                   Paused/Active oscillation hazard
  *   - beta_exit             WARNING - Braiins fee_rate turned non-zero
  *   - wallet_runway         ERROR - balance / 3h-burn drops below threshold
+ *   - mutation_failed       ERROR - N consecutive ticks where every executed
+ *                                   bid mutation was rejected (#372)
  *   - pool_block_credited   INFO  - operator-celebratory TIDES credit notice
  *
  * One detector remains stubbed pending a data dependency:
@@ -42,7 +44,7 @@ import type { PoolBlocksRepo } from '../state/repos/pool_blocks.js';
 import type { PoolBlocksTable } from '../state/types.js';
 import type { OceanPayoutsRepo } from '../state/repos/ocean_payouts.js';
 import type { TickMetricsRepo } from '../state/repos/tick_metrics.js';
-import type { State } from '../controller/types.js';
+import type { ExecutionResult, State } from '../controller/types.js';
 import { getAlertCopy } from '../i18n/alert-copy.js';
 // #227 + follow-up: locale-aware number formatting. Every Telegram
 // body used to hard-code en-US thousand / decimal separators; these
@@ -132,6 +134,16 @@ const INITIAL: EventState = { bad_since_ms: null, active_alert_id: null };
  */
 const VR_OVERHEATING_CEILING_C = 100;
 
+/**
+ * #372: how many consecutive ticks must contain a failed bid mutation
+ * before `mutation_failed` fires. Three ticks (~90 s at the default
+ * cadence) is long enough to ride out a single 500 from the
+ * marketplace, short enough that the operator hears about a
+ * blacklist / auth / balance rejection within a couple of minutes
+ * instead of discovering it hours later in the decisions API.
+ */
+const MUTATION_FAILED_STREAK_TICKS = 3;
+
 export interface AlertEvaluatorOptions {
   readonly alertManager: AlertManager;
   /** #149: optional AxeOS poller; when set the four solo-mining detectors run after the main detectors each tick. */
@@ -185,6 +197,20 @@ export class AlertEvaluator {
   private wallet_runway: EventState = INITIAL;
   /** #167: Braiins marketplace had no fillable supply for our target AND delivery was ~0. */
   private marketplace_empty: EventState = INITIAL;
+  /** #372: every bid mutation the tick actually attempted was rejected. */
+  private mutation_failed: EventState = INITIAL;
+  /**
+   * #372: count of consecutive ticks that attempted at least one bid
+   * mutation and had at least one FAILED outcome. Ticks that attempt
+   * no mutation at all (no proposals, DRY_RUN, or gate-BLOCKED) are
+   * neutral - they neither increment nor reset. Reset to 0 by a tick
+   * whose attempted mutations all succeeded.
+   */
+  private mutationFailedStreak = 0;
+  /** #372: `<KIND>` of the most recent FAILED execution, for the alert body. */
+  private mutationFailedLastKind: string | null = null;
+  /** #372: raw marketplace error of the most recent FAILED execution. */
+  private mutationFailedLastError: string | null = null;
   /**
    * #117: highest pool-block height we've already considered for
    * the celebratory Telegram. Hydrated at boot from
@@ -324,12 +350,22 @@ export class AlertEvaluator {
       ['beta_exit', (s) => { this.beta_exit = s; }],
       ['wallet_runway', (s) => { this.wallet_runway = s; }],
       ['marketplace_empty', (s) => { this.marketplace_empty = s; }],
+      ['mutation_failed', (s) => { this.mutation_failed = s; }],
     ];
     for (const [cls, setter] of classes) {
       const open = await alertsRepo.findOpenAlert(cls);
       if (open) {
         setter({ bad_since_ms: open.created_at, active_alert_id: open.id });
       }
+    }
+    // #372: mutation_failed's "bad" predicate is a streak counter, not
+    // a live read of State. Inheriting an open alert without also
+    // restoring the streak would make the very first post-restart tick
+    // look recovered and pair a bogus "working again" message. Re-seed
+    // the counter at the firing threshold so only a genuinely
+    // successful mutation clears it.
+    if (this.mutation_failed.active_alert_id !== null) {
+      this.mutationFailedStreak = MUTATION_FAILED_STREAK_TICKS;
     }
     // #117: silently baseline the pool-block watermark from whatever
     // is currently in the table. Anything below this height is
@@ -350,8 +386,13 @@ export class AlertEvaluator {
    * Per-tick evaluation. Call once per tick after the controller has
    * produced its TickResult. Order: detectors fire in declaration order;
    * each detector's transition logic is independent.
+   *
+   * `executed` is the tick's execution results (#372). Optional so the
+   * many existing call sites / tests that only care about State-derived
+   * detectors keep working; omitting it makes the tick neutral for
+   * `mutation_failed`.
    */
-  async evaluate(state: State): Promise<void> {
+  async evaluate(state: State, executed?: readonly ExecutionResult[]): Promise<void> {
     const disabled = new Set(state.config.notification_disabled_event_classes);
     await this.evaluateDatumUnreachable(state, disabled);
     await this.evaluateBelowFloor(state, disabled);
@@ -362,6 +403,7 @@ export class AlertEvaluator {
     await this.evaluateBetaExit(state, disabled);
     await this.evaluateWalletRunway(state, disabled);
     await this.evaluateMarketplaceEmpty(state, disabled);
+    await this.evaluateMutationFailed(state, executed ?? [], disabled);
     await this.evaluatePoolBlockCredited(state, disabled);
     // #226: payout lifecycle. Order matters lightly: initiated reads
     // state.ocean_unpaid_sat against the prior tick's snapshot, then
@@ -715,6 +757,81 @@ export class AlertEvaluator {
       bodyForRecovery: (durMs) =>
         copyFor(state).marketplace_empty_body_recovery({ duration: formatDuration(durMs) }),
     });
+  }
+
+  /**
+   * #372: repeated bid-mutation execution failures.
+   *
+   * Motivating incident (2026-08-21): after a node outage, Braiins
+   * blacklisted the target and every CREATE_BID came back
+   * `400 - Target not allowed (blacklisted until ...)`. The failure
+   * was recorded in `decisions.executed_json` and nowhere else - the
+   * Status page showed a bare orange FAILED badge, no alert fired, and
+   * the operator only learned the reason hours later.
+   *
+   * Semantics, deliberately count-based rather than time-based:
+   *
+   * - An *attempt* is an execution result whose outcome is EXECUTED or
+   *   FAILED. DRY_RUN and gate-BLOCKED results are not attempts - the
+   *   marketplace was never asked, so they say nothing about its health.
+   * - A tick with >= 1 attempt and >= 1 FAILED increments the streak
+   *   and records the latest error.
+   * - A tick with >= 1 attempt and no FAILED resets the streak to 0.
+   * - A tick with zero attempts is neutral: it neither increments nor
+   *   resets. This is the common case (the autopilot is usually happy
+   *   and proposes nothing), and treating it as a reset would mean the
+   *   streak could effectively never reach three.
+   *
+   * `isBad` is therefore sticky at streak >= threshold: neutral ticks
+   * keep the alert open, and only a successful mutation clears it,
+   * which is exactly what `runTransition` needs to pair the recovery
+   * at the right moment.
+   */
+  private async evaluateMutationFailed(
+    state: State,
+    executed: readonly ExecutionResult[],
+    disabledClasses: ReadonlySet<string>,
+  ): Promise<void> {
+    const attempts = executed.filter(
+      (e) => e.outcome === 'EXECUTED' || e.outcome === 'FAILED',
+    );
+    const failures = attempts.filter((e) => e.outcome === 'FAILED');
+    if (failures.length > 0) {
+      this.mutationFailedStreak += 1;
+      const last = failures[failures.length - 1]!;
+      this.mutationFailedLastKind = last.proposal.kind;
+      // Narrowed by the filter above, but TS can't see through it.
+      this.mutationFailedLastError =
+        last.outcome === 'FAILED' ? last.error : null;
+    } else if (attempts.length > 0) {
+      this.mutationFailedStreak = 0;
+    }
+
+    const isBad = this.mutationFailedStreak >= MUTATION_FAILED_STREAK_TICKS;
+    const streakAtFire = this.mutationFailedStreak;
+    const kind = this.mutationFailedLastKind ?? 'unknown';
+    const error = this.mutationFailedLastError ?? 'unknown';
+    this.mutation_failed = await this.runTransition({
+      event_class: 'mutation_failed',
+      severity: 'IMPORTANT',
+      isBad,
+      // Count-based, so the time threshold is zero: the tick that
+      // pushes the streak to three IS the firing tick.
+      thresholdMs: 0,
+      currentState: this.mutation_failed,
+      disabledClasses,
+      title: copyFor(state).mutation_failed_title(),
+      titleForRecovery: copyFor(state).mutation_failed_title_recovery(),
+      bodyForFiring: () =>
+        copyFor(state).mutation_failed_body({ ticks: streakAtFire, kind, error }),
+      bodyForRecovery: () => copyFor(state).mutation_failed_body_recovery(),
+    });
+    // A muted class returns INITIAL from runTransition; drop the streak
+    // too so re-enabling the class starts from a clean slate rather
+    // than firing instantly off a stale count.
+    if (disabledClasses.has('mutation_failed')) {
+      this.mutationFailedStreak = 0;
+    }
   }
 
   private async evaluatePoolBlockCredited(state: State, disabledClasses: ReadonlySet<string>): Promise<void> {

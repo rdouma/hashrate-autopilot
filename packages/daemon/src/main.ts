@@ -1018,7 +1018,10 @@ async function bootOperational(
       // Fire-and-forget: alert evaluation must not block the tick
       // loop. Errors are logged but never bubble up.
       void alertEvaluator
-        .evaluate(r.state)
+        // #372: pass the tick's execution results so mutation_failed
+        // can see rejected CREATE / EDIT / CANCEL attempts. They're
+        // not reachable from `state`.
+        .evaluate(r.state, r.executed)
         .catch((err) => log(`[alert-evaluator] ${(err as Error)?.message ?? err}`));
       void alertManager
         .processDueRetries()

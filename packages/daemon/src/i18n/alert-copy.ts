@@ -87,6 +87,13 @@ export interface AlertCopy {
   beta_exit_body(args: { fee_pct: string }): string;
   beta_exit_body_recovery(): string;
 
+  // #372: repeated bid-mutation execution failures. `error` is the raw
+  // marketplace API message and is passed through untranslated.
+  mutation_failed_title(): string;
+  mutation_failed_title_recovery(): string;
+  mutation_failed_body(args: { ticks: number; kind: string; error: string }): string;
+  mutation_failed_body_recovery(): string;
+
   wallet_runway_title(args: { runway_days: string; threshold_days: string }): string;
   wallet_runway_title_recovery(args: { runway_days: string; threshold_days: string }): string;
   wallet_runway_body(args: {
@@ -241,6 +248,13 @@ const EN: AlertCopy = {
   beta_exit_body_recovery: () =>
     `Active bids are back to fee_rate_pct = 0. Either Braiins reverted, or all fee-bearing bids settled.`,
 
+  mutation_failed_title: () => 'Bid actions keep failing',
+  mutation_failed_title_recovery: () => 'Bid actions working again',
+  mutation_failed_body: ({ ticks, kind, error }) =>
+    `The autopilot tried to change your bids on ${ticks} ticks in a row and the marketplace rejected every attempt. Nothing is being placed, repriced or cancelled until this clears. Last failure (${kind}): ${error}`,
+  mutation_failed_body_recovery: () =>
+    `A bid action went through - the marketplace is accepting changes again.`,
+
   wallet_runway_title: ({ runway_days, threshold_days }) =>
     `Wallet runway ${runway_days} days (below ${threshold_days} day threshold)`,
   wallet_runway_title_recovery: ({ runway_days, threshold_days }) =>
@@ -370,6 +384,13 @@ const NL: AlertCopy = {
     `Braiins rekent nu een fee op minstens één actieve bid (fee_rate_pct: ${fee_pct}%). De marketplace lijkt uit beta te zijn - herevalueer het kostenmodel en de gedocumenteerde beta-exit-stappen.`,
   beta_exit_body_recovery: () =>
     `Actieve bids zijn weer terug op fee_rate_pct = 0. Of Braiins heeft het teruggedraaid, of alle fee-bearing bids zijn afgerekend.`,
+
+  mutation_failed_title: () => 'Bid-acties blijven mislukken',
+  mutation_failed_title_recovery: () => 'Bid-acties werken weer',
+  mutation_failed_body: ({ ticks, kind, error }) =>
+    `De autopilot heeft ${ticks} ticks achter elkaar geprobeerd je bids aan te passen en de marktplaats heeft elke poging geweigerd. Er wordt niets geplaatst, geherprijsd of geannuleerd tot dit is opgelost. Laatste fout (${kind}): ${error}`,
+  mutation_failed_body_recovery: () =>
+    `Een bid-actie is gelukt - de marktplaats accepteert weer wijzigingen.`,
 
   wallet_runway_title: ({ runway_days, threshold_days }) =>
     `Wallet runway ${runway_days} dagen (onder de ${threshold_days}-dagen drempel)`,
@@ -501,6 +522,13 @@ const ES: AlertCopy = {
     `Braiins está cobrando una comisión no nula en al menos una oferta activa (fee_rate_pct: ${fee_pct}%). El marketplace parece haber salido de beta - reevalúa el modelo de costes y considera los pasos documentados.`,
   beta_exit_body_recovery: () =>
     `Las ofertas activas vuelven a fee_rate_pct = 0. O bien Braiins lo revirtió, o todas las ofertas con comisión se liquidaron.`,
+
+  mutation_failed_title: () => 'Las acciones sobre ofertas siguen fallando',
+  mutation_failed_title_recovery: () => 'Las acciones sobre ofertas funcionan de nuevo',
+  mutation_failed_body: ({ ticks, kind, error }) =>
+    `El autopilot intentó cambiar tus ofertas en ${ticks} ticks seguidos y el marketplace rechazó todos los intentos. No se está creando, reajustando ni cancelando nada hasta que esto se resuelva. Último fallo (${kind}): ${error}`,
+  mutation_failed_body_recovery: () =>
+    `Una acción sobre una oferta se completó - el marketplace vuelve a aceptar cambios.`,
 
   wallet_runway_title: ({ runway_days, threshold_days }) =>
     `Autonomía de wallet ${runway_days} días (por debajo del umbral de ${threshold_days} días)`,

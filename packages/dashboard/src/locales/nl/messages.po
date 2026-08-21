@@ -749,6 +749,10 @@ msgstr "Bod {0} is {1} - wacht tot het actief wordt."
 msgid "Bid above target - Braiins price-decrease cooldown active."
 msgstr "Bod boven doel - Braiins-cooldown voor prijsverlaging actief."
 
+#: src/pages/Config.tsx
+msgid "Bid actions keep failing"
+msgstr "Bid-acties blijven mislukken"
+
 #: src/components/TilesBar.tsx
 msgid "bid coverage"
 msgstr "order-dekking"
@@ -2040,6 +2044,10 @@ msgstr "Alle filterchips inschakelen (alle groepen)"
 #: src/components/Bip110ScanCard.tsx
 msgid "Epoch"
 msgstr "Epoch"
+
+#: src/pages/Status.tsx
+msgid "Error:"
+msgstr "Fout:"
 
 #: src/pages/Status.tsx
 msgid "Escalation in"
@@ -4662,6 +4670,10 @@ msgstr "De daemon staat misschien niet in setup-modus. Herlaad de pagina of cont
 #: src/pages/Config.tsx
 msgid "The hostname being maintained. For No-IP DDNS Key groups (the modern auth flow that doesn't expose your account password), use the special hostname all.ddnskey.com - that updates every hostname assigned to the DDNS Key's group in one call. Test connection pushes a real update with the values currently in the form (without saving). `nochg` and `good` are both success."
 msgstr "De hostnaam die onderhouden wordt. Voor No-IP DDNS Key-groepen (de moderne auth-flow die je accountwachtwoord niet blootstelt), gebruik de speciale hostnaam all.ddnskey.com - die werkt elke hostnaam in de DDNS Key-groep in één call bij. Test connection stuurt een echte update met de waarden uit het formulier (zonder op te slaan). `nochg` en `good` zijn beide succes."
+
+#: src/pages/Config.tsx
+msgid "The marketplace rejected every bid action the autopilot attempted on 3 ticks in a row. The alert carries the marketplace's own error text, so you can see whether it's a blacklist, a balance problem, or an auth failure. Clears as soon as one bid action goes through."
+msgstr "De marktplaats heeft 3 ticks achter elkaar elke bid-actie van de autopilot geweigerd. De alert bevat de foutmelding van de marktplaats zelf, zodat je ziet of het om een blacklist, een saldoprobleem of een auth-fout gaat. Verdwijnt zodra er weer één bid-actie lukt."
 
 #: src/pages/Config.tsx
 msgid "The new password and its confirmation don't match."

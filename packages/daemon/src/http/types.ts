@@ -255,6 +255,13 @@ export interface ProposalView {
   readonly allowed: boolean;
   readonly gate_reason: string | null;
   readonly executed: 'DRY_RUN' | 'EXECUTED' | 'BLOCKED' | 'FAILED';
+  /**
+   * #372: the raw execution error, verbatim from the marketplace API,
+   * when `executed === 'FAILED'`. Null for every other outcome. The
+   * dashboard renders it under the FAILED badge; it is server data and
+   * is deliberately NOT translated.
+   */
+  readonly error: string | null;
 }
 
 export interface DecisionSummary {

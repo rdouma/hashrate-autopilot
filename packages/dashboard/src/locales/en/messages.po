@@ -749,6 +749,10 @@ msgstr "Bid {0} is {1} - waiting for it to become active."
 msgid "Bid above target - Braiins price-decrease cooldown active."
 msgstr "Bid above target - Braiins price-decrease cooldown active."
 
+#: src/pages/Config.tsx
+msgid "Bid actions keep failing"
+msgstr "Bid actions keep failing"
+
 #: src/components/TilesBar.tsx
 msgid "bid coverage"
 msgstr "bid coverage"
@@ -2040,6 +2044,10 @@ msgstr "Enable every filter chip (all groups)"
 #: src/components/Bip110ScanCard.tsx
 msgid "Epoch"
 msgstr "Epoch"
+
+#: src/pages/Status.tsx
+msgid "Error:"
+msgstr "Error:"
 
 #: src/pages/Status.tsx
 msgid "Escalation in"
@@ -4662,6 +4670,10 @@ msgstr "The daemon may not be in setup mode. Reload the page or check the daemon
 #: src/pages/Config.tsx
 msgid "The hostname being maintained. For No-IP DDNS Key groups (the modern auth flow that doesn't expose your account password), use the special hostname all.ddnskey.com - that updates every hostname assigned to the DDNS Key's group in one call. Test connection pushes a real update with the values currently in the form (without saving). `nochg` and `good` are both success."
 msgstr "The hostname being maintained. For No-IP DDNS Key groups (the modern auth flow that doesn't expose your account password), use the special hostname all.ddnskey.com - that updates every hostname assigned to the DDNS Key's group in one call. Test connection pushes a real update with the values currently in the form (without saving). `nochg` and `good` are both success."
+
+#: src/pages/Config.tsx
+msgid "The marketplace rejected every bid action the autopilot attempted on 3 ticks in a row. The alert carries the marketplace's own error text, so you can see whether it's a blacklist, a balance problem, or an auth failure. Clears as soon as one bid action goes through."
+msgstr "The marketplace rejected every bid action the autopilot attempted on 3 ticks in a row. The alert carries the marketplace's own error text, so you can see whether it's a blacklist, a balance problem, or an auth failure. Clears as soon as one bid action goes through."
 
 #: src/pages/Config.tsx
 msgid "The new password and its confirmation don't match."

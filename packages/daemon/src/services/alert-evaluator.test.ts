@@ -584,3 +584,116 @@ describe('AlertEvaluator - pool_block_credited actual credit (#239 v2)', () => {
     expect(body).toContain('Credited to you: ~33,549 sat');
   });
 });
+
+// ---------------------------------------------------------------------
+// #372: mutation_failed - repeated bid-mutation execution failures.
+// ---------------------------------------------------------------------
+
+type Exec = NonNullable<Parameters<AlertEvaluator['evaluate']>[1]>[number];
+
+function failed(kind = 'CREATE_BID', error = 'Braiins API POST /spot/bid returned 400 - Target not allowed'): Exec {
+  return { proposal: { kind }, outcome: 'FAILED', error } as unknown as Exec;
+}
+
+function ok(kind = 'CREATE_BID'): Exec {
+  return { proposal: { kind }, outcome: 'EXECUTED', note: 'ok' } as unknown as Exec;
+}
+
+function dryRun(kind = 'CREATE_BID'): Exec {
+  return { proposal: { kind }, outcome: 'DRY_RUN', note: 'would create' } as unknown as Exec;
+}
+
+describe('AlertEvaluator - mutation_failed (#372)', () => {
+  it('does not fire after two consecutive failing ticks', async () => {
+    const mgr = makeManager();
+    const ev = new AlertEvaluator({ alertManager: mgr, now: () => 0 });
+    await ev.evaluate(makeState({}), [failed()]);
+    await ev.evaluate(makeState({}), [failed()]);
+    expect(mgr.recordAlert).not.toHaveBeenCalled();
+  });
+
+  it('fires once on the third consecutive failing tick, with the latest error in the body', async () => {
+    const mgr = makeManager();
+    const ev = new AlertEvaluator({ alertManager: mgr, now: () => 0 });
+    await ev.evaluate(makeState({}), [failed()]);
+    await ev.evaluate(makeState({}), [failed()]);
+    await ev.evaluate(
+      makeState({}),
+      [failed('EDIT_PRICE', 'Braiins API PATCH /spot/bid returned 400 - blacklisted until 2026-08-22T19:01:40 UTC')],
+    );
+    expect(mgr.recordAlert).toHaveBeenCalledTimes(1);
+    expect(mgr.recorded[0]!.event_class).toBe('mutation_failed');
+    expect(mgr.recorded[0]!.severity).toBe('IMPORTANT');
+    expect(mgr.recorded[0]!.body).toContain('blacklisted until 2026-08-22T19:01:40 UTC');
+    expect(mgr.recorded[0]!.body).toContain('EDIT_PRICE');
+    // Stays open on further failing ticks - one alert, not four.
+    await ev.evaluate(makeState({}), [failed()]);
+    expect(mgr.recordAlert).toHaveBeenCalledTimes(1);
+  });
+
+  it('treats ticks with no executed mutation as neutral - neither increments nor resets', async () => {
+    const mgr = makeManager();
+    const ev = new AlertEvaluator({ alertManager: mgr, now: () => 0 });
+    await ev.evaluate(makeState({}), [failed()]);
+    // Quiet tick (nothing proposed) and a DRY_RUN tick: the marketplace
+    // was never asked, so neither counts either way.
+    await ev.evaluate(makeState({}), []);
+    await ev.evaluate(makeState({}));
+    await ev.evaluate(makeState({}), [dryRun()]);
+    expect(mgr.recordAlert).not.toHaveBeenCalled();
+    await ev.evaluate(makeState({}), [failed()]);
+    expect(mgr.recordAlert).not.toHaveBeenCalled();
+    // Third failing tick overall - fires despite the neutral ticks in between.
+    await ev.evaluate(makeState({}), [failed()]);
+    expect(mgr.recordAlert).toHaveBeenCalledTimes(1);
+    expect(mgr.recorded[0]!.event_class).toBe('mutation_failed');
+  });
+
+  it('pairs a recovery when a tick executes all its mutations successfully', async () => {
+    const mgr = makeManager();
+    const ev = new AlertEvaluator({ alertManager: mgr, now: () => 0 });
+    await ev.evaluate(makeState({}), [failed()]);
+    await ev.evaluate(makeState({}), [failed()]);
+    await ev.evaluate(makeState({}), [failed()]); // fires alert id=1
+    expect(mgr.recordAlert).toHaveBeenCalledTimes(1);
+    await ev.evaluate(makeState({}), [ok()]);
+    expect(mgr.recordAlert).toHaveBeenCalledTimes(2);
+    expect(mgr.recorded[1]!.event_class).toBe('mutation_failed_recovery');
+    expect(mgr.recorded[1]!.severity).toBe('INFO');
+    expect(mgr.recorded[1]!.paired_alert_id).toBe(1);
+  });
+
+  it('a partially-successful tick still counts as a failing tick', async () => {
+    const mgr = makeManager();
+    const ev = new AlertEvaluator({ alertManager: mgr, now: () => 0 });
+    for (let i = 0; i < 3; i++) {
+      await ev.evaluate(makeState({}), [ok('CANCEL_BID'), failed()]);
+    }
+    expect(mgr.recordAlert).toHaveBeenCalledTimes(1);
+    expect(mgr.recorded[0]!.event_class).toBe('mutation_failed');
+  });
+
+  it('a success before the third failure resets the streak (no fire)', async () => {
+    const mgr = makeManager();
+    const ev = new AlertEvaluator({ alertManager: mgr, now: () => 0 });
+    await ev.evaluate(makeState({}), [failed()]);
+    await ev.evaluate(makeState({}), [failed()]);
+    await ev.evaluate(makeState({}), [ok()]);
+    await ev.evaluate(makeState({}), [failed()]);
+    await ev.evaluate(makeState({}), [failed()]);
+    expect(mgr.recordAlert).not.toHaveBeenCalled();
+  });
+
+  it('respects the per-event-class opt-out', async () => {
+    const mgr = makeManager();
+    const ev = new AlertEvaluator({ alertManager: mgr, now: () => 0 });
+    const muted = makeState({
+      config: {
+        ...(makeState({}).config as State['config']),
+        notification_disabled_event_classes: ['mutation_failed'],
+      },
+    });
+    for (let i = 0; i < 5; i++) await ev.evaluate(muted, [failed()]);
+    expect(mgr.recordAlert).not.toHaveBeenCalled();
+  });
+});

@@ -749,6 +749,10 @@ msgstr "La oferta {0} está {1} - esperando a que se active."
 msgid "Bid above target - Braiins price-decrease cooldown active."
 msgstr "Oferta por encima del objetivo - cooldown de bajada de precio de Braiins activo."
 
+#: src/pages/Config.tsx
+msgid "Bid actions keep failing"
+msgstr "Las acciones sobre ofertas siguen fallando"
+
 #: src/components/TilesBar.tsx
 msgid "bid coverage"
 msgstr "cobertura de oferta"
@@ -2040,6 +2044,10 @@ msgstr "Activar todos los filtros (todos los grupos)"
 #: src/components/Bip110ScanCard.tsx
 msgid "Epoch"
 msgstr "Época"
+
+#: src/pages/Status.tsx
+msgid "Error:"
+msgstr "Error:"
 
 #: src/pages/Status.tsx
 msgid "Escalation in"
@@ -4662,6 +4670,10 @@ msgstr "El daemon puede no estar en modo setup. Recarga la página o revisa los 
 #: src/pages/Config.tsx
 msgid "The hostname being maintained. For No-IP DDNS Key groups (the modern auth flow that doesn't expose your account password), use the special hostname all.ddnskey.com - that updates every hostname assigned to the DDNS Key's group in one call. Test connection pushes a real update with the values currently in the form (without saving). `nochg` and `good` are both success."
 msgstr "El hostname que se mantiene. Para grupos de DDNS Key de No-IP (el flujo moderno que no expone la contraseña de tu cuenta), usa el hostname especial all.ddnskey.com - actualiza cada hostname asignado al grupo del DDNS Key en una sola llamada. Test connection envía una actualización real con los valores del formulario (sin guardar). `nochg` y `good` son ambos éxito."
+
+#: src/pages/Config.tsx
+msgid "The marketplace rejected every bid action the autopilot attempted on 3 ticks in a row. The alert carries the marketplace's own error text, so you can see whether it's a blacklist, a balance problem, or an auth failure. Clears as soon as one bid action goes through."
+msgstr "El marketplace rechazó todas las acciones sobre ofertas que el autopilot intentó en 3 ticks seguidos. La alerta incluye el texto de error del propio marketplace, para que veas si es una lista negra, un problema de saldo o un fallo de autenticación. Se resuelve en cuanto una acción sobre una oferta se completa."
 
 #: src/pages/Config.tsx
 msgid "The new password and its confirmation don't match."

@@ -335,6 +335,12 @@ export interface ProposalView {
   allowed: boolean;
   gate_reason: string | null;
   executed: 'DRY_RUN' | 'EXECUTED' | 'BLOCKED' | 'FAILED';
+  /**
+   * #372: raw execution error from the marketplace when
+   * `executed === 'FAILED'`, null otherwise. Server data - rendered
+   * verbatim, never translated.
+   */
+  error: string | null;
 }
 
 export interface BalanceView {

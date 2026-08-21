@@ -3679,6 +3679,16 @@ function EventClassSubscriptions({
       severity: 'WARNING',
     },
     {
+      // #372: repeated bid-mutation rejections. Count-based (3
+      // consecutive ticks), so no minutes input.
+      id: 'mutation_failed',
+      label: t`Bid actions keep failing`,
+      help: t`The marketplace rejected every bid action the autopilot attempted on 3 ticks in a row. The alert carries the marketplace's own error text, so you can see whether it's a blacklist, a balance problem, or an auth failure. Clears as soon as one bid action goes through.`,
+      enabled: !disabled.has('mutation_failed'),
+      setEnabled: (n) => toggleClass('mutation_failed', n),
+      severity: 'IMPORTANT',
+    },
+    {
       id: 'braiins_deposit',
       // Single tile gates all three deposit lifecycle events
       // (Detected / Available / Returned). Operator's framing in

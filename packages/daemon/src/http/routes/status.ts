@@ -361,7 +361,12 @@ function summariseLastExecuted(
   return { summary, executed_at_ms: tickAt };
 }
 
-function toProposalView(g: GateOutcome, executionResult: ExecutionResult | undefined): ProposalView {
+/**
+ * Exported for tests (#372): the executed-error passthrough is the
+ * whole point of this mapping, so it gets a direct unit test rather
+ * than a full HTTP harness.
+ */
+export function toProposalView(g: GateOutcome, executionResult: ExecutionResult | undefined): ProposalView {
   const proposal = g.proposal;
   const summary = describeProposal(proposal);
   const reason = 'reason' in proposal ? proposal.reason : '';
@@ -372,6 +377,13 @@ function toProposalView(g: GateOutcome, executionResult: ExecutionResult | undef
     allowed: g.allowed,
     gate_reason: g.allowed ? null : g.reason,
     executed: executionResult?.outcome ?? 'DRY_RUN',
+    // #372: a bare orange FAILED badge told the operator nothing -
+    // the reason ("Target not allowed (blacklisted until ...)") was
+    // recorded in decisions.executed_json and only reachable via the
+    // decisions API. Carry it onto /api/status so the Status page can
+    // show it inline.
+    error:
+      executionResult?.outcome === 'FAILED' ? executionResult.error : null,
   };
 }
 

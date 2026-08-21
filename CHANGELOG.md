@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-08-21
+
+### `[Fix]` Failed bid actions now say why (#372)
+
+When the marketplace rejected a bid action, the Status page showed a bare orange FAILED badge and nothing else - the actual reason (for example "Target not allowed (blacklisted until ...)") was recorded but only reachable through the raw decisions API. The failed row now prints the marketplace's own error message underneath it, shortened to fit, with the full text on hover.
+
+A new "Bid actions keep failing" alert also rings Telegram when three ticks in a row have every attempted bid action rejected, carrying the latest error text in the message, and pairs a recovery notice as soon as one action goes through again. It is on by default alongside the other important alerts and can be switched off on the Notifications tab.
+
 ## 2026-08-20
 
 ### `[Release]` v1.18.1

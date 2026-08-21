@@ -449,7 +449,7 @@ event detectors. Setup walkthrough at [`docs/setup-telegram.md`](setup-telegram.
 
 **Events that fire Telegram:**
 
-IMPORTANT severity (8 marketplace + 4 solo = 12 total) - hard outages that need a phone alarm:
+IMPORTANT severity (9 marketplace + 4 solo = 13 total) - hard outages that need a phone alarm:
 
 1. **Datum stratum unreachable** for `datum_unreachable_alert_after_minutes` (#135 - was `pool_outage_blip_tolerance_seconds × 5`; now an independent knob with an inline-minute input on the Notifications tab).
 2. **Hashrate below floor** for `below_floor_alert_after_minutes`.
@@ -459,17 +459,18 @@ IMPORTANT severity (8 marketplace + 4 solo = 12 total) - hard outages that need 
 6. **Unknown bid detected** (already triggers daemon auto-PAUSE; now also rings Telegram).
 7. **Bid sustained-paused by Braiins** for `sustained_paused_alert_after_minutes` (#135 - was `pool_outage_blip_tolerance_seconds × 5`; now an independent knob).
 8. **Braiins deposit returned** - compliance bounced a deposit back (`return_tx_id` non-null on the on-chain endpoint). Real money on the line.
+9. **Bid actions keep failing** (#372) - `mutation_failed`. Count-based, not time-based: fires when 3 *consecutive* ticks each attempted at least one bid mutation and had at least one FAILED execution. An "attempt" is an execution result with outcome EXECUTED or FAILED; DRY_RUN and gate-BLOCKED results are not attempts (the marketplace was never asked), and a tick with zero attempts is neutral - it neither increments nor resets the streak. A tick whose attempted mutations all succeeded resets the streak and pairs the recovery. The body carries the most recent raw marketplace error verbatim (untranslated server data), e.g. `Braiins API POST /spot/bid returned 400 - Target not allowed (blacklisted until ...)`. Baselined across restarts: an open `mutation_failed` alert re-seeds the streak at the threshold on `hydrate()` so the first post-restart tick can't pair a bogus recovery.
 
 IMPORTANT severity (Bitaxe miners, active only when `solo_mining_enabled = true` and the device is `enabled`; the daemon-internal config field name retains the `solo_*` prefix even though the user-facing label is "Bitaxe miner") (#149):
 
-9. **Bitaxe miner overheating** - ASIC temp >= the ASIC ceiling (default 75 °C across all BM13xx chips, matching AxeOS firmware's `THROTTLE_TEMP`; overridable via `solo_overheating_threshold_celsius`) OR VR temp >= 100 °C (separate hardcoded ceiling; AxeOS's `TPS546_THROTTLE_TEMP` is 105 °C), sustained for 90 seconds (~3 ticks). The alert body names which sensor tripped. Paired recovery when both temps fall back below their respective ceilings.
-10. **Bitaxe miner offline / not hashing** - device unreachable, OR not actually hashing, for `solo_zero_hashrate_alert_after_minutes` consecutive minutes. "Not hashing" covers a reported hashrate of 0 and (#291) a *reachable* miner that is provably halted: an explicit firmware halt flag (`overheat_mode` on stock Bitaxe, `shutdown` on NerdQAxe) or, on firmwares that report neither (NerdAxe), a physically impossible hashrate-per-watt (> 100 GH/s/W, ~1.4x the best real ASIC) that betrays a frozen reading. Without this a board that thermally halts but keeps publishing its last hashrate looked healthy and even triggered a false "back online". Paired recovery, which only fires once the miner is genuinely hashing again; the firing body names the cause (overheated / shut down / not hashing - reboot needed). The dashboard's Bitaxe card shows such a miner as 0 with a "reboot needed" badge and drops it from the fleet hashrate total.
-11. **Bitaxe miner share-rejection high** - rolling-window rejection ratio >= `solo_share_rejection_threshold_pct` over `solo_share_rejection_window_minutes`. Re-arms once per window length; no recovery row.
-12. **Bitaxe miner stratum URL drift** - device's reported `stratumURL` changed from the previously-observed value. Baselined silently on first poll so adding a device doesn't fire a spurious drift alert. No recovery row (new URL becomes the new baseline).
+10. **Bitaxe miner overheating** - ASIC temp >= the ASIC ceiling (default 75 °C across all BM13xx chips, matching AxeOS firmware's `THROTTLE_TEMP`; overridable via `solo_overheating_threshold_celsius`) OR VR temp >= 100 °C (separate hardcoded ceiling; AxeOS's `TPS546_THROTTLE_TEMP` is 105 °C), sustained for 90 seconds (~3 ticks). The alert body names which sensor tripped. Paired recovery when both temps fall back below their respective ceilings.
+11. **Bitaxe miner offline / not hashing** - device unreachable, OR not actually hashing, for `solo_zero_hashrate_alert_after_minutes` consecutive minutes. "Not hashing" covers a reported hashrate of 0 and (#291) a *reachable* miner that is provably halted: an explicit firmware halt flag (`overheat_mode` on stock Bitaxe, `shutdown` on NerdQAxe) or, on firmwares that report neither (NerdAxe), a physically impossible hashrate-per-watt (> 100 GH/s/W, ~1.4x the best real ASIC) that betrays a frozen reading. Without this a board that thermally halts but keeps publishing its last hashrate looked healthy and even triggered a false "back online". Paired recovery, which only fires once the miner is genuinely hashing again; the firing body names the cause (overheated / shut down / not hashing - reboot needed). The dashboard's Bitaxe card shows such a miner as 0 with a "reboot needed" badge and drops it from the fleet hashrate total.
+12. **Bitaxe miner share-rejection high** - rolling-window rejection ratio >= `solo_share_rejection_threshold_pct` over `solo_share_rejection_window_minutes`. Re-arms once per window length; no recovery row.
+13. **Bitaxe miner stratum URL drift** - device's reported `stratumURL` changed from the previously-observed value. Baselined silently on first poll so adding a device doesn't fire a spurious drift alert. No recovery row (new URL becomes the new baseline).
 
 WARNING severity - soft warnings that can wait for the next dashboard glance:
 
-13. **Beta-exit detected** - any active owned bid reports `fee_rate_pct > 0`.
+14. **Beta-exit detected** - any active owned bid reports `fee_rate_pct > 0`.
 
 INFO severity (opt-in, good news + lifecycle):
 
@@ -690,7 +691,10 @@ The top-level blocks are drag-to-reorderable (#244 v3): a header **Rearrange** b
 - **Per-day P&L card.** Range-aware (see §11.1). Ocean estimate + projected income, spend, net.
 - **Lifetime P&L + funding ledger.** Cumulative block-reward income, cumulative spend, net.
 - **Last tick proposals.** The controller's most recent Proposal[] with reasons - what decide() wanted to do
-  on the last tick, whether or not the gate let it execute.
+  on the last tick, whether or not the gate let it execute. **#372:** a FAILED row also renders the marketplace's
+  own rejection message inline under the badge (muted red, truncated to 120 characters, full text on hover via
+  tooltip), sourced from the new `error` field on `/api/status` `last_proposals[]`. The error string is server
+  data and is never translated.
 - **Bitaxe miners card** (solo-gated). Fleet table from the AxeOS poller: per-device hashrate, temps, power,
   best difficulty, halted-detection flags; scan/add/remove controls.
 

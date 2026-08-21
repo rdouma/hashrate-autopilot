@@ -4532,8 +4532,39 @@ function ProposalLine({ p }: { p: ProposalView }) {
       {p.gate_reason && (
         <span className="text-xs text-red-400 ml-2">({gateReasonLabel(p.gate_reason)})</span>
       )}
+      {/* #372: a bare orange FAILED badge said nothing - the reason
+          was buried in decisions.executed_json. Show the marketplace's
+          own message inline, truncated, with the full text on hover.
+          The error is server data and is NOT translated; only the
+          "Error:" label is. */}
+      {p.executed === 'FAILED' && p.error && (
+        <div className="mt-1">
+          <Tooltip text={p.error} preWrap>
+            <span className="text-xs text-red-300/80 font-mono break-words cursor-help">
+              <span className="not-italic text-red-400/70 mr-1">
+                <Trans>Error:</Trans>
+              </span>
+              {truncateError(p.error)}
+            </span>
+          </Tooltip>
+        </div>
+      )}
     </div>
   );
+}
+
+/**
+ * #372: cap the inline execution error so one long marketplace
+ * message can't push the proposals card off the page. The untruncated
+ * string stays available in the tooltip.
+ */
+const PROPOSAL_ERROR_MAX_CHARS = 120;
+
+export function truncateError(err: string): string {
+  const flat = err.replace(/\s+/g, ' ').trim();
+  return flat.length > PROPOSAL_ERROR_MAX_CHARS
+    ? flat.slice(0, PROPOSAL_ERROR_MAX_CHARS - 1) + '…'
+    : flat;
 }
 
 function RunModeToggle({
