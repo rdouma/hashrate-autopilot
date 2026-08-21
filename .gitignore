@@ -66,3 +66,7 @@ docs/hashrate-marketplace-landscape.md
 
 # Internal release-announcement log (tweet drafts) - operator-only, never shared
 announcements.md
+
+# Draft discussion posts - personal writing iterated locally, published
+# manually when ready. Never committed; the README documents the flow.
+discussions/drafts/
