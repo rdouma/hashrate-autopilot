@@ -820,6 +820,18 @@ msgstr "Marcadores de eventos de oferta (CREATE / EDIT_PRICE / EDIT_SPEED / CANC
 msgid "Bid:"
 msgstr "Oferta:"
 
+#: src/pages/Config.tsx
+msgid "Bidding held after bid churn"
+msgstr "Ofertas en pausa tras churn de ofertas"
+
+#: src/pages/Status.tsx
+msgid "Bidding is on hold - bids kept being created and canceled again without delivering any hashrate."
+msgstr "Las ofertas están en pausa - se crearon ofertas una y otra vez que se cancelaron sin llegar a entregar hashrate."
+
+#: src/pages/Status.tsx
+msgid "Bidding is on hold - the marketplace blacklisted your pool target. Bidding resumes automatically."
+msgstr "Las ofertas están en pausa - el marketplace puso tu pool en la lista negra. Las ofertas se reanudan automáticamente."
+
 #: src/pages/Status.tsx
 msgid "Bids"
 msgstr "Ofertas"
@@ -2804,6 +2816,10 @@ msgstr "API del mercado caída"
 msgid "Marketplace API has been unreachable for at least this many minutes."
 msgstr "La API del marketplace lleva al menos este número de minutos sin ser accesible."
 
+#: src/pages/Config.tsx
+msgid "Marketplace blacklisted your pool"
+msgstr "El marketplace puso tu pool en la lista negra"
+
 #: src/lib/alertConditions.ts
 msgid "marketplace empty"
 msgstr "mercado vacío"
@@ -4133,6 +4149,10 @@ msgstr "Se resuelve a:"
 msgid "Restore the values that were on this page when you opened it."
 msgstr "Restaura los valores que había en esta página cuando la abriste."
 
+#: src/pages/Status.tsx
+msgid "Resume bidding"
+msgstr "Reanudar ofertas"
+
 #: src/pages/Config.tsx
 msgid "Resume last mode"
 msgstr "Reanudar último modo"
@@ -4140,6 +4160,18 @@ msgstr "Reanudar último modo"
 #: src/pages/History.tsx
 msgid "resumed"
 msgstr "reanudada"
+
+#: src/pages/Status.tsx
+msgid "Resumes in {remainingFormatted}"
+msgstr "Se reanuda en {remainingFormatted}"
+
+#: src/pages/Status.tsx
+msgid "Resuming on the next tick"
+msgstr "Se reanuda en el próximo tick"
+
+#: src/pages/Status.tsx
+msgid "resuming…"
+msgstr "reanudando…"
 
 #: src/pages/Config.tsx
 msgid "Retry interval"
@@ -4652,6 +4684,10 @@ msgid "The 55% miner-activation threshold has been crossed. BIP 110 will activat
 msgstr "Se ha cruzado el umbral del 55% para la activación por mineros. BIP 110 se activará en el siguiente límite de época de dificultad."
 
 #: src/pages/Config.tsx
+msgid "The autopilot stopped placing new bids because the ones it placed were canceled by the marketplace again and again without ever delivering hashrate - usually your pool endpoint or the Bitcoin node behind it. Bidding stays held until you press Resume bidding on the Status page."
+msgstr "El autopilot dejó de colocar ofertas nuevas porque el marketplace canceló una y otra vez las que colocaba sin llegar a entregar hashrate - normalmente es tu endpoint de pool o el nodo Bitcoin que hay detrás. Las ofertas siguen en pausa hasta que pulses Reanudar ofertas en la página Status."
+
+#: src/pages/Config.tsx
 msgid "The bid tracks the cheapest ask with enough depth for your target, plus a small premium. Two hard ceilings sit above that so the premium can never run away. Entered in <0/>/PH/day."
 msgstr "La oferta sigue al precio de venta más barato con profundidad suficiente para tu objetivo, más una pequeña prima. Encima hay dos topes duros para que la prima nunca se descontrole. Se introduce en <0/>/PH/día."
 
@@ -4663,6 +4699,10 @@ msgstr "La dirección BTC a la que Ocean TIDES acredita los pagos. Editar esto a
 msgid "The chain Ocean's default endpoint mines. Stats come from Ocean's JSON API."
 msgstr "La cadena que mina el endpoint predeterminado de Ocean. Las estadísticas provienen de la API JSON de Ocean."
 
+#: src/pages/Status.tsx
+msgid "The daemon could not clear the hold."
+msgstr "El daemon no pudo levantar la pausa."
+
 #: src/pages/Setup.tsx
 msgid "The daemon may not be in setup mode. Reload the page or check the daemon logs."
 msgstr "El daemon puede no estar en modo setup. Recarga la página o revisa los logs del daemon."
@@ -4670,6 +4710,10 @@ msgstr "El daemon puede no estar en modo setup. Recarga la página o revisa los 
 #: src/pages/Config.tsx
 msgid "The hostname being maintained. For No-IP DDNS Key groups (the modern auth flow that doesn't expose your account password), use the special hostname all.ddnskey.com - that updates every hostname assigned to the DDNS Key's group in one call. Test connection pushes a real update with the values currently in the form (without saving). `nochg` and `good` are both success."
 msgstr "El hostname que se mantiene. Para grupos de DDNS Key de No-IP (el flujo moderno que no expone la contraseña de tu cuenta), usa el hostname especial all.ddnskey.com - actualiza cada hostname asignado al grupo del DDNS Key en una sola llamada. Test connection envía una actualización real con los valores del formulario (sin guardar). `nochg` y `good` son ambos éxito."
+
+#: src/pages/Config.tsx
+msgid "The marketplace refuses bids pointing at your pool endpoint for a while, so the autopilot holds new bids until the blacklist expires and then resumes on its own. You can resume earlier from the Status page."
+msgstr "El marketplace rechaza durante un tiempo las ofertas que apuntan a tu endpoint de pool, así que el autopilot retiene las ofertas nuevas hasta que caduque la lista negra y luego se reanuda solo. Puedes reanudar antes desde la página Status."
 
 #: src/pages/Config.tsx
 msgid "The marketplace rejected every bid action the autopilot attempted on 3 ticks in a row. The alert carries the marketplace's own error text, so you can see whether it's a blacklist, a balance problem, or an auth failure. Clears as soon as one bid action goes through."

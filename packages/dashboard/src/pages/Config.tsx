@@ -3689,6 +3689,26 @@ function EventClassSubscriptions({
       severity: 'IMPORTANT',
     },
     {
+      // #373: churn breaker tripped. State-based (mirrors the
+      // persisted CREATE hold), so no minutes input.
+      id: 'bid_churn_hold',
+      label: t`Bidding held after bid churn`,
+      help: t`The autopilot stopped placing new bids because the ones it placed were canceled by the marketplace again and again without ever delivering hashrate - usually your pool endpoint or the Bitcoin node behind it. Bidding stays held until you press Resume bidding on the Status page.`,
+      enabled: !disabled.has('bid_churn_hold'),
+      setEnabled: (n) => toggleClass('bid_churn_hold', n),
+      severity: 'IMPORTANT',
+    },
+    {
+      // #373: marketplace-side blacklist of the pool target. Also
+      // state-based; releases itself when the blacklist expires.
+      id: 'target_blacklisted',
+      label: t`Marketplace blacklisted your pool`,
+      help: t`The marketplace refuses bids pointing at your pool endpoint for a while, so the autopilot holds new bids until the blacklist expires and then resumes on its own. You can resume earlier from the Status page.`,
+      enabled: !disabled.has('target_blacklisted'),
+      setEnabled: (n) => toggleClass('target_blacklisted', n),
+      severity: 'IMPORTANT',
+    },
+    {
       id: 'braiins_deposit',
       // Single tile gates all three deposit lifecycle events
       // (Detected / Available / Returned). Operator's framing in

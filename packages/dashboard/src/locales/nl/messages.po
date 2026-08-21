@@ -820,6 +820,18 @@ msgstr "Bid-event-markers (CREATE / EDIT_PRICE / EDIT_SPEED / CANCEL) op de prij
 msgid "Bid:"
 msgstr "Bid:"
 
+#: src/pages/Config.tsx
+msgid "Bidding held after bid churn"
+msgstr "Bieden op hold na bod-churn"
+
+#: src/pages/Status.tsx
+msgid "Bidding is on hold - bids kept being created and canceled again without delivering any hashrate."
+msgstr "Bieden staat op hold - er werden steeds biedingen aangemaakt die weer geannuleerd werden zonder dat er hashrate geleverd werd."
+
+#: src/pages/Status.tsx
+msgid "Bidding is on hold - the marketplace blacklisted your pool target. Bidding resumes automatically."
+msgstr "Bieden staat op hold - de marktplaats heeft je pool-target op een blacklist gezet. Bieden hervat automatisch."
+
 #: src/pages/Status.tsx
 msgid "Bids"
 msgstr "Biedingen"
@@ -2804,6 +2816,10 @@ msgstr "marktplaats-API onbereikbaar"
 msgid "Marketplace API has been unreachable for at least this many minutes."
 msgstr "Marketplace-API is al ten minste dit aantal minuten onbereikbaar."
 
+#: src/pages/Config.tsx
+msgid "Marketplace blacklisted your pool"
+msgstr "Marktplaats heeft je pool geblacklist"
+
 #: src/lib/alertConditions.ts
 msgid "marketplace empty"
 msgstr "marktplaats leeg"
@@ -4133,6 +4149,10 @@ msgstr "Resolveert naar:"
 msgid "Restore the values that were on this page when you opened it."
 msgstr "Herstel de waarden die op deze pagina stonden toen je hem opende."
 
+#: src/pages/Status.tsx
+msgid "Resume bidding"
+msgstr "Bieden hervatten"
+
 #: src/pages/Config.tsx
 msgid "Resume last mode"
 msgstr "Laatste modus hervatten"
@@ -4140,6 +4160,18 @@ msgstr "Laatste modus hervatten"
 #: src/pages/History.tsx
 msgid "resumed"
 msgstr "hervat"
+
+#: src/pages/Status.tsx
+msgid "Resumes in {remainingFormatted}"
+msgstr "Hervat over {remainingFormatted}"
+
+#: src/pages/Status.tsx
+msgid "Resuming on the next tick"
+msgstr "Hervat bij de volgende tick"
+
+#: src/pages/Status.tsx
+msgid "resuming…"
+msgstr "hervatten…"
 
 #: src/pages/Config.tsx
 msgid "Retry interval"
@@ -4652,6 +4684,10 @@ msgid "The 55% miner-activation threshold has been crossed. BIP 110 will activat
 msgstr "De 55%-drempel voor miner-activatie is overschreden. BIP 110 wordt geactiveerd bij de volgende difficulty-epoch."
 
 #: src/pages/Config.tsx
+msgid "The autopilot stopped placing new bids because the ones it placed were canceled by the marketplace again and again without ever delivering hashrate - usually your pool endpoint or the Bitcoin node behind it. Bidding stays held until you press Resume bidding on the Status page."
+msgstr "De autopilot is gestopt met het plaatsen van nieuwe biedingen omdat de marktplaats de geplaatste biedingen steeds weer annuleerde zonder ooit hashrate te leveren - meestal ligt het aan je pool-endpoint of de Bitcoin-node erachter. Bieden blijft op hold tot je op de Status-pagina op Bieden hervatten drukt."
+
+#: src/pages/Config.tsx
 msgid "The bid tracks the cheapest ask with enough depth for your target, plus a small premium. Two hard ceilings sit above that so the premium can never run away. Entered in <0/>/PH/day."
 msgstr "Het bod volgt de goedkoopste vraagprijs met genoeg diepte voor je doel, plus een kleine toeslag. Daarboven zitten twee harde plafonds zodat de toeslag nooit kan oplopen. Ingevoerd in <0/>/PH/day."
 
@@ -4663,6 +4699,10 @@ msgstr "Het BTC-adres waaraan Ocean TIDES uitbetalingen toeschrijft. Wijzigen hi
 msgid "The chain Ocean's default endpoint mines. Stats come from Ocean's JSON API."
 msgstr "De keten die Oceans standaard-endpoint mijnt. Statistieken komen van Oceans JSON-API."
 
+#: src/pages/Status.tsx
+msgid "The daemon could not clear the hold."
+msgstr "De daemon kon de hold niet opheffen."
+
 #: src/pages/Setup.tsx
 msgid "The daemon may not be in setup mode. Reload the page or check the daemon logs."
 msgstr "De daemon staat misschien niet in setup-modus. Herlaad de pagina of controleer de daemon-logs."
@@ -4670,6 +4710,10 @@ msgstr "De daemon staat misschien niet in setup-modus. Herlaad de pagina of cont
 #: src/pages/Config.tsx
 msgid "The hostname being maintained. For No-IP DDNS Key groups (the modern auth flow that doesn't expose your account password), use the special hostname all.ddnskey.com - that updates every hostname assigned to the DDNS Key's group in one call. Test connection pushes a real update with the values currently in the form (without saving). `nochg` and `good` are both success."
 msgstr "De hostnaam die onderhouden wordt. Voor No-IP DDNS Key-groepen (de moderne auth-flow die je accountwachtwoord niet blootstelt), gebruik de speciale hostnaam all.ddnskey.com - die werkt elke hostnaam in de DDNS Key-groep in één call bij. Test connection stuurt een echte update met de waarden uit het formulier (zonder op te slaan). `nochg` en `good` zijn beide succes."
+
+#: src/pages/Config.tsx
+msgid "The marketplace refuses bids pointing at your pool endpoint for a while, so the autopilot holds new bids until the blacklist expires and then resumes on its own. You can resume earlier from the Status page."
+msgstr "De marktplaats weigert een tijdje biedingen die naar jouw pool-endpoint wijzen, dus houdt de autopilot nieuwe biedingen tegen tot de blacklist verloopt en hervat daarna vanzelf. Je kunt eerder hervatten vanaf de Status-pagina."
 
 #: src/pages/Config.tsx
 msgid "The marketplace rejected every bid action the autopilot attempted on 3 ticks in a row. The alert carries the marketplace's own error text, so you can see whether it's a blacklist, a balance problem, or an auth failure. Clears as soon as one bid action goes through."

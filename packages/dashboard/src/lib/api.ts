@@ -880,6 +880,16 @@ export const api = {
       body: JSON.stringify({ run_mode }),
     }),
   tickNow: () => request<TickNowResponse>('/api/actions/tick-now', { method: 'POST' }),
+  /**
+   * #373: release the persisted CREATE hold (churn breaker or
+   * marketplace blacklist) so the next tick may place bids again.
+   * Allowed for both hold kinds - a blacklist hold expires on its own,
+   * but the operator stays sovereign over an early resume.
+   */
+  clearCreateHold: () =>
+    request<{ ok: boolean; error?: string }>('/api/actions/create-hold/clear', {
+      method: 'POST',
+    }),
   metrics: (range: ChartRange) =>
     request<{ points: MetricPoint[]; range: ChartRange | null }>(
       `/api/metrics?range=${encodeURIComponent(range)}`,

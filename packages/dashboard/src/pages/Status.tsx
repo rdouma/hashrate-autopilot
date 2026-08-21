@@ -35,6 +35,7 @@ import {
   type BidView,
   type FinanceResponse,
   type FinanceRangeResponse,
+  type NextActionDescriptor,
   type NextActionView,
   type OceanResponse,
   type ProposalView,
@@ -2110,6 +2111,99 @@ function NextActionMessage({ next }: { next: NextActionView }) {
   );
 }
 
+/**
+ * #373: the CREATE hold panel on the Next-Action card.
+ *
+ * Two hold kinds share one presentation because the operator question
+ * is the same in both ("why is nothing being bid, and how do I get
+ * out of it?"), but they differ in how they end:
+ *
+ * - `churn` - the autopilot kept creating bids the marketplace
+ *   canceled straight back with zero delivery. There is no timer;
+ *   only the operator releases it, after checking the cause.
+ * - `blacklist` - the marketplace blacklisted the pool target until
+ *   `until_ms`. It releases itself, so the panel shows a live
+ *   countdown driven by the shared 1 Hz ticker.
+ *
+ * The Resume button is offered for both kinds: an auto-releasing hold
+ * is still the operator's to cut short.
+ *
+ * `hold.detail` is daemon/marketplace text - rendered verbatim, never
+ * translated.
+ */
+function CreateHoldPanel({
+  hold,
+}: {
+  hold: Extract<NextActionDescriptor, { kind: 'create_hold' }>;
+}) {
+  const { i18n } = useLingui();
+  void i18n;
+  const qc = useQueryClient();
+  const [error, setError] = useState<string | null>(null);
+  const isBlacklist = hold.hold_kind === 'blacklist';
+  const hasCountdown = isBlacklist && hold.until_ms !== null;
+  // Only subscribe to the per-second tick when a countdown is actually
+  // on screen; a churn hold has nothing that changes between polls.
+  const now = useNowSecond(hasCountdown);
+  const remaining = hasCountdown ? Math.max(0, hold.until_ms! - now) : 0;
+  const remainingFormatted = formatRemaining(remaining);
+
+  const clearMutation = useMutation({
+    mutationFn: () => api.clearCreateHold(),
+    onSuccess: (res) => {
+      if (res.ok) {
+        setError(null);
+        void qc.invalidateQueries({ queryKey: STATUS_QUERY_KEY });
+      } else {
+        setError(res.error ?? t`The daemon could not clear the hold.`);
+      }
+    },
+    onError: (e: unknown) => {
+      setError(e instanceof Error ? e.message : String(e));
+    },
+  });
+
+  return (
+    <div className="rounded border border-amber-700 bg-amber-900/30 text-amber-300 px-3 py-2 text-sm">
+      <div>
+        {isBlacklist ? (
+          <Trans>
+            Bidding is on hold - the marketplace blacklisted your pool target. Bidding resumes
+            automatically.
+          </Trans>
+        ) : (
+          <Trans>
+            Bidding is on hold - bids kept being created and canceled again without delivering any
+            hashrate.
+          </Trans>
+        )}
+      </div>
+      {hold.detail && (
+        <div className="mt-1 text-xs text-amber-200/80 break-words">{hold.detail}</div>
+      )}
+      {hasCountdown && (
+        <div className="mt-1 text-xs font-mono text-amber-200">
+          {remaining > 0 ? (
+            <Trans>Resumes in {remainingFormatted}</Trans>
+          ) : (
+            <Trans>Resuming on the next tick</Trans>
+          )}
+        </div>
+      )}
+      <div className="mt-2">
+        <button
+          onClick={() => clearMutation.mutate()}
+          disabled={clearMutation.isPending}
+          className="px-3 py-1.5 text-xs rounded border border-amber-600 text-amber-100 hover:bg-amber-800/40 disabled:opacity-50"
+        >
+          {clearMutation.isPending ? <Trans>resuming…</Trans> : <Trans>Resume bidding</Trans>}
+        </button>
+      </div>
+      {error && <div className="mt-1 text-xs text-red-300 break-words">{error}</div>}
+    </div>
+  );
+}
+
 function renderNextActionSummary(
   d: NonNullable<NextActionView['descriptor']>,
   denomination: ReturnType<typeof useDenomination>,
@@ -2125,6 +2219,12 @@ function renderNextActionSummary(
       return <Trans>Waiting for Ocean hashprice - trading is paused until the break-even reference is available.</Trans>;
     case 'no_market_supply':
       return <Trans>No hashrate available on the market right now.</Trans>;
+    case 'create_hold':
+      // #373: the hold owns the whole message area - headline, the
+      // daemon's raw detail, the countdown (blacklist) and the resume
+      // control all live in one amber panel, so the detail renderer
+      // below deliberately returns null for this kind.
+      return <CreateHoldPanel hold={d} />;
     case 'will_create_bid': {
       const target = denomination.formatSatPerPhDay(d.target_ph);
       return d.run_mode === 'LIVE' ? (
@@ -2166,6 +2266,9 @@ function renderNextActionDetail(
     case 'paused':
     case 'braiins_unreachable':
     case 'no_market_supply':
+    // #373: CreateHoldPanel (rendered by the summary branch) already
+    // carries its own explanation line, so no second detail row.
+    case 'create_hold':
       return null;
     case 'unknown_bids':
       return <Trans>IDs: {d.ids.join(', ')}</Trans>;
