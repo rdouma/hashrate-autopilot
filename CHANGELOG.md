@@ -2,6 +2,10 @@
 
 ## 2026-08-22
 
+### `[Fix]` Long-lived holds no longer fake a "Recovered" after six hours (#376)
+
+The chart band and Timeline span for an ongoing condition stopped after six hours and claimed it had recovered - contradicting the live hold. The span layer presumed any unrecovered alert older than six hours was a stale orphan from a crash; a 24-hour marketplace blacklist is the first condition that legitimately stays open longer. An unrecovered alert that is the latest of its kind now stays open indefinitely (bounded only at seven days for pathological orphans), and any span end that is not a real recovery is labeled "Ended (estimated)" instead of "Recovered".
+
 ### `[Fix]` Unpaid-history holes filled between real samples (#375)
 
 The #369 restore recovered the wiped era only at ticks the decision log still covered, leaving a sparse dashed unpaid line with holes mid-July through mid-August. A boot-time pass now fills those holes by linear interpolation strictly between adjacent real samples - only when the bracket is at most 6 hours, contains no payout, and is monotonically non-decreasing (a drop means a payout happened in the gap; those stay honest holes). Bounded gap-filling between two real measurements, not reconstruction; BIP110-chain ticks are never touched, and interpolated segments can never be misread as payouts by the deduced-payout scanner.

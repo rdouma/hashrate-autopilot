@@ -300,6 +300,8 @@ export interface AlertConditionSpanView {
   body: string;
   start_ms: number;
   end_ms: number | null;
+  /** #376: true when end_ms is an estimate (implicit close / bounded orphan), never a real recovery. */
+  end_estimated: boolean;
   /** #341: when the loud alert fired (opener.created_at). The gap from
    *  start_ms is the sustained threshold waited out before paging. */
   fired_at: number;

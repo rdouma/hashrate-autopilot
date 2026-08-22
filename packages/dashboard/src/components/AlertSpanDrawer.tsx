@@ -139,7 +139,7 @@ export function AlertSpanDrawer({
               <span className="text-slate-200 font-mono text-right">{fmt.timestamp(span.fired_at)}</span>
             </div>
             <div className="flex justify-between gap-3 text-xs">
-              <span className="text-slate-500"><Trans>Recovered</Trans></span>
+              <span className="text-slate-500">{span.end_estimated ? <Trans>Ended (estimated)</Trans> : <Trans>Recovered</Trans>}</span>
               <span className="text-slate-200 font-mono text-right">
                 {span.end_ms !== null ? fmt.timestamp(span.end_ms) : <Trans>ongoing</Trans>}
               </span>

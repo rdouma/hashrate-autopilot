@@ -45,6 +45,13 @@ export interface AlertConditionSpan {
   /** Recovery timestamp, or null if the condition is still open. */
   readonly end_ms: number | null;
   /**
+   * #376: true when `end_ms` is NOT a real recovery - the span was
+   * closed implicitly (a newer episode of the same class started) or
+   * bounded (pathological orphan past the outer bound). The UI must
+   * never label an estimated end "Recovered".
+   */
+  readonly end_estimated: boolean;
+  /**
    * #341: the moment the loud alert notification actually fired
    * (opener.created_at). Distinct from `start_ms`, which is the
    * condition onset (bad_since) when known. The gap between them is
@@ -436,10 +443,17 @@ export class AlertsRepo {
   ): Promise<AlertConditionSpan[]> {
     if (CONDITION_OPEN_CLASSES.length === 0) return [];
 
-    // How long an orphan opener (no recovery) is allowed to imply the
-    // condition is still open. Beyond this we treat it as a stale gap,
-    // not a live condition, and stop the band there.
-    const ORPHAN_MAX_MS = 6 * 60 * 60 * 1000;
+    // #376: an unrecovered opener that is the LATEST of its class is
+    // genuinely ongoing - the evaluator hydrates open alerts across
+    // restarts and pairs a recovery the moment the condition clears,
+    // so "latest + unrecovered" means the condition is live (or the
+    // daemon is down mid-condition, which the band should also show).
+    // The old 6-hour orphan cap falsely "recovered" the first
+    // legitimately long-lived condition (a 24h marketplace blacklist
+    // hold) six hours in. A generous outer bound remains only for
+    // pathological orphans whose recovery can never fire (e.g. a
+    // per-device solo alert whose device was removed).
+    const ORPHAN_MAX_MS = 7 * 24 * 60 * 60 * 1000;
 
     const [openers, recoveries] = await Promise.all([
       this.db
@@ -487,16 +501,19 @@ export class AlertsRepo {
       if (o.event_class === null) continue;
       const recovery = recoveryByOpenId.get(o.id);
       let endMs: number | null;
+      let endEstimated = false;
       if (recovery !== undefined) {
         endMs = recovery.at; // trust the recovery fully, any length.
       } else {
         const nextStart = nextOpenerStartById.get(o.id);
         if (nextStart !== undefined) {
           endMs = nextStart; // implicit close at the next episode.
+          endEstimated = true;
         } else if (nowMs - o.created_at <= ORPHAN_MAX_MS) {
-          endMs = null; // recent orphan -> plausibly still open.
+          endMs = null; // latest of its class, unrecovered -> ongoing.
         } else {
-          endMs = o.created_at + ORPHAN_MAX_MS; // stale orphan -> bounded.
+          endMs = o.created_at + ORPHAN_MAX_MS; // pathological orphan -> bounded.
+          endEstimated = true;
         }
       }
       // Closed (or bounded) before the window opened -> no overlap.
@@ -519,6 +536,7 @@ export class AlertsRepo {
         onset_known: o.condition_started_at !== null,
         threshold_minutes: null, // enriched by the HTTP route from live config
         recovery_body: recovery !== undefined ? recovery.body : null,
+        end_estimated: endEstimated,
       });
     }
     return spans;

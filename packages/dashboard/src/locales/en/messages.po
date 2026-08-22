@@ -2073,6 +2073,11 @@ msgstr "Enable debug API endpoint"
 msgid "Enable every filter chip (all groups)"
 msgstr "Enable every filter chip (all groups)"
 
+#: src/components/AlertSpanDrawer.tsx
+#: src/components/AlertSpanTooltip.tsx
+msgid "Ended (estimated)"
+msgstr "Ended (estimated)"
+
 #: src/components/Bip110ScanCard.tsx
 msgid "Epoch"
 msgstr "Epoch"

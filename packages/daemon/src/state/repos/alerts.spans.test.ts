@@ -9,7 +9,10 @@ import { AlertsRepo } from './alerts.js';
  * close at the next same-class opener, recent-vs-stale orphans), and the
  * window-overlap filter. A fixed `nowMs` is passed for determinism.
  */
-const ORPHAN_MAX_MS = 6 * 60 * 60 * 1000;
+// #376: widened from 6h - a latest-of-class unrecovered opener is a live
+// condition (24h blacklist holds are legitimate); the bound only catches
+// pathological orphans whose recovery can never fire.
+const ORPHAN_MAX_MS = 7 * 24 * 60 * 60 * 1000;
 
 describe('AlertsRepo.conditionSpansSince (#316)', () => {
   let handle: DatabaseHandle;
@@ -140,13 +143,24 @@ describe('AlertsRepo.conditionSpansSince (#316)', () => {
     expect(spans[0]?.end_ms).toBeNull();
   });
 
-  it('bounds a STALE orphan at start + ORPHAN_MAX_MS instead of painting to now', async () => {
+  it('#376: a latest-of-class unrecovered opener stays OPEN well past 6h (the blacklist-hold incident)', async () => {
     const start = 1_000;
-    const now = start + ORPHAN_MAX_MS + 60 * 60 * 1000; // 7h after start
+    const now = start + 20 * 60 * 60 * 1000; // 20h into a 24h hold
+    await insertOpener('target_blacklisted', start);
+    const spans = await repo.conditionSpansSince(0, now, now);
+    expect(spans).toHaveLength(1);
+    expect(spans[0]?.end_ms).toBeNull(); // ongoing - never a fake "Recovered"
+    expect(spans[0]?.end_estimated).toBe(false);
+  });
+
+  it('bounds a PATHOLOGICAL orphan at start + ORPHAN_MAX_MS, flagged estimated', async () => {
+    const start = 1_000;
+    const now = start + ORPHAN_MAX_MS + 60 * 60 * 1000; // beyond the 7d bound
     await insertOpener('solo_overheating', start);
     const spans = await repo.conditionSpansSince(0, now, now);
     expect(spans).toHaveLength(1);
     expect(spans[0]?.end_ms).toBe(start + ORPHAN_MAX_MS);
+    expect(spans[0]?.end_estimated).toBe(true);
   });
 
   it('implicitly closes an orphan at the next same-class opener start', async () => {
@@ -158,6 +172,7 @@ describe('AlertsRepo.conditionSpansSince (#316)', () => {
     const first = spans.find((s) => s.start_ms === 1_000);
     const second = spans.find((s) => s.start_ms === 5_000);
     expect(first?.end_ms).toBe(5_000); // closed at the next episode
+    expect(first?.end_estimated).toBe(true); // #376: never labeled "Recovered"
     expect(second?.end_ms).toBeNull(); // newest, recent -> ongoing
   });
 
@@ -168,8 +183,9 @@ describe('AlertsRepo.conditionSpansSince (#316)', () => {
     await insertOpener('zero_hashrate', 3_000); // different class
     const spans = await repo.conditionSpansSince(0, now, now);
     const solo = spans.find((s) => s.event_class === 'solo_overheating');
-    // Not closed at 3_000; stale -> bounded at start + ORPHAN_MAX_MS.
+    // Not closed at 3_000; pathological -> bounded at start + ORPHAN_MAX_MS.
     expect(solo?.end_ms).toBe(start + ORPHAN_MAX_MS);
+    expect(solo?.end_estimated).toBe(true);
   });
 
   it('ignores non-condition event_classes (e.g. pool_block_credited)', async () => {
