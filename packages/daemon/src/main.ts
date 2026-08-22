@@ -69,7 +69,7 @@ import { AlertManager } from './services/alert-manager.js';
 import { BraiinsDepositWatcherService } from './services/braiins-deposit-watcher.js';
 import { TelegramSink, type SendOptions } from './services/notifier.js';
 import { TelegramReceiver } from './services/telegram-receiver.js';
-import { runOceanUnpaidCleanup, runOceanUnpaidImport, runOceanUnpaidRestore } from './services/ocean-unpaid-cleanup.js';
+import { runOceanUnpaidCleanup, runOceanUnpaidImport, runOceanUnpaidInterpolate, runOceanUnpaidRestore } from './services/ocean-unpaid-cleanup.js';
 import { BidGuardService } from './services/bid-guard.js';
 import { runNetworkDifficultyBackfill } from './services/network-difficulty-backfill.js';
 import { runPoolBlocksBackfill } from './services/pool-blocks-backfill.js';
@@ -791,6 +791,12 @@ async function bootOperational(
       'ocean-unpaid-import.json',
     ),
   }).catch((err) => log(`[ocean-unpaid-import] ${(err as Error).message}`));
+  // #375: last in the chain, so it can bracket against everything the
+  // restore and import just recovered - fills remaining holes by
+  // bounded linear interpolation between adjacent real samples.
+  await runOceanUnpaidInterpolate({ db: handle.db, log: (m) => log(m) }).catch(
+    (err) => log(`[ocean-unpaid-interpolate] ${(err as Error).message}`),
+  );
 
   // Boot chain order (#241):
   //   1. pool-blocks-backfill - pull Ocean's pool_blocks for the

@@ -17,6 +17,7 @@ import { closeDatabase, openDatabase, type DatabaseHandle } from '../state/db.js
 import {
   runOceanUnpaidCleanup,
   runOceanUnpaidImport,
+  runOceanUnpaidInterpolate,
   runOceanUnpaidRestore,
 } from './ocean-unpaid-cleanup.js';
 
@@ -207,5 +208,94 @@ describe('runOceanUnpaidRestore (#369 self-heal)', () => {
     for (let i = 0; i < 5; i++) {
       expect(m.get(MODERN_MS - i * 60_000)).toBe(1_000_000 + i);
     }
+  });
+});
+
+describe('runOceanUnpaidInterpolate (#375 bounded gap-fill)', () => {
+  const MIN = 60_000;
+
+  async function insertPayout(tsMs: number): Promise<void> {
+    await handle.db
+      .insertInto('ocean_payouts')
+      .values({
+        address: 'bc1qtest',
+        ts: tsMs,
+        on_chain_txid: 'tx',
+        net_sat: 1_000_000,
+        rail: 'onchain',
+        dedup_key: `k${tsMs}`,
+        first_seen_at: tsMs,
+      } as never)
+      .execute();
+  }
+
+  it('fills a short gap linearly between two real samples', async () => {
+    await insertTick(MODERN_MS, 100_000);
+    await insertTick(MODERN_MS + 1 * MIN, null);
+    await insertTick(MODERN_MS + 2 * MIN, null);
+    await insertTick(MODERN_MS + 3 * MIN, null);
+    await insertTick(MODERN_MS + 4 * MIN, 140_000);
+
+    await runOceanUnpaidInterpolate({ db: handle.db });
+
+    const m = await unpaidByTick();
+    expect(m.get(MODERN_MS + 1 * MIN)).toBe(110_000);
+    expect(m.get(MODERN_MS + 2 * MIN)).toBe(120_000);
+    expect(m.get(MODERN_MS + 3 * MIN)).toBe(130_000);
+  });
+
+  it('refuses gaps wider than 6 hours', async () => {
+    await insertTick(MODERN_MS, 100_000);
+    await insertTick(MODERN_MS + 3 * 60 * MIN, null);
+    await insertTick(MODERN_MS + 7 * 60 * MIN, 200_000); // 7h bracket
+
+    await runOceanUnpaidInterpolate({ db: handle.db });
+
+    expect((await unpaidByTick()).get(MODERN_MS + 3 * 60 * MIN)).toBeNull();
+  });
+
+  it('refuses non-monotonic brackets (a payout happened in the gap)', async () => {
+    await insertTick(MODERN_MS, 1_100_000);
+    await insertTick(MODERN_MS + 1 * MIN, null);
+    await insertTick(MODERN_MS + 2 * MIN, 40_000); // dropped - paid out
+
+    await runOceanUnpaidInterpolate({ db: handle.db });
+
+    expect((await unpaidByTick()).get(MODERN_MS + 1 * MIN)).toBeNull();
+  });
+
+  it('refuses brackets containing a ledger payout even when net-positive', async () => {
+    await insertTick(MODERN_MS, 1_000_000);
+    await insertTick(MODERN_MS + 1 * MIN, null);
+    await insertTick(MODERN_MS + 2 * MIN, 1_010_000); // netted up across a payout
+    await insertPayout(MODERN_MS + 90_000);
+
+    await runOceanUnpaidInterpolate({ db: handle.db });
+
+    expect((await unpaidByTick()).get(MODERN_MS + 1 * MIN)).toBeNull();
+  });
+
+  it('never fills BIP110-chain ticks', async () => {
+    await insertTick(MODERN_MS, 100_000);
+    await handle.db
+      .insertInto('tick_metrics')
+      .values({
+        tick_at: MODERN_MS + 1 * MIN,
+        delivered_ph: 3,
+        target_ph: 3,
+        floor_ph: 1,
+        owned_bid_count: 1,
+        unknown_bid_count: 0,
+        run_mode: 'LIVE',
+        action_mode: 'NORMAL',
+        ocean_unpaid_sat: null,
+        ocean_chain: 'bip110',
+      } as never)
+      .execute();
+    await insertTick(MODERN_MS + 2 * MIN, 120_000);
+
+    await runOceanUnpaidInterpolate({ db: handle.db });
+
+    expect((await unpaidByTick()).get(MODERN_MS + 1 * MIN)).toBeNull();
   });
 });

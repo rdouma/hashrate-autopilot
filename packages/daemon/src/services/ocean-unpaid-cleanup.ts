@@ -224,3 +224,123 @@ export async function runOceanUnpaidImport(
     log(`ocean-unpaid-import: could not rename import file: ${(err as Error).message}`);
   }
 }
+
+/**
+ * #375: bounded gap-filling between adjacent REAL unpaid samples.
+ *
+ * The #369 restore recovered the wiped era only at ticks the decision
+ * log still covered, leaving minute-level holes between real samples.
+ * Between two adjacent real readings with no payout in between, unpaid
+ * is a slow monotonic accrual, so the intermediate values are tightly
+ * bounded by the two endpoints - linear interpolation there is
+ * display-grade gap-filling, categorically different from the banned
+ * model-based reconstruction (#108) that invented values from
+ * `reward x share_log` with no bounding measurements at all.
+ *
+ * Strict safety bounds - a gap is filled ONLY when:
+ *   (a) the bracketing real samples are at most 6 h apart,
+ *   (b) no payout exists in the payout ledger inside the bracket, and
+ *   (c) the right endpoint is >= the left (monotonic accrual - a drop
+ *       means a payout/adjustment happened inside the gap, and
+ *       interpolating would smear a cliff into a fake slope; those
+ *       gaps stay honest holes).
+ * BIP110-chain ticks are never filled (their unpaid is unknowable,
+ * not missing). Interpolated segments are monotonic non-decreasing
+ * between real endpoints, so the deduced-payout drop scanner can
+ * never read them as payouts. Idempotent: filled rows are non-null
+ * on the next boot and drop out of the scan.
+ */
+export async function runOceanUnpaidInterpolate(
+  deps: OceanUnpaidCleanupDeps,
+): Promise<void> {
+  const log = deps.log ?? (() => undefined);
+  const MAX_BRACKET_MS = 6 * 60 * 60_000;
+
+  const nullCount = await deps.db
+    .selectFrom('tick_metrics')
+    .select(({ fn }) => fn.countAll<number>().as('c'))
+    .where('ocean_unpaid_sat', 'is', null)
+    .where('synthetic', '=', 0)
+    .executeTakeFirst();
+  if (!nullCount || Number(nullCount.c) === 0) return;
+
+  const rows = await deps.db
+    .selectFrom('tick_metrics')
+    .select(['tick_at', 'ocean_unpaid_sat', 'ocean_chain'])
+    .where('synthetic', '=', 0)
+    .orderBy('tick_at', 'asc')
+    .execute();
+  const payoutTs = (
+    await deps.db.selectFrom('ocean_payouts').select('ts').orderBy('ts', 'asc').execute()
+  ).map((p) => Number(p.ts));
+
+  const hasPayoutBetween = (t1: number, t2: number): boolean => {
+    // payoutTs is sorted; linear scan with early exit is fine at the
+    // dozens-of-payouts scale this table has.
+    for (const ts of payoutTs) {
+      if (ts > t2) break;
+      if (ts > t1) return true;
+    }
+    return false;
+  };
+
+  const fills: Array<[number, number]> = [];
+  let leftT: number | null = null;
+  let leftV: number | null = null;
+  let pendingNulls: number[] = [];
+  for (const r of rows) {
+    if (r.ocean_unpaid_sat === null) {
+      if (r.ocean_chain !== 'bip110') pendingNulls.push(r.tick_at);
+      continue;
+    }
+    const t = r.tick_at;
+    const v = Number(r.ocean_unpaid_sat);
+    if (
+      leftT !== null &&
+      leftV !== null &&
+      pendingNulls.length > 0 &&
+      t - leftT <= MAX_BRACKET_MS &&
+      v >= leftV &&
+      !hasPayoutBetween(leftT, t)
+    ) {
+      for (const nt of pendingNulls) {
+        const frac = (nt - leftT) / (t - leftT);
+        fills.push([nt, Math.round(leftV + (v - leftV) * frac)]);
+      }
+    }
+    leftT = t;
+    leftV = v;
+    pendingNulls = [];
+  }
+
+  if (fills.length === 0) return;
+
+  await sql`CREATE TEMP TABLE IF NOT EXISTS unpaid_interp (tick_at INTEGER PRIMARY KEY, unpaid INTEGER NOT NULL)`.execute(
+    deps.db,
+  );
+  await sql`DELETE FROM unpaid_interp`.execute(deps.db);
+  const CHUNK = 5_000;
+  for (let i = 0; i < fills.length; i += CHUNK) {
+    const chunk = fills.slice(i, i + CHUNK);
+    const valuesSql = sql.join(
+      chunk.map(([t, v]) => sql`(${t}, ${v})`),
+      sql`, `,
+    );
+    await sql`INSERT OR REPLACE INTO unpaid_interp (tick_at, unpaid) VALUES ${valuesSql}`.execute(
+      deps.db,
+    );
+  }
+  const result = await sql`
+    UPDATE tick_metrics
+    SET ocean_unpaid_sat = (
+      SELECT unpaid FROM unpaid_interp WHERE unpaid_interp.tick_at = tick_metrics.tick_at
+    )
+    WHERE ocean_unpaid_sat IS NULL
+      AND tick_at IN (SELECT tick_at FROM unpaid_interp)
+  `.execute(deps.db);
+  await sql`DROP TABLE IF EXISTS unpaid_interp`.execute(deps.db);
+
+  log(
+    `ocean-unpaid-interpolate: filled ${Number(result.numAffectedRows ?? 0)} gap row(s) between adjacent real samples (#375)`,
+  );
+}
