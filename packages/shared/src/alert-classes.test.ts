@@ -9,7 +9,21 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import { conditionBandRenderMode } from './alert-classes.js';
+import { CONDITION_SPAN_CLASSES, conditionBandRenderMode } from './alert-classes.js';
+
+describe('CONDITION_SPAN_CLASSES', () => {
+  it('names every recovery class `<openClass>_recovery`', () => {
+    for (const cls of CONDITION_SPAN_CLASSES) {
+      expect(cls.recoveryClass).toBe(`${cls.openClass}_recovery`);
+    }
+  });
+
+  it('tints every span with the single shared alert-condition color slot', () => {
+    for (const cls of CONDITION_SPAN_CLASSES) {
+      expect(cls.colorSlot).toBe('events.alert_condition');
+    }
+  });
+});
 
 describe('conditionBandRenderMode', () => {
   it('chart-ful classes render bands on their target chart, focused or not', () => {
@@ -35,6 +49,17 @@ describe('conditionBandRenderMode', () => {
     expect(conditionBandRenderMode('marketplace_empty', 'price', false)).toBe('none');
     expect(conditionBandRenderMode('sustained_paused', 'price', false)).toBe('none');
     expect(conditionBandRenderMode('marketplace_empty', 'hashrate', true)).toBe('none');
+  });
+
+  it('hold + failure classes band their charts (#374)', () => {
+    // A create hold suppresses all trading, so it shows on both charts.
+    for (const openClass of ['bid_churn_hold', 'target_blacklisted']) {
+      expect(conditionBandRenderMode(openClass, 'hashrate', false)).toBe('band');
+      expect(conditionBandRenderMode(openClass, 'price', false)).toBe('band');
+    }
+    // Repeated mutation rejections read as a stalled bid price.
+    expect(conditionBandRenderMode('mutation_failed', 'price', false)).toBe('band');
+    expect(conditionBandRenderMode('mutation_failed', 'hashrate', true)).toBe('none');
   });
 
   it('unknown / null classes render nothing', () => {

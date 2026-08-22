@@ -45,7 +45,8 @@ export interface ConditionSpanClass {
  * The condition spans surfaced on the timeline, in display order.
  * Hashrate-shaped conditions live on the Hashrate chart; connectivity
  * and economic ones span both so they're visible wherever you're
- * looking; the Bitaxe thermal one is hashrate-side.
+ * looking; the Bitaxe thermal one is hashrate-side. Holds that stop the
+ * autopilot from trading at all (#374) span both charts too.
  */
 export const CONDITION_SPAN_CLASSES: readonly ConditionSpanClass[] = [
   {
@@ -89,6 +90,30 @@ export const CONDITION_SPAN_CLASSES: readonly ConditionSpanClass[] = [
     charts: ['hashrate'],
     colorSlot: 'events.alert_condition',
     label: 'Bitaxe overheating',
+  },
+  // #374: hold / failure conditions. A create hold suppresses *all*
+  // trading, so it bands both charts; repeated mutation rejections show
+  // up as a stalled bid price, so that one bands the price chart only.
+  {
+    openClass: 'bid_churn_hold',
+    recoveryClass: 'bid_churn_hold_recovery',
+    charts: ['hashrate', 'price'],
+    colorSlot: 'events.alert_condition',
+    label: 'Bidding held (bid churn)',
+  },
+  {
+    openClass: 'target_blacklisted',
+    recoveryClass: 'target_blacklisted_recovery',
+    charts: ['hashrate', 'price'],
+    colorSlot: 'events.alert_condition',
+    label: 'Pool blacklisted by marketplace',
+  },
+  {
+    openClass: 'mutation_failed',
+    recoveryClass: 'mutation_failed_recovery',
+    charts: ['price'],
+    colorSlot: 'events.alert_condition',
+    label: 'Bid actions failing',
   },
   // #318: log-only span classes (charts: [] -> they appear as History
   // span rows but draw no chart band, since #167 fillable-null and #287

@@ -19,6 +19,9 @@ export function conditionLabel(openClass: string): string {
     case 'solo_overheating': return t`Bitaxe overheating`;
     case 'marketplace_empty': return t`marketplace empty`;
     case 'sustained_paused': return t`bid paused (sustained)`;
+    case 'bid_churn_hold': return t`bidding held (bid churn)`;
+    case 'target_blacklisted': return t`pool blacklisted`;
+    case 'mutation_failed': return t`bid actions failing`;
     default: return openClass;
   }
 }
@@ -34,6 +37,9 @@ export function conditionRecoveryLabel(openClass: string): string {
     case 'solo_overheating': return t`Bitaxe cooled down`;
     case 'marketplace_empty': return t`marketplace filled`;
     case 'sustained_paused': return t`bid resumed`;
+    case 'bid_churn_hold': return t`bidding resumed`;
+    case 'target_blacklisted': return t`blacklist expired`;
+    case 'mutation_failed': return t`bid actions working again`;
     default: return t`recovered`;
   }
 }

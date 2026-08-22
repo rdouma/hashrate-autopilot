@@ -749,9 +749,17 @@ msgstr "La oferta {0} está {1} - esperando a que se active."
 msgid "Bid above target - Braiins price-decrease cooldown active."
 msgstr "Oferta por encima del objetivo - cooldown de bajada de precio de Braiins activo."
 
+#: src/lib/alertConditions.ts
+msgid "bid actions failing"
+msgstr "acciones sobre ofertas fallando"
+
 #: src/pages/Config.tsx
 msgid "Bid actions keep failing"
 msgstr "Las acciones sobre ofertas siguen fallando"
+
+#: src/lib/alertConditions.ts
+msgid "bid actions working again"
+msgstr "acciones sobre ofertas funcionando de nuevo"
 
 #: src/components/TilesBar.tsx
 msgid "bid coverage"
@@ -820,6 +828,10 @@ msgstr "Marcadores de eventos de oferta (CREATE / EDIT_PRICE / EDIT_SPEED / CANC
 msgid "Bid:"
 msgstr "Oferta:"
 
+#: src/lib/alertConditions.ts
+msgid "bidding held (bid churn)"
+msgstr "ofertas en pausa (churn de ofertas)"
+
 #: src/pages/Config.tsx
 msgid "Bidding held after bid churn"
 msgstr "Ofertas en pausa tras churn de ofertas"
@@ -831,6 +843,10 @@ msgstr "Las ofertas están en pausa - se crearon ofertas una y otra vez que se c
 #: src/pages/Status.tsx
 msgid "Bidding is on hold - the marketplace blacklisted your pool target. Bidding resumes automatically."
 msgstr "Las ofertas están en pausa - el marketplace puso tu pool en la lista negra. Las ofertas se reanudan automáticamente."
+
+#: src/lib/alertConditions.ts
+msgid "bidding resumed"
+msgstr "ofertas reanudadas"
 
 #: src/pages/Status.tsx
 msgid "Bids"
@@ -980,6 +996,10 @@ msgstr "Dirección de pago Bitcoin"
 #: src/components/Bip110ScanCard.tsx
 msgid "bitcoind RPC is not configured on the daemon. Set BHA_BITCOIND_RPC_URL / _USER / _PASSWORD or fill the corresponding fields on the Config page."
 msgstr "bitcoind RPC no está configurado en el daemon. Defina BHA_BITCOIND_RPC_URL / _USER / _PASSWORD o complete los campos correspondientes en la página de Configuración."
+
+#: src/lib/alertConditions.ts
+msgid "blacklist expired"
+msgstr "lista negra expirada"
 
 #: src/components/HashrateChart.tsx
 msgid "Block aged out of the rolling-{windowLabel} window - pool luck went from {luckBeforeText} to {luckAfterText}."
@@ -3719,6 +3739,10 @@ msgstr "pool"
 #: src/pages/Config.tsx
 msgid "Pool & Payout"
 msgstr "Pool y pago"
+
+#: src/lib/alertConditions.ts
+msgid "pool blacklisted"
+msgstr "pool en lista negra"
 
 #: src/components/HashrateChart.tsx
 #: src/pages/Config.tsx

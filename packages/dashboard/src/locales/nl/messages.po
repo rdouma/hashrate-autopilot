@@ -749,9 +749,17 @@ msgstr "Bod {0} is {1} - wacht tot het actief wordt."
 msgid "Bid above target - Braiins price-decrease cooldown active."
 msgstr "Bod boven doel - Braiins-cooldown voor prijsverlaging actief."
 
+#: src/lib/alertConditions.ts
+msgid "bid actions failing"
+msgstr "bod-acties mislukken"
+
 #: src/pages/Config.tsx
 msgid "Bid actions keep failing"
 msgstr "Bid-acties blijven mislukken"
+
+#: src/lib/alertConditions.ts
+msgid "bid actions working again"
+msgstr "bod-acties werken weer"
 
 #: src/components/TilesBar.tsx
 msgid "bid coverage"
@@ -820,6 +828,10 @@ msgstr "Bid-event-markers (CREATE / EDIT_PRICE / EDIT_SPEED / CANCEL) op de prij
 msgid "Bid:"
 msgstr "Bid:"
 
+#: src/lib/alertConditions.ts
+msgid "bidding held (bid churn)"
+msgstr "bieden gepauzeerd (bod-churn)"
+
 #: src/pages/Config.tsx
 msgid "Bidding held after bid churn"
 msgstr "Bieden op hold na bod-churn"
@@ -831,6 +843,10 @@ msgstr "Bieden staat op hold - er werden steeds biedingen aangemaakt die weer ge
 #: src/pages/Status.tsx
 msgid "Bidding is on hold - the marketplace blacklisted your pool target. Bidding resumes automatically."
 msgstr "Bieden staat op hold - de marktplaats heeft je pool-target op een blacklist gezet. Bieden hervat automatisch."
+
+#: src/lib/alertConditions.ts
+msgid "bidding resumed"
+msgstr "bieden hervat"
 
 #: src/pages/Status.tsx
 msgid "Bids"
@@ -980,6 +996,10 @@ msgstr "Bitcoin uitbetaaladres"
 #: src/components/Bip110ScanCard.tsx
 msgid "bitcoind RPC is not configured on the daemon. Set BHA_BITCOIND_RPC_URL / _USER / _PASSWORD or fill the corresponding fields on the Config page."
 msgstr "bitcoind RPC is niet geconfigureerd in de daemon. Stel BHA_BITCOIND_RPC_URL / _USER / _PASSWORD in of vul de corresponderende velden in op de Config-pagina."
+
+#: src/lib/alertConditions.ts
+msgid "blacklist expired"
+msgstr "zwarte lijst verlopen"
 
 #: src/components/HashrateChart.tsx
 msgid "Block aged out of the rolling-{windowLabel} window - pool luck went from {luckBeforeText} to {luckAfterText}."
@@ -3719,6 +3739,10 @@ msgstr "pool"
 #: src/pages/Config.tsx
 msgid "Pool & Payout"
 msgstr "Pool en payout"
+
+#: src/lib/alertConditions.ts
+msgid "pool blacklisted"
+msgstr "pool op zwarte lijst"
 
 #: src/components/HashrateChart.tsx
 #: src/pages/Config.tsx

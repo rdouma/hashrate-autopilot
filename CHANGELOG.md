@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-08-22
+
+### `[Fix]` Unpaid-history holes filled between real samples (#375)
+
+The #369 restore recovered the wiped era only at ticks the decision log still covered, leaving a sparse dashed unpaid line with holes mid-July through mid-August. A boot-time pass now fills those holes by linear interpolation strictly between adjacent real samples - only when the bracket is at most 6 hours, contains no payout, and is monotonically non-decreasing (a drop means a payout happened in the gap; those stay honest holes). Bounded gap-filling between two real measurements, not reconstruction; BIP110-chain ticks are never touched, and interpolated segments can never be misread as payouts by the deduced-payout scanner.
+
+### `[UI]` Hold and failure periods now band the charts (#374)
+
+Periods where bidding was held after bid churn, where the marketplace had blacklisted your pool, or where bid actions kept failing now draw a hatched band across the Status charts, with a hover tooltip naming the condition and how long it lasted. They also appear as span rows on the Timeline with their own filter chip, so you can see at a glance which flat stretch of the price line was a hold rather than a quiet market.
+
 ## 2026-08-21
 
 ### `[Fix]` Churn breaker, blacklist-aware hold, and node-health bid protection (#373)

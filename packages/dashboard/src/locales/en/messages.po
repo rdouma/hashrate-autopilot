@@ -749,9 +749,17 @@ msgstr "Bid {0} is {1} - waiting for it to become active."
 msgid "Bid above target - Braiins price-decrease cooldown active."
 msgstr "Bid above target - Braiins price-decrease cooldown active."
 
+#: src/lib/alertConditions.ts
+msgid "bid actions failing"
+msgstr "bid actions failing"
+
 #: src/pages/Config.tsx
 msgid "Bid actions keep failing"
 msgstr "Bid actions keep failing"
+
+#: src/lib/alertConditions.ts
+msgid "bid actions working again"
+msgstr "bid actions working again"
 
 #: src/components/TilesBar.tsx
 msgid "bid coverage"
@@ -820,6 +828,10 @@ msgstr "Bid-event markers (CREATE / EDIT_PRICE / EDIT_SPEED / CANCEL) on the pri
 msgid "Bid:"
 msgstr "Bid:"
 
+#: src/lib/alertConditions.ts
+msgid "bidding held (bid churn)"
+msgstr "bidding held (bid churn)"
+
 #: src/pages/Config.tsx
 msgid "Bidding held after bid churn"
 msgstr "Bidding held after bid churn"
@@ -831,6 +843,10 @@ msgstr "Bidding is on hold - bids kept being created and canceled again without 
 #: src/pages/Status.tsx
 msgid "Bidding is on hold - the marketplace blacklisted your pool target. Bidding resumes automatically."
 msgstr "Bidding is on hold - the marketplace blacklisted your pool target. Bidding resumes automatically."
+
+#: src/lib/alertConditions.ts
+msgid "bidding resumed"
+msgstr "bidding resumed"
 
 #: src/pages/Status.tsx
 msgid "Bids"
@@ -980,6 +996,10 @@ msgstr "Bitcoin payout address"
 #: src/components/Bip110ScanCard.tsx
 msgid "bitcoind RPC is not configured on the daemon. Set BHA_BITCOIND_RPC_URL / _USER / _PASSWORD or fill the corresponding fields on the Config page."
 msgstr "bitcoind RPC is not configured on the daemon. Set BHA_BITCOIND_RPC_URL / _USER / _PASSWORD or fill the corresponding fields on the Config page."
+
+#: src/lib/alertConditions.ts
+msgid "blacklist expired"
+msgstr "blacklist expired"
 
 #: src/components/HashrateChart.tsx
 msgid "Block aged out of the rolling-{windowLabel} window - pool luck went from {luckBeforeText} to {luckAfterText}."
@@ -3719,6 +3739,10 @@ msgstr "pool"
 #: src/pages/Config.tsx
 msgid "Pool & Payout"
 msgstr "Pool & Payout"
+
+#: src/lib/alertConditions.ts
+msgid "pool blacklisted"
+msgstr "pool blacklisted"
 
 #: src/components/HashrateChart.tsx
 #: src/pages/Config.tsx
