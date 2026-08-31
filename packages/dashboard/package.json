@@ -20,11 +20,11 @@
     "@hashrate-autopilot/shared": "workspace:*",
     "@lingui/core": "^6.6.0",
     "@lingui/react": "^6.6.0",
-    "@tanstack/react-query": "^5.101.4",
+    "@tanstack/react-query": "^5.102.8",
     "fflate": "^0.8.3",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "react-router": "^8.3.0"
+    "react-router": "^8.3.1"
   },
   "devDependencies": {
     "@babel/core": "^8.0.1",

@@ -27,7 +27,7 @@
     "@hashrate-autopilot/braiins-client": "workspace:*",
     "@hashrate-autopilot/daemon": "workspace:*",
     "@hashrate-autopilot/shared": "workspace:*",
-    "@inquirer/prompts": "^8.5.2",
+    "@inquirer/prompts": "^8.7.0",
     "@types/node": "^26.2.0",
     "eslint": "^10.8.1",
     "playwright": "^1.62.1",
