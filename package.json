@@ -27,7 +27,7 @@
     "@hashrate-autopilot/braiins-client": "workspace:*",
     "@hashrate-autopilot/daemon": "workspace:*",
     "@hashrate-autopilot/shared": "workspace:*",
-    "@inquirer/prompts": "^8.5.2",
+    "@inquirer/prompts": "^8.7.3",
     "@types/node": "^26.2.0",
     "eslint": "^10.8.1",
     "playwright": "^1.62.1",
@@ -36,6 +36,6 @@
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.66.0",
     "vitest": "^4.1.10",
-    "yaml": "^2.9.0"
+    "yaml": "^2.9.1"
   }
 }
