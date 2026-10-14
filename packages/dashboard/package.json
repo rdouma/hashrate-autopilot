@@ -18,13 +18,13 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@hashrate-autopilot/shared": "workspace:*",
-    "@lingui/core": "^6.6.0",
-    "@lingui/react": "^6.6.0",
-    "@tanstack/react-query": "^5.101.4",
+    "@lingui/core": "^6.9.1",
+    "@lingui/react": "^6.9.1",
+    "@tanstack/react-query": "^5.104.1",
     "fflate": "^0.8.3",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "react-router": "^8.3.0"
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-router": "^8.4.0"
   },
   "devDependencies": {
     "@babel/core": "^8.0.1",
@@ -34,8 +34,8 @@
     "@lingui/vite-plugin": "^6.6.0",
     "@rolldown/plugin-babel": "^0.2.3",
     "@tailwindcss/vite": "^4.3.3",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.4",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.0.5",
     "tailwindcss": "^4.3.3",
     "vite": "^8.2.1"
