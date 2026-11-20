@@ -22,14 +22,17 @@ allowBuilds:
   esbuild: true
 
 overrides:
-  fast-uri: ">=4.1.2"
+  fast-uri: ">=4.2.3"
   esbuild: ">=0.28.1"
   # Only the minimatch@5 copy is vulnerable (>=2.0.0 <2.1.3); the
   # minimatch@10 copy under eslint is already on 5.x and out of range.
   # Scope the bump so minimatch@5 stays on the 2.x line it is written
   # against instead of being dragged onto brace-expansion 5.
-  "minimatch@5>brace-expansion": ">=2.1.3 <3"
+  "minimatch@5>brace-expansion": ">=2.1.6 <3"
   # Upper bound keeps the 4.x API that @redocly/openapi-core (via
   # openapi-typescript) is written against; >=4.3.0 carries the fix.
-  js-yaml: ">=4.3.1 <5"
+  js-yaml: ">=4.3.2 <5"
   find-my-way: ">=9.7.0"
+  browserslist: ">=4.28.7"
+  baseline-browser-mapping: ">=2.11.0"
+  source-map-js: ">=1.2.2"
