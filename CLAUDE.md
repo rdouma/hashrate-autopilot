@@ -2,8 +2,8 @@
 
 ## Model tiers (imported from the Domizello workflow, 2026-08-20)
 
-**Plan expensive, execute cheap.** The session model (Fable) does the
-strategy, architecture, triage judgment, issue/PR management, release
+**Plan at the top, execute cheap.** Opus is the top tier (2026-09-24: the
+Fable tier is retired) and does the strategy, architecture, triage judgment, issue/PR management, release
 management, and ALL prose a human reads (docs, spec, CHANGELOG,
 issue/PR bodies and comments, release notes). The actual coding is
 delegated to **Opus subagents** (`Agent` tool, `model: opus`) with a
@@ -17,7 +17,7 @@ triage, migration design, mutation-gate or payout-accounting logic,
 or anything that rewrites an operator's database in place. If a
 cheaper tier flails twice on a chunk, escalate one tier instead of
 retrying. The orchestrator rewrites worker prose rather than passing
-it through verbatim. Full local policy (with current model IDs):
+it through verbatim. Full local policy:
 `.claude/rules/model-tiers.md` (operator-private, not committed).
 
 ## Diagnostic credentials
