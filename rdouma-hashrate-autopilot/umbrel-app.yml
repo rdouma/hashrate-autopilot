@@ -7,7 +7,7 @@ manifestVersion: 1
 id: rdouma-hashrate-autopilot
 category: bitcoin
 name: Hashrate Autopilot
-version: "1.18.2"
+version: "1.18.3"
 tagline: Autopilot for renting hashrate to mine on Ocean Mining
 icon: https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/assets/icon-512.png
 # Umbrel renders description literally - no YAML folding of soft
@@ -55,6 +55,12 @@ defaultPassword: ""
 submitter: Remco Douma
 submission: https://github.com/rdouma/hashrate-autopilot
 releaseNotes: |
+  v1.18.3 - security maintenance update. No new features and no behavior changes.
+
+  SECURITY
+  - Updates the app's software dependencies to their patched releases, clearing 28 published security advisories. The most relevant are in the web server and data-validation libraries the app uses (fastify, zod, fast-uri, js-yaml): request spoofing, URI confusion, and memory or CPU exhaustion from oversized input.
+  - Safe to upgrade from any 1.17.x or 1.18.x release; no new settings.
+
   v1.18.2 - the autopilot now protects your account from marketplace penalties, and the dashboard always tells you why bidding stopped.
 
   FIXED

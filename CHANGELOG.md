@@ -2,6 +2,10 @@
 
 ## 2026-11-20
 
+### `[Release]` v1.18.3
+
+Security maintenance release with no new features and no behavior changes. Dependencies move to patched releases, clearing all 28 open Dependabot advisories, including in the daemon's web server and validation libraries (fastify, zod, fast-uri, js-yaml). Safe to upgrade from any 1.17.x or 1.18.x release; no new settings.
+
 ### `[Infra]` Dependency security sweep
 
 Clears all 28 open Dependabot security alerts. The daemon's web server and validation stack moves to patched releases (fastify 5.12.8, zod 4.6.7, fast-uri 4.2.3, js-yaml 4.3.2, brace-expansion 2.1.8), closing several request-spoofing, URI-confusion and denial-of-service advisories. Dashboard build tooling (vite 8.3.8, vitest 4.1.12, browserslist, source-map-js, baseline-browser-mapping) and the remaining routine minor updates are picked up as well. No behavior or settings changes.
