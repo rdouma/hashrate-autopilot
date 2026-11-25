@@ -7,7 +7,7 @@ manifestVersion: 1
 id: rdouma-hashrate-autopilot
 category: bitcoin
 name: Hashrate Autopilot
-version: "1.18.3"
+version: "1.18.4"
 tagline: Autopilot for renting hashrate to mine on Ocean Mining
 icon: https://raw.githubusercontent.com/rdouma/hashrate-autopilot/main/assets/icon-512.png
 # Umbrel renders description literally - no YAML folding of soft
@@ -55,6 +55,14 @@ defaultPassword: ""
 submitter: Remco Douma
 submission: https://github.com/rdouma/hashrate-autopilot
 releaseNotes: |
+  v1.18.4 - security update. Updating is strongly recommended.
+
+  SECURITY
+  - Fixes a flaw that let someone who could reach the dashboard on your network use its API without the dashboard password. Reported privately by a security researcher; there is no sign it was used.
+  - A saved node RPC password or DDNS credential can no longer be redirected to a new address: changing the address now asks you to enter the credential again.
+  - The first-run setup screen no longer returns stored credentials and no longer accepts requests from other websites.
+  - Safe to upgrade from any 1.17.x or 1.18.x release; no new settings.
+
   v1.18.3 - security maintenance update. No new features and no behavior changes.
 
   SECURITY

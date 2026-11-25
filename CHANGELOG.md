@@ -2,6 +2,10 @@
 
 ## 2026-11-25
 
+### `[Release]` v1.18.4
+
+Security release. Fixes a dashboard password bypass (GHSA-35jm-xg76-3hh4): anyone who could reach the dashboard port could call the API without the password. Also stops a stored node RPC password or DDNS credential from being redirected to a new address, and hardens the first-run setup server. Updating is strongly recommended; safe from any 1.17.x or 1.18.x release, no new settings.
+
 ### `[Fix]` Dashboard password could be bypassed with an encoded URL (GHSA-35jm-xg76-3hh4)
 
 The password check only looked at the raw request text, while the web server matches routes after decoding it. A request with one letter of `/api` percent-encoded (for example `/%61pi/config`) reached the normal handler with no password, so anyone who could reach the dashboard port could read and change the configuration and switch the run mode to LIVE. Authentication and rate limiting now decide on the route the server actually matched; only the health probe stays public. Reported privately by DritzPS.
