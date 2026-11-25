@@ -58,7 +58,7 @@ releaseNotes: |
   v1.18.4 - security update. Updating is strongly recommended.
 
   SECURITY
-  - Fixes a flaw that let someone who could reach the dashboard on your network use its API without the dashboard password. Reported privately by a security researcher; there is no sign it was used.
+  - Fixes a flaw that let someone who could reach the dashboard on your network use its API without the dashboard password. Reported privately by a security researcher.
   - A saved node RPC password or DDNS credential can no longer be redirected to a new address: changing the address now asks you to enter the credential again.
   - The first-run setup screen no longer returns stored credentials and no longer accepts requests from other websites.
   - Safe to upgrade from any 1.17.x or 1.18.x release; no new settings.
