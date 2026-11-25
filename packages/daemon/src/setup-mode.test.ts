@@ -80,6 +80,71 @@ describe('createSetupModeServer', () => {
     expect(body.current_config).not.toBeNull();
   });
 
+  it('GET /api/setup-info blanks stored credentials (GHSA-35jm-xg76-3hh4)', async () => {
+    await configRepo.upsert({
+      ...validSetupPayload().config,
+      bitcoind_rpc_url: 'http://node.local:8332',
+      bitcoind_rpc_user: 'rpcuser',
+      bitcoind_rpc_password: 'rpc-secret',
+      telegram_bot_token: 'bot:SECRET',
+      ddns_credential: 'ddns-secret',
+    });
+    const res = await server.app.inject({ method: 'GET', url: '/api/setup-info' });
+    expect(res.body).not.toContain('rpc-secret');
+    expect(res.body).not.toContain('bot:SECRET');
+    expect(res.body).not.toContain('ddns-secret');
+    const body = res.json() as { current_config: Record<string, unknown> };
+    expect(body.current_config['bitcoind_rpc_user']).toBe('rpcuser');
+    expect(body.current_config['bitcoind_rpc_password']).toBe('');
+  });
+
+  it('POST /api/setup keeps stored credentials sent back blank', async () => {
+    await configRepo.upsert({
+      ...validSetupPayload().config,
+      telegram_bot_token: 'bot:SECRET',
+      ddns_credential: 'ddns-secret',
+    });
+    const res = await server.app.inject({ method: 'POST', url: '/api/setup', payload: validSetupPayload() });
+    expect(res.statusCode).toBe(200);
+    const saved = await configRepo.get();
+    expect(saved?.telegram_bot_token).toBe('bot:SECRET');
+    expect(saved?.ddns_credential).toBe('ddns-secret');
+  });
+
+  it('POST /api/setup refuses to send a stored RPC password to a new URL', async () => {
+    await configRepo.upsert({
+      ...validSetupPayload().config,
+      bitcoind_rpc_url: 'http://node.local:8332',
+      bitcoind_rpc_user: 'rpcuser',
+      bitcoind_rpc_password: 'rpc-secret',
+    });
+    const payload = validSetupPayload();
+    const res = await server.app.inject({
+      method: 'POST',
+      url: '/api/setup',
+      payload: {
+        ...payload,
+        config: {
+          ...payload.config,
+          bitcoind_rpc_url: 'http://evil.example:8332',
+          bitcoind_rpc_user: 'rpcuser',
+          bitcoind_rpc_password: '',
+        },
+      },
+    });
+    expect(res.statusCode).toBe(400);
+    expect((await configRepo.get())?.bitcoind_rpc_url).toBe('http://node.local:8332');
+  });
+
+  it('does not reflect a foreign Origin (same-origin CORS)', async () => {
+    const res = await server.app.inject({
+      method: 'GET',
+      url: '/api/setup-info',
+      headers: { origin: 'https://evil.example', host: 'umbrel.local:3010' },
+    });
+    expect(res.headers['access-control-allow-origin']).toBeUndefined();
+  });
+
   it('POST /api/setup writes config + secrets and returns 200', async () => {
     const res = await server.app.inject({
       method: 'POST',

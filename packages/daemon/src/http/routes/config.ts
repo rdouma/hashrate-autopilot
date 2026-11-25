@@ -45,6 +45,40 @@ export function keepCredentials(next: AppConfig, prev: AppConfig): AppConfig {
   return merged as AppConfig;
 }
 
+/**
+ * GHSA-35jm-xg76-3hh4 (related hardening): which config fields decide
+ * WHERE each write-only credential is sent. A blank credential on save
+ * means "keep the stored one" (#331), so without this check a caller
+ * could re-point the address and have the daemon send the stored secret
+ * (or the secrets-file fallback) to a host of their choosing. Telegram is
+ * absent on purpose: its token only ever goes to the fixed Telegram API.
+ */
+export const CREDENTIAL_DESTINATION_FIELDS: Readonly<Record<string, readonly string[]>> = {
+  bitcoind_rpc_password: ['bitcoind_rpc_url'],
+  ddns_credential: ['ddns_provider', 'ddns_update_url'],
+};
+
+/**
+ * Credentials that must be re-entered on this save: the incoming value is
+ * blank (= keep stored) while one of its destination fields changed to a
+ * non-empty value. Clearing a destination (disabling the feature) is fine.
+ */
+export function credentialsNeedingReentry(next: AppConfig, prev: AppConfig): string[] {
+  const n = next as Record<string, unknown>;
+  const p = prev as Record<string, unknown>;
+  const out: string[] = [];
+  for (const [cred, destinations] of Object.entries(CREDENTIAL_DESTINATION_FIELDS)) {
+    if (n[cred] !== '') continue;
+    const moved = destinations.some((d) => {
+      const nv = typeof n[d] === 'string' ? (n[d] as string).trim() : '';
+      const pv = typeof p[d] === 'string' ? (p[d] as string).trim() : '';
+      return nv !== '' && nv !== pv;
+    });
+    if (moved) out.push(cred);
+  }
+  return out;
+}
+
 export async function registerConfigRoutes(
   app: FastifyInstance,
   deps: HttpServerDeps,
@@ -95,6 +129,18 @@ export async function registerConfigRoutes(
       // onConfigSaved callback can diff and decide what to kick
       // (e.g. DDNS updater on hostname/credential change).
       const prev = await deps.configRepo.get().catch(() => null);
+      if (prev) {
+        const reentry = credentialsNeedingReentry(cleaned, prev);
+        if (reentry.length > 0) {
+          reply.code(422);
+          return {
+            error: 'credential must be re-entered',
+            details: reentry
+              .map((f) => `${f}: the address this credential is sent to changed, so enter the credential again`)
+              .join('\n'),
+          };
+        }
+      }
       // #331: blank credential fields mean "keep existing" (write-only
       // API). Applied before the diff so leaving a masked field blank
       // isn't recorded as a change and never blanks a set secret.

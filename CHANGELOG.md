@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-11-25
+
+### `[Fix]` Dashboard password could be bypassed with an encoded URL (GHSA-35jm-xg76-3hh4)
+
+The password check only looked at the raw request text, while the web server matches routes after decoding it. A request with one letter of `/api` percent-encoded (for example `/%61pi/config`) reached the normal handler with no password, so anyone who could reach the dashboard port could read and change the configuration and switch the run mode to LIVE. Authentication and rate limiting now decide on the route the server actually matched; only the health probe stays public. Reported privately by DritzPS.
+
+### `[Fix]` Stored credentials can no longer be redirected to a new address
+
+Saving the configuration with a blank node RPC password or DDNS credential keeps the stored one, but that also applied when the RPC URL, DDNS provider or DDNS update URL changed, so the stored secret could be sent to a different host. Changing one of those addresses now requires entering the credential again. The first-run setup server also stops returning stored credentials and no longer allows cross-site requests from other websites.
+
 ## 2026-11-20
 
 ### `[Release]` v1.18.3

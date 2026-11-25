@@ -45,6 +45,12 @@ import {
   APP_CONFIG_DEFAULTS,
   SecretsSchema,
 } from './config/schema.js';
+import {
+  credentialsNeedingReentry,
+  keepCredentials,
+  maskCredentials,
+} from './http/routes/config.js';
+import { sameOriginCorsDelegator } from './http/server.js';
 import type { ConfigRepo } from './state/repos/config.js';
 import type { SecretsRepo } from './state/repos/secrets.js';
 
@@ -83,9 +89,12 @@ export async function createSetupModeServer(
 ): Promise<SetupModeServer> {
   const app = Fastify({ logger: false, disableRequestLogging: true });
 
-  // Same CORS treatment as the operational server so the dashboard's
-  // dev mode (Vite on :5173 → daemon on :3010) works end-to-end.
-  await app.register(fastifyCors, { origin: true, credentials: true });
+  // Same CORS policy as the operational server: same-origin only
+  // (#358, GHSA-35jm-xg76-3hh4). The old `origin: true` let any website
+  // the operator visited read /api/setup-info and POST /api/setup while
+  // this server was up. Dev mode is unaffected - Vite proxies /api
+  // server-side, so the browser only ever talks to Vite.
+  await app.register(fastifyCors, sameOriginCorsDelegator);
 
   // ---------------------------------------------------------------
   // Setup endpoints - unauthenticated.
@@ -133,7 +142,11 @@ export async function createSetupModeServer(
         payout_source: envPayoutSource ?? (detected.url ? 'bitcoind' : APP_CONFIG_DEFAULTS.payout_source),
         datum_api_url: envDatumApiUrl ?? APP_CONFIG_DEFAULTS.datum_api_url,
       },
-      current_config: existing,
+      // Write-only credentials are blanked exactly like GET /api/config
+      // (#331, GHSA-35jm-xg76-3hh4): this endpoint is unauthenticated,
+      // so it must never hand out a stored secret. POST /api/setup keeps
+      // the stored value when the wizard sends the field back blank.
+      current_config: existing ? maskCredentials(existing).config : null,
       detected_bitcoind: detected,
     };
   });
@@ -164,8 +177,28 @@ export async function createSetupModeServer(
       ...(detected.password && !parsedConfig.bitcoind_rpc_password ? { bitcoind_rpc_password: detected.password } : {}),
     };
 
+    // current_config went out masked, so blank write-only fields mean
+    // "keep the stored value" - but never when the address that value is
+    // sent to changed (GHSA-35jm-xg76-3hh4), or this unauthenticated
+    // endpoint could redirect a stored secret to another host.
+    const existing = await deps.configRepo.get();
+    if (existing) {
+      const reentry = credentialsNeedingReentry(config, existing);
+      if (reentry.length > 0) {
+        reply.code(400).send({
+          error: 'credential_must_be_reentered',
+          details: reentry.map((f) => ({
+            path: f,
+            message: 'the address this credential is sent to changed, so enter the credential again',
+          })),
+        });
+        return;
+      }
+    }
+    const toSave = existing ? keepCredentials(config, existing) : config;
+
     deps.log?.('setup: writing config + secrets to db');
-    await deps.configRepo.upsert(config);
+    await deps.configRepo.upsert(toSave);
     await deps.secretsRepo.upsert(secrets);
 
     reply.send({ ok: true });

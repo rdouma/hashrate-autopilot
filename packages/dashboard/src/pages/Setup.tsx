@@ -88,7 +88,14 @@ export function Setup() {
           payout_source: base.payout_source,
           bitcoind_rpc_url: base.bitcoind_rpc_url,
           bitcoind_rpc_user: base.bitcoind_rpc_user,
-          bitcoind_rpc_password: base.bitcoind_rpc_password,
+          // The daemon blanks a stored RPC password in current_config
+          // (it is write-only). Pre-fill from the appliance-detected
+          // password only when it belongs to the same node URL.
+          bitcoind_rpc_password:
+            base.bitcoind_rpc_password ||
+            (i.detected_bitcoind?.url && i.detected_bitcoind.url === base.bitcoind_rpc_url
+              ? (i.detected_bitcoind.password ?? '')
+              : ''),
           electrs_host: base.electrs_host ?? '',
           electrs_port: base.electrs_port ?? 50001,
         });

@@ -322,6 +322,15 @@ Two tiers of config:
   replies; because browsers attach cached HTTP-auth credentials to cross-origin fetches, a page in another tab
   could drive authenticated endpoints while an operator had a live session. The policy is exported as
   `sameOriginCorsDelegator` from `http/server.ts` so its tests exercise the registered code rather than a copy.
+  The NEEDS_SETUP server registers the same policy.
+- **Auth decision follows the matched route (GHSA-35jm-xg76-3hh4).** The auth and rate-limit `onRequest` hooks
+  decide on `req.routeOptions.url` (the route pattern the router matched, after percent-decoding), not on the raw
+  `req.url`, so an encoded target like `/%61pi/config` cannot reach an `/api/*` handler without the password. Only
+  a matched `/api/health` is public. See `requiresDashboardAuth` / `isApiRequest` in `http/server.ts`.
+- **Write-only credentials stay pinned to their address.** `GET /api/config` and the setup server's
+  `/api/setup-info` blank `bitcoind_rpc_password`, `ddns_credential` and `telegram_bot_token`; a blank value on save
+  keeps the stored one. A save that changes where a credential is sent (`bitcoind_rpc_url`; `ddns_provider` /
+  `ddns_update_url`) while leaving it blank is refused, so a stored secret can never be redirected to a new host.
 - **Live updates**: polling via TanStack Query (`refetchInterval` ~5s on status screens). No WebSocket/SSE in v1.
 
 ## 5. Data model (SQLite, better-sqlite3)

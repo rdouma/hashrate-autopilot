@@ -196,6 +196,39 @@ export const sameOriginCorsDelegator =
     cb(null, { origin: sameOrigin, credentials: true });
   };
 
+/**
+ * Minimal request shape the auth / rate-limit predicates need. Fastify
+ * resolves the route before `onRequest` hooks run, so `routeOptions.url`
+ * holds the matched route pattern (undefined when nothing matched).
+ */
+interface RoutedRequest {
+  readonly url: string;
+  readonly routeOptions: { readonly url?: string | undefined };
+}
+
+/**
+ * GHSA-35jm-xg76-3hh4: `req.url` is the raw request target, but the
+ * router matches after percent-decoding. A target like `/%61pi/config`
+ * reaches the `/api/config` handler while `req.url.startsWith('/api/')`
+ * is false, so a raw-text prefix test silently skipped auth. The matched
+ * route pattern is the ground truth; the raw prefix is kept as a second
+ * trigger so this is strictly stricter than the old check.
+ */
+export function isApiRequest(req: RoutedRequest): boolean {
+  const route = req.routeOptions.url;
+  return req.url.startsWith('/api/') || (route !== undefined && route.startsWith('/api/'));
+}
+
+/**
+ * True when a request must present the dashboard password. Only the
+ * health probe is public, and only when the router actually matched it -
+ * an unmatched `/api/...` target gets a 401, not a pass.
+ */
+export function requiresDashboardAuth(req: RoutedRequest): boolean {
+  if (!isApiRequest(req)) return false;
+  return req.routeOptions.url !== '/api/health';
+}
+
 export async function createHttpServer(deps: HttpServerDeps): Promise<HttpServer> {
   const app = Fastify({ logger: false, disableRequestLogging: true });
 
@@ -272,7 +305,7 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<HttpServer
   const RATE_LIMIT = 300;
   let lastRatePrune = Date.now();
   app.addHook('onRequest', (req, reply, done) => {
-    if (!req.url.startsWith('/api/')) return done();
+    if (!isApiRequest(req)) return done();
     const ip = req.ip;
     const now = Date.now();
     let bucket = rateBuckets.get(ip);
@@ -298,9 +331,10 @@ export async function createHttpServer(deps: HttpServerDeps): Promise<HttpServer
   // callback-style Fastify middleware signature (req, reply, done).
   // /api/health is exempt - appliance hosts (Umbrel, Start9, #67) and
   // the dashboard's mode probe both need to reach it without creds.
+  // The decision is made on the MATCHED route, not the raw request
+  // target (GHSA-35jm-xg76-3hh4) - see requiresDashboardAuth.
   app.addHook('onRequest', (req, reply, done) => {
-    if (!req.url.startsWith('/api/')) return done();
-    if (req.url.startsWith('/api/health')) return done();
+    if (!requiresDashboardAuth(req)) return done();
     app.basicAuth(req, reply, done);
   });
 
