@@ -1,13 +1,6 @@
 # Hashrate Autopilot
 
-> ⚠️ **Project status (August 2026): maintenance mode.** Read this before investing time in the tool. I have
-> personally stopped mining SHA-256 and I'm winding down my own use: my Braiins budget runs out in a few weeks, and
-> after that I can no longer test fixes myself. The software keeps working as-is and nothing is being taken away,
-> but there is no SHA-256 roadmap anymore, and bug-fix support will be limited at best. Forks are welcome. If a
-> rentable hashrate market for the Blake2b chain ever appears, that is the direction I would pick the project back
-> up in ([#371](https://github.com/rdouma/hashrate-autopilot/issues/371)). The full reasoning - why BIP-110's
-> failure ended the home-mining-as-decentralization thesis this tool was built on - is here:
-> **[Why I'm stepping back from SHA-256 mining](https://github.com/rdouma/hashrate-autopilot/discussions/377)**.
+> ⛔ **Project status (November 2026): end of life. Hashrate Autopilot stops working at the end of 2026.** Braiins is switching off the v1 Hashpower API this tool is built on at the end of 2026, and new Braiins accounts no longer get the API tokens it needs. Its replacement, the v2 API with Braiins ID, is not supported, and I won't port it: I stopped mining after BIP-110 was rejected and I no longer plan to update this project. v1.18.4 is the last release. Forks are welcome, and anyone who wants to port it to the v2 API is free to do so. Announcement: **[Hashrate Autopilot stops working at the end of 2026](https://github.com/rdouma/hashrate-autopilot/discussions/406)**. Why I stepped back: **[Why I'm stepping back from SHA-256 mining](https://github.com/rdouma/hashrate-autopilot/discussions/377)**.
 
 > 📦 **Already running the community-store version (`rdouma-hashrate-autopilot`) and switching to the official Umbrel App Store?** Don't just click Install - the official-store app id is different, so a straight install creates a second empty instance side-by-side with your existing data. Five-minute migration recipe (every step done from the umbrelOS Files app, no terminal needed) here: **[Migrating from the community store version](docs/migrating-from-community-store.md)**.
 
